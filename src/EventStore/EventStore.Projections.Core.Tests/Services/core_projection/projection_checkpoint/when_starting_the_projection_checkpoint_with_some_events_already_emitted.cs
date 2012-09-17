@@ -43,6 +43,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         private ProjectionCheckpoint _checkpoint;
         private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
 
+        protected override void Given()
+        {
+            NoStream("stream1");
+            NoStream("stream2");
+            NoStream("stream3");
+        }
+
         [SetUp]
         public void setup()
         {

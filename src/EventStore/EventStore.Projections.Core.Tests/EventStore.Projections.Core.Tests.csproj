@@ -239,26 +239,6 @@
       <Name>EventStore.Projections.Core</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
-    <Content Include="..\..\..\bin\eventstore\$(Configuration)\$(SolutionPlatform)\js1.dll">
-      <Link>js1.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\..\..\bin\eventstore\$(Configuration)\$(SolutionPlatform)\js1.pdb">
-      <Link>js1.pdb</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' != 'Windows_NT' ">
-    <Content Include="../libs/libjs1.so">
-      <Link>libjs1.so</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="../libs/libv8.so">
-      <Link>libv8.so</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
   <ItemGroup>
     <Content Include="Queries\1Query.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -266,6 +246,11 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="BeforeBuild">
+    <Copy SourceFiles="..\libs\libjs1.so" DestinationFolder="$(OutDir)" Condition=" '$(OS)' != 'Windows_NT' " />
+    <Copy SourceFiles="..\libs\libv8.so" DestinationFolder="$(OutDir)" Condition=" '$(OS)' != 'Windows_NT' " />
+    <Copy SourceFiles="..\libs\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
