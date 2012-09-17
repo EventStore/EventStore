@@ -1,0 +1,348 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <title>Projection Status</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content=""/>
+    <meta name="author" content=""/>
+
+    <!-- styles section -->
+    <link href="bootstrap/css/bootstrap.css" rel="stylesheet"/>
+    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet"/>
+    <link href="bootstrap/css/bootstrap-sitelayout.css" rel="stylesheet"/>
+
+        <!-- for IE6-8 support of HTML5 elements -->
+        <!--[if lt IE 9]>
+            <script src="lib/html5shim/html5.js" type="text/javascript"></script>
+        <![endif]-->
+
+    <!-- icons -->
+    <link rel="shortcut icon" href="bootstrap/ico/favicon.ico"/>
+  </head>
+
+  <body>
+    <div class="wrapper">
+      <!-- ==================================== top navigation section ====================================-->
+        <div class="navbar navbar-inverse navbar-fixed-top">
+          <div class="navbar-inner">
+            <div class="container">
+              <!-- ==== show menu for device ====-->
+              <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </a>
+
+              <!-- ==== site logo ====-->
+              <a class="brand" href="index.htm">
+                  <img src="bootstrap/img/eventstore_logo.png">
+              </a>
+
+                <!-- ==== show menu for desktop device ====-->
+                <div class="nav-collapse collapse topmenu">
+                    <ul class="nav" id="navmenu">
+                    </ul>
+                </div><!--/.nav-collapse -->
+                <script id="navmenuTemplate" type="text/x-jsrender">
+                    <li class="{{>active}}">
+                        <a href="{{>link}}">{{>name}}</a>
+                    </li>
+                </script>
+
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================== content section ====================================-->
+        <div class="container content">
+
+            <h1>Projection</h1>
+            
+            
+            <div class="row">
+                <div class="span12">
+                    <div id="commands-container">
+                        <ul style="display: inline;">
+                            <li style="display: inline;" id="edit-source-container-top">
+                            </li>
+
+                            <li style="display: inline;">
+                                <a href="#" id="commandDisable"><img src="bootstrap/img/stop_btn.png" title="Disable" alt="Disable"/></a>
+                            </li>
+
+                            <li style="display: inline;">
+                                <a href="#" id="commandEnable"><img src="bootstrap/img/start_btn.png" title="Enable" alt="Enable"/></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="projection-status">
+                
+            </div>
+            
+            <script id="projectionTemplate" type="text/x-jsrender">
+                <div class="row">
+                    <div class="span12">
+                        <ul class="breadcrumb">
+                            <li><strong> {{>name}}</strong> <span class="divider">/</span></li>
+                            <li><strong>Mode:</strong> {{>mode}} <span class="divider">/</span></li>
+                            <li><strong>Status:</strong> {{>status}} <span class="divider">/</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </script>
+            
+            
+            <h4>State</h4>
+            <div class="row ">
+                <div class="span12">
+                    <div class="well">
+                        <div id="raw_state"></div>
+                    
+                        <div id="projection-status-button"></div>
+                    </div>
+                </div>
+            </div>
+
+            <script id="projectionTemplateButton" type="text/x-jsrender"> 
+                <table class="table 1table-bordered 1table-striped table-thin">
+                  <tbody>
+                    <tr>
+                        <td>Position: {{>position}}({{>~percentsDone(positionRaw)}}%)</td>
+                        <td>Last Checkpoint: {{>lastCheckpoint}}</td>
+                        <td>Checkpoint Status: {{>checkpointStatus}}</td>
+                    </tr>
+                    <tr>
+                        <td>Reads/Writes In-progress: {{>readsInProgress}}/{{>writesInProgress}}</td>
+                        <td>Write Pending Events: {{>writePendingEventsBeforeCheckpoint}}\/{{>writePendingEventsAfterCheckpoint}}</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Partitions Cached: {{>partitionsCached}}</td>
+                        <td>Events Processed (since restart): {{>eventsProcessedAfterRestart}}</td>
+                        <td>Buffered Events: {{>bufferedEvents}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+            </script>
+            
+            
+            <div class="row">
+                <div class="span12">
+                    <h4>Source: <span id="edit-source-container"></span></h4>
+                    <pre id="source" style="font-family: consolas, 'courier new';"></pre>
+                    
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="span12" id="projection-reason">
+                    
+                </div>
+            </div>
+
+            <script id="projectionTemplateReason" type="text/x-jsrender">
+                
+                <h4>Reason:<h4>
+                <div class="projection-reason-data">
+                    <pre>{{>stateReason}}</pre>    
+                </div>
+
+            </script>
+            
+            <script id="editSourceTemplate" type="text/x-jsrender">
+                <a href="{{>'edit-projection-source.htm#'+statusUrl}}" class="btn btn-success"><i class="icon-pencil"></i> Edit</a>
+            </script>
+
+                </div> <!-- /container -->
+      <div class="push"></div>
+    </div>
+
+    <!-- ==================================== footer section ====================================-->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="span12">
+                    <p>&copy; EventStore 2012</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==================================== javascript section ====================================-->
+    <span class="scriptload">
+        <script src="lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+        <script src="lib/jsrender/jsrender.js" type="text/javascript"></script>
+        <script src="js/loadjs.js" type="text/javascript"></script>
+    </span>
+
+    <script type="text/javascript">
+
+            var projectionStatusUrl = "";
+
+            function success(data, status, xhr) {
+                var projection = data.projections[0];
+                document.title = projection.name + " - Projection Status";
+                $("#raw_data").text(JSON.stringify(projection));
+
+                $("#projection-status").html(
+                    $.render.projectionTemplate(projection, {
+                        percentsDone: function (v) {
+                            return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
+                        }
+                    })
+                );
+                
+                $("#projection-status-button").html(
+                    $.render.projectionTemplateButton(projection, {
+                        percentsDone: function (v) {
+                            return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
+                        }
+                    })
+                );
+                
+                $("#projection-reason").html(
+                    $.render.projectionTemplateReason(projection, {
+                        percentsDone: function (v) {
+                            return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
+                        }
+                    })
+                );
+                
+                
+    
+                $("#edit-source-container").html(
+                    $.render.editSourceTemplate(projection)
+                );
+                $("#edit-source-container-top").html(
+                    $.render.editSourceTemplate(projection)
+                );
+
+                delayedRequestProjection();
+            }
+
+            function error(xhr, status) {
+                delayedRequestProjection();
+            }
+
+            function successState(data, status, xhr) {
+                if(data) {
+                    $("#raw_state").text(JSON.stringify(data));
+                }
+                delayedRequestProjectionState();
+            }
+
+            function errorState(xhr, status) {
+                delayedRequestProjectionState();
+            }
+
+            function successSource(data, status, xhr) {
+                $("#source").text(data);
+                delayedRequestProjectionSource();
+            }
+
+            function errorSource(xhr, status) {
+                delayedRequestProjectionSource();
+            }
+
+            function delayedRequestProjection() {
+                setTimeout(requestProjection, 1000);
+            }
+
+            function delayedRequestProjectionState() {
+                setTimeout(requestProjectionState, 1000);
+            }
+
+            function delayedRequestProjectionSource() {
+                setTimeout(requestProjectionSource, 5000);
+            }
+
+            function requestProjection() {
+                $.ajax(projectionStatusUrl + "/statistics", {
+                    cache: false,
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    success: success,
+                    error: error
+                });
+            }
+
+            function requestProjectionState() {
+                $.ajax(projectionStatusUrl + "/state", {
+                    cache: false,
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    success: successState,
+                    error: errorState
+                });
+            }
+
+            function requestProjectionSource() {
+                $.ajax(projectionStatusUrl + "/query", {
+                    cache: false,
+                    headers: {
+                        Accept: "text/plain",
+                    },
+                    dataType: "text",
+                    success: successSource,
+                    error: errorSource
+                });
+            }
+
+            function successPostCommand(data, status, xhr) {
+                window.location = "view-projection.htm#" + projectionStatusUrl;
+            }
+
+
+            function onDisable() {
+                $.ajax(projectionStatusUrl + "/command/disable", {
+                    cache: false,
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    type: "POST",
+                    success: successPostCommand,
+                    error: function() { alert("Failed!"); }
+                });
+            }
+
+            function onEnable() {
+                $.ajax(projectionStatusUrl + "/command/enable", {
+                    cache: false,
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    type: "POST",
+                    success: successPostCommand,
+                    error: function() { alert("Failed!"); }
+                });
+            }
+
+            $(function() {
+                $.templates("projectionTemplate", "#projectionTemplate");
+                $.templates("projectionTemplateButton", "#projectionTemplateButton");
+                $.templates("projectionTemplateReason", "#projectionTemplateReason");
+                $.templates("editSourceTemplate", "#editSourceTemplate");
+
+                projectionStatusUrl = location.hash.substr(1);
+                requestProjection();
+                requestProjectionState();
+                requestProjectionSource();
+
+                $("#commandDisable").click(onDisable);
+                $("#commandEnable").click(onEnable);
+
+               /* $("#projectiontab a").click(function (e) {
+                    e.preventDefault();
+                    $(this).tab('show');
+                });*/
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,157 @@
+div, span, p, td {
+	font-family: Arial, sans-serif;
+}
+#content {
+	width: 1200px;
+}
+#chart {
+	display: inline-block;
+}
+#chart path {
+	-webkit-transition: opacity 0.2s linear;
+}
+#slider {
+	margin-top: 10px;
+}
+#chart_container {
+	position: relative;
+	display: inline-block;
+}
+#smoother {
+	margin: 0 0 10px 16px;
+	width: 100px;
+}
+.rickshaw_graph .detail {
+	left: -1000;
+}
+#chart {
+	border: 1px solid #f0f0f0;
+}
+#side_panel {
+	padding: 0 20px 20px 0;
+	width: 240px;
+	display: inline-block;
+	vertical-align: top;
+}
+#side_panel section {
+	color: #505050;
+	font-size: 12px;
+}
+#side_panel section h6 {
+	margin: 0 0 1em 0;
+	font-size: 12px;
+	font-weight: normal;
+}
+#side_panel .ui-slider-horizontal {
+	height: 1px !important;
+	border-color: #e0e0e0;
+	margin-bottom: 10px;
+}
+#side_panel .ui-slider-handle {
+	border-color: #a0a0a0;
+	height: 9px !important;
+	width: 9px !important;
+	top: -5px !important;
+	border-radius: 6px;
+	outline: none;
+	cursor: pointer;
+}
+h1 {
+	font-family: Franklin Gothic Medium, UnDotum, Helvetica, Arial;
+	font-weight: normal;
+	font-size: 20px;
+}
+section {
+	border: none;
+	border-top: 1px solid #eaeaea;
+	padding: 15px 0;
+}
+#smoother {
+	margin: 5px 0 0 10px;
+	width: 90%;
+}
+label.disabled {
+	opacity: 0.4;
+}
+#renderer_form.toggler {
+	display: block;
+	margin: 0;
+}
+#renderer_form.toggler input[type=radio]:checked {
+	outline: 2px solid steelblue;
+}
+#renderer_form.toggler input[type=radio] {
+	-moz-appearance: button;
+	background: white;
+	margin: 0 7px;
+	width: 39px;
+	height: 26px;
+	position: absolute;
+}
+#renderer_form.toggler label {
+	display: inline-block;
+	padding: 0;
+	width: 39px;
+	padding-top: 27px;
+	text-align: center;
+	font-size: 10px;
+	color: #808080;
+	background-repeat: no-repeat;
+	position: relative;
+	margin: 0 7px;
+	cursor: pointer;
+}
+#interpolation_form,
+#offset_form {
+	vertical-align: top;
+	display: inline-block;
+	width: 45%;
+}
+#interpolation_form label,
+#offset_form label {
+	display: block;
+}
+label[for=area] {
+	background: url(../images/om_stack.png);
+}
+label[for=line] {
+	background: url(../images/om_lines.png);
+}
+label[for=bar] {
+	background: url(../images/om_bar.png);
+}
+label[for=scatter] {
+	background: url(../images/om_scatter.png);
+}
+#offset_form label,
+#interpolation_form label {
+	background-repeat: no-repeat;
+	background-position: 2em center;
+	cursor: pointer;
+	cursor: hand;
+}
+#offset_form label span,
+#interpolation_form label span {
+	padding-left: 36px;
+}
+label[for=stack] {
+	background-image: url(../images/offset_stack.png);
+}
+label[for=pct] {
+	background-image: url(../images/offset_pct.png);
+}
+label[for=stream] {
+	background-image: url(../images/offset_stream.png);
+}
+label[for=value] {
+	background-image: url(../images/offset_value.png);
+}
+label[for=cardinal] {
+	background-image: url(../images/interp_cardinal.png);
+}
+label[for=linear] {
+	background-image: url(../images/interp_linear.png);
+}
+label[for=step] {
+	background-image: url(../images/interp_step.png);
+}

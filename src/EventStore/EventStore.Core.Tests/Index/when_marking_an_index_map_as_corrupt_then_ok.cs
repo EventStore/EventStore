@@ -1,0 +1,68 @@
+// Copyright (c) 2012, Event Store LLP
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+// Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+// Neither the name of the Event Store LLP nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 
+using System;
+using System.IO;
+using EventStore.Core.Index;
+using NUnit.Framework;
+
+namespace EventStore.Core.Tests.Index
+{
+    [TestFixture]
+    public class when_marking_an_index_map_as_corrupt_then_ok
+    {
+        private readonly string _file = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        private IndexMap _map;
+
+        [SetUp]
+        public void Setup()
+        {
+            _map = IndexMap.FromFile(_file, x => false);
+            var directory = new FileInfo(_file).DirectoryName;
+            _map.EnterUnsafeState(directory);
+            _map.LeaveUnsafeState(directory);
+        }
+
+        [Test]
+        public void the_file_does_not_exist()
+        {
+            Assert.IsFalse(File.Exists(Path.Combine(Path.GetTempPath(), "merging.m")));
+        }
+
+        [Test]
+        public void the_map_says_its_not_in_corrupted_state()
+        {
+            Assert.IsFalse(_map.IsCorrupt(Path.GetTempPath()));
+        }
+
+        [TearDown]
+        public void teardown()
+        {
+            File.Delete(Path.Combine(Path.GetTempPath(), "merging.m"));
+        }
+    }
+}

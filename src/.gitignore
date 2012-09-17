@@ -1,0 +1,11 @@
+/Logs
+/Data
+/v8/
+ipch/
+*.o
+*.ii
+*.s
+*.sdf
+*.opensdf
+*.DotSettings.user
+*.DotSettings.personal

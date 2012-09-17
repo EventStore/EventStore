@@ -1,0 +1,206 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{03E02082-E179-4730-81FF-CE914749D6E3}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>EventStore.Projections.Core</RootNamespace>
+    <AssemblyName>EventStore.Projections.Core</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\bin\eventstore\debug\anycpu\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\..\bin\eventstore\release\anycpu\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\..\bin\eventstore\debug\x86\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>..\..\..\bin\eventstore\release\x86\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugAsserts|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\DebugAsserts\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;PROJECTIONS_ASSERTS</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugAsserts|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\DebugAsserts\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit.framework">
+      <HintPath>..\libs\nunit.framework.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="EventPosition.cs" />
+    <Compile Include="Json.cs" />
+    <Compile Include="Messaging\PublishToWrapEnvelop.cs" />
+    <Compile Include="Messaging\UnwrapEnvelopeHandler.cs" />
+    <Compile Include="Messaging\UnwrapEnvelopeMessage.cs" />
+    <Compile Include="Services\Http\ProjectionsStatisticsHttpFormatted.cs" />
+    <Compile Include="Services\Management\ManagedProjection.cs" />
+    <Compile Include="Services\Management\ManagedProjectionState.cs" />
+    <Compile Include="Services\Management\ProjectionStateHandlerFactory.cs" />
+    <Compile Include="Services\Processing\ByStreamStatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\CategoryEventFilter.cs" />
+    <Compile Include="Services\Processing\EventDistributionPoint.cs" />
+    <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\PartitionStateCache.cs" />
+    <Compile Include="Services\Processing\PositionTracker.cs" />
+    <Compile Include="Services\Processing\QuerySourceProcessingStrategyBuilder.cs" />
+    <Compile Include="Services\Processing\CheckpointTag.cs" />
+    <Compile Include="Services\Processing\EmittedEvent.cs" />
+    <Compile Include="Services\Processing\EmittedStream.cs" />
+    <Compile Include="Services\Processing\HeadingEventDistributionPoint.cs" />
+    <Compile Include="Services\Processing\StagedProcessingQueue.cs" />
+    <Compile Include="Services\Processing\StatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\StreamEventFilter.cs" />
+    <Compile Include="Services\Processing\StreamReaderEventDistributionPoint.cs" />
+    <Compile Include="Services\IProjectionStateHandler.cs" />
+    <Compile Include="Services\Processing\EventFilter.cs" />
+    <Compile Include="Services\Processing\StreamPositionTagger.cs" />
+    <Compile Include="Services\Processing\PositionTagger.cs" />
+    <Compile Include="Services\Processing\PrepareInfo.cs" />
+    <Compile Include="Services\Processing\CoreProjection.cs" />
+    <Compile Include="Services\Processing\ProjectionCheckpoint.cs" />
+    <Compile Include="Services\Processing\ProjectionSubscription.cs" />
+    <Compile Include="Services\Processing\CheckpointStrategy.cs" />
+    <Compile Include="Services\Processing\TransactionFileEventFilter.cs" />
+    <Compile Include="Services\Processing\TransactionFileReaderEventDistributionPoint.cs" />
+    <Compile Include="Services\ProjectionConfig.cs" />
+    <Compile Include="Messages\ProjectionMessage.cs" />
+    <Compile Include="Services\ProjectionClientConnectionManager.cs" />
+    <Compile Include="Services\Processing\ProjectionCoreService.cs" />
+    <Compile Include="Messages\ProjectionManagementMessage.cs" />
+    <Compile Include="Services\Management\ProjectionManager.cs" />
+    <Compile Include="Services\ProjectionMode.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProjectionWorkerNode.cs" />
+    <Compile Include="Services\Http\ProjectionsController.cs" />
+    <Compile Include="Services\ProjectionStateMetadata.cs" />
+    <Compile Include="Services\Http\ProjectionStatisticsHttpFormatted.cs" />
+    <Compile Include="Services\ProjectionStatistics.cs" />
+    <Compile Include="Services\RequestResponseDispatcher.cs" />
+    <Compile Include="Services\RequestResponseNetworkForwarder.cs" />
+    <Compile Include="Services\Processing\RequestResponseQueueForwarder.cs" />
+    <Compile Include="Services\v8\DefaultV8ProjectionStateHandler.cs" />
+    <Compile Include="Services\v8\V8ProjectionStateHandler.cs" />
+    <Compile Include="Standard\CategorizeEventsByStreamPath.cs" />
+    <Compile Include="Standard\CategorizeStreamByPath.cs" />
+    <Compile Include="Standard\IndexStreams.cs" />
+    <Compile Include="Utils\EnumExtensions.cs" />
+    <Compile Include="v8\CompiledScript.cs" />
+    <Compile Include="v8\js1.cs" />
+    <Compile Include="v8\Js1Exception.cs" />
+    <Compile Include="v8\PreludeScript.cs" />
+    <Compile Include="v8\Program.cs" />
+    <Compile Include="v8\QueryScript.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
+      <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
+      <Name>EventStore.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj">
+      <Project>{6BC8929C-FFD0-4EE6-ACF8-BDF4A3855AF4}</Project>
+      <Name>EventStore.Core.Tests</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj">
+      <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>
+      <Name>EventStore.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj">
+      <Project>{30AF4820-DC60-4674-9E19-C4518445545A}</Project>
+      <Name>EventStore.Transport.Http</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj">
+      <Project>{A3C1CBE0-4728-451F-B709-480134432880}</Project>
+      <Name>EventStore.Transport.Tcp</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Prelude\Modules\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Prelude\1Prelude.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Prelude\2--Prelude.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Prelude\Modules.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Prelude\ModulesExecuted.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Prelude\Projections.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

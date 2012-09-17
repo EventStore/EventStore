@@ -1,0 +1,242 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{6BC8929C-FFD0-4EE6-ACF8-BDF4A3855AF4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>EventStore.Core.Tests</RootNamespace>
+    <AssemblyName>EventStore.Core.Tests</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\bin\eventstore.tests\debug\x86\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\..\bin\eventstore.tests\release\x86\</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>..\..\..\bin\eventstore.tests\debug\anycpu\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DebugType>full</DebugType>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+    <DebugSymbols>true</DebugSymbols>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>..\..\..\bin\eventstore.tests\release\anycpu\</OutputPath>
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="nunit.framework">
+      <HintPath>..\libs\nunit.framework.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Bus\Helpers\BusTestBase.cs" />
+    <Compile Include="Bus\Helpers\BusTestMessages.cs" />
+    <Compile Include="Bus\Helpers\BusTestHandlers.cs" />
+    <Compile Include="Bus\Helpers\TimeoutHelper.cs" />
+    <Compile Include="Bus\QueuedHandler\Helpers\Consumers.cs" />
+    <Compile Include="Bus\QueuedHandler\Helpers\Messages.cs" />
+    <Compile Include="Bus\QueuedHandler\Helpers\QueuedHandlerTestBase.cs" />
+    <Compile Include="Bus\QueuedHandler\queued_handler_should.cs" />
+    <Compile Include="Bus\QueuedHandler\when_publishing.cs" />
+    <Compile Include="Bus\QueuedHandler\when_publishing_before_starting.cs" />
+    <Compile Include="Bus\QueuedHandler\when_starting.cs" />
+    <Compile Include="Bus\QueuedHandler\when_stopping.cs" />
+    <Compile Include="Bus\when_publishing.cs" />
+    <Compile Include="Bus\when_subscribing.cs" />
+    <Compile Include="Bus\when_unsubscribing.cs" />
+    <Compile Include="Common\CollectionsExtensions.cs" />
+    <Compile Include="Common\HelperExtensions.cs" />
+    <Compile Include="DataStructures\pairing_heap_should.cs" />
+    <Compile Include="Fakes\FakeLogger.cs" />
+    <Compile Include="Fakes\FakePublisher.cs" />
+    <Compile Include="Fakes\NoopPublisher.cs" />
+    <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
+    <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
+    <Compile Include="Index\create_index_map_from_non_existing_file.cs" />
+    <Compile Include="Index\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
+    <Compile Include="Index\adding_item_to_empty_index_map.cs" />
+    <Compile Include="Index\adding_sixteen_items_to_empty_index_map_with_four_tables_per_level_causes_double_merge.cs" />
+    <Compile Include="Index\destroying_ptable.cs" />
+    <Compile Include="Index\index_map_should.cs" />
+    <Compile Include="Index\MemTableTests.cs" />
+    <Compile Include="Index\FakeFilenameProvider.cs" />
+    <Compile Include="Index\IndexEntryTests.cs" />
+    <Compile Include="Index\ptable_read_scenario_with_usual_items.cs" />
+    <Compile Include="Index\ptable_read_scenario_with_items_spanning_few_cache_segments.cs" />
+    <Compile Include="Index\ptable_should.cs" />
+    <Compile Include="Index\index_map_should_detect_corruption.cs" />
+    <Compile Include="Index\table_index_should.cs" />
+    <Compile Include="Index\table_index_with_two_ptables_and_memtable_on_range_query.cs" />
+    <Compile Include="Index\when_marking_an_index_map_as_corrupt.cs" />
+    <Compile Include="Index\saving_empty_index_to_a_file.cs" />
+    <Compile Include="Index\saving_index_with_six_items_to_a_file.cs" />
+    <Compile Include="Index\ptable_range_query_tests.cs" />
+    <Compile Include="Index\PTableReadScenario.cs" />
+    <Compile Include="Index\table_index_on_try_get_one_value_query.cs" />
+    <Compile Include="Index\when_a_ptable_header_is_corrupt_on_disk.cs" />
+    <Compile Include="Index\when_a_ptable_is_corrupt_on_disk.cs" />
+    <Compile Include="Index\when_creating_ptable_from_memtable.cs" />
+    <Compile Include="Index\when_marking_an_index_map_as_corrupt_then_ok.cs" />
+    <Compile Include="Index\when_merging_four_ptables_with_hash_collisions_and_wrong_log_position_natural_order.cs" />
+    <Compile Include="Index\when_merging_four_ptables.cs" />
+    <Compile Include="Index\when_merging_four_ptables_with_deletes.cs" />
+    <Compile Include="Index\ReverseComparerTests.cs" />
+    <Compile Include="Index\saving_index_with_single_item_to_a_file.cs" />
+    <Compile Include="Index\when_merging_two_ptables.cs" />
+    <Compile Include="Index\when_merging_two_ptables_with_deletes.cs" />
+    <Compile Include="Index\when_merging_two_ptables_with_deletes_and_hash_collisions.cs" />
+    <Compile Include="Index\when_merging_two_ptables_with_hash_collisions_and_wrong_log_position_natural_order.cs" />
+    <Compile Include="Index\when_trying_to_get_latest_entry.cs" />
+    <Compile Include="Index\table_index_on_range_query.cs" />
+    <Compile Include="Index\when_merging_four_ptables_with_deletes_and_hash_collisions.cs" />
+    <Compile Include="Index\when_opening_ptable_without_right_flag_in_header.cs" />
+    <Compile Include="Infrastructure\RandTestQueueItem.cs" />
+    <Compile Include="Infrastructure\IRandTestFinishCondition.cs" />
+    <Compile Include="Infrastructure\IRandTestItemProcessor.cs" />
+    <Compile Include="Infrastructure\RandomTestRunner.cs" />
+    <Compile Include="MD5HashTests.cs" />
+    <Compile Include="Infrastructure\Services\GossipService\gossip_service_should.cs" />
+    <Compile Include="Infrastructure\Services\Monitoring\FormatterTests.cs" />
+    <Compile Include="Infrastructure\Services\Monitoring\StatsParserTests.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\two_pc_manager_should.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_writing_transactions.cs" />
+    <Compile Include="Infrastructure\Services\Storage\ByLengthHasher.cs" />
+    <Compile Include="Infrastructure\Services\Storage\FakeTableIndex.cs" />
+    <Compile Include="Infrastructure\Services\Storage\NullCache.cs" />
+    <Compile Include="Infrastructure\Services\Storage\ReadIndexTestScenario.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_nonempty_tfile_with_chaser_lagging_behind.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_multiple_events_in_a_stream.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_prepares_and_commits.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_prepares_but_no_commits.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_two_events_in_stream.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_caching_read_items.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_multievent_sequential_write_request_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_two_intermingled_transactions_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\with_single_deleted_event_stream_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\with_three_collisioned_streams_one_event_each_with_second_stream_deleted_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\with_three_collisioned_streams_with_different_number_of_events_each_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\with_three_collisioned_streams_with_different_number_of_events_third_one_deleted_each_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\with_two_collisioned_streams_one_event_each_first_stream_deleted_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\with_two_collisioned_streams_one_event_each_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\with_no_hash_collisions_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\with_three_collisioned_streams_one_event_each_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Transport\Http\atom_specs.cs" />
+    <Compile Include="Infrastructure\Services\Transport\Http\HttpBootstrap.cs" />
+    <Compile Include="Infrastructure\Services\Transport\Http\http_service_should.cs" />
+    <Compile Include="Infrastructure\Services\Transport\Http\PortableServer.cs" />
+    <Compile Include="Infrastructure\Services\Transport\Http\ping_controller_should.cs" />
+    <Compile Include="SpecificationWithDirectoryPerTestFixture.cs" />
+    <Compile Include="SpecificationWithFilePerTestFixture.cs" />
+    <Compile Include="Startup\ComparisonHelper.cs" />
+    <Compile Include="Startup\reading_args_for_vnode_with_id_1.cs" />
+    <Compile Include="SpecificationWithDirectory.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Infrastructure\Services\TimeService\time_service_should.cs" />
+    <Compile Include="SpecificationWithFile.cs" />
+    <Compile Include="TransactionLog\commit_log_record_should.cs" />
+    <Compile Include="TransactionLog\prefix_filenaming_strategy.cs" />
+    <Compile Include="TransactionLog\prepare_log_record_should.cs" />
+    <Compile Include="TransactionLog\Chunks\when_creating_TFChunk_from_empty_file.cs" />
+    <Compile Include="TransactionLog\Chunks\when_appending_past_end_of_a_TFChunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_appending_to_a_TFChunk_and_flushing.cs" />
+    <Compile Include="TransactionLog\Chunks\when_appending_to_a_tfchunk_without_flush.cs" />
+    <Compile Include="TransactionLog\Chunks\when_opening_existing_TFChunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_opening_tf_chunk_from_non_existing_file.cs" />
+    <Compile Include="TransactionLog\Chunks\when_reading_from_a_cached_chunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_uncaching_a_chunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_writing_multiple_records_to_a_chunk.cs" />
+    <Compile Include="TransactionLog\versioned_pattern_filenaming_strategy.cs" />
+    <Compile Include="TransactionLog\when_chasing_a_chunked_transaction_log.cs" />
+    <Compile Include="TransactionLog\when_chasing_a_multifile_transaction_log.cs" />
+    <Compile Include="TransactionLog\when_creating_chunked_transaction_chaser.cs" />
+    <Compile Include="TransactionLog\when_creating_chunked_transaction_file_database.cs" />
+    <Compile Include="TransactionLog\when_creating_chunked_transaction_file_reader.cs" />
+    <Compile Include="TransactionLog\when_creating_chunked_transaction_file_writer.cs" />
+    <Compile Include="TransactionLog\when_creating_multifile_transaction_chaser.cs" />
+    <Compile Include="TransactionLog\when_creating_multifile_transaction_file_reader.cs" />
+    <Compile Include="TransactionLog\when_creating_multifile_transaction_file_writer.cs" />
+    <Compile Include="TransactionLog\when_creating_multifile_transaction_log_database_validator.cs" />
+    <Compile Include="TransactionLog\when_opening_chunked_transaction_file_db_without_previous_files.cs" />
+    <Compile Include="TransactionLog\when_opening_multifile_transaction_file_writer_without_previous_files.cs" />
+    <Compile Include="TransactionLog\when_reading_an_empty_multifile_transaction_log.cs" />
+    <Compile Include="TransactionLog\when_reading_transaction_log_with_few_records.cs" />
+    <Compile Include="TransactionLog\when_reading_bulk_records.cs" />
+    <Compile Include="TransactionLog\when_validating_chunked_transaction_db.cs" />
+    <Compile Include="TransactionLog\when_validating_multifile_transaction_file_reader_with_previous_files.cs" />
+    <Compile Include="TransactionLog\when_verifying_chunked_transaction_db_without_previous_files.cs" />
+    <Compile Include="TransactionLog\when_verifying_multifile_transaction_db_without_previous_files.cs" />
+    <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_checksum.cs" />
+    <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_checksum_and_data_bigger_than_buffer.cs" />
+    <Compile Include="TransactionLog\when_writing_an_existing_chunked_transaction_file_with_not_enough_space_in_chunk.cs" />
+    <Compile Include="TransactionLog\when_writing_an_existing_multifile_transaction_file_with_checksum.cs" />
+    <Compile Include="TransactionLog\when_writing_an_existing_multifile_transaction_file_with_checksum_and_data_bigger_than_buffer.cs" />
+    <Compile Include="TransactionLog\when_writing_an_existing_multifile_transaction_file_with_checksum_that_overlaps.cs" />
+    <Compile Include="TransactionLog\when_writing_an_existing_multifile_transaction_file_with_checksum_that_overlaps_multiple_files.cs" />
+    <Compile Include="TransactionLog\when_writing_a_file_checksum_to_a_file.cs" />
+    <Compile Include="TransactionLog\when_writing_a_file_checksum_to_a_writethroughfile.cs" />
+    <Compile Include="TransactionLog\when_writing_a_memorymappedchecksum_to_a_file.cs" />
+    <Compile Include="TransactionLog\when_writing_a_new_chunked_transaction_file.cs" />
+    <Compile Include="TransactionLog\when_writing_a_new_multifile_transaction_file.cs" />
+    <Compile Include="TransactionLog\when_writing_commit_record_to_file.cs" />
+    <Compile Include="TransactionLog\when_writing_prepare_record_to_file.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
+      <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
+      <Name>EventStore.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj">
+      <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>
+      <Name>EventStore.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj">
+      <Project>{30AF4820-DC60-4674-9E19-C4518445545A}</Project>
+      <Name>EventStore.Transport.Http</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
