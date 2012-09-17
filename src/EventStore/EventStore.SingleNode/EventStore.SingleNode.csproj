@@ -64,14 +64,6 @@
     <Compile Include="SingleNodeWithProjections.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\libs\libjs1.so">
-      <Link>libjs1.so</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\libs\libv8.so">
-      <Link>libv8.so</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>
@@ -105,6 +97,11 @@
     <PreBuildEvent>
     </PreBuildEvent>
   </PropertyGroup>
+  <Target Name="BeforeBuild">
+    <Copy SourceFiles="..\libs\libjs1.so" DestinationFolder="$(OutDir)" Condition=" '$(OS)' != 'Windows_NT' " />
+    <Copy SourceFiles="..\libs\libv8.so" DestinationFolder="$(OutDir)" Condition=" '$(OS)' != 'Windows_NT' " />
+    <Copy SourceFiles="..\libs\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

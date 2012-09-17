@@ -102,6 +102,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _inCheckpoint;
         private int _inCheckpointWriteAttempt;
         private readonly PositionTracker _lastProcessedEventPosition;
+        private int _lastWrittenCheckpointEventNumber;
         private string _requestedCheckpointStateJson;
 
         private CheckpointTag _lastCompletedCheckpointPosition;
@@ -208,7 +209,6 @@ namespace EventStore.Projections.Core.Services.Processing
         //NOTE: this is temporary dictionary to check internal consistency.  Must be removed
         //TODO: remove
         private readonly Dictionary<string, int> _lastSequencesByPartition = new Dictionary<string, int>();
-        private int _lastWrittenCheckpointEventNumber;
 #endif
 
         public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
