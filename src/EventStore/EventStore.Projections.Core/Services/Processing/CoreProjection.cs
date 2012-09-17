@@ -188,11 +188,13 @@ namespace EventStore.Projections.Core.Services.Processing
                         _closingCheckpoint != null ? _closingCheckpoint.GetWritePendingEvents() : 0,
                     WritePendingEventsAfterCheckpoint =
                         _currentCheckpoint != null ? _currentCheckpoint.GetWritePendingEvents() : 0,
-                    ReadsInProgress = _readDispatcher.ActiveRequestCount +
-                        (_closingCheckpoint != null ? _closingCheckpoint.GetReadsInProgress() : 0)
+                    ReadsInProgress =
+                        _readDispatcher.ActiveRequestCount
+                        + (_closingCheckpoint != null ? _closingCheckpoint.GetReadsInProgress() : 0)
                         + (_currentCheckpoint != null ? _currentCheckpoint.GetReadsInProgress() : 0),
-                    WritesInProgress = ((_inCheckpointWriteAttempt != 0) ? 1 : 0) +
-                        (_closingCheckpoint != null ? _closingCheckpoint.GetWritesInProgress() : 0)
+                    WritesInProgress =
+                        ((_inCheckpointWriteAttempt != 0) ? 1 : 0)
+                        + (_closingCheckpoint != null ? _closingCheckpoint.GetWritesInProgress() : 0)
                         + (_currentCheckpoint != null ? _currentCheckpoint.GetWritesInProgress() : 0),
                     PartitionsCached = _partitionStateCache.CachedItemCount,
                     CheckpointStatus =
@@ -206,6 +208,7 @@ namespace EventStore.Projections.Core.Services.Processing
         //NOTE: this is temporary dictionary to check internal consistency.  Must be removed
         //TODO: remove
         private readonly Dictionary<string, int> _lastSequencesByPartition = new Dictionary<string, int>();
+        private int _lastWrittenCheckpointEventNumber;
 #endif
 
         public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
@@ -285,6 +288,11 @@ namespace EventStore.Projections.Core.Services.Processing
                         "Checkpoint has be written for projection {0} at sequence number {1} (current)", _name,
                         message.EventNumber);
                 _lastCompletedCheckpointPosition = _requestedCheckpointPosition;
+                _lastWrittenCheckpointEventNumber = message.EventNumber
+                                                    +
+                                                    (_lastWrittenCheckpointEventNumber == ExpectedVersion.NoStream // account for StreamCreated
+                                                         ? 1
+                                                         : 0);
 
                 _closingCheckpoint = null;
                 if (_state != State.Stopping && _state != State.FaultedStopping)
@@ -544,7 +552,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 int pendingEventsCount = _pendingEvents.Count;
                 if (pendingEventsCount > _projectionConfig.PendingEventsThreshold)
                     PauseSubscription();
-                if (_subscriptionPaused && pendingEventsCount < _projectionConfig.PendingEventsThreshold / 2)
+                if (_subscriptionPaused && pendingEventsCount < _projectionConfig.PendingEventsThreshold/2)
                     ResumeSubscription();
                 int processed = _pendingEvents.Process();
                 if (processed > 0)
@@ -795,11 +803,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private void PublishWriteCheckpointEvent()
         {
             if (_logger != null)
-                _logger.Trace("Writing checkpoint for {0} at {1}", _name, _requestedCheckpointPosition);
+                _logger.Trace(
+                    "Writing checkpoint for {0} at {1} with expected version number {2}", _name,
+                    _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
             _publisher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), new SendToThisEnvelope(this), _projectionCheckpointStreamId, ExpectedVersion.Any,
-                    _checkpointEventToBePublished));
+                    Guid.NewGuid(), new SendToThisEnvelope(this), _projectionCheckpointStreamId,
+                    _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished));
         }
 
         private void OnLoadStateCompleted(ClientMessage.ReadEventsBackwardsCompleted message)
@@ -828,6 +838,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _lastProcessedEventPosition.UpdateToZero();
             _lastCompletedCheckpointPosition = _lastProcessedEventPosition.LastTag;
+            _lastWrittenCheckpointEventNumber = ExpectedVersion.NoStream;
             LoadProjectionState("");
         }
 
@@ -837,6 +848,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var checkpointTag = checkpoint.Metadata.ParseJson<CheckpointTag>();
             _lastProcessedEventPosition.UpdateByCheckpointTag(checkpointTag);
             _lastCompletedCheckpointPosition = checkpointTag;
+            _lastWrittenCheckpointEventNumber = checkpoint.EventNumber;
 
             string newState = Encoding.UTF8.GetString(checkpoint.Data);
 

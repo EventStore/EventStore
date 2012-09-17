@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,9 +38,8 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EmittedStream :
-        IHandle<ClientMessage.WriteEventsCompleted>,
-        IHandle<ClientMessage.ReadEventsBackwardsCompleted>
+    public class EmittedStream : IHandle<ClientMessage.WriteEventsCompleted>,
+                                 IHandle<ClientMessage.ReadEventsBackwardsCompleted>
     {
         private readonly ILogger _logger;
         private readonly string _streamId;
@@ -50,17 +50,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Queue<Tuple<EmittedEvent[], CheckpointTag>> _pendingWrites =
             new Queue<Tuple<EmittedEvent[], CheckpointTag>>();
 
-        private bool _checkpointRequested = false;
-        private bool _awaitingWriteCompleted = false;
-        private bool _awaitingListEventsCompleted = false;
-        private bool _started = false;
+        private bool _checkpointRequested;
+        private bool _awaitingWriteCompleted;
+        private bool _awaitingListEventsCompleted;
+        private bool _started;
 
         private readonly int _maxWriteBatchLength;
         private CheckpointTag _lastCommittedMetadata; // TODO: rename
         private Event[] _submittedToWriteEvents;
+        private int _lastKnownEventNumber;
 
 
-		public EmittedStream(
+        public EmittedStream(
             string streamId, IPublisher publisher,
             IHandle<ProjectionMessage.Projections.ReadyForCheckpoint> readyHandler, bool recoveryMode,
             int maxWriteBatchLength, ILogger logger = null)
@@ -122,6 +123,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("WriteEvents has not been submitted");
             if (message.ErrorCode == OperationErrorCode.Success)
             {
+                _lastKnownEventNumber = message.EventNumber + _submittedToWriteEvents.Length - 1
+                                        + (_lastKnownEventNumber == ExpectedVersion.NoStream ? 1 : 0); // account for stream crated
                 OnWriteCompleted();
                 return;
             }
@@ -149,12 +152,14 @@ namespace EventStore.Projections.Core.Services.Processing
             if (message.Events.Length == 0)
             {
                 _lastCommittedMetadata = null;
+                _lastKnownEventNumber = ExpectedVersion.NoStream;
                 SubmitWriteEvents();
             }
             else
             {
-				var projectionStateMetadata = message.Events[0].Metadata.ParseJson<CheckpointTag>();
+                var projectionStateMetadata = message.Events[0].Metadata.ParseJson<CheckpointTag>();
                 _lastCommittedMetadata = projectionStateMetadata;
+                _lastKnownEventNumber = message.Events[0].EventNumber;
                 SubmitWriteEventsInRecovery();
             }
         }
@@ -185,8 +190,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _awaitingListEventsCompleted = true;
             _publisher.Publish(
                 new ClientMessage.ReadEventsBackwards(
-                    Guid.NewGuid(), new SendToThisEnvelope(this),
-                    _streamId, -1, 1, resolveLinks: false));
+                    Guid.NewGuid(), new SendToThisEnvelope(this), _streamId, -1, 1, resolveLinks: false));
         }
 
         private void SubmitWriteEvents()
@@ -197,13 +201,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 var eventsToWrite = _pendingWrites.Dequeue();
                 list.Add(eventsToWrite);
             }
-            var events =
-                from eventsToWrite in list
-                from v in eventsToWrite.Item1
-                let data = v.Data
-                let metadata = CreateSerializedMetadata(eventsToWrite)
-                select
-                    new Event(v.EventId, v.EventType, false,  data, metadata);
+            var events = from eventsToWrite in list
+                         from v in eventsToWrite.Item1
+                         let data = v.Data
+                         let metadata = CreateSerializedMetadata(eventsToWrite)
+                         select new Event(v.EventId, v.EventType, false, data, metadata);
 
             _submittedToWriteEvents = events.ToArray();
             PublishWriteEvents();
@@ -213,12 +215,13 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _publisher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), new SendToThisEnvelope(this), _streamId, ExpectedVersion.Any, _submittedToWriteEvents));
+                    Guid.NewGuid(), new SendToThisEnvelope(this), _streamId,
+                    _recoveryMode ? _lastKnownEventNumber : ExpectedVersion.Any, _submittedToWriteEvents));
         }
 
         private byte[] CreateSerializedMetadata(Tuple<EmittedEvent[], CheckpointTag> eventsToWrite)
         {
-			return eventsToWrite.Item2.ToJsonBytes ();
+            return eventsToWrite.Item2.ToJsonBytes();
         }
 
         private void EnsureCheckpointNotRequested()
