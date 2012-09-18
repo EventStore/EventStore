@@ -73,6 +73,7 @@ namespace EventStore.SingleNode
             Node.Bus.Subscribe(Forwarder.Create<SystemMessage.SystemInit>(_coreQueue));
             Node.Bus.Subscribe(Forwarder.Create<SystemMessage.SystemStart>(_coreQueue));
 
+            _projectionNode.CoreOutput.Subscribe(Node.TimerService);
             _coreInputBus.Subscribe<SystemMessage.SystemStart>(this);
         }
 

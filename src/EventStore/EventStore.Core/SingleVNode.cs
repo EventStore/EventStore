@@ -59,6 +59,7 @@ namespace EventStore.Core
 
         private readonly SingleVNodeController _controller;
         private HttpService _httpService;
+        private TimerService _timerService;
 
         public SingleVNode(TFChunkDb db, SingleVNodeSettings vNodeSettings, SingleVNodeAppSettings appSettings)
         {
@@ -164,8 +165,8 @@ namespace EventStore.Core
 
             //TIMER
             //var timer = new TimerService(new TimerBasedScheduler(new RealTimer(), new RealTimeProvider()));
-            var timer = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
-            Bus.Subscribe<TimerMessage.Schedule>(timer);
+            TimerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
+            Bus.Subscribe<TimerMessage.Schedule>(TimerService);
 
             MainQueue.Start();
             monitoringQueue.Start();
@@ -185,6 +186,12 @@ namespace EventStore.Core
         {
             get { return _httpService; }
             set { _httpService = value; }
+        }
+
+        public TimerService TimerService
+        {
+            get { return _timerService; }
+            set { _timerService = value; }
         }
 
         public void Start()
