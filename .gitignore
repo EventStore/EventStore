@@ -1,5 +1,6 @@
 /Logs
 /Data
+/Data-logs
 /v8/
 ipch/
 *.o
