@@ -617,7 +617,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             catch (Exception ex)
             {
-                ProcessEventFaulted(message, ex);
+                ProcessEventFaulted(string.Format(
+                    "The {0} projection failed to process an event.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
+                    _name, GetHandlerTypeName(), message.Position, ex.Message), ex);
                 newState = null;
                 emittedEvents = null;
                 hasBeenProcessed = false;
@@ -625,8 +627,9 @@ namespace EventStore.Projections.Core.Services.Processing
             newState = newState ?? "";
             if (hasBeenProcessed)
             {
-                if (_projectionConfig.EmitEventEnabled)
-                    EmitEmittedEvents(committedEventWorkItem, emittedEvents);
+                if (!ProcessEmittedEvents(committedEventWorkItem, emittedEvents))
+                    return;
+
                 if (_partitionStateCache.GetLockedPartitionState(partition) != newState)
                     // ensure state actually changed
                 {
@@ -638,6 +641,18 @@ namespace EventStore.Projections.Core.Services.Processing
                         EmitStateUpdated(committedEventWorkItem, partition, newState);
                 }
             }
+        }
+
+        private bool ProcessEmittedEvents(CommittedEventWorkItem committedEventWorkItem, EmittedEvent[] emittedEvents)
+        {
+            if (_projectionConfig.EmitEventEnabled)
+                EmitEmittedEvents(committedEventWorkItem, emittedEvents);
+            else if (emittedEvents != null && emittedEvents.Length > 0)
+            {
+                ProcessEventFaulted("emit_event is not enabled by the projection configuration/mode");
+                return false;
+            }
+            return true;
         }
 
         private void FinilizeCommittedEventProcessing(ProjectionMessage.Projections.CommittedEventReceived message)
@@ -718,14 +733,16 @@ namespace EventStore.Projections.Core.Services.Processing
                     });
         }
 
-        private void ProcessEventFaulted(ProjectionMessage.Projections.CommittedEventReceived message, Exception ex)
+        private void ProcessEventFaulted(string faultedReason, Exception ex = null)
         {
-            _faultedReason =
-                string.Format(
-                    "The {0} projection failed to process an event.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
-                    _name, GetHandlerTypeName(), message.Position, ex.Message);
+            _faultedReason = faultedReason;
             if (_logger != null)
-                _logger.ErrorException(ex, _faultedReason);
+            {
+                if (ex != null)
+                    _logger.ErrorException(ex, _faultedReason);
+                else
+                    _logger.Error(_faultedReason);
+            }
             GoToState(State.FaultedStopping);
         }
 
