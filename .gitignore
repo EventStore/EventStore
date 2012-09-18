@@ -29,6 +29,8 @@ bin
 *.suo
 *.dotcover
 *.cache
+*.ncrunchsolution
+*.ncrunchproject
 
 .idea
 
