@@ -80,7 +80,15 @@ namespace EventStore.Projections.Core.Services.v8
 
         private void QueryOnEmit(string json)
         {
-			var emittedEvent = json.ParseJson<EmittedEventJsonContract>();
+            EmittedEventJsonContract emittedEvent;
+            try
+            {
+                emittedEvent = json.ParseJson<EmittedEventJsonContract>();
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException("Failed to deserialize emitted event JSON", ex);
+            }
             if (_emittedEvents == null)
                 _emittedEvents = new List<EmittedEvent>();
             _emittedEvents.Add(new EmittedEvent(emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body));
