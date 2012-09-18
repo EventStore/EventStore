@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return new HashSet<string>(list);
         }
 
-        public void Validate()
+        public void Validate(ProjectionMode mode)
         {
             if (!_allStreams && _categories == null && _streams == null)
                 throw new InvalidOperationException("None of streams and categories are included");
@@ -94,6 +94,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Both FromAll and specific categories/streams cannot be set");
             if (_allEvents && _events != null)
                 throw new InvalidOperationException("Both AllEvents and specific event filters cannot be set");
+            if (_byStream && mode < ProjectionMode.Persistent)
+                throw new InvalidOperationException("Partitioned (foreachStream) projections require Persistent mode");
         }
     }
 }

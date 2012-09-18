@@ -144,7 +144,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionCheckpointStreamId = ProjectionsStreamPrefix + _name + ProjectionCheckpointStreamSuffix;
             var builder = new CheckpointStrategy.Builder();
             _projectionStateHandler.ConfigureSourceProcessingStrategy(builder);
-            _checkpointStrategy = builder.Build();
+            _checkpointStrategy = builder.Build(_projectionConfig.Mode);
             _eventFilter = _checkpointStrategy.EventFilter;
             _lastProcessedEventPosition = new PositionTracker(_checkpointStrategy.PositionTagger);
             _partitionStateCache = new PartitionStateCache();

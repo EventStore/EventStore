@@ -47,9 +47,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
-            public CheckpointStrategy Build()
+            public CheckpointStrategy Build(ProjectionMode mode)
             {
-                base.Validate();
+                base.Validate(mode);
                 return new CheckpointStrategy(
                     _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream);
             }
