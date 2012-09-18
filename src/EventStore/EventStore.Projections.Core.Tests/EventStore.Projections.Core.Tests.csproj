@@ -249,7 +249,9 @@
   <Target Name="BeforeBuild">
     <Copy SourceFiles="..\libs\libjs1.so" DestinationFolder="$(OutDir)" Condition=" '$(OS)' != 'Windows_NT' " />
     <Copy SourceFiles="..\libs\libv8.so" DestinationFolder="$(OutDir)" Condition=" '$(OS)' != 'Windows_NT' " />
-    <Copy SourceFiles="..\libs\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
+    <Copy SourceFiles="..\libs\win32\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
+    <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
+    <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

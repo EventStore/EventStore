@@ -66,14 +66,14 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)\..\Libs\x64;$(LibraryPath)</LibraryPath>
-    <OutDir>$(ProjectDir)..\..\..\bin\eventstore\$(Configuration)\anycpu\</OutDir>
+    <OutDir>$(ProjectDir)..\libs\x64\</OutDir>
     <TargetName>js1</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)\..\Libs\win32;$(LibraryPath)</LibraryPath>
-    <OutDir>$(ProjectDir)..\..\..\bin\eventstore\$(Configuration)\x86\</OutDir>
+    <OutDir>$(ProjectDir)..\libs\win32\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
     <TargetName>js1</TargetName>
   </PropertyGroup>
