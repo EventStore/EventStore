@@ -78,21 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             _paused = false;
             _pauseRequested = false;
-            RequestEvents();
-        }
-
-        private void RequestEvents()
-        {
-            if (_disposed) throw new InvalidOperationException("Disposed");
-            if (_eventsRequested)
-                throw new InvalidOperationException("Read operation is already in progress");
-            if (_pauseRequested || _paused)
-                throw new InvalidOperationException("Paused or pause requested");
-            _eventsRequested = true;
-            _publisher.Publish(
-                new ClientMessage.ReadEventsForward(
-                    _distibutionPointCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
-                    _maxReadCount, _resolveLinkTos));
+            RequestEvents(delay: false);
         }
 
         public override void Pause()
@@ -121,9 +107,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 case RangeReadResult.NoStream:
                     DeliverLastCommitPosition(message.LastCommitPosition.Value); // allow joining heading distribution
-                    _publisher.Publish(
-                        TimerMessage.Schedule.Create(
-                            TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher), CreateTickMessage()));
+                    RequestEvents(delay: true);
 
                     break;
                 case RangeReadResult.Success:
@@ -131,10 +115,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         // the end
                         DeliverLastCommitPosition(message.LastCommitPosition.Value);
-                        // allow joining heading distribution
-                        _publisher.Publish(
-                            TimerMessage.Schedule.Create(
-                                TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher), CreateTickMessage()));
                     }
                     else
                     {
@@ -148,18 +128,15 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (_pauseRequested)
                         _paused = true;
                     else
-                        //TODO: we may publish this message somewhere 10 events before the end of the chunk
-                        _publisher.Publish(CreateTickMessage());
+                        if (message.Events.Length == 0)
+                            RequestEvents(delay: true);
+                        else
+                            _publisher.Publish(CreateTickMessage());
                     break;
                 default:
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
-        }
-
-        private ProjectionMessage.CoreService.Tick CreateTickMessage()
-        {
-            return new ProjectionMessage.CoreService.Tick(() => { if (!_paused && !_disposed) RequestEvents(); });
         }
 
         public override void Handle(ClientMessage.ReadEventsFromTFCompleted message)
@@ -170,6 +147,32 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void Dispose()
         {
             _disposed = true;
+        }
+
+        private void RequestEvents(bool delay)
+        {
+            if (_disposed) throw new InvalidOperationException("Disposed");
+            if (_eventsRequested)
+                throw new InvalidOperationException("Read operation is already in progress");
+            if (_pauseRequested || _paused)
+                throw new InvalidOperationException("Paused or pause requested");
+            _eventsRequested = true;
+
+
+            var readEventsForward = new ClientMessage.ReadEventsForward(
+                _distibutionPointCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
+                _maxReadCount, _resolveLinkTos);
+            if (delay)
+                _publisher.Publish(
+                    TimerMessage.Schedule.Create(
+                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher), readEventsForward));
+            else
+                _publisher.Publish(readEventsForward);
+        }
+
+        private ProjectionMessage.CoreService.Tick CreateTickMessage()
+        {
+            return new ProjectionMessage.CoreService.Tick(() => { if (!_paused && !_disposed) RequestEvents(delay: false); });
         }
 
         private void DeliverLastCommitPosition(long lastCommitPosition)

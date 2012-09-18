@@ -376,7 +376,7 @@ namespace EventStore.Projections.Core.Services.Management
                 stateHandler = handlerFactory.Create(HandlerType, Query, Console.WriteLine);
                 var checkpointStrategyBuilder = new CheckpointStrategy.Builder();
                 stateHandler.ConfigureSourceProcessingStrategy(checkpointStrategyBuilder);
-                checkpointStrategyBuilder.Validate(); // avoid future exceptions in coreprojection
+                checkpointStrategyBuilder.Validate(this.Mode); // avoid future exceptions in coreprojection
                 // constructor can fail if wrong source defintion
                 //TODO: revise it
                 _coreProjection = new CoreProjection(_name, _id, coreOutput, stateHandler, config, _logger);

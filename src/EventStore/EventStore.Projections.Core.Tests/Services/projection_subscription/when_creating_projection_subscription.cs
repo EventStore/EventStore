@@ -29,6 +29,7 @@
 using System;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -79,7 +80,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var result = new CheckpointStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build();
+            return result.Build(ProjectionMode.Persistent);
         }
     }
 }

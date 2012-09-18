@@ -33,6 +33,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -78,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services
             var result = new CheckpointStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build();
+            return result.Build(ProjectionMode.Persistent);
         }
 
         protected static Event CreateEvent()
