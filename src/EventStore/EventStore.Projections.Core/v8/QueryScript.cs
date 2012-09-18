@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -36,7 +37,7 @@ using js1test;
 
 namespace EventStore.Projections.Core.v8
 {
-    internal class QueryScript : IDisposable
+    class QueryScript : IDisposable
     {
         private readonly CompiledScript _script;
         private readonly Dictionary<string, IntPtr> _registeredHandlers = new Dictionary<string, IntPtr>();
@@ -53,6 +54,7 @@ namespace EventStore.Projections.Core.v8
         private readonly Js1.CommandHandlerRegisteredDelegate _commandHandlerRegisteredCallback; // do not inline
         private readonly Js1.ReverseCommandHandlerDelegate _reverseCommandHandlerDelegate; // do not inline
         private QuerySourcesDefinition _sources;
+        private Exception _reverseCommandHandlerException;
 
         public event Action<string> Emit;
 
@@ -84,15 +86,23 @@ namespace EventStore.Projections.Core.v8
 
         private void ReverseCommandHandler(string commandName, string commandBody)
         {
-            //TODO: change to dictionary
-            switch (commandName)
+            try
             {
-                case "emit":
-                    DoEmit(commandBody);
-                    break;
-                default:
-                    Console.WriteLine("Ignoring unknown reverse command: '{0}'", commandName);
-                    break;
+                switch (commandName)
+                {
+                    case "emit":
+                        DoEmit(commandBody);
+                        break;
+                    default:
+                        Console.WriteLine("Ignoring unknown reverse command: '{0}'", commandName);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                // report only the first exception occured in reverse command handler
+                if (_reverseCommandHandlerException == null)
+                    _reverseCommandHandlerException = ex;
             }
         }
 
@@ -143,7 +153,7 @@ namespace EventStore.Projections.Core.v8
 
             Console.WriteLine(sourcesJson);
 
-			_sources = sourcesJson.ParseJson<QuerySourcesDefinition>();
+            _sources = sourcesJson.ParseJson<QuerySourcesDefinition>();
 
             if (_sources.AllStreams)
                 Console.WriteLine("All streams requested");
@@ -165,14 +175,22 @@ namespace EventStore.Projections.Core.v8
 
         private string ExecuteHandler(IntPtr commandHandlerHandle, string json, string[] other = null)
         {
+            _reverseCommandHandlerException = null;
             IntPtr resultJsonPtr;
             IntPtr resultHandle = Js1.ExecuteCommandHandler(
                 _script.GetHandle(), commandHandlerHandle, json, other, other != null ? other.Length : 0,
                 out resultJsonPtr);
             if (resultHandle == IntPtr.Zero)
                 CompiledScript.CheckResult(_script.GetHandle(), disposeScriptOnException: false);
+            //TODO: do we need to free resulktJsonPtr in case of exceptoon thrown a line above
             string resultJson = Marshal.PtrToStringUni(resultJsonPtr);
             Js1.FreeResult(resultHandle);
+            if (_reverseCommandHandlerException != null)
+            {
+                throw new ApplicationException(
+                    "An exception occured while executing a reverse command handler. " + _reverseCommandHandlerException.Message,
+                    _reverseCommandHandlerException);
+            }
             return resultJson;
         }
 
