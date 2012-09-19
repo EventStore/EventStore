@@ -39,16 +39,5 @@
 .settings .poll-control:hover {
 	background-color: #DDDDDD;
 }  */
-.error {
-	width: 40%;
-	margin: 10px auto;
-	padding: 8px;
-	text-align: center;
-	border: 1px solid #EE5678;
-    background-color: transparent;
-	border-radius: 5px;
-	font-size: 13px;
-    color: #EE5678;
-}
 .zoomed-chart {
 }
