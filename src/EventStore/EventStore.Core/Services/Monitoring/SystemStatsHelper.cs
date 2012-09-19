@@ -141,6 +141,7 @@ namespace EventStore.Core.Services.Monitoring
             Func<string, string, string> queueStat = (queueName, stat) => string.Format("es-queue-{0}-{1}", queueName, stat);
             foreach (var queue in queues)
             {
+                stats[queueStat(queue.Name, "queueName")] = queue.Name;
                 stats[queueStat(queue.Name, "avgItemsPerSecond")] = queue.AvgItemsPerSecond;
                 stats[queueStat(queue.Name, "avgProcessingTime")] = queue.AvgProcessingTime;
                 stats[queueStat(queue.Name, "currentIdleTime")] = queue.CurrentIdleTime.HasValue ? queue.CurrentIdleTime.Value.ToString("G") : null;
