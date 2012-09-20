@@ -84,12 +84,12 @@ namespace EventStore.ClientAPI.Common.ConcurrentCollections
           }
       }
 
-      public void Enqueue(T item)
+      public void Push(T item)
       {
           TryAdd(item);
       }
 
-      public bool TryDequeue(out T item)
+      public bool TryPop(out T item)
       {
           return TryTake(out item);
       }

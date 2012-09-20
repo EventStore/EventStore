@@ -83,6 +83,11 @@ namespace EventStore.Common.ConcurrentCollections
             }
         }
 
+		public void Enqueue (T item)
+		{
+			TryAdd(item);
+		}
+
         public bool TryTake(out T item)
         {
             item = default(T);
@@ -97,6 +102,11 @@ namespace EventStore.Common.ConcurrentCollections
                 Monitor.Exit(_padLock);
             }
         }
+
+		public bool TryDequeue (out T item)
+		{
+			return TryTake (out item);
+		}
 
         public T[] ToArray()
         {

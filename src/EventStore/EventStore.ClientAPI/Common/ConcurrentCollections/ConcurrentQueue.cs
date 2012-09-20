@@ -8,7 +8,7 @@ using System.Threading;
 namespace EventStore.ClientAPI.Common.ConcurrentCollections
 {
     /// <summary>
-    /// This is a not concurrent concurrentqueue that actually works with mono.
+    /// This is a not concurrent concurrentqueue that actually works with mono. Alas one day it may be fixed.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
@@ -84,6 +84,11 @@ namespace EventStore.ClientAPI.Common.ConcurrentCollections
             }
         }
 
+		public void Enqueue (T item)
+		{
+			TryAdd(item);
+		}
+
         public bool TryTake(out T item)
         {
             item = default(T);
@@ -98,6 +103,11 @@ namespace EventStore.ClientAPI.Common.ConcurrentCollections
                 Monitor.Exit(_padLock);
             }
         }
+
+		public bool TryDequeue (out T item)
+		{
+			return TryTake (out item);
+		}
 
         public T[] ToArray()
         {
