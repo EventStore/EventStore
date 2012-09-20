@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,22 +24,35 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Messages;
-using EventStore.ClientAPI.Services.Storage.ReadIndex;
-using EventStore.ClientAPI.Services.Transport.Tcp;
 using EventStore.ClientAPI.Tcp;
 
 namespace EventStore.ClientAPI.Commands
 {
-    class ReadFromBeginningTaskCompletionWrapper : ITaskCompletionWrapper
+    public class CreateStreamResult
     {
-        private readonly TaskCompletionSource<ReadResult> _completion;
+        public bool IsSuccessful { get; private set; }
+        public OperationErrorCode LastErrorCode { get; private set; }
 
-        public ReadFromBeginningTaskCompletionWrapper(TaskCompletionSource<ReadResult> completion)
+        public CreateStreamResult(OperationErrorCode operationErrorCode)
+        {
+            IsSuccessful = operationErrorCode == OperationErrorCode.Success;
+            LastErrorCode = operationErrorCode;
+        }
+    }
+
+    class CreateStreamCompletionWrapper : ITaskCompletionWrapper
+    {
+        private const int MaxRetriesCount = 10;
+
+        private readonly TaskCompletionSource<CreateStreamResult> _completion;
+
+        public CreateStreamCompletionWrapper(TaskCompletionSource<CreateStreamResult> completion)
         {
             _completion = completion;
         }
@@ -47,36 +60,58 @@ namespace EventStore.ClientAPI.Commands
         public TcpPackage SentPackage { get; set; }
         public int Attempt { get; private set; }
 
-        private ClientMessageDto.ReadEventsFromBeginningCompleted _resultDto;
+        private ClientMessages.CreateStreamCompleted _resultDto;
 
         public bool UpdateForNextAttempt()
         {
-            return false;
+            _resultDto = null;
+
+            var correlationId = Guid.NewGuid();
+            Attempt += 1;
+            var package = new TcpPackage(SentPackage.Command, correlationId, SentPackage.Data);
+            SentPackage = package;
+
+            return true;
         }
 
         public ProcessResult Process(TcpPackage package)
         {
             try
             {
-                if (package.Command != TcpCommand.ReadEventsFromBeginningCompleted)
+                if (package.Command != TcpCommand.CreateStreamCompleted)
                 {
                     return new ProcessResult(ProcessResultStatus.NotifyError, 
                                              new Exception(string.Format("Not expected command, expected {0}, received {1}",  
-                                                                         TcpCommand.ReadEventsFromBeginningCompleted, package.Command)));
+                                                                         TcpCommand.CreateStreamCompleted, package.Command)));
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessageDto.ReadEventsFromBeginningCompleted>();
+                var dto = data.Deserialize<ClientMessages.CreateStreamCompleted>();
                 _resultDto = dto;
 
-                switch ((RangeReadResult)dto.Result)
+                switch ((OperationErrorCode)dto.ErrorCode)
                 {
-                    case RangeReadResult.Success:
+                    case OperationErrorCode.Success:
                         return new ProcessResult(ProcessResultStatus.Success);
-                    case RangeReadResult.StreamDeleted:
-                    case RangeReadResult.NoStream:
+
+                    case OperationErrorCode.PrepareTimeout:
+                    case OperationErrorCode.CommitTimeout:
+                    case OperationErrorCode.ForwardTimeout:
+                        if (Attempt < MaxRetriesCount)
+                        {
+                            return new ProcessResult(ProcessResultStatus.Retry);
+                        }
+                        else
+                        {
+                            return new ProcessResult(ProcessResultStatus.NotifyError, 
+                                                     new Exception(string.Format("Max retries count reached, last error: {0}", 
+                                                                  (OperationErrorCode)dto.ErrorCode)));
+                        }
+                    case OperationErrorCode.WrongExpectedVersion:
+                    case OperationErrorCode.StreamDeleted:
+                    case OperationErrorCode.InvalidTransaction:
                         return new ProcessResult(ProcessResultStatus.NotifyError, 
-                                                 new Exception(string.Format("{0}", (RangeReadResult)dto.Result)));
+                                                 new Exception(string.Format("{0}", (OperationErrorCode)dto.ErrorCode)));
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -96,7 +131,7 @@ namespace EventStore.ClientAPI.Commands
         {
             if (_resultDto != null)
             {
-                _completion.SetResult(new ReadResult((RangeReadResult)_resultDto.Result, _resultDto.Events));
+                _completion.SetResult(new CreateStreamResult((OperationErrorCode)_resultDto.ErrorCode));
             }
             else
             {

@@ -28,17 +28,14 @@
 //  
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Data;
-using NUnit.Framework;
 
 namespace EventStore.ClientAPI
 {
-    [TestFixture, Explicit]
     public class usage_shows_how
     {
         public class TestEvent : Event
@@ -57,13 +54,11 @@ namespace EventStore.ClientAPI
             }
         }
 
-        [TestFixtureSetUp]
         public void FixtureSetup()
         {
             EventStore.Configure(Configure.AsDefault());
         }
 
-        [Test]
         public void create_stream()
         {
             string stream = "NewStream-" + Guid.NewGuid();
@@ -71,7 +66,6 @@ namespace EventStore.ClientAPI
             EventStore.AppendToStream(stream, 0, new [] { new TestEvent("Some data") });
         }
 
-        [Test]
         public void create_stream_once()
         {
             string stream = "NewStream-" + Guid.NewGuid();
@@ -83,13 +77,12 @@ namespace EventStore.ClientAPI
             }
             catch (AggregateException aggregateException)
             {
-                Assert.That(aggregateException.InnerExceptions[0]
+                Debug.Assert(aggregateException.InnerExceptions[0]
                             .Message.Contains("WrongExpectedVersion"));
             }
             EventStore.AppendToStream(stream, 0, new[] { new TestEvent("Some data") });
         }
 
-        [Test]
         public void create_stream_with_protobuf()
         {
             string stream = "NewStream-protobuf-" + Guid.NewGuid();
@@ -97,7 +90,6 @@ namespace EventStore.ClientAPI
             EventStore.CreateStreamWithProtoBufMetadata(stream, metadata);
         }
 
-        [Test]
         public void write_to()
         {
             var endpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 1113);
@@ -108,11 +100,10 @@ namespace EventStore.ClientAPI
                 task.Wait();
 
                 var result = task.Result;
-                Assert.IsTrue(result.IsSuccessful, "Written Successfully");
+                Debug.Assert(result.IsSuccessful, "Written Successfully");
             }
         }
 
-        [Test]
         public void write_to_sync()
         {
             var endpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 1113);
@@ -123,7 +114,6 @@ namespace EventStore.ClientAPI
             }
         }
 
-        [Test]
         public void read_from()
         {
             write_to();
@@ -136,7 +126,7 @@ namespace EventStore.ClientAPI
                 task.Wait();
 
                 var result = task.Result;
-                Assert.AreEqual(result.Events.Length, 2);
+                Debug.Assert(result.Events.Length == 2);
             }
         }
 
@@ -155,7 +145,6 @@ namespace EventStore.ClientAPI
         //    }
         //}
 
-        [Test]
         public void write_to_and_delete() {
             var endpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 1113);
             using (var connection = new EventStoreConnection(endpoint))
@@ -165,7 +154,7 @@ namespace EventStore.ClientAPI
 
                 var appendTask = connection.AppendToStreamAsync(stream, -2, new[] { ev });
                 appendTask.Wait();
-                Assert.IsTrue(appendTask.Result.IsSuccessful, "Failed to append data to stream.");
+                Debug.Assert(appendTask.Result.IsSuccessful, "Failed to append data to stream.");
 
                 var data = connection.ReadEventStream(stream, 0, int.MaxValue);
 
@@ -173,11 +162,10 @@ namespace EventStore.ClientAPI
 
                 var deleteTask = connection.DeleteStreamAsync(stream, lastEventVersion);
                 deleteTask.Wait();
-                Assert.IsTrue(deleteTask.Result.IsSuccessful, "Failed to delete stream.");
+                Debug.Assert(deleteTask.Result.IsSuccessful, "Failed to delete stream.");
             }
         }
 
-        [Test]
         public void write_and_read_when_configured_as_default()
         {
             EventStore.Configure(Configure.AsDefault());
@@ -189,11 +177,10 @@ namespace EventStore.ClientAPI
 
             var events = EventStore.ReadEventStream(stream, 0, 5);
 
-            Assert.AreEqual(events.Events[1].EventId, ev.EventId);
+            Debug.Assert(events.Events[1].EventId == ev.EventId);
         }
 
 
-        [Test]
         public void write_read_and_delete_with_version_when_configured_as_default()
         {
             EventStore.Configure(Configure.AsDefault());
@@ -203,19 +190,17 @@ namespace EventStore.ClientAPI
             EventStore.AppendToStream(stream, ExpectedVersion.Any, new[] { ev });
 
             var events = EventStore.ReadEventStream(stream, 0, 5);
-            Assert.AreEqual(events.Events[1].EventId, ev.EventId);
+            Debug.Assert(events.Events[1].EventId == ev.EventId);
 
             EventStore.DeleteStream(stream, 1);
         }
 
-        [Test]
         public void delete_not_existing_stream()
         {
             EventStore.Configure(Configure.AsDefault());
             EventStore.DeleteStream(Guid.NewGuid().ToString());
         }
 
-        [Test]
         public void write_read_and_delete_when_configured_as_default()
         {
             EventStore.Configure(Configure.AsDefault());
@@ -225,12 +210,11 @@ namespace EventStore.ClientAPI
             EventStore.AppendToStream(stream, ExpectedVersion.Any, new[] { ev });
             
             var events = EventStore.ReadEventStream(stream, 0, 5);
-            Assert.AreEqual(events.Events[1].EventId, ev.EventId);
+            Debug.Assert(events.Events[1].EventId == ev.EventId);
 
             EventStore.DeleteStream(stream);
         }
 
-        [Test]
         public void write_to_loop()
         {
             var endpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 1113);
@@ -244,7 +228,6 @@ namespace EventStore.ClientAPI
             }
         }
 
-        [Test]
         public void write_to_loop_async()
         {
             var stopwatch = new Stopwatch();

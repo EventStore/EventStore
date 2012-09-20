@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,20 +25,20 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-
-using System;
-using EventStore.ClientAPI.Services.Transport.Tcp;
-
-namespace EventStore.ClientAPI.Commands
+namespace EventStore.ClientAPI.Defines
 {
-    public interface ITaskCompletionWrapper
+    public enum SingleReadResult
     {
-        TcpPackage SentPackage { get; set; }
-        int Attempt { get; }
-        bool UpdateForNextAttempt();
-
-        ProcessResult Process(TcpPackage package);
-        void Complete();
-        void Fail(Exception exception);
+        Success,
+        NotFound,
+        NoStream,
+        StreamDeleted
     }
+
+    public enum RangeReadResult
+    {
+        Success,
+        NoStream,
+        StreamDeleted
+    }    
 }

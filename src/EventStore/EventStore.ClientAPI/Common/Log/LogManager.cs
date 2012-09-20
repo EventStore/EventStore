@@ -30,7 +30,7 @@ using System;
 
 namespace EventStore.ClientAPI.Common.Log
 {
-    public static class LogManager
+    static class LogManager
     {
         public static ILogger GetLoggerFor<T>()
         {

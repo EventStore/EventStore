@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,20 +25,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-namespace EventStore.ClientAPI.Services.Storage.ReadIndex
+namespace EventStore.ClientAPI
 {
-    public enum SingleReadResult
+    public static class ExpectedVersion
     {
-        Success,
-        NotFound,
-        NoStream,
-        StreamDeleted
+        public const int Any = -2;
+        public const int NoStream = -1;
+        public const int EmptyStream = 0;
     }
-
-    public enum RangeReadResult
-    {
-        Success,
-        NoStream,
-        StreamDeleted
-    }    
 }

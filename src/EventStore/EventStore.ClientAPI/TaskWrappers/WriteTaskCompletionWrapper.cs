@@ -28,19 +28,19 @@
 
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Messages;
-using EventStore.ClientAPI.Services.Transport.Tcp;
 using EventStore.ClientAPI.Tcp;
 
 namespace EventStore.ClientAPI.Commands
 {
-    class DeleteTaskCompletionWrapper : ITaskCompletionWrapper
+    class WriteTaskCompletionWrapper : ITaskCompletionWrapper
     {
         private const int MaxRetriesCount = 10;
 
-        private readonly TaskCompletionSource<DeleteResult> _completion;
+        private readonly TaskCompletionSource<WriteResult> _completion;
 
-        public DeleteTaskCompletionWrapper(TaskCompletionSource<DeleteResult> completion)
+        public WriteTaskCompletionWrapper(TaskCompletionSource<WriteResult> completion)
         {
             _completion = completion;
         }
@@ -48,7 +48,7 @@ namespace EventStore.ClientAPI.Commands
         public TcpPackage SentPackage { get; set; }
         public int Attempt { get; private set; }
 
-        private ClientMessageDto.DeleteStreamCompleted _resultDto;
+        private ClientMessages.WriteEventsCompleted _resultDto;
 
         public bool UpdateForNextAttempt()
         {
@@ -66,15 +66,15 @@ namespace EventStore.ClientAPI.Commands
         {
             try
             {
-                if (package.Command != TcpCommand.DeleteStreamCompleted)
+                if (package.Command != TcpCommand.WriteEventsCompleted)
                 {
-                    return new ProcessResult(ProcessResultStatus.NotifyError,
-                                             new Exception(string.Format("Not expected command, expected {0}, received {1}",
-                                                                         TcpCommand.DeleteStreamCompleted, package.Command)));
+                    return new ProcessResult(ProcessResultStatus.NotifyError, 
+                                             new Exception(string.Format("Not expected command, expected {0}, received {1}",  
+                                                                         TcpCommand.WriteEventsCompleted, package.Command)));
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessageDto.DeleteStreamCompleted>();
+                var dto = data.Deserialize<ClientMessages.WriteEventsCompleted>();
                 _resultDto = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)
@@ -91,14 +91,14 @@ namespace EventStore.ClientAPI.Commands
                         }
                         else
                         {
-                            return new ProcessResult(ProcessResultStatus.NotifyError,
-                                                     new Exception(string.Format("Max retries count reached, last error: {0}",
+                            return new ProcessResult(ProcessResultStatus.NotifyError, 
+                                                     new Exception(string.Format("Max retries count reached, last error: {0}", 
                                                                   (OperationErrorCode)dto.ErrorCode)));
                         }
                     case OperationErrorCode.WrongExpectedVersion:
                     case OperationErrorCode.StreamDeleted:
                     case OperationErrorCode.InvalidTransaction:
-                        return new ProcessResult(ProcessResultStatus.NotifyError,
+                        return new ProcessResult(ProcessResultStatus.NotifyError, 
                                                  new Exception(string.Format("{0}", (OperationErrorCode)dto.ErrorCode)));
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -110,22 +110,21 @@ namespace EventStore.ClientAPI.Commands
             }
         }
 
+        public void Fail(Exception exception)
+        {
+            _completion.SetException(exception);
+        }
+
         public void Complete()
         {
             if (_resultDto != null)
             {
-                _completion.SetResult(new DeleteResult((OperationErrorCode)_resultDto.ErrorCode));
+                _completion.SetResult(new WriteResult((OperationErrorCode)_resultDto.ErrorCode));
             }
             else
             {
                 _completion.SetException(new Exception("Failed to set empty result"));
             }
-        }
-
-        public void Fail(Exception exception)
-        {
-            _completion.SetException(exception);
-
         }
     }
 }

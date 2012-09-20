@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI.Common.ConcurrentCollections
     /// Not very concurrent stack for use in mono
     /// </summary>
     /// <typeparam name="T"></typeparam>
-  public class ConcurrentStack<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
+  class ConcurrentStack<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
   {
       private readonly Stack<T> _stack = new Stack<T>();
       private readonly object _padLock = new object();

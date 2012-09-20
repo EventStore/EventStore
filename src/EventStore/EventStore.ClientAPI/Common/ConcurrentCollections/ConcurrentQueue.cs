@@ -24,7 +24,7 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  using System;
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI.Common.ConcurrentCollections
     /// This is a not concurrent concurrentqueue that actually works with mono. Alas one day it may be fixed.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
+    class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
     {
         private readonly Queue<T> _queue = new Queue<T>();
         private readonly object _padLock = new object();

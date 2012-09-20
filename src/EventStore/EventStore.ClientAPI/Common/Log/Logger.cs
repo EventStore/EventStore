@@ -2,7 +2,7 @@
 
 namespace EventStore.ClientAPI.Common.Log
 {
-    public interface ILogger
+    interface ILogger
     {
         void Error(string format, params object[] args);
         void Error(Exception ex, string format, params object[] args);
