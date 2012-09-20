@@ -32,9 +32,9 @@ namespace EventStore.BufferManagement
         private readonly bool _allowedToCreateMemory;
 
 #if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentStack<ArraySegment<byte>> _buffers = new Common.ConcurrentCollections.ConcurrentStack<ArraySegment<byte>>();
+        private readonly Common.ConcurrentCollections.ConcurrentQueue<ArraySegment<byte>> _buffers = new Common.ConcurrentCollections.ConcurrentQueue<ArraySegment<byte>>();
 #else
-        private readonly System.Collections.Concurrent.ConcurrentStack<ArraySegment<byte>> _buffers = new System.Collections.Concurrent.ConcurrentStack<ArraySegment<byte>>();
+        private readonly System.Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>> _buffers = new System.Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
 #endif
 
         private readonly List<byte[]> _segments;
@@ -157,7 +157,7 @@ namespace EventStore.BufferManagement
                 for (int i = 0; i < _segmentChunks; i++)
                 {
                     var chunk = new ArraySegment<byte>(bytes, i * _chunkSize, _chunkSize);
-                    _buffers.Push(chunk);
+                    _buffers.Enqueue(chunk);
                 }
 
                 Log.Info("Segments count: {0}, buffers count: {1}, should be when full: {2}",
@@ -181,7 +181,7 @@ namespace EventStore.BufferManagement
             while (trial < TrialsCount)
             {
                 ArraySegment<byte> result;
-                if (_buffers.TryPop(out result))
+                if (_buffers.TryDequeue(out result))
                     return result;
                 CreateNewSegment(false);
                 trial++;
@@ -208,7 +208,7 @@ namespace EventStore.BufferManagement
                 ArraySegment<byte> piece;
                 while (totalReceived < toGet)
                 {
-                    if (!_buffers.TryPop(out piece))
+                    if (!_buffers.TryDequeue(out piece))
                         break;
                     result[totalReceived] = piece;
                     ++totalReceived;
@@ -232,7 +232,7 @@ namespace EventStore.BufferManagement
         public void CheckIn(ArraySegment<byte> buffer)
         {
            CheckBuffer(buffer);
-           _buffers.Push(buffer);
+           _buffers.Enqueue(buffer);
         }
 
         /// <summary>
@@ -251,7 +251,7 @@ namespace EventStore.BufferManagement
             foreach (var buf in buffersToReturn)
             {
                 CheckBuffer(buf);
-                _buffers.Push(buf);
+                _buffers.Enqueue(buf);
             }
         }
 
