@@ -28,11 +28,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
-using System.Text;
 using js1test;
 
 namespace EventStore.Projections.Core.v8
@@ -182,7 +179,7 @@ namespace EventStore.Projections.Core.v8
                 out resultJsonPtr);
             if (resultHandle == IntPtr.Zero)
                 CompiledScript.CheckResult(_script.GetHandle(), disposeScriptOnException: false);
-            //TODO: do we need to free resulktJsonPtr in case of exceptoon thrown a line above
+            //TODO: do we need to free resulktJsonPtr in case of exception thrown a line above
             string resultJson = Marshal.PtrToStringUni(resultJsonPtr);
             Js1.FreeResult(resultHandle);
             if (_reverseCommandHandlerException != null)
@@ -222,14 +219,6 @@ namespace EventStore.Projections.Core.v8
                 throw new InvalidOperationException("'process_event' command handler has not been registered");
 
             _processEvent(json, other);
-        }
-
-        public string TestArray(string json, string[] other)
-        {
-            if (_testArray == null)
-                throw new InvalidOperationException("'test_array' command handler has not been registered");
-
-            return _testArray(json, other);
         }
 
         public string GetState()

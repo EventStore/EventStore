@@ -33,7 +33,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionSubscription : IHandle<ProjectionMessage.Projections.CommittedEventReceived>
+    public class ProjectionSubscription : IProjectionSubscription
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionSubscription>();
         private readonly Guid _projectionCorrelationId;
