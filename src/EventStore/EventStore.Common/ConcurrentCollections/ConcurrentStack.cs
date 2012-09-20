@@ -99,6 +99,7 @@ namespace EventStore.Common.ConcurrentCollections
           if (!Monitor.TryEnter(_padLock, 5000)) return false;
           try
           {
+				if(_stack.Count == 0) return false;
               item = _stack.Pop();
               return true;
           }

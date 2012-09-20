@@ -95,6 +95,7 @@ namespace EventStore.ClientAPI.Common.ConcurrentCollections
             if (!Monitor.TryEnter(_padLock, 5000)) return false;
             try
             {
+				if(_queue.Count == 0) return false;
                 item = _queue.Dequeue();
                 return true;
             }
@@ -103,6 +104,22 @@ namespace EventStore.ClientAPI.Common.ConcurrentCollections
                 Monitor.Exit(_padLock);
             }
         }
+
+		public bool TryPeek (out T item)
+		{
+			item = default(T);
+            if (!Monitor.TryEnter(_padLock, 5000)) return false;
+            try
+            {
+				if(_queue.Count == 0) return false;
+                item = _queue.Peek();
+                return true;
+            }
+            finally
+            {
+                Monitor.Exit(_padLock);
+            }
+		}
 
 		public bool TryDequeue (out T item)
 		{
