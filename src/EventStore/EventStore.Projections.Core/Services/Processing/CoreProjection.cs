@@ -426,12 +426,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterPaused()
         {
-            _processingQueue.PauseSubscription();
         }
 
         private void EnterResumed()
         {
-            _processingQueue.ResumeSubscription();
             GoToState(State.Running);
         }
 

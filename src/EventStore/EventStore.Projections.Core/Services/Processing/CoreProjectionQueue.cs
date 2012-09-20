@@ -74,16 +74,19 @@ namespace EventStore.Projections.Core.Services.Processing
         public void SetRunning()
         {
             _queueState = QueueState.Running;
+            ResumeSubscription();
         }
 
         public void SetPaused()
         {
-            _queueState = QueueState.Running;
+            _queueState = QueueState.Stopped;
+            PauseSubscription();
         }
 
         public void SetStopped()
         {
-            _queueState = QueueState.Running;
+            _queueState = QueueState.Stopped;
+            // unsubscribe?
         }
 
         public void QueueTick()
@@ -140,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastEnqueuedEventTag = eventTag;
         }
 
-        internal void PauseSubscription()
+        private void PauseSubscription()
         {
             if (!_subscriptionPaused)
             {
@@ -150,7 +153,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        internal void ResumeSubscription()
+        private void ResumeSubscription()
         {
             if (_subscriptionPaused && _queueState == QueueState.Running)
             {
