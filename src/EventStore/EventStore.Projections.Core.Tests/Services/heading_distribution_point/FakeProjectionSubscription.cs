@@ -26,42 +26,37 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using EventStore.Core.Bus;
-using EventStore.Core.Messages;
-using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
-using EventStore.Projections.Core.Services;
-using EventStore.Projections.Core.Services.Management;
-using NUnit.Framework;
+using System.Collections.Generic;
+using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection
+namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
 {
-    public class TestFixtureWithReadWriteDisaptchers
+    class FakeProjectionSubscription : IProjectionSubscription
     {
-        protected InMemoryBus _bus;
+        private readonly List<ProjectionMessage.Projections.CommittedEventReceived> _receivedEvents =
+            new List<ProjectionMessage.Projections.CommittedEventReceived>();
 
-        protected RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
-
-        protected
-            RequestResponseDispatcher<ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>
-            _readDispatcher;
-
-        protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
-        protected WatchingConsumer _consumer;
-
-        [SetUp]
-        public void setup0()
+        public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
         {
-            _bus = new InMemoryBus("bus");
-            _readDispatcher =
-                new RequestResponseDispatcher
-                    <ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>(
-                    _bus, e => e.CorrelationId, e => e.CorrelationId);
-            _writeDispatcher =
-                new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
-                    _bus, e => e.CorrelationId, e => e.CorrelationId);
-            _consumer = new WatchingConsumer();
-            _bus.Subscribe(_consumer);
+            _receivedEvents.Add(message);
+        }
+
+        public bool CanJoinAt(EventPosition firstAvailableTransactionFileEvent, CheckpointTag eventCheckpointTag)
+        {
+            return eventCheckpointTag.PreparePosition >= firstAvailableTransactionFileEvent.CommitPosition;
+        }
+
+        public CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventReceived committedEvent)
+        {
+            return CheckpointTag.FromStreamPosition(
+                committedEvent.PositionStreamId, committedEvent.EventSequenceNumber,
+                committedEvent.Position.PreparePosition);
+        }
+
+        public List<ProjectionMessage.Projections.CommittedEventReceived> ReceivedEvents
+        {
+            get { return _receivedEvents; }
         }
     }
 }

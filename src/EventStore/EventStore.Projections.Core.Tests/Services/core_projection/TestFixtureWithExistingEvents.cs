@@ -48,7 +48,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                                                           IHandle<ClientMessage.WriteEvents>,
                                                           IHandle<ProjectionMessage.CoreService.Tick>
     {
-        protected WatchingConsumer _consumer;
         protected TestMessageHandler<ClientMessage.ReadEventsBackwards> _listEventsHandler;
 
         protected readonly Dictionary<string, List<EventRecord>> _lastMessageReplies =
@@ -119,8 +118,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             _ticksAreHandledImmediately = false;
             _writesQueue = new Queue<ClientMessage.WriteEvents>();
-            _consumer = new WatchingConsumer();
-            _bus.Subscribe(_consumer);
             _listEventsHandler = new TestMessageHandler<ClientMessage.ReadEventsBackwards>();
             _bus.Subscribe(_listEventsHandler);
             _bus.Subscribe<ClientMessage.WriteEvents>(this);

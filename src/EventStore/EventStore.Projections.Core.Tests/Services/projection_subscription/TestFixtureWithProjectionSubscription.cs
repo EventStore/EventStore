@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Bus;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
@@ -41,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         private Guid _projectionCorrelationId;
         protected TestMessageHandler<ProjectionMessage.Projections.CommittedEventReceived> _eventHandler;
         protected TestMessageHandler<ProjectionMessage.Projections.CheckpointSuggested> _checkpointHandler;
-        protected ProjectionSubscription _subscription;
+        protected IHandle<ProjectionMessage.Projections.CommittedEventReceived> _subscription;
         protected EventDistributionPoint _forkedDistributionPoint;
         protected FakePublisher _bus;
         protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
