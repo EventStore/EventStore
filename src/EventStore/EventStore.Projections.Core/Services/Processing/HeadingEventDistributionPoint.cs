@@ -61,10 +61,10 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureStarted();
             if (message.CorrelationId != _distributionPointId)
                 return false;
-            ValidateEventOrder(message);
-
             if (message.Data == null)
                 return true;
+            ValidateEventOrder(message);
+
             CacheRecentMessage(message);
             DistributeMessage(message);
             if (_headSubscribers.Count == 0 && !_headDistributionPointPaused)

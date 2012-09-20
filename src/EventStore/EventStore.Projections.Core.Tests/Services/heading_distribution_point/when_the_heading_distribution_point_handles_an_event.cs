@@ -75,7 +75,15 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
                     new Event(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
+        [Test]
+        public void can_handle_special_update_position_event()
+        {
+            _point.Handle(
+                new ProjectionMessage.Projections.CommittedEventReceived(
+                    _distibutionPointCorrelationId, new EventPosition(long.MinValue, 30), "stream", 12, false, null));
+        }
+
+        [Test, ExpectedException(typeof(InvalidOperationException))]
         public void cannot_handle_previous_event()
         {
             _point.Handle(
