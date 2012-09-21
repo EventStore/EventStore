@@ -118,6 +118,7 @@
     <Compile Include="Services\Storage\ReaderIndex\ReadIndex.cs" />
     <Compile Include="Index\TableIndex.cs" />
     <Compile Include="Services\Storage\StorageScavenger.cs" />
+    <Compile Include="Services\SystemNames.cs" />
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkScavenger.cs" />
     <Compile Include="Services\Transport\Http\Configure.cs" />

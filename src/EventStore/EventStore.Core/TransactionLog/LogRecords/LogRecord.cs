@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using EventStore.Core.Data;
+using EventStore.Core.Services;
 
 namespace EventStore.Core.TransactionLog.LogRecords
 {
@@ -88,12 +89,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
         public static PrepareLogRecord DeleteTombstone(long logPosition, Guid correlationId, string eventStreamId, int expectedVersion)
         {
-            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), logPosition, eventStreamId, expectedVersion, DateTime.UtcNow, PrepareFlags.DeleteTombstone, "$stream-deleted", NoData, NoData);
+            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), logPosition, eventStreamId, expectedVersion, DateTime.UtcNow, PrepareFlags.DeleteTombstone, SystemEventTypes.StreamDeleted, NoData, NoData);
         }
 
         public static PrepareLogRecord StreamCreated(long logPosition, Guid correlationId, long transactionPos, string eventStreamId, byte[] metadata)
         {
-            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionPos, eventStreamId, ExpectedVersion.NoStream, DateTime.UtcNow, PrepareFlags.Data | PrepareFlags.TransactionBegin, "$stream-created", NoData, metadata);
+            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionPos, eventStreamId, ExpectedVersion.NoStream, DateTime.UtcNow, PrepareFlags.Data | PrepareFlags.TransactionBegin, SystemEventTypes.StreamCreated, NoData, metadata);
         }
 
         protected LogRecord(LogRecordType recordType, byte version)

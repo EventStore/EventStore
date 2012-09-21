@@ -76,10 +76,7 @@ namespace EventStore.Core.Services.Storage
         private int _flushMessagesInQueue;
         private VNodeState _state = VNodeState.Initializing;
 
-        public StorageWriter(IPublisher bus, 
-                             ISubscriber subscriber, 
-                             ITransactionFileWriter writer,
-                             IReadIndex readIndex)
+        public StorageWriter(IPublisher bus, ISubscriber subscriber, ITransactionFileWriter writer, IReadIndex readIndex)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(subscriber, "subscriber");
@@ -162,42 +159,47 @@ namespace EventStore.Core.Services.Storage
         void IHandle<ReplicationMessage.WritePrepares>.Handle(ReplicationMessage.WritePrepares message)
         {
             if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
-            CheckExpectedVersionAndWrite(message, (msg, toCreateStream) =>
+
+            Interlocked.Decrement(ref _flushMessagesInQueue);
+
+            try
             {
-                Debug.Assert(msg.Events.Length > 0);
+                Debug.Assert(message.Events.Length > 0);
+
                 var logPosition = _writer.Checkpoint.ReadNonFlushed();
                 var transactionPosition = logPosition;
 
-                if (toCreateStream)
+                var shouldCreateStream = ShouldCreateStreamFor(message);
+                if (ShouldCreateStreamFor(message))
                 {
                     var res = WritePrepareWithRetry(LogRecord.StreamCreated(logPosition,
-                                                                            msg.CorrelationId,
+                                                                            message.CorrelationId,
                                                                             transactionPosition,
-                                                                            msg.EventStreamId,
+                                                                            message.EventStreamId,
                                                                             LogRecord.NoData));
                     transactionPosition = res.WrittenPos;
                     logPosition = res.NewPos;
                 }
 
-                for (int i = 0; i < msg.Events.Length; ++i)
+                for (int i = 0; i < message.Events.Length; ++i)
                 {
-                    var evnt = msg.Events[i];
+                    var evnt = message.Events[i];
                     var flags = PrepareFlags.Data;
-                    if (i == 0 && !toCreateStream) 
+                    if (i == 0 && !shouldCreateStream)
                         flags |= PrepareFlags.TransactionBegin;
-                    if (i == msg.Events.Length - 1) 
+                    if (i == message.Events.Length - 1)
                         flags |= PrepareFlags.TransactionEnd;
                     if (evnt.IsJson)
                         flags |= PrepareFlags.IsJson;
 
-                    var expectedVersion = toCreateStream
+                    var expectedVersion = shouldCreateStream
                                               ? ExpectedVersion.Any
-                                              : (i == 0 ? msg.ExpectedVersion : ExpectedVersion.Any);
+                                              : (i == 0 ? message.ExpectedVersion : ExpectedVersion.Any);
                     var res = WritePrepareWithRetry(LogRecord.Prepare(logPosition,
-                                                                      msg.CorrelationId,
+                                                                      message.CorrelationId,
                                                                       evnt.EventId,
                                                                       transactionPosition,
-                                                                      msg.EventStreamId,
+                                                                      message.EventStreamId,
                                                                       expectedVersion,
                                                                       flags,
                                                                       evnt.EventType,
@@ -205,27 +207,38 @@ namespace EventStore.Core.Services.Storage
                                                                       evnt.Metadata));
                     logPosition = res.NewPos;
                 }
-            });
+            }
+            finally
+            {
+                Flush();
+            }
         }
 
         void IHandle<ReplicationMessage.WriteTransactionStart>.Handle(ReplicationMessage.WriteTransactionStart message)
         {
             if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
-            CheckExpectedVersionAndWrite(message, (msg, toCreateStream) =>
+
+            Interlocked.Decrement(ref _flushMessagesInQueue);
+
+            try
             {
                 var logPosition = _writer.Checkpoint.ReadNonFlushed();
-                var record = toCreateStream
-                    ? LogRecord.StreamCreated(logPosition, msg.CorrelationId, logPosition, msg.EventStreamId, LogRecord.NoData)
-                    : LogRecord.TransactionBegin(logPosition, msg.CorrelationId, msg.EventStreamId, msg.ExpectedVersion);
+                var record = ShouldCreateStreamFor(message)
+                    ? LogRecord.StreamCreated(logPosition, message.CorrelationId, logPosition, message.EventStreamId, LogRecord.NoData)
+                    : LogRecord.TransactionBegin(logPosition, message.CorrelationId, message.EventStreamId, message.ExpectedVersion);
                 WritePrepareWithRetry(record);
-            });
+            }
+            finally
+            {
+                Flush();
+            }
         }
 
         void IHandle<ReplicationMessage.WriteTransactionData>.Handle(ReplicationMessage.WriteTransactionData message)
         {
             if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
-            Interlocked.Decrement(ref _flushMessagesInQueue);
 
+            Interlocked.Decrement(ref _flushMessagesInQueue);
             try
             {
                 Debug.Assert(message.Events.Length > 0);
@@ -255,8 +268,8 @@ namespace EventStore.Core.Services.Storage
         void IHandle<ReplicationMessage.WriteTransactionPrepare>.Handle(ReplicationMessage.WriteTransactionPrepare message)
         {
             if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
-            Interlocked.Decrement(ref _flushMessagesInQueue);
 
+            Interlocked.Decrement(ref _flushMessagesInQueue);
             try
             {
                 var record = LogRecord.TransactionEnd(_writer.Checkpoint.ReadNonFlushed(),
@@ -275,41 +288,44 @@ namespace EventStore.Core.Services.Storage
         void IHandle<ReplicationMessage.WriteCommit>.Handle(ReplicationMessage.WriteCommit message)
         {
             if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
-            Interlocked.Decrement(ref _flushMessagesInQueue);
 
+            Interlocked.Decrement(ref _flushMessagesInQueue);
             try
             {
-                // TODO AN: do it without exception catching
-                PrepareLogRecord prepare;
-                try
+                var result = _readIndex.CheckCommitStartingAt(message.PrepareStartPosition);
+                switch (result.Decision)
                 {
-                    prepare = _readIndex.GetPrepare(message.PrepareStartPosition);
+                    case CommitDecision.Ok:
+                    {
+                        var commit = WriteCommitWithRetry(LogRecord.Commit(_writer.Checkpoint.ReadNonFlushed(),
+                                                                           message.CorrelationId,
+                                                                           message.PrepareStartPosition,
+                                                                           result.CurrentVersion + 1));
+                        _readIndex.Commit(commit);
+                        break;
+                    }
+                    case CommitDecision.WrongExpectedVersion:
+                        message.Envelope.ReplyWith(new ReplicationMessage.WrongExpectedVersion(message.CorrelationId));
+                        break;
+                    case CommitDecision.Deleted:
+                        message.Envelope.ReplyWith(new ReplicationMessage.StreamDeleted(message.CorrelationId));
+                        break;
+                    case CommitDecision.Idempotent:
+                        message.Envelope.ReplyWith(new ReplicationMessage.AlreadyCommitted(message.CorrelationId,
+                                                                                           result.EventStreamId,
+                                                                                           result.StartEventNumber,
+                                                                                           result.EndEventNumber));
+                        break;
+                    case CommitDecision.CorruptedIdempotency:
+                        //TODO AN add messages and error code for invalid idempotent request
+                        throw new Exception("The request was partially committed and other part is different.");
+                        break;
+                    case CommitDecision.InvalidTransaction:
+                        message.Envelope.ReplyWith(new ReplicationMessage.InvalidTransaction(message.CorrelationId));
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
-                catch (InvalidOperationException)
-                {
-                    message.Envelope.ReplyWith(new ReplicationMessage.InvalidTransaction(message.CorrelationId));
-                    return;
-                }
-
-                var eventStreamId = prepare.EventStreamId;
-                int currentVersion = _readIndex.GetLastStreamEventNumber(eventStreamId);
-
-                if (currentVersion == EventNumber.DeletedStream)
-                {
-                    message.Envelope.ReplyWith(new ReplicationMessage.StreamDeleted(message.CorrelationId));
-                    return;
-                }
-                if (prepare.ExpectedVersion != ExpectedVersion.Any && currentVersion != prepare.ExpectedVersion)
-                {
-                    message.Envelope.ReplyWith(new ReplicationMessage.WrongExpectedVersion(message.CorrelationId));
-                    return;
-                }
-
-                var commit = WriteCommitWithRetry(LogRecord.Commit(_writer.Checkpoint.ReadNonFlushed(),
-                                                                   message.CorrelationId,
-                                                                   message.PrepareStartPosition,
-                                                                   currentVersion + 1)); 
-                _readIndex.Commit(commit);
             }
             finally
             {
@@ -321,38 +337,43 @@ namespace EventStore.Core.Services.Storage
         {
             if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
 
-            CheckExpectedVersionAndWrite(message, (msg, toCreateStream) =>
+            Interlocked.Decrement(ref _flushMessagesInQueue);
+            try
             {
-                if (toCreateStream)
+                if (ShouldCreateStreamFor(message))
                 {
                     var transactionPos = _writer.Checkpoint.ReadNonFlushed();
                     var res = WritePrepareWithRetry(LogRecord.StreamCreated(transactionPos,
-                                                                            msg.CorrelationId,
+                                                                            message.CorrelationId,
                                                                             transactionPos,
-                                                                            msg.EventStreamId,
+                                                                            message.EventStreamId,
                                                                             LogRecord.NoData));
                     transactionPos = res.WrittenPos;
 
                     WritePrepareWithRetry(LogRecord.Prepare(res.NewPos,
-                                                            msg.CorrelationId,
+                                                            message.CorrelationId,
                                                             Guid.NewGuid(),
                                                             transactionPos,
-                                                            msg.EventStreamId,
-                                                            msg.ExpectedVersion,
+                                                            message.EventStreamId,
+                                                            message.ExpectedVersion,
                                                             PrepareFlags.StreamDelete | PrepareFlags.TransactionEnd,
-                                                            "$stream-deleted",
+                                                            SystemEventTypes.StreamDeleted,
                                                             LogRecord.NoData,
                                                             LogRecord.NoData));
                 }
                 else
                 {
                     var record = LogRecord.DeleteTombstone(_writer.Checkpoint.ReadNonFlushed(),
-                                                           msg.CorrelationId,
-                                                           msg.EventStreamId,
-                                                           msg.ExpectedVersion);
+                                                           message.CorrelationId,
+                                                           message.EventStreamId,
+                                                           message.ExpectedVersion);
                     WritePrepareWithRetry(record);
                 }
-            });
+            }
+            finally
+            {
+                Flush();
+            }
         }
 
         private WriteResult WritePrepareWithRetry(PrepareLogRecord prepare)
@@ -407,65 +428,14 @@ namespace EventStore.Core.Services.Storage
             return commit;
         }
 
-        private void CheckExpectedVersionAndWrite<T>(T message, Action<T, bool> doWrite) 
-            where T: ReplicationMessage.IPreconditionedWriteMessage
+        private bool ShouldCreateStreamFor(ReplicationMessage.IPreconditionedWriteMessage message)
         {
-            Interlocked.Decrement(ref _flushMessagesInQueue);
-
-            OperationErrorCode errorCode;
-            int currentVersion;
-            if (!VerifyVersionOnPrepare(message.EventStreamId, message.ExpectedVersion, out errorCode, out currentVersion))
-            {
-                switch (errorCode)
-                {
-                    case OperationErrorCode.WrongExpectedVersion:
-                        message.Envelope.ReplyWith(new ReplicationMessage.WrongExpectedVersion(message.CorrelationId));
-                        break;
-                    case OperationErrorCode.StreamDeleted:
-                        message.Envelope.ReplyWith(new ReplicationMessage.StreamDeleted(message.CorrelationId));
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
-            else
-            {
-                var toCreateStream = message.AllowImplicitStreamCreation
-                                     && (message.ExpectedVersion == ExpectedVersion.NoStream
-                                         || (message.ExpectedVersion == ExpectedVersion.Any && currentVersion == ExpectedVersion.NoStream));
-                doWrite(message, toCreateStream);
-            }
-
-            Flush();
-        }
-
-        private bool VerifyVersionOnPrepare(string eventStreamId, 
-                                            int expectedVersion, 
-                                            out OperationErrorCode errorCode, 
-                                            out int currentVersion)
-        {
-            currentVersion = _readIndex.GetLastStreamEventNumber(eventStreamId);
-
-            if (currentVersion == EventNumber.DeletedStream)
-            {
-                errorCode = OperationErrorCode.StreamDeleted;
+            if (!message.AllowImplicitStreamCreation)
                 return false;
-            }
 
-            if (expectedVersion == ExpectedVersion.Any)
-            {
-                errorCode = OperationErrorCode.Success;
-                return true;
-            }
-
-            if (expectedVersion < currentVersion)
-            {
-                errorCode = OperationErrorCode.WrongExpectedVersion;
-                return false;
-            }
-
-            errorCode = OperationErrorCode.Success;
-            return true;
+            return message.ExpectedVersion == ExpectedVersion.NoStream
+                   || (message.ExpectedVersion == ExpectedVersion.Any
+                       && _readIndex.GetLastStreamEventNumber(message.EventStreamId) == ExpectedVersion.NoStream);
         }
 
         void IHandle<ReplicationMessage.LogBulk>.Handle(ReplicationMessage.LogBulk message)

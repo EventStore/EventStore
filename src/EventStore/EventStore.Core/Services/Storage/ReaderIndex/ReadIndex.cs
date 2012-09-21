@@ -62,6 +62,38 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         StreamDeleted
     }
 
+    public enum CommitDecision
+    {
+        Ok,
+        WrongExpectedVersion,
+        Deleted,
+        Idempotent,
+        CorruptedIdempotency,
+        InvalidTransaction
+    }
+
+    public struct CommitCheckResult
+    {
+        public readonly CommitDecision Decision;
+        public readonly string EventStreamId;
+        public readonly int CurrentVersion;
+        public readonly int StartEventNumber;
+        public readonly int EndEventNumber;
+
+        public CommitCheckResult(CommitDecision decision, 
+                                 string eventStreamId, 
+                                 int currentVersion, 
+                                 int startEventNumber, 
+                                 int endEventNumber)
+        {
+            Decision = decision;
+            EventStreamId = eventStreamId;
+            CurrentVersion = currentVersion;
+            StartEventNumber = startEventNumber;
+            EndEventNumber = endEventNumber;
+        }
+    }
+
     public class ReadIndex : IDisposable, IReadIndex
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ReadIndex>();
@@ -87,7 +119,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _persistedCommitCheckpoint = -1;
         private long _lastCommitPosition = -1;
 
-        private int? _threadId;
+        private readonly BoundedCache<Guid, Tuple<string, int>> _commitedEvents = 
+            new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, 10*1024*1024, x => 16 + 4 + 2*x.Item1.Length);
 
         public ReadIndex(IPublisher bus,
                          TFChunkDb db,
@@ -174,13 +207,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public void Commit(CommitLogRecord commit)
         {
-            if (_threadId.HasValue && _threadId != Thread.CurrentThread.ManagedThreadId)
-            {
-                Debugger.Break();
-                throw new Exception("Access to commit from multiple threads.");
-            }
-            _threadId = Thread.CurrentThread.ManagedThreadId;
-
             _tableIndex.CommitCheckpoint.Write(commit.LogPosition);
 
             bool first = true;
@@ -204,6 +230,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     //Debug.Assert(number == -1);
                     number = EventNumber.DeletedStream;
 
+                    _commitedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, number), throwOnDuplicate: false);
+
                     if (commit.LogPosition > _persistedCommitCheckpoint 
                         || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint)
                         addToIndex = true;
@@ -222,6 +250,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         number = prepare.ExpectedVersion + 1;
                     }
 
+                    _commitedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, number), throwOnDuplicate: false);
+
                     if (commit.LogPosition > _persistedCommitCheckpoint
                         || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint)
                         addToIndex = true;
@@ -229,6 +259,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 // could be just empty prepares for TransactionBegin and TransactionEnd, for instance
                 if (addToIndex)
                 {
+#if DEBUG
                     long pos;
                     if (_tableIndex.TryGetOneValue(streamHash, number, out pos))
                     {
@@ -247,6 +278,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     prepare));
                         }
                     }
+#endif
                     _tableIndex.Add(streamHash, number, prepare.LogPosition);
                     _bus.Publish(new ReplicationMessage.EventCommited(commit.LogPosition, number, prepare));
                 }
@@ -264,7 +296,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             finally
             {
                 ReturnReader(reader);
-                reader = null;
             }
 
             if (!result.Success)
@@ -311,6 +342,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 ReturnReader(reader);
             }
         }
+
         private SingleReadResult TryReadRecordInternal(ITransactionFileReader reader, 
                                                        string eventStreamId,
                                                        int version, 
@@ -517,6 +549,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (prepare.EventStreamId == eventStreamId) // LUCKY!!!
                 return latestEntry.Version;
 
+            // TODO AN here lie the problem of out of memory if the stream have A LOT of events in them
             foreach (var indexEntry in _tableIndex.GetRange(streamHash, 0, int.MaxValue))
             {
                 var p = GetPrepareInternal(reader, indexEntry.Position);
@@ -710,19 +743,21 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public string[] GetStreamIds()
         {
-            int batchSize = 100;
+            const int batchSize = 100;
             var allEvents = new List<EventRecord>();
             EventRecord[] eventsBatch;
 
             int from = 0;
             do
             {
-                eventsBatch = null;
-                var result = TryReadEventsForward("$streams", from, batchSize, out eventsBatch);
+                var result = TryReadEventsForward(SystemStreams.StreamsStream, from, batchSize, out eventsBatch);
 
                 if (result != RangeReadResult.Success)
+                {
                     throw new ApplicationInitializationException(
-                        "couldn't find system stream $streams, which should've been created at system startup");
+                        string.Format("Couldn't find system stream {0}, which should've been created at system startup",
+                                      SystemStreams.StreamsStream));
+                }
 
                 from += eventsBatch.Length;
                 allEvents.AddRange(eventsBatch);
@@ -740,6 +775,89 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 .ToArray();
 
             return streamIds;
+        }
+
+        public CommitCheckResult CheckCommitStartingAt(long prepareStartPosition)
+        {
+            var reader = GetReader();
+            try
+            {
+                // TODO AN: do it without exception catching
+                string streamId;
+                int expectedVersion;
+                try
+                {
+                    var firstPrepare = GetPrepareInternal(reader, prepareStartPosition);
+                    streamId = firstPrepare.EventStreamId;
+                    expectedVersion = firstPrepare.ExpectedVersion;
+                }
+                catch (InvalidOperationException)
+                {
+                    return new CommitCheckResult(CommitDecision.InvalidTransaction, string.Empty, -1, -1, -1);
+                }
+
+                var curVersion = GetLastStreamEventNumberInternal(reader, streamId);
+
+                if (curVersion == EventNumber.DeletedStream)
+                    return new CommitCheckResult(CommitDecision.Deleted, streamId, curVersion, -1, -1);
+
+                // idempotency checks
+                if (expectedVersion == ExpectedVersion.Any)
+                {
+                    var first = true;
+                    int startEventNumber = -1;
+                    int endEventNumber = -1;
+                    foreach (var prepare in GetTransactionPrepares(prepareStartPosition))
+                    {
+                        Tuple<string, int> commitedInfo;
+                        if (!_commitedEvents.TryGetRecord(prepare.EventId, out commitedInfo)
+                            || commitedInfo.Item1 != prepare.EventStreamId)
+                        {
+                            return first
+                                ? new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1)
+                                : new CommitCheckResult(CommitDecision.CorruptedIdempotency, streamId, curVersion, -1, -1);
+                        }
+                        if (first)
+                            startEventNumber = commitedInfo.Item2;
+                        endEventNumber = commitedInfo.Item2;
+                        first = false;
+                    }
+                    return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber);
+                }
+                else if (expectedVersion < curVersion)
+                {
+                    var eventNumber = expectedVersion;
+                    var first = true;
+                    foreach (var prepare in GetTransactionPrepares(prepareStartPosition))
+                    {
+                        eventNumber += 1;
+
+                        EventRecord record;
+                        // TODO AN need to discriminate implicit and explicit $stream-created event
+                        // TODO AN and avoid checking implicit as it has always different EventId
+                        if (!TryGetRecordInternal(reader, streamId, eventNumber, out record) 
+                            || (eventNumber > 0 && record.EventId != prepare.EventId)) 
+                        {
+                            return first || eventNumber == 1 // because right now $stream-created is always considered equal
+                                ? new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1)
+                                : new CommitCheckResult(CommitDecision.CorruptedIdempotency, streamId, curVersion, -1, -1);
+                        }
+                        first = false;
+                    }
+                    return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber);
+                }
+                else if (expectedVersion > curVersion)
+                {
+                    return new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1);
+                }
+
+                // expectedVersion == currentVersion
+                return new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1);
+            }
+            finally
+            {
+                ReturnReader(reader);
+            }
         }
 
         public ReadIndexStats GetStatistics()
@@ -760,6 +878,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Close();
         }
 
+        /// <summary>
+        /// Used to deserialize event stream ID from $streams events
+        /// </summary>
         private class StreamId
         {
             public string Id { get; set; }

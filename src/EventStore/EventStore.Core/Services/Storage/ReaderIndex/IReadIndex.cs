@@ -47,6 +47,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         bool IsStreamDeleted(string eventStreamId);
         List<ResolvedEventRecord> ReadEventsFromTF(long fromCommitPosition, long afterPreparePosition, int maxCount, bool resolveLinks);
         EventRecord ResolveLinkToEvent(EventRecord eventRecord);
+        CommitCheckResult CheckCommitStartingAt(long prepareStartPosition);
         string[] GetStreamIds();
         
         void Build();
