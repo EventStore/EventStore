@@ -32,6 +32,7 @@ using EventStore.ClientAPI.Defines;
 
 namespace EventStore.ClientAPI.Data
 {
+    //TODO GFY this should not be exposed
     public class EventRecord : IEquatable<EventRecord>
     {
         public static readonly byte[] Empty = new byte[0];

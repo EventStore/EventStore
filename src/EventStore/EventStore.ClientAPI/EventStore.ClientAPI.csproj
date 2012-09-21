@@ -91,7 +91,7 @@
     <Compile Include="Common\Utils\Ensure.cs" />
     <Compile Include="Data\Event.cs" />
     <Compile Include="Data\EventRecord.cs" />
-    <Compile Include="Data\ExpectedVersion.cs" />
+    <Compile Include="ExpectedVersion.cs" />
     <Compile Include="FailedConnectionException.cs" />
     <Compile Include="Defines\OperationErrorCode.cs" />
     <Compile Include="Defines\ReadResult.cs" />
