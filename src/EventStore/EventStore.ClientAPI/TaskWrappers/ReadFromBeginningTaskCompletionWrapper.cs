@@ -32,7 +32,7 @@ using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.Tcp;
 
-namespace EventStore.ClientAPI.Commands
+namespace EventStore.ClientAPI.TaskWrappers
 {
     class ReadFromBeginningTaskCompletionWrapper : ITaskCompletionWrapper
     {

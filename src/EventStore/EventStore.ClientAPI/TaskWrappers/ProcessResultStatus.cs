@@ -1,6 +1,6 @@
 using System;
 
-namespace EventStore.ClientAPI.Commands
+namespace EventStore.ClientAPI.TaskWrappers
 {
     public enum ProcessResultStatus
     {

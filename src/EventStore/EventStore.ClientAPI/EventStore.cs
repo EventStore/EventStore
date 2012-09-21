@@ -29,8 +29,8 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Commands;
 using EventStore.ClientAPI.Data;
+using EventStore.ClientAPI.TaskWrappers;
 
 namespace EventStore.ClientAPI
 {
