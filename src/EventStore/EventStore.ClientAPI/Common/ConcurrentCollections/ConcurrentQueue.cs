@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI.Common.ConcurrentCollections
     /// This is a not concurrent concurrentqueue that actually works with mono. Alas one day it may be fixed.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
+    class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
     {
         private readonly Queue<T> _queue = new Queue<T>();
         private readonly object _padLock = new object();

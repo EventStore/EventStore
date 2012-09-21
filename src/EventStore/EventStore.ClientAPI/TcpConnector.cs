@@ -38,7 +38,7 @@ using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
 
 namespace EventStore.ClientAPI
 {
-    public class TcpConnector
+     class TcpConnector
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnector>();
 

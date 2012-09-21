@@ -27,7 +27,7 @@
 //  
 namespace EventStore.ClientAPI.Defines
 {
-    public enum TcpCommand: byte
+    enum TcpCommand: byte
     {
         HeartbeatRequestCommand = 0x01,
         HeartbeatResponseCommand = 0x02,

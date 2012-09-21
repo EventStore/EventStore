@@ -31,7 +31,7 @@ using EventStore.ClientAPI.Defines;
 
 namespace EventStore.ClientAPI.Commands
 {
-    public interface ITaskCompletionWrapper
+     interface ITaskCompletionWrapper
     {
         TcpPackage SentPackage { get; set; }
         int Attempt { get; }

@@ -2,6 +2,7 @@ using System;
 
 namespace EventStore.ClientAPI.Defines
 {
+    //TODO GFY THIS SHOULD NOT BE PUBLIC
     [Flags]
     public enum PrepareFlags : ushort
     {

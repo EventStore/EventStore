@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI.Commands
         }
     }
 
-    public class CreateStreamCompletionWrapper : ITaskCompletionWrapper
+    class CreateStreamCompletionWrapper : ITaskCompletionWrapper
     {
         private const int MaxRetriesCount = 10;
 

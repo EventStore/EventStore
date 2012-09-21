@@ -30,7 +30,7 @@ using System;
 
 namespace EventStore.ClientAPI.Defines
 {
-    public struct TcpPackage
+     struct TcpPackage
     {
         private static readonly byte[] EmptyArray = new byte[0];
 
