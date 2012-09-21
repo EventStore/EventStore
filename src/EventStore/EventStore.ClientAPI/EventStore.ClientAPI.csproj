@@ -79,8 +79,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Commands\CreateStreamCompletionWrapper.cs" />
-    <Compile Include="Commands\ProcessResultStatus.cs" />
+    <Compile Include="TaskWrappers\CreateStreamCompletionWrapper.cs" />
+    <Compile Include="TaskWrappers\ProcessResultStatus.cs" />
     <Compile Include="Common\Log\Logger.cs" />
     <Compile Include="Common\Log\LogManager.cs" />
     <Compile Include="Common\Utils\BytesFormatter.cs" />
@@ -88,15 +88,15 @@
     <Compile Include="Common\ConcurrentCollections\ConcurrentStack.cs" />
     <Compile Include="Configure.cs" />
     <Compile Include="Exceptions\ConnectionClosingException.cs" />
-    <Compile Include="Commands\DeleteTaskCompletionWrapper.cs" />
-    <Compile Include="Commands\ITaskCompletionWrapper.cs" />
-    <Compile Include="Commands\ReadFromBeginningTaskCompletionWrapper.cs" />
+    <Compile Include="TaskWrappers\DeleteTaskCompletionWrapper.cs" />
+    <Compile Include="TaskWrappers\ITaskCompletionWrapper.cs" />
+    <Compile Include="TaskWrappers\ReadFromBeginningTaskCompletionWrapper.cs" />
     <Compile Include="Common\Utils\Ensure.cs" />
     <Compile Include="Data\Event.cs" />
     <Compile Include="Data\EventRecord.cs" />
     <Compile Include="Data\ExpectedVersion.cs" />
     <Compile Include="Exceptions\FailedConnectionException.cs" />
-    <Compile Include="Messages\OperationErrorCode.cs" />
+    <Compile Include="Defines\OperationErrorCode.cs" />
     <Compile Include="Defines\ReadResult.cs" />
     <Compile Include="Defines\TcpCommand.cs" />
     <Compile Include="Defines\TcpPackage.cs" />
@@ -123,11 +123,9 @@
     <Compile Include="Transport.Tcp\TcpConnectionBase.cs" />
     <Compile Include="Exceptions\UnknownPackageReturned.cs" />
     <Compile Include="Usage.cs" />
-    <Compile Include="Commands\WriteTaskCompletionWrapper.cs" />
+    <Compile Include="TaskWrappers\WriteTaskCompletionWrapper.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="TransactionLog.LogRecords\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
