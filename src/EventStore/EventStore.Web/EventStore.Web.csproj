@@ -44,55 +44,55 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <Content Include="web\bootstrap\css\bootstrap-responsive.css">
+    <Content Include="web\lib\bootstrap\css\bootstrap-responsive.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\css\bootstrap-responsive.min.css">
+    <Content Include="web\lib\bootstrap\css\bootstrap-responsive.min.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\css\bootstrap-sitelayout.css">
+    <Content Include="web\css\es.sitelayout.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\css\bootstrap.css">
+    <Content Include="web\lib\bootstrap\css\bootstrap.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\css\bootstrap.min.css">
+    <Content Include="web\lib\bootstrap\css\bootstrap.min.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\ico\favicon.ico">
+    <Content Include="web\img\favicon.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\img\cancel_btn.png">
+    <Content Include="web\img\cancel_btn.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\img\es-avatar.png">
+    <Content Include="web\img\es-avatar.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\img\es-logo-thumbnail.png">
+    <Content Include="web\img\es-logo-thumbnail.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\img\es-logo.png">
+    <Content Include="web\img\es-logo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\img\eventstore_logo.png">
+    <Content Include="web\img\eventstore_logo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\img\glyphicons-halflings-white.png">
+    <Content Include="web\lib\bootstrap\img\glyphicons-halflings-white.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\img\glyphicons-halflings.png">
+    <Content Include="web\lib\bootstrap\img\glyphicons-halflings.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\img\start_btn.png">
+    <Content Include="web\img\start_btn.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\img\stop_btn.png">
+    <Content Include="web\img\stop_btn.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\js\bootstrap.js">
+    <Content Include="web\lib\bootstrap\js\bootstrap.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\bootstrap\js\bootstrap.min.js">
+    <Content Include="web\lib\bootstrap\js\bootstrap.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="web\chat.htm">
