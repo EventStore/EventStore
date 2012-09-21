@@ -4,7 +4,7 @@ namespace EventStore.ClientAPI.Defines
 {
     //TODO GFY THIS SHOULD NOT BE PUBLIC
     [Flags]
-    public enum PrepareFlags : ushort
+    public enum Flags : ushort
     {
         None = 0x00,
         Data = 0x01,                // prepare contains data
