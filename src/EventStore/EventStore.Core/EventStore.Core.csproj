@@ -111,6 +111,7 @@
     <Compile Include="Services\Monitoring\StatsCollectorEnvelope.cs" />
     <Compile Include="Services\Monitoring\Stats\StatsContainer.cs" />
     <Compile Include="Services\Monitoring\SystemStatsHelper.cs" />
+    <Compile Include="Services\Monitoring\Stats\StatMetadata.cs" />
     <Compile Include="Services\SingleAckRequestManager.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IReadIndex.cs" />
     <Compile Include="Services\Storage\ReaderIndex\ReadIndex.cs" />

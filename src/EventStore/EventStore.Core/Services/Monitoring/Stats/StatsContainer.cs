@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.Monitoring.Utils;
 
 namespace EventStore.Core.Services.Monitoring.Stats
 {
@@ -47,15 +48,54 @@ namespace EventStore.Core.Services.Monitoring.Stats
                 _stats.Add(stat.Key, stat.Value);
         }
 
-        public Dictionary<string, object> GetRawStats()
+        public Dictionary<string, object> GetStats(bool useGrouping, bool useMetadata)
+        {
+            if (useGrouping && useMetadata)
+                return GetGroupedStatsWithMetadata();
+
+            if (useGrouping && !useMetadata)
+                return GetGroupedStats();
+
+            if (!useGrouping && useMetadata)
+                return GetRawStatsWithMetadata();
+
+            //if (!useGrouping && !useMetadata)
+                return GetRawStats();
+        }
+
+        private Dictionary<string, object> GetGroupedStatsWithMetadata()
+        {
+            var grouped = Group(_stats);
+            return grouped;
+        }
+
+        private Dictionary<string, object> GetGroupedStats()
+        {
+            var values = GetStatsValues(_stats);
+            var grouped = Group(values);
+            return grouped;
+        }
+
+        private Dictionary<string, object> GetRawStatsWithMetadata()
         {
             return new Dictionary<string, object>(_stats);
         }
 
-        public Dictionary<string, object> GetGroupedStats()
+        private Dictionary<string, object> GetRawStats()
         {
-            var grouped = Group(_stats);
-            return grouped;
+            var values = GetStatsValues(_stats);
+            return values;
+        }
+
+        private static Dictionary<string, object> GetStatsValues(Dictionary<string, object> dictionary)
+        {
+            return dictionary.ToDictionary(
+                kvp => kvp.Key,
+                kvp =>
+                {
+                    var statInfo = kvp.Value as StatMetadata;
+                    return statInfo == null ? kvp.Value : statInfo.Value;
+                });
         }
 
         private static Dictionary<string, object> Group(Dictionary<string, object> input)

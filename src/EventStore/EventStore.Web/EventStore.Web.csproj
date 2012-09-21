@@ -131,9 +131,6 @@
     <Content Include="web\js\charts\es.graphcontrol.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\js\charts\es.statsBinding.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="web\js\charts\es.TimeSeries.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
