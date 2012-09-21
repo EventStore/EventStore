@@ -29,7 +29,7 @@
 using System;
 using EventStore.ClientAPI.Defines;
 
-namespace EventStore.ClientAPI.Commands
+namespace EventStore.ClientAPI.TaskWrappers
 {
      interface ITaskCompletionWrapper
     {
