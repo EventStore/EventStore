@@ -90,7 +90,7 @@ function invokeLazyExecutedCallbacks(_lazyExecutedCallbacks)
 jQuery(document).ready(function () {
 
     var scriptarr = new Array();
-    scriptarr.push(['bootstrap/js/bootstrap.min.js', "script"]);
+    scriptarr.push(['lib/bootstrap/js/bootstrap.min.js', "script"]);
     scriptarr.push(['lib/jsrender/jsrender.js', "script"]);
     scriptarr.push(['js/es.menu.js', "script"]);
 
