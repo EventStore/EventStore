@@ -32,6 +32,8 @@ using EventStore.ClientAPI.Defines;
 
 namespace EventStore.ClientAPI.Data
 {
+    //TODO GFY is this really what we want to expose to the world as an event through the API?
+    //What does expected version mean here?
     public class EventRecord : IEquatable<EventRecord>
     {
         public static readonly byte[] Empty = new byte[0];
@@ -58,6 +60,32 @@ namespace EventStore.ClientAPI.Data
         }
 
         public EventRecord(int eventNumber,
+                           long logPosition,
+                           Guid correlationId,
+                           Guid eventId,
+                           long transactionPosition,
+                           string eventStreamId,
+                           int expectedVersion,
+                           DateTime timeStamp,
+                           bool isDeleteTombstone,
+                           string eventType,
+                           byte[] data,
+                           byte[] metadata) : this(eventNumber,
+                                                   logPosition,
+                                                   correlationId,
+                                                   eventId,
+                                                   transactionPosition,
+                                                   eventStreamId,
+                                                   expectedVersion,
+                                                   timeStamp,
+                                                   isDeleteTombstone ? Flags.DeleteTombstone : Flags.None,
+                                                   eventType,
+                                                   data,
+                                                   metadata)
+        {
+        }
+
+        internal EventRecord(int eventNumber,
                            long logPosition,
                            Guid correlationId,
                            Guid eventId,
