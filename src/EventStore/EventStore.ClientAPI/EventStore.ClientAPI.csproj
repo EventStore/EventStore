@@ -103,11 +103,8 @@
     <Compile Include="TcpConnector.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Defines\PrepareFlags.cs" />
     <Compile Include="Transport.Tcp\ProtobufExtensions.cs" />
-    <Compile Include="TransactionLog.LogRecords\CommitLogRecord.cs" />
-    <Compile Include="TransactionLog.LogRecords\LogRecord.cs" />
-    <Compile Include="TransactionLog.LogRecords\LogRecordType.cs" />
-    <Compile Include="TransactionLog.LogRecords\PrepareLogRecord.cs" />
     <Compile Include="Messages\ClientMessageDto.cs" />
     <Compile Include="Transport.Tcp\TcpConfiguratin.cs" />
     <Compile Include="Transport.Tcp\TcpConnection.cs" />
@@ -129,7 +126,7 @@
     <Compile Include="Commands\WriteTaskCompletionWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Services.Transport.Tcp\" />
+    <Folder Include="TransactionLog.LogRecords\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
