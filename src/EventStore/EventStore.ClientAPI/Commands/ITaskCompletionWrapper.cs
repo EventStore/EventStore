@@ -27,7 +27,7 @@
 //  
 
 using System;
-using EventStore.ClientAPI.Services.Transport.Tcp;
+using EventStore.ClientAPI.Defines;
 
 namespace EventStore.ClientAPI.Commands
 {

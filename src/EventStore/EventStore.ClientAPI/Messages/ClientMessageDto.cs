@@ -27,7 +27,7 @@
 //  
 using System;
 using EventStore.ClientAPI.Data;
-using EventStore.ClientAPI.Services.Storage.ReadIndex;
+using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.TransactionLog.LogRecords;
 using ProtoBuf;
 using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;

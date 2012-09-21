@@ -28,8 +28,8 @@
 
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Messages;
-using EventStore.ClientAPI.Services.Transport.Tcp;
 using EventStore.ClientAPI.Tcp;
 
 namespace EventStore.ClientAPI.Commands

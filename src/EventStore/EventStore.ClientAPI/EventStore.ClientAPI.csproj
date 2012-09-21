@@ -97,9 +97,9 @@
     <Compile Include="Data\ExpectedVersion.cs" />
     <Compile Include="Exceptions\FailedConnectionException.cs" />
     <Compile Include="Messages\OperationErrorCode.cs" />
-    <Compile Include="Services.Storage.ReadIndex\ReadResult.cs" />
-    <Compile Include="Services.Transport.Tcp\TcpCommand.cs" />
-    <Compile Include="Services.Transport.Tcp\TcpPackage.cs" />
+    <Compile Include="Defines\ReadResult.cs" />
+    <Compile Include="Defines\TcpCommand.cs" />
+    <Compile Include="Defines\TcpPackage.cs" />
     <Compile Include="TcpConnector.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -128,7 +128,9 @@
     <Compile Include="Usage.cs" />
     <Compile Include="Commands\WriteTaskCompletionWrapper.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Services.Transport.Tcp\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
