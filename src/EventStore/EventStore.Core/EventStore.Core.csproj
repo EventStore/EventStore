@@ -103,6 +103,7 @@
     <Compile Include="Index\ITableIndex.cs" />
     <Compile Include="Index\HashListMemTable.cs" />
     <Compile Include="Index\MergeResult.cs" />
+    <Compile Include="Index\PossibleToHandleOutOfMemoryException.cs" />
     <Compile Include="Index\PTable.cs" />
     <Compile Include="Index\PTableHeader.cs" />
     <Compile Include="Index\SortedListExtensions.cs" />
