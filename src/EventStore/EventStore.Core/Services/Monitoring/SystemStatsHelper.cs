@@ -88,15 +88,15 @@ namespace EventStore.Core.Services.Monitoring
 
             stats["proc-tcp-connections"] = new StatMetadata(tcp.Connections, "Tcp", "Tcp Connections");
             stats["proc-tcp-inSend"] = new StatMetadata(tcp.InSend, "Tcp", "Tcp In Send");
-            stats["proc-tcp-measureTime"] = new StatMetadata(tcp.MeasureTime, "Tcp", "Tcp Measure Time");
+            stats["proc-tcp-measureTime"] = tcp.MeasureTime;
             stats["proc-tcp-pendingReceived"] = new StatMetadata(tcp.PendingReceived, "Tcp", "Tcp Pending Received");
             stats["proc-tcp-pendingSend"] = new StatMetadata(tcp.PendingSend, "Tcp", "Tcp Pending Send");
-            stats["proc-tcp-receivedBytesSinceLastRun"] = new StatMetadata(tcp.ReceivedBytesSinceLastRun, "Tcp", "Tcp Received Bytes Since Last Run");
-            stats["proc-tcp-receivedBytesTotal"] = new StatMetadata(tcp.ReceivedBytesTotal, "Tcp", "Tcp Received Bytes Total");
+            stats["proc-tcp-receivedBytesSinceLastRun"] = tcp.ReceivedBytesSinceLastRun;
+            stats["proc-tcp-receivedBytesTotal"] = tcp.ReceivedBytesTotal;
             stats["proc-tcp-receivingSpeed"] = new StatMetadata(tcp.ReceivingSpeed, "Tcp", "Tcp Receiving Speed");
             stats["proc-tcp-sendingSpeed"] = new StatMetadata(tcp.SendingSpeed, "Tcp", "Tcp Sending Speed");
-            stats["proc-tcp-sentBytesSinceLastRun"] = new StatMetadata(tcp.SentBytesSinceLastRun, "Tcp", "Tcp Sent Bytes Since Last Run");
-            stats["proc-tcp-sentBytesTotal"] = new StatMetadata(tcp.SentBytesTotal, "Tcp", "Tcp Sent Bytes Total");
+            stats["proc-tcp-sentBytesSinceLastRun"] = tcp.SentBytesSinceLastRun;
+            stats["proc-tcp-sentBytesTotal"] = tcp.SentBytesTotal;
             stats["proc-tcp-measureTimeFriendly"] = tcp.MeasureTimeFriendly;
             stats["proc-tcp-receivedBytesTotalFriendly"] = tcp.ReceivedBytesTotalFriendly;
             stats["proc-tcp-receivingSpeedFriendly"] = tcp.ReceivingSpeedFriendly;
@@ -115,8 +115,8 @@ namespace EventStore.Core.Services.Monitoring
             stats["proc-gc-totalBytesInHeaps"] = gcStats.TotalBytesInHeaps;
 
             stats["proc-mem"] = new StatMetadata(workingSetMemory, "Process", "Process Working Set Memory");
-            stats["proc-threadsCount"] = new StatMetadata(threadsCount, "Process", "Process Working Set Memory");
-            stats["proc-cpu"] = new StatMetadata(procCpu, "Process", "Process Working Set Memory");
+            stats["proc-threadsCount"] = new StatMetadata(threadsCount, "Process", "Process Threads Count");
+            stats["proc-cpu"] = new StatMetadata(procCpu, "Process", "Process Cpu Usage");
             stats["proc-startTime"] = startTime;
             stats["proc-id"] = procId;
 
@@ -129,10 +129,10 @@ namespace EventStore.Core.Services.Monitoring
             Func<string, string, string> driveStat = (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName, stat);
             foreach (var driveInfo in drives.Drives)
             {
-                stats[driveStat(driveInfo.DiskName, "availableBytes")] = new StatMetadata(driveInfo.AvailableBytes, driveInfo.DiskName, string.Format("Disk '{0}' Available Bytes", driveInfo.DiskName));
+                stats[driveStat(driveInfo.DiskName, "availableBytes")] = driveInfo.AvailableBytes;
                 stats[driveStat(driveInfo.DiskName, "totalBytes")] = driveInfo.TotalBytes;
-                stats[driveStat(driveInfo.DiskName, "usage")] = new StatMetadata(driveInfo.Usage, driveInfo.DiskName, string.Format("Disk '{0}' Usage", driveInfo.DiskName));
-                stats[driveStat(driveInfo.DiskName, "usedBytes")] = new StatMetadata(driveInfo.UsedBytes, driveInfo.DiskName, string.Format("Disk '{0}' Used Bytes", driveInfo.DiskName));
+                stats[driveStat(driveInfo.DiskName, "usage")] = driveInfo.Usage;
+                stats[driveStat(driveInfo.DiskName, "usedBytes")] = driveInfo.UsedBytes;
                 stats[driveStat(driveInfo.DiskName, "availableBytesFriendly")] = driveInfo.AvailableBytesFriendly;
                 stats[driveStat(driveInfo.DiskName, "totalBytesFriendly")] = driveInfo.TotalBytesFriendly;
                 stats[driveStat(driveInfo.DiskName, "usedBytesFriendly")] = driveInfo.UsedBytesFriendly;
@@ -164,8 +164,8 @@ namespace EventStore.Core.Services.Monitoring
                 var meminfo = ShellExecutor.GetOutput("free", "-b");
                 var meminfolines = meminfo.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
                 var ourline = meminfolines[1];
-                var Spaces = new Regex(@"[\s\t]+", RegexOptions.Compiled);
-                var trimmedLine = Spaces.Replace(ourline, " ");
+                var spaces = new Regex(@"[\s\t]+", RegexOptions.Compiled);
+                var trimmedLine = spaces.Replace(ourline, " ");
                 var freeRamStr = trimmedLine.Split(' ')[3];
                 return long.Parse(freeRamStr);
             }
