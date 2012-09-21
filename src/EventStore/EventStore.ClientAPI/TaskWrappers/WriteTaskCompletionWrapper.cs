@@ -48,7 +48,7 @@ namespace EventStore.ClientAPI.Commands
         public TcpPackage SentPackage { get; set; }
         public int Attempt { get; private set; }
 
-        private ClientMessageDto.WriteEventsCompleted _resultDto;
+        private ClientMessages.WriteEventsCompleted _resultDto;
 
         public bool UpdateForNextAttempt()
         {
@@ -74,7 +74,7 @@ namespace EventStore.ClientAPI.Commands
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessageDto.WriteEventsCompleted>();
+                var dto = data.Deserialize<ClientMessages.WriteEventsCompleted>();
                 _resultDto = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)

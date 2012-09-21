@@ -48,7 +48,7 @@ namespace EventStore.ClientAPI.Commands
         public TcpPackage SentPackage { get; set; }
         public int Attempt { get; private set; }
 
-        private ClientMessageDto.DeleteStreamCompleted _resultDto;
+        private ClientMessages.DeleteStreamCompleted _resultDto;
 
         public bool UpdateForNextAttempt()
         {
@@ -74,7 +74,7 @@ namespace EventStore.ClientAPI.Commands
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessageDto.DeleteStreamCompleted>();
+                var dto = data.Deserialize<ClientMessages.DeleteStreamCompleted>();
                 _resultDto = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)

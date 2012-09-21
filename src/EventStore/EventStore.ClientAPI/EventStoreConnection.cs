@@ -162,7 +162,7 @@ namespace EventStore.ClientAPI
         {
             var correlationId = Guid.NewGuid();
 
-            var dto = new ClientMessageDto.ReadEventsFromBeginning(correlationId, stream, start, count);
+            var dto = new ClientMessages.ReadEventsFromBeginning(correlationId, stream, start, count);
 
             var package = new TcpPackage(TcpCommand.ReadEventsFromBeginning, correlationId, dto.Serialize());
 
@@ -184,12 +184,12 @@ namespace EventStore.ClientAPI
         {
             var correlationId = Guid.NewGuid();
 
-            var eventDtos = events.Select(x => new ClientMessageDto.Event(x.EventId,
+            var eventDtos = events.Select(x => new ClientMessages.Event(x.EventId,
                                                                           x.Type,
                                                                           x.Data,
                                                                           x.Metadata)).ToArray();
 
-            var dto = new ClientMessageDto.WriteEvents(correlationId,
+            var dto = new ClientMessages.WriteEvents(correlationId,
                                                        stream,
                                                        expectedVersion,
                                                        eventDtos);
@@ -227,7 +227,7 @@ namespace EventStore.ClientAPI
         {
             var correlationId = Guid.NewGuid();
 
-            var dto = new ClientMessageDto.CreateStream(correlationId,
+            var dto = new ClientMessages.CreateStream(correlationId,
                                                         stream,
                                                         metadata);
 
@@ -249,7 +249,7 @@ namespace EventStore.ClientAPI
         public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion)
         {
             var correlationId = Guid.NewGuid();
-            var dto = new ClientMessageDto.DeleteStream(correlationId, stream, expectedVersion);
+            var dto = new ClientMessages.DeleteStream(correlationId, stream, expectedVersion);
 
             var package = new TcpPackage(TcpCommand.DeleteStream, correlationId, dto.Serialize());
             var taskCompletionSource = new TaskCompletionSource<DeleteResult>();

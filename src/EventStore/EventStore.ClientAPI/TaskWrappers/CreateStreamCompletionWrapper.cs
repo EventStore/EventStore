@@ -60,7 +60,7 @@ namespace EventStore.ClientAPI.Commands
         public TcpPackage SentPackage { get; set; }
         public int Attempt { get; private set; }
 
-        private ClientMessageDto.CreateStreamCompleted _resultDto;
+        private ClientMessages.CreateStreamCompleted _resultDto;
 
         public bool UpdateForNextAttempt()
         {
@@ -86,7 +86,7 @@ namespace EventStore.ClientAPI.Commands
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessageDto.CreateStreamCompleted>();
+                var dto = data.Deserialize<ClientMessages.CreateStreamCompleted>();
                 _resultDto = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)

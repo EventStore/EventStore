@@ -33,7 +33,7 @@ using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
 
 namespace EventStore.ClientAPI.Messages
 {
-    public static class ClientMessageDto
+    public static class ClientMessages
     {
         #region TCP DTO
         [ProtoContract]

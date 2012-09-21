@@ -87,7 +87,7 @@
     <Compile Include="Common\ConcurrentCollections\ConcurrentQueue.cs" />
     <Compile Include="Common\ConcurrentCollections\ConcurrentStack.cs" />
     <Compile Include="Configure.cs" />
-    <Compile Include="Exceptions\ConnectionClosingException.cs" />
+    <Compile Include="ConnectionClosingException.cs" />
     <Compile Include="TaskWrappers\DeleteTaskCompletionWrapper.cs" />
     <Compile Include="TaskWrappers\ITaskCompletionWrapper.cs" />
     <Compile Include="TaskWrappers\ReadFromBeginningTaskCompletionWrapper.cs" />
@@ -95,7 +95,7 @@
     <Compile Include="Data\Event.cs" />
     <Compile Include="Data\EventRecord.cs" />
     <Compile Include="Data\ExpectedVersion.cs" />
-    <Compile Include="Exceptions\FailedConnectionException.cs" />
+    <Compile Include="FailedConnectionException.cs" />
     <Compile Include="Defines\OperationErrorCode.cs" />
     <Compile Include="Defines\ReadResult.cs" />
     <Compile Include="Defines\TcpCommand.cs" />
@@ -105,7 +105,7 @@
     </Compile>
     <Compile Include="Defines\PrepareFlags.cs" />
     <Compile Include="Transport.Tcp\ProtobufExtensions.cs" />
-    <Compile Include="Messages\ClientMessageDto.cs" />
+    <Compile Include="ClientMessages.cs" />
     <Compile Include="Transport.Tcp\TcpConfiguratin.cs" />
     <Compile Include="Transport.Tcp\TcpConnection.cs" />
     <Compile Include="Transport.Tcp\LengthPrefixFramer.cs" />
@@ -121,11 +121,13 @@
     <Compile Include="Transport.Tcp\ITcpConnection.cs" />
     <Compile Include="Transport.Tcp\SocketArgsPool.cs" />
     <Compile Include="Transport.Tcp\TcpConnectionBase.cs" />
-    <Compile Include="Exceptions\UnknownPackageReturned.cs" />
+    <Compile Include="UnknownPackageReturned.cs" />
     <Compile Include="Usage.cs" />
     <Compile Include="TaskWrappers\WriteTaskCompletionWrapper.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Exceptions\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

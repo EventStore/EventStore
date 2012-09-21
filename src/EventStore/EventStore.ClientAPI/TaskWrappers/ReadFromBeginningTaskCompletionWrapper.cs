@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI.Commands
         public TcpPackage SentPackage { get; set; }
         public int Attempt { get; private set; }
 
-        private ClientMessageDto.ReadEventsFromBeginningCompleted _resultDto;
+        private ClientMessages.ReadEventsFromBeginningCompleted _resultDto;
 
         public bool UpdateForNextAttempt()
         {
@@ -65,7 +65,7 @@ namespace EventStore.ClientAPI.Commands
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessageDto.ReadEventsFromBeginningCompleted>();
+                var dto = data.Deserialize<ClientMessages.ReadEventsFromBeginningCompleted>();
                 _resultDto = dto;
 
                 switch ((RangeReadResult)dto.Result)
