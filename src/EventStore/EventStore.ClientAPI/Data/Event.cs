@@ -29,6 +29,7 @@ using System;
 
 namespace EventStore.ClientAPI.Data
 {
+    //TODO GFY this should not be public
     public class Event
     {
         public static readonly byte[] Empty = new byte[0];

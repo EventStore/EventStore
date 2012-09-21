@@ -25,7 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using System;
+
 using EventStore.ClientAPI.Data;
 
 namespace EventStore.ClientAPI
@@ -40,13 +40,5 @@ namespace EventStore.ClientAPI
             Events = events;
             Name = name;
         }
-    }
-
-    public interface Event
-    {
-        Guid EventId { get; }
-        string Type { get; }
-        byte[] Data { get; }
-        byte[] Metadata { get; }
     }
 }

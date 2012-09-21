@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,35 +24,24 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//  
 
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Messages;
-using EventStore.ClientAPI.Services.Transport.Tcp;
 using EventStore.ClientAPI.Tcp;
+using EventStore.ClientAPI.Transport.Tcp;
 
-namespace EventStore.ClientAPI.Commands
+namespace EventStore.ClientAPI.TaskWrappers
 {
-    public class CreateStreamResult
-    {
-        public bool IsSuccessful { get; private set; }
-        public OperationErrorCode LastErrorCode { get; private set; }
-
-        public CreateStreamResult(OperationErrorCode operationErrorCode)
-        {
-            IsSuccessful = operationErrorCode == OperationErrorCode.Success;
-            LastErrorCode = operationErrorCode;
-        }
-    }
-
-    public class CreateStreamCompletionWrapper : ITaskCompletionWrapper
+    class DeleteTaskCompletionWrapper : ITaskCompletionWrapper
     {
         private const int MaxRetriesCount = 10;
 
-        private readonly TaskCompletionSource<CreateStreamResult> _completion;
+        private readonly TaskCompletionSource<DeleteResult> _completion;
 
-        public CreateStreamCompletionWrapper(TaskCompletionSource<CreateStreamResult> completion)
+        public DeleteTaskCompletionWrapper(TaskCompletionSource<DeleteResult> completion)
         {
             _completion = completion;
         }
@@ -60,7 +49,7 @@ namespace EventStore.ClientAPI.Commands
         public TcpPackage SentPackage { get; set; }
         public int Attempt { get; private set; }
 
-        private ClientMessageDto.CreateStreamCompleted _resultDto;
+        private ClientMessages.DeleteStreamCompleted _resultDto;
 
         public bool UpdateForNextAttempt()
         {
@@ -78,15 +67,15 @@ namespace EventStore.ClientAPI.Commands
         {
             try
             {
-                if (package.Command != TcpCommand.CreateStreamCompleted)
+                if (package.Command != TcpCommand.DeleteStreamCompleted)
                 {
-                    return new ProcessResult(ProcessResultStatus.NotifyError, 
-                                             new Exception(string.Format("Not expected command, expected {0}, received {1}",  
-                                                                         TcpCommand.CreateStreamCompleted, package.Command)));
+                    return new ProcessResult(ProcessResultStatus.NotifyError,
+                                             new Exception(string.Format("Not expected command, expected {0}, received {1}",
+                                                                         TcpCommand.DeleteStreamCompleted, package.Command)));
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessageDto.CreateStreamCompleted>();
+                var dto = data.Deserialize<ClientMessages.DeleteStreamCompleted>();
                 _resultDto = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)
@@ -103,14 +92,14 @@ namespace EventStore.ClientAPI.Commands
                         }
                         else
                         {
-                            return new ProcessResult(ProcessResultStatus.NotifyError, 
-                                                     new Exception(string.Format("Max retries count reached, last error: {0}", 
+                            return new ProcessResult(ProcessResultStatus.NotifyError,
+                                                     new Exception(string.Format("Max retries count reached, last error: {0}",
                                                                   (OperationErrorCode)dto.ErrorCode)));
                         }
                     case OperationErrorCode.WrongExpectedVersion:
                     case OperationErrorCode.StreamDeleted:
                     case OperationErrorCode.InvalidTransaction:
-                        return new ProcessResult(ProcessResultStatus.NotifyError, 
+                        return new ProcessResult(ProcessResultStatus.NotifyError,
                                                  new Exception(string.Format("{0}", (OperationErrorCode)dto.ErrorCode)));
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -122,21 +111,22 @@ namespace EventStore.ClientAPI.Commands
             }
         }
 
-        public void Fail(Exception exception)
-        {
-            _completion.SetException(exception);
-        }
-
         public void Complete()
         {
             if (_resultDto != null)
             {
-                _completion.SetResult(new CreateStreamResult((OperationErrorCode)_resultDto.ErrorCode));
+                _completion.SetResult(new DeleteResult((OperationErrorCode)_resultDto.ErrorCode));
             }
             else
             {
                 _completion.SetException(new Exception("Failed to set empty result"));
             }
+        }
+
+        public void Fail(Exception exception)
+        {
+            _completion.SetException(exception);
+
         }
     }
 }

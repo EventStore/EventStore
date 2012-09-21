@@ -28,19 +28,18 @@
 
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Messages;
-using EventStore.ClientAPI.Services.Transport.Tcp;
 using EventStore.ClientAPI.Tcp;
+using EventStore.ClientAPI.Transport.Tcp;
 
-namespace EventStore.ClientAPI.Commands
+namespace EventStore.ClientAPI.TaskWrappers
 {
-    class WriteTaskCompletionWrapper : ITaskCompletionWrapper
+    class ReadFromBeginningTaskCompletionWrapper : ITaskCompletionWrapper
     {
-        private const int MaxRetriesCount = 10;
+        private readonly TaskCompletionSource<ReadResult> _completion;
 
-        private readonly TaskCompletionSource<WriteResult> _completion;
-
-        public WriteTaskCompletionWrapper(TaskCompletionSource<WriteResult> completion)
+        public ReadFromBeginningTaskCompletionWrapper(TaskCompletionSource<ReadResult> completion)
         {
             _completion = completion;
         }
@@ -48,58 +47,36 @@ namespace EventStore.ClientAPI.Commands
         public TcpPackage SentPackage { get; set; }
         public int Attempt { get; private set; }
 
-        private ClientMessageDto.WriteEventsCompleted _resultDto;
+        private ClientMessages.ReadEventsFromBeginningCompleted _resultDto;
 
         public bool UpdateForNextAttempt()
         {
-            _resultDto = null;
-
-            var correlationId = Guid.NewGuid();
-            Attempt += 1;
-            var package = new TcpPackage(SentPackage.Command, correlationId, SentPackage.Data);
-            SentPackage = package;
-
-            return true;
+            return false;
         }
 
         public ProcessResult Process(TcpPackage package)
         {
             try
             {
-                if (package.Command != TcpCommand.WriteEventsCompleted)
+                if (package.Command != TcpCommand.ReadEventsFromBeginningCompleted)
                 {
                     return new ProcessResult(ProcessResultStatus.NotifyError, 
                                              new Exception(string.Format("Not expected command, expected {0}, received {1}",  
-                                                                         TcpCommand.WriteEventsCompleted, package.Command)));
+                                                                         TcpCommand.ReadEventsFromBeginningCompleted, package.Command)));
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessageDto.WriteEventsCompleted>();
+                var dto = data.Deserialize<ClientMessages.ReadEventsFromBeginningCompleted>();
                 _resultDto = dto;
 
-                switch ((OperationErrorCode)dto.ErrorCode)
+                switch ((RangeReadResult)dto.Result)
                 {
-                    case OperationErrorCode.Success:
+                    case RangeReadResult.Success:
                         return new ProcessResult(ProcessResultStatus.Success);
-
-                    case OperationErrorCode.PrepareTimeout:
-                    case OperationErrorCode.CommitTimeout:
-                    case OperationErrorCode.ForwardTimeout:
-                        if (Attempt < MaxRetriesCount)
-                        {
-                            return new ProcessResult(ProcessResultStatus.Retry);
-                        }
-                        else
-                        {
-                            return new ProcessResult(ProcessResultStatus.NotifyError, 
-                                                     new Exception(string.Format("Max retries count reached, last error: {0}", 
-                                                                  (OperationErrorCode)dto.ErrorCode)));
-                        }
-                    case OperationErrorCode.WrongExpectedVersion:
-                    case OperationErrorCode.StreamDeleted:
-                    case OperationErrorCode.InvalidTransaction:
+                    case RangeReadResult.StreamDeleted:
+                    case RangeReadResult.NoStream:
                         return new ProcessResult(ProcessResultStatus.NotifyError, 
-                                                 new Exception(string.Format("{0}", (OperationErrorCode)dto.ErrorCode)));
+                                                 new Exception(string.Format("{0}", (RangeReadResult)dto.Result)));
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -119,7 +96,7 @@ namespace EventStore.ClientAPI.Commands
         {
             if (_resultDto != null)
             {
-                _completion.SetResult(new WriteResult((OperationErrorCode)_resultDto.ErrorCode));
+                _completion.SetResult(new ReadResult((RangeReadResult)_resultDto.Result, _resultDto.Events));
             }
             else
             {

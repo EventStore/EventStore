@@ -25,9 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-namespace EventStore.ClientAPI.Tcp
+namespace EventStore.ClientAPI.Transport.Tcp
 {
-    public static class TcpConfiguration
+    static class TcpConfiguration
     {
         public const int SocketCloseTimeoutMs = 500;
 

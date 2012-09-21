@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,55 +25,20 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-namespace EventStore.ClientAPI.Services.Transport.Tcp
+namespace EventStore.ClientAPI.Defines
 {
-    public enum TcpCommand: byte
+    public enum SingleReadResult
     {
-        HeartbeatRequestCommand = 0x01,
-        HeartbeatResponseCommand = 0x02,
-
-        Ping = 0x03,
-        Pong = 0x04,
-
-        PrepareAck = 0x05,
-        CommitAck = 0x06,
-
-        SubscribeReplica = 0x07,
-        LogBulk = 0x08,
-
-        SlaveAssignment = 0x09,
-        CloneAssignment = 0x0A,
-
-        // CLIENT COMMANDS
-        CreateStream = 0x80,
-        CreateStreamCompleted = 0x81,
-
-        WriteEvents = 0x82,
-        WriteEventsCompleted = 0x83,
-
-        TransactionStart = 0x84,
-        TransactionStartCompleted = 0x85,
-        TransactionWrite = 0x86,
-        TransactionWriteCompleted = 0x87,
-        TransactionCommit = 0x88,
-        TransactionCommitCompleted = 0x89,
-
-        DeleteStream = 0x8A,
-        DeleteStreamCompleted = 0x8B,
-
-        ReadEvent = 0xB0,
-        ReadEventCompleted = 0xB1,
-        ReadEventsFromBeginning = 0xB2,
-        ReadEventsFromBeginningCompleted = 0xB3,
-        ReadEventsFromEnd = 0xB4,
-        ReadEventsFromEndCompleted = 0xB5,
-
-        SubscribeToStream = 0xC0,
-        UnsubscribeFromStream = 0xC1,
-        SubscribeToAllStreams = 0xC2,
-        UnsubscribeFromAllStreams = 0xC3,
-        StreamEventAppeared = 0xC4,
-        SubscriptionDropped = 0xC5,
-        SubscriptionToAllDropped = 0xC6
+        Success,
+        NotFound,
+        NoStream,
+        StreamDeleted
     }
+
+    public enum RangeReadResult
+    {
+        Success,
+        NoStream,
+        StreamDeleted
+    }    
 }

@@ -114,6 +114,13 @@
     <Compile Include="Services\checkpoint_tag_by_tf_position.cs" />
     <Compile Include="Services\core_projection\when_receiving_a_committed_event_the_projection_with_partitioned_state_should.cs" />
     <Compile Include="Services\core_projection\when_receiving_committed_events_the_projection_with_partitioned_state_should.cs" />
+    <Compile Include="Services\heading_distribution_point\FakeProjectionSubscription.cs" />
+    <Compile Include="Services\heading_distribution_point\when_heading_distribution_point_has_been_created.cs" />
+    <Compile Include="Services\heading_distribution_point\when_starting_a_heading_distribution_point.cs" />
+    <Compile Include="Services\heading_distribution_point\when_the_heading_distribution_point_handles_an_event.cs" />
+    <Compile Include="Services\heading_distribution_point\when_the_heading_distribution_point_subscribes_a_projection.cs" />
+    <Compile Include="Services\heading_distribution_point\when_the_heading_distribution_point_unsubscribes_a_projection.cs" />
+    <Compile Include="Services\heading_distribution_point\when_the_heading_distribution_point_with_a_subscribed_projection_handles_an_event.cs" />
     <Compile Include="Services\mixed_checkpoint_tags.cs" />
     <Compile Include="Services\partition_state_cache\when_caching_a_parition_state.cs" />
     <Compile Include="Services\partition_state_cache\when_relocking_the_state_at_earlier_position.cs" />

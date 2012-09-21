@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,17 +24,17 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
-namespace EventStore.ClientAPI.Messages
+// 
+
+using EventStore.Core.Bus;
+using EventStore.Projections.Core.Messages;
+
+namespace EventStore.Projections.Core.Services.Processing
 {
-    public enum OperationErrorCode
+    public interface IProjectionSubscription : IHandle<ProjectionMessage.Projections.CommittedEventReceived>
     {
-        Success = 0,
-        PrepareTimeout,
-        CommitTimeout,
-        ForwardTimeout,
-        WrongExpectedVersion,
-        StreamDeleted,
-        InvalidTransaction
+        bool CanJoinAt(EventPosition firstAvailableTransactionFileEvent, CheckpointTag eventCheckpointTag);
+
+        CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventReceived committedEvent);
     }
 }

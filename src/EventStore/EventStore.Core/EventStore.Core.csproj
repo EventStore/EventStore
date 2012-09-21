@@ -103,6 +103,7 @@
     <Compile Include="Index\ITableIndex.cs" />
     <Compile Include="Index\HashListMemTable.cs" />
     <Compile Include="Index\MergeResult.cs" />
+    <Compile Include="Index\PossibleToHandleOutOfMemoryException.cs" />
     <Compile Include="Index\PTable.cs" />
     <Compile Include="Index\PTableHeader.cs" />
     <Compile Include="Index\SortedListExtensions.cs" />
@@ -170,7 +171,6 @@
     <Compile Include="Services\Monitoring\Stats\DiskIo.cs" />
     <Compile Include="Services\Monitoring\Utils\ShellExecutor.cs" />
     <Compile Include="Services\Monitoring\Utils\StatsCsvEncoder.cs" />
-    <Compile Include="DataStructures\QueueWithIndexer.cs" />
     <Compile Include="Services\Storage\ReaderIndex\DictionaryBasedCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IReadCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\ReadIndexStats.cs" />

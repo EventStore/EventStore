@@ -25,12 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Collections.Generic;
 
-namespace EventStore.ClientAPI.Tcp
+namespace EventStore.ClientAPI.Transport.Tcp
 {
-    public class LengthPrefixMessageFramer
+    class LengthPrefixMessageFramer
     {
         public const int HeaderLength = sizeof(Int32);
 

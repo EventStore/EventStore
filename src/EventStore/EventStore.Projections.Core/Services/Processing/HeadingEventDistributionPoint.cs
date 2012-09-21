@@ -25,24 +25,31 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class HeadingEventDistributionPoint
     {
-        private TransactionFileReaderEventDistributionPoint _headDistributionPoint;
+        private EventDistributionPoint _headDistributionPoint;
         private EventPosition _subscribeFromPosition = new EventPosition(long.MaxValue, long.MaxValue);
 
         private readonly Queue<ProjectionMessage.Projections.CommittedEventReceived> _lastMessages =
             new Queue<ProjectionMessage.Projections.CommittedEventReceived>();
 
         private readonly int _eventCacheSize;
-        private readonly Dictionary<Guid, ProjectionSubscription> _headSubscribers = new Dictionary<Guid, ProjectionSubscription>();
+
+        private readonly Dictionary<Guid, IProjectionSubscription> _headSubscribers =
+            new Dictionary<Guid, IProjectionSubscription>();
+
         private bool _headDistributionPointPaused;
         private Guid _distributionPointId;
+        private bool _started;
+        private EventPosition _lastEventPosition = new EventPosition(0, -1);
 
         public HeadingEventDistributionPoint(int eventCacheSize)
         {
@@ -51,10 +58,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public bool Handle(ProjectionMessage.Projections.CommittedEventReceived message)
         {
+            EnsureStarted();
             if (message.CorrelationId != _distributionPointId)
                 return false;
             if (message.Data == null)
-                return true; 
+                return true;
+            ValidateEventOrder(message);
+
             CacheRecentMessage(message);
             DistributeMessage(message);
             if (_headSubscribers.Count == 0 && !_headDistributionPointPaused)
@@ -65,21 +75,41 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        public void Start(Guid distributionPointId, TransactionFileReaderEventDistributionPoint transactionFileReaderEventDistributionPoint)
+        private void ValidateEventOrder(ProjectionMessage.Projections.CommittedEventReceived message)
         {
+            if (_lastEventPosition >= message.Position)
+                throw new InvalidOperationException(
+                    string.Format(
+                        "Invalid committed event order.  Last: '{0}' Received: '{1}'", _lastEventPosition,
+                        message.Position));
+            _lastEventPosition = message.Position;
+        }
+
+        public void Start(Guid distributionPointId, EventDistributionPoint eventDistributionPoint)
+        {
+            if (_started)
+                throw new InvalidOperationException("Already started");
             _distributionPointId = distributionPointId;
-            _headDistributionPoint = transactionFileReaderEventDistributionPoint;
+            _headDistributionPoint = eventDistributionPoint;
             //Guid.Empty means head distribution point
             _headDistributionPoint.Resume();
+            _started = true;
         }
 
         public void Stop()
         {
+            EnsureStarted();
             _headDistributionPoint = null;
+            _started = false;
         }
 
-        public bool TrySubscribe(Guid projectionId, ProjectionSubscription projectionSubscription, CheckpointTag fromCheckpointTag)
+        public bool TrySubscribe(
+            Guid projectionId, IProjectionSubscription projectionSubscription, CheckpointTag fromCheckpointTag)
         {
+            EnsureStarted();
+            if (_headSubscribers.ContainsKey(projectionId))
+                throw new InvalidOperationException(
+                    string.Format("Projection '{0}' has been already subscribed", projectionId));
             if (projectionSubscription.CanJoinAt(_subscribeFromPosition, fromCheckpointTag))
             {
                 DispatchRecentMessagesTo(projectionSubscription);
@@ -91,10 +121,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Unsubscribe(Guid projectionId)
         {
+            EnsureStarted();
+            if (!_headSubscribers.ContainsKey(projectionId))
+                throw new InvalidOperationException(
+                    string.Format("Projection '{0}' has not been subscribed", projectionId));
             _headSubscribers.Remove(projectionId);
         }
 
-        private void DispatchRecentMessagesTo(ProjectionSubscription subscription)
+        private void DispatchRecentMessagesTo(
+            IHandle<ProjectionMessage.Projections.CommittedEventReceived> subscription)
         {
             foreach (var m in _lastMessages)
                 subscription.Handle(m);
@@ -117,7 +152,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscribeFromPosition = lastAvailableCommittedevent.Position;
         }
 
-        private void AddSubscriber(Guid publishWithCorrelationId, ProjectionSubscription subscription)
+        private void AddSubscriber(Guid publishWithCorrelationId, IProjectionSubscription subscription)
         {
             _headSubscribers.Add(publishWithCorrelationId, subscription);
             if (_headDistributionPointPaused)
@@ -125,6 +160,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 _headDistributionPointPaused = false;
                 _headDistributionPoint.Resume();
             }
+        }
+
+        private void EnsureStarted()
+        {
+            if (!_started)
+                throw new InvalidOperationException("Not started");
         }
     }
 }

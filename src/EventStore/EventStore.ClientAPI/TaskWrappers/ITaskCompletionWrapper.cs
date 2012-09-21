@@ -25,12 +25,20 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-namespace EventStore.ClientAPI.Data
+
+using System;
+using EventStore.ClientAPI.Defines;
+
+namespace EventStore.ClientAPI.TaskWrappers
 {
-    public static class ExpectedVersion
+     interface ITaskCompletionWrapper
     {
-        public const int Any = -2;
-        public const int NoStream = -1;
-        public const int EmptyStream = 0;
+        TcpPackage SentPackage { get; set; }
+        int Attempt { get; }
+        bool UpdateForNextAttempt();
+
+        ProcessResult Process(TcpPackage package);
+        void Complete();
+        void Fail(Exception exception);
     }
 }

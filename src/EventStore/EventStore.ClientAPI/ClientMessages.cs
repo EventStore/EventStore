@@ -27,14 +27,13 @@
 //  
 using System;
 using EventStore.ClientAPI.Data;
-using EventStore.ClientAPI.Services.Storage.ReadIndex;
-using EventStore.ClientAPI.TransactionLog.LogRecords;
+using EventStore.ClientAPI.Defines;
 using ProtoBuf;
 using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
 
 namespace EventStore.ClientAPI.Messages
 {
-    public static class ClientMessageDto
+    static class ClientMessages
     {
         #region TCP DTO
         [ProtoContract]
@@ -664,16 +663,6 @@ namespace EventStore.ClientAPI.Messages
 
             public StreamEventAppeared()
             {
-            }
-
-            public StreamEventAppeared(Guid correlationId, int eventNumber, PrepareLogRecord @event)
-            {
-                CorrelationId = correlationId.ToByteArray();
-                EventStreamId = @event.EventStreamId;
-                EventNumber = eventNumber;
-                EventType = @event.EventType;
-                Data = @event.Data;
-                Metadata = @event.Metadata;
             }
         }
 

@@ -25,11 +25,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 
-namespace EventStore.ClientAPI.Services.Transport.Tcp
+namespace EventStore.ClientAPI.Defines
 {
-    public struct TcpPackage
+     struct TcpPackage
     {
         private static readonly byte[] EmptyArray = new byte[0];
 

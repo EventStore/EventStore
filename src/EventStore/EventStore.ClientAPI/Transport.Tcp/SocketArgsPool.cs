@@ -25,13 +25,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Net.Sockets;
 using System.Threading;
 
-namespace EventStore.ClientAPI.Tcp
+namespace EventStore.ClientAPI.Transport.Tcp
 {
-    internal class SocketArgsPool
+    class SocketArgsPool
     {
         private readonly string _name;
         private readonly Func<SocketAsyncEventArgs> _socketArgsCreator;

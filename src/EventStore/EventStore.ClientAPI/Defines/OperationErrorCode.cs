@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,11 +25,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-namespace EventStore.ClientAPI.TransactionLog.LogRecords
+namespace EventStore.ClientAPI.Defines
 {
-    public enum LogRecordType
+    public enum OperationErrorCode
     {
-        Prepare = 0,
-        Commit = 1
+        Success = 0,
+        PrepareTimeout,
+        CommitTimeout,
+        ForwardTimeout,
+        WrongExpectedVersion,
+        StreamDeleted,
+        InvalidTransaction
     }
 }

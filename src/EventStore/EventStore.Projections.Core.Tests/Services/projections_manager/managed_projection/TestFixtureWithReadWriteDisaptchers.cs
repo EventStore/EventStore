@@ -28,6 +28,7 @@
 
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
@@ -46,6 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             _readDispatcher;
 
         protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
+        protected WatchingConsumer _consumer;
 
         [SetUp]
         public void setup0()
@@ -58,6 +60,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
                     _bus, e => e.CorrelationId, e => e.CorrelationId);
+            _consumer = new WatchingConsumer();
+            _bus.Subscribe(_consumer);
         }
     }
 }

@@ -1,10 +1,10 @@
 // Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,21 +24,39 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
-using System;
-using EventStore.ClientAPI.Services.Transport.Tcp;
+using System.Collections.Generic;
+using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 
-namespace EventStore.ClientAPI.Commands
+namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
 {
-    public interface ITaskCompletionWrapper
+    class FakeProjectionSubscription : IProjectionSubscription
     {
-        TcpPackage SentPackage { get; set; }
-        int Attempt { get; }
-        bool UpdateForNextAttempt();
+        private readonly List<ProjectionMessage.Projections.CommittedEventReceived> _receivedEvents =
+            new List<ProjectionMessage.Projections.CommittedEventReceived>();
 
-        ProcessResult Process(TcpPackage package);
-        void Complete();
-        void Fail(Exception exception);
+        public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
+        {
+            _receivedEvents.Add(message);
+        }
+
+        public bool CanJoinAt(EventPosition firstAvailableTransactionFileEvent, CheckpointTag eventCheckpointTag)
+        {
+            return eventCheckpointTag.PreparePosition >= firstAvailableTransactionFileEvent.CommitPosition;
+        }
+
+        public CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventReceived committedEvent)
+        {
+            return CheckpointTag.FromStreamPosition(
+                committedEvent.PositionStreamId, committedEvent.EventSequenceNumber,
+                committedEvent.Position.PreparePosition);
+        }
+
+        public List<ProjectionMessage.Projections.CommittedEventReceived> ReceivedEvents
+        {
+            get { return _receivedEvents; }
+        }
     }
 }

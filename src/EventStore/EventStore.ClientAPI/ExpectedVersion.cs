@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,21 +25,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
-
-namespace EventStore.ClientAPI.Tcp
+namespace EventStore.ClientAPI
 {
-    interface ITcpConnection
+    public static class ExpectedVersion
     {
-        event Action<ITcpConnection, SocketError> ConnectionClosed;
-        IPEndPoint EffectiveEndPoint { get; }
-        int SendQueueSize { get; }
-        void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback);
-        void EnqueueSend(IEnumerable<ArraySegment<byte>> data);
-        void Close();
+        public const int Any = -2;
+        public const int NoStream = -1;
+        public const int EmptyStream = 0;
     }
 }
-        
