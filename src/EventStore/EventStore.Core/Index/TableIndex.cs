@@ -92,7 +92,27 @@ namespace EventStore.Core.Index
         {
             //NOT THREAD SAFE (assumes one thread)
             CreateIfDoesNotExist(_directory);
-            _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename), IsHashCollision, _maxTablesPerLevel);
+
+            try
+            {
+                _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename),
+                                              IsHashCollision,
+                                              _maxTablesPerLevel);
+                if (_indexMap.IsCorrupt(_directory))
+                    throw new CorruptIndexException("IndexMap is in unsafe state.");
+            }
+            catch (CorruptIndexException exc)
+            {
+                Log.ErrorException(exc, "ReadIndex was corrupted. Rebuilding from scratch...");
+                foreach (var filePath in Directory.EnumerateFiles(_directory))
+                {
+                    File.Delete(filePath);
+                }
+                _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename),
+                                              IsHashCollision,
+                                              _maxTablesPerLevel);
+            } 
+
             _prepareCheckpoint = _indexMap.PrepareCheckpoint;
             _commitCheckpoint.Write(_indexMap.CommitCheckpoint);
         }
