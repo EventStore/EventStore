@@ -37,7 +37,7 @@ using EventStore.ClientAPI.Tcp;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    public class TcpConnection : TcpConnectionBase, ITcpConnection
+    class TcpConnection : TcpConnectionBase, ITcpConnection
     {
         private const int BufferSize = 512;
 

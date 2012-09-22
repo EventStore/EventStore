@@ -32,7 +32,7 @@ using System.Net.Sockets;
 
 namespace EventStore.ClientAPI.Tcp
 {
-    public interface ITcpConnection
+    interface ITcpConnection
     {
         event Action<ITcpConnection, SocketError> ConnectionClosed;
         IPEndPoint EffectiveEndPoint { get; }

@@ -39,6 +39,7 @@ using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.TaskWrappers;
 using EventStore.ClientAPI.Tcp;
+using EventStore.ClientAPI.Transport.Tcp;
 using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
 using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
 
