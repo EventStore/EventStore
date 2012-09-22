@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.TransactionLog
             writer.Open();
             writer.Close();
 
-            var reader = new MultifileTransactionFileChaser(config);
+            var reader = new MultifileTransactionFileChaser(config, new InMemoryCheckpoint(0));
             reader.Open();
             LogRecord record;
             Assert.IsFalse(reader.TryReadNext(out record));
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var writer = new MultifileTransactionFileWriter(config);
             writer.Open();
 
-            var reader = new MultifileTransactionFileChaser(config);
+            var reader = new MultifileTransactionFileChaser(config, new InMemoryCheckpoint(0));
             reader.Open();
             LogRecord record;
             Assert.IsFalse(reader.TryReadNext(out record));
