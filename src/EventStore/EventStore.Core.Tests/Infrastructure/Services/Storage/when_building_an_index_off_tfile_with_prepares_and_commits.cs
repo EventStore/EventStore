@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             chaserchk.Write(writerchk.Read());
             chaserchk.Flush();
 
-            var tableIndex = new TableIndex(Path.Combine(PathName, "index"), () => new HashListMemTable(), new InMemoryCheckpoint(), 1000);
+            var tableIndex = new TableIndex(Path.Combine(PathName, "index"), () => new HashListMemTable(), 1000);
             _idx = new ReadIndex(new NoopPublisher(),
                                  pos => new MultifileTransactionFileChaser(config, new InMemoryCheckpoint(pos)),
                                  () => new MultifileTransactionFileReader(config, config.WriterCheckpoint),

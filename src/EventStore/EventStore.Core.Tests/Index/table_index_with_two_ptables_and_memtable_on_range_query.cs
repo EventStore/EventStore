@@ -45,31 +45,34 @@ namespace EventStore.Core.Tests.Index
         public void SetUp()
         {
             _indexDir = Path.Combine(Path.GetTempPath(), "idx-" + Guid.NewGuid().ToString());
-            _tableIndex = new TableIndex(_indexDir, () => new HashListMemTable(), new InMemoryCheckpoint(), maxSizeForMemory: 2, maxTablesPerLevel: 2);
+            _tableIndex = new TableIndex(_indexDir,
+                                         () => new HashListMemTable(),
+                                         maxSizeForMemory: 2,
+                                         maxTablesPerLevel: 2);
             _tableIndex.Initialize();
 
             // ptable level 2
-            _tableIndex.Add(0xDEAD, 0, 0xFF00); 
-            _tableIndex.Add(0xDEAD, 1, 0xFF01);
-            _tableIndex.Add(0xBEEF, 0, 0xFF00);
-            _tableIndex.Add(0xBEEF, 1, 0xFF01);
-            _tableIndex.Add(0xABBA, 0, 0xFF00);
-            _tableIndex.Add(0xABBA, 1, 0xFF01);
-            _tableIndex.Add(0xABBA, 0, 0xFF02);
-            _tableIndex.Add(0xABBA, 1, 0xFF03);
+            _tableIndex.Add(0, 0xDEAD, 0, 0xFF00); 
+            _tableIndex.Add(0, 0xDEAD, 1, 0xFF01);
+            _tableIndex.Add(0, 0xBEEF, 0, 0xFF00);
+            _tableIndex.Add(0, 0xBEEF, 1, 0xFF01);
+            _tableIndex.Add(0, 0xABBA, 0, 0xFF00);
+            _tableIndex.Add(0, 0xABBA, 1, 0xFF01);
+            _tableIndex.Add(0, 0xABBA, 0, 0xFF02);
+            _tableIndex.Add(0, 0xABBA, 1, 0xFF03);
 
             // ptable level 1
-            _tableIndex.Add(0xADA, 0, 0xFF00);
-            _tableIndex.Add(0xCEED, 10, 0xFFF1);
-            _tableIndex.Add(0xBABA, 0, 0xFF00);
-            _tableIndex.Add(0xDEAD, 0, 0xFF10);
+            _tableIndex.Add(0, 0xADA, 0, 0xFF00);
+            _tableIndex.Add(0, 0xCEED, 10, 0xFFF1);
+            _tableIndex.Add(0, 0xBABA, 0, 0xFF00);
+            _tableIndex.Add(0, 0xDEAD, 0, 0xFF10);
 
             // ptable level 0
-            _tableIndex.Add(0xBABA, 1, 0xFF01);
-            _tableIndex.Add(0xDEAD, 1, 0xFF11);
+            _tableIndex.Add(0, 0xBABA, 1, 0xFF01);
+            _tableIndex.Add(0, 0xDEAD, 1, 0xFF11);
 
             // memtable
-            _tableIndex.Add(0xADA, 0, 0xFF01);
+            _tableIndex.Add(0, 0xADA, 0, 0xFF01);
 
             Thread.Sleep(500);
         }

@@ -107,11 +107,12 @@ namespace EventStore.Core.Index
                 var s = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, 16, FileOptions.RandomAccess);
                 _streams.Enqueue(s);
             }
+
             try
             {
                 _midpoints = PopulateCache(depth);
             }
-            catch(PossibleToHandleOutOfMemoryException ex)
+            catch (PossibleToHandleOutOfMemoryException)
             {
                 Log.Info("Was unable to create midpoints for ptable. Performance hit possible OOM Exception.");
             }
@@ -171,7 +172,7 @@ namespace EventStore.Core.Index
                     {
                         midpoints = new Midpoint[Count];
                     }
-                    catch (OutOfMemoryException oom)
+                    catch (OutOfMemoryException)
                     {
                         throw new PossibleToHandleOutOfMemoryException();
                     }
@@ -183,7 +184,7 @@ namespace EventStore.Core.Index
                     {
                         midpoints = new Midpoint[1 + (Count + segmentSize - 1)/segmentSize];
                     }
-                    catch(OutOfMemoryException oom)
+                    catch(OutOfMemoryException)
                     {
                         throw new PossibleToHandleOutOfMemoryException();
                     }

@@ -82,7 +82,6 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
 
             TableIndex = new TableIndex(Path.Combine(PathName, "index"),
                                         () => new HashListMemTable(),
-                                        new InMemoryCheckpoint(),
                                         maxSizeForMemory: _maxEntriesInMemTable);
             TableIndex.Initialize();
 

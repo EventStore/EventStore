@@ -25,21 +25,19 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
 using System.Collections.Generic;
-using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Index
 {
     public interface ITableIndex
     {
+        long CommitCheckpoint { get; }
         long PrepareCheckpoint { get; }
-        ICheckpoint CommitCheckpoint { get; }
 
         void Initialize();
         void ClearAll(bool removeFiles = true);
 
-        void Add(uint stream, int version, long position);
+        void Add(long commitPos, uint stream, int version, long position);
         
         bool TryGetOneValue(uint stream, int version, out long position);
         bool TryGetLatestEntry(uint stream, out IndexEntry entry);

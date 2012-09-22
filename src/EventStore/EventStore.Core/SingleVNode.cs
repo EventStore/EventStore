@@ -90,7 +90,6 @@ namespace EventStore.Core
             var indexPath = Path.Combine(db.Config.Path, "index");
             var tableIndex = new TableIndex(indexPath,
                                             () => new HashListMemTable(),
-                                            new InMemoryCheckpoint(),
                                             maxSizeForMemory: 1000000,
                                             maxTablesPerLevel: 2);
 

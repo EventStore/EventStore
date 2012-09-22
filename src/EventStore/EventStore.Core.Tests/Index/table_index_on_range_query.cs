@@ -44,24 +44,24 @@ namespace EventStore.Core.Tests.Index
         public void SetUp()
         {
             _indexDir = Path.Combine(Path.GetTempPath(), "idx-" + Guid.NewGuid().ToString());
-            _tableIndex = new TableIndex(_indexDir, () => new HashListMemTable(), new InMemoryCheckpoint(), maxSizeForMemory: 2000);
+            _tableIndex = new TableIndex(_indexDir, () => new HashListMemTable(), maxSizeForMemory: 2000);
             _tableIndex.Initialize();
 
-            _tableIndex.Add(0xDEAD, 0, 0xFF00);
-            _tableIndex.Add(0xDEAD, 1, 0xFF01); 
-
-            _tableIndex.Add(0xBEEF, 0, 0xFF00);
-            _tableIndex.Add(0xBEEF, 1, 0xFF01); 
-
-            _tableIndex.Add(0xABBA, 0, 0xFF00);
-            _tableIndex.Add(0xABBA, 1, 0xFF01); 
-            _tableIndex.Add(0xABBA, 2, 0xFF02);
-            _tableIndex.Add(0xABBA, 3, 0xFF03); 
-
-            _tableIndex.Add(0xDEAD, 0, 0xFF10);
-            _tableIndex.Add(0xDEAD, 1, 0xFF11); 
-
-            _tableIndex.Add(0xADA, 0, 0xFF00);
+            _tableIndex.Add(0, 0xDEAD, 0, 0xFF00);
+            _tableIndex.Add(0, 0xDEAD, 1, 0xFF01); 
+                            
+            _tableIndex.Add(0, 0xBEEF, 0, 0xFF00);
+            _tableIndex.Add(0, 0xBEEF, 1, 0xFF01); 
+                             
+            _tableIndex.Add(0, 0xABBA, 0, 0xFF00);
+            _tableIndex.Add(0, 0xABBA, 1, 0xFF01); 
+            _tableIndex.Add(0, 0xABBA, 2, 0xFF02);
+            _tableIndex.Add(0, 0xABBA, 3, 0xFF03); 
+                             
+            _tableIndex.Add(0, 0xDEAD, 0, 0xFF10);
+            _tableIndex.Add(0, 0xDEAD, 1, 0xFF11); 
+                             
+            _tableIndex.Add(0, 0xADA, 0, 0xFF00);
         }
 
         [Test]

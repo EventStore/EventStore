@@ -1,6 +1,6 @@
 using System;
 
-namespace EventStore.Core.Index
+namespace EventStore.Core.Exceptions
 {
     internal class PossibleToHandleOutOfMemoryException : OutOfMemoryException
     {

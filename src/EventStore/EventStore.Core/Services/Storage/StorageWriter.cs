@@ -319,7 +319,6 @@ namespace EventStore.Core.Services.Storage
                     case CommitDecision.CorruptedIdempotency:
                         //TODO AN add messages and error code for invalid idempotent request
                         throw new Exception("The request was partially committed and other part is different.");
-                        break;
                     case CommitDecision.InvalidTransaction:
                         message.Envelope.ReplyWith(new ReplicationMessage.InvalidTransaction(message.CorrelationId));
                         break;

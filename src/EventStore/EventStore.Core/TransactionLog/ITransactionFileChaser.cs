@@ -38,7 +38,6 @@ namespace EventStore.Core.TransactionLog
         RecordReadResult TryReadNext();
         bool TryReadNext(out LogRecord record);
 
-        void Dispose();
         void Close();
         void Flush();
     }

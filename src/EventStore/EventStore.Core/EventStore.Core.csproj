@@ -87,6 +87,7 @@
     <Compile Include="Exceptions\FileBeingDeletedException.cs" />
     <Compile Include="Exceptions\HashValidationException.cs" />
     <Compile Include="Exceptions\InvalidFileException.cs" />
+    <Compile Include="Exceptions\PossibleToHandleOutOfMemoryException.cs" />
     <Compile Include="Exceptions\PTableNotFoundException.cs" />
     <Compile Include="Exceptions\ReaderCheckpointHigherThanWriterException.cs" />
     <Compile Include="Exceptions\UnableToAcquireLockInReasonableTimeException.cs" />
@@ -103,7 +104,6 @@
     <Compile Include="Index\ITableIndex.cs" />
     <Compile Include="Index\HashListMemTable.cs" />
     <Compile Include="Index\MergeResult.cs" />
-    <Compile Include="Index\PossibleToHandleOutOfMemoryException.cs" />
     <Compile Include="Index\PTable.cs" />
     <Compile Include="Index\PTableHeader.cs" />
     <Compile Include="Index\SortedListExtensions.cs" />

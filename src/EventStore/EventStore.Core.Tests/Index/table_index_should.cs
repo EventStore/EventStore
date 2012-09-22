@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Index
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _tableIndex = new TableIndex(PathName, () => new HashListMemTable(), new InMemoryCheckpoint(), maxSizeForMemory: 2000);
+            _tableIndex = new TableIndex(PathName, () => new HashListMemTable(), maxSizeForMemory: 2000);
             _tableIndex.Initialize();
         }
 
@@ -71,15 +71,21 @@ namespace EventStore.Core.Tests.Index
         }
 
         [Test]
+        public void throw_argumentoutofrangeexception_on_adding_entry_with_negative_commit_position()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => _tableIndex.Add(-1, 0x0000, 0, 0));
+        }
+
+        [Test]
         public void throw_argumentoutofrangeexception_on_adding_entry_with_negative_version()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => _tableIndex.Add(0x0000, -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _tableIndex.Add(0, 0x0000, -1, 0));
         }
 
         [Test]
         public void throw_argumentoutofrangeexception_on_adding_entry_with_negative_position()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => _tableIndex.Add(0x0000, 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _tableIndex.Add(0, 0x0000, 0, -1));
         }
     }
 }

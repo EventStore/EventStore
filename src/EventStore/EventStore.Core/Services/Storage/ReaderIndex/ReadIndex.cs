@@ -161,7 +161,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         {
             _tableIndex.Initialize();
             _persistedPrepareCheckpoint = _tableIndex.PrepareCheckpoint;
-            _persistedCommitCheckpoint = _tableIndex.CommitCheckpoint.ReadNonFlushed();
+            _persistedCommitCheckpoint = _tableIndex.CommitCheckpoint;
 
             foreach (var rdr in _readers)
             {
@@ -204,8 +204,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public void Commit(CommitLogRecord commit)
         {
-            _tableIndex.CommitCheckpoint.Write(commit.LogPosition);
-
             bool first = true;
             int number = -1;
             uint streamHash = 0;
@@ -276,7 +274,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         }
                     }
 #endif
-                    _tableIndex.Add(streamHash, number, prepare.LogPosition);
+                    _tableIndex.Add(commit.LogPosition, streamHash, number, prepare.LogPosition);
                     _bus.Publish(new ReplicationMessage.EventCommited(commit.LogPosition, number, prepare));
                 }
             }
