@@ -41,7 +41,6 @@ using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
 
@@ -73,13 +72,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _failedReadCount;
 
         private readonly IPublisher _bus;
-        private readonly TFChunkDb _db;
+        private readonly Func<long, ITransactionFileChaser> _chaserFactory;
 #if __MonoCS__
         private readonly Common.ConcurrentCollections.ConcurrentStack<ITransactionFileReader> _readers = new Common.ConcurrentCollections.ConcurrentStack<ITransactionFileReader>();
 #else
         private readonly System.Collections.Concurrent.ConcurrentStack<ITransactionFileReader> _readers = new System.Collections.Concurrent.ConcurrentStack<ITransactionFileReader>();
 #endif
-        private readonly ICheckpoint _writerCheckpoint;
         private readonly ITableIndex _tableIndex;
         private readonly IHasher _hasher;
 
@@ -90,29 +88,26 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private int? _threadId;
 
         public ReadIndex(IPublisher bus,
-                         TFChunkDb db,
+                         Func<long, ITransactionFileChaser> chaserFactory,
                          Func<ITransactionFileReader> readerFactory,
                          int readerCount,
-                         ICheckpoint writerCheckpoint,
                          ITableIndex tableIndex,
                          IHasher hasher)
         {
             Ensure.NotNull(bus, "bus");
-            Ensure.NotNull(db, "db");
             Ensure.NotNull(readerFactory, "readerFactory");
+            Ensure.NotNull(chaserFactory, "chaserFactory");
             Ensure.Positive(readerCount, "readerCount");
-            Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(hasher, "hasher");
 
             _bus = bus;
-            _db = db;
+            _chaserFactory = chaserFactory;
             for (int i = 0; i < readerCount; ++i)
             {
                 _readers.Push(readerFactory());
             }
 
-            _writerCheckpoint = writerCheckpoint;
             _tableIndex = tableIndex;
             _hasher = hasher;
         }
@@ -144,7 +139,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             long pos = Math.Max(0, _persistedCommitCheckpoint);
             long processed = 0;
 
-            var chaser = new TFChunkChaser(_db, _writerCheckpoint, new InMemoryCheckpoint(pos));
+            var chaser = _chaserFactory(pos);
             RecordReadResult result;
             while ((result = chaser.TryReadNext()).Success)
             {
@@ -280,7 +275,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 yield break;
             }
 
-            var chaser = new TFChunkChaser(_db, _writerCheckpoint, new InMemoryCheckpoint(transactionBeginPos));
+            var chaser = _chaserFactory(transactionBeginPos);
             while (true)
             {
                 result = chaser.TryReadNext();
@@ -564,7 +559,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var count = 0;
             //var nextReadCommitPosition = fromCommitPosition;
 
-            var chaser = new TFChunkChaser(_db, _writerCheckpoint, new InMemoryCheckpoint(fromCommitPosition));
+            var chaser = _chaserFactory(fromCommitPosition);
             while (count < maxCount)
             {
                 var result = chaser.TryReadNext();
@@ -594,9 +589,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 
                 //nextReadCommitPosition = result.NewPosition; // likely prepare - but we will skip it
 
-                var commitChaser = new TFChunkChaser(_db,
-                                                     _writerCheckpoint,
-                                                     new InMemoryCheckpoint(commitLogRecord.TransactionPosition));
+                var commitChaser = _chaserFactory(commitLogRecord.TransactionPosition);
                 //long nextPreparePosition = commitLogRecord.TransactionPosition;
                 //long nextPrepareMustBeGreaterThan = nextPreparePosition;
                 long transactionPosition = commitLogRecord.TransactionPosition;
@@ -710,14 +703,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public string[] GetStreamIds()
         {
-            int batchSize = 100;
+            const int batchSize = 100;
             var allEvents = new List<EventRecord>();
             EventRecord[] eventsBatch;
 
             int from = 0;
             do
             {
-                eventsBatch = null;
                 var result = TryReadEventsForward("$streams", from, batchSize, out eventsBatch);
 
                 if (result != RangeReadResult.Success)

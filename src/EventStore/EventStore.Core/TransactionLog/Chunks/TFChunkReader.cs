@@ -91,12 +91,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 return chunk.TryReadRecordAt(chunkPos);
             }
-            catch (FileBeingDeletedException ex)
+            catch (FileBeingDeletedException)
             {
                 if(retries > 100) throw new InvalidOperationException("Been told the file was deleted > 100 times. Probably a problem in db");
                 return TryReadAtInternal(position, retries + 1);
             }
-
         }
     }
 }
