@@ -25,6 +25,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+//
+// This code is extended from Davy Landman
+// Originally released under MPL 1.1 http://landman-code.blogspot.com/2009/02/c-superfasthash-and-murmurhash2.html
+//
 using System;
 
 namespace EventStore.Core.Index.Hashes
