@@ -169,7 +169,6 @@
     <Compile Include="Services\Monitoring\Stats\DiskIo.cs" />
     <Compile Include="Services\Monitoring\Utils\ShellExecutor.cs" />
     <Compile Include="Services\Monitoring\Utils\StatsCsvEncoder.cs" />
-    <Compile Include="DataStructures\QueueWithIndexer.cs" />
     <Compile Include="Services\Storage\ReaderIndex\DictionaryBasedCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IReadCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\ReadIndexStats.cs" />
