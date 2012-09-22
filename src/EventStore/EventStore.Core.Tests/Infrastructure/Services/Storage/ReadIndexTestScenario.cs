@@ -1,5 +1,4 @@
-﻿/*
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -89,9 +88,9 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
 
             var reader = new MultifileTransactionFileReader(_dbConfig, _dbConfig.WriterCheckpoint);
             ReadIndex = new ReadIndex(new NoopPublisher(),
+                                      pos => new MultifileTransactionFileChaser(_dbConfig, new InMemoryCheckpoint(pos)), 
                                       () => reader,
                                       1,
-                                      _dbConfig.WriterCheckpoint,
                                       TableIndex,
                                       new ByLengthHasher());
             ReadIndex.Build();
@@ -211,4 +210,3 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         }
     }
 }
-*/

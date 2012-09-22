@@ -1,4 +1,4 @@
-/*// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -189,4 +189,4 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             Assert.AreEqual(_p2, records[1]);
         }
     }
-}*/
+}

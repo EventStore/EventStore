@@ -40,7 +40,6 @@ using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
 
@@ -172,31 +171,34 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             long pos = Math.Max(0, _persistedCommitCheckpoint);
             long processed = 0;
 
-            var chaser = _chaserFactory(pos);
-            RecordReadResult result;
-            while ((result = chaser.TryReadNext()).Success)
+            using (var chaser = _chaserFactory(pos))
             {
-                //Debug.WriteLine(result.LogRecord);
-
-                switch (result.LogRecord.RecordType)
+                chaser.Open();
+                RecordReadResult result;
+                while ((result = chaser.TryReadNext()).Success)
                 {
-                    case LogRecordType.Prepare:
-                    {
-                        //Prepare((PrepareLogRecord) result.LogRecord);
-                        break;
-                    }
-                    case LogRecordType.Commit:
-                    {
-                        Commit((CommitLogRecord) result.LogRecord);
-                        break;
-                    }
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                    //Debug.WriteLine(result.LogRecord);
 
-                processed += 1;
-                if (processed%100000 == 0)
-                    Log.Debug("ReadIndex Rebuilding: processed {0} records.", processed);
+                    switch (result.LogRecord.RecordType)
+                    {
+                        case LogRecordType.Prepare:
+                        {
+                            //Prepare((PrepareLogRecord) result.LogRecord);
+                            break;
+                        }
+                        case LogRecordType.Commit:
+                        {
+                            Commit((CommitLogRecord) result.LogRecord);
+                            break;
+                        }
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+
+                    processed += 1;
+                    if (processed%100000 == 0)
+                        Log.Debug("ReadIndex Rebuilding: processed {0} records.", processed);
+                }
             }
         }
 
@@ -306,21 +308,24 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 yield break;
             }
 
-            var chaser = _chaserFactory(transactionBeginPos);
-            while (true)
+            using (var chaser = _chaserFactory(transactionBeginPos))
             {
-                result = chaser.TryReadNext();
-                if (!result.Success)
-                    throw new InvalidOperationException("Couldn't read record which is supposed to be in file.");
-
-                var prepare = result.LogRecord as PrepareLogRecord;
-                if (prepare != null
-                    && prepare.TransactionPosition == transactionBeginPos
-                    && prepare.EventStreamId == transactionRecord.EventStreamId)
+                chaser.Open();
+                while (true)
                 {
-                    yield return prepare;
-                    if ((prepare.Flags & PrepareFlags.TransactionEnd) != 0)
-                        yield break;
+                    result = chaser.TryReadNext();
+                    if (!result.Success)
+                        throw new InvalidOperationException("Couldn't read record which is supposed to be in file.");
+
+                    var prepare = result.LogRecord as PrepareLogRecord;
+                    if (prepare != null
+                        && prepare.TransactionPosition == transactionBeginPos
+                        && prepare.EventStreamId == transactionRecord.EventStreamId)
+                    {
+                        yield return prepare;
+                        if ((prepare.Flags & PrepareFlags.TransactionEnd) != 0)
+                            yield break;
+                    }
                 }
             }
         }
@@ -592,102 +597,108 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var count = 0;
             //var nextReadCommitPosition = fromCommitPosition;
 
-            var chaser = _chaserFactory(fromCommitPosition);
-            while (count < maxCount)
+            using (var chaser = _chaserFactory(fromCommitPosition))
             {
-                var result = chaser.TryReadNext();
-                // skip until commit as we may start from just last know prepare position  
-                while (result.Success && result.LogRecord.RecordType != LogRecordType.Commit)
-                {
-                    result = chaser.TryReadNext();
-                }
-                if (!result.Success)
-                    break;
-
-                var commitLogRecord = (CommitLogRecord) result.LogRecord;
-//                if (commitLogRecord.Position < nextReadCommitPosition)
-//                {
-//                    throw new Exception(
-//                        string.Format("Commit record has been read at past position. First requested: {0} Read: {1}",
-//                                      nextReadCommitPosition,
-//                                      commitLogRecord.Position));
-//                }
-//                if (result.NewPosition <= commitLogRecord.Position)
-//                {
-//                    throw new Exception(
-//                        string.Format("Invalid new position has been returned. Record position: {0}. New position: {1}",
-//                                      commitLogRecord.Position,
-//                                      result.NewPosition));
-//                }
-                
-                //nextReadCommitPosition = result.NewPosition; // likely prepare - but we will skip it
-
-                var commitChaser = _chaserFactory(commitLogRecord.TransactionPosition);
-                //long nextPreparePosition = commitLogRecord.TransactionPosition;
-                //long nextPrepareMustBeGreaterThan = nextPreparePosition;
-                long transactionPosition = commitLogRecord.TransactionPosition;
-                int nextEventNumber = commitLogRecord.EventNumber;
-                
+                chaser.Open();
                 while (count < maxCount)
                 {
-//                    if (nextPreparePosition >= commitLogRecord.Position)
-//                    {
-//                        throw new Exception(
-//                            string.Format("Did not find the end of the transaction.  Commit: {0} Transaction: {1} current: {2}",
-//                                          commitLogRecord.Position,
-//                                          transactionPosition,
-//                                          nextPreparePosition));
-//                    }
-
-                    result = commitChaser.TryReadNext();
-                    if (!result.Success)
-                        throw new Exception(string.Format("Cannot read TF at position."));//" {0}", nextPreparePosition));
-                    
-                    //nextPreparePosition = result.NewPosition;
-                    if (result.LogRecord.RecordType != LogRecordType.Prepare)
-                        continue;
-                    
-                    var prepareRecord = (PrepareLogRecord)result.LogRecord;
-                    //if (prepareRecord.Position < nextPrepareMustBeGreaterThan)
-                    //    throw new Exception("TF order is incorrect");
-                    
-                    //nextPrepareMustBeGreaterThan = result.NewPosition;
-                    if (prepareRecord.TransactionPosition == transactionPosition)
+                    var result = chaser.TryReadNext();
+                    // skip until commit as we may start from just last know prepare position  
+                    while (result.Success && result.LogRecord.RecordType != LogRecordType.Commit)
                     {
-                        if (prepareRecord.LogPosition > afterPreparePosition) // AFTER means > 
-                        {
-                            if (commitLogRecord.Position < lastAddedCommit ||
-                                commitLogRecord.Position == lastAddedCommit && prepareRecord.Position <= lastAddedPrepare)
-                            {
-                                throw new Exception(string.Format(
-                                        "events were read in invalid order. Last event position was {0}/{1}.  " 
-                                        + "Attempt to add event with position: {2}/{3}",
-                                        lastAddedCommit,
-                                        lastAddedPrepare,
-                                        commitLogRecord.Position,
-                                        prepareRecord.Position));
-                            }
+                        result = chaser.TryReadNext();
+                    }
+                    if (!result.Success)
+                        break;
 
-                            lastAddedCommit = commitLogRecord.Position;
-                            lastAddedPrepare = prepareRecord.Position;
-                            var eventRecord = new EventRecord(nextEventNumber, prepareRecord);
-                            EventRecord linkToEvent = null;
-                            
-                            if (resolveLinks)
+                    var commitLogRecord = (CommitLogRecord)result.LogRecord;
+                    //                if (commitLogRecord.Position < nextReadCommitPosition)
+                    //                {
+                    //                    throw new Exception(
+                    //                        string.Format("Commit record has been read at past position. First requested: {0} Read: {1}",
+                    //                                      nextReadCommitPosition,
+                    //                                      commitLogRecord.Position));
+                    //                }
+                    //                if (result.NewPosition <= commitLogRecord.Position)
+                    //                {
+                    //                    throw new Exception(
+                    //                        string.Format("Invalid new position has been returned. Record position: {0}. New position: {1}",
+                    //                                      commitLogRecord.Position,
+                    //                                      result.NewPosition));
+                    //                }
+
+                    //nextReadCommitPosition = result.NewPosition; // likely prepare - but we will skip it
+
+                    using (var commitChaser = _chaserFactory(commitLogRecord.TransactionPosition))
+                    {
+                        commitChaser.Open();
+                        //long nextPreparePosition = commitLogRecord.TransactionPosition;
+                        //long nextPrepareMustBeGreaterThan = nextPreparePosition;
+                        long transactionPosition = commitLogRecord.TransactionPosition;
+                        int nextEventNumber = commitLogRecord.EventNumber;
+
+                        while (count < maxCount)
+                        {
+                            //                    if (nextPreparePosition >= commitLogRecord.Position)
+                            //                    {
+                            //                        throw new Exception(
+                            //                            string.Format("Did not find the end of the transaction.  Commit: {0} Transaction: {1} current: {2}",
+                            //                                          commitLogRecord.Position,
+                            //                                          transactionPosition,
+                            //                                          nextPreparePosition));
+                            //                    }
+
+                            result = commitChaser.TryReadNext();
+                            if (!result.Success)
+                                throw new Exception(string.Format("Cannot read TF at position."));//" {0}", nextPreparePosition));
+
+                            //nextPreparePosition = result.NewPosition;
+                            if (result.LogRecord.RecordType != LogRecordType.Prepare)
+                                continue;
+
+                            var prepareRecord = (PrepareLogRecord)result.LogRecord;
+                            //if (prepareRecord.Position < nextPrepareMustBeGreaterThan)
+                            //    throw new Exception("TF order is incorrect");
+
+                            //nextPrepareMustBeGreaterThan = result.NewPosition;
+                            if (prepareRecord.TransactionPosition == transactionPosition)
                             {
-                                var resolved = ResolveLinkToEvent(eventRecord);
-                                if (resolved != null)
+                                if (prepareRecord.LogPosition > afterPreparePosition) // AFTER means > 
                                 {
-                                    linkToEvent = eventRecord;
-                                    eventRecord = resolved;
+                                    if (commitLogRecord.Position < lastAddedCommit ||
+                                        commitLogRecord.Position == lastAddedCommit && prepareRecord.Position <= lastAddedPrepare)
+                                    {
+                                        throw new Exception(string.Format(
+                                                "events were read in invalid order. Last event position was {0}/{1}.  "
+                                                + "Attempt to add event with position: {2}/{3}",
+                                                lastAddedCommit,
+                                                lastAddedPrepare,
+                                                commitLogRecord.Position,
+                                                prepareRecord.Position));
+                                    }
+
+                                    lastAddedCommit = commitLogRecord.Position;
+                                    lastAddedPrepare = prepareRecord.Position;
+                                    var eventRecord = new EventRecord(nextEventNumber, prepareRecord);
+                                    EventRecord linkToEvent = null;
+
+                                    if (resolveLinks)
+                                    {
+                                        var resolved = ResolveLinkToEvent(eventRecord);
+                                        if (resolved != null)
+                                        {
+                                            linkToEvent = eventRecord;
+                                            eventRecord = resolved;
+                                        }
+                                    }
+                                    records.Add(new ResolvedEventRecord(eventRecord, linkToEvent, commitLogRecord.Position));
+                                    count++;
                                 }
+                                nextEventNumber++;
+                                if ((prepareRecord.Flags & PrepareFlags.TransactionEnd) != 0)
+                                    break;
                             }
-                            records.Add(new ResolvedEventRecord(eventRecord, linkToEvent, commitLogRecord.Position));
-                            count++;
                         }
-                        nextEventNumber++;
-                        if ((prepareRecord.Flags & PrepareFlags.TransactionEnd) != 0)
-                            break;
                     }
                 }
             }
