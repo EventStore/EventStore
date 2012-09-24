@@ -36,6 +36,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _bus = bus;
             _awaitingCommit = commitCount;
             _awaitingPrepare = prepareCount;
+            _publishEnvelope = new PublishEnvelope(bus);
         }
 
 
