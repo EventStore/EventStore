@@ -27,7 +27,6 @@
 //  
 using EventStore.ClientAPI.Data;
 using EventStore.ClientAPI.Defines;
-using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
 {

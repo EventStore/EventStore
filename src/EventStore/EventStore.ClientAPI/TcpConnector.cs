@@ -29,16 +29,14 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Defines;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Tcp;
 using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
 
 namespace EventStore.ClientAPI
 {
-     class TcpConnector
+    internal class TcpConnector
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnector>();
 

@@ -29,20 +29,17 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Commands;
-using EventStore.ClientAPI.Data;
+using EventStore.ClientAPI.Defines;
 
 namespace EventStore.ClientAPI
 {
     public static class EventStore
     {
-        private static EventStoreConnection _connection;
         private static string _name;
+        private static EventStoreConnection _connection;
 
         public static void Configure(Configure args)
         {
-            //set connection etc fluent API
-
             _name = args._name;
             _connection = new EventStoreConnection(new IPEndPoint(args._address, args._port));
         }
@@ -111,6 +108,9 @@ namespace EventStore.ClientAPI
             //will get call backs to handler
         }
 
-        
+        public static void Close()
+        {
+            _connection.Close();
+        }
     }
 }

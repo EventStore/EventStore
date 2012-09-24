@@ -27,20 +27,26 @@
 //  
 
 using System;
-using EventStore.ClientAPI.Commands;
-using EventStore.ClientAPI.Defines;
+using System.Runtime.Serialization;
 
-namespace EventStore.ClientAPI.TaskWrappers
+namespace EventStore.ClientAPI.Exceptions
 {
-    internal interface ITaskCompletionWrapper
+    internal class UnknownPackageException : Exception
     {
-        Guid CorrelationId { get; }
-        void SetRetryId(Guid correlationId);
+        public UnknownPackageException()
+        {
+        }
 
-        TcpPackage CreateNetworkPackage();
-        ProcessResult Process(TcpPackage package);
+        public UnknownPackageException(string message) : base(message)
+        {
+        }
 
-        void Complete();
-        void Fail(Exception exception);
+        public UnknownPackageException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected UnknownPackageException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
     }
 }

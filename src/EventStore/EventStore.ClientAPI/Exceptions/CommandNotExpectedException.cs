@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -27,20 +27,15 @@
 //  
 
 using System;
-using EventStore.ClientAPI.Commands;
-using EventStore.ClientAPI.Defines;
 
-namespace EventStore.ClientAPI.TaskWrappers
+namespace EventStore.ClientAPI.Exceptions
 {
-    internal interface ITaskCompletionWrapper
+    public class CommandNotExpectedException : Exception
     {
-        Guid CorrelationId { get; }
-        void SetRetryId(Guid correlationId);
-
-        TcpPackage CreateNetworkPackage();
-        ProcessResult Process(TcpPackage package);
-
-        void Complete();
-        void Fail(Exception exception);
+        public CommandNotExpectedException(string expected, string actual)
+            : base(string.Format("Expected : {0}. Actual : {1}.", expected, actual))
+        {
+            
+        }
     }
 }

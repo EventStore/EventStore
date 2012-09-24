@@ -28,50 +28,58 @@
 
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Commands;
 using EventStore.ClientAPI.Defines;
-using EventStore.ClientAPI.Messages;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Tcp;
 
-namespace EventStore.ClientAPI.Commands
+namespace EventStore.ClientAPI.TaskWrappers
 {
-    public class CreateStreamResult
+    internal class CreateStreamCompletionWrapper : ITaskCompletionWrapper
     {
-        public bool IsSuccessful { get; private set; }
-        public OperationErrorCode LastErrorCode { get; private set; }
-
-        public CreateStreamResult(OperationErrorCode operationErrorCode)
-        {
-            IsSuccessful = operationErrorCode == OperationErrorCode.Success;
-            LastErrorCode = operationErrorCode;
-        }
-    }
-
-    class CreateStreamCompletionWrapper : ITaskCompletionWrapper
-    {
-        private const int MaxRetriesCount = 10;
-
         private readonly TaskCompletionSource<CreateStreamResult> _completion;
+        private ClientMessages.CreateStreamCompleted _result;
 
-        public CreateStreamCompletionWrapper(TaskCompletionSource<CreateStreamResult> completion)
+        private Guid _correlationId;
+        private readonly object _corrIdLock = new object();
+
+        private readonly string _stream;
+        private readonly byte[] _metadata;
+
+        public Guid CorrelationId
+        {
+            get
+            {
+                lock (_corrIdLock)
+                    return _correlationId;
+            }
+        }
+
+        public CreateStreamCompletionWrapper(TaskCompletionSource<CreateStreamResult> completion,
+                                             Guid correlationId,
+                                             string stream,
+                                             byte[] metadata)
         {
             _completion = completion;
+
+            _correlationId = correlationId;
+            _stream = stream;
+            _metadata = metadata;
         }
 
-        public TcpPackage SentPackage { get; set; }
-        public int Attempt { get; private set; }
-
-        private ClientMessages.CreateStreamCompleted _resultDto;
-
-        public bool UpdateForNextAttempt()
+        public void SetRetryId(Guid correlationId)
         {
-            _resultDto = null;
+            lock (_corrIdLock)
+                _correlationId = correlationId;
+        }
 
-            var correlationId = Guid.NewGuid();
-            Attempt += 1;
-            var package = new TcpPackage(SentPackage.Command, correlationId, SentPackage.Data);
-            SentPackage = package;
-
-            return true;
+        public TcpPackage CreateNetworkPackage()
+        {
+            lock (_corrIdLock)
+            {
+                var dto = new ClientMessages.CreateStream(_correlationId, _stream, _metadata);
+                return new TcpPackage(TcpCommand.CreateStream, _correlationId, dto.Serialize());
+            }
         }
 
         public ProcessResult Process(TcpPackage package)
@@ -79,15 +87,13 @@ namespace EventStore.ClientAPI.Commands
             try
             {
                 if (package.Command != TcpCommand.CreateStreamCompleted)
-                {
                     return new ProcessResult(ProcessResultStatus.NotifyError, 
-                                             new Exception(string.Format("Not expected command, expected {0}, received {1}",  
-                                                                         TcpCommand.CreateStreamCompleted, package.Command)));
-                }
+                                             new CommandNotExpectedException(TcpCommand.CreateStreamCompleted.ToString(), 
+                                                                             package.Command.ToString()));
 
                 var data = package.Data;
                 var dto = data.Deserialize<ClientMessages.CreateStreamCompleted>();
-                _resultDto = dto;
+                _result = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)
                 {
@@ -97,46 +103,33 @@ namespace EventStore.ClientAPI.Commands
                     case OperationErrorCode.PrepareTimeout:
                     case OperationErrorCode.CommitTimeout:
                     case OperationErrorCode.ForwardTimeout:
-                        if (Attempt < MaxRetriesCount)
-                        {
-                            return new ProcessResult(ProcessResultStatus.Retry);
-                        }
-                        else
-                        {
-                            return new ProcessResult(ProcessResultStatus.NotifyError, 
-                                                     new Exception(string.Format("Max retries count reached, last error: {0}", 
-                                                                  (OperationErrorCode)dto.ErrorCode)));
-                        }
+                        return new ProcessResult(ProcessResultStatus.Retry);
                     case OperationErrorCode.WrongExpectedVersion:
                     case OperationErrorCode.StreamDeleted:
                     case OperationErrorCode.InvalidTransaction:
-                        return new ProcessResult(ProcessResultStatus.NotifyError, 
+                        return new ProcessResult(ProcessResultStatus.NotifyError,
                                                  new Exception(string.Format("{0}", (OperationErrorCode)dto.ErrorCode)));
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return new ProcessResult(ProcessResultStatus.NotifyError, ex);
+                return new ProcessResult(ProcessResultStatus.NotifyError, e);
             }
+        }
+
+        public void Complete()
+        {
+            if (_result != null)
+                _completion.SetResult(new CreateStreamResult((OperationErrorCode)_result.ErrorCode));
+            else
+                _completion.SetException(new NoResultException());
         }
 
         public void Fail(Exception exception)
         {
             _completion.SetException(exception);
-        }
-
-        public void Complete()
-        {
-            if (_resultDto != null)
-            {
-                _completion.SetResult(new CreateStreamResult((OperationErrorCode)_resultDto.ErrorCode));
-            }
-            else
-            {
-                _completion.SetException(new Exception("Failed to set empty result"));
-            }
         }
     }
 }

@@ -28,29 +28,61 @@
 
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Commands;
 using EventStore.ClientAPI.Defines;
-using EventStore.ClientAPI.Messages;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Tcp;
 
-namespace EventStore.ClientAPI.Commands
+namespace EventStore.ClientAPI.TaskWrappers
 {
-    class ReadFromBeginningTaskCompletionWrapper : ITaskCompletionWrapper
+    internal class ReadFromBeginningTaskCompletionWrapper : ITaskCompletionWrapper
     {
         private readonly TaskCompletionSource<ReadResult> _completion;
+        private ClientMessages.ReadEventsFromBeginningCompleted _result;
 
-        public ReadFromBeginningTaskCompletionWrapper(TaskCompletionSource<ReadResult> completion)
+        private Guid _correlationId;
+        private readonly object _corrIdLock = new object();
+
+        private readonly string _stream;
+        private readonly int _start;
+        private readonly int _count;
+
+        public Guid CorrelationId
         {
-            _completion = completion;
+            get
+            {
+                lock(_corrIdLock)
+                    return _correlationId;
+            }
         }
 
-        public TcpPackage SentPackage { get; set; }
-        public int Attempt { get; private set; }
-
-        private ClientMessages.ReadEventsFromBeginningCompleted _resultDto;
-
-        public bool UpdateForNextAttempt()
+        public ReadFromBeginningTaskCompletionWrapper(TaskCompletionSource<ReadResult> completion,
+                                                      Guid corrId, 
+                                                      string stream, 
+                                                      int start, 
+                                                      int count)
         {
-            return false;
+            _completion = completion;
+
+            _correlationId = corrId;
+            _stream = stream;
+            _start = start;
+            _count = count;
+        }
+
+        public void SetRetryId(Guid correlationId)
+        {
+            lock (_corrIdLock)
+                _correlationId = correlationId;
+        }
+
+        public TcpPackage CreateNetworkPackage()
+        {
+            lock (_corrIdLock)
+            {
+                var dto = new ClientMessages.ReadEventsFromBeginning(_correlationId, _stream, _start, _count);
+                return new TcpPackage(TcpCommand.ReadEventsFromBeginning, _correlationId, dto.Serialize());
+            }
         }
 
         public ProcessResult Process(TcpPackage package)
@@ -59,14 +91,14 @@ namespace EventStore.ClientAPI.Commands
             {
                 if (package.Command != TcpCommand.ReadEventsFromBeginningCompleted)
                 {
-                    return new ProcessResult(ProcessResultStatus.NotifyError, 
-                                             new Exception(string.Format("Not expected command, expected {0}, received {1}",  
-                                                                         TcpCommand.ReadEventsFromBeginningCompleted, package.Command)));
+                    return new ProcessResult(ProcessResultStatus.NotifyError,
+                        new CommandNotExpectedException(TcpCommand.ReadEventsFromBeginningCompleted.ToString(), 
+                                                        package.Command.ToString()));
                 }
 
                 var data = package.Data;
                 var dto = data.Deserialize<ClientMessages.ReadEventsFromBeginningCompleted>();
-                _resultDto = dto;
+                _result = dto;
 
                 switch ((RangeReadResult)dto.Result)
                 {
@@ -80,27 +112,23 @@ namespace EventStore.ClientAPI.Commands
                         throw new ArgumentOutOfRangeException();
                 }
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return new ProcessResult(ProcessResultStatus.NotifyError, ex);
+                return new ProcessResult(ProcessResultStatus.NotifyError, e);
             }
+        }
+
+        public void Complete()
+        {
+            if (_result != null)
+                _completion.SetResult(new ReadResult((RangeReadResult)_result.Result, _result.Events));
+            else
+                _completion.SetException(new NoResultException());
         }
 
         public void Fail(Exception exception)
         {
             _completion.SetException(exception);
-        }
-
-        public void Complete()
-        {
-            if (_resultDto != null)
-            {
-                _completion.SetResult(new ReadResult((RangeReadResult)_resultDto.Result, _resultDto.Events));
-            }
-            else
-            {
-                _completion.SetException(new Exception("Failed to set empty result"));
-            }
         }
     }
 }

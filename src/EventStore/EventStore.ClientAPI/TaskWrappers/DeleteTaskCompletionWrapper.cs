@@ -28,38 +28,58 @@
 
 using System;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Commands;
 using EventStore.ClientAPI.Defines;
-using EventStore.ClientAPI.Messages;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Tcp;
 
-namespace EventStore.ClientAPI.Commands
+namespace EventStore.ClientAPI.TaskWrappers
 {
-    class DeleteTaskCompletionWrapper : ITaskCompletionWrapper
+    internal class DeleteTaskCompletionWrapper : ITaskCompletionWrapper
     {
-        private const int MaxRetriesCount = 10;
-
         private readonly TaskCompletionSource<DeleteResult> _completion;
+        private ClientMessages.DeleteStreamCompleted _result;
 
-        public DeleteTaskCompletionWrapper(TaskCompletionSource<DeleteResult> completion)
+        private Guid _correlationId;
+        private readonly object _corrIdLock = new object();
+
+        private readonly string _stream;
+        private readonly int _expectedVersion;
+
+        public Guid CorrelationId
         {
-            _completion = completion;
+            get
+            {
+                lock (_corrIdLock)
+                    return _correlationId;
+            }
         }
 
-        public TcpPackage SentPackage { get; set; }
-        public int Attempt { get; private set; }
-
-        private ClientMessages.DeleteStreamCompleted _resultDto;
-
-        public bool UpdateForNextAttempt()
+        public DeleteTaskCompletionWrapper(TaskCompletionSource<DeleteResult> completion,
+                                           Guid correlationId, 
+                                           string stream, 
+                                           int expectedVersion)
         {
-            _resultDto = null;
+            _completion = completion;
 
-            var correlationId = Guid.NewGuid();
-            Attempt += 1;
-            var package = new TcpPackage(SentPackage.Command, correlationId, SentPackage.Data);
-            SentPackage = package;
+            _correlationId = correlationId;
+            _stream = stream;
+            _expectedVersion = expectedVersion;
+        }
 
-            return true;
+        public TcpPackage CreateNetworkPackage()
+        {
+            lock (_corrIdLock)
+            {
+                var dto = new ClientMessages.DeleteStream(_correlationId, _stream, _expectedVersion);
+                return new TcpPackage(TcpCommand.DeleteStream, _correlationId, dto.Serialize());
+            }
+        }
+
+        public void SetRetryId(Guid corrId)
+        {
+            lock (_corrIdLock)
+                _correlationId = corrId;
         }
 
         public ProcessResult Process(TcpPackage package)
@@ -69,32 +89,22 @@ namespace EventStore.ClientAPI.Commands
                 if (package.Command != TcpCommand.DeleteStreamCompleted)
                 {
                     return new ProcessResult(ProcessResultStatus.NotifyError,
-                                             new Exception(string.Format("Not expected command, expected {0}, received {1}",
-                                                                         TcpCommand.DeleteStreamCompleted, package.Command)));
+                                             new CommandNotExpectedException(TcpCommand.DeleteStreamCompleted.ToString(), 
+                                                                             package.Command.ToString()));
                 }
 
                 var data = package.Data;
                 var dto = data.Deserialize<ClientMessages.DeleteStreamCompleted>();
-                _resultDto = dto;
+                _result = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)
                 {
                     case OperationErrorCode.Success:
                         return new ProcessResult(ProcessResultStatus.Success);
-
                     case OperationErrorCode.PrepareTimeout:
                     case OperationErrorCode.CommitTimeout:
                     case OperationErrorCode.ForwardTimeout:
-                        if (Attempt < MaxRetriesCount)
-                        {
-                            return new ProcessResult(ProcessResultStatus.Retry);
-                        }
-                        else
-                        {
-                            return new ProcessResult(ProcessResultStatus.NotifyError,
-                                                     new Exception(string.Format("Max retries count reached, last error: {0}",
-                                                                  (OperationErrorCode)dto.ErrorCode)));
-                        }
+                        return new ProcessResult(ProcessResultStatus.Retry);
                     case OperationErrorCode.WrongExpectedVersion:
                     case OperationErrorCode.StreamDeleted:
                     case OperationErrorCode.InvalidTransaction:
@@ -104,28 +114,23 @@ namespace EventStore.ClientAPI.Commands
                         throw new ArgumentOutOfRangeException();
                 }
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                return new ProcessResult(ProcessResultStatus.NotifyError, ex);
+                return new ProcessResult(ProcessResultStatus.NotifyError, e);
             }
         }
 
         public void Complete()
         {
-            if (_resultDto != null)
-            {
-                _completion.SetResult(new DeleteResult((OperationErrorCode)_resultDto.ErrorCode));
-            }
+            if (_result != null)
+                _completion.SetResult(new DeleteResult((OperationErrorCode)_result.ErrorCode));
             else
-            {
-                _completion.SetException(new Exception("Failed to set empty result"));
-            }
+                _completion.SetException(new NoResultException());
         }
 
         public void Fail(Exception exception)
         {
             _completion.SetException(exception);
-
         }
     }
 }
