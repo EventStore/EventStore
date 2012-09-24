@@ -27,12 +27,15 @@
 // 
 using System;
 using System.IO;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http
 {
     public class AsyncStreamCopier<T>
     {
+        private static readonly ILogger Log = LogManager.GetLogger("AsyncStreamCopier");
+
         public event EventHandler Completed;
 
         public T AsyncState { get; private set; }
@@ -42,7 +45,8 @@ namespace EventStore.Transport.Http
         private readonly Stream _input;
         private readonly Stream _output;
 
-        public AsyncStreamCopier(Stream input, Stream output, T state)
+        private readonly string _debuginfo;
+        public AsyncStreamCopier(Stream input, Stream output, T state, string debuginfo = null)
         {
             Ensure.NotNull(input, "input");
             Ensure.NotNull(output, "output");
@@ -52,6 +56,8 @@ namespace EventStore.Transport.Http
 
             AsyncState = state;
             Error = null;
+
+            _debuginfo = debuginfo;
         }
 
         public void Start()
@@ -77,6 +83,13 @@ namespace EventStore.Transport.Http
             try
             {
                 int bytesRead = _input.EndRead(ar);
+                if(ar.CompletedSynchronously)
+                {
+                    Log.Info("Completed synchronously. IN : {0}, OUT : {1}, DEBUGINFO : {2}",
+                             _input.GetType().FullName,
+                             _output.GetType().FullName,
+                             _debuginfo);
+                }
                 if (bytesRead == 0 || bytesRead == -1) //TODO TR: only mono returns -1
                 {
                     OnCompleted();
