@@ -28,6 +28,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
@@ -65,7 +66,24 @@ namespace EventStore.Transport.Http
         public void Start()
         {
             _watch.Start();
+#if POOLCOPY
+            ThreadPool.QueueUserWorkItem(_ =>
+                                             {
+                                                 try
+                                                 {
+                                                     _input.CopyTo(_output);
+                                                     OnCompleted();
+                                                 }
+                                                 catch (Exception e)
+                                                 {
+                                                     Log.ErrorException(e, "CopyTo thrown an exception");
+                                                     Error = e;
+                                                     OnCompleted();
+                                                 }
+                                             });
+#else
             GetNextChunk();
+#endif
         }
 
         private void GetNextChunk()
@@ -125,7 +143,7 @@ namespace EventStore.Transport.Http
         private void OnCompleted()
         {
             _watch.Stop();
-            if (_watch.ElapsedMilliseconds > 10)
+            if (_watch.ElapsedMilliseconds > 5)
                 Log.Info("Slow copy. IN : {0}, OUT : {1}, DEBUGINFO : {2}, TOOK {3}ms",
                          _input.GetType().FullName,
                          _output.GetType().FullName,
