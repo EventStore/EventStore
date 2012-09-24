@@ -33,11 +33,10 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Commands;
 using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.TaskWrappers;
-using EventStore.ClientAPI.Tcp;
+using EventStore.ClientAPI.Transport.Tcp;
 using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
 using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
 

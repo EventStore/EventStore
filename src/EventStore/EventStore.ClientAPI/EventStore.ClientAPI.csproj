@@ -107,7 +107,7 @@
     <Compile Include="TcpConnector.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Defines\PrepareFlags.cs" />
+    <Compile Include="Defines\Flags.cs" />
     <Compile Include="Transport.Tcp\ProtobufExtensions.cs" />
     <Compile Include="ClientMessages.cs" />
     <Compile Include="Transport.Tcp\TcpConfiguratin.cs" />

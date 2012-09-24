@@ -27,7 +27,6 @@
 //  
 
 using System;
-using EventStore.ClientAPI.Commands;
 using EventStore.ClientAPI.Defines;
 
 namespace EventStore.ClientAPI.TaskWrappers
