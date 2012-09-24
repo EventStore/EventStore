@@ -33,15 +33,15 @@ namespace EventStore.Common.Settings
     public class SingleVNodeSettings
     {
         public readonly IPEndPoint ExternalTcpEndPoint;
-        public readonly IPEndPoint HttpEndPoint;
+        public readonly IPEndPoint ExternalHttpEndPoint;
 
-        public SingleVNodeSettings(IPEndPoint externalTcpEndPoint, IPEndPoint httpEndPoint)
+        public SingleVNodeSettings(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint)
         {
             Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
-            Ensure.NotNull(httpEndPoint, "httpEndPoint");
+            Ensure.NotNull(externalHttpEndPoint, "ExternalHttpEndPoint");
 
             ExternalTcpEndPoint = externalTcpEndPoint;
-            HttpEndPoint = httpEndPoint;
+            ExternalHttpEndPoint = externalHttpEndPoint;
         }
 
         public override string ToString()
@@ -49,7 +49,7 @@ namespace EventStore.Common.Settings
             return string.Format("#{0}[tcp-{1}, http-{2}], ",
                                  ExternalTcpEndPoint.Address,
                                  ExternalTcpEndPoint.Port,
-                                 HttpEndPoint.Port);
+                                 ExternalHttpEndPoint.Port);
         }
     }
 

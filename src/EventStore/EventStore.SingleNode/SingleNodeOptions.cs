@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System.Collections.Generic;
+using System.Net;
 using EventStore.Common.CommandLine;
 using EventStore.Common.CommandLine.lib;
 
@@ -36,16 +37,28 @@ namespace EventStore.SingleNode
         [Option("t", "tcp-port", Required = true)]
         public int TcpPort { get; set; }
 
+        [Option("h", "http-port", Required = true)]
+        public int HttpPort { get; set; }
+
+        [Option("i", "ip", Required = true)]
+        public IPAddress Ip { get; set; }
+
+        [Option("s", "stats-period-sec", DefaultValue = 30)]
+        public int StatsPeriodSec { get; set; }
+
+        [Option("c", "chunkcache", DefaultValue = 2)]
+        public int ChunksToCache { get; set; }
+
         [Option(null, "db")]
         public string DbPath { get; set; }
 
         public override IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
         {
-            foreach (var pair in base.GetLoadedOptionsPairs())
-            {
-                yield return pair;
-            }
+            yield return new KeyValuePair<string, string>("IP", Ip.ToString());
             yield return new KeyValuePair<string, string>("TCP PORT", TcpPort.ToString());
+            yield return new KeyValuePair<string, string>("HTTP PORT", HttpPort.ToString());
+            yield return new KeyValuePair<string, string>("STATS PERIOD SEC", StatsPeriodSec.ToString());
+            yield return new KeyValuePair<string, string>("CHUNK CACHE", ChunksToCache.ToString());
             yield return new KeyValuePair<string, string>("DB PATH", string.IsNullOrEmpty(DbPath) ? "<DEFAULT>" : DbPath);
         }
     }

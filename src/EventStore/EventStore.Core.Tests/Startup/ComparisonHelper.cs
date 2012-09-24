@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Startup
 
     //    public static bool IsEqualTo(this VNodeSettings first, VNodeSettings second)
     //    {
-    //        return first.HttpEndPoint.Equals(second.HttpEndPoint)
+    //        return first.ExternalHttpEndPoint.Equals(second.ExternalHttpEndPoint)
     //               && first.InternalTcpEndPoint.Equals(second.InternalTcpEndPoint)
     //               && first.ExternalTcpEndPoint.Equals(second.ExternalTcpEndPoint);
     //    }
