@@ -32,7 +32,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Data;
 
 namespace EventStore.ClientAPI
 {

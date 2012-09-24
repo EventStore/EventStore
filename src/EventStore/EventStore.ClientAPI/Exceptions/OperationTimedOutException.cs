@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -27,14 +27,26 @@
 //  
 
 using System;
+using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
-    internal class UnknownPackageReturned : Exception
+    public class OperationTimedOutException : Exception
     {
-        public UnknownPackageReturned(string toString)
+        public OperationTimedOutException()
         {
-            throw new NotImplementedException();
+        }
+
+        public OperationTimedOutException(string message) : base(message)
+        {
+        }
+
+        public OperationTimedOutException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected OperationTimedOutException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
     }
 }

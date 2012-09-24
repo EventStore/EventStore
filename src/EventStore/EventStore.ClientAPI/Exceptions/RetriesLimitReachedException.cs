@@ -27,17 +27,19 @@
 // 
 
 using System;
-using System.Net;
-using System.Net.Sockets;
 
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class FailedConnectionException : Exception
+    public class RetriesLimitReachedException : Exception
     {
-        public FailedConnectionException(IPEndPoint endPoint, SocketError socketError) 
-            : base(string.Format("Connection to [{0}] failed. Error: {1}.", endPoint, socketError))
+        public RetriesLimitReachedException(int retries) 
+            : base(string.Format("Reached retries limit : {0}", retries))
         {
-            
+        }
+
+        public RetriesLimitReachedException(string item, int retries)
+            : base(string.Format("Item {0} reached retries limit : {1}", item, retries))
+        {
         }
     }
 }
