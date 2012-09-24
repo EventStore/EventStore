@@ -28,10 +28,8 @@
 
 using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Commands;
 using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.Tcp;
 using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.TaskWrappers
