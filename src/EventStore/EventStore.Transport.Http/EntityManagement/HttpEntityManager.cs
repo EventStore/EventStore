@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -215,7 +216,7 @@ namespace EventStore.Transport.Http.EntityManagement
                                 InputStream = new MemoryStream(response),
                                 OutputStream = HttpEntity.Response.OutputStream
                             };
-            var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
+            var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state, "SERVER RESPONSE WRITE COPIER");
             copier.Completed += ResponseWritten;
             copier.Start();
         }
@@ -249,7 +250,7 @@ namespace EventStore.Transport.Http.EntityManagement
                                 OutputStream = new MemoryStream()
                             };
 
-            var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
+            var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state, "SERVER REQUEST READ COPIER");
             copier.Completed += RequestRead;
             copier.Start();
         }
@@ -279,8 +280,14 @@ namespace EventStore.Transport.Http.EntityManagement
         {
             try
             {
+                var watch = Stopwatch.StartNew();
                 _onRequestSatisfied(HttpEntity);
                 HttpEntity.Response.Close();
+                watch.Stop();
+
+                if (watch.ElapsedMilliseconds > 5)
+                    Log.Info("SLOW CLOSE HTTP CONNECTION : TOOK {0}ms", watch.Elapsed.TotalMilliseconds);
+
             }
             catch (Exception e)
             {
