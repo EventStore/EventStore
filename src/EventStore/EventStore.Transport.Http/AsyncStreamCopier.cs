@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -46,6 +47,7 @@ namespace EventStore.Transport.Http
         private readonly Stream _output;
 
         private readonly string _debuginfo;
+        private readonly Stopwatch _watch = new Stopwatch();
         public AsyncStreamCopier(Stream input, Stream output, T state, string debuginfo = null)
         {
             Ensure.NotNull(input, "input");
@@ -62,6 +64,7 @@ namespace EventStore.Transport.Http
 
         public void Start()
         {
+            _watch.Start();
             GetNextChunk();
         }
 
@@ -121,6 +124,13 @@ namespace EventStore.Transport.Http
 
         private void OnCompleted()
         {
+            _watch.Stop();
+            if (_watch.ElapsedMilliseconds > 10)
+                Log.Info("Slow copy. IN : {0}, OUT : {1}, DEBUGINFO : {2}, TOOK {3}ms",
+                         _input.GetType().FullName,
+                         _output.GetType().FullName,
+                         _debuginfo,
+                         _watch.ElapsedMilliseconds);
             if (Completed != null)
                 Completed(this, EventArgs.Empty);
         }
