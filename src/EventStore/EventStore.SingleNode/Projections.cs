@@ -25,42 +25,39 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Projections.Core;
 using EventStore.Projections.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.SingleNode
 {
-    public class SingleNodeWithProjections  : SingleNode.Program, IHandle<SystemMessage.SystemStart>
+    public class Projections  
     {
-        private InMemoryBus _coreInputBus;
-        private QueuedHandler _coreQueue;
-        private ProjectionWorkerNode _projectionNode;
-        private RequestResponseQueueForwarder _forwarder;
-        private InMemoryBus _readerInputBus;
+        // TODO MM, YS: why isnt this code inside  ProjectionWorkerNode.cs ?
 
-        public static int Main(string[] args)
-        {
-            var p = new SingleNodeWithProjections();
-            return p.Run(args);
-        }
+        private readonly InMemoryBus _coreInputBus;
+        private readonly QueuedHandler _coreQueue;
+        private readonly ProjectionWorkerNode _projectionNode;
+        private readonly RequestResponseQueueForwarder _forwarder;
+        private readonly InMemoryBus _readerInputBus;
 
-        protected override void Create()
+        public Projections(SingleVNode node, TFChunkDb db)
         {
-            base.Create();
-            var db = this.TfDb;
             _coreInputBus = new InMemoryBus("bus");
             _coreQueue = new QueuedHandler(_coreInputBus, "ProjectionCoreQueue");
 
             _readerInputBus = new InMemoryBus("Reader Input");
 
-            _projectionNode = new ProjectionWorkerNode(db, _coreQueue, Node.HttpService);
+            _projectionNode = new ProjectionWorkerNode(db, _coreQueue, node.HttpService);
             _projectionNode.SetupMessaging(_coreInputBus, _readerInputBus);
 
-            _forwarder = new RequestResponseQueueForwarder(inputQueue: _coreQueue, externalRequestQueue: Node.MainQueue);
+            _forwarder = new RequestResponseQueueForwarder(inputQueue: _coreQueue, externalRequestQueue: node.MainQueue);
             // forwarded messages
             _projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEvent>(_forwarder);
             _projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEventsBackwards>(_forwarder);
@@ -69,22 +66,16 @@ namespace EventStore.SingleNode
             _projectionNode.CoreOutput.Subscribe<ClientMessage.WriteEvents>(_forwarder);
             _coreInputBus.Subscribe(new UnwrapEnvelopeHandler());
 
-            Node.Bus.Subscribe(Forwarder.Create<SystemMessage.BecomeShuttingDown>(_coreQueue));
-            Node.Bus.Subscribe(Forwarder.Create<SystemMessage.SystemInit>(_coreQueue));
-            Node.Bus.Subscribe(Forwarder.Create<SystemMessage.SystemStart>(_coreQueue));
+            node.Bus.Subscribe(Forwarder.Create<SystemMessage.BecomeShuttingDown>(_coreQueue));
+            node.Bus.Subscribe(Forwarder.Create<SystemMessage.SystemInit>(_coreQueue));
+            node.Bus.Subscribe(Forwarder.Create<SystemMessage.SystemStart>(_coreQueue));
 
-            _projectionNode.CoreOutput.Subscribe(Node.TimerService);
-            _coreInputBus.Subscribe<SystemMessage.SystemStart>(this);
+            _projectionNode.CoreOutput.Subscribe(node.TimerService);
         }
 
-        protected override void Start()
+        public void Start()
         {
             _coreQueue.Start();
-            base.Start();
-        }
-
-        public void Handle(SystemMessage.SystemStart message)
-        {
         }
     }
 }

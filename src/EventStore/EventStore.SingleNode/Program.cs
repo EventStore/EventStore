@@ -41,22 +41,38 @@ namespace EventStore.SingleNode
         private SingleVNodeAppSettings _appSets;
         private SingleVNodeSettings _vNodeSets;
 
+        private Projections _projections;
+        private bool _noProjections;
+
+        public static int Main(string[] args)
+        {
+            var p = new Program();
+            return p.Run(args);
+        }
+
         protected override void OnArgsParsed(SingleNodeOptions options)
         {
             var now = DateTime.UtcNow;
             TfDb = GetTfDb(options, now);
             _appSets = GetAppSettings(options);
             _vNodeSets = GetVNodeSettings(options);
+            _noProjections = options.NoProjections;
         }
 
         protected override void Create()
         {
             Node = new SingleVNode(TfDb, _vNodeSets, _appSets);
+
+            if (!_noProjections)
+                _projections = new Projections(Node, TfDb);
         }
 
         protected override void Start()
         {
             Node.Start();
+
+            if (!_noProjections)
+                _projections.Start();
         }
 
         public override void Stop()

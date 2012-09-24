@@ -52,6 +52,9 @@ namespace EventStore.SingleNode
         [Option(null, "db")]
         public string DbPath { get; set; }
 
+        [Option(null, "no-projections", DefaultValue = false)]
+        public bool NoProjections { get; set; }
+
         public override IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
         {
             yield return new KeyValuePair<string, string>("IP", Ip.ToString());
@@ -60,6 +63,7 @@ namespace EventStore.SingleNode
             yield return new KeyValuePair<string, string>("STATS PERIOD SEC", StatsPeriodSec.ToString());
             yield return new KeyValuePair<string, string>("CHUNK CACHE", ChunksToCache.ToString());
             yield return new KeyValuePair<string, string>("DB PATH", string.IsNullOrEmpty(DbPath) ? "<DEFAULT>" : DbPath);
+            yield return new KeyValuePair<string, string>("NO PROJECTIONS", NoProjections.ToString());
         }
     }
 }
