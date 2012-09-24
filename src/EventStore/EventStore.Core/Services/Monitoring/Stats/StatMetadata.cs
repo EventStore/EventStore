@@ -1,10 +1,10 @@
 ﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,22 +24,34 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
-
-namespace EventStore.ClientAPI.Tcp
+// 
+namespace EventStore.Core.Services.Monitoring.Stats
 {
-    interface ITcpConnection
+    public class StatMetadata
     {
-        event Action<ITcpConnection, SocketError> ConnectionClosed;
-        IPEndPoint EffectiveEndPoint { get; }
-        int SendQueueSize { get; }
-        void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback);
-        void EnqueueSend(IEnumerable<ArraySegment<byte>> data);
-        void Close();
+        public object Value { get; set; }
+        public string Category { get; set; }
+        public string Title { get; set; }
+        public bool DrawChart { get; set; }
+
+        public StatMetadata() {}
+        private StatMetadata(object value, string category, string title, bool drawChart)
+        {
+            Value = value;
+            Category = category;
+            Title = title;
+            DrawChart = drawChart;
+        }
+
+        public StatMetadata(object value, string category, string title)
+            : this(value, category, title, true)
+        {
+            
+        }
+
+        public StatMetadata(object value, string title)
+            : this (value, null, title, true)
+        {
+        }
     }
 }
-        

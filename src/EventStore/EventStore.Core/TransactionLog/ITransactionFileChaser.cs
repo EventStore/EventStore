@@ -25,18 +25,19 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog
 {
-    public interface ITransactionFileChaser
+    public interface ITransactionFileChaser: IDisposable
     {
         void Open();
 
-        bool TryReadNext(out LogRecord record);
         RecordReadResult TryReadNext();
-        
-        void Dispose();
+        bool TryReadNext(out LogRecord record);
+
         void Close();
         void Flush();
     }

@@ -34,7 +34,7 @@ using EventStore.ClientAPI.Tcp;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    public class TcpTypedConnection
+    class TcpTypedConnection
     {
         public event Action<TcpTypedConnection, SocketError> ConnectionClosed;
 

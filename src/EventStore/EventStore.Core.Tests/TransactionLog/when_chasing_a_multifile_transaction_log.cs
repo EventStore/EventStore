@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var writerchk = new InMemoryCheckpoint(0);
             var config = new TransactionFileDatabaseConfig(PathName, "prefix.tf", 10000, writerchk, new List<ICheckpoint>());
             File.WriteAllBytes(Path.Combine(PathName, "prefix.tf0"), new byte[10000]);
-            var reader = new MultifileTransactionFileChaser(config);
+            var reader = new MultifileTransactionFileChaser(config, new InMemoryCheckpoint(0));
             reader.Open();
             LogRecord record;   
             Assert.IsFalse(reader.TryReadNext(out record));
@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var readerchk = new InMemoryCheckpoint("reader", 12);
             var config = new TransactionFileDatabaseConfig(PathName, "prefix.tf", 10000, writerchk, new[] {readerchk});
             File.WriteAllBytes(Path.Combine(PathName, "prefix.tf0"), new byte[10000]);
-            var reader = new MultifileTransactionFileChaser(config, "reader");
+            var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
             LogRecord record;
             Assert.IsFalse(reader.TryReadNext(out record));
@@ -94,10 +94,10 @@ namespace EventStore.Core.Tests.TransactionLog
                 recordToWrite.WriteWithLengthPrefixTo(writer);
                 fs.Close();
             }
-            var reader = new MultifileTransactionFileChaser(config, "reader");
+            var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
 
-            LogRecord record = null;
+            LogRecord record;
             var recordRead = reader.TryReadNext(out record);
             reader.Close();
             
@@ -132,9 +132,9 @@ namespace EventStore.Core.Tests.TransactionLog
             }
             writerchk.Write(recordToWrite.GetSizeWithLengthPrefix());
 
-            var reader = new MultifileTransactionFileChaser(config, "reader");
+            var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
-            LogRecord record = null;
+            LogRecord record;
             var readRecord = reader.TryReadNext(out record);
             reader.Close();
 
@@ -169,9 +169,9 @@ namespace EventStore.Core.Tests.TransactionLog
             }
             writerchk.Write(recordToWrite.GetSizeWithLengthPrefix());
             
-            var reader = new MultifileTransactionFileChaser(config, "reader");
+            var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
-            LogRecord record = null;
+            LogRecord record;
             var readRecord = reader.TryReadNext(out record);
             reader.Close();
 
@@ -204,9 +204,9 @@ namespace EventStore.Core.Tests.TransactionLog
                 fs.Close();
             }
 
-            var reader = new MultifileTransactionFileChaser(config, "reader");
+            var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
-            LogRecord record = null;
+            LogRecord record;
             var readRecord = reader.TryReadNext(out record);
             reader.Close();
 
@@ -239,9 +239,9 @@ namespace EventStore.Core.Tests.TransactionLog
                 fs.Close();
             }
 
-            var reader = new MultifileTransactionFileChaser(config, "reader");
+            var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
-            LogRecord record = null;
+            LogRecord record;
             var readRecord = reader.TryReadNext(out record);
             reader.Close();
             Assert.IsFalse(readRecord);
@@ -282,9 +282,9 @@ namespace EventStore.Core.Tests.TransactionLog
                 fs.Close();
             }
 
-            var reader = new MultifileTransactionFileChaser(config, "reader");
+            var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
-            LogRecord record = null;
+            LogRecord record;
             var readRecord = reader.TryReadNext(out record);
             reader.Close();
             
@@ -327,9 +327,9 @@ namespace EventStore.Core.Tests.TransactionLog
                 fs.Close();
             }
 
-            var reader = new MultifileTransactionFileChaser(config, "reader");
+            var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
-            LogRecord record = null;
+            LogRecord record;
             var readRecord = reader.TryReadNext(out record);
             reader.Close();
             
@@ -348,7 +348,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var fileName = Path.Combine(PathName, "prefix.tf0");
             File.Create(fileName).Close();
 
-            var reader = new MultifileTransactionFileChaser(config, "reader");
+            var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
             
             LogRecord record;

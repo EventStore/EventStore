@@ -76,7 +76,7 @@ namespace EventStore.ClientAPI
         private readonly TcpConnector _connector;
         private Connection _connection;
         private readonly object _connectionLock = new object();
-
+        
         private readonly ConcurrentQueue<ITaskCompletionWrapper> _queue = new ConcurrentQueue<ITaskCompletionWrapper>();
         private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
         private int _inProgressCount;
@@ -171,8 +171,8 @@ namespace EventStore.ClientAPI
             var taskCompletionSource = new TaskCompletionSource<WriteResult>();
             var taskWrapper = new WriteTaskCompletionWrapper(taskCompletionSource, 
                                                              Guid.NewGuid(), 
-                                                             stream, 
-                                                             expectedVersion, 
+                                                       stream,
+                                                       expectedVersion,
                                                              events);
 
             EnqueueOperation(taskWrapper);
@@ -237,7 +237,7 @@ namespace EventStore.ClientAPI
         {
             while (_queue.Count >= MaxQueueSize)
                 Thread.Sleep(1);
-
+            
             _queue.Enqueue(wrapper);
         }
 
@@ -272,16 +272,16 @@ namespace EventStore.ClientAPI
                     {
                         var lastUpdated = new DateTime(Interlocked.Read(ref workerItem.LastUpdatedTicks));
                         if (now - lastUpdated > EventTimeoutDelay)
-                        {
-                            if (lastUpdated > _lastReconnectionTimestamp)
                             {
+                            if (lastUpdated > _lastReconnectionTimestamp)
+                                {
                                 workerItem.Wrapper.Fail(
                                     new OperationTimedOutException(
                                         string.Format("Timed out event which never got response from server was discovered. "
                                                       + "Last state update : {0}, last reconnect : {1}, now(utc) : {2}.",
-                                                      lastUpdated,
-                                                      _lastReconnectionTimestamp,
-                                                      now)));
+                                                            lastUpdated,
+                                                            _lastReconnectionTimestamp,
+                                                            now)));
                                 TryRemoveWorkItem(workerItem);
                             }
                             else
@@ -294,12 +294,12 @@ namespace EventStore.ClientAPI
         }
 
         private bool TryRemoveWorkItem(WorkItem workItem)
-        {
+                {
             WorkItem removed;
             if (!_inProgress.TryRemove(workItem.Wrapper.CorrelationId, out removed))
                 return false;
 
-            Interlocked.Decrement(ref _inProgressCount);
+                    Interlocked.Decrement(ref _inProgressCount);
             return true;
         }
 
@@ -328,22 +328,22 @@ namespace EventStore.ClientAPI
                                                                                      inProgressItem.Attempt));
                     else
                         Send(inProgressItem);
-                }
-                else
+                    }
+                    else
                     Debug.WriteLine("Concurrency failure. Unable to remove in progress item on retry");
-            }
-        }
+                    }
+                }
 
         private void OnPackageReceived(Connection connection, TcpPackage package)
-        {
+                {
             var corrId = package.CorrelationId;
             WorkItem workItem;
 
             if(!_inProgress.TryGetValue(corrId, out workItem))
-            {
+                    {
                 Debug.WriteLine("Unexpected corrid received {0}", corrId);
                 return;
-            }
+                    }
 
             var result = workItem.Wrapper.Process(package);
             switch (result.Status)
@@ -360,8 +360,8 @@ namespace EventStore.ClientAPI
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
+                }
             }
-        }
 
         private void OnConnectionEstablished(Connection tcpTypedConnection) { }
 

@@ -34,14 +34,14 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services
 {
-    public class RequestManagementService : IHandle<ReplicationMessage.EventCommited>, 
-                                            IHandle<ReplicationMessage.CreateStreamRequestCreated>, 
+    public class RequestManagementService : IHandle<ReplicationMessage.CreateStreamRequestCreated>, 
                                             IHandle<ReplicationMessage.WriteRequestCreated>, 
                                             IHandle<ReplicationMessage.DeleteStreamRequestCreated>,
                                             IHandle<ReplicationMessage.TransactionStartRequestCreated>,
                                             IHandle<ReplicationMessage.TransactionWriteRequestCreated>,
                                             IHandle<ReplicationMessage.TransactionCommitRequestCreated>,
                                             IHandle<ReplicationMessage.RequestCompleted>,
+                                            IHandle<ReplicationMessage.AlreadyCommitted>,
                                             IHandle<ReplicationMessage.PrepareAck>,
                                             IHandle<ReplicationMessage.CommitAck>,
                                             IHandle<ReplicationMessage.WrongExpectedVersion>,
@@ -53,8 +53,6 @@ namespace EventStore.Core.Services
         private readonly IPublisher _bus;
         private readonly Dictionary<Guid, object> _currentRequests = new Dictionary<Guid, object>();
 
-        private readonly BoundedCache<Guid, int> _commitedEvents = new BoundedCache<Guid, int>(1000000, long.MaxValue, x => 20); 
-
         private readonly int _prepareCount;
         private readonly int _commitCount;
 
@@ -63,12 +61,6 @@ namespace EventStore.Core.Services
             _bus = bus;
             _prepareCount = prepareCount;
             _commitCount = commitCount;
-        }
-
-        public void Handle(ReplicationMessage.EventCommited message)
-        {
-            // TODO AN remove all this, idempotency check should be done in StorageWriter
-            _commitedEvents.PutRecord(message.Prepare.EventId, message.EventNumber, throwOnDuplicate: false);
         }
 
         public void Handle(ReplicationMessage.CreateStreamRequestCreated message)
@@ -80,15 +72,6 @@ namespace EventStore.Core.Services
 
         public void Handle(ReplicationMessage.WriteRequestCreated message)
         {
-            // TODO AN verify the check for just the first event is sensible solution for idempotency
-            int eventVersion;
-            if (_commitedEvents.TryGetRecord(message.Events[0].EventId, out eventVersion))
-            {
-                var response = new ClientMessage.WriteEventsCompleted(message.CorrelationId, message.EventStreamId, eventVersion);
-                message.Envelope.ReplyWith(response);
-                return;
-            }
-
             var manager = new TwoPhaseCommitRequestManager(_bus, _prepareCount, _commitCount);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
@@ -96,8 +79,6 @@ namespace EventStore.Core.Services
 
         public void Handle(ReplicationMessage.DeleteStreamRequestCreated message)
         {
-            // TODO AN: add idempotency of events on write
-
             var manager = new TwoPhaseCommitRequestManager(_bus, _prepareCount, _commitCount);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
@@ -128,6 +109,11 @@ namespace EventStore.Core.Services
         {
             if (!_currentRequests.Remove(message.CorrelationId))
                 throw new InvalidOperationException("Should never complete request twice.");
+        }
+
+        public void Handle(ReplicationMessage.AlreadyCommitted message)
+        {
+            DispatchInternal(message.CorrelationId, message);
         }
 
         public void Handle(ReplicationMessage.PrepareAck message)

@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Core.Services;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -69,7 +70,7 @@ namespace EventStore.Projections.Core.Standard
                 return false; // not our event
 
             emittedEvents = new[]
-                {new EmittedEvent("$streams", Guid.NewGuid(), "$>", sequenceNumber + "@" + streamId)};
+                {new EmittedEvent(SystemStreams.StreamsStream, Guid.NewGuid(), SystemEventTypes.LinkTo, sequenceNumber + "@" + streamId)};
 
             return true;
         }

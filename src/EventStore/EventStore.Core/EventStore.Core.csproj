@@ -87,6 +87,7 @@
     <Compile Include="Exceptions\FileBeingDeletedException.cs" />
     <Compile Include="Exceptions\HashValidationException.cs" />
     <Compile Include="Exceptions\InvalidFileException.cs" />
+    <Compile Include="Exceptions\PossibleToHandleOutOfMemoryException.cs" />
     <Compile Include="Exceptions\PTableNotFoundException.cs" />
     <Compile Include="Exceptions\ReaderCheckpointHigherThanWriterException.cs" />
     <Compile Include="Exceptions\UnableToAcquireLockInReasonableTimeException.cs" />
@@ -111,11 +112,13 @@
     <Compile Include="Services\Monitoring\StatsCollectorEnvelope.cs" />
     <Compile Include="Services\Monitoring\Stats\StatsContainer.cs" />
     <Compile Include="Services\Monitoring\SystemStatsHelper.cs" />
+    <Compile Include="Services\Monitoring\Stats\StatMetadata.cs" />
     <Compile Include="Services\SingleAckRequestManager.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IReadIndex.cs" />
     <Compile Include="Services\Storage\ReaderIndex\ReadIndex.cs" />
     <Compile Include="Index\TableIndex.cs" />
     <Compile Include="Services\Storage\StorageScavenger.cs" />
+    <Compile Include="Services\SystemNames.cs" />
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkScavenger.cs" />
     <Compile Include="Services\Transport\Http\Configure.cs" />
@@ -169,7 +172,6 @@
     <Compile Include="Services\Monitoring\Stats\DiskIo.cs" />
     <Compile Include="Services\Monitoring\Utils\ShellExecutor.cs" />
     <Compile Include="Services\Monitoring\Utils\StatsCsvEncoder.cs" />
-    <Compile Include="DataStructures\QueueWithIndexer.cs" />
     <Compile Include="Services\Storage\ReaderIndex\DictionaryBasedCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IReadCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\ReadIndexStats.cs" />

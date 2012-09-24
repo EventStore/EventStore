@@ -41,6 +41,7 @@ namespace EventStore.Core.Services
                                                 IHandle<ReplicationMessage.WriteRequestCreated>,
                                                 IHandle<ReplicationMessage.TransactionCommitRequestCreated>,
                                                 IHandle<ReplicationMessage.DeleteStreamRequestCreated>,
+                                                IHandle<ReplicationMessage.AlreadyCommitted>,
                                                 IHandle<ReplicationMessage.PrepareAck>,
                                                 IHandle<ReplicationMessage.CommitAck>,
                                                 IHandle<ReplicationMessage.WrongExpectedVersion>,
@@ -165,6 +166,12 @@ namespace EventStore.Core.Services
                                                       new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
         }
 
+        public void Handle(ReplicationMessage.AlreadyCommitted message)
+        {
+            Debug.Assert(message.EventStreamId == _eventStreamId && message.CorrelationId == _correlationId);
+            CompleteSuccessRequest(_correlationId, _eventStreamId, message.StartEventNumber);
+        }
+
         public void Handle(ReplicationMessage.PrepareAck message)
         {
             if (_completed)
@@ -228,7 +235,7 @@ namespace EventStore.Core.Services
             CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.CommitTimeout, "Commit phase timeout.");
         }
 
-        private void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int eventNumber)
+        private void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
         {
             _completed = true;
             _bus.Publish(new ReplicationMessage.RequestCompleted(correlationId, true));
@@ -244,7 +251,7 @@ namespace EventStore.Core.Services
                 case RequestType.Write:
                 {
                     var responseMsg = new ClientMessage.WriteEventsCompleted(
-                            correlationId, eventStreamId, eventNumber);
+                            correlationId, eventStreamId, startEventNumber);
                     _responseEnvelope.ReplyWith(responseMsg);
                     break;
                 }

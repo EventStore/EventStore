@@ -50,6 +50,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Ensure.NotNull(service, "service");
             Ensure.NotNull(pipe, "pipe");
 
+            service.RegisterControllerAction(new ControllerAction("/stats",
+                                                                  HttpMethod.Get,
+                                                                  Codec.NoCodecs,
+                                                                  SupportedCodecs,
+                                                                  DefaultResponseCodec),
+                                             OnGetFreshStats);
             service.RegisterControllerAction(new ControllerAction("/stats/{*statPath}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
@@ -68,7 +74,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var statPath = match.BoundVariables["statPath"];
             var statSelector = GetStatSelector(statPath);
 
-            Publish(new MonitoringMessage.GetFreshStats(envelope, statSelector));
+            bool useMetadata;
+            if (!bool.TryParse(match.QueryParameters["metadata"], out useMetadata))
+                useMetadata = false;
+
+            bool useGrouping;
+            if (!bool.TryParse(match.QueryParameters["group"], out useGrouping))
+                useGrouping = true;
+
+            if (!useGrouping && !string.IsNullOrEmpty(statPath))
+            {
+                base.SendBadRequest(entity, "Dynamic stats selection works only with grouping enabled");
+                return;
+            }
+             
+            Publish(new MonitoringMessage.GetFreshStats(envelope, statSelector, useMetadata, useGrouping));
         }
 
         private static Func<Dictionary<string, object>, Dictionary<string, object>> GetStatSelector(string statPath)

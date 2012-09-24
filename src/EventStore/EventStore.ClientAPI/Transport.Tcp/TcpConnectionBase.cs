@@ -28,11 +28,12 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using EventStore.ClientAPI.Transport.Tcp;
 using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
 
 namespace EventStore.ClientAPI.Tcp
 {
-    public class TcpConnectionBase : IMonitoredTcpConnection
+    class TcpConnectionBase : IMonitoredTcpConnection
     {
         private Socket _socket;
         private IPEndPoint _endPoint;

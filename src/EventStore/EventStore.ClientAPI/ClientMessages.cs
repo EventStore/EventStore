@@ -34,7 +34,7 @@ using ProtoBuf;
 
 namespace EventStore.ClientAPI
 {
-    public static class ClientMessages
+    static class ClientMessages
     {
         [ProtoContract]
         public class CreateStream

@@ -40,23 +40,15 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_null_file_config_throws_argument_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => new MultifileTransactionFileChaser(null));
+            Assert.Throws<ArgumentNullException>(() => new MultifileTransactionFileChaser(null, new InMemoryCheckpoint()));
         }
 
         [Test]
-        public void a_null_checksum_does_not_result_in_exception()
+        public void a_null_checksum_result_in_argumentnullexception()
         {
             var config = new TransactionFileDatabaseConfig("C:\\tmp", "prefix.tf", 10000, new InMemoryCheckpoint(),
                                                            new List<ICheckpoint>());
-            Assert.DoesNotThrow(() => new MultifileTransactionFileChaser(config, null));
-        }
-
-        [Test]
-        public void a_checksum_that_does_not_exist_results_in_argument_exception()
-        {
-            var config = new TransactionFileDatabaseConfig("C:\\tmp", "prefix.tf", 10000, new InMemoryCheckpoint(),
-                                                           new List<ICheckpoint>());
-            Assert.Throws<ArgumentException>(() => new MultifileTransactionFileChaser(config, "hello"));
+            Assert.Throws<ArgumentNullException>(() => new MultifileTransactionFileChaser(config, null));
         }
     }
 }

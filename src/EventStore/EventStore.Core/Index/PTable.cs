@@ -35,7 +35,6 @@ using System.Security.Cryptography;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 
@@ -109,7 +108,14 @@ namespace EventStore.Core.Index
                 _streams.Enqueue(s);
             }
 
-            _midpoints = PopulateCache(depth);
+            try
+            {
+                _midpoints = PopulateCache(depth);
+            }
+            catch (PossibleToHandleOutOfMemoryException)
+            {
+                Log.Info("Was unable to create midpoints for ptable. Performance hit possible OOM Exception.");
+            }
         }
 
         public void VerifyFileHash()
@@ -162,12 +168,26 @@ namespace EventStore.Core.Index
                 if (Count < midPointsCnt)
                 {
                     segmentSize = 1; // we cache all items
-                    midpoints = new Midpoint[Count];
+                    try
+                    {
+                        midpoints = new Midpoint[Count];
+                    }
+                    catch (OutOfMemoryException)
+                    {
+                        throw new PossibleToHandleOutOfMemoryException();
+                    }
                 }
                 else
                 {
                     segmentSize = Count / midPointsCnt;
-                    midpoints = new Midpoint[1 + (Count + segmentSize - 1) / segmentSize];
+                    try
+                    {
+                        midpoints = new Midpoint[1 + (Count + segmentSize - 1)/segmentSize];
+                    }
+                    catch(OutOfMemoryException)
+                    {
+                        throw new PossibleToHandleOutOfMemoryException();
+                    }
                 }
 
                 for (int x = 0, i = 0, xN = Count - 1; x < xN; x += segmentSize, i += 1)
@@ -453,7 +473,7 @@ namespace EventStore.Core.Index
             var startKey = BuildKey(stream, startVersion);
             var endKey = BuildKey(stream, endVersion);
 
-            if (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key)
+            if (_midpoints != null && (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key))
                 return false;
 
             var readbuffer = new byte[16];
@@ -512,7 +532,7 @@ namespace EventStore.Core.Index
             var startKey = BuildKey(stream, startVersion);
             var endKey = BuildKey(stream, endVersion);
 
-            if (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key)
+            if (_midpoints != null && (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key))
                 return ret;
 
             var readbuffer = new byte[16];
@@ -561,6 +581,7 @@ namespace EventStore.Core.Index
 
         private Tuple<int, int> LocateRecordRange(ulong stream)
         {
+            if (_midpoints == null) return Tuple.Create(0, Count);
             int lowerMidpoint = LowerMidpointBound(stream);
             int upperMidpoint = UpperMidpointBound(stream);
             return Tuple.Create(_midpoints[lowerMidpoint].ItemIndex, _midpoints[upperMidpoint].ItemIndex);
@@ -572,6 +593,7 @@ namespace EventStore.Core.Index
         /// </summary>
         private int LowerMidpointBound(ulong stream)
         {
+            if (_midpoints == null) return 0;
             int l = 0;
             int r = _midpoints.Length - 1;
             while (l < r)
@@ -587,6 +609,7 @@ namespace EventStore.Core.Index
 
         private int UpperMidpointBound(ulong stream)
         {
+            if (_midpoints == null) return Count;
             int l = 0;
             int r = _midpoints.Length - 1;
             while (l < r)

@@ -30,6 +30,12 @@ using EventStore.Core.Bus;
 
 namespace EventStore.Core.Services.TimerService
 {
+    /// <summary>
+    /// Timer service uses scheduler that is expected to be already running 
+    /// when it is passed to constructor and stopped on the disposal. This is done to
+    /// make sure that we can handle timeouts and callbacks any time
+    /// (even during system shutdowns and initialization)
+    /// </summary>
     public class TimerService: IDisposable, IHandle<TimerMessage.Schedule>
     {
         private readonly IScheduler _scheduler;

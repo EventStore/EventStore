@@ -76,6 +76,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Event.cs" />
     <Compile Include="Defines\CreateStreamResult.cs" />
     <Compile Include="Exceptions\CommandNotExpectedException.cs" />
     <Compile Include="Exceptions\ConnectionClosingException.cs" />

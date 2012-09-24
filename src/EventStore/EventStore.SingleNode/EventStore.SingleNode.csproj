@@ -40,7 +40,7 @@
     <Optimize>false</Optimize>
     <Externalconsole>true</Externalconsole>
     <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
