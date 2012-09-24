@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Diagnostics;
 using EventStore.Core.Bus;
@@ -32,9 +33,9 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 
-namespace EventStore.Core.Services
+namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public class SingleAckRequestManager : IHandle<ReplicationMessage.TransactionStartRequestCreated>,
+    class SingleAckRequestManager : IHandle<ReplicationMessage.TransactionStartRequestCreated>,
                                            IHandle<ReplicationMessage.TransactionWriteRequestCreated>,
                                            IHandle<ReplicationMessage.PrepareAck>,
                                            IHandle<ReplicationMessage.WrongExpectedVersion>,
@@ -82,7 +83,7 @@ namespace EventStore.Core.Services
                                                                       message.EventStreamId,
                                                                       message.ExpectedVersion,
                                                                       allowImplicitStreamCreation: true));
-            _bus.Publish(TimerMessage.Schedule.Create(TwoPhaseCommitRequestManager.PrepareTimeout,
+            _bus.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                       _publishEnvelope,
                                                       new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
         }
