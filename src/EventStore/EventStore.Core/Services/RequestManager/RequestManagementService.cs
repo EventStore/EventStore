@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services
@@ -65,21 +66,21 @@ namespace EventStore.Core.Services
 
         public void Handle(ReplicationMessage.CreateStreamRequestCreated message)
         {
-            var manager = new TwoPhaseCommitRequestManager(_bus, _prepareCount, _commitCount);
+            var manager = new CreateStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
         public void Handle(ReplicationMessage.WriteRequestCreated message)
         {
-            var manager = new TwoPhaseCommitRequestManager(_bus, _prepareCount, _commitCount);
+            var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
         public void Handle(ReplicationMessage.DeleteStreamRequestCreated message)
         {
-            var manager = new TwoPhaseCommitRequestManager(_bus, _prepareCount, _commitCount);
+            var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
@@ -100,7 +101,7 @@ namespace EventStore.Core.Services
 
         public void Handle(ReplicationMessage.TransactionCommitRequestCreated message)
         {
-            var manager = new TwoPhaseCommitRequestManager(_bus, _prepareCount, _commitCount);
+            var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
