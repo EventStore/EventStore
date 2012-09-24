@@ -27,14 +27,26 @@
 //  
 
 using System;
+using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
     public class ConnectionClosingException : Exception
     {
-        public ConnectionClosingException() : base("The connection has been told to close.")
+        public ConnectionClosingException()
         {
-            
+        }
+
+        public ConnectionClosingException(string message) : base(message)
+        {
+        }
+
+        public ConnectionClosingException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected ConnectionClosingException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
     }
 }

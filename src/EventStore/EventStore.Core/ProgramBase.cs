@@ -27,6 +27,7 @@
 // 
 using System;
 using System.IO;
+using System.Net;
 using System.Reflection;
 using System.Threading;
 using EventStore.Common.CommandLine;
@@ -68,7 +69,7 @@ namespace EventStore.Core
                 if (!BoxMode)
                 {
                     var projName = Assembly.GetEntryAssembly().GetName().Name.Replace(".", " - ");
-                    Console.Title = String.Format("{0} : {1}", projName, options.HttpPort);
+                    Console.Title = String.Format("{0}, {1}", projName, GetComponentName(options));
                 }
 
                 Create();
@@ -94,6 +95,7 @@ namespace EventStore.Core
 
         protected abstract void OnArgsParsed(TOptions options);
         protected abstract string GetLogsDirectory();
+        protected abstract string GetComponentName(TOptions options); 
         protected abstract void Create();
         protected abstract void Start();
         public abstract void Stop();
@@ -104,7 +106,7 @@ namespace EventStore.Core
             if (!CommandLineParser.Default.ParseArguments(args, options, Console.Error, Constants.EnvVarPrefix))
                 throw new ApplicationInitializationException("Error while parsing options");
 
-            // todo MM: init should execute before OnArgsParsed, removed dependencies between log path and parsed options
+            // todo MM: init should execute before OnArgsParsed, remove dependencies between log path and parsed options
             OnArgsParsed(options);
             Init(options);
 
@@ -115,7 +117,7 @@ namespace EventStore.Core
         {
             if (!BoxMode)
             {
-                LogManager.Init(String.Format("{0}-{1}", options.Ip, options.HttpPort), GetLogsDirectory());
+                LogManager.Init(GetComponentName(options), GetLogsDirectory());
             }
 
             var systemInfo = String.Format("{0} {1}", OS.IsLinux ? "Linux" : "Windows", Runtime.IsMono ? "MONO" : ".NET");

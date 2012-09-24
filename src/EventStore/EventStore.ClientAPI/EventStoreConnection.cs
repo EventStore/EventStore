@@ -29,31 +29,30 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.TaskWrappers;
-using EventStore.ClientAPI.Tcp;
 using EventStore.ClientAPI.Transport.Tcp;
 using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
 using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
 
 namespace EventStore.ClientAPI
 {
-    class WorkItem
+    internal class WorkItem
     {
-        public TcpPackage TcpPackage;
+        public ITaskCompletionWrapper Wrapper;
+
         public int Attempt;
         public long LastUpdatedTicks;
 
-        public WorkItem(TcpPackage tcpPackage)
+        public WorkItem(ITaskCompletionWrapper wrapper)
         {
-            TcpPackage = tcpPackage;
+            Ensure.NotNull(wrapper, "wrapper");
+            Wrapper = wrapper;
 
             Attempt = 0;
             LastUpdatedTicks = DateTime.UtcNow.Ticks;
@@ -62,36 +61,36 @@ namespace EventStore.ClientAPI
 
     public class EventStoreConnection : IDisposable
     {
-        private const int TcpSentReceiveWindow = 50;
+        private const int MaxConcurrentItems = 50;
+        private const int MaxQueueSize = 1000;
+
+        private const int MaxAttempts = 100;
 
         private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(0.5);
-        private static readonly TimeSpan EventTimeoutDelay = TimeSpan.FromSeconds(11);
+        private static readonly TimeSpan EventTimeoutDelay = TimeSpan.FromSeconds(7);
         private static readonly TimeSpan EventTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
         private readonly IPEndPoint _tcpEndPoint;
 
         private readonly TcpConnector _connector;
         private Connection _connection;
+        private readonly object _connectionLock = new object();
         
-        private readonly ConcurrentQueue<TcpPackage> _sendQueue = new ConcurrentQueue<TcpPackage>();
+        private readonly ConcurrentQueue<ITaskCompletionWrapper> _queue = new ConcurrentQueue<ITaskCompletionWrapper>();
         private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
-        private long _inProgressCount;
+        private int _inProgressCount;
+
         private DateTime _lastReconnectionTimestamp;
         private readonly Stopwatch _reconnectionStopwatch = new Stopwatch();
         private readonly Stopwatch _timeoutCheckStopwatch = new Stopwatch();
         private int _reconnectionsCount;
-        private readonly object _connectionLock = new object();
 
-        private Thread _monitoringThread;
-        private volatile bool _monitoringThreadStop;
-
-        private readonly ConcurrentDictionary<Guid, ITaskCompletionWrapper> _outstandingOperations;
-
-        private bool _enableReconnect;
+        private readonly Thread _worker;
+        private volatile bool _stopping;
 
         public int OutstandingAsyncOperations
         {
-            get { return _outstandingOperations.Count; }
+            get { return _inProgressCount; }
         }
 
         public EventStoreConnection(IPEndPoint tcpEndPoint)
@@ -100,38 +99,27 @@ namespace EventStore.ClientAPI
 
             _tcpEndPoint = tcpEndPoint;
             _connector = new TcpConnector(_tcpEndPoint);
-            _outstandingOperations = new ConcurrentDictionary<Guid, ITaskCompletionWrapper>();
 
             _lastReconnectionTimestamp = DateTime.UtcNow;
-            _connection = _connector.CreateTcpConnection(OnPackageReceived, ConnectionEstablished, ConnectionClosed);
+            _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
             _timeoutCheckStopwatch.Start();
 
-            _monitoringThread = new Thread(MonitoringLoop)
+            _worker = new Thread(MainLoop)
             {
                 IsBackground = true,
-                Name = string.Format("Monitoring thread")
+                Name = string.Format("Worker thread")
             };
-            _monitoringThread.Start();
+            _worker.Start();
         }
-
-        //public void EnableAutoReconnect()
-        //{
-        //    _enableReconnect = true;
-        //}
-
-        //public void DisableAutoReconnect()
-        //{
-        //    _enableReconnect = false;
-        //}
 
         public void Close()
         {
-            _monitoringThreadStop = true;
+            _stopping = true;
             _connection.Close();
-            foreach(var val in _outstandingOperations.Values)
-            {
-                val.Fail(new ConnectionClosingException());
-            }
+
+            const string err = "Work item was still in progress at the moment of manual connection closing";
+            foreach(var workItem in _inProgress.Values)
+                workItem.Wrapper.Fail(new ConnectionClosingException(err));
         }
 
         void IDisposable.Dispose()
@@ -139,19 +127,10 @@ namespace EventStore.ClientAPI
             Close();
         }
 
-        private void ConnectionEstablished(Connection tcpTypedConnection)
-        {
-            
-        }
-
-        private void ConnectionClosed(Connection tcpTypedConnection, IPEndPoint endPoint, SocketError socketError)
-        {
-            lock (_connectionLock)
-                _reconnectionStopwatch.Restart();
-        }
-
         public EventStream ReadEventStream(string stream, int start, int count)
         {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
             var task = ReadEventStreamAsync(stream, start, count);
             task.Wait();
 
@@ -161,171 +140,115 @@ namespace EventStore.ClientAPI
 
         public Task<ReadResult> ReadEventStreamAsync(string stream, int start, int count)
         {
-            var correlationId = Guid.NewGuid();
-
-            var dto = new ClientMessages.ReadEventsFromBeginning(correlationId, stream, start, count);
-
-            var package = new TcpPackage(TcpCommand.ReadEventsFromBeginning, correlationId, dto.Serialize());
+            Ensure.NotNullOrEmpty(stream, "stream");
 
             var taskCompletionSource = new TaskCompletionSource<ReadResult>();
-            var taskWrapper = new ReadFromBeginningTaskCompletionWrapper(taskCompletionSource);
-            RegisterHandler(correlationId, taskWrapper);
-            EnqueueForSend(package);
+            var taskWrapper = new ReadFromBeginningTaskCompletionWrapper(taskCompletionSource, 
+                                                                         Guid.NewGuid(), 
+                                                                         stream, 
+                                                                         start, 
+                                                                         count);
 
+            EnqueueOperation(taskWrapper);
             return taskCompletionSource.Task;
         }
 
         public void AppendToStream(string stream, int expectedVersion, IEnumerable<Event> events)
         {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
+
             var task = AppendToStreamAsync(stream, expectedVersion, events);
             task.Wait();
         }
 
         public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<Event> events)
         {
-            var correlationId = Guid.NewGuid();
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
 
-            var eventDtos = events.Select(x => new ClientMessages.Event(x.EventId,
-                                                                          x.Type,
-                                                                          x.Data,
-                                                                          x.Metadata)).ToArray();
-
-            var dto = new ClientMessages.WriteEvents(correlationId,
+            var taskCompletionSource = new TaskCompletionSource<WriteResult>();
+            var taskWrapper = new WriteTaskCompletionWrapper(taskCompletionSource, 
+                                                             Guid.NewGuid(), 
                                                        stream,
                                                        expectedVersion,
-                                                       eventDtos);
+                                                             events);
 
-            var package = new TcpPackage(TcpCommand.WriteEvents, correlationId, dto.Serialize());
-            var taskCompletionSource = new TaskCompletionSource<WriteResult>();
-            var taskWrapper = new WriteTaskCompletionWrapper(taskCompletionSource);
-            RegisterHandler(correlationId, taskWrapper);
-            EnqueueForSend(package);
-
+            EnqueueOperation(taskWrapper);
             return taskCompletionSource.Task;
         }
 
         public void CreateStreamWithProtoBufMetadata(string stream, object metadata)
         {
+            Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(metadata, "metadata");
-            var metadataBytes = metadata.Serialize();
-            CreateStream(stream, metadataBytes.Array);
+
+            CreateStream(stream, metadata.Serialize().Array);
         }
 
         public Task<CreateStreamResult> CreateStreamWithProtoBufMetadataAsync(string stream, object metadata)
         {
+            Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(metadata, "metadata");
-            var metadataBytes = metadata.Serialize();
-            return CreateStreamAsync(stream, metadataBytes.Array);
+
+            return CreateStreamAsync(stream, metadata.Serialize().Array);
         }
 
         public void CreateStream(string stream, byte[] metadata)
         {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
             var task = CreateStreamAsync(stream, metadata);
             task.Wait();
         }
 
         public Task<CreateStreamResult> CreateStreamAsync(string stream, byte[] metadata)
         {
-            var correlationId = Guid.NewGuid();
+            Ensure.NotNullOrEmpty(stream, "stream");
 
-            var dto = new ClientMessages.CreateStream(correlationId,
-                                                        stream,
-                                                        metadata);
-
-            var package = new TcpPackage(TcpCommand.CreateStream, correlationId, dto.Serialize());
             var taskCompletionSource = new TaskCompletionSource<CreateStreamResult>();
-            var taskWrapper = new CreateStreamCompletionWrapper(taskCompletionSource);
-            RegisterHandler(correlationId, taskWrapper);
-            EnqueueForSend(package);
+            var taskWrapper = new CreateStreamCompletionWrapper(taskCompletionSource, Guid.NewGuid(), stream, metadata);
 
+            EnqueueOperation(taskWrapper);
             return taskCompletionSource.Task;
         }
 
         public void DeleteStream(string stream, int expectedVersion)
         {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
             var task = DeleteStreamAsync(stream, expectedVersion);
             task.Wait();
         }
 
         public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion)
         {
-            var correlationId = Guid.NewGuid();
-            var dto = new ClientMessages.DeleteStream(correlationId, stream, expectedVersion);
+            Ensure.NotNullOrEmpty(stream, "stream");
 
-            var package = new TcpPackage(TcpCommand.DeleteStream, correlationId, dto.Serialize());
             var taskCompletionSource = new TaskCompletionSource<DeleteResult>();
-            var taskWrapper = new DeleteTaskCompletionWrapper(taskCompletionSource);
-            RegisterHandler(correlationId, taskWrapper);
-            EnqueueForSend(package);
+            var taskWrapper = new DeleteTaskCompletionWrapper(taskCompletionSource, Guid.NewGuid(), stream, expectedVersion);
 
+            EnqueueOperation(taskWrapper);
             return taskCompletionSource.Task;
         }
 
-        internal void RegisterHandler(Guid correlationId, ITaskCompletionWrapper wrapper)
+        private void EnqueueOperation(ITaskCompletionWrapper wrapper)
         {
-            _outstandingOperations.TryAdd(correlationId, wrapper);
-        }
-
-        private void OnPackageReceived(Connection typedTcpConnection, TcpPackage package)
-        {
-            WorkItem workItem;
-            ITaskCompletionWrapper wrapper;
-
-            if (RemoveInProgressItem(package.CorrelationId, "PR", out workItem, out wrapper))
-            {
-            }
-            else
-            {
-                if (!_outstandingOperations.TryGetValue(package.CorrelationId, out wrapper))
-                {
-                    // "SKIPPED [[ "
-                    return;
-                }
-            }
-
-            var result = wrapper.Process(package);
-            switch (result.Status)
-            {
-                case ProcessResultStatus.Success:
-                    wrapper.Complete();
-                    break;
-                case ProcessResultStatus.Retry:
-                        if (wrapper.UpdateForNextAttempt())
-                        {
-                            RegisterHandler(wrapper.SentPackage.CorrelationId, wrapper);
-                            EnqueueForSend(wrapper.SentPackage);
-                        }
-                        else
-                            wrapper.Fail(new Exception(string.Format("Retry is not supported in wrapper {0}.", wrapper.GetType())));
-                    break;
-                case ProcessResultStatus.NotifyError:
-                    wrapper.Fail(result.Exception);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        internal void EnqueueForSend(TcpPackage package)
-        {
-            while (_sendQueue.Count > TcpSentReceiveWindow)
+            while (_queue.Count >= MaxQueueSize)
                 Thread.Sleep(1);
             
-            _sendQueue.Enqueue(package);
+            _queue.Enqueue(wrapper);
         }
 
-        private void MonitoringLoop()
+        private void MainLoop()
         {
-            while (!_monitoringThreadStop)
+            while (!_stopping)
             {
-                TcpPackage nextPackage;
-                if (_inProgressCount < TcpSentReceiveWindow && _sendQueue.TryDequeue(out nextPackage))
+                ITaskCompletionWrapper wrapper;
+                if (_inProgressCount < MaxConcurrentItems && _queue.TryDequeue(out wrapper))
                 {
                     Interlocked.Increment(ref _inProgressCount);
-
-                    var workItem = new WorkItem(nextPackage);
-
-                    Send(workItem, null);
+                    Send(new WorkItem(wrapper));
                 }
                 else
                     Thread.Sleep(1);
@@ -336,9 +259,7 @@ namespace EventStore.ClientAPI
                     {
                         _reconnectionsCount += 1;
                         _lastReconnectionTimestamp = DateTime.UtcNow;
-                        _connection = _connector.CreateTcpConnection(OnPackageReceived, 
-                                                                     ConnectionEstablished, 
-                                                                     ConnectionClosed);
+                        _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
                         _reconnectionStopwatch.Stop();
                     }
                 }
@@ -346,116 +267,107 @@ namespace EventStore.ClientAPI
                 if (_timeoutCheckStopwatch.Elapsed > EventTimeoutCheckPeriod)
                 {
                     var now = DateTime.UtcNow;
-                    foreach (var kvp in _inProgress)
+                    foreach (var workerItem in _inProgress.Values)
                     {
-                        var correlationId = kvp.Key;
-                        var workerItem = kvp.Value;
-
                         var lastUpdated = new DateTime(Interlocked.Read(ref workerItem.LastUpdatedTicks));
-                        if (now - lastUpdated > EventTimeoutDelay || _reconnectionsCount > 10)
-                        {
-                            if (lastUpdated > _lastReconnectionTimestamp || _reconnectionsCount > 10)
+                        if (now - lastUpdated > EventTimeoutDelay)
                             {
-                                WorkItem workItem;
-                                ITaskCompletionWrapper completionWrapper;
-                                if (RemoveInProgressItem(correlationId, " -ML timeout", out workItem, out completionWrapper))
+                            if (lastUpdated > _lastReconnectionTimestamp)
                                 {
-                                    completionWrapper.Fail(
-                                        new Exception(
-                                                string.Format("Timed out event {0} which "
-                                                            + "never got response from server was discovered. "
-                                                            + "Last state update: {1}, last reconnect: {2}, now: {3}.",
-                                                            workerItem.TcpPackage.CorrelationId,
+                                workerItem.Wrapper.Fail(
+                                    new OperationTimedOutException(
+                                        string.Format("Timed out event which never got response from server was discovered. "
+                                                      + "Last state update : {0}, last reconnect : {1}, now(utc) : {2}.",
                                                             lastUpdated,
                                                             _lastReconnectionTimestamp,
                                                             now)));
-                                }
-
-                                
+                                TryRemoveWorkItem(workerItem);
                             }
                             else
-                                Retry(correlationId);
+                                Retry(workerItem);
                         }
                     }
                     _timeoutCheckStopwatch.Restart();
                 }
             }
-
         }
 
-        private bool RemoveInProgressItem(Guid correlationId, string marker, 
-            out WorkItem workItem, out ITaskCompletionWrapper wrapper)
-        {
-            lock (_connectionLock)
-            {
-                if (_inProgress.TryRemove(correlationId, out workItem))
+        private bool TryRemoveWorkItem(WorkItem workItem)
                 {
-                    Interlocked.Decrement(ref _inProgressCount);
-                    return _outstandingOperations.TryRemove(correlationId, out wrapper);
-                }
-                wrapper = null;
+            WorkItem removed;
+            if (!_inProgress.TryRemove(workItem.Wrapper.CorrelationId, out removed))
                 return false;
-            }
+
+                    Interlocked.Decrement(ref _inProgressCount);
+            return true;
         }
 
-        private void Send(WorkItem workItem, ITaskCompletionWrapper wrapper)
+        private void Send(WorkItem workItem)
         {
             lock (_connectionLock)
             {
-                var correlationId = workItem.TcpPackage.CorrelationId;
-                _inProgress.TryAdd(correlationId, workItem);
-
-                if (wrapper != null)
-                    _outstandingOperations.TryAdd(correlationId, wrapper);
-                else
-                {
-                    ITaskCompletionWrapper unused;
-                    Debug.Assert(_outstandingOperations.TryGetValue(correlationId, out unused),
-                        "Initially wrapper should be prsebt in outstanding tasks");
-                }
-                _connection.EnqueueSend(workItem.TcpPackage.AsByteArray());
+                _inProgress.TryAdd(workItem.Wrapper.CorrelationId, workItem);
+                _connection.EnqueueSend(workItem.Wrapper.CreateNetworkPackage().AsByteArray());
             }
         }
 
-        private void Retry(Guid correlationId)
+        private void Retry(WorkItem workItem)
         {
-            //lock (_connectionLock)
+            lock (_connectionLock)
             {
                 WorkItem inProgressItem;
-                ITaskCompletionWrapper wrapper;
-
-                if (RemoveInProgressItem(correlationId, " IN Retry", out inProgressItem, out wrapper))
+                if (_inProgress.TryRemove(workItem.Wrapper.CorrelationId, out inProgressItem))
                 {
-                    var newCorrelationId = Guid.NewGuid();
-                    var newPackage = new TcpPackage(inProgressItem.TcpPackage.Command, 
-                                                    newCorrelationId,
-                                                    inProgressItem.TcpPackage.Data);
+                    inProgressItem.Wrapper.SetRetryId(Guid.NewGuid());
                     inProgressItem.Attempt += 1;
-                    inProgressItem.TcpPackage = newPackage;
                     Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
 
-                    if (inProgressItem.Attempt > 100)
-                    {
-                       wrapper.Fail(new Exception(string.Format("Item's {0} current attempt is {1}!",
-                                                                            inProgressItem,
-                                                                            inProgressItem.Attempt)));
+                    if (inProgressItem.Attempt > MaxAttempts)
+                        inProgressItem.Wrapper.Fail(new RetriesLimitReachedException(inProgressItem.Wrapper.ToString(),
+                                                                                     inProgressItem.Attempt));
+                    else
+                        Send(inProgressItem);
                     }
                     else
-                    {
-                            wrapper.SentPackage = newPackage;
-                            Send(inProgressItem, wrapper);
+                    Debug.WriteLine("Concurrency failure. Unable to remove in progress item on retry");
                     }
                 }
-                else
+
+        private void OnPackageReceived(Connection connection, TcpPackage package)
                 {
-                    ITaskCompletionWrapper completionWrapper;
-                    if (_outstandingOperations.TryRemove(correlationId, out completionWrapper))
+            var corrId = package.CorrelationId;
+            WorkItem workItem;
+
+            if(!_inProgress.TryGetValue(corrId, out workItem))
                     {
-                        completionWrapper.Fail(new Exception(string.Format("Item {0} was not found to perform retry on ",
-                                                                           correlationId)));
+                Debug.WriteLine("Unexpected corrid received {0}", corrId);
+                return;
                     }
+
+            var result = workItem.Wrapper.Process(package);
+            switch (result.Status)
+            {
+                case ProcessResultStatus.Success:
+                    if(TryRemoveWorkItem(workItem))
+                        workItem.Wrapper.Complete();
+                    break;
+                case ProcessResultStatus.Retry:
+                    Retry(workItem);
+                    break;
+                case ProcessResultStatus.NotifyError:
+                    workItem.Wrapper.Fail(result.Exception);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
                 }
             }
+
+        private void OnConnectionEstablished(Connection tcpTypedConnection) { }
+
+        private void OnConnectionClosed(Connection connection, IPEndPoint endPoint, SocketError error)
+        {
+            lock (_connectionLock)
+                _reconnectionStopwatch.Restart();
         }
     }
 }

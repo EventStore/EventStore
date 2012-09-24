@@ -69,6 +69,11 @@ namespace EventStore.SingleNode
             return TfDb.Config.Path + "-logs" ;
         }
 
+        protected override string GetComponentName(SingleNodeOptions options)
+        {
+            return string.Format("{0}-{1}", options.Ip, options.HttpPort);
+        }
+
         private static TFChunkDb GetTfDb(SingleNodeOptions options, DateTime timeStamp)
         {
             var db = CreateTfDbConfig(options.DbPath, options.HttpPort, timeStamp, options.ChunksToCache);

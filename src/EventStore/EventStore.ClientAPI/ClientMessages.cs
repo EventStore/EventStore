@@ -25,17 +25,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Data;
 using EventStore.ClientAPI.Defines;
 using ProtoBuf;
-using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
 
-namespace EventStore.ClientAPI.Messages
+namespace EventStore.ClientAPI
 {
     static class ClientMessages
     {
-        #region TCP DTO
         [ProtoContract]
         public class CreateStream
         {
@@ -701,7 +701,5 @@ namespace EventStore.ClientAPI.Messages
                 CorrelationId = correlationId.ToByteArray();
             }
         }
-        #endregion
-         
     }
 }

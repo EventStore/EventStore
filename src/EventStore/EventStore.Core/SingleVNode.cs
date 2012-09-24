@@ -68,7 +68,7 @@ namespace EventStore.Core
             db.OpenVerifyAndClean();
 
             _tcpEndPoint = vNodeSettings.ExternalTcpEndPoint;
-            _httpEndPoint = vNodeSettings.HttpEndPoint;
+            _httpEndPoint = vNodeSettings.ExternalHttpEndPoint;
 
             _outputBus = new InMemoryBus("OutputBus");
             _controller = new SingleVNodeController(Bus, _httpEndPoint);

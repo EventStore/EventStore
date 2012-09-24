@@ -47,17 +47,10 @@ namespace EventStore.ClientAPI.Data
         public readonly string EventStreamId;
         public readonly int ExpectedVersion;
         public readonly DateTime TimeStamp;
+        public readonly PrepareFlags Flags;
         public readonly string EventType;
         public readonly byte[] Data;
         public readonly byte[] Metadata;
-
-        private readonly Flags _flags; 
-
-
-        public bool IsDeleteTombstone
-        {
-            get { return (_flags & Flags.DeleteTombstone) == Flags.DeleteTombstone;  }
-        }
 
         public EventRecord(int eventNumber,
                            long logPosition,
@@ -67,33 +60,7 @@ namespace EventStore.ClientAPI.Data
                            string eventStreamId,
                            int expectedVersion,
                            DateTime timeStamp,
-                           bool isDeleteTombstone,
-                           string eventType,
-                           byte[] data,
-                           byte[] metadata) : this(eventNumber,
-                                                   logPosition,
-                                                   correlationId,
-                                                   eventId,
-                                                   transactionPosition,
-                                                   eventStreamId,
-                                                   expectedVersion,
-                                                   timeStamp,
-                                                   isDeleteTombstone ? Flags.DeleteTombstone : Flags.None,
-                                                   eventType,
-                                                   data,
-                                                   metadata)
-        {
-        }
-
-        internal EventRecord(int eventNumber,
-                           long logPosition,
-                           Guid correlationId,
-                           Guid eventId,
-                           long transactionPosition,
-                           string eventStreamId,
-                           int expectedVersion,
-                           DateTime timeStamp,
-                           Flags flags,
+                           PrepareFlags flags,
                            string eventType,
                            byte[] data,
                            byte[] metadata)
@@ -113,7 +80,7 @@ namespace EventStore.ClientAPI.Data
             EventStreamId = eventStreamId;
             ExpectedVersion = expectedVersion;
             TimeStamp = timeStamp;
-            _flags = flags;
+            Flags = flags;
             EventType = eventType ?? string.Empty;
             Data = data;
             Metadata = metadata ?? Empty;
@@ -131,7 +98,7 @@ namespace EventStore.ClientAPI.Data
                    && string.Equals(EventStreamId, other.EventStreamId)
                    && ExpectedVersion == other.ExpectedVersion
                    && TimeStamp.Equals(other.TimeStamp)
-                   && _flags.Equals(other._flags)
+                   && Flags.Equals(other.Flags)
                    && string.Equals(EventType, other.EventType)
                    && Data.SequenceEqual(other.Data)
                    && Metadata.SequenceEqual(other.Metadata);
@@ -157,7 +124,7 @@ namespace EventStore.ClientAPI.Data
                 hashCode = (hashCode * 397) ^ EventStreamId.GetHashCode();
                 hashCode = (hashCode * 397) ^ ExpectedVersion;
                 hashCode = (hashCode * 397) ^ TimeStamp.GetHashCode();
-                hashCode = (hashCode * 397) ^ _flags.GetHashCode();
+                hashCode = (hashCode * 397) ^ Flags.GetHashCode();
                 hashCode = (hashCode * 397) ^ EventType.GetHashCode();
                 hashCode = (hashCode * 397) ^ Data.GetHashCode();
                 hashCode = (hashCode * 397) ^ Metadata.GetHashCode();
@@ -195,7 +162,7 @@ namespace EventStore.ClientAPI.Data
                                  EventStreamId,
                                  ExpectedVersion,
                                  TimeStamp,
-                                 _flags,
+                                 Flags,
                                  EventType);
         }
     }

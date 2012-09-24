@@ -77,6 +77,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Event.cs" />
+    <Compile Include="Defines\CreateStreamResult.cs" />
+    <Compile Include="Exceptions\CommandNotExpectedException.cs" />
+    <Compile Include="Exceptions\ConnectionClosingException.cs" />
+    <Compile Include="Exceptions\ConnectionFailedException.cs" />
+    <Compile Include="Exceptions\NoResultException.cs" />
+    <Compile Include="Exceptions\OperationTimedOutException.cs" />
+    <Compile Include="Exceptions\RetriesLimitReachedException.cs" />
+    <Compile Include="Exceptions\UnknownPackageException.cs" />
     <Compile Include="TaskWrappers\CreateStreamCompletionWrapper.cs" />
     <Compile Include="TaskWrappers\ProcessResultStatus.cs" />
     <Compile Include="Common\Log\Logger.cs" />
@@ -85,7 +93,6 @@
     <Compile Include="Common\ConcurrentCollections\ConcurrentQueue.cs" />
     <Compile Include="Common\ConcurrentCollections\ConcurrentStack.cs" />
     <Compile Include="Configure.cs" />
-    <Compile Include="ConnectionClosingException.cs" />
     <Compile Include="TaskWrappers\DeleteTaskCompletionWrapper.cs" />
     <Compile Include="TaskWrappers\ITaskCompletionWrapper.cs" />
     <Compile Include="TaskWrappers\ReadFromBeginningTaskCompletionWrapper.cs" />
@@ -93,7 +100,6 @@
     <Compile Include="Data\Event.cs" />
     <Compile Include="Data\EventRecord.cs" />
     <Compile Include="ExpectedVersion.cs" />
-    <Compile Include="FailedConnectionException.cs" />
     <Compile Include="Defines\OperationErrorCode.cs" />
     <Compile Include="Defines\ReadResult.cs" />
     <Compile Include="Defines\TcpCommand.cs" />
@@ -101,14 +107,13 @@
     <Compile Include="TcpConnector.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Defines\Flags.cs" />
+    <Compile Include="Defines\PrepareFlags.cs" />
     <Compile Include="Transport.Tcp\ProtobufExtensions.cs" />
     <Compile Include="ClientMessages.cs" />
     <Compile Include="Transport.Tcp\TcpConfiguratin.cs" />
     <Compile Include="Transport.Tcp\TcpConnection.cs" />
     <Compile Include="Transport.Tcp\LengthPrefixFramer.cs" />
     <Compile Include="Transport.Tcp\TcpConnectionMonitor.cs" />
-    <Compile Include="Transport.Tcp\TcpStats.cs" />
     <Compile Include="Transport.Tcp\TcpTypedConnection.cs" />
     <Compile Include="EventStoreConnection.cs" />
     <Compile Include="EventStore.cs" />
@@ -120,7 +125,6 @@
     <Compile Include="Transport.Tcp\ITcpConnection.cs" />
     <Compile Include="Transport.Tcp\SocketArgsPool.cs" />
     <Compile Include="Transport.Tcp\TcpConnectionBase.cs" />
-    <Compile Include="UnknownPackageReturned.cs" />
     <Compile Include="Usage.cs" />
     <Compile Include="TaskWrappers\WriteTaskCompletionWrapper.cs" />
   </ItemGroup>

@@ -3,7 +3,7 @@ using System;
 namespace EventStore.ClientAPI.Defines
 {
     [Flags]
-    enum Flags : ushort
+    public enum PrepareFlags : ushort
     {
         None = 0x00,
         Data = 0x01,                // prepare contains data
