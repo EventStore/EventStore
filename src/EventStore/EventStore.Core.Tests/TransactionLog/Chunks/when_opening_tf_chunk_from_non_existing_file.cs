@@ -69,14 +69,15 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
     public class when_destroying_a_tf_chunk_that_is_locked
     {
         private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
-        private TFChunk chunk;
+        private TFChunk _chunk;
+        private TFChunkBulkReader _reader;
 
         [SetUp]
         public void setup()
         {
-            chunk = TFChunk.CreateNew(_filename, 1000, 0, 0);
-            chunk.AcquireLock();
-            chunk.MarkForDeletion();
+            _chunk = TFChunk.CreateNew(_filename, 1000, 0, 0);
+            _reader = _chunk.AcquireReader();
+            _chunk.MarkForDeletion();
         }
 
         [Test]
@@ -88,9 +89,9 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [TearDown]
         public void td()
         {
-            chunk.ReleaseLock();
-            chunk.MarkForDeletion();
-            chunk.WaitForDestroy(2000);
+            _reader.Release();
+            _chunk.MarkForDeletion();
+            _chunk.WaitForDestroy(2000);
         }
     }
 
@@ -105,9 +106,9 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public void setup()
         {
             chunk = TFChunk.CreateNew(_filename, 1000, 0, 0);
-            chunk.AcquireLock();
+            var reader = chunk.AcquireReader();
             chunk.MarkForDeletion();
-            chunk.ReleaseLock();
+            reader.Release();
         }
 
         [Test]
@@ -128,9 +129,9 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public void setup()
         {
             chunk = TFChunk.CreateNew(_filename, 1000, 0, 0);
-            chunk.AcquireLock();
+            var reader = chunk.AcquireReader();
             chunk.MarkForDeletion();
-            chunk.ReleaseLock();
+            reader.Release();
         }
 
         [Test]

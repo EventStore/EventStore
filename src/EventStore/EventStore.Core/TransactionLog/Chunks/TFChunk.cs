@@ -1042,16 +1042,17 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public void AcquireLock()
+        public TFChunkBulkReader AcquireReader()
         {
             if(_selfdestructin54321)
             {
                 throw new FileBeingDeletedException();
             }
             Interlocked.Increment(ref _lockedCount);
+            return new TFChunkBulkReader(this);
         }
 
-        public void ReleaseLock()
+        internal void ReleaseReader(TFChunkBulkReader reader)
         {
             Interlocked.Decrement(ref _lockedCount);
             if(_selfdestructin54321)
@@ -1072,6 +1073,28 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
+    }
+
+    //TODO GFY ACTUALLY GET STREAM HERE AND USE IT. 
+    public class TFChunkBulkReader : IDisposable
+    {
+        private readonly TFChunk _chunk;
+
+        internal TFChunkBulkReader(TFChunk chunk)
+        {
+            _chunk = chunk;
+        }
+
+        public void Release()
+        {
+            //Kill bulk stream
+            _chunk.ReleaseReader(this);
+        }
+
+        public void Dispose()
+        {
+            Release();
+        }
     }
 
     public struct PosMap
