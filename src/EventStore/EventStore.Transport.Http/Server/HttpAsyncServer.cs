@@ -47,12 +47,13 @@ namespace EventStore.Transport.Http.Server
 
         private readonly HttpListener _listener;
 
-        public HttpAsyncServer(string uri)
+        public HttpAsyncServer(string[] prefixes)
         {
-            Ensure.NotNull(uri, "uri");
+            Ensure.NotNull(prefixes, "prefixes");
 
             _listener = new HttpListener();
-            _listener.Prefixes.Add(uri);
+            foreach (var prefix in prefixes)
+                _listener.Prefixes.Add(prefix);
         }
 
         public bool TryStart()

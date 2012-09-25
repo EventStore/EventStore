@@ -28,7 +28,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Transport.Http;
@@ -40,9 +39,9 @@ namespace EventStore.Core.Services.Transport.Http
     {
         public static ServiceDocument ToServiceDocument(IEnumerable<string> userStreams, 
                                                         IEnumerable<string> systemStreams,
-                                                        IPEndPoint httpEndPoint)
+                                                        string userHostName)
         {
-            if (userStreams == null || systemStreams == null || httpEndPoint == null)
+            if (userStreams == null || systemStreams == null || userHostName == null)
                 return null;
 
             var document = new ServiceDocument();
@@ -58,7 +57,7 @@ namespace EventStore.Core.Services.Transport.Http
                 var collection = new CollectionElement();
 
                 collection.SetTitle(userStream);
-                collection.SetUri(httpEndPoint.ToHttpUrl("/streams/{0}", userStream));
+                collection.SetUri(HostName.Combine(userHostName, "/streams/{0}", userStream));
 
                 collection.AddAcceptType(ContentType.Xml);
                 collection.AddAcceptType(ContentType.Atom);
@@ -73,7 +72,7 @@ namespace EventStore.Core.Services.Transport.Http
                 var collection = new CollectionElement();
 
                 collection.SetTitle(systemStream);
-                collection.SetUri(httpEndPoint.ToHttpUrl("/streams/{0}", systemStream));
+                collection.SetUri(HostName.Combine(userHostName, "/streams/{0}", systemStream));
 
                 collection.AddAcceptType(ContentType.Xml);
                 collection.AddAcceptType(ContentType.Atom);
@@ -94,16 +93,16 @@ namespace EventStore.Core.Services.Transport.Http
                                             int count, 
                                             DateTime updateTime,
                                             EventRecord[] items, 
-                                            Func<EventRecord, IPEndPoint, EntryElement> itemToEntry,
-                                            IPEndPoint httpEndPoint)
+                                            Func<EventRecord, string, EntryElement> itemToEntry,
+                                            string userHostName)
         {
-            if (string.IsNullOrEmpty(eventStreamId) || items == null || httpEndPoint == null)
+            if (string.IsNullOrEmpty(eventStreamId) || items == null || userHostName == null)
                 return null;
 
             if (start == -1)
                 start = GetActualStart(items);
 
-            var self = httpEndPoint.ToHttpUrl("streams/{0}", eventStreamId);
+            var self = HostName.Combine(userHostName, "/streams/{0}", eventStreamId);
 
             var feed = new FeedElement();
 
@@ -115,30 +114,33 @@ namespace EventStore.Core.Services.Transport.Http
 
             feed.AddLink(self, "self", null);
             
-            feed.AddLink(httpEndPoint.ToHttpUrl("/streams/{0}/range/{1}/{2}",
-                                                eventStreamId,
-                                                AtomSpecs.FeedPageSize - 1,
-                                                AtomSpecs.FeedPageSize),
+            feed.AddLink(HostName.Combine(userHostName, 
+                                     "/streams/{0}/range/{1}/{2}",
+                                     eventStreamId,
+                                     AtomSpecs.FeedPageSize - 1,
+                                     AtomSpecs.FeedPageSize),
                          "first",
                          null);
 
 
-            feed.AddLink(httpEndPoint.ToHttpUrl("/streams/{0}/range/{1}/{2}",
-                                                eventStreamId,
-                                                PrevStart(start),
-                                                AtomSpecs.FeedPageSize),
+            feed.AddLink(HostName.Combine(userHostName, 
+                                     "/streams/{0}/range/{1}/{2}",
+                                     eventStreamId,
+                                     PrevStart(start),
+                                     AtomSpecs.FeedPageSize),
                          "prev",
                          null);
-            feed.AddLink(httpEndPoint.ToHttpUrl("/streams/{0}/range/{1}/{2}",
-                                                eventStreamId,
-                                                NextStart(start),
-                                                AtomSpecs.FeedPageSize),
+            feed.AddLink(HostName.Combine(userHostName, 
+                                     "/streams/{0}/range/{1}/{2}",
+                                     eventStreamId,
+                                     NextStart(start),
+                                     AtomSpecs.FeedPageSize),
                          "next",
                          null);
 
             foreach (var item in items)
             {
-                feed.AddEntry(itemToEntry(item, httpEndPoint));
+                feed.AddEntry(itemToEntry(item, userHostName));
             }
 
             return feed;
@@ -160,33 +162,33 @@ namespace EventStore.Core.Services.Transport.Http
             return items.Max(e => e.EventNumber);
         }
 
-        public static EntryElement ToEntry(EventRecord evnt, IPEndPoint httpEndPoint)
+        public static EntryElement ToEntry(EventRecord evnt, string userHostName)
         {
-            if (evnt == null || httpEndPoint == null)
+            if (evnt == null || userHostName == null)
                 return null;
 
             var entry = new EntryElement();
 
             entry.SetTitle(String.Format("{0} #{1}", evnt.EventStreamId, evnt.EventNumber));
 
-            entry.SetId(httpEndPoint.ToHttpUrl("/streams/{0}/{1}", evnt.EventStreamId, evnt.EventNumber));
+            entry.SetId(HostName.Combine(userHostName, "/streams/{0}/{1}", evnt.EventStreamId, evnt.EventNumber));
             entry.SetUpdated(evnt.TimeStamp);
 
             entry.SetAuthor(AtomSpecs.Author);
             entry.SetSummary(String.Format("Entry #{0}", evnt.EventNumber));
 
-            entry.AddLink(httpEndPoint.ToHttpUrl("/streams/{0}/{1}", evnt.EventStreamId, evnt.EventNumber), "edit", null);
+            entry.AddLink(HostName.Combine(userHostName, "/streams/{0}/{1}", evnt.EventStreamId, evnt.EventNumber), "edit", null);
 
             entry.AddLink(
-                httpEndPoint.ToHttpUrl("/streams/{0}/event/{1}?format=text", evnt.EventStreamId, evnt.EventNumber),
+                HostName.Combine(userHostName, "/streams/{0}/event/{1}?format=text", evnt.EventStreamId, evnt.EventNumber),
                 null,
                 ContentType.PlainText);
             entry.AddLink(
-                httpEndPoint.ToHttpUrl("/streams/{0}/event/{1}?format=json", evnt.EventStreamId, evnt.EventNumber),
+                HostName.Combine(userHostName, "/streams/{0}/event/{1}?format=json", evnt.EventStreamId, evnt.EventNumber),
                 "alternate",
                 ContentType.Json);
             entry.AddLink(
-                httpEndPoint.ToHttpUrl("/streams/{0}/event/{1}?format=xml", evnt.EventStreamId, evnt.EventNumber),
+                HostName.Combine(userHostName, "/streams/{0}/event/{1}?format=xml", evnt.EventStreamId, evnt.EventNumber),
                 "alternate",
                 ContentType.Xml);
 

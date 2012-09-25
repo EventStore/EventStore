@@ -30,6 +30,8 @@ using System.Net;
 using EventStore.Common.Settings;
 using EventStore.Core;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Common.Utils;
+using System.Linq;
 
 namespace EventStore.SingleNode
 {
@@ -104,10 +106,13 @@ namespace EventStore.SingleNode
 
         private static SingleVNodeSettings GetVNodeSettings(SingleNodeOptions options)
         {
-            var http = new IPEndPoint(options.Ip, options.HttpPort);
             var tcp = new IPEndPoint(options.Ip, options.TcpPort);
+            var http = new IPEndPoint(options.Ip, options.HttpPort);
+            var prefixes = !String.IsNullOrEmpty(options.PrefixesString)
+                               ? options.PrefixesString.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)
+                               : new[] {http.ToHttpUrl()};
 
-            var vnodeSettings = new SingleVNodeSettings(tcp, http);
+            var vnodeSettings = new SingleVNodeSettings(tcp, http, prefixes.Select(p => p.Trim()).ToArray());
             return vnodeSettings;
         }
     }
