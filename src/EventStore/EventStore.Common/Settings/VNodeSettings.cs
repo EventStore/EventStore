@@ -34,22 +34,26 @@ namespace EventStore.Common.Settings
     {
         public readonly IPEndPoint ExternalTcpEndPoint;
         public readonly IPEndPoint HttpEndPoint;
+        public readonly string[] HttpPrefixes;
 
-        public SingleVNodeSettings(IPEndPoint externalTcpEndPoint, IPEndPoint httpEndPoint)
+        public SingleVNodeSettings(IPEndPoint externalTcpEndPoint, IPEndPoint httpEndPoint, string[] httpPrefixes)
         {
             Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
             Ensure.NotNull(httpEndPoint, "httpEndPoint");
+            Ensure.NotNull(httpPrefixes, "httpPrefixes");
 
             ExternalTcpEndPoint = externalTcpEndPoint;
             HttpEndPoint = httpEndPoint;
+            HttpPrefixes = httpPrefixes;
         }
 
         public override string ToString()
         {
-            return string.Format("#{0}[tcp-{1}, http-{2}], ",
+            return string.Format("#{0}[tcp-{1}, http-{2}, http-prefixes-{3}], ",
                                  ExternalTcpEndPoint.Address,
                                  ExternalTcpEndPoint.Port,
-                                 HttpEndPoint.Port);
+                                 HttpEndPoint.Port,
+                                 string.Join(",", HttpPrefixes));
         }
     }
 

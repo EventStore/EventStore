@@ -39,6 +39,9 @@ namespace EventStore.SingleNode
         [Option(null, "db")]
         public string DbPath { get; set; }
 
+        [Option(null, "prefixes")]
+        public string PrefixesString { get; set; }
+
         public override IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
         {
             foreach (var pair in base.GetLoadedOptionsPairs())
