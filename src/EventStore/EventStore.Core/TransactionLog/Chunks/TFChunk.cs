@@ -935,38 +935,40 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         private int _destructedFileStreams;
         private int _destructedMemStreams;
+        private int _lockedCount = 0;
 
         private void TryDestruct()
         {
             ReaderWorkItem workItem;
+            var destructed = _destructedFileStreams;
             while (_streams.TryDequeue(out workItem))
             {
-                var destructed = Interlocked.Increment(ref _destructedFileStreams);
+                destructed = Interlocked.Increment(ref _destructedFileStreams);
                 workItem.Stream.Close();
                 workItem.Stream.Dispose();
-
-                if (destructed == _maxReadThreads)
-                {
-                    if (File.Exists(_filename))
-                        File.SetAttributes(_filename, FileAttributes.Normal);
-
-                    if (_writerWorkItem != null)
-                    {
-                        _writerWorkItem.Stream.Close();
-                        _writerWorkItem.Stream.Dispose();
-                        if (_writerWorkItem.UnmanagedMemoryStream != null)
-                        {
-                            _writerWorkItem.UnmanagedMemoryStream.Dispose();
-                            _writerWorkItem.UnmanagedMemoryStream = null;
-                        }
-                    }
-
-                    if (_deleteFile)
-                        Helper.EatException(() => File.Delete(_filename));
-
-                    _destroyEvent.Set();
-                }
+                
             }
+            if (destructed == _maxReadThreads)
+            {
+                if (File.Exists(_filename))
+                    File.SetAttributes(_filename, FileAttributes.Normal);
+
+                if (_writerWorkItem != null)
+                {
+                    _writerWorkItem.Stream.Close();
+                    _writerWorkItem.Stream.Dispose();
+                    if (_writerWorkItem.UnmanagedMemoryStream != null)
+                    {
+                        _writerWorkItem.UnmanagedMemoryStream.Dispose();
+                        _writerWorkItem.UnmanagedMemoryStream = null;
+                    }
+                }
+                if (_deleteFile && _lockedCount == 0)
+                    Helper.EatException(() => File.Delete(_filename));
+
+                _destroyEvent.Set();
+            }
+            
         }
 
         private void TryDestructUnmanagedMemory()
@@ -1040,6 +1042,24 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
+        public void AcquireLock()
+        {
+            if(_selfdestructin54321)
+            {
+                throw new FileBeingDeletedException();
+            }
+            Interlocked.Increment(ref _lockedCount);
+        }
+
+        public void ReleaseLock()
+        {
+            Interlocked.Decrement(ref _lockedCount);
+            if(_selfdestructin54321)
+            {
+                TryDestruct();
+            }
+        }
+
         private struct Midpoint
         {
             public readonly int ItemIndex;
@@ -1051,6 +1071,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 LogPos = posmap.LogPos;
             }
         }
+
     }
 
     public struct PosMap
