@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using EventStore.Common.Settings;
+using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog;
@@ -43,7 +44,8 @@ namespace EventStore.Core.Tests.Integration
                                                  new[] {chaserChk});
 
             var settings = new SingleVNodeSettings(new IPEndPoint(IPAddress.Loopback, 1111),
-                                                   new IPEndPoint(IPAddress.Loopback, 2111));
+                                                   new IPEndPoint(IPAddress.Loopback, 2111),
+                                                   new[] {new IPEndPoint(IPAddress.Loopback, 2111).ToHttpUrl()});
             var appsets = new SingleVNodeAppSettings(TimeSpan.FromDays(1));
             _db = new TFChunkDb(nodeConfig);
 
