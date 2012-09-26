@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using EventStore.Common.Utils;
+using Uri = System.Uri;
 
 namespace EventStore.Transport.Http.EntityManagement
 {
@@ -45,7 +46,7 @@ namespace EventStore.Transport.Http.EntityManagement
         public readonly HttpEntityManager Manager;
 
         public readonly DateTime Received;
-        public readonly IPEndPoint ServerHttpEndPoint;
+        public readonly string UserHostName;
 
         public readonly ICodec RequestCodec;
         public readonly ICodec ResponseCodec;
@@ -60,7 +61,7 @@ namespace EventStore.Transport.Http.EntityManagement
         }
 
         public HttpEntity(DateTime received,
-                          IPEndPoint serverHttpEndpoint,
+                          string userHostName,
                           ICodec requestCodec,
                           ICodec responseCodec,
                           HttpListenerContext context,
@@ -69,7 +70,7 @@ namespace EventStore.Transport.Http.EntityManagement
                           string[] allowedMethods,
                           Action<HttpEntity> onRequestSatisfied)
         {
-            Ensure.NotNull(serverHttpEndpoint, "serverHttpEndpoint");
+            Ensure.NotNull(userHostName, "userHostName");
             Ensure.NotNull(requestCodec, "requestCodec");
             Ensure.NotNull(responseCodec, "responseCodec");
             Ensure.NotNull(context, "context");
@@ -79,7 +80,7 @@ namespace EventStore.Transport.Http.EntityManagement
             Ensure.NotNull(onRequestSatisfied, "onRequestSatisfied");
 
             Received = received;
-            ServerHttpEndPoint = serverHttpEndpoint;
+            UserHostName = userHostName;
 
             RequestCodec = requestCodec;
             ResponseCodec = responseCodec;

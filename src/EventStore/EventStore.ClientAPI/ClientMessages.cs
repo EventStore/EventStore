@@ -273,37 +273,6 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class ReadEventsFromBeginning
-        {
-            [ProtoMember(1, IsRequired = false)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
-            public string EventStreamId { get; set; }
-
-            [ProtoMember(3)]
-            public int StartIndex { get; set; }
-
-            [ProtoMember(4)]
-            public int MaxCount { get; set; }
-
-            [ProtoMember(5)]
-            public bool ResolveLinktos { get; set; }
-
-            public ReadEventsFromBeginning()
-            {
-            }
-
-            public ReadEventsFromBeginning(Guid correlationId, string eventStreamId, int startIndex, int maxCount)
-            {
-                CorrelationId = correlationId.ToByteArray();
-                EventStreamId = eventStreamId;
-                StartIndex = startIndex;
-                MaxCount = maxCount;
-            }
-        }
-
-        [ProtoContract]
         public class ReadEventCompleted
         {
             [ProtoMember(1)]
@@ -351,6 +320,37 @@ namespace EventStore.ClientAPI
                 EventType = eventType;
                 Data = data;
                 Metadata = metadata;
+            }
+        }
+
+        [ProtoContract]
+        public class ReadEventsFromBeginning
+        {
+            [ProtoMember(1, IsRequired = false)]
+            public byte[] CorrelationId { get; set; }
+
+            [ProtoMember(2)]
+            public string EventStreamId { get; set; }
+
+            [ProtoMember(3)]
+            public int StartIndex { get; set; }
+
+            [ProtoMember(4)]
+            public int MaxCount { get; set; }
+
+            [ProtoMember(5)]
+            public bool ResolveLinktos { get; set; }
+
+            public ReadEventsFromBeginning()
+            {
+            }
+
+            public ReadEventsFromBeginning(Guid correlationId, string eventStreamId, int startIndex, int maxCount)
+            {
+                CorrelationId = correlationId.ToByteArray();
+                EventStreamId = eventStreamId;
+                StartIndex = startIndex;
+                MaxCount = maxCount;
             }
         }
 

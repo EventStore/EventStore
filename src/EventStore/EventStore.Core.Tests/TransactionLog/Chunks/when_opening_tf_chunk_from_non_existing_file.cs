@@ -44,4 +44,100 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             Assert.Throws<CorruptDatabaseException>(() => TFChunk.FromCompletedFile(_filename));
         }
     }
+
+    [TestFixture]
+    public class when_destroying_a_tf_chunk
+    {
+        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
+        private TFChunk chunk;
+
+        [SetUp]
+        public void setup()
+        {
+            chunk = TFChunk.CreateNew(_filename, 1000, 0, 0);
+            chunk.MarkForDeletion();
+        }
+
+        [Test]
+        public void the_file_is_deleted()
+        {
+            Assert.IsFalse(File.Exists(_filename));
+        }
+    }
+
+    [TestFixture]
+    public class when_destroying_a_tf_chunk_that_is_locked
+    {
+        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
+        private TFChunk _chunk;
+        private TFChunkBulkReader _reader;
+
+        [SetUp]
+        public void setup()
+        {
+            _chunk = TFChunk.CreateNew(_filename, 1000, 0, 0);
+            _reader = _chunk.AcquireReader();
+            _chunk.MarkForDeletion();
+        }
+
+        [Test]
+        public void the_file_is_not_deleted()
+        {
+            Assert.IsTrue(File.Exists(_filename));
+        }
+
+        [TearDown]
+        public void td()
+        {
+            _reader.Release();
+            _chunk.MarkForDeletion();
+            _chunk.WaitForDestroy(2000);
+        }
+    }
+
+
+    [TestFixture]
+    public class when_unlocking_a_tf_chunk_that_has_been_marked_for_deletion
+    {
+        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
+        private TFChunk chunk;
+
+        [SetUp]
+        public void setup()
+        {
+            chunk = TFChunk.CreateNew(_filename, 1000, 0, 0);
+            var reader = chunk.AcquireReader();
+            chunk.MarkForDeletion();
+            reader.Release();
+        }
+
+        [Test]
+        public void the_file_is_deleted()
+        {
+            Assert.IsFalse(File.Exists(_filename));
+        }
+    }
+
+
+    [TestFixture]
+    public class when_marking_for_deletion_a_tf_chunk_that_has_been_locked_and_unlocked
+    {
+        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
+        private TFChunk chunk;
+
+        [SetUp]
+        public void setup()
+        {
+            chunk = TFChunk.CreateNew(_filename, 1000, 0, 0);
+            var reader = chunk.AcquireReader();
+            chunk.MarkForDeletion();
+            reader.Release();
+        }
+
+        [Test]
+        public void the_file_is_deleted()
+        {
+            Assert.IsFalse(File.Exists(_filename));
+        }
+    }
 }
