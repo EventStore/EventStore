@@ -26,27 +26,21 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
-using System.Runtime.Serialization;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace EventStore.ClientAPI.Exceptions
+namespace EventStore.ClientAPI
 {
-    public class NoResultException : Exception
+    public interface IEventsProducer
     {
-        public NoResultException()
-        {
-        }
+        void AppendToStream(string stream, int expectedVersion, IEnumerable<IEvent> events);
+        Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<IEvent> events);
 
-        public NoResultException(string message) : base(message)
-        {
-        }
-
-        public NoResultException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected NoResultException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+        EventStoreTransaction StartTransaction(string stream, int expectedVersion);
+        Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion);
+        void TransactionalWrite(long transactionId, string stream, IEnumerable<IEvent> events);
+        Task TransactionalWriteAsync(long transactionId, string stream, IEnumerable<IEvent> events);
+        void CommitTransaction(long transactionId, string stream);
+        Task CommitTransactionAsync(long transactionId, string stream);
     }
 }

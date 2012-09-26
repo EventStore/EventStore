@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,44 +25,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using EventStore.ClientAPI.Data;
-using EventStore.ClientAPI.Defines;
-
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.System
 {
-    public class WriteResult
+    internal enum RangeReadResult
     {
-        public bool IsSuccessful { get; private set; }
-        public OperationErrorCode LastErrorCode { get; private set; }
-
-        public WriteResult(OperationErrorCode operationErrorCode)
-        {
-            IsSuccessful = operationErrorCode == OperationErrorCode.Success;
-            LastErrorCode = operationErrorCode;
-        }
-    }
-
-    public class ReadResult
-    {
-        public RangeReadResult Result { get; private set; }
-        public EventRecord[] Events { get; private set; }
-
-        public ReadResult(RangeReadResult result, EventRecord[] events)
-        {
-            Result = result;
-            Events = events;
-        }
-    }
-
-    public class DeleteResult
-    {
-        public bool IsSuccessful { get; private set; }
-        public OperationErrorCode LastErrorCode { get; private set; }
-
-        public DeleteResult(OperationErrorCode operationErrorCode)
-        {
-            IsSuccessful = operationErrorCode == OperationErrorCode.Success;
-            LastErrorCode = operationErrorCode;
-        }
-    }
+        Success,
+        NoStream,
+        StreamDeleted
+    }    
 }

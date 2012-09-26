@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -27,116 +27,109 @@
 //  
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.System;
 using EventStore.ClientAPI.Transport.Tcp;
 
-namespace EventStore.ClientAPI.TaskWrappers
+namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class WriteTaskCompletionWrapper : ITaskCompletionWrapper
+    internal class CommitTransactionOperation : IClientOperation
     {
-        private readonly TaskCompletionSource<WriteResult> _completion;
-        private ClientMessages.WriteEventsCompleted _result;
-
-        private Guid _correlationId;
+        private readonly TaskCompletionSource<object> _source;
+        private ClientMessages.TransactionCommitCompleted _result;
+        
+        private Guid _corrId;
         private readonly object _corrIdLock = new object();
 
+        private readonly long _transactionId;
         private readonly string _stream;
-        private readonly int _expectedVersion;
-        private readonly IEnumerable<Event> _events; 
 
         public Guid CorrelationId
         {
             get
             {
-                lock(_corrIdLock)
-                    return _correlationId;
+                lock (_corrIdLock)
+                    return _corrId;
             }
         }
 
-        public WriteTaskCompletionWrapper(TaskCompletionSource<WriteResult> completion,
+        public CommitTransactionOperation(TaskCompletionSource<object> source,
                                           Guid corrId,
-                                          string stream,
-                                          int expectedVersion,
-                                          IEnumerable<Event> events)
+                                          long transactionId,
+                                          string stream)
         {
-            _completion = completion;
+            _source = source;
 
-            _correlationId = corrId;
+            _corrId = corrId;
+            _transactionId = transactionId;
             _stream = stream;
-            _expectedVersion = expectedVersion;
-            _events = events;
         }
 
         public void SetRetryId(Guid correlationId)
         {
             lock (_corrIdLock)
-                _correlationId = correlationId;
+                _corrId = correlationId;
         }
 
         public TcpPackage CreateNetworkPackage()
         {
             lock (_corrIdLock)
             {
-                var eventDtos = _events.Select(x => new ClientMessages.Event(x.EventId, x.Type, x.Data, x.Metadata))
-                                       .ToArray();
-                var write = new ClientMessages.WriteEvents(_correlationId, _stream, _expectedVersion, eventDtos);
-                return new TcpPackage(TcpCommand.WriteEvents, _correlationId, write.Serialize());
+                var commit = new ClientMessages.TransactionCommit(_corrId, _transactionId, _stream);
+                return new TcpPackage(TcpCommand.TransactionCommit, _corrId, commit.Serialize());
             }
         }
 
-        public ProcessResult Process(TcpPackage package)
+        public InspectionResult InspectPackage(TcpPackage package)
         {
             try
             {
-                if (package.Command != TcpCommand.WriteEventsCompleted)
+                if (package.Command != TcpCommand.TransactionCommitCompleted)
                 {
-                    return new ProcessResult(ProcessResultStatus.NotifyError, 
-                                             new CommandNotExpectedException(TcpCommand.WriteEventsCompleted.ToString(), 
-                                                                             package.Command.ToString()));
+                    return new InspectionResult(InspectionDecision.NotifyError,
+                                                new CommandNotExpectedException(TcpCommand.TransactionCommitCompleted.ToString(),
+                                                                                package.Command.ToString()));
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessages.WriteEventsCompleted>();
+                var dto = data.Deserialize<ClientMessages.TransactionCommitCompleted>();
                 _result = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)
                 {
                     case OperationErrorCode.Success:
-                        return new ProcessResult(ProcessResultStatus.Success);
+                        return new InspectionResult(InspectionDecision.Succeed);
                     case OperationErrorCode.PrepareTimeout:
                     case OperationErrorCode.CommitTimeout:
                     case OperationErrorCode.ForwardTimeout:
                     case OperationErrorCode.WrongExpectedVersion:
-                        return new ProcessResult(ProcessResultStatus.Retry);
+                        return new InspectionResult(InspectionDecision.Retry);
                     case OperationErrorCode.StreamDeleted:
                     case OperationErrorCode.InvalidTransaction:
-                        return new ProcessResult(ProcessResultStatus.NotifyError, 
-                                                 new Exception(string.Format("{0}", (OperationErrorCode)dto.ErrorCode)));
+                        return new InspectionResult(InspectionDecision.NotifyError,
+                                                    new Exception(string.Format("{0}", (OperationErrorCode)dto.ErrorCode)));
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
             }
             catch (Exception e)
             {
-                return new ProcessResult(ProcessResultStatus.NotifyError, e);
+                return new InspectionResult(InspectionDecision.NotifyError, e);
             }
         }
 
         public void Complete()
         {
             if (_result != null)
-                _completion.SetResult(new WriteResult((OperationErrorCode)_result.ErrorCode));
+                _source.SetResult(null);
             else
-                _completion.SetException(new NoResultException());
+                _source.SetException(new NoResultException());
         }
 
         public void Fail(Exception exception)
         {
-            _completion.SetException(exception);
+            _source.SetException(exception);
         }
     }
 }
