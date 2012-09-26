@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Integration
 
         public void Wait(Action<T> callback)
         {
-            Wait(10000000, callback);
+            Wait(10000, callback);
         }
 
         public void Wait(int milliseconds, Action<T> callback)

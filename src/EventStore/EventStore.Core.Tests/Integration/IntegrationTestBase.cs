@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Integration
         private TFChunkDb _db;
 
         private SingleVNode _vNode;
-        private ICheckpoint _writerCheckpoint;
+        private ICheckpoint _writerChk;
         private ICheckpoint _chaserChk;
 
         [SetUp]
@@ -34,16 +34,23 @@ namespace EventStore.Core.Tests.Integration
             var chunkSize = 256*1024*1024;
             var chunksToCache = 2;
 
-            _writerCheckpoint = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"),
-                                                               Checkpoint.Writer, cached: true);
-            _chaserChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"),
-                                                        Checkpoint.Chaser, cached: true);
+
+            if (Runtime.IsMono)
+            {
+                _writerChk = new FileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"), Checkpoint.Writer, cached: true);
+                _chaserChk = new FileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"), Checkpoint.Chaser, cached: true);
+            }
+            else
+            {
+                _writerChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"), Checkpoint.Writer, cached: true);
+                _chaserChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"), Checkpoint.Chaser, cached: true);
+            }
 
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
                                                  chunkSize,
                                                  chunksToCache,
-                                                 _writerCheckpoint,
+                                                 _writerChk,
                                                  new[] {_chaserChk});
 
             var settings = new SingleVNodeSettings(new IPEndPoint(IPAddress.Loopback, 1111),
@@ -75,7 +82,7 @@ namespace EventStore.Core.Tests.Integration
                 shutdownCallback.Wait();
 
                 _db.Dispose();
-                _writerCheckpoint.Dispose();
+                _writerChk.Dispose();
                 _chaserChk.Dispose();
                 Directory.Delete(_db.Config.Path, true);
 
