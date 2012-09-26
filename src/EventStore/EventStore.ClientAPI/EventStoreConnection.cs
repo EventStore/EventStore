@@ -33,9 +33,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Defines;
+using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.TaskWrappers;
+using EventStore.ClientAPI.System;
 using EventStore.ClientAPI.Transport.Tcp;
 using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
 using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
@@ -44,22 +44,22 @@ namespace EventStore.ClientAPI
 {
     internal class WorkItem
     {
-        public ITaskCompletionWrapper Wrapper;
+        public IClientOperation Operation;
 
         public int Attempt;
         public long LastUpdatedTicks;
 
-        public WorkItem(ITaskCompletionWrapper wrapper)
+        public WorkItem(IClientOperation operation)
         {
-            Ensure.NotNull(wrapper, "wrapper");
-            Wrapper = wrapper;
+            Ensure.NotNull(operation, "operation");
+            Operation = operation;
 
             Attempt = 0;
             LastUpdatedTicks = DateTime.UtcNow.Ticks;
         }
     }
 
-    public class EventStoreConnection : IDisposable
+    public class EventStoreConnection : IDisposable, IEventStore
     {
         private const int MaxConcurrentItems = 50;
         private const int MaxQueueSize = 1000;
@@ -76,7 +76,7 @@ namespace EventStore.ClientAPI
         private Connection _connection;
         private readonly object _connectionLock = new object();
         
-        private readonly ConcurrentQueue<ITaskCompletionWrapper> _queue = new ConcurrentQueue<ITaskCompletionWrapper>();
+        private readonly ConcurrentQueue<IClientOperation> _queue = new ConcurrentQueue<IClientOperation>();
         private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
         private int _inProgressCount;
 
@@ -122,7 +122,7 @@ namespace EventStore.ClientAPI
 
             const string err = "Work item was still in progress at the moment of manual connection closing";
             foreach(var workItem in _inProgress.Values)
-                workItem.Wrapper.Fail(new ConnectionClosingException(err));
+                workItem.Operation.Fail(new ConnectionClosingException(err));
         }
 
         void IDisposable.Dispose()
@@ -138,15 +138,15 @@ namespace EventStore.ClientAPI
             task.Wait();
         }
 
-        public Task<CreateStreamResult> CreateStreamAsync(string stream, byte[] metadata)
+        public Task CreateStreamAsync(string stream, byte[] metadata)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
-            var taskCompletionSource = new TaskCompletionSource<CreateStreamResult>();
-            var taskWrapper = new CreateStreamCompletionWrapper(taskCompletionSource, Guid.NewGuid(), stream, metadata);
+            var source = new TaskCompletionSource<object>();
+            var operation = new CreateStreamOperation(source, Guid.NewGuid(), stream, metadata);
 
-            EnqueueOperation(taskWrapper);
-            return taskCompletionSource.Task;
+            EnqueueOperation(operation);
+            return source.Task;
         }
 
         public void CreateStreamWithProtoBufMetadata(string stream, object metadata)
@@ -157,7 +157,7 @@ namespace EventStore.ClientAPI
             CreateStream(stream, metadata.Serialize().Array);
         }
 
-        public Task<CreateStreamResult> CreateStreamWithProtoBufMetadataAsync(string stream, object metadata)
+        public Task CreateStreamWithProtoBufMetadataAsync(string stream, object metadata)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(metadata, "metadata");
@@ -173,18 +173,18 @@ namespace EventStore.ClientAPI
             task.Wait();
         }
 
-        public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion)
+        public Task DeleteStreamAsync(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
-            var taskCompletionSource = new TaskCompletionSource<DeleteResult>();
-            var taskWrapper = new DeleteTaskCompletionWrapper(taskCompletionSource, Guid.NewGuid(), stream, expectedVersion);
+            var source = new TaskCompletionSource<object>();
+            var operation = new DeleteStreamOperation(source, Guid.NewGuid(), stream, expectedVersion);
 
-            EnqueueOperation(taskWrapper);
-            return taskCompletionSource.Task;
+            EnqueueOperation(operation);
+            return source.Task;
         }
 
-        public void AppendToStream(string stream, int expectedVersion, IEnumerable<Event> events)
+        public void AppendToStream(string stream, int expectedVersion, IEnumerable<IEvent> events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
@@ -193,65 +193,116 @@ namespace EventStore.ClientAPI
             task.Wait();
         }
 
-        public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<Event> events)
+        public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<IEvent> events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
 
-            var taskCompletionSource = new TaskCompletionSource<WriteResult>();
-            var taskWrapper = new WriteTaskCompletionWrapper(taskCompletionSource, 
-                                                             Guid.NewGuid(), 
-                                                             stream,
-                                                             expectedVersion,
-                                                             events);
+            var source = new TaskCompletionSource<object>();
+            var operation = new AppendToStreamOperation(source, Guid.NewGuid(), stream, expectedVersion, events);
 
-            EnqueueOperation(taskWrapper);
-            return taskCompletionSource.Task;
+            EnqueueOperation(operation);
+            return source.Task;
         }
 
-        public EventStream ReadEventStream(string stream, int start, int count)
+        public EventStoreTransaction StartTransaction(string stream, int expectedVersion)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var task = StartTransactionAsync(stream, expectedVersion);
+            task.Wait();
+            return task.Result;
+        }
+
+        public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var source = new TaskCompletionSource<EventStoreTransaction>();
+            var operation = new StartTransactionOperation(source, Guid.NewGuid(), stream, expectedVersion);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public void TransactionalWrite(long transactionId, string stream, IEnumerable<IEvent> events)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
+
+            var task = TransactionalWriteAsync(transactionId, stream, events);
+            task.Wait();
+        }
+
+        public Task TransactionalWriteAsync(long transactionId, string stream, IEnumerable<IEvent> events)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
+
+            var source = new TaskCompletionSource<object>();
+            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), transactionId, stream, events);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public void CommitTransaction(long transactionId, string stream)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var task = CommitTransactionAsync(transactionId, stream);
+            task.Wait();
+        }
+
+        public Task CommitTransactionAsync(long transactionId, string stream)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var source = new TaskCompletionSource<object>();
+            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), transactionId, stream);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public EventStreamSlice ReadEventStream(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var task = ReadEventStreamAsync(stream, start, count);
             task.Wait();
 
-            //TODO GFY THiS SHOULD HAPPEN IN COMPLETiON
-            return new EventStream(stream, task.Result.Events);
+            return task.Result;
         }
 
-        public Task<ReadResult> ReadEventStreamAsync(string stream, int start, int count)
+        public Task<EventStreamSlice> ReadEventStreamAsync(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
-            var taskCompletionSource = new TaskCompletionSource<ReadResult>();
-            var taskWrapper = new ReadFromBeginningTaskCompletionWrapper(taskCompletionSource, 
-                                                                         Guid.NewGuid(), 
-                                                                         stream, 
-                                                                         start, 
-                                                                         count);
+            var source = new TaskCompletionSource<EventStreamSlice>();
+            var operation = new ReadFromBeginningOperation(source, Guid.NewGuid(), stream, start, count);
 
-            EnqueueOperation(taskWrapper);
-            return taskCompletionSource.Task;
+            EnqueueOperation(operation);
+            return source.Task;
         }
 
-        private void EnqueueOperation(ITaskCompletionWrapper wrapper)
+        private void EnqueueOperation(IClientOperation operation)
         {
             while (_queue.Count >= MaxQueueSize)
                 Thread.Sleep(1);
             
-            _queue.Enqueue(wrapper);
+            _queue.Enqueue(operation);
         }
 
         private void MainLoop()
         {
             while (!_stopping)
             {
-                ITaskCompletionWrapper wrapper;
-                if (_inProgressCount < MaxConcurrentItems && _queue.TryDequeue(out wrapper))
+                IClientOperation operation;
+                if (_inProgressCount < MaxConcurrentItems && _queue.TryDequeue(out operation))
                 {
                     Interlocked.Increment(ref _inProgressCount);
-                    Send(new WorkItem(wrapper));
+                    Send(new WorkItem(operation));
                 }
                 else
                     Thread.Sleep(1);
@@ -282,7 +333,7 @@ namespace EventStore.ClientAPI
                                                         lastUpdated,
                                                         _lastReconnectionTimestamp,
                                                         now);
-                                workerItem.Wrapper.Fail(new OperationTimedOutException(err));
+                                workerItem.Operation.Fail(new OperationTimedOutException(err));
                                 TryRemoveWorkItem(workerItem);
                             }
                             else
@@ -297,7 +348,7 @@ namespace EventStore.ClientAPI
         private bool TryRemoveWorkItem(WorkItem workItem)
         {
             WorkItem removed;
-            if (!_inProgress.TryRemove(workItem.Wrapper.CorrelationId, out removed))
+            if (!_inProgress.TryRemove(workItem.Operation.CorrelationId, out removed))
                 return false;
 
             Interlocked.Decrement(ref _inProgressCount);
@@ -308,8 +359,8 @@ namespace EventStore.ClientAPI
         {
             lock (_connectionLock)
             {
-                _inProgress.TryAdd(workItem.Wrapper.CorrelationId, workItem);
-                _connection.EnqueueSend(workItem.Wrapper.CreateNetworkPackage().AsByteArray());
+                _inProgress.TryAdd(workItem.Operation.CorrelationId, workItem);
+                _connection.EnqueueSend(workItem.Operation.CreateNetworkPackage().AsByteArray());
             }
         }
 
@@ -318,15 +369,15 @@ namespace EventStore.ClientAPI
             lock (_connectionLock)
             {
                 WorkItem inProgressItem;
-                if (_inProgress.TryRemove(workItem.Wrapper.CorrelationId, out inProgressItem))
+                if (_inProgress.TryRemove(workItem.Operation.CorrelationId, out inProgressItem))
                 {
-                    inProgressItem.Wrapper.SetRetryId(Guid.NewGuid());
+                    inProgressItem.Operation.SetRetryId(Guid.NewGuid());
                     inProgressItem.Attempt += 1;
                     Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
 
                     if (inProgressItem.Attempt > MaxAttempts)
-                        inProgressItem.Wrapper.Fail(new RetriesLimitReachedException(inProgressItem.Wrapper.ToString(),
-                                                                                     inProgressItem.Attempt));
+                        inProgressItem.Operation.Fail(new RetriesLimitReachedException(inProgressItem.Operation.ToString(),
+                                                                                       inProgressItem.Attempt));
                     else
                         Send(inProgressItem);
                 }
@@ -346,18 +397,18 @@ namespace EventStore.ClientAPI
                 return;
             }
 
-            var result = workItem.Wrapper.Process(package);
-            switch (result.Status)
+            var result = workItem.Operation.InspectPackage(package);
+            switch (result.Decision)
             {
-                case ProcessResultStatus.Success:
+                case InspectionDecision.Succeed:
                     if (TryRemoveWorkItem(workItem))
-                        workItem.Wrapper.Complete();
+                        workItem.Operation.Complete();
                     break;
-                case ProcessResultStatus.Retry:
+                case InspectionDecision.Retry:
                     Retry(workItem);
                     break;
-                case ProcessResultStatus.NotifyError:
-                    workItem.Wrapper.Fail(result.Exception);
+                case InspectionDecision.NotifyError:
+                    workItem.Operation.Fail(result.Error);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

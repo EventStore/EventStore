@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -27,26 +27,18 @@
 //  
 
 using System;
-using System.Runtime.Serialization;
 
-namespace EventStore.ClientAPI.Exceptions
+namespace EventStore.ClientAPI.System
 {
-    public class NoResultException : Exception
+    internal class InspectionResult
     {
-        public NoResultException()
-        {
-        }
+        public readonly InspectionDecision Decision;
+        public readonly Exception Error;
 
-        public NoResultException(string message) : base(message)
+        public InspectionResult(InspectionDecision decision, Exception error = null)
         {
-        }
-
-        public NoResultException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected NoResultException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
+            Decision = decision;
+            Error = error;
         }
     }
 }

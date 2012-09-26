@@ -28,9 +28,9 @@
 
 using System;
 
-namespace EventStore.ClientAPI.Defines
+namespace EventStore.ClientAPI.System
 {
-     struct TcpPackage
+    internal struct TcpPackage
     {
         private static readonly byte[] EmptyArray = new byte[0];
 

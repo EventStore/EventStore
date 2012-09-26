@@ -25,14 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
-namespace EventStore.ClientAPI.Tcp
+namespace EventStore.ClientAPI.Transport.Tcp
 {
-    interface ITcpConnection
+    internal interface ITcpConnection
     {
         event Action<ITcpConnection, SocketError> ConnectionClosed;
         IPEndPoint EffectiveEndPoint { get; }

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,17 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using EventStore.ClientAPI.Common.Log;
-using EventStore.ClientAPI.Defines;
-using EventStore.ClientAPI.Tcp;
-using EventStore.ClientAPI.Transport.Tcp;
-using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
+using EventStore.ClientAPI.System;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Transport.Tcp
 {
     internal class TcpConnector
     {
@@ -49,12 +47,12 @@ namespace EventStore.ClientAPI
             _tcpEndpoint = tcpEndpoint;
         }
 
-        public Connection CreateTcpConnection(Action<Connection, TcpPackage> handlePackage,
-                                              Action<Connection> connectionEstablished,
-                                              Action<Connection, IPEndPoint, SocketError> connectionClosed)
+        public TcpTypedConnection CreateTcpConnection(Action<TcpTypedConnection, TcpPackage> handlePackage,
+                                              Action<TcpTypedConnection> connectionEstablished,
+                                              Action<TcpTypedConnection, IPEndPoint, SocketError> connectionClosed)
         {
             var connectionCreatedEvent = new AutoResetEvent(false);
-            Connection typedConnection = null;
+            TcpTypedConnection typedConnection = null;
 
             var connection = _connector.ConnectTo(
                 _tcpEndpoint,
@@ -72,7 +70,7 @@ namespace EventStore.ClientAPI
                     connectionClosed(null, conn.EffectiveEndPoint, error);
                 });
 
-            typedConnection = new Connection(connection);
+            typedConnection = new TcpTypedConnection(connection);
             typedConnection.ConnectionClosed +=
                 (conn, error) =>
                 {

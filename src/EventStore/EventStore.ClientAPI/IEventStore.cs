@@ -26,19 +26,19 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using EventStore.ClientAPI.Data;
+using System.Threading.Tasks;
 
 namespace EventStore.ClientAPI
 {
-    public class EventStream
+    public interface IEventStore : IEventsProducer, IEventsConsumer
     {
-        public string Name { get; private set; }
-        public EventRecord[] Events;
+        void CreateStream(string stream, byte[] metadata);
+        Task CreateStreamAsync(string stream, byte[] metadata);
 
-        public EventStream(string name, EventRecord[] events)
-        {
-            Events = events;
-            Name = name;
-        }
+        void CreateStreamWithProtoBufMetadata(string stream, object metadata);
+        Task CreateStreamWithProtoBufMetadataAsync(string stream, object metadata);
+
+        void DeleteStream(string stream, int expectedVersion);
+        Task DeleteStreamAsync(string stream, int expectedVersion);
     }
 }

@@ -25,16 +25,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Linq;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Defines;
 
-namespace EventStore.ClientAPI.Data
+namespace EventStore.ClientAPI.System
 {
-    //TODO GFY is this really what we want to expose to the world as an event through the API?
-    //What does expected version mean here?
-    public class EventRecord : IEquatable<EventRecord>
+    internal class EventRecord : IEquatable<EventRecord>
     {
         public static readonly byte[] Empty = new byte[0];
 

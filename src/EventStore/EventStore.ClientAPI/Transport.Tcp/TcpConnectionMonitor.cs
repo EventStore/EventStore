@@ -31,11 +31,10 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Tcp;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    public class TcpStats
+    internal class TcpStats
     {
         public readonly int Connections;
         public readonly long SentBytesTotal;
@@ -85,7 +84,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         }
     }
 
-    class TcpConnectionMonitor
+    internal class TcpConnectionMonitor
     {
         public static readonly TcpConnectionMonitor Default = new TcpConnectionMonitor();
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionMonitor>();

@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -27,109 +27,115 @@
 //  
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.System;
 using EventStore.ClientAPI.Transport.Tcp;
 
-namespace EventStore.ClientAPI.TaskWrappers
+namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class DeleteTaskCompletionWrapper : ITaskCompletionWrapper
+    internal class TransactionalWriteOperation : IClientOperation
     {
-        private readonly TaskCompletionSource<DeleteResult> _completion;
-        private ClientMessages.DeleteStreamCompleted _result;
+        private readonly TaskCompletionSource<object> _source;
+        private ClientMessages.TransactionWriteCompleted _result;
 
-        private Guid _correlationId;
+        private Guid _corrId;
         private readonly object _corrIdLock = new object();
 
+        private readonly long _transactionId;
         private readonly string _stream;
-        private readonly int _expectedVersion;
+        private readonly IEnumerable<IEvent> _events;
 
         public Guid CorrelationId
         {
             get
             {
                 lock (_corrIdLock)
-                    return _correlationId;
+                    return _corrId;
             }
         }
 
-        public DeleteTaskCompletionWrapper(TaskCompletionSource<DeleteResult> completion,
-                                           Guid correlationId, 
-                                           string stream, 
-                                           int expectedVersion)
+        public TransactionalWriteOperation(TaskCompletionSource<object> source,
+                                           Guid corrId,
+                                           long transactionId,
+                                           string stream,
+                                           IEnumerable<IEvent> events)
         {
-            _completion = completion;
+            _source = source;
 
-            _correlationId = correlationId;
+            _corrId = corrId;
+            _transactionId = transactionId;
             _stream = stream;
-            _expectedVersion = expectedVersion;
+            _events = events;
+        }
+
+        public void SetRetryId(Guid correlationId)
+        {
+            lock (_corrIdLock)
+                _corrId = correlationId;
         }
 
         public TcpPackage CreateNetworkPackage()
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.DeleteStream(_correlationId, _stream, _expectedVersion);
-                return new TcpPackage(TcpCommand.DeleteStream, _correlationId, dto.Serialize());
+                var dtos = _events.Select(x => new ClientMessages.Event(x.EventId, x.Type, x.Data, x.Metadata)).ToArray();
+                var write = new ClientMessages.TransactionWrite(_corrId, _transactionId, _stream, dtos);
+                return new TcpPackage(TcpCommand.TransactionWrite, _corrId, write.Serialize());
             }
         }
 
-        public void SetRetryId(Guid corrId)
-        {
-            lock (_corrIdLock)
-                _correlationId = corrId;
-        }
-
-        public ProcessResult Process(TcpPackage package)
+        public InspectionResult InspectPackage(TcpPackage package)
         {
             try
             {
-                if (package.Command != TcpCommand.DeleteStreamCompleted)
+                if (package.Command != TcpCommand.TransactionWriteCompleted)
                 {
-                    return new ProcessResult(ProcessResultStatus.NotifyError,
-                                             new CommandNotExpectedException(TcpCommand.DeleteStreamCompleted.ToString(), 
+                    return new InspectionResult(InspectionDecision.NotifyError,
+                                             new CommandNotExpectedException(TcpCommand.TransactionWriteCompleted.ToString(),
                                                                              package.Command.ToString()));
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessages.DeleteStreamCompleted>();
+                var dto = data.Deserialize<ClientMessages.TransactionWriteCompleted>();
                 _result = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)
                 {
                     case OperationErrorCode.Success:
-                        return new ProcessResult(ProcessResultStatus.Success);
+                        return new InspectionResult(InspectionDecision.Succeed);
                     case OperationErrorCode.PrepareTimeout:
                     case OperationErrorCode.CommitTimeout:
                     case OperationErrorCode.ForwardTimeout:
-                        return new ProcessResult(ProcessResultStatus.Retry);
                     case OperationErrorCode.WrongExpectedVersion:
+                        return new InspectionResult(InspectionDecision.Retry);
                     case OperationErrorCode.StreamDeleted:
                     case OperationErrorCode.InvalidTransaction:
-                        return new ProcessResult(ProcessResultStatus.NotifyError,
-                                                 new Exception(string.Format("{0}", (OperationErrorCode)dto.ErrorCode)));
+                        return new InspectionResult(InspectionDecision.NotifyError,
+                                                    new Exception(string.Format("{0}", (OperationErrorCode)dto.ErrorCode)));
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
             }
             catch (Exception e)
             {
-                return new ProcessResult(ProcessResultStatus.NotifyError, e);
+                return new InspectionResult(InspectionDecision.NotifyError, e);
             }
         }
 
         public void Complete()
         {
             if (_result != null)
-                _completion.SetResult(new DeleteResult((OperationErrorCode)_result.ErrorCode));
+                _source.SetResult(null);
             else
-                _completion.SetException(new NoResultException());
+                _source.SetException(new NoResultException());
         }
 
         public void Fail(Exception exception)
         {
-            _completion.SetException(exception);
+            _source.SetException(exception);
         }
     }
 }

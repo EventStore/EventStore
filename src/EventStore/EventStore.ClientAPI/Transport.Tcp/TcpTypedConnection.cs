@@ -30,11 +30,10 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using EventStore.ClientAPI.Tcp;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    class TcpTypedConnection
+    internal class TcpTypedConnection
     {
         public event Action<TcpTypedConnection, SocketError> ConnectionClosed;
 

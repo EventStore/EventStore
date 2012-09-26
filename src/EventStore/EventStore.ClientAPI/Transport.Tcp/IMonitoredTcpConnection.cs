@@ -25,12 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Net;
 
-namespace EventStore.ClientAPI.Tcp
+namespace EventStore.ClientAPI.Transport.Tcp
 {
-    interface IMonitoredTcpConnection
+    internal interface IMonitoredTcpConnection
     {
         IPEndPoint EndPoint { get; }
 

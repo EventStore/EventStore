@@ -28,16 +28,16 @@
 
 using System;
 using System.Collections.Generic;
+using Collections = System.Collections;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using EventStore.ClientAPI.Tcp;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    class TcpConnection : TcpConnectionBase, ITcpConnection
+    internal class TcpConnection : TcpConnectionBase, ITcpConnection
     {
         private const int BufferSize = 512;
 
@@ -98,7 +98,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 #if __MonoCS__
         private readonly Common.ConcurrentCollections.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.ConcurrentCollections.ConcurrentQueue<ArraySegment<byte>>();
 #else
-        private readonly System.Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new System.Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
+        private readonly Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
 #endif
 
         private readonly Queue<Tuple<ArraySegment<byte>, Action>> _receiveQueue =

@@ -27,26 +27,33 @@
 //  
 
 using System;
-using System.Runtime.Serialization;
 
-namespace EventStore.ClientAPI.Exceptions
+namespace EventStore.ClientAPI.System
 {
-    public class NoResultException : Exception
+    internal class Event
     {
-        public NoResultException()
-        {
-        }
+        public static readonly byte[] Empty = new byte[0];
 
-        public NoResultException(string message) : base(message)
-        {
-        }
+        public readonly Guid EventId;
+        public readonly string EventType;
+        public readonly bool IsJson;
 
-        public NoResultException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
+        public readonly byte[] Data;
+        public readonly byte[] Metadata;
 
-        protected NoResultException(SerializationInfo info, StreamingContext context) : base(info, context)
+        public Event(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata)
         {
+            if (Guid.Empty == eventId)
+                throw new ArgumentException("Empty eventId provided.");
+            if (string.IsNullOrEmpty(eventType))
+                throw new ArgumentException("Empty eventType provided.");
+
+            EventId = eventId;
+            EventType = eventType;
+            IsJson = isJson;
+
+            Data = data ?? Empty;
+            Metadata = metadata ?? Empty;
         }
     }
 }
