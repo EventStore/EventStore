@@ -106,10 +106,10 @@ namespace EventStore.Transport.Http
                 int bytesRead = _input.EndRead(ar);
                 if(ar.CompletedSynchronously)
                 {
-                    Log.Info("Completed synchronously. IN : {0}, OUT : {1}, DEBUGINFO : {2}",
-                             _input.GetType().FullName,
-                             _output.GetType().FullName,
-                             _debuginfo);
+                    //Log.Info("Completed synchronously. IN : {0}, OUT : {1}, DEBUGINFO : {2}",
+                    //         _input.GetType().FullName,
+                    //         _output.GetType().FullName,
+                    //         _debuginfo);
                 }
                 if (bytesRead == 0 || bytesRead == -1) //TODO TR: only mono returns -1
                 {
@@ -144,7 +144,7 @@ namespace EventStore.Transport.Http
         {
             _watch.Stop();
             if (_watch.ElapsedMilliseconds > 5)
-                Log.Info("Slow copy. IN : {0}, OUT : {1}, DEBUGINFO : {2}, TOOK {3}ms",
+                Log.Trace("Slow copy. IN : {0}, OUT : {1}, DEBUGINFO : {2}, TOOK {3}ms",
                          _input.GetType().FullName,
                          _output.GetType().FullName,
                          _debuginfo,
