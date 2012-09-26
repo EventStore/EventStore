@@ -127,7 +127,7 @@
     <Compile Include="Infrastructure\RandomTestRunner.cs" />
     <Compile Include="Integration\IntegrationTestBase.cs" />
     <Compile Include="Integration\EnvelopeCallback.cs" />
-    <Compile Include="Integration\when_writing_events.cs" />
+    <Compile Include="Integration\when_writing_single_event_and_then_reading_it.cs" />
     <Compile Include="MD5HashTests.cs" />
     <Compile Include="Infrastructure\Services\GossipService\gossip_service_should.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\FormatterTests.cs" />

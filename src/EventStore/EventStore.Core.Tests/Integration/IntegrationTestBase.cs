@@ -21,6 +21,8 @@ namespace EventStore.Core.Tests.Integration
         private TFChunkDb _db;
 
         private SingleVNode _vNode;
+        private ICheckpoint _writerCheckpoint;
+        private ICheckpoint _chaserChk;
 
         [SetUp]
         protected virtual void SetUp()
@@ -32,16 +34,17 @@ namespace EventStore.Core.Tests.Integration
             var chunkSize = 256*1024*1024;
             var chunksToCache = 2;
 
-            ICheckpoint writerChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"),
-                                                                   Checkpoint.Writer, cached: true);
-            ICheckpoint chaserChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"),
-                                                                   Checkpoint.Chaser, cached: true);
+            _writerCheckpoint = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"),
+                                                               Checkpoint.Writer, cached: true);
+            _chaserChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"),
+                                                        Checkpoint.Chaser, cached: true);
+
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
                                                  chunkSize,
                                                  chunksToCache,
-                                                 writerChk,
-                                                 new[] {chaserChk});
+                                                 _writerCheckpoint,
+                                                 new[] {_chaserChk});
 
             var settings = new SingleVNodeSettings(new IPEndPoint(IPAddress.Loopback, 1111),
                                                    new IPEndPoint(IPAddress.Loopback, 2111),
@@ -64,8 +67,16 @@ namespace EventStore.Core.Tests.Integration
         {
             try
             {
+                var shutdownCallback = new EnvelopeCallback<SystemMessage.BecomeShutdown>();
+                _vNode.Bus.Subscribe<SystemMessage.BecomeShutdown>(shutdownCallback);
+
                 _vNode.Stop();
+
+                shutdownCallback.Wait();
+
                 _db.Dispose();
+                _writerCheckpoint.Dispose();
+                _chaserChk.Dispose();
                 Directory.Delete(_db.Config.Path, true);
 
                 _vNode = null;
