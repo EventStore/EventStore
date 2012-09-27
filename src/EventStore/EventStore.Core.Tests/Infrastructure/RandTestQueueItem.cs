@@ -47,5 +47,10 @@ namespace EventStore.Core.Tests.Infrastructure
             Message = message;
             Bus = bus;
         }
+
+        public override string ToString()
+        {
+            return string.Format("{0}-{1} :{2} to {3}", LogicalTime, GlobalId, Message, EndPoint.Port);
+        }
     }
 }
