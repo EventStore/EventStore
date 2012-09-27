@@ -74,7 +74,7 @@
                 <input type="submit" class="submit" value="Send"/>
             </form>
             
-            <div class="error" style="color: red"></div>     
+            <div class="error" style="color: red; display: none"></div>     
 
             <div class="push"></div>
         </div>
@@ -106,8 +106,8 @@
         <script src="js/projections/es.projection.js"> </script>
         <script src="js/projections/es.api.js"> </script>
         <script>
-            $(function() {
-                
+            $(function () {
+
                 var userName = null;
                 var chatRoomName = null;
 
@@ -120,24 +120,24 @@
                 $(".input-window").submit(onMessageInput);
 
                 es.projection({
-                    runProjection: function () {
-                           fromStream('chat-' + chatRoomName).when({
-                               'ChatMessage': function (state, event) {
-                                   var body =  event.body;
-                                   return { "text" : (body.time + "> " + body.sender + ": " +  body.message) };
-                               },
-                               'UserJoinedChat': function (state, event) {
-                                   var body =  event.body;
-                                   return { "text" : (body.time + "> user " + body.user + " has joined the chat!") };
-                               }
-                           });
-                    },
-                    runTrigger: function (runAction) {
-                        $( ".input-dialog" ).bind( "dialogclose", function(event, ui) {
-                            runAction();    
+                    body: function () {
+                        fromStream('chat-' + chatRoomName).when({
+                            'ChatMessage': function (state, event) {
+                                var body = event.body;
+                                return { "text": (body.time + "> " + body.sender + ": " + body.message) };
+                            },
+                            'UserJoinedChat': function (state, event) {
+                                var body = event.body;
+                                return { "text": (body.time + "> user " + body.user + " has joined the chat!") };
+                            }
                         });
                     },
-                    onState: function (stateStr) {
+                    runTrigger: function (runAction) {
+                        $(".input-dialog").bind("dialogclose", function (event, ui) {
+                            runAction();
+                        });
+                    },
+                    onStateChange: function (stateStr) {
                         var stateObj = JSON.parse(stateStr);
                         var currentText = $('.chat-window').val();
 
@@ -146,7 +146,10 @@
                     },
                     startFrom: 0,
                     showError: function (err) {
-                        $('#error').text(err);
+                        $('.error').text(err);
+                    },
+                    hideError: function () {
+                        $('.error').hide().text("");
                     }
                 });
 
@@ -155,10 +158,10 @@
 
                     userName = $(".input-dialog .input-name").val();
                     chatRoomName = $(".input-dialog .input-room").val();
-                    
+
                     if (!userName || !chatRoomName)
                         return;
-                    
+
                     $(".input-window .username").append(userName + ": ");
                     $(".chartroom").append(chatRoomName);
                     $(".input-window .message-input")[0].focus();
@@ -168,69 +171,69 @@
                     $(this).dialog("close");
 
                     (function postUserEnteredChatEvent() {
-                         var data = {
-                              time: getFormattedTime(),
-                              user: userName
-                         };
-                         es.postEvent({
-                             data: data,
-                             stream: 'chat-' + chatRoomName,
-                             eventType: 'UserJoinedChat'
-                         });
-                     })();
+                        var data = {
+                            time: getFormattedTime(),
+                            user: userName
+                        };
+                        es.postEvent({
+                            data: data,
+                            stream: 'chat-' + chatRoomName,
+                            eventType: 'UserJoinedChat'
+                        });
+                    })();
                 }
-                
-                function onMessageInput(event) {
-                   event.preventDefault();
 
-                   var input = $(".message-input").val();
-                   if (!input)
+                function onMessageInput(event) {
+                    event.preventDefault();
+
+                    var input = $(".message-input").val();
+                    if (!input)
                         return;
 
-                   var data = {
-                       sender: userName,
-                       message: input,
-                       time:  getFormattedTime()
-                   };
-                   es.postEvent({
-                       data: data,
-                       stream: "chat-" + chatRoomName,
-                       eventType: 'ChatMessage' ,
-                       success: function () {
-                           $(".input-window .message-input").val("");
-                       }
-                   });
+                    var data = {
+                        sender: userName,
+                        message: input,
+                        time: getFormattedTime()
+                    };
+                    es.postEvent({
+                        data: data,
+                        stream: "chat-" + chatRoomName,
+                        eventType: 'ChatMessage',
+                        success: function () {
+                            $(".input-window .message-input").val("");
+                        }
+                    });
                 }
-                
-                function trySaveUserData(es_username, es_chatroom) { 
+
+                function trySaveUserData(es_username, es_chatroom) {
                     if (window.localStorage) {
                         localStorage.setItem('$es_username', es_username);
                         localStorage.setItem('$es_chatroom', es_chatroom);
                     }
                 };
 
-                function tryLoadUserData() { 
+                function tryLoadUserData() {
                     if (window.localStorage) {
                         var es_username = localStorage.getItem('$es_username');
                         var es_chatroom = localStorage.getItem('$es_chatroom');
-                        
+
                         if (es_username)
                             $(".input-dialog .input-name").val(es_username);
                         if (es_chatroom)
                             $(".input-dialog .input-room").val(es_chatroom);
                     }
                 };
-                
+
                 function getFormattedTime() {
                     var now = new Date();
                     return _format(now.getHours()) + ":" + _format(now.getMinutes()) + ":" + _format(now.getSeconds());
-                    
+
                     function _format(timeUnit) {
                         if (timeUnit < 10)
                             return "0" + timeUnit;
                         else
                             return "" + timeUnit;
-                    } 
+                    }
                 }
 
             });

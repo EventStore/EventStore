@@ -64,7 +64,7 @@
         <script>
             $(function() {
                 es.projection({
-                    runProjection: function () {
+                    body: function () {
                         var query_text = $('#query').val();
                         eval(query_text);
                     },
@@ -74,13 +74,16 @@
                             runAction();
                         });
                     },
-                    onState: function (state) {
+                    onStateChange: function (state) {
                         var text = $('#state').text();
                         $('#state').text(text + "\r\n" + state);
                     },
                     startFrom: 0,
                     showError: function (err) {
                         $('#error').text(err);
+                    },
+                    hideError: function () {
+                        $('#error').hide().text('');
                     }
                 });
             });

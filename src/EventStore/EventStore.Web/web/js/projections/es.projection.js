@@ -1,11 +1,12 @@
 if (!window.es) { window.es = {}; };
 es.projection = function (settings) {
 
-    var runProjection = settings.runProjection;
-    var onState = settings.onState;
-    var runTrigger = settings.runTrigger;
+    var projectionBody = settings.body;
+    var onStateChange = settings.onStateChange;
+    var runTrigger = settings.runTrigger || $; // trigger to run projections, default is onload
     var startFrom = settings.startFrom || 0;
-    var showError = settings.showError;
+    var showError = settings.showError || function () { };
+    var hideError = settings.hideError || function () { };
 
     var currentTimeout = null;
     var currentAjaxes = null;
@@ -15,7 +16,7 @@ es.projection = function (settings) {
 
         cancelProjection();
         var processor = $initialize_hosted_projections();
-        runProjection();
+        projectionBody();
         processor.initialize();
 
         var sources = JSON.parse(processor.get_sources());
@@ -44,7 +45,7 @@ es.projection = function (settings) {
                             parsedEvent.metadata);
             var state = processor.get_state();
 
-            onState(state);
+            onStateChange(state);
         }
     });
 
@@ -74,7 +75,7 @@ es.projection = function (settings) {
 
             var encodedStream = encodeURIComponent(streamId);
 
-            for(var i = 0; i < batchSize; i++) {
+            for (var i = 0; i < batchSize; i++) {
                 var url = ["/streams/", encodedStream, "/event/", sequenceNumber + i].join("");
                 var ajax = $.ajax(url, {
                     headers: {
@@ -86,10 +87,10 @@ es.projection = function (settings) {
                     error: errorFeed
                 });
                 currentAjaxes.push(ajax);
-            }            
+            }
 
             function successFeed(data) {
-                showError("");
+                hideError();
                 receivedEvents.push(data);
                 processBatchItem();
             }
@@ -100,13 +101,13 @@ es.projection = function (settings) {
                 } else {
                     showError("Error occured: " + error);
                 }
-                
+
                 processBatchItem();
             }
-            
+
             function processBatchItem() {
                 processedBatchItemsCount++;
-                
+
                 if (processedBatchItemsCount === batchSize) {
                     currentAjaxes = [];   // no easy way to remove ajaxes from array when they arrive, so just remove all when batch done
 
@@ -116,24 +117,24 @@ es.projection = function (settings) {
                     } else {
                         loadNextBatch(sequenceNumber + batchSize, usualBatchSize);
                     }
-                    
+
                     processBatch(receivedEvents);
                     receivedEvents = null;
                 }
-                
+
                 function loadNextBatchInAWhile(sequenceNumber, batchSize) {
-                     currentTimeout = setTimeout(function () {
-                         loadNextBatch(sequenceNumber, batchSize);
-                     }, 1000);
+                    currentTimeout = setTimeout(function () {
+                        loadNextBatch(sequenceNumber, batchSize);
+                    }, 1000);
                 }
             }
-            
+
             function processBatch(events) {
-                events.sort(function(a, b) {
+                events.sort(function (a, b) {
                     return a.eventNumber - b.eventNumber;
                 });
-                
-                for (var j = 0, l = events.length; j < l;  j++) {
+
+                for (var j = 0, l = events.length; j < l; j++) {
                     callback(events[j]);
                 }
             }
