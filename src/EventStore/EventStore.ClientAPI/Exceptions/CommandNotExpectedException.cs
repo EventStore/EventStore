@@ -35,7 +35,6 @@ namespace EventStore.ClientAPI.Exceptions
         public CommandNotExpectedException(string expected, string actual)
             : base(string.Format("Expected : {0}. Actual : {1}.", expected, actual))
         {
-            
         }
     }
 }

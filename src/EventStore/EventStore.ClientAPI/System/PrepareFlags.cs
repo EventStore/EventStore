@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -27,26 +27,26 @@
 //  
 
 using System;
-using System.Runtime.Serialization;
 
-namespace EventStore.ClientAPI.Exceptions
+namespace EventStore.ClientAPI.System
 {
-    public class NoResultException : Exception
+    [Flags]
+    internal enum PrepareFlags : ushort
     {
-        public NoResultException()
-        {
-        }
+        None = 0x00,
+        Data = 0x01,                // prepare contains data
+        TransactionBegin = 0x02,    // prepare starts transaction
+        TransactionEnd = 0x04,      // prepare ends transaction
+        StreamDelete = 0x08,        // prepare deletes stream
 
-        public NoResultException(string message) : base(message)
-        {
-        }
+        IsCommited = 0x10,          // prepare should be considered committed immediately, no commit will follow in TF
+        //Snapshot = 0x20,          // prepare belongs to snapshot stream, only last event in stream will be kept after scavenging
 
-        public NoResultException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
+        //Update = 0x80,            // prepare updates previous instance of the same event, DANGEROUS!
+        IsJson = 0x100,             // indicates data & metadata are valid json
 
-        protected NoResultException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+        // aggregate flag set
+        DeleteTombstone = TransactionBegin | TransactionEnd | StreamDelete,
+        SingleWrite = Data | TransactionBegin | TransactionEnd
     }
 }

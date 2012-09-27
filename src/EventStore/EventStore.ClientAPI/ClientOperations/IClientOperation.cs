@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,35 +25,21 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
+using EventStore.ClientAPI.System;
 
-namespace EventStore.ClientAPI.Data
+namespace EventStore.ClientAPI.ClientOperations
 {
-    //TODO GFY this should not be public
-    public class Event
+    internal interface IClientOperation
     {
-        public static readonly byte[] Empty = new byte[0];
+        Guid CorrelationId { get; }
+        void SetRetryId(Guid correlationId);
 
-        public readonly Guid EventId;
-        public readonly string EventType;
-        public readonly bool IsJson;
+        TcpPackage CreateNetworkPackage();
+        InspectionResult InspectPackage(TcpPackage package);
 
-        public readonly byte[] Data;
-        public readonly byte[] Metadata;
-
-        public Event(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata)
-        {
-            if (Guid.Empty == eventId)
-                throw new ArgumentException("Empty eventId provided.");
-            if (string.IsNullOrEmpty(eventType))
-                throw new ArgumentException("Empty eventType provided.");
-
-            EventId = eventId;
-            EventType = eventType;
-            IsJson = isJson;
-
-            Data = data ?? Empty;
-            Metadata = metadata ?? Empty;
-        }
+        void Complete();
+        void Fail(Exception exception);
     }
 }

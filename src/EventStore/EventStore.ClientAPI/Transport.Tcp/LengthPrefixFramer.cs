@@ -31,7 +31,7 @@ using System.Collections.Generic;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    class LengthPrefixMessageFramer
+    internal class LengthPrefixMessageFramer
     {
         public const int HeaderLength = sizeof(Int32);
 

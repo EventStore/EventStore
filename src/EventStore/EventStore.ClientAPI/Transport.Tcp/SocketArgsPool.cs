@@ -29,10 +29,11 @@
 using System;
 using System.Net.Sockets;
 using System.Threading;
+using Collections = System.Collections;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    class SocketArgsPool
+    internal class SocketArgsPool
     {
         private readonly string _name;
         private readonly Func<SocketAsyncEventArgs> _socketArgsCreator;
@@ -40,7 +41,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 #if __MonoCS__
         private readonly Common.ConcurrentCollections.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Common.ConcurrentCollections.ConcurrentStack<SocketAsyncEventArgs>();
 #else
-        private readonly System.Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new System.Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
+        private readonly Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
 #endif
 
         private int _getArgs = 0;

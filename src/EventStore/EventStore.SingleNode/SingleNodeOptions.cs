@@ -55,6 +55,9 @@ namespace EventStore.SingleNode
         [Option(null, "no-projections", DefaultValue = false)]
         public bool NoProjections { get; set; }
 
+        [Option(null, "prefixes")]
+        public string PrefixesString { get; set; }
+
         public override IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
         {
             yield return new KeyValuePair<string, string>("IP", Ip.ToString());

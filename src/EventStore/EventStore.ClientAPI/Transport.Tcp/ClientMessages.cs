@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -28,16 +28,15 @@
 
 using System;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Data;
-using EventStore.ClientAPI.Defines;
+using EventStore.ClientAPI.System;
 using ProtoBuf;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Transport.Tcp
 {
-    static class ClientMessages
+    internal static class ClientMessages
     {
         [ProtoContract]
-        public class CreateStream
+        internal class CreateStream
         {
             [ProtoMember(1, IsRequired = false)]
             public byte[] CorrelationId { get; set; }
@@ -65,7 +64,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class CreateStreamCompleted
+        internal class CreateStreamCompleted
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -93,7 +92,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class Event
+        internal class Event
         {
             [ProtoMember(1)]
             public byte[] EventId { get; set; }
@@ -119,7 +118,7 @@ namespace EventStore.ClientAPI
                 Metadata = metadata;
             }
 
-            public Event(Data.Event evnt)
+            public Event(System.Event evnt)
             {
                 EventId = evnt.EventId.ToByteArray();
                 EventType = evnt.EventType;
@@ -129,7 +128,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class WriteEvents
+        internal class WriteEvents
         {
             [ProtoMember(1, IsRequired = false)]
             public byte[] CorrelationId { get; set; }
@@ -160,7 +159,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class WriteEventsCompleted
+        internal class WriteEventsCompleted
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -192,7 +191,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class DeleteStream
+        internal class DeleteStream
         {
             [ProtoMember(1, IsRequired = false)]
             public byte[] CorrelationId { get; set; }
@@ -218,7 +217,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class DeleteStreamCompleted
+        internal class DeleteStreamCompleted
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -246,7 +245,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class ReadEvent
+        internal class ReadEvent
         {
             [ProtoMember(1, IsRequired = false)]
             public byte[] CorrelationId { get; set; }
@@ -273,38 +272,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class ReadEventsFromBeginning
-        {
-            [ProtoMember(1, IsRequired = false)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
-            public string EventStreamId { get; set; }
-
-            [ProtoMember(3)]
-            public int StartIndex { get; set; }
-
-            [ProtoMember(4)]
-            public int MaxCount { get; set; }
-
-            [ProtoMember(5)]
-            public bool ResolveLinktos { get; set; }
-
-            public ReadEventsFromBeginning()
-            {
-            }
-
-            public ReadEventsFromBeginning(Guid correlationId, string eventStreamId, int startIndex, int maxCount)
-            {
-                CorrelationId = correlationId.ToByteArray();
-                EventStreamId = eventStreamId;
-                StartIndex = startIndex;
-                MaxCount = maxCount;
-            }
-        }
-
-        [ProtoContract]
-        public class ReadEventCompleted
+        internal class ReadEventCompleted
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -355,7 +323,38 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class ReadEventsFromBeginningCompleted
+        internal class ReadEventsFromBeginning
+        {
+            [ProtoMember(1, IsRequired = false)]
+            public byte[] CorrelationId { get; set; }
+
+            [ProtoMember(2)]
+            public string EventStreamId { get; set; }
+
+            [ProtoMember(3)]
+            public int StartIndex { get; set; }
+
+            [ProtoMember(4)]
+            public int MaxCount { get; set; }
+
+            [ProtoMember(5)]
+            public bool ResolveLinktos { get; set; }
+
+            public ReadEventsFromBeginning()
+            {
+            }
+
+            public ReadEventsFromBeginning(Guid correlationId, string eventStreamId, int startIndex, int maxCount)
+            {
+                CorrelationId = correlationId.ToByteArray();
+                EventStreamId = eventStreamId;
+                StartIndex = startIndex;
+                MaxCount = maxCount;
+            }
+        }
+
+        [ProtoContract]
+        internal class ReadEventsFromBeginningCompleted
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -397,7 +396,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class TransactionStart
+        internal class TransactionStart
         {
             [ProtoMember(1, IsRequired = false)]
             public byte[] CorrelationId { get; set; }
@@ -421,7 +420,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class TransactionStartCompleted
+        internal class TransactionStartCompleted
         {
             [ProtoMember(1, IsRequired = false)]
             public byte[] CorrelationId { get; set; }
@@ -457,7 +456,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class TransactionWrite
+        internal class TransactionWrite
         {
             [ProtoMember(1, IsRequired = false)]
             public byte[] CorrelationId { get; set; }
@@ -485,7 +484,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class TransactionWriteCompleted
+        internal class TransactionWriteCompleted
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -517,7 +516,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class TransactionCommit
+        internal class TransactionCommit
         {
             [ProtoMember(1, IsRequired = false)]
             public byte[] CorrelationId { get; set; }
@@ -541,7 +540,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class TransactionCommitCompleted
+        internal class TransactionCommitCompleted
         {
             [ProtoMember(1)]
             public byte[] CorrelationId;
@@ -569,7 +568,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class SubscribeToStream
+        internal class SubscribeToStream
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -589,7 +588,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class UnsubscribeFromStream
+        internal class UnsubscribeFromStream
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -609,7 +608,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class SubscribeToAllStreams
+        internal class SubscribeToAllStreams
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -625,7 +624,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class UnsubscribeFromAllStreams
+        internal class UnsubscribeFromAllStreams
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -641,7 +640,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class StreamEventAppeared
+        internal class StreamEventAppeared
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -667,7 +666,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class SubscriptionDropped
+        internal class SubscriptionDropped
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -687,7 +686,7 @@ namespace EventStore.ClientAPI
         }
 
         [ProtoContract]
-        public class SubscriptionToAllDropped
+        internal class SubscriptionToAllDropped
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }

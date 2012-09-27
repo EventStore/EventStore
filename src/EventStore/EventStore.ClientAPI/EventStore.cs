@@ -25,11 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Defines;
 
 namespace EventStore.ClientAPI
 {
@@ -44,12 +42,12 @@ namespace EventStore.ClientAPI
             _connection = new EventStoreConnection(new IPEndPoint(args._address, args._port));
         }
 
-        public static EventStream ReadEventStream(string stream, int start, int count)
+        public static EventStreamSlice ReadEventStream(string stream, int start, int count)
         {
             return _connection.ReadEventStream(stream, start, count);
         }
 
-        public static Task<ReadResult> ReadEventStreamAsync(string stream, int start, int count)
+        public static Task<EventStreamSlice> ReadEventStreamAsync(string stream, int start, int count)
         {
             return _connection.ReadEventStreamAsync(stream, start, count);
         }
@@ -58,7 +56,7 @@ namespace EventStore.ClientAPI
             _connection.CreateStreamWithProtoBufMetadata(stream, metadata);
         }
 
-        public static Task<CreateStreamResult> CreateStreamWithProtoBufMetadataAsync(string stream, object metadata)
+        public static Task CreateStreamWithProtoBufMetadataAsync(string stream, object metadata)
         {
             return _connection.CreateStreamWithProtoBufMetadataAsync(stream, metadata);
         }
@@ -68,17 +66,17 @@ namespace EventStore.ClientAPI
             _connection.CreateStream(stream, metadata);
         }
 
-        public static Task<CreateStreamResult> CreateStreamAsync(string stream, byte[] metadata)
+        public static Task CreateStreamAsync(string stream, byte[] metadata)
         {
             return _connection.CreateStreamAsync(stream, metadata);
         }
 
-        public static void AppendToStream(string stream, int expectedVersion, IEnumerable<Event> events)
+        public static void AppendToStream(string stream, int expectedVersion, IEnumerable<IEvent> events)
         {
             _connection.AppendToStream(stream, expectedVersion, events);
         }
 
-        public static Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<Event> events)
+        public static Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<IEvent> events)
         {
             return _connection.AppendToStreamAsync(stream, expectedVersion, events);
         }
@@ -88,7 +86,7 @@ namespace EventStore.ClientAPI
             _connection.DeleteStream(stream, expectedVersion); 
         }
 
-        public static Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion)
+        public static Task DeleteStreamAsync(string stream, int expectedVersion)
         {
             return _connection.DeleteStreamAsync(stream, expectedVersion);
         }
@@ -98,14 +96,9 @@ namespace EventStore.ClientAPI
             _connection.DeleteStream(stream, ExpectedVersion.Any);
         }
 
-        public static Task<DeleteResult> DeleteStreamAsync(string stream)
+        public static Task DeleteStreamAsync(string stream)
         {
             return _connection.DeleteStreamAsync(stream, ExpectedVersion.Any);
-        }
-
-        public static void Subscribe(string streamName, Action<Event> handler)
-        {
-            //will get call backs to handler
         }
 
         public static void Close()

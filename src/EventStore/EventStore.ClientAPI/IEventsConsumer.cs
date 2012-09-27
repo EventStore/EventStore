@@ -26,27 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
-using System.Runtime.Serialization;
+using System.Threading.Tasks;
 
-namespace EventStore.ClientAPI.Exceptions
+namespace EventStore.ClientAPI
 {
-    public class NoResultException : Exception
+    public interface IEventsConsumer
     {
-        public NoResultException()
-        {
-        }
-
-        public NoResultException(string message) : base(message)
-        {
-        }
-
-        public NoResultException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected NoResultException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+        EventStreamSlice ReadEventStream(string stream, int start, int count);
+        Task<EventStreamSlice> ReadEventStreamAsync(string stream, int start, int count);
     }
 }

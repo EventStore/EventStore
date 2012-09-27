@@ -26,27 +26,31 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
-using System.Runtime.Serialization;
+using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.System;
+using System.Linq;
 
-namespace EventStore.ClientAPI.Exceptions
+namespace EventStore.ClientAPI
 {
-    internal class UnknownPackageException : Exception
+    public class EventStreamSlice
     {
-        public UnknownPackageException()
-        {
-        }
+        public readonly string Stream;
+        public readonly int StartIndex;
+        public readonly int Count;
+        public readonly RecordedEvent[] Events;
 
-        public UnknownPackageException(string message) : base(message)
+        internal EventStreamSlice(string stream,
+                                  int startIndex,
+                                  int count,
+                                  EventRecord[] events)
         {
-        }
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
 
-        public UnknownPackageException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected UnknownPackageException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
+            Stream = stream;
+            StartIndex = startIndex;
+            Count = count;
+            Events = events.Select(e => new RecordedEvent(e)).ToArray();
         }
     }
 }

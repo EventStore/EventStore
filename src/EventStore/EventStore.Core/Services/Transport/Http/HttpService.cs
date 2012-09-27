@@ -40,6 +40,7 @@ using System.Linq;
 using EventStore.Transport.Http.EntityManagement;
 using EventStore.Transport.Http.Server;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
+using Uri = System.Uri;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -85,7 +86,6 @@ namespace EventStore.Core.Services.Transport.Http
 
         private readonly IPublisher _inputBus;
         private readonly IEnvelope _publishEnvelope;
-        private readonly Uri _prefix;
 
         private readonly object _pendingLock = new object();
         private readonly SortedSet<HttpEntity> _pending;
@@ -94,22 +94,20 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly HttpMessagePipe _httpPipe;
         private readonly HttpAsyncServer _server;
 
-        public HttpService(IPublisher inputBus, string uri)
+        public HttpService(IPublisher inputBus, string[] prefixes)
         {
             Ensure.NotNull(inputBus, "inputBus");
-            Ensure.NotNull(uri, "uri");
+            Ensure.NotNull(prefixes, "prefixes");
 
             _inputBus = inputBus;
             _publishEnvelope = new PublishEnvelope(inputBus);
-            
-            _prefix = new Uri(uri);
 
             _pending = new SortedSet<HttpEntity>(new HttpEntityReceivedComparer());
             _actions = new Dictionary<ControllerAction, Action<HttpEntity, UriTemplateMatch>>();
 
             _httpPipe = new HttpMessagePipe();
 
-            _server = new HttpAsyncServer(uri);
+            _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
         }
 
@@ -252,7 +250,7 @@ namespace EventStore.Core.Services.Transport.Http
         private UriTemplateMatch MatchUriTemplate(string pattern, Uri uri)
         {
             var template = new UriTemplate(pattern);
-            return template.Match(_prefix, uri);
+            return template.Match(new UriBuilder(uri.Scheme, uri.Host, uri.Port).Uri, uri);
         }
 
         private void MethodNotAllowed(HttpListenerContext context, string[] allowed)
@@ -287,7 +285,7 @@ namespace EventStore.Core.Services.Transport.Http
                                         Action<HttpEntity> onRequestSatisfied)
         {
             return new HttpEntity(receivedTime,
-                                  context.Request.LocalEndPoint,
+                                  context.Request.UserHostName,
                                   requestCodec,
                                   responseCodec,
                                   context,

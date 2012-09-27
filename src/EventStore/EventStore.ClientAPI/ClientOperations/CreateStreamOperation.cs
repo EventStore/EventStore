@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,49 +24,46 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
 using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.System;
 using EventStore.ClientAPI.Transport.Tcp;
 
-namespace EventStore.ClientAPI.TaskWrappers
+namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class ReadFromBeginningTaskCompletionWrapper : ITaskCompletionWrapper
+    internal class CreateStreamOperation : IClientOperation
     {
-        private readonly TaskCompletionSource<ReadResult> _completion;
-        private ClientMessages.ReadEventsFromBeginningCompleted _result;
+        private readonly TaskCompletionSource<object> _source;
+        private ClientMessages.CreateStreamCompleted _result;
 
         private Guid _correlationId;
         private readonly object _corrIdLock = new object();
 
         private readonly string _stream;
-        private readonly int _start;
-        private readonly int _count;
+        private readonly byte[] _metadata;
 
         public Guid CorrelationId
         {
             get
             {
-                lock(_corrIdLock)
+                lock (_corrIdLock)
                     return _correlationId;
             }
         }
 
-        public ReadFromBeginningTaskCompletionWrapper(TaskCompletionSource<ReadResult> completion,
-                                                      Guid corrId, 
-                                                      string stream, 
-                                                      int start, 
-                                                      int count)
+        public CreateStreamOperation(TaskCompletionSource<object> source,
+                                     Guid correlationId,
+                                     string stream,
+                                     byte[] metadata)
         {
-            _completion = completion;
+            _source = source;
 
-            _correlationId = corrId;
+            _correlationId = correlationId;
             _stream = stream;
-            _start = start;
-            _count = count;
+            _metadata = metadata;
         }
 
         public void SetRetryId(Guid correlationId)
@@ -79,55 +76,59 @@ namespace EventStore.ClientAPI.TaskWrappers
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.ReadEventsFromBeginning(_correlationId, _stream, _start, _count);
-                return new TcpPackage(TcpCommand.ReadEventsFromBeginning, _correlationId, dto.Serialize());
+                var dto = new ClientMessages.CreateStream(_correlationId, _stream, _metadata);
+                return new TcpPackage(TcpCommand.CreateStream, _correlationId, dto.Serialize());
             }
         }
 
-        public ProcessResult Process(TcpPackage package)
+        public InspectionResult InspectPackage(TcpPackage package)
         {
             try
             {
-                if (package.Command != TcpCommand.ReadEventsFromBeginningCompleted)
-                {
-                    return new ProcessResult(ProcessResultStatus.NotifyError,
-                        new CommandNotExpectedException(TcpCommand.ReadEventsFromBeginningCompleted.ToString(), 
-                                                        package.Command.ToString()));
-                }
+                if (package.Command != TcpCommand.CreateStreamCompleted)
+                    return new InspectionResult(InspectionDecision.NotifyError, 
+                                                new CommandNotExpectedException(TcpCommand.CreateStreamCompleted.ToString(), 
+                                                                                package.Command.ToString()));
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessages.ReadEventsFromBeginningCompleted>();
+                var dto = data.Deserialize<ClientMessages.CreateStreamCompleted>();
                 _result = dto;
 
-                switch ((RangeReadResult)dto.Result)
+                switch ((OperationErrorCode)dto.ErrorCode)
                 {
-                    case RangeReadResult.Success:
-                        return new ProcessResult(ProcessResultStatus.Success);
-                    case RangeReadResult.StreamDeleted:
-                    case RangeReadResult.NoStream:
-                        return new ProcessResult(ProcessResultStatus.NotifyError, 
-                                                 new Exception(string.Format("{0}", (RangeReadResult)dto.Result)));
+                    case OperationErrorCode.Success:
+                        return new InspectionResult(InspectionDecision.Succeed);
+
+                    case OperationErrorCode.PrepareTimeout:
+                    case OperationErrorCode.CommitTimeout:
+                    case OperationErrorCode.ForwardTimeout:
+                        return new InspectionResult(InspectionDecision.Retry);
+                    case OperationErrorCode.WrongExpectedVersion:
+                    case OperationErrorCode.StreamDeleted:
+                    case OperationErrorCode.InvalidTransaction:
+                        return new InspectionResult(InspectionDecision.NotifyError,
+                                                    new Exception(string.Format("{0}", (OperationErrorCode)dto.ErrorCode)));
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
             }
             catch (Exception e)
             {
-                return new ProcessResult(ProcessResultStatus.NotifyError, e);
+                return new InspectionResult(InspectionDecision.NotifyError, e);
             }
         }
 
         public void Complete()
         {
             if (_result != null)
-                _completion.SetResult(new ReadResult((RangeReadResult)_result.Result, _result.Events));
+                _source.SetResult(null);
             else
-                _completion.SetException(new NoResultException());
+                _source.SetException(new NoResultException());
         }
 
         public void Fail(Exception exception)
         {
-            _completion.SetException(exception);
+            _source.SetException(exception);
         }
     }
 }

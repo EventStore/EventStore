@@ -32,7 +32,7 @@ using ProtoBuf;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    static class ProtobufExtensions
+    internal static class ProtobufExtensions
     {
         public static T Deserialize<T>(this ArraySegment<byte> data)
         {

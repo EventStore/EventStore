@@ -29,11 +29,10 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using EventStore.ClientAPI.Tcp;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    class TcpClientConnector
+    internal class TcpClientConnector
     {
        private readonly SocketArgsPool _connectSocketArgsPool;
 

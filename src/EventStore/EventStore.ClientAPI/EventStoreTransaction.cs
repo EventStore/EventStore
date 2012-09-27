@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,28 +25,21 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+using EventStore.ClientAPI.Common.Utils;
 
-using System;
-using System.Runtime.Serialization;
-
-namespace EventStore.ClientAPI.Exceptions
+namespace EventStore.ClientAPI
 {
-    public class NoResultException : Exception
+    public class EventStoreTransaction
     {
-        public NoResultException()
-        {
-        }
+        public readonly string Stream;
+        public readonly long TransactionId;
 
-        public NoResultException(string message) : base(message)
+        internal EventStoreTransaction(string stream, long transactionId)
         {
-        }
+            Ensure.NotNullOrEmpty(stream, "stream");
 
-        public NoResultException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected NoResultException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
+            Stream = stream;
+            TransactionId = transactionId;
         }
     }
 }

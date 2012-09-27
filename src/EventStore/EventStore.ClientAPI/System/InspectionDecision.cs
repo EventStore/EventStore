@@ -26,20 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
-using EventStore.ClientAPI.Defines;
-
-namespace EventStore.ClientAPI.TaskWrappers
+namespace EventStore.ClientAPI.System
 {
-    internal interface ITaskCompletionWrapper
+    internal enum InspectionDecision
     {
-        Guid CorrelationId { get; }
-        void SetRetryId(Guid correlationId);
-
-        TcpPackage CreateNetworkPackage();
-        ProcessResult Process(TcpPackage package);
-
-        void Complete();
-        void Fail(Exception exception);
+        Succeed,
+        Retry,
+        NotifyError
     }
 }

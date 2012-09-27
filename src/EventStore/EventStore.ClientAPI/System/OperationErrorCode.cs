@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,28 +25,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-
-using System;
-using System.Runtime.Serialization;
-
-namespace EventStore.ClientAPI.Exceptions
+namespace EventStore.ClientAPI.System
 {
-    public class NoResultException : Exception
+    internal enum OperationErrorCode
     {
-        public NoResultException()
-        {
-        }
-
-        public NoResultException(string message) : base(message)
-        {
-        }
-
-        public NoResultException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected NoResultException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+        Success = 0,
+        PrepareTimeout,
+        CommitTimeout,
+        ForwardTimeout,
+        WrongExpectedVersion,
+        StreamDeleted,
+        InvalidTransaction
     }
 }

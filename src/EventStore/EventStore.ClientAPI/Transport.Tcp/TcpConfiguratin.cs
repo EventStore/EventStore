@@ -27,7 +27,7 @@
 //  
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    static class TcpConfiguration
+    internal static class TcpConfiguration
     {
         public const int SocketCloseTimeoutMs = 500;
 
