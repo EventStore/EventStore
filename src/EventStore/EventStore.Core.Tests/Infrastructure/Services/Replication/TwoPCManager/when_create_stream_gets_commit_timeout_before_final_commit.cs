@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System.Collections;
+using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
@@ -43,7 +44,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
             return new CreateStreamTwoPhaseRequestManager(publisher, 3, 3);
         }
 
-        protected override IEnumerable WithInitialMessages()
+        protected override IEnumerable<Message> WithInitialMessages()
         {
             yield return new ReplicationMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Metadata);
             yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
@@ -51,7 +52,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
             yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
             yield return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
         }
-
+        
         protected override Message When()
         {
             return new ReplicationMessage.CommitPhaseTimeout(CorrelationId);

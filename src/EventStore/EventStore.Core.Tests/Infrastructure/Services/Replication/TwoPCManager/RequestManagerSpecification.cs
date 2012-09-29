@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
         protected TwoPhaseRequestManagerBase manager;
         protected abstract TwoPhaseRequestManagerBase OnManager(FakePublisher publisher);
         protected List<Message> produced;
-        protected abstract IEnumerable WithInitialMessages();
+        protected abstract IEnumerable<Message> WithInitialMessages();
         protected FakePublisher _publisher;
         protected Guid CorrelationId = Guid.NewGuid();
         protected byte[] Metadata = new byte[255];

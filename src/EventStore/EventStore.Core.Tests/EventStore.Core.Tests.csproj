@@ -130,6 +130,7 @@
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\FakeEnvelope.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\RequestManagerSpecification.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_accepts_request.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_completes_successfully.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_prepare_timeout_after_prepares.cs" />

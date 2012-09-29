@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System.Collections;
+using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
@@ -42,7 +43,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
             return new CreateStreamTwoPhaseRequestManager(publisher, 3,3);
         }
 
-        protected override IEnumerable WithInitialMessages()
+        protected override IEnumerable<Message> WithInitialMessages()
         {
             yield break;
         }
