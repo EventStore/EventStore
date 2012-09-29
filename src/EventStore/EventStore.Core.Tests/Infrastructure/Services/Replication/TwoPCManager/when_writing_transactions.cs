@@ -46,14 +46,14 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
     //    private const int _startingLogPosition = 0;
 
     //    private TwoPhaseCommitRequestManager _manager;
-    //    private FakePublisher _bus;
+    //    private FakePublisher Publisher;
     //    private Guid _correlationID;
 
     //    [SetUp]
     //    public void SetUp()
     //    {
-    //        _bus = new FakePublisher();
-    //        _manager = new TwoPhaseCommitRequestManager(_bus, 2, 2);
+    //        Publisher = new FakePublisher();
+    //        _manager = new TwoPhaseCommitRequestManager(Publisher, 2, 2);
 
     //        _correlationID = Guid.NewGuid();
 
@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
     //    [TearDown]
     //    public void TearDown()
     //    {
-    //        _bus = null;
+    //        Publisher = null;
     //        _manager = null;
     //        _correlationID = Guid.Empty;
     //    }
@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
     //        _manager.Handle(new ReplicationMessage.CommitAck(_correlationID, _startingLogPosition, _startingLogPosition));
     //        _manager.Handle(new ReplicationMessage.CommitAck(_correlationID, _startingLogPosition, _startingLogPosition));
 
-    //        Assert.That(_bus.Messages.ContainsSingle<ReplicationMessage.RequestCompleted>(m => m.Success == true));
+    //        Assert.That(Publisher.Messages.ContainsSingle<ReplicationMessage.RequestCompleted>(m => m.Success == true));
     //    }
 
     //    [Test]
@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
     //        _manager.Handle(new ReplicationMessage.CommitAck(_correlationID, _startingLogPosition, _startingLogPosition));
     //        _manager.Handle(new ReplicationMessage.CommitAck(_correlationID, _startingLogPosition, _startingLogPosition));
 
-    //        Assert.That(_bus.Messages.ContainsSingle<ReplicationMessage.RequestCompleted>(m => m.Success == true));
+    //        Assert.That(Publisher.Messages.ContainsSingle<ReplicationMessage.RequestCompleted>(m => m.Success == true));
     //    }
 
     //    [Test]
@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
 
     //        _manager.Handle(new ReplicationMessage.PreparePhaseTimeout(_correlationID));
 
-    //        Assert.That(_bus.Messages.ContainsSingle<ReplicationMessage.RequestCompleted>(m => m.Success == false));
+    //        Assert.That(Publisher.Messages.ContainsSingle<ReplicationMessage.RequestCompleted>(m => m.Success == false));
     //    }
 
     //    [Test]
@@ -136,7 +136,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
     //        _manager.Handle(new ReplicationMessage.CommitAck(_correlationID, _importlessLogPosition, _importlessLogPosition));
     //        _manager.Handle(new ReplicationMessage.CommitAck(_correlationID, _importlessLogPosition, _importlessLogPosition));
 
-    //        Assert.That(_bus.Messages.ContainsSingle<ReplicationMessage.RequestCompleted>(m => m.Success == true));
+    //        Assert.That(Publisher.Messages.ContainsSingle<ReplicationMessage.RequestCompleted>(m => m.Success == true));
     //    }
     //}
 }

@@ -37,8 +37,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
 {
     class CreateStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<ReplicationMessage.CreateStreamRequestCreated>
     {
-        public CreateStreamTwoPhaseRequestManager(IPublisher bus, int prepareCount, int commitCount) :
-            base(bus, prepareCount, commitCount)
+        public CreateStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
+            base(publisher, prepareCount, commitCount)
         {}
 
         public void Handle(ReplicationMessage.CreateStreamRequestCreated request)
@@ -51,7 +51,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _correlationId = request.CorrelationId;
             _eventStreamId = request.EventStreamId;
 
-            _bus.Publish(new ReplicationMessage.WritePrepares(
+            Publisher.Publish(new ReplicationMessage.WritePrepares(
                              request.CorrelationId,
                              _publishEnvelope,
                              request.EventStreamId,
@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                              new[] { new Event(Guid.NewGuid(), "StreamCreated", true, LogRecord.NoData, request.Metadata) },
                              allowImplicitStreamCreation: false,
                              liveUntil: DateTime.UtcNow.AddSeconds(Timeouts.PrepareTimeout.Seconds)));
-            _bus.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
+            Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                       _publishEnvelope,
                                                       new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
         }
@@ -77,8 +77,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
             base.CompleteFailedRequest(correlationId, eventStreamId, errorCode, error);
             var responseMsg = new ClientMessage.CreateStreamCompleted(correlationId, eventStreamId, errorCode, error);
-            _responseEnvelope.ReplyWith(responseMsg);
-                        
+            _responseEnvelope.ReplyWith(responseMsg);     
         }
     }
 }

@@ -8,7 +8,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class TwoPhaseRequestManagerBase :           IHandle<ReplicationMessage.AlreadyCommitted>,
+    public class TwoPhaseRequestManagerBase :           IHandle<ReplicationMessage.AlreadyCommitted>,
                                                         IHandle<ReplicationMessage.PrepareAck>,
                                                         IHandle<ReplicationMessage.CommitAck>,
                                                         IHandle<ReplicationMessage.WrongExpectedVersion>,
@@ -17,7 +17,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                         IHandle<ReplicationMessage.CommitPhaseTimeout>
     {
          
-        protected readonly IPublisher _bus;
+        protected readonly IPublisher Publisher;
         protected readonly IEnvelope _publishEnvelope;
         protected IEnvelope _responseEnvelope;
         protected Guid _correlationId;
@@ -31,12 +31,14 @@ namespace EventStore.Core.Services.RequestManager.Managers
         protected bool _completed;
         protected bool _initialized;
 
-        public TwoPhaseRequestManagerBase(IPublisher bus, int prepareCount, int commitCount)
+        public TwoPhaseRequestManagerBase(IPublisher publisher, int prepareCount, int commitCount)
         {
-            _bus = bus;
+            if(publisher == null) throw new ArgumentNullException();
+            if(prepareCount <= 0 || commitCount <= 0) throw new ArgumentOutOfRangeException("counts for prepare and commit acks must be a positive number");
+            Publisher = publisher;
             _awaitingCommit = commitCount;
             _awaitingPrepare = prepareCount;
-            _publishEnvelope = new PublishEnvelope(bus);
+            _publishEnvelope = new PublishEnvelope(publisher);
         }
 
 
@@ -66,7 +68,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(ReplicationMessage.CommitPhaseTimeout message)
         {
-            if (_completed || _awaitingCommit == 0)
+            if (_completed || _awaitingCommit == 0 || _awaitingPrepare != 0)
                 return;
 
             CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.CommitTimeout, "Commit phase timeout.");
@@ -92,8 +94,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 _awaitingPrepare -= 1;
                 if (_awaitingPrepare == 0)
                 {
-                    _bus.Publish(new ReplicationMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _preparePos));
-                    _bus.Publish(TimerMessage.Schedule.Create(Timeouts.CommitTimeout,
+                    Publisher.Publish(new ReplicationMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _preparePos));
+                    Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.CommitTimeout,
                                                               _publishEnvelope,
                                                               new ReplicationMessage.CommitPhaseTimeout(_correlationId)));
                 }
@@ -113,14 +115,14 @@ namespace EventStore.Core.Services.RequestManager.Managers
         protected virtual void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
         {
             _completed = true;
-            _bus.Publish(new ReplicationMessage.RequestCompleted(correlationId, true));
+            Publisher.Publish(new ReplicationMessage.RequestCompleted(correlationId, true));
         }
 
         protected virtual void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
         {
             Debug.Assert(errorCode != OperationErrorCode.Success);
             _completed = true;
-            _bus.Publish(new ReplicationMessage.RequestCompleted(correlationId, false));
+            Publisher.Publish(new ReplicationMessage.RequestCompleted(correlationId, false));
         }
     }
 }

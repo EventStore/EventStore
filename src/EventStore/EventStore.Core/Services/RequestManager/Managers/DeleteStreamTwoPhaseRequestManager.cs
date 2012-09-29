@@ -35,8 +35,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
 {
     class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<ReplicationMessage.DeleteStreamRequestCreated>
     {
-        public DeleteStreamTwoPhaseRequestManager(IPublisher bus, int prepareCount, int commitCount) :
-            base(bus, prepareCount, commitCount)
+        public DeleteStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
+            base(publisher, prepareCount, commitCount)
         {}
         public void Handle(ReplicationMessage.DeleteStreamRequestCreated request)
         {
@@ -48,13 +48,13 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _correlationId = request.CorrelationId;
             _eventStreamId = request.EventStreamId;
 
-            _bus.Publish(new ReplicationMessage.WriteDelete(request.CorrelationId,
+            Publisher.Publish(new ReplicationMessage.WriteDelete(request.CorrelationId,
                                                             _publishEnvelope,
                                                             request.EventStreamId,
                                                             request.ExpectedVersion,
                                                             allowImplicitStreamCreation: true,
                                                             liveUntil: DateTime.UtcNow.AddSeconds(Timeouts.PrepareTimeout.Seconds)));
-            _bus.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
+            Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                       _publishEnvelope,
                                                       new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
         }

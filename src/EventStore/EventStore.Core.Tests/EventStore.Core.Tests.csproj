@@ -52,6 +52,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="nunit.framework">
       <HintPath>..\libs\nunit.framework.dll</HintPath>
     </Reference>
@@ -81,6 +82,7 @@
     <Compile Include="Fakes\FakeLogger.cs" />
     <Compile Include="Fakes\FakePublisher.cs" />
     <Compile Include="Fakes\NoopPublisher.cs" />
+    <Compile Include="Helper\ReflectionDynamic.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\create_index_map_from_non_existing_file.cs" />
@@ -125,13 +127,20 @@
     <Compile Include="Infrastructure\IRandTestFinishCondition.cs" />
     <Compile Include="Infrastructure\IRandTestItemProcessor.cs" />
     <Compile Include="Infrastructure\RandomTestRunner.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\FakeEnvelope.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\RequestManagerSpecification.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_accepts_request.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_commit_timeout_before_commit_stage.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_commit_timeout_before_final_commit.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_prepare_timeout_after_prepares.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_creating_create_stream_request_manager.cs" />
     <Compile Include="Integration\IntegrationTestBase.cs" />
     <Compile Include="Integration\EnvelopeCallback.cs" />
     <Compile Include="Integration\when_writing_single_event_and_then_reading_it.cs" />
     <Compile Include="MD5HashTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\FormatterTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\StatsParserTests.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\two_pc_manager_should.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_writing_transactions.cs" />
     <Compile Include="Infrastructure\Services\Storage\ByLengthHasher.cs" />
     <Compile Include="Infrastructure\Services\Storage\FakeTableIndex.cs" />

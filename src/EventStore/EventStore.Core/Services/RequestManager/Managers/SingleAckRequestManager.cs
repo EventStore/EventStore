@@ -106,7 +106,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                                          request.EventStreamId,
                                                                          request.Events));
             CompleteSuccessRequest(request.CorrelationId, request.TransactionId, request.EventStreamId);
-//            _bus.Publish(TimerMessage.Schedule.Create(TwoPhaseCommitRequestManager.PrepareTimeout,
+//            Publisher.Publish(TimerMessage.Schedule.Create(TwoPhaseCommitRequestManager.PrepareTimeout,
 //                                                      _publishEnvelope,
 //                                                      new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
         }
