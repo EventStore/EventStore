@@ -131,10 +131,12 @@
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\RequestManagerSpecification.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_accepts_request.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_completes_successfully.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_already_committed.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_prepare_timeout_after_prepares.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_stream_deleted.cs" />
     <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_creating_create_stream_request_manager.cs" />
     <Compile Include="Integration\IntegrationTestBase.cs" />
     <Compile Include="Integration\EnvelopeCallback.cs" />
