@@ -25,15 +25,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.CreateStream
 {
     public class when_create_stream_gets_already_committed : RequestManagerSpecification
     {

@@ -32,12 +32,12 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.CreateStream
 {
-    public class when_create_stream_gets_commit_timeout_before_final_commit : RequestManagerSpecification
+    public class when_create_stream_gets_prepare_timeout_before_prepares : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
@@ -47,29 +47,26 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
         protected override IEnumerable<Message> WithInitialMessages()
         {
             yield return new ReplicationMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Metadata);
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
         }
-        
+
         protected override Message When()
         {
-            return new ReplicationMessage.CommitPhaseTimeout(CorrelationId);
+            return new ReplicationMessage.PreparePhaseTimeout(CorrelationId);
         }
 
         [Test]
-        public void failed_request_message_is_publised()
+        public void failed_request_message_is_published()
         {
-            Assert.That(produced.ContainsSingle<ReplicationMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId && 
-                                                                                          x.Success == false));
+            Assert.That(produced.ContainsSingle<ReplicationMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId && x.Success == false));
         }
 
         [Test]
         public void the_envelope_is_replied_to_with_failure()
         {
-            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.CreateStreamCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                                  x.ErrorCode == OperationErrorCode.CommitTimeout));
+            Assert.AreEqual(1, Envelope.Replies.Count);
+            var reply = (ClientMessage.CreateStreamCompleted) Envelope.Replies[0];
+            Assert.AreEqual(CorrelationId, reply.CorrelationId);
+            Assert.AreEqual(OperationErrorCode.PrepareTimeout, reply.ErrorCode);
         }
     }
 }

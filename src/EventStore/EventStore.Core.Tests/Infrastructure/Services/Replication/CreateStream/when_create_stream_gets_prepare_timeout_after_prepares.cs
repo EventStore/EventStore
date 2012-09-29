@@ -24,20 +24,20 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// using System.Collections;
+// 
 
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.CreateStream
 {
-    public class when_create_stream_completes_successfully : RequestManagerSpecification
+    public class when_create_stream_gets_prepare_timeout_after_prepares : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
@@ -50,28 +50,23 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
             yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
             yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
             yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
-            yield return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
-            
         }
 
         protected override Message When()
         {
-            return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
+            return new ReplicationMessage.PreparePhaseTimeout(CorrelationId);
         }
 
         [Test]
-        public void successful_request_message_is_publised()
+        public void no_messages_are_published()
         {
-            Assert.That(produced.ContainsSingle<ReplicationMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                          x.Success));
+            Assert.That(produced.Count == 0);
         }
 
         [Test]
-        public void the_envelope_is_replied_to_with_success()
+        public void the_envelope_is_not_replied_to()
         {
-            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.CreateStreamCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                                  x.ErrorCode == OperationErrorCode.Success));
+            Assert.AreEqual(0, Envelope.Replies.Count);
         }
     }
 }

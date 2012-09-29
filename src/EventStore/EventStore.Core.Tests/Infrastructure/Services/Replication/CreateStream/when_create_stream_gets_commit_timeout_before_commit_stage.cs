@@ -25,17 +25,19 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.CreateStream
 {
-    public class when_create_stream_gets_stream_deleted : RequestManagerSpecification
+    public class when_create_stream_gets_commit_timeout_before_commit_stage : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
@@ -45,25 +47,25 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
         protected override IEnumerable<Message> WithInitialMessages()
         {
             yield return new ReplicationMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Metadata);
+            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
         }
 
         protected override Message When()
         {
-            return new ReplicationMessage.StreamDeleted(CorrelationId);
+            return new ReplicationMessage.CommitPhaseTimeout(CorrelationId);
         }
 
         [Test]
-        public void failed_request_message_is_publised()
+        public void no_messages_are_published()
         {
-            Assert.That(produced.ContainsSingle<ReplicationMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                          x.Success == false));
+            Assert.AreEqual(0, produced.Count);
         }
 
         [Test]
-        public void the_envelope_is_replied_to_with_failure()
+        public void the_envelope_is_not_replied_to()
         {
-            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.CreateStreamCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                                  x.ErrorCode == OperationErrorCode.StreamDeleted));
+            Assert.AreEqual(0, Envelope.Replies.Count);
         }
     }
 }

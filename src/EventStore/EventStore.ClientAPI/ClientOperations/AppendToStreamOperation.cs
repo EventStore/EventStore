@@ -109,7 +109,7 @@ namespace EventStore.ClientAPI.ClientOperations
                     case OperationErrorCode.PrepareTimeout:
                     case OperationErrorCode.CommitTimeout:
                     case OperationErrorCode.ForwardTimeout:
-                    case OperationErrorCode.WrongExpectedVersion:
+                    case OperationErrorCode.WrongExpectedVersion: //TODO GFY WE PROBABLY SHOULDNT RETRY WEV
                         return new InspectionResult(InspectionDecision.Retry);
                     case OperationErrorCode.StreamDeleted:
                     case OperationErrorCode.InvalidTransaction:

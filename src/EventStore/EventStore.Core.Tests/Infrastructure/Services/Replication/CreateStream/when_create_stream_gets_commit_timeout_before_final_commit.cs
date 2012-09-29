@@ -25,57 +25,52 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.Collections;
+
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.CreateStream
 {
-    public class when_create_stream_accepts_request : RequestManagerSpecification
+    public class when_create_stream_gets_commit_timeout_before_final_commit : RequestManagerSpecification
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new CreateStreamTwoPhaseRequestManager(publisher, 3,3);
+            return new CreateStreamTwoPhaseRequestManager(publisher, 3, 3);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield break;
+            yield return new ReplicationMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Metadata);
+            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
         }
-
+        
         protected override Message When()
         {
-            return new ReplicationMessage.CreateStreamRequestCreated(CorrelationId, new NoopEnvelope(), "test123", Metadata);
+            return new ReplicationMessage.CommitPhaseTimeout(CorrelationId);
         }
 
         [Test]
-        public void two_messages_are_created()
+        public void failed_request_message_is_publised()
         {
-            Assert.AreEqual(2, produced.Count);
+            Assert.That(produced.ContainsSingle<ReplicationMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId && 
+                                                                                          x.Success == false));
         }
 
         [Test]
-        public void the_first_message_is_write_prepare_with_correct_info()
+        public void the_envelope_is_replied_to_with_failure()
         {
-            Assert.IsInstanceOf<ReplicationMessage.WritePrepares>(produced[0]);
-            var msg = (ReplicationMessage.WritePrepares) produced[0];
-            Assert.AreEqual(CorrelationId, msg.CorrelationId);
-            Assert.AreEqual("test123", msg.EventStreamId);
-        }
-
-        [Test]
-        public void the_second_message_is_timer_schedule()
-        {
-            Assert.IsInstanceOf<TimerMessage.Schedule>(produced[1]);
-            var msg = (TimerMessage.Schedule) produced[1];
-            var reply = (ReplicationMessage.PreparePhaseTimeout) msg.ReplyMessage;
-            Assert.AreEqual(Timeouts.PrepareTimeout, msg.TriggerAfter);
-            Assert.AreEqual(CorrelationId, reply.CorrelationId);
+            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.CreateStreamCompleted>(x => x.CorrelationId == CorrelationId &&
+                                                                                                  x.ErrorCode == OperationErrorCode.CommitTimeout));
         }
     }
 }

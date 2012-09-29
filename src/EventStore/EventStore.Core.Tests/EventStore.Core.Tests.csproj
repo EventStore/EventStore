@@ -127,24 +127,23 @@
     <Compile Include="Infrastructure\IRandTestFinishCondition.cs" />
     <Compile Include="Infrastructure\IRandTestItemProcessor.cs" />
     <Compile Include="Infrastructure\RandomTestRunner.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\FakeEnvelope.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\RequestManagerSpecification.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_accepts_request.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_completes_successfully.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_already_committed.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_commit_timeout_before_commit_stage.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_commit_timeout_before_final_commit.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_prepare_timeout_after_prepares.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_prepare_timeout_before_prepares.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_create_stream_gets_stream_deleted.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_creating_create_stream_request_manager.cs" />
+    <Compile Include="Infrastructure\Services\Replication\FakeEnvelope.cs" />
+    <Compile Include="Infrastructure\Services\Replication\RequestManagerSpecification.cs" />
+    <Compile Include="Infrastructure\Services\Replication\CreateStream\when_create_stream_accepts_request.cs" />
+    <Compile Include="Infrastructure\Services\Replication\CreateStream\when_create_stream_completes_successfully.cs" />
+    <Compile Include="Infrastructure\Services\Replication\CreateStream\when_create_stream_gets_already_committed.cs" />
+    <Compile Include="Infrastructure\Services\Replication\CreateStream\when_create_stream_gets_commit_timeout_before_commit_stage.cs" />
+    <Compile Include="Infrastructure\Services\Replication\CreateStream\when_create_stream_gets_commit_timeout_before_final_commit.cs" />
+    <Compile Include="Infrastructure\Services\Replication\CreateStream\when_create_stream_gets_prepare_timeout_after_prepares.cs" />
+    <Compile Include="Infrastructure\Services\Replication\CreateStream\when_create_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Infrastructure\Services\Replication\CreateStream\when_create_stream_gets_stream_deleted.cs" />
+    <Compile Include="Infrastructure\Services\Replication\CreateStream\when_creating_create_stream_request_manager.cs" />
     <Compile Include="Integration\IntegrationTestBase.cs" />
     <Compile Include="Integration\EnvelopeCallback.cs" />
     <Compile Include="Integration\when_writing_single_event_and_then_reading_it.cs" />
     <Compile Include="MD5HashTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\FormatterTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\StatsParserTests.cs" />
-    <Compile Include="Infrastructure\Services\Replication\TwoPCManager\when_writing_transactions.cs" />
     <Compile Include="Infrastructure\Services\Storage\ByLengthHasher.cs" />
     <Compile Include="Infrastructure\Services\Storage\FakeTableIndex.cs" />
     <Compile Include="Infrastructure\Services\Storage\NullCache.cs" />
@@ -239,7 +238,9 @@
       <Name>EventStore.Transport.Http</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Infrastructure\Services\Replication\TwoPCManager\" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="app.config">
       <SubType>Designer</SubType>
