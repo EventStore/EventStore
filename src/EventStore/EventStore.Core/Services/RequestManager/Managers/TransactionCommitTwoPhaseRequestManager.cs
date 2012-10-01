@@ -55,6 +55,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
         {
+            base.CompleteSuccessRequest(correlationId, eventStreamId, startEventNumber);
             var responseMsg = new ClientMessage.TransactionCommitCompleted(
                 correlationId, _preparePos, OperationErrorCode.Success, null);
             _responseEnvelope.ReplyWith(responseMsg);
@@ -62,6 +63,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
         {
+            base.CompleteFailedRequest(correlationId, eventStreamId, errorCode, error);
             var responseMsg = new ClientMessage.TransactionCommitCompleted(
                 correlationId, _preparePos, errorCode, error);
             _responseEnvelope.ReplyWith(responseMsg);

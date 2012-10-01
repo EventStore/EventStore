@@ -6,7 +6,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Infrastructure.Services.Replication.DeleteStream
 {
     [TestFixture]
-    public class when_creating_create_stream_request_manager
+    public class when_creating_delete_stream_request_manager
     {
         [Test]
         public void null_publisher_throws_argument_null_exception()
