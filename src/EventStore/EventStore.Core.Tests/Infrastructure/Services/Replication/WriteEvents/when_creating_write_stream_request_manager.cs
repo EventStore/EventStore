@@ -26,47 +26,49 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
-using EventStore.Core.Data;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.WriteEvents
 {
-    public abstract class RequestManagerSpecification
+    [TestFixture]
+    public class when_creating_write_stream_request_manager
     {
-        protected TwoPhaseRequestManagerBase manager;
-        protected abstract TwoPhaseRequestManagerBase OnManager(FakePublisher publisher);
-        protected List<Message> produced;
-        protected abstract IEnumerable<Message> WithInitialMessages();
-        protected FakePublisher _publisher;
-        protected Guid CorrelationId = Guid.NewGuid();
-        protected byte[] Metadata = new byte[255];
-        protected byte[] EventData = new byte[255];
-        protected FakeEnvelope Envelope;
-        protected abstract Message When();
-
-        protected Event DummyEvent()
+        [Test]
+        public void null_publisher_throws_argument_null_exception()
         {
-            return new Event(Guid.NewGuid(), "test", true, EventData, Metadata);
+            Assert.Throws<ArgumentNullException>(() => new WriteStreamTwoPhaseRequestManager(null, 3, 3));
         }
 
-        [SetUp]
-        public void Setup()
+        [Test]
+        public void zero_prepare_ack_count_throws_argument_out_range()
         {
-            _publisher = new FakePublisher();
-            Envelope = new FakeEnvelope();
-            manager = OnManager(_publisher);
-            foreach(var m in WithInitialMessages())
-            {
-                manager.AsDynamic().Handle(m);
-            }
-            _publisher.Messages.Clear();
-            manager.AsDynamic().Handle(When());
-            produced = new List<Message>(_publisher.Messages);
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 0, 3));
+        }
+
+        [Test]
+        public void zero_commit_ack_count_throws_argument_out_range()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 3, 0));
+        }
+
+
+        [Test]
+        public void negative_commit_ack_count_throws_argument_out_range()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 3, -1));
+        }
+
+
+        [Test]
+        public void negative_prepare_ack_count_throws_argument_out_range()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), -1, 3));
         }
     }
 }

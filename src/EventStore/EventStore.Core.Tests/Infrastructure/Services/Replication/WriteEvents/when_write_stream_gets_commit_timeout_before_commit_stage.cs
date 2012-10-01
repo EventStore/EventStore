@@ -25,48 +25,47 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.WriteEvents
 {
-    public abstract class RequestManagerSpecification
+    public class when_write_stream_gets_commit_timeout_before_commit_stage : RequestManagerSpecification
     {
-        protected TwoPhaseRequestManagerBase manager;
-        protected abstract TwoPhaseRequestManagerBase OnManager(FakePublisher publisher);
-        protected List<Message> produced;
-        protected abstract IEnumerable<Message> WithInitialMessages();
-        protected FakePublisher _publisher;
-        protected Guid CorrelationId = Guid.NewGuid();
-        protected byte[] Metadata = new byte[255];
-        protected byte[] EventData = new byte[255];
-        protected FakeEnvelope Envelope;
-        protected abstract Message When();
-
-        protected Event DummyEvent()
+        protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new Event(Guid.NewGuid(), "test", true, EventData, Metadata);
+            return new WriteStreamTwoPhaseRequestManager(publisher, 3, 3);
         }
 
-        [SetUp]
-        public void Setup()
+        protected override IEnumerable<Message> WithInitialMessages()
         {
-            _publisher = new FakePublisher();
-            Envelope = new FakeEnvelope();
-            manager = OnManager(_publisher);
-            foreach(var m in WithInitialMessages())
-            {
-                manager.AsDynamic().Handle(m);
-            }
-            _publisher.Messages.Clear();
-            manager.AsDynamic().Handle(When());
-            produced = new List<Message>(_publisher.Messages);
+            yield return new ReplicationMessage.WriteRequestCreated(CorrelationId, Envelope, "test123", ExpectedVersion.Any, new [] {DummyEvent()});
+            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+        }
+
+        protected override Message When()
+        {
+            return new ReplicationMessage.CommitPhaseTimeout(CorrelationId);
+        }
+
+        [Test]
+        public void no_messages_are_published()
+        {
+            Assert.AreEqual(0, produced.Count);
+        }
+
+        [Test]
+        public void the_envelope_is_not_replied_to()
+        {
+            Assert.AreEqual(0, Envelope.Replies.Count);
         }
     }
 }
