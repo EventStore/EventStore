@@ -25,32 +25,48 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.Net;
-using EventStore.Core.Bus;
+using System;
+using System.Collections.Generic;
+using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Helper;
+using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
 {
-    public class RandTestQueueItem
+    public abstract class RequestManagerSpecification
     {
-        public readonly int LogicalTime;
-        public readonly int GlobalId;
-        public readonly IPEndPoint EndPoint;
-        public readonly Message Message;
-        public readonly IPublisher Bus;
+        protected TwoPhaseRequestManagerBase manager;
+        protected abstract TwoPhaseRequestManagerBase OnManager(FakePublisher publisher);
+        protected List<Message> produced;
+        protected abstract IEnumerable<Message> WithInitialMessages();
+        protected FakePublisher _publisher;
+        protected Guid CorrelationId = Guid.NewGuid();
+        protected byte[] Metadata = new byte[255];
+        protected byte[] EventData = new byte[255];
+        protected FakeEnvelope Envelope;
+        protected abstract Message When();
 
-        public RandTestQueueItem(int logicalTime, int globalId, IPEndPoint endPoint, Message message, IPublisher bus)
+        protected Event DummyEvent()
         {
-            LogicalTime = logicalTime;
-            GlobalId = globalId;
-            EndPoint = endPoint;
-            Message = message;
-            Bus = bus;
+            return new Event(Guid.NewGuid(), "test", true, EventData, Metadata);
         }
 
-        public override string ToString()
+        [SetUp]
+        public void Setup()
         {
-            return string.Format("{0}-{1} :{2} to {3}", LogicalTime, GlobalId, Message, EndPoint.Port);
+            _publisher = new FakePublisher();
+            Envelope = new FakeEnvelope();
+            manager = OnManager(_publisher);
+            foreach(var m in WithInitialMessages())
+            {
+                manager.AsDynamic().Handle(m);
+            }
+            _publisher.Messages.Clear();
+            manager.AsDynamic().Handle(When());
+            produced = new List<Message>(_publisher.Messages);
         }
     }
 }

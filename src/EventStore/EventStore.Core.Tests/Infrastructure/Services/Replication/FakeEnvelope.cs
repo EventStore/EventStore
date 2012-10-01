@@ -25,32 +25,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.Net;
-using EventStore.Core.Bus;
+using System.Collections.Generic;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Tests.Infrastructure
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
 {
-    public class RandTestQueueItem
+    public class FakeEnvelope : IEnvelope
     {
-        public readonly int LogicalTime;
-        public readonly int GlobalId;
-        public readonly IPEndPoint EndPoint;
-        public readonly Message Message;
-        public readonly IPublisher Bus;
+        public List<Message> Replies = new List<Message>();
 
-        public RandTestQueueItem(int logicalTime, int globalId, IPEndPoint endPoint, Message message, IPublisher bus)
+        public void ReplyWith<T>(T message) where T : Message
         {
-            LogicalTime = logicalTime;
-            GlobalId = globalId;
-            EndPoint = endPoint;
-            Message = message;
-            Bus = bus;
-        }
-
-        public override string ToString()
-        {
-            return string.Format("{0}-{1} :{2} to {3}", LogicalTime, GlobalId, Message, EndPoint.Port);
+            Replies.Add(message);
         }
     }
 }

@@ -25,32 +25,47 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.Net;
-using EventStore.Core.Bus;
+using System.Collections.Generic;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.Tests.Common;
+using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
+using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TransactionCommit
 {
-    public class RandTestQueueItem
+    public class when_transaction_commit_gets_prepare_timeout_before_prepares : RequestManagerSpecification
     {
-        public readonly int LogicalTime;
-        public readonly int GlobalId;
-        public readonly IPEndPoint EndPoint;
-        public readonly Message Message;
-        public readonly IPublisher Bus;
-
-        public RandTestQueueItem(int logicalTime, int globalId, IPEndPoint endPoint, Message message, IPublisher bus)
+        protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            LogicalTime = logicalTime;
-            GlobalId = globalId;
-            EndPoint = endPoint;
-            Message = message;
-            Bus = bus;
+            return new TransactionCommitTwoPhaseRequestManager(publisher, 3, 3);
         }
 
-        public override string ToString()
+        protected override IEnumerable<Message> WithInitialMessages()
         {
-            return string.Format("{0}-{1} :{2} to {3}", LogicalTime, GlobalId, Message, EndPoint.Port);
+            yield return new ReplicationMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4, "test123");
+        }
+
+        protected override Message When()
+        {
+            return new ReplicationMessage.PreparePhaseTimeout(CorrelationId);
+        }
+
+        [Test]
+        public void failed_request_message_is_published()
+        {
+            Assert.That(produced.ContainsSingle<ReplicationMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId && x.Success == false));
+        }
+
+        [Test]
+        public void the_envelope_is_replied_to_with_failure()
+        {
+            Assert.AreEqual(1, Envelope.Replies.Count);
+            var reply = (ClientMessage.TransactionCommitCompleted)Envelope.Replies[0];
+            Assert.AreEqual(CorrelationId, reply.CorrelationId);
+            Assert.AreEqual(OperationErrorCode.PrepareTimeout, reply.ErrorCode);
         }
     }
 }

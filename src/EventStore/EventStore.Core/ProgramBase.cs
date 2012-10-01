@@ -159,7 +159,7 @@ namespace EventStore.Core
             if (!Directory.Exists(dbPath)) // mono crashes without this check
                 Directory.CreateDirectory(dbPath);
 
-            ICheckpoint writerChk;
+            ICheckpoint writerChk; //TODO MM: WHO SHOULD DISPOSE THESE TWO??
             ICheckpoint chaserChk;
 
             if (Runtime.IsMono)

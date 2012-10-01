@@ -18,7 +18,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Integration
 {
-    [TestFixture]
+    [TestFixture, Ignore("freezed because of low priority")]
     public class when_writing_single_event_and_then_reading_it :IntegrationTestBase
     {
         private EnvelopeCallback<ClientMessage.ReadEventCompleted> _readCallback;

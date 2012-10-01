@@ -25,32 +25,50 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.Net;
-using EventStore.Core.Bus;
-using EventStore.Core.Messaging;
+using System;
+using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.Tests.Fakes;
+using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.WriteEvents
 {
-    public class RandTestQueueItem
+    [TestFixture]
+    public class when_creating_write_stream_request_manager
     {
-        public readonly int LogicalTime;
-        public readonly int GlobalId;
-        public readonly IPEndPoint EndPoint;
-        public readonly Message Message;
-        public readonly IPublisher Bus;
-
-        public RandTestQueueItem(int logicalTime, int globalId, IPEndPoint endPoint, Message message, IPublisher bus)
+        [Test]
+        public void null_publisher_throws_argument_null_exception()
         {
-            LogicalTime = logicalTime;
-            GlobalId = globalId;
-            EndPoint = endPoint;
-            Message = message;
-            Bus = bus;
+            Assert.Throws<ArgumentNullException>(() => new WriteStreamTwoPhaseRequestManager(null, 3, 3));
         }
 
-        public override string ToString()
+        [Test]
+        public void zero_prepare_ack_count_throws_argument_out_range()
         {
-            return string.Format("{0}-{1} :{2} to {3}", LogicalTime, GlobalId, Message, EndPoint.Port);
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 0, 3));
+        }
+
+        [Test]
+        public void zero_commit_ack_count_throws_argument_out_range()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 3, 0));
+        }
+
+
+        [Test]
+        public void negative_commit_ack_count_throws_argument_out_range()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), 3, -1));
+        }
+
+
+        [Test]
+        public void negative_prepare_ack_count_throws_argument_out_range()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new WriteStreamTwoPhaseRequestManager(new FakePublisher(), -1, 3));
         }
     }
 }
