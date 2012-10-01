@@ -79,6 +79,7 @@
     <Compile Include="ClientOperations\CommitTransactionOperation.cs" />
     <Compile Include="ClientOperations\StartTransactionOperation.cs" />
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
+    <Compile Include="Exceptions\CannotEstablishConnectionException.cs" />
     <Compile Include="IEventsConsumer.cs" />
     <Compile Include="IEvent.cs" />
     <Compile Include="EventStoreTransaction.cs" />

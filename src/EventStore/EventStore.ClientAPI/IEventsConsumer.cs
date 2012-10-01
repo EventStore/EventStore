@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
+using System;
 using System.Threading.Tasks;
 
 namespace EventStore.ClientAPI
@@ -34,5 +35,11 @@ namespace EventStore.ClientAPI
     {
         EventStreamSlice ReadEventStream(string stream, int start, int count);
         Task<EventStreamSlice> ReadEventStreamAsync(string stream, int start, int count);
+
+        Task SubscribeAsync(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped);
+        void Unsubscribe(string stream);
+
+        Task SubscribeToAllStreamsAsync(Action<RecordedEvent> eventAppeared, Action subscriptionDropped);
+        void UnsubscribeFromAllStreams();
     }
 }

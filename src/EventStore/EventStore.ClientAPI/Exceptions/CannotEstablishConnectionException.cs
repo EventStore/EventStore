@@ -25,48 +25,30 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
-using EventStore.ClientAPI.System;
-using EventStore.ClientAPI.Transport.Tcp;
+using System.Runtime.Serialization;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Exceptions
 {
-    public class RecordedEvent
+    public class CannotEstablishConnectionException : Exception
     {
-        public readonly string EventStreamId;
-
-        public readonly Guid EventId;
-        public readonly int EventNumber;
-
-        public readonly string EventType;
-
-        public readonly byte[] Data;
-        public readonly byte[] Metadata;
-
-        internal RecordedEvent(EventRecord systemRecord)
+        public CannotEstablishConnectionException()
         {
-            EventStreamId = systemRecord.EventStreamId;
-
-            EventId = systemRecord.EventId;
-            EventNumber = systemRecord.EventNumber;
-
-            EventType = systemRecord.EventType;
-
-            Data = systemRecord.Data;
-            Metadata = systemRecord.Metadata;
         }
 
-        internal RecordedEvent(ClientMessages.StreamEventAppeared streamEvent)
+        public CannotEstablishConnectionException(string message) : base(message)
         {
-            EventStreamId = streamEvent.EventStreamId;
+        }
 
-            EventId = Guid.Empty;//TODO TR : update ClientMessages.StreamEventAppeared to return EventId
-            EventNumber = streamEvent.EventNumber;
+        public CannotEstablishConnectionException(string message,
+                 Exception innerException) : base(message, innerException)
+        {
+        }
 
-            EventType = streamEvent.EventType;
-
-            Data = streamEvent.Data;
-            Metadata = streamEvent.Metadata;
+        protected CannotEstablishConnectionException(SerializationInfo info,
+                    StreamingContext context) : base(info, context)
+        {
         }
     }
 }
