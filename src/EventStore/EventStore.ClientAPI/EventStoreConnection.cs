@@ -45,6 +45,9 @@ namespace EventStore.ClientAPI
 {
     internal class WorkItem
     {
+        private static long _seqNumber = -1;
+
+        public readonly long SeqNo;
         public IClientOperation Operation;
 
         public int Attempt;
@@ -53,20 +56,26 @@ namespace EventStore.ClientAPI
         public WorkItem(IClientOperation operation)
         {
             Ensure.NotNull(operation, "operation");
+            SeqNo = NextSeqNo();
             Operation = operation;
 
             Attempt = 0;
             LastUpdatedTicks = DateTime.UtcNow.Ticks;
         }
+
+        private static long NextSeqNo()
+        {
+            return Interlocked.Increment(ref _seqNumber);
+        }
     }
 
     public class EventStoreConnection : IDisposable, IEventStore
     {
-        private const int MaxConcurrentItems = 50;
+        private const int MaxConcurrentItems = 5000;
         private const int MaxQueueSize = 1000;
 
-        private const int MaxAttempts = 100;
-        private const int MaxReconnections = 20;
+        private const int MaxAttempts = 10;
+        private const int MaxReconnections = 10;
 
         private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(0.5);
         private static readonly TimeSpan EventTimeoutDelay = TimeSpan.FromSeconds(7);
@@ -381,6 +390,7 @@ namespace EventStore.ClientAPI
                 if (_timeoutCheckStopwatch.Elapsed > EventTimeoutCheckPeriod)
                 {
                     var now = DateTime.UtcNow;
+                    var retriable = new List<WorkItem>();
                     foreach (var workerItem in _inProgress.Values)
                     {
                         var lastUpdated = new DateTime(Interlocked.Read(ref workerItem.LastUpdatedTicks));
@@ -397,9 +407,13 @@ namespace EventStore.ClientAPI
                                 TryRemoveWorkItem(workerItem);
                             }
                             else
-                                Retry(workerItem);
+                                retriable.Add(workerItem);
                         }
                     }
+
+                    foreach (var workItem in retriable.OrderBy(wi => wi.SeqNo))
+                        Retry(workItem);
+
                     _timeoutCheckStopwatch.Restart();
                 }
             }

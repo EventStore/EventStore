@@ -103,8 +103,8 @@ namespace EventStore.ClientAPI.ClientOperations
                     case OperationErrorCode.PrepareTimeout:
                     case OperationErrorCode.CommitTimeout:
                     case OperationErrorCode.ForwardTimeout:
-                    case OperationErrorCode.WrongExpectedVersion:
                         return new InspectionResult(InspectionDecision.Retry);
+                    case OperationErrorCode.WrongExpectedVersion:
                     case OperationErrorCode.StreamDeleted:
                     case OperationErrorCode.InvalidTransaction:
                         return new InspectionResult(InspectionDecision.NotifyError,
