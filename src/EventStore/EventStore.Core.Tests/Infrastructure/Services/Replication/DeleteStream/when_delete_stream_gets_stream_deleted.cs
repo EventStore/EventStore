@@ -24,43 +24,49 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-using System;
+// using System.Collections.Generic;
+
 using System.Collections.Generic;
+using EventStore.Core.Data;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Helper;
+using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication.DeleteStream
 {
-    public abstract class RequestManagerSpecification
+    public class when_delete_stream_gets_stream_deleted : RequestManagerSpecification
     {
-        protected TwoPhaseRequestManagerBase manager;
-        protected abstract TwoPhaseRequestManagerBase OnManager(FakePublisher publisher);
-        protected List<Message> produced;
-        protected abstract IEnumerable<Message> WithInitialMessages();
-        protected FakePublisher _publisher;
-        protected Guid CorrelationId = Guid.NewGuid();
-        protected byte[] Metadata = new byte[255];
-        protected byte[] EventData = new byte[255];
-        protected FakeEnvelope Envelope;
-        protected abstract Message When();
-
-        [SetUp]
-        public void Setup()
+        protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            _publisher = new FakePublisher();
-            Envelope = new FakeEnvelope();
-            manager = OnManager(_publisher);
-            foreach(var m in WithInitialMessages())
-            {
-                manager.AsDynamic().Handle(m);
-            }
-            _publisher.Messages.Clear();
-            manager.AsDynamic().Handle(When());
-            produced = new List<Message>(_publisher.Messages);
+            return new DeleteStreamTwoPhaseRequestManager(publisher, 3, 3);
+        }
+
+        protected override IEnumerable<Message> WithInitialMessages()
+        {
+            yield return new ReplicationMessage.DeleteStreamRequestCreated(CorrelationId, Envelope, "test123", ExpectedVersion.Any);
+        }
+
+        protected override Message When()
+        {
+            return new ReplicationMessage.StreamDeleted(CorrelationId);
+        }
+
+        [Test]
+        public void failed_request_message_is_publised()
+        {
+            Assert.That(produced.ContainsSingle<ReplicationMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId &&
+                                                                                          x.Success == false));
+        }
+
+        [Test]
+        public void the_envelope_is_replied_to_with_failure()
+        {
+            Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.DeleteStreamCompleted>(x => x.CorrelationId == CorrelationId &&
+                                                                                                  x.ErrorCode == OperationErrorCode.StreamDeleted));
         }
     }
 }
