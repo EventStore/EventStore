@@ -36,6 +36,7 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
@@ -755,8 +756,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var result = TryReadEventsForward(SystemStreams.StreamsStream, from, batchSize, out eventsBatch);
                 if (result != RangeReadResult.Success)
                 {
-                    throw new ApplicationInitializationException(
-                        string.Format("Couldn't find system stream {0}, which should've been created at system startup",
+                    throw new SystemStreamNotFoundException(
+                        string.Format("Couldn't find system stream {0}, which should've been created with projection 'Index By Streams'",
                                       SystemStreams.StreamsStream));
                 }
 
@@ -770,8 +771,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 .Select(e =>
                 {
                     var dataStr = Encoding.UTF8.GetString(e.Data);
-                    var ev = JsonConvert.DeserializeObject<StreamId>(dataStr);
-                    return ev.Id;
+                    var parts = dataStr.Split('@');
+                    if (parts.Length < 2)
+                        throw new FormatException("$streams stream event data is in bad format: {0}. Expected: eventNumber@streamid");
+                    var streamid = parts[1];
+                    return streamid;
                 })
                 .ToArray();
 
@@ -877,14 +881,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public void Dispose()
         {
             Close();
-        }
-
-        /// <summary>
-        /// Used to deserialize event stream ID from $streams events
-        /// </summary>
-        private class StreamId
-        {
-            public string Id { get; set; }
         }
     }
 }
