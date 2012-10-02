@@ -112,6 +112,7 @@ namespace EventStore.TestClient
 
             _commands.Register(new DvuBasicProcessor());
             _commands.Register(new DvuAdvancedProcessor());
+            _commands.Register(new RunTestScenariosProcessor());
 
             _commands.Register(new SubscribeToStreamProcessor());
 

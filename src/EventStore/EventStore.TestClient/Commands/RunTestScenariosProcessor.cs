@@ -1,0 +1,403 @@
+﻿// Copyright (c) 2012, Event Store LLP
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+// Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+// Neither the name of the Event Store LLP nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Reflection;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using EventStore.ClientAPI;
+using EventStore.Common.Log;
+
+namespace EventStore.TestClient.Commands
+{
+    internal class RunTestScenariosProcessor : ICmdProcessor
+    {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<RunTestScenariosProcessor>();
+        private IScenario[] _scenarios;
+
+        public string Keyword
+        {
+            get
+            {
+                return string.Format("RFS");
+            }
+        }
+
+        public string Usage
+        {
+            get
+            {
+                return Keyword;
+            }
+        }
+
+        public bool Execute(CommandProcessorContext context, string[] args)
+        {
+            context.IsAsync();
+
+            _scenarios = new IScenario[] { new Scenario1() };
+
+            Log.Info("Running test scenarion ({0}) total", _scenarios.Length);
+            foreach (var scenario in _scenarios)
+            {
+                try
+                {
+                    scenario.Run();
+                    scenario.Clean();
+                    Log.Info("Scenario run successfully");
+                }
+                catch (Exception e)
+                {
+                    context.Fail(e);
+                }
+            }
+
+            Log.Info("Finished running test scenarios");
+            context.Success();
+            return true;
+        }
+    }
+
+    internal class TestEvent : IEvent
+    {
+        public Guid EventId { get; private set; }
+        public string Type { get; private set; }
+
+        public byte[] Data { get; private set; }
+        public byte[] Metadata { get; private set; }
+
+        public TestEvent(int index)
+        {
+            EventId = Guid.NewGuid();
+            Type = index.ToString();
+
+            Data = Encoding.UTF8.GetBytes(new string('-', 1024) + index.ToString());
+            Metadata = new byte[0];
+        }
+    }
+
+    internal enum WriteMode
+    {
+        SingleEventAtTime,
+        Bucket,
+        Transactional
+    }
+
+    internal interface IScenario
+    {
+        void Run();
+        void Clean();
+    }
+
+    internal class Scenario1 : IScenario
+    {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<Scenario1>();
+        private readonly string _dbPath = Path.Combine(Path.GetTempPath(), "ES_" + Guid.NewGuid());
+
+        private readonly IPEndPoint _tcpEndPoint = new IPEndPoint(IPAddress.Loopback, 1113);
+        private readonly IPAddress _adress = IPAddress.Loopback;
+        private readonly int _port = 1113;
+
+        private readonly int _streamsCount;
+        private readonly int _eventsPerStream;
+
+        private readonly int _tailSize;
+
+        public Scenario1()
+        {
+            _streamsCount = 64;
+            _eventsPerStream = 1000;
+            _tailSize = 10;
+        }
+
+        public virtual void Run()
+        {
+            KillSingleNodes();
+            StartNode();
+
+            var streams = Enumerable.Range(0, _streamsCount).Select(x => x.ToString());
+
+            Write(WriteMode.SingleEventAtTime, streams.ToList(), _eventsPerStream);
+            //Write(WriteMode.SingleEventAtTime, streams.Take(30).ToList(), _eventsPerStream);
+            //Write(WriteMode.Bucket, streams.Skip(30).Take(20).ToList(), _eventsPerStream);
+            //Write(WriteMode.Transactional, streams.Skip(50).ToList(), _eventsPerStream);
+
+            var deleted = streams.Where((s, i) => i%7 == 0);
+            DeleteStreams(deleted);
+
+            KillSingleNodes();
+            StartNode();
+
+            CheckStreamsDeleted(deleted);
+
+            Read(streams.Except(deleted).ToList(), from: 0, count: _tailSize);
+            Read(streams.Except(deleted).ToList(), from: _eventsPerStream - _tailSize, count: _tailSize);
+            Read(streams.Except(deleted).ToList(), from: _eventsPerStream / 2, count: _tailSize);
+        }
+
+        public void Clean()
+        {
+            Log.Info("Deleting {0}*...", _dbPath);
+            Directory.Delete(_dbPath, true);
+            Log.Info("Deleted {0}*", _dbPath);
+        }
+
+        protected void Write(WriteMode mode, IList<string> streams, int eventsPerStream)
+        {
+            Log.Info("Writing events. Mode : {0}. Streams : {1}, Events per stream : {2}...", 
+                     mode, 
+                     streams.Count, 
+                     eventsPerStream);
+
+            var written = new AutoResetEvent[streams.Count];
+            for (var i = 0; i < written.Length; i++)
+                written[i] = new AutoResetEvent(false);
+
+            switch (mode)
+            {
+                case WriteMode.SingleEventAtTime:
+                    for (var i = 0; i < streams.Count; i++)
+                    {
+                        int i1 = i;
+                        ThreadPool.QueueUserWorkItem(_ => WriteSingleEventAtTime(written[i1], streams[i1], eventsPerStream));
+                    }
+                    break;
+                case WriteMode.Bucket: 
+                    for (var i = 0; i < streams.Count; i++)
+                    {
+                        int i1 = i;
+                        ThreadPool.QueueUserWorkItem(_ => WriteBucketOfEventsAtTime(written[i1], streams[i1], eventsPerStream));
+                    }
+                    break;
+                case WriteMode.Transactional:
+                    for (var i = 0; i < streams.Count; i++)
+                    {
+                        int i1 = i;
+                        ThreadPool.QueueUserWorkItem(_ => WriteEventsInTransactionalWay(written[i1], streams[i1], eventsPerStream));
+                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("mode");
+            }
+
+            WaitHandle.WaitAll(written);
+
+            Log.Info("Events written. Mode : {0}. Streams : {1}, Events per stream : {2}", 
+                     mode, 
+                     streams.Count, 
+                     eventsPerStream);
+        }
+
+        protected void DeleteStreams(IEnumerable<string> streams)
+        {
+            Log.Info("Deleting streams...");
+            using (var store = new EventStoreConnection(_tcpEndPoint))
+            {
+                foreach (var stream in streams)
+                {
+                    Log.Info("Deleting stream {0}...", stream);
+                    store.DeleteStream(stream, _eventsPerStream);
+                    Log.Info("Stream {0} successfully deleted", stream);
+                }
+            }
+            Log.Info("All streams successfully deleted");
+        }
+
+        protected void CheckStreamsDeleted(IEnumerable<string> streams)
+        {
+            Log.Info("Verifying streams are deleted...");
+            using (var store = new EventStoreConnection(_tcpEndPoint))
+            {
+                foreach (var stream in streams)
+                {
+                    try
+                    {
+                        store.ReadEventStream(stream, 0, 1);
+                        throw new ApplicationException(string.Format("Stream {0} should have been deleted!", stream));
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Info("Reading from {0} lead to {1}", stream, e.Message);
+
+                        if(e is ApplicationException)
+                            throw;
+                    }
+                }
+            }
+            Log.Info("Verification succeded");
+        }
+
+        protected void Read(List<string> streams, int @from, int count)
+        {
+            var read = new AutoResetEvent[streams.Count];
+            for (int i = 0; i < read.Length; i++)
+                read[i] = new AutoResetEvent(false);
+
+            for (int i = 0; i < streams.Count; i++)
+            {
+                int i1 = i;
+                ThreadPool.QueueUserWorkItem(_ => ReadStream(read[i1], streams[i1], @from, count));
+            }
+
+            WaitHandle.WaitAll(read);
+        }
+
+        protected void StartNode()
+        {
+            var nodepath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var fileName = Path.Combine(nodepath, "EventStore.SingleNode.exe");
+
+            var arguments = string.Format("--ip {0} -t {1} -h {2} --db {3}", _adress, _port, _port + 1000, _dbPath);
+
+            Log.Info("Starting {0} {1}...", fileName, arguments);
+            Process.Start(fileName, arguments);
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+            Log.Info("Started {0} {1}", fileName, arguments);
+        }
+
+        protected void KillSingleNodes()
+        {
+            var processes = Process.GetProcesses();
+            foreach (var process in processes.Where(p => p.ProcessName == "EventStore.SingleNode"))
+            {
+                Log.Info("Killing {0}...", process.ProcessName);
+                process.Kill();
+                while (!process.HasExited) 
+                    Thread.Sleep(100);
+                Log.Info("Killed {0}", process.ProcessName);
+            }
+        }
+
+        private void WriteSingleEventAtTime(AutoResetEvent written, string stream, int events)
+        {
+            Console.WriteLine("Starting to write to {0}", stream);
+            using (var store = new EventStoreConnection(_tcpEndPoint))
+            {
+                store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
+
+                var tasks = new List<Task>();
+                for (var i = 0; i < events; i++)
+                {
+                    //tasks.Add(store.AppendToStreamAsync(stream, i, new[] { new TestEvent(i + 1) }));
+                    store.AppendToStream(stream, i, new[] { new TestEvent(i + 1) });
+                    //if (i % 1000 == 0)
+                    if (i % 10 == 0)
+                    {
+                        Console.WriteLine("Wrote {0} to {1}", i, stream);
+                        tasks.RemoveAll(t => t.IsCompleted);
+                    }
+                }
+
+                //Task.WaitAll(tasks.ToArray());
+            }
+            Console.WriteLine("Written to {0}", stream);
+            written.Set();
+        }
+
+        private void WriteBucketOfEventsAtTime(AutoResetEvent written, string stream, int events)
+        {
+            using (var store = new EventStoreConnection(_tcpEndPoint))
+            {
+                store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
+
+                var tasks = new List<Task>();
+
+                var position = 0;
+                var bucketSize = 100;
+
+                while (position < events)
+                {
+                    var bucket = Enumerable.Range(position, bucketSize).Select(x => new TestEvent(x + 1));
+                    var task = store.AppendToStreamAsync(stream, position, bucket);
+                    tasks.Add(task);
+
+                    if (position % 1000 == 0)
+                        tasks.RemoveAll(t => t.IsCompleted);
+
+                    position += bucketSize;
+                }
+
+                if(position != events)
+                {
+                    var start = position - bucketSize;
+                    var count = events - start;
+
+                    var bucket = Enumerable.Range(start, count).Select(x => new TestEvent(x + 1));
+                    var task = store.AppendToStreamAsync(stream, start, bucket);
+                    tasks.Add(task);
+                }
+
+                Task.WaitAll(tasks.ToArray());
+            }
+
+            written.Set();
+        }
+
+        private void WriteEventsInTransactionalWay(AutoResetEvent written, string stream, int events)
+        {
+            using (var store = new EventStoreConnection(_tcpEndPoint))
+            {
+                store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
+                var esTrans = store.StartTransaction(stream, 0);
+
+                var tasks = new List<Task>();
+                for (var i = 0; i < events; i++)
+                {
+                    tasks.Add(store.TransactionalWriteAsync(esTrans.TransactionId, stream, new[] { new TestEvent(i + 1) }));
+                    if (i % 1000 == 0)
+                        tasks.RemoveAll(t => t.IsCompleted);
+                }
+                tasks.Add(store.CommitTransactionAsync(esTrans.TransactionId, stream));
+                Task.WaitAll(tasks.ToArray());
+            }
+
+            written.Set();
+        }
+
+        private void ReadStream(AutoResetEvent read, string stream, int @from, int count)
+        {
+            using (var store = new EventStoreConnection(_tcpEndPoint))
+            {
+                for (var i = @from; i < @from + count; i++)
+                {
+                    var slice = store.ReadEventStream(stream, i, 1);
+                    if(slice == null || slice.Events == null || slice.Events.Count() != 1)
+                        throw new Exception(string.Format("Tried to read 1 event at position {0} from stream {1} but failed", i, stream));
+                }
+            }
+
+            read.Set();
+        }
+    }
+}

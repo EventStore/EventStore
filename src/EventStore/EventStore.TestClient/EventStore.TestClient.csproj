@@ -56,6 +56,7 @@
     <Compile Include="ClientOptions.cs" />
     <Compile Include="CommandProcessorContext.cs" />
     <Compile Include="CommandsProcessor.cs" />
+    <Compile Include="Commands\RunTestScenariosProcessor.cs" />
     <Compile Include="Commands\ScavengeProcessor.cs" />
     <Compile Include="Commands\CreateStreamProcessor.cs" />
     <Compile Include="Commands\DeleteProcessor.cs" />
@@ -107,6 +108,10 @@
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">
       <Project>{A794D3FB-06AC-471F-AB8D-6E98CBFA0021}</Project>
       <Name>EventStore.BufferManagement</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
+      <Project>{c7c0a3c2-a0eb-4ff4-a0cd-67eadf3f553f}</Project>
+      <Name>EventStore.ClientAPI</Name>
     </ProjectReference>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
