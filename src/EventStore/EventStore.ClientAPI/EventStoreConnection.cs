@@ -166,22 +166,6 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        public void CreateStreamWithProtoBufMetadata(string stream, object metadata)
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
-            Ensure.NotNull(metadata, "metadata");
-
-            CreateStream(stream, metadata.Serialize().Array);
-        }
-
-        public Task CreateStreamWithProtoBufMetadataAsync(string stream, object metadata)
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
-            Ensure.NotNull(metadata, "metadata");
-
-            return CreateStreamAsync(stream, metadata.Serialize().Array);
-        }
-
         public void DeleteStream(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
