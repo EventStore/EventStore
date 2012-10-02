@@ -72,7 +72,7 @@ namespace EventStore.ClientAPI
     public class EventStoreConnection : IDisposable, IEventStore
     {
         private const int MaxConcurrentItems = 5000;
-        private const int MaxQueueSize = 1000;
+        private const int MaxQueueSize = 5000;
 
         private const int MaxAttempts = 10;
         private const int MaxReconnections = 10;
@@ -138,7 +138,9 @@ namespace EventStore.ClientAPI
             _subscriptionsChannel.Close();
 
             const string err = "Work item was still in progress at the moment of manual connection closing";
-            foreach(var workItem in _inProgress.Values)
+            var items = _inProgress.Values;
+            _inProgress.Clear();
+            foreach(var workItem in items)
                 workItem.Operation.Fail(new ConnectionClosingException(err));
         }
 
@@ -403,8 +405,8 @@ namespace EventStore.ClientAPI
                                                         lastUpdated,
                                                         _lastReconnectionTimestamp,
                                                         now);
-                                workerItem.Operation.Fail(new OperationTimedOutException(err));
-                                TryRemoveWorkItem(workerItem);
+                                if(TryRemoveWorkItem(workerItem))
+                                    workerItem.Operation.Fail(new OperationTimedOutException(err));
                             }
                             else
                                 retriable.Add(workerItem);
@@ -482,7 +484,8 @@ namespace EventStore.ClientAPI
                     Retry(workItem);
                     break;
                 case InspectionDecision.NotifyError:
-                    workItem.Operation.Fail(result.Error);
+                    if(TryRemoveWorkItem(workItem))
+                        workItem.Operation.Fail(result.Error);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
