@@ -35,9 +35,6 @@ namespace EventStore.ClientAPI
         void CreateStream(string stream, byte[] metadata);
         Task CreateStreamAsync(string stream, byte[] metadata);
 
-        void CreateStreamWithProtoBufMetadata(string stream, object metadata);
-        Task CreateStreamWithProtoBufMetadataAsync(string stream, object metadata);
-
         void DeleteStream(string stream, int expectedVersion);
         Task DeleteStreamAsync(string stream, int expectedVersion);
     }

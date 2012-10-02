@@ -52,15 +52,6 @@ namespace EventStore.ClientAPI
             return _connection.ReadEventStreamAsync(stream, start, count);
         }
 
-        public static void CreateStreamWithProtoBufMetadata(string stream, object metadata) {
-            _connection.CreateStreamWithProtoBufMetadata(stream, metadata);
-        }
-
-        public static Task CreateStreamWithProtoBufMetadataAsync(string stream, object metadata)
-        {
-            return _connection.CreateStreamWithProtoBufMetadataAsync(stream, metadata);
-        }
-
         public static void CreateStream(string stream, byte[] metadata)
         {
             _connection.CreateStream(stream, metadata);
