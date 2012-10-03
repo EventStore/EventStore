@@ -58,7 +58,13 @@ namespace EventStore.TestClient.Commands
         {
             get
             {
-                return Keyword;
+                return string.Format("{0} " +
+                                     "<max concurrent requests, default = 500> " +
+                                     "<threads, default = 20> " +
+                                     "<streams, default = 20> " +
+                                     "<eventsPerStream, default = 10000> " +
+                                     "<streams delete step, default = 7> ",
+                                     Keyword);
             }
         }
 
@@ -66,7 +72,40 @@ namespace EventStore.TestClient.Commands
         {
             context.IsAsync();
 
-            _scenarios = new IScenario[] { new Scenario1() };
+            if(args.Length != 0 && args.Length != 5)
+                return false;
+
+            var maxConcurrentRequests = 500;
+            var threads = 20;
+            var streams = 20;
+            var eventsPerStream = 10000;
+            var streamDeleteStep = 7;
+
+            if(args.Length == 5)
+            {
+                try
+                {
+                    maxConcurrentRequests = int.Parse(args[0]);
+                    threads = int.Parse(args[1]);
+                    streams = int.Parse(args[2]);
+                    eventsPerStream = int.Parse(args[3]);
+                    streamDeleteStep = int.Parse(args[4]);
+                }
+                catch (Exception e)
+                {
+                    Log.Error("Invalid arguments ({0})", e.Message);
+                    return false;
+                }
+            }
+
+            Log.Info("Running scenarios using {0} threads, {1} streams {2} events each, deleting every {3}th stream. Max concurrent ES requests - {4}",
+                     threads,
+                     streams,
+                     eventsPerStream,
+                     streamDeleteStep,
+                     maxConcurrentRequests);
+
+            _scenarios = new IScenario[] { new Scenario1(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep) };
 
             Log.Info("Running test scenarios ({0} total)...", _scenarios.Length);
             foreach (var scenario in _scenarios)
@@ -120,41 +159,28 @@ namespace EventStore.TestClient.Commands
         void Clean();
     }
 
-    internal class Scenario1 : IScenario
+    internal class Scenario1 : ScenarioBase
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<Scenario1>();
-        private readonly string _dbPath = Path.Combine(Path.GetTempPath(), "ES_" + Guid.NewGuid());
-
-        private readonly IPEndPoint _tcpEndPoint = new IPEndPoint(IPAddress.Loopback, 1113);
-
-        private readonly int _streams;
-        private readonly int _eventsPerStream;
-        private readonly int _streamDeleteStep;
-        private readonly int _piece;
-
-        public Scenario1()
+        public Scenario1(int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep)
+            : base(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
         {
-            _streams = 20;
-            _eventsPerStream = 10000;
-            _streamDeleteStep = 7;
-            _piece = 100;
         }
 
-        public virtual void Run()
+        public override void Run()
         {
-            ThreadPool.SetMaxThreads(20, 20);
+            ThreadPool.SetMaxThreads(Threads, Threads);
 
             KillSingleNodes();
             StartNode();
 
-            var streams = Enumerable.Range(0, _streams).Select(i => string.Format("scenario-stream-{0}", i)).ToArray();
+            var streams = Enumerable.Range(0, Streams).Select(i => string.Format("scenario-stream-{0}", i)).ToArray();
             var slices = Split(streams, 3);
 
-            Write(WriteMode.SingleEventAtTime, slices[0], _eventsPerStream);
-            Write(WriteMode.Bucket, slices[1], _eventsPerStream);
-            Write(WriteMode.Transactional, slices[2], _eventsPerStream);
+            Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream);
+            Write(WriteMode.Bucket, slices[1], EventsPerStream);
+            Write(WriteMode.Transactional, slices[2], EventsPerStream);
 
-            var deleted = streams.Where((s, i) => i % _streamDeleteStep == 0).ToArray();
+            var deleted = streams.Where((s, i) => i % StreamDeleteStep == 0).ToArray();
             DeleteStreams(deleted);
 
             KillSingleNodes();
@@ -163,18 +189,51 @@ namespace EventStore.TestClient.Commands
             CheckStreamsDeleted(deleted);
 
             var exceptDeleted = streams.Except(deleted).ToArray();
-            Read(exceptDeleted, from: 0, count: _piece);
-            Read(exceptDeleted, from: _eventsPerStream - _piece, count: _piece + 1);
-            Read(exceptDeleted, from: _eventsPerStream/2, count: Math.Min(_piece, _eventsPerStream - _eventsPerStream/2));
+            Read(exceptDeleted, from: 0, count: Piece + 1);
+            Read(exceptDeleted, from: EventsPerStream - Piece, count: Piece + 1);
+            Read(exceptDeleted, from: EventsPerStream / 2, count: Math.Min(Piece + 1, EventsPerStream - EventsPerStream / 2));
 
             KillSingleNodes();
         }
+    }
+
+    internal abstract class ScenarioBase : IScenario
+    {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<Scenario1>();
+
+        private readonly string _dbPath = Path.Combine(Path.GetTempPath(), "ES_" + Guid.NewGuid());
+        private readonly IPEndPoint _tcpEndPoint = new IPEndPoint(IPAddress.Loopback, 1113);
+
+        protected readonly int MaxConcurrentRequests;
+        protected readonly int Threads;
+        protected readonly int Streams;
+        protected readonly int EventsPerStream;
+        protected readonly int StreamDeleteStep;
+        protected readonly int Piece;
+
+        protected ScenarioBase(int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep)
+        {
+            MaxConcurrentRequests = maxConcurrentRequests;
+            Threads = threads;
+            Streams = streams;
+            EventsPerStream = eventsPerStream;
+            StreamDeleteStep = streamDeleteStep;
+            Piece = 100;
+        }
+
+        public abstract void Run();
 
         public void Clean()
         {
             Log.Info("Deleting {0}...", _dbPath);
             Directory.Delete(_dbPath, true);
             Log.Info("Deleted {0}", _dbPath);
+        }
+
+        protected T[][] Split<T>(IEnumerable<T> sequence, int parts)
+        {
+            var i = 0;
+            return sequence.GroupBy(item => i++ % parts).Select(part => part.ToArray()).ToArray();
         }
 
         protected void Write(WriteMode mode, string[] streams, int eventsPerStream)
@@ -224,12 +283,12 @@ namespace EventStore.TestClient.Commands
         protected void DeleteStreams(IEnumerable<string> streams)
         {
             Log.Info("Deleting streams...");
-            using (var store = new EventStoreConnection(_tcpEndPoint))
+            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests))
             {
                 foreach (var stream in streams)
                 {
                     Log.Info("Deleting stream {0}...", stream);
-                    store.DeleteStream(stream, _eventsPerStream);
+                    store.DeleteStream(stream, EventsPerStream);
                     Log.Info("Stream {0} successfully deleted", stream);
                 }
             }
@@ -239,7 +298,7 @@ namespace EventStore.TestClient.Commands
         protected void CheckStreamsDeleted(IEnumerable<string> streams)
         {
             Log.Info("Verifying streams are deleted...");
-            using (var store = new EventStoreConnection(_tcpEndPoint))
+            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests))
             {
                 foreach (var stream in streams)
                 {
@@ -283,7 +342,7 @@ namespace EventStore.TestClient.Commands
 
             Log.Info("Starting [{0} {1}]...", fileName, arguments);
             Process.Start(fileName, arguments);
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            Thread.Sleep(TimeSpan.FromSeconds(7));
             Log.Info("Started [{0} {1}]", fileName, arguments);
         }
 
@@ -303,7 +362,7 @@ namespace EventStore.TestClient.Commands
         private void WriteSingleEventAtTime(CountdownEvent written, string stream, int events)
         {
             Log.Info("Starting to write {0} events to [{1}]", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint, 500))
+            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests))
             {
                 store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
 
@@ -324,7 +383,7 @@ namespace EventStore.TestClient.Commands
         private void WriteBucketOfEventsAtTime(CountdownEvent written, string stream, int events)
         {
             Log.Info("Starting to write {0} events to [{1}] (100 events at once)", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint, 500))
+            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests))
             {
                 store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
 
@@ -362,7 +421,7 @@ namespace EventStore.TestClient.Commands
         private void WriteEventsInTransactionalWay(CountdownEvent written, string stream, int events)
         {
             Log.Info("Starting to write {0} events to [{1}] (in single transaction)", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint, 500))
+            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests))
             {
                 store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
                 var esTrans = store.StartTransaction(stream, 0);
@@ -385,7 +444,7 @@ namespace EventStore.TestClient.Commands
         private void ReadStream(CountdownEvent read, string stream, int @from, int count)
         {
             Log.Info("Reading [{0}] from {1,-10} count {2,-10}", stream, @from, count);
-            using (var store = new EventStoreConnection(_tcpEndPoint))
+            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests))
             {
                 for (var i = @from; i < @from + count; i++)
                 {
@@ -397,12 +456,6 @@ namespace EventStore.TestClient.Commands
 
             Log.Info("Done reading [{0}] from {1,-10} count {2,-10}", stream, @from, count);
             read.Signal();
-        }
-
-        private T[][] Split<T>(IEnumerable<T> sequence, int parts)
-        {
-            var i = 0;
-            return sequence.GroupBy(item => i++%parts).Select(part => part.ToArray()).ToArray();
         }
     }
 }
