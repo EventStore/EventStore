@@ -81,7 +81,7 @@ namespace EventStore.TestClient.Commands
             var eventsPerStream = 10000;
             var streamDeleteStep = 7;
 
-            if(args.Length == 5)
+            if (args.Length == 5)
             {
                 try
                 {
@@ -105,7 +105,11 @@ namespace EventStore.TestClient.Commands
                      streamDeleteStep,
                      maxConcurrentRequests);
 
-            _scenarios = new IScenario[] { new Scenario1(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep) };
+            _scenarios = new IScenario[]
+                {
+                    new Scenario1(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
+                    new LoopingScenario(maxConcurrentRequests / 2, threads, streams, eventsPerStream * 2, streamDeleteStep)
+                };
 
             Log.Info("Running test scenarios ({0} total)...", _scenarios.Length);
             foreach (var scenario in _scenarios)
@@ -194,6 +198,25 @@ namespace EventStore.TestClient.Commands
             Read(exceptDeleted, from: EventsPerStream / 2, count: Math.Min(Piece + 1, EventsPerStream - EventsPerStream / 2));
 
             KillSingleNodes();
+        }
+    }
+
+    internal class LoopingScenario : Scenario1
+    {
+        public LoopingScenario(int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep) 
+            : base(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
+        {
+        }
+
+        public override void Run()
+        {
+            const int untilHours = 4;
+            var stopWatch = Stopwatch.StartNew();
+
+            while (stopWatch.Elapsed.TotalHours < untilHours)
+            {
+                base.Run();
+            }
         }
     }
 
@@ -354,7 +377,9 @@ namespace EventStore.TestClient.Commands
                 Log.Info("Killing {0}...", process.ProcessName);
                 process.Kill();
                 while (!process.HasExited) 
-                    Thread.Sleep(100);
+                    Thread.Sleep(200);
+
+                Thread.Sleep(2000);
                 Log.Info("Killed {0}", process.ProcessName);
             }
         }
