@@ -73,8 +73,9 @@ namespace EventStore.ClientAPI
     {
         private const int MaxQueueSize = 5000;
 
-        private const int MaxAttempts = 10;
-        private const int MaxReconnections = 10;
+        private readonly int _maxConcurrentItems;
+        private readonly int _maxAttempts;
+        private readonly int _maxReconnections;
 
         private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(0.5);
         private static readonly TimeSpan EventTimeoutDelay = TimeSpan.FromSeconds(7);
@@ -91,7 +92,6 @@ namespace EventStore.ClientAPI
         
         private readonly ConcurrentQueue<IClientOperation> _queue = new ConcurrentQueue<IClientOperation>();
         private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
-        private readonly int _maxConcurrentItems;
         private int _inProgressCount;
 
         private DateTime _lastReconnectionTimestamp;
@@ -110,13 +110,21 @@ namespace EventStore.ClientAPI
             }
         }
 
-        public EventStoreConnection(IPEndPoint tcpEndPoint, int maxConcurrentRequests = 5000)
+        public EventStoreConnection(IPEndPoint tcpEndPoint, 
+                                    int maxConcurrentRequests = 5000,
+                                    int maxAttemptsForOperation = 10,
+                                    int maxReconnections = 10)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
             Ensure.Positive(maxConcurrentRequests, "maxConcurrentRequests");
+            Ensure.Nonnegative(maxAttemptsForOperation, "maxAttemptsForOperation");
+            Ensure.Nonnegative(maxReconnections, "maxReconnections");
 
             _tcpEndPoint = tcpEndPoint;
             _maxConcurrentItems = maxConcurrentRequests;
+            _maxAttempts = maxAttemptsForOperation;
+            _maxReconnections = maxReconnections;
+
             _connector = new TcpConnector(_tcpEndPoint);
             _subscriptionsChannel = new SubscriptionsChannel(_tcpEndPoint);
 
@@ -366,8 +374,8 @@ namespace EventStore.ClientAPI
                     if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= ReconnectionDelay)
                     {
                         _reconnectionsCount += 1;
-                        if(_reconnectionsCount > MaxReconnections)
-                            throw new CannotEstablishConnectionException(string.Format("Tried {0} times without success", MaxReconnections));
+                        if(_reconnectionsCount > _maxReconnections)
+                            throw new CannotEstablishConnectionException();
 
                         _lastReconnectionTimestamp = DateTime.UtcNow;
                         _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
@@ -437,7 +445,7 @@ namespace EventStore.ClientAPI
                     inProgressItem.Attempt += 1;
                     Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
 
-                    if (inProgressItem.Attempt > MaxAttempts)
+                    if (inProgressItem.Attempt > _maxAttempts)
                         inProgressItem.Operation.Fail(new RetriesLimitReachedException(inProgressItem.Operation.ToString(),
                                                                                        inProgressItem.Attempt));
                     else
