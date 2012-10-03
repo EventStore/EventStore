@@ -105,10 +105,11 @@ namespace EventStore.ClientAPI.ClientOperations
                     case OperationErrorCode.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
                     case OperationErrorCode.WrongExpectedVersion:
+                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException());
                     case OperationErrorCode.StreamDeleted:
+                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException());
                     case OperationErrorCode.InvalidTransaction:
-                        return new InspectionResult(InspectionDecision.NotifyError, 
-                                                    new Exception(string.Format("{0}", (OperationErrorCode)dto.ErrorCode)));
+                        return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
                     default:
                         throw new ArgumentOutOfRangeException();
                 }

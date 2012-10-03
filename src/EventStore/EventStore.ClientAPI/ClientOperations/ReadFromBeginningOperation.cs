@@ -104,9 +104,9 @@ namespace EventStore.ClientAPI.ClientOperations
                     case RangeReadResult.Success:
                         return new InspectionResult(InspectionDecision.Succeed);
                     case RangeReadResult.StreamDeleted:
+                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException());
                     case RangeReadResult.NoStream:
-                        return new InspectionResult(InspectionDecision.NotifyError, 
-                                                    new Exception(string.Format("{0}", (RangeReadResult)dto.Result)));
+                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDoesNotExistException());
                     default:
                         throw new ArgumentOutOfRangeException();
                 }

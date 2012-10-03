@@ -80,6 +80,10 @@
     <Compile Include="ClientOperations\StartTransactionOperation.cs" />
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
     <Compile Include="Exceptions\CannotEstablishConnectionException.cs" />
+    <Compile Include="Exceptions\InvalidTransactionException.cs" />
+    <Compile Include="Exceptions\StreamDeletedException.cs" />
+    <Compile Include="Exceptions\StreamDoesNotExistException.cs" />
+    <Compile Include="Exceptions\WrongExpectedVersionException.cs" />
     <Compile Include="IEventsConsumer.cs" />
     <Compile Include="IEvent.cs" />
     <Compile Include="EventStoreTransaction.cs" />
