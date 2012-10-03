@@ -71,7 +71,6 @@ namespace EventStore.ClientAPI
 
     public class EventStoreConnection : IDisposable, IEventStore
     {
-        private const int MaxConcurrentItems = 5000;
         private const int MaxQueueSize = 5000;
 
         private const int MaxAttempts = 10;
@@ -92,6 +91,7 @@ namespace EventStore.ClientAPI
         
         private readonly ConcurrentQueue<IClientOperation> _queue = new ConcurrentQueue<IClientOperation>();
         private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
+        private readonly int _maxConcurrentItems;
         private int _inProgressCount;
 
         private DateTime _lastReconnectionTimestamp;
@@ -110,11 +110,13 @@ namespace EventStore.ClientAPI
             }
         }
 
-        public EventStoreConnection(IPEndPoint tcpEndPoint)
+        public EventStoreConnection(IPEndPoint tcpEndPoint, int maxConcurrentRequests = 5000)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+            Ensure.Positive(maxConcurrentRequests, "maxConcurrentRequests");
 
             _tcpEndPoint = tcpEndPoint;
+            _maxConcurrentItems = maxConcurrentRequests;
             _connector = new TcpConnector(_tcpEndPoint);
             _subscriptionsChannel = new SubscriptionsChannel(_tcpEndPoint);
 
@@ -351,7 +353,7 @@ namespace EventStore.ClientAPI
             while (!_stopping)
             {
                 IClientOperation operation;
-                if (_inProgressCount < MaxConcurrentItems && _queue.TryDequeue(out operation))
+                if (_inProgressCount < _maxConcurrentItems && _queue.TryDequeue(out operation))
                 {
                     Interlocked.Increment(ref _inProgressCount);
                     Send(new WorkItem(operation));

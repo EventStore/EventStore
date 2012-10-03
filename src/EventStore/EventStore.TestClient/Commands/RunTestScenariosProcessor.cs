@@ -134,7 +134,7 @@ namespace EventStore.TestClient.Commands
 
         public Scenario1()
         {
-            _streams = 100;
+            _streams = 20;
             _eventsPerStream = 10000;
             _streamDeleteStep = 7;
             _piece = 100;
@@ -142,6 +142,8 @@ namespace EventStore.TestClient.Commands
 
         public virtual void Run()
         {
+            ThreadPool.SetMaxThreads(20, 20);
+
             KillSingleNodes();
             StartNode();
 
@@ -301,7 +303,7 @@ namespace EventStore.TestClient.Commands
         private void WriteSingleEventAtTime(CountdownEvent written, string stream, int events)
         {
             Log.Info("Starting to write {0} events to [{1}]", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint))
+            using (var store = new EventStoreConnection(_tcpEndPoint, 500))
             {
                 store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
 
@@ -322,7 +324,7 @@ namespace EventStore.TestClient.Commands
         private void WriteBucketOfEventsAtTime(CountdownEvent written, string stream, int events)
         {
             Log.Info("Starting to write {0} events to [{1}] (100 events at once)", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint))
+            using (var store = new EventStoreConnection(_tcpEndPoint, 500))
             {
                 store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
 
@@ -360,7 +362,7 @@ namespace EventStore.TestClient.Commands
         private void WriteEventsInTransactionalWay(CountdownEvent written, string stream, int events)
         {
             Log.Info("Starting to write {0} events to [{1}] (in single transaction)", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint))
+            using (var store = new EventStoreConnection(_tcpEndPoint, 500))
             {
                 store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
                 var esTrans = store.StartTransaction(stream, 0);
