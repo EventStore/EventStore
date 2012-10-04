@@ -75,7 +75,7 @@ namespace EventStore.TestClient.Commands
             if(args.Length != 0 && args.Length != 5)
                 return false;
 
-            var maxConcurrentRequests = 500;
+            var maxConcurrentRequests = 100;
             var threads = 20;
             var streams = 20;
             var eventsPerStream = 10000;
@@ -108,7 +108,7 @@ namespace EventStore.TestClient.Commands
             _scenarios = new IScenario[]
                 {
                     //new Scenario1(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
-                    new LoopingScenario(maxConcurrentRequests / 2, threads, streams, eventsPerStream * 2, streamDeleteStep)
+                    new LoopingScenario(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
                 };
 
             Log.Info("Running test scenarios ({0} total)...", _scenarios.Length);
@@ -203,21 +203,25 @@ namespace EventStore.TestClient.Commands
 
     internal class LoopingScenario : ScenarioBase
     {
+        private readonly Random _rnd = new Random();
         private volatile bool _stopParalleWrites;
+        private TimeSpan _startupWaitInterval;
+
+        protected override TimeSpan StartupWaitInterval
+        {
+            get { return _startupWaitInterval; }
+        }
 
         public LoopingScenario(int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep) 
             : base(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
         {
+            SetStartupWaitInterval(TimeSpan.FromSeconds(7));
         }
 
-        private TimeSpan _waitForStartUp = TimeSpan.FromSeconds(7);
-
-        protected override TimeSpan WaitForStartup
+        private void SetStartupWaitInterval(TimeSpan interval)
         {
-            get { return _waitForStartUp; }
+            _startupWaitInterval = interval;
         }
-
-        private Random _rnd = new Random();
 
         public void InnerRun(int runIndex)
         {
@@ -240,7 +244,8 @@ namespace EventStore.TestClient.Commands
             DeleteStreams(deleted);
 
             _stopParalleWrites = true;
-            parallelWritesEvent.WaitOne(5000);
+            if (!parallelWritesEvent.WaitOne(5000))
+                throw new ApplicationException("Parallel writes stop timed out.");
 
             KillSingleNodes();
             StartNode();
@@ -274,7 +279,8 @@ namespace EventStore.TestClient.Commands
             CheckStreamsDeleted(pickedFromAllStreamsDeleted);
 
             _stopParalleWrites = true;
-            parallelWritesEvent.WaitOne(5000);
+            if (!parallelWritesEvent.WaitOne(5000))
+                throw new ApplicationException("Parallel writes stop timed out.");
 
             KillSingleNodes();
         }
@@ -315,8 +321,8 @@ namespace EventStore.TestClient.Commands
             var runIndex = 0;
             while (stopWatch.Elapsed.TotalHours < untilHours)
             {
-                Log.Info("=================== Start run #{0} ===================", runIndex);
-                _waitForStartUp = TimeSpan.FromSeconds(7 + runIndex / 4);
+                Log.Info("=================== Start run #{0} =================== upd", runIndex);
+                SetStartupWaitInterval(TimeSpan.FromSeconds(7 + 1.2 * runIndex));
                 InnerRun(runIndex);
                 runIndex += 1;
             }
@@ -342,6 +348,11 @@ namespace EventStore.TestClient.Commands
         protected readonly int EventsPerStream;
         protected readonly int StreamDeleteStep;
         protected readonly int Piece;
+
+        protected virtual TimeSpan StartupWaitInterval
+        {
+            get { return TimeSpan.FromSeconds(7); }
+        }
 
         protected ScenarioBase(int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep)
         {
@@ -476,13 +487,8 @@ namespace EventStore.TestClient.Commands
 
             Log.Info("Starting [{0} {1}]...", fileName, arguments);
             Process.Start(fileName, arguments);
-            Thread.Sleep(WaitForStartup);
+            Thread.Sleep(StartupWaitInterval);
             Log.Info("Started [{0} {1}]", fileName, arguments);
-        }
-
-        protected virtual TimeSpan WaitForStartup
-        {
-            get { return TimeSpan.FromSeconds(7); }
         }
 
         protected void KillSingleNodes()
