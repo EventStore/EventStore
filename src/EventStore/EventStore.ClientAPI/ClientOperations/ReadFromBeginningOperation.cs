@@ -45,6 +45,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly string _stream;
         private readonly int _start;
         private readonly int _count;
+        private readonly bool _resolveLinkTos;
 
         public Guid CorrelationId
         {
@@ -59,7 +60,8 @@ namespace EventStore.ClientAPI.ClientOperations
                                           Guid corrId, 
                                           string stream, 
                                           int start, 
-                                          int count)
+                                          int count,
+                                          bool resolveLinkTos)
         {
             _source = source;
 
@@ -67,6 +69,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _stream = stream;
             _start = start;
             _count = count;
+            _resolveLinkTos = resolveLinkTos;
         }
 
         public void SetRetryId(Guid correlationId)
@@ -79,7 +82,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.ReadEventsFromBeginning(_correlationId, _stream, _start, _count);
+                var dto = new ClientMessages.ReadEventsFromBeginning(_correlationId, _stream, _start, _count, _resolveLinkTos);
                 return new TcpPackage(TcpCommand.ReadEventsFromBeginning, _correlationId, dto.Serialize());
             }
         }

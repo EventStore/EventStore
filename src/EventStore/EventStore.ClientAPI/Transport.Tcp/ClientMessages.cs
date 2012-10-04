@@ -344,12 +344,13 @@ namespace EventStore.ClientAPI.Transport.Tcp
             {
             }
 
-            public ReadEventsFromBeginning(Guid correlationId, string eventStreamId, int startIndex, int maxCount)
+            public ReadEventsFromBeginning(Guid correlationId, string eventStreamId, int startIndex, int maxCount, bool resolveLinkTos)
             {
                 CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 StartIndex = startIndex;
                 MaxCount = maxCount;
+                ResolveLinktos = resolveLinkTos;
             }
         }
 
