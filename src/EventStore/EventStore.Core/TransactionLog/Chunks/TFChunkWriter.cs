@@ -77,8 +77,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 _writerChunk.Complete();
                 //_writerCheckpoint.Flush(); //flush our checkpoint
                 _writerChunk = _db.Manager.AddNewChunk();
-
-                _writerPos = (chunkNum + 1) * (long)_db.Config.ChunkSize; // we just moved to a new chunk at pos 0
+                _writerPos = (_writerChunk.ChunkHeader.ChunkStartNumber) * (long)_db.Config.ChunkSize; // we just moved to a new chunk at pos 0
+                //GFY CANT USE chunkNum here (it could be exact at end)
             }
             _writerCheckpoint.Write(_writerPos);
             newPos = _writerPos;
