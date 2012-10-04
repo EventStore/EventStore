@@ -27,11 +27,33 @@
 // 
 using System;
 using System.IO;
+using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
+    [TestFixture]
+    public class when_reading_bulk_a_chunk : SpecificationWithDirectory
+    {
+        private TFChunk _originalChunk;
+        private TFChunk _newChunk;
+
+        public override void SetUp()
+        {
+            //base.SetUp();
+            //_originalChunk = TFChunk.CreateNew(this.GetFilePathFor("file1"), 2000, 0, 0);
+            //_newChunk = TFChunk.CreateNewBulk();
+            //using(var reader = _originalChunk.AcquireReader())
+            //{
+            //    do
+            //    {
+            //        result = reader.ReadNextBytes()
+            //    } while(result)
+            //}
+        }
+    }
+
     [TestFixture]
     public class when_appending_past_end_of_a_TFChunk
     {

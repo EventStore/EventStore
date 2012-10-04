@@ -95,13 +95,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                     Log.Fatal("RECEIVED NULL CHUNK!!! Position: {0}, WriterChk: {1}, ChunkNum: {2}, ChunkPos: {3}. TRIAL: {4}. Trying one more time...", position, writerChk, chunkNum, chunkPos, trial);
                     return TryReadNext(position, trial + 1);
                 }
-                throw new Exception(string.Format("No chunk returned for LogPosition: {0}, chunkNum: {1}, chunkPos: {2}, writer check: {3}", _curPos, chunkNum, chunkPos, writerChk));
+                throw new Exception(string.Format("No chunk returned for LogPosition: {0}, chunkNum: {1}, chunkPos: {2}, writer check: {3} place: {4}", _curPos, chunkNum, chunkPos, writerChk, chunkNum * _db.Config.ChunkSize + chunkPos));
             }
 
             RecordReadResult result; 
             try
             {
-                result = position == 0 ? chunk.TryReadFirst() : chunk.TryReadSameOrClosest(chunkPos);
+                result = chunkPos == 0 ? chunk.TryReadFirst() : chunk.TryReadSameOrClosest(chunkPos);
             }
             catch(FileBeingDeletedException)
             {

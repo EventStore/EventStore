@@ -1015,11 +1015,6 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                 if (_selfdestructin54321)
                     throw new FileBeingDeletedException();
-                //there is an extremely unlikely race condition here 
-                //GFY TODO resolve it though impact is minimal
-                //as of now the worst thing thing that can happen is a chunk does not get deleted
-                //but gets picked up later when the database gets restarted
-                // if no cached reader - use usual
                 if (_streams.TryDequeue(out item))
                     return item;
             }
@@ -1049,7 +1044,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 throw new FileBeingDeletedException();
             }
             Interlocked.Increment(ref _lockedCount);
-            return new TFChunkBulkReader(this);
+            return new TFChunkBulkReader(this, null);
         }
 
         internal void ReleaseReader(TFChunkBulkReader reader)
@@ -1073,28 +1068,62 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
+        public ReadResult TryReadNextBulk(Stream stream, byte [] into, int count)
+        {
+            var sizeRead = 0;
+            var available = stream.Length - stream.Position;
+            sizeRead = stream.Read(into, 0, count);
+            return new ReadResult {IsEOF = stream.Length == stream.Position, ReadData = sizeRead};
+        }
     }
 
-    //TODO GFY ACTUALLY GET STREAM HERE AND USE IT. 
     public class TFChunkBulkReader : IDisposable
     {
         private readonly TFChunk _chunk;
+        private readonly Stream _stream;
+        private bool _disposed;
+        private readonly byte [] _buffer = new byte[5000];
 
-        internal TFChunkBulkReader(TFChunk chunk)
+        internal TFChunkBulkReader(TFChunk chunk, Stream streamToUse)
         {
+            Ensure.NotNull(chunk, "chunk");
+            Ensure.NotNull(streamToUse, "stream");
             _chunk = chunk;
+            _stream = streamToUse;
+        }
+
+        ~TFChunkBulkReader()
+        {
+            Dispose();
         }
 
         public void Release()
         {
             //Kill bulk stream
+            _stream.Close();
+            _stream.Dispose();
+            _disposed = true;
             _chunk.ReleaseReader(this);
+        }
+
+        public ReadResult ReadNextBytes(int count)
+        {
+            //GFY NOTE THIS DOES NOT USE WRITER CHECKSUM!
+            return _chunk.TryReadNextBulk(_stream, _buffer, count);
         }
 
         public void Dispose()
         {
+            if(_disposed) return;
             Release();
+            GC.SuppressFinalize(this);
         }
+    }
+
+    public struct ReadResult
+    {
+        public int ReadData;
+        public bool IsEOF;
     }
 
     public struct PosMap
