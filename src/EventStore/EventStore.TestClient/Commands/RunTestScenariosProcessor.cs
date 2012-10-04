@@ -454,9 +454,6 @@ namespace EventStore.TestClient.Commands
 
         protected void Read(string[] streams, int @from, int count)
         {
-            if (streams.Any(x => x.Contains("in0-5")))
-                throw new Exception();
-
             Log.Info("Reading [{0}]\nfrom {1,-10} count {2,-10}", string.Join(",", streams), @from, count);
             var read = new CountdownEvent(streams.Length);
 
