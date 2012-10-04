@@ -107,7 +107,7 @@ namespace EventStore.TestClient.Commands
 
             _scenarios = new IScenario[]
                 {
-                    new Scenario1(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
+                    //new Scenario1(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
                     new LoopingScenario(maxConcurrentRequests / 2, threads, streams, eventsPerStream * 2, streamDeleteStep)
                 };
 
@@ -177,7 +177,7 @@ namespace EventStore.TestClient.Commands
             KillSingleNodes();
             StartNode();
 
-            var streams = Enumerable.Range(0, Streams).Select(i => string.Format("scenario-stream-{0}", i)).ToArray();
+            var streams = Enumerable.Range(0, Streams).Select(i => string.Format("test-stream-{0}", i)).ToArray();
             var slices = Split(streams, 3);
 
             Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream);
@@ -201,11 +201,110 @@ namespace EventStore.TestClient.Commands
         }
     }
 
-    internal class LoopingScenario : Scenario1
+    internal class LoopingScenario : ScenarioBase
     {
+        private volatile bool _stopParalleWrites;
+
         public LoopingScenario(int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep) 
             : base(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
         {
+        }
+
+        private TimeSpan _waitForStartUp = TimeSpan.FromSeconds(7);
+
+        protected override TimeSpan WaitForStartup
+        {
+            get { return _waitForStartUp; }
+        }
+
+        private Random _rnd = new Random();
+
+        public void InnerRun(int runIndex)
+        {
+            const int internalThreadsCount = 2;
+            ThreadPool.SetMaxThreads(Threads + internalThreadsCount, Threads + internalThreadsCount);
+
+            KillSingleNodes();
+            StartNode();
+
+            var parallelWritesEvent = RunParallelWrites(runIndex);
+
+            var streams = Enumerable.Range(0, Streams).Select(i => FormatStreamName(runIndex, i)).ToArray();
+            var slices = Split(streams, 3);
+
+            Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream);
+            Write(WriteMode.Bucket, slices[1], EventsPerStream);
+            Write(WriteMode.Transactional, slices[2], EventsPerStream);
+
+            var deleted = streams.Where((s, i) => i % StreamDeleteStep == 0).ToArray();
+            DeleteStreams(deleted);
+
+            _stopParalleWrites = true;
+            parallelWritesEvent.WaitOne(5000);
+
+            KillSingleNodes();
+            StartNode();
+
+            parallelWritesEvent = RunParallelWrites(runIndex);
+
+            CheckStreamsDeleted(deleted);
+
+            var exceptDeleted = streams.Except(deleted).ToArray();
+            Read(exceptDeleted, from: 0, count: Piece + 1);
+            Read(exceptDeleted, from: EventsPerStream - Piece, count: Piece + 1);
+            Read(exceptDeleted, from: EventsPerStream / 2, count: Math.Min(Piece + 1, EventsPerStream - EventsPerStream / 2));
+
+            Log.Info("== READ from picked ALL ==");
+
+            var pickedFromAllStreamsForRead = Enumerable.Range(0, runIndex)
+                                              .SelectMany(run => Enumerable.Range(0, Streams)
+                                              .Where(s => s % StreamDeleteStep != 0)
+                                              .Select(s => FormatStreamName(run, s)))
+                                              .Where(x => _rnd.Next(100) > 50).ToArray();
+
+            var pickedFromAllStreamsDeleted = Enumerable.Range(0, runIndex)
+                                              .SelectMany(run => Enumerable.Range(0, Streams)
+                                              .Where(s => s % StreamDeleteStep == 0)
+                                              .Select(s => FormatStreamName(run, s)))
+                                              .Where(x => _rnd.Next(100) > 50).ToArray();
+
+            Read(pickedFromAllStreamsForRead, 0, EventsPerStream / 5);
+            Read(pickedFromAllStreamsForRead, EventsPerStream / 2, EventsPerStream / 5);
+
+            CheckStreamsDeleted(pickedFromAllStreamsDeleted);
+
+            _stopParalleWrites = true;
+            parallelWritesEvent.WaitOne(5000);
+
+            KillSingleNodes();
+        }
+
+        private AutoResetEvent RunParallelWrites(int runIndex)
+        {
+            _stopParalleWrites = false;
+            var resetEvent = new AutoResetEvent(false);
+            ThreadPool.QueueUserWorkItem(_ =>
+                {
+                    while (!_stopParalleWrites)
+                    {
+                        var parallelStreams = Enumerable.Range(0, 2)
+                        .Select(x => string.Format("parallel-write-stream-in{0}-{1}-{2}",
+                            runIndex,
+                            x,
+                            string.Format("rnd{0}-{1}", _rnd.Next(), DateTime.UtcNow.Ticks)))
+                        .ToArray();
+
+                        Thread.Sleep(1);
+                        Write(WriteMode.SingleEventAtTime, parallelStreams, 10000);
+                    }
+                    resetEvent.Set();
+                });
+            return resetEvent;
+        }
+
+        private static string FormatStreamName(int runIndex, int i)
+        {
+            return string.Format("stream-in{0}-{1}", runIndex, i);
         }
 
         public override void Run()
@@ -213,18 +312,28 @@ namespace EventStore.TestClient.Commands
             const int untilHours = 4;
             var stopWatch = Stopwatch.StartNew();
 
+            var runIndex = 0;
             while (stopWatch.Elapsed.TotalHours < untilHours)
             {
-                base.Run();
+                Log.Info("=================== Start run #{0} ===================", runIndex);
+                _waitForStartUp = TimeSpan.FromSeconds(7 + runIndex / 4);
+                InnerRun(runIndex);
+                runIndex += 1;
             }
         }
     }
 
     internal abstract class ScenarioBase : IScenario
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<Scenario1>();
+        protected static readonly ILogger Log = LogManager.GetLoggerFor<Scenario1>();
 
-        private readonly string _dbPath = Path.Combine(Path.GetTempPath(), "ES_" + Guid.NewGuid());
+        private string _dbPath;
+
+        protected void CreateNewDbPath()
+        {
+            _dbPath = Path.Combine(Path.GetTempPath(), "ES_" + Guid.NewGuid());
+        }
+
         private readonly IPEndPoint _tcpEndPoint = new IPEndPoint(IPAddress.Loopback, 1113);
 
         protected readonly int MaxConcurrentRequests;
@@ -242,6 +351,8 @@ namespace EventStore.TestClient.Commands
             EventsPerStream = eventsPerStream;
             StreamDeleteStep = streamDeleteStep;
             Piece = 100;
+
+            CreateNewDbPath();
         }
 
         public abstract void Run();
@@ -343,6 +454,9 @@ namespace EventStore.TestClient.Commands
 
         protected void Read(string[] streams, int @from, int count)
         {
+            if (streams.Any(x => x.Contains("in0-5")))
+                throw new Exception();
+
             Log.Info("Reading [{0}]\nfrom {1,-10} count {2,-10}", string.Join(",", streams), @from, count);
             var read = new CountdownEvent(streams.Length);
 
@@ -365,8 +479,13 @@ namespace EventStore.TestClient.Commands
 
             Log.Info("Starting [{0} {1}]...", fileName, arguments);
             Process.Start(fileName, arguments);
-            Thread.Sleep(TimeSpan.FromSeconds(7));
+            Thread.Sleep(WaitForStartup);
             Log.Info("Started [{0} {1}]", fileName, arguments);
+        }
+
+        protected virtual TimeSpan WaitForStartup
+        {
+            get { return TimeSpan.FromSeconds(7); }
         }
 
         protected void KillSingleNodes()
