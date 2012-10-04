@@ -32,12 +32,15 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Common.Log;
+using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Transport.Tcp;
 
 namespace EventStore.TestClient.Commands
 {
@@ -105,10 +108,11 @@ namespace EventStore.TestClient.Commands
                      streamDeleteStep,
                      maxConcurrentRequests);
 
+            var directTcpSender = CreateDirectTcpSender(context);
             _scenarios = new IScenario[]
                 {
-                    //new Scenario1(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
-                    new LoopingScenario(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
+                    //new Scenario1(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
+                    new LoopingScenario(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
                 };
 
             Log.Info("Running test scenarios ({0} total)...", _scenarios.Length);
@@ -129,6 +133,28 @@ namespace EventStore.TestClient.Commands
 
             context.Success();
             return true;
+        }
+
+        private Action<byte[]> CreateDirectTcpSender(CommandProcessorContext context)
+        {
+            Action<byte[]> sender = bytes =>
+            {
+                var sent = new AutoResetEvent(false);
+
+                Action<TcpTypedConnection<byte[]>, TcpPackage> handlePackage = (_, __) => { };
+                Action<TcpTypedConnection<byte[]>> established = connection =>
+                {
+                    connection.EnqueueSend(bytes);
+                    connection.Close();
+                    sent.Set();
+                };
+                Action<TcpTypedConnection<byte[]>, SocketError> closed = (_, __) => sent.Set();
+
+                context.Client.CreateTcpConnection(context, handlePackage, established, closed, false);
+                sent.WaitOne();
+            };   
+
+            return sender;
         }
     }
 
@@ -165,8 +191,8 @@ namespace EventStore.TestClient.Commands
 
     internal class Scenario1 : ScenarioBase
     {
-        public Scenario1(int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep)
-            : base(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
+        public Scenario1(Action<byte[]> directSendOverTcp, int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep)
+            : base(directSendOverTcp, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
         {
         }
 
@@ -212,8 +238,8 @@ namespace EventStore.TestClient.Commands
             get { return _startupWaitInterval; }
         }
 
-        public LoopingScenario(int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep) 
-            : base(maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
+        public LoopingScenario(Action<byte[]> directSendOverTcp, int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep) 
+            : base(directSendOverTcp, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
         {
             SetStartupWaitInterval(TimeSpan.FromSeconds(7));
         }
@@ -230,6 +256,8 @@ namespace EventStore.TestClient.Commands
 
             KillSingleNodes();
             StartNode();
+            if (runIndex % 2 == 0)
+                Scavenge();
 
             var parallelWritesEvent = RunParallelWrites(runIndex);
 
@@ -244,7 +272,7 @@ namespace EventStore.TestClient.Commands
             DeleteStreams(deleted);
 
             _stopParalleWrites = true;
-            if (!parallelWritesEvent.WaitOne(5000))
+            if (!parallelWritesEvent.WaitOne(60000))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
             KillSingleNodes();
@@ -279,7 +307,7 @@ namespace EventStore.TestClient.Commands
             CheckStreamsDeleted(pickedFromAllStreamsDeleted);
 
             _stopParalleWrites = true;
-            if (!parallelWritesEvent.WaitOne(5000))
+            if (!parallelWritesEvent.WaitOne(60000))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
             KillSingleNodes();
@@ -321,8 +349,8 @@ namespace EventStore.TestClient.Commands
             var runIndex = 0;
             while (stopWatch.Elapsed.TotalHours < untilHours)
             {
-                Log.Info("=================== Start run #{0} =================== upd", runIndex);
-                SetStartupWaitInterval(TimeSpan.FromSeconds(7 + 1.2 * runIndex));
+                Log.Info("=================== Start run #{0} =================== ", runIndex);
+                SetStartupWaitInterval(TimeSpan.FromSeconds(7 + (2 * runIndex) % 200));
                 InnerRun(runIndex);
                 runIndex += 1;
             }
@@ -342,6 +370,7 @@ namespace EventStore.TestClient.Commands
 
         private readonly IPEndPoint _tcpEndPoint = new IPEndPoint(IPAddress.Loopback, 1113);
 
+        protected readonly Action<byte[]> DirectSendOverTcp;
         protected readonly int MaxConcurrentRequests;
         protected readonly int Threads;
         protected readonly int Streams;
@@ -354,8 +383,14 @@ namespace EventStore.TestClient.Commands
             get { return TimeSpan.FromSeconds(7); }
         }
 
-        protected ScenarioBase(int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep)
+        protected ScenarioBase(Action<byte[]> directSendOverTcp,
+                               int maxConcurrentRequests, 
+                               int threads, 
+                               int streams, 
+                               int eventsPerStream, 
+                               int streamDeleteStep)
         {
+            DirectSendOverTcp = directSendOverTcp;
             MaxConcurrentRequests = maxConcurrentRequests;
             Threads = threads;
             Streams = streams;
@@ -504,6 +539,13 @@ namespace EventStore.TestClient.Commands
                 Thread.Sleep(2000);
                 Log.Info("Killed {0}", process.ProcessName);
             }
+        }
+
+        protected void Scavenge()
+        {
+            Log.Info("Send scavenge command...");
+            var package = new TcpPackage(TcpCommand.ScavengeDatabase, Guid.NewGuid(), null).AsByteArray();
+            DirectSendOverTcp(package);
         }
 
         private void WriteSingleEventAtTime(CountdownEvent written, string stream, int events)
