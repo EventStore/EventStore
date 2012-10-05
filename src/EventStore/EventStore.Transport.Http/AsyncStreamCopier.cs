@@ -26,18 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http
 {
     public class AsyncStreamCopier<T>
     {
-        private static readonly ILogger Log = LogManager.GetLogger("AsyncStreamCopier");
-
         public event EventHandler Completed;
 
         public T AsyncState { get; private set; }
@@ -47,9 +42,7 @@ namespace EventStore.Transport.Http
         private readonly Stream _input;
         private readonly Stream _output;
 
-        private readonly string _debuginfo;
-        private readonly Stopwatch _watch = new Stopwatch();
-        public AsyncStreamCopier(Stream input, Stream output, T state, string debuginfo = null)
+        public AsyncStreamCopier(Stream input, Stream output, T state)
         {
             Ensure.NotNull(input, "input");
             Ensure.NotNull(output, "output");
@@ -59,31 +52,11 @@ namespace EventStore.Transport.Http
 
             AsyncState = state;
             Error = null;
-
-            _debuginfo = debuginfo;
         }
 
         public void Start()
         {
-            _watch.Start();
-#if POOLCOPY
-            ThreadPool.QueueUserWorkItem(_ =>
-                                             {
-                                                 try
-                                                 {
-                                                     _input.CopyTo(_output);
-                                                     OnCompleted();
-                                                 }
-                                                 catch (Exception e)
-                                                 {
-                                                     Log.ErrorException(e, "CopyTo thrown an exception");
-                                                     Error = e;
-                                                     OnCompleted();
-                                                 }
-                                             });
-#else
             GetNextChunk();
-#endif
         }
 
         private void GetNextChunk()
@@ -104,13 +77,6 @@ namespace EventStore.Transport.Http
             try
             {
                 int bytesRead = _input.EndRead(ar);
-                if(ar.CompletedSynchronously)
-                {
-                    //Log.Info("Completed synchronously. IN : {0}, OUT : {1}, DEBUGINFO : {2}",
-                    //         _input.GetType().FullName,
-                    //         _output.GetType().FullName,
-                    //         _debuginfo);
-                }
                 if (bytesRead == 0 || bytesRead == -1) //TODO TR: only mono returns -1
                 {
                     OnCompleted();
@@ -142,13 +108,6 @@ namespace EventStore.Transport.Http
 
         private void OnCompleted()
         {
-            _watch.Stop();
-            if (_watch.ElapsedMilliseconds > 5)
-                Log.Trace("Slow copy. IN : {0}, OUT : {1}, DEBUGINFO : {2}, TOOK {3}ms",
-                         _input.GetType().FullName,
-                         _output.GetType().FullName,
-                         _debuginfo,
-                         _watch.ElapsedMilliseconds);
             if (Completed != null)
                 Completed(this, EventArgs.Empty);
         }

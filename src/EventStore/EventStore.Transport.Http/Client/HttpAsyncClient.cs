@@ -95,7 +95,7 @@ namespace EventStore.Transport.Http.Client
                 state.InputStream = networkStream;
                 state.OutputStream = new MemoryStream();
 
-                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, state.OutputStream, state, "CLIENT RESPONSE READ COPIER");
+                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, state.OutputStream, state);
                 copier.Completed += ResponseRead;
                 copier.Start();
             }
@@ -133,7 +133,7 @@ namespace EventStore.Transport.Http.Client
             {
                 var networkStream = state.Request.EndGetRequestStream(ar);
                 state.OutputStream = networkStream;
-                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, networkStream, state, "CLIENT REQUEST WRITE COPIER");
+                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, networkStream, state);
                 copier.Completed += RequestWrote;
                 copier.Start();
             }
