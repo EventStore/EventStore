@@ -47,7 +47,6 @@ namespace EventStore.TestClient.Commands
     internal class RunTestScenariosProcessor : ICmdProcessor
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<RunTestScenariosProcessor>();
-        private IScenario[] _scenarios;
 
         public string Keyword
         {
@@ -56,6 +55,8 @@ namespace EventStore.TestClient.Commands
                 return string.Format("RT");
             }
         }
+
+        private const string AllScenariosFlag = "#ALL";
 
         public string Usage
         {
@@ -66,7 +67,9 @@ namespace EventStore.TestClient.Commands
                                      "<threads, default = 20> " +
                                      "<streams, default = 20> " +
                                      "<eventsPerStream, default = 10000> " +
-                                     "<streams delete step, default = 7> ",
+                                     "<streams delete step, default = 7> " +
+                                     "<scenario name, default = LoopingScenario, " + AllScenariosFlag + " for all scenarios>" +
+                                     "<execution period minutes, default = 10>",
                                      Keyword);
             }
         }
@@ -75,7 +78,7 @@ namespace EventStore.TestClient.Commands
         {
             context.IsAsync();
 
-            if(args.Length != 0 && args.Length != 5)
+            if(args.Length != 0 && args.Length != 7)
                 return false;
 
             var maxConcurrentRequests = 100;
@@ -83,8 +86,10 @@ namespace EventStore.TestClient.Commands
             var streams = 20;
             var eventsPerStream = 10000;
             var streamDeleteStep = 7;
+            var scenarioName = "LoopingScenario";
+            var executionPeriodMinutes = 10;
 
-            if (args.Length == 5)
+            if (args.Length == 7)
             {
                 try
                 {
@@ -93,6 +98,8 @@ namespace EventStore.TestClient.Commands
                     streams = int.Parse(args[2]);
                     eventsPerStream = int.Parse(args[3]);
                     streamDeleteStep = int.Parse(args[4]);
+                    scenarioName = args[5];
+                    executionPeriodMinutes = int.Parse(args[6]);
                 }
                 catch (Exception e)
                 {
@@ -101,22 +108,38 @@ namespace EventStore.TestClient.Commands
                 }
             }
 
-            Log.Info("Running scenarios using {0} threads, {1} streams {2} events each, deleting every {3}th stream. Max concurrent ES requests - {4}",
+            Log.Info("Running scenario {0} using {1} threads, {2} streams {3} events each deleting every {4}th stream. " +
+                     "Period {5} minutes. " +
+                     "Max concurrent ES requests {6}",
+                     scenarioName,
                      threads,
                      streams,
                      eventsPerStream,
                      streamDeleteStep,
+                     executionPeriodMinutes,
                      maxConcurrentRequests);
 
             var directTcpSender = CreateDirectTcpSender(context);
-            _scenarios = new IScenario[]
+            var allScenarios = new IScenario[]
                 {
-                    //new Scenario1(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
-                    new LoopingScenario(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
+                    new Scenario1(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
+                    new LoopingScenario(directTcpSender, 
+                                        maxConcurrentRequests, 
+                                        threads, 
+                                        streams, 
+                                        eventsPerStream, 
+                                        streamDeleteStep, 
+                                        TimeSpan.FromMinutes(executionPeriodMinutes))
                 };
 
-            Log.Info("Running test scenarios ({0} total)...", _scenarios.Length);
-            foreach (var scenario in _scenarios)
+            Log.Info("Found scenarios ({0} total).", allScenarios.Length);
+            var scenarios = allScenarios.Where(x => scenarioName == AllScenariosFlag 
+                                                    || x.GetType().Name.Equals(scenarioName, StringComparison.InvariantCultureIgnoreCase))
+                                        .ToArray();
+
+            Log.Info("Running test scenarios ({0} total)...", scenarios.Length);
+
+            foreach (var scenario in scenarios)
             {
                 try
                 {
@@ -229,6 +252,8 @@ namespace EventStore.TestClient.Commands
 
     internal class LoopingScenario : ScenarioBase
     {
+        private readonly TimeSpan _executionPeriod;
+        
         private readonly Random _rnd = new Random();
         private volatile bool _stopParalleWrites;
         private TimeSpan _startupWaitInterval;
@@ -238,15 +263,36 @@ namespace EventStore.TestClient.Commands
             get { return _startupWaitInterval; }
         }
 
-        public LoopingScenario(Action<byte[]> directSendOverTcp, int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep) 
+        public LoopingScenario(Action<byte[]> directSendOverTcp, 
+                               int maxConcurrentRequests, 
+                               int threads, 
+                               int streams, 
+                               int eventsPerStream, 
+                               int streamDeleteStep,
+                               TimeSpan executionPeriod) 
             : base(directSendOverTcp, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
         {
+            _executionPeriod = executionPeriod;
             SetStartupWaitInterval(TimeSpan.FromSeconds(7));
         }
 
         private void SetStartupWaitInterval(TimeSpan interval)
         {
             _startupWaitInterval = interval;
+        }
+
+        public override void Run()
+        {
+            var stopWatch = Stopwatch.StartNew();
+
+            var runIndex = 0;
+            while (stopWatch.Elapsed < _executionPeriod)
+            {
+                Log.Info("=================== Start run #{0} =================== ", runIndex);
+                SetStartupWaitInterval(TimeSpan.FromSeconds(7 + (2 * runIndex) % 200));
+                InnerRun(runIndex);
+                runIndex += 1;
+            }
         }
 
         public void InnerRun(int runIndex)
@@ -293,13 +339,13 @@ namespace EventStore.TestClient.Commands
                                               .SelectMany(run => Enumerable.Range(0, Streams)
                                               .Where(s => s % StreamDeleteStep != 0)
                                               .Select(s => FormatStreamName(run, s)))
-                                              .Where(x => _rnd.Next(100) > 50).ToArray();
+                                              .Where(x => _rnd.Next(100) > (10 + 1000 / runIndex)).ToArray();
 
             var pickedFromAllStreamsDeleted = Enumerable.Range(0, runIndex)
                                               .SelectMany(run => Enumerable.Range(0, Streams)
                                               .Where(s => s % StreamDeleteStep == 0)
                                               .Select(s => FormatStreamName(run, s)))
-                                              .Where(x => _rnd.Next(100) > 50).ToArray();
+                                              .Where(x => _rnd.Next(100) > (5 + 1000 / runIndex)).ToArray();
 
             Read(pickedFromAllStreamsForRead, 0, EventsPerStream / 5);
             Read(pickedFromAllStreamsForRead, EventsPerStream / 2, EventsPerStream / 5);
@@ -329,7 +375,13 @@ namespace EventStore.TestClient.Commands
                         .ToArray();
 
                         Thread.Sleep(1);
-                        Write(WriteMode.SingleEventAtTime, parallelStreams, 10000);
+                        
+                        const int eventsPerStream = 1000;
+
+                        Write(WriteMode.SingleEventAtTime, parallelStreams, eventsPerStream);
+                        Read(parallelStreams, 0, eventsPerStream / 6);
+                        Read(parallelStreams, eventsPerStream / 3, eventsPerStream / 6);
+                        Read(parallelStreams, eventsPerStream - eventsPerStream / 10, eventsPerStream / 10);
                     }
                     resetEvent.Set();
                 });
@@ -339,21 +391,6 @@ namespace EventStore.TestClient.Commands
         private static string FormatStreamName(int runIndex, int i)
         {
             return string.Format("stream-in{0}-{1}", runIndex, i);
-        }
-
-        public override void Run()
-        {
-            const int untilHours = 4;
-            var stopWatch = Stopwatch.StartNew();
-
-            var runIndex = 0;
-            while (stopWatch.Elapsed.TotalHours < untilHours)
-            {
-                Log.Info("=================== Start run #{0} =================== ", runIndex);
-                SetStartupWaitInterval(TimeSpan.FromSeconds(7 + (2 * runIndex) % 200));
-                InnerRun(runIndex);
-                runIndex += 1;
-            }
         }
     }
 
@@ -368,7 +405,7 @@ namespace EventStore.TestClient.Commands
             _dbPath = Path.Combine(Path.GetTempPath(), "ES_" + Guid.NewGuid());
         }
 
-        private readonly IPEndPoint _tcpEndPoint = new IPEndPoint(IPAddress.Loopback, 1113);
+        private readonly IPEndPoint _tcpEndPoint;
 
         protected readonly Action<byte[]> DirectSendOverTcp;
         protected readonly int MaxConcurrentRequests;
@@ -399,6 +436,9 @@ namespace EventStore.TestClient.Commands
             Piece = 100;
 
             CreateNewDbPath();
+
+            var ip = GetInterIpAddress();
+            _tcpEndPoint = new IPEndPoint(ip, 1113);
         }
 
         public abstract void Run();
@@ -524,6 +564,22 @@ namespace EventStore.TestClient.Commands
             Process.Start(fileName, arguments);
             Thread.Sleep(StartupWaitInterval);
             Log.Info("Started [{0} {1}]", fileName, arguments);
+        }
+
+        private IPAddress GetInterIpAddress()
+        {
+            var interIp = IPAddress.None;
+
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (IPAddress ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    interIp = ip;
+                    break;
+                }
+            }
+            return interIp;
         }
 
         protected void KillSingleNodes()
