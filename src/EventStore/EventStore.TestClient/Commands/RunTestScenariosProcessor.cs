@@ -56,7 +56,7 @@ namespace EventStore.TestClient.Commands
             }
         }
 
-        private const string AllScenariosFlag = "#ALL";
+        private const string AllScenariosFlag = "ALL";
 
         public string Usage
         {
