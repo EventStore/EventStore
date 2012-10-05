@@ -339,13 +339,13 @@ namespace EventStore.TestClient.Commands
                                               .SelectMany(run => Enumerable.Range(0, Streams)
                                               .Where(s => s % StreamDeleteStep != 0)
                                               .Select(s => FormatStreamName(run, s)))
-                                              .Where(x => _rnd.Next(100) > 50).ToArray();
+                                              .Where(x => _rnd.Next(100) > (10 + 1000 / runIndex)).ToArray();
 
             var pickedFromAllStreamsDeleted = Enumerable.Range(0, runIndex)
                                               .SelectMany(run => Enumerable.Range(0, Streams)
                                               .Where(s => s % StreamDeleteStep == 0)
                                               .Select(s => FormatStreamName(run, s)))
-                                              .Where(x => _rnd.Next(100) > 50).ToArray();
+                                              .Where(x => _rnd.Next(100) > (5 + 1000 / runIndex)).ToArray();
 
             Read(pickedFromAllStreamsForRead, 0, EventsPerStream / 5);
             Read(pickedFromAllStreamsForRead, EventsPerStream / 2, EventsPerStream / 5);
@@ -405,7 +405,7 @@ namespace EventStore.TestClient.Commands
             _dbPath = Path.Combine(Path.GetTempPath(), "ES_" + Guid.NewGuid());
         }
 
-        private readonly IPEndPoint _tcpEndPoint = new IPEndPoint(IPAddress.Loopback, 1113);
+        private readonly IPEndPoint _tcpEndPoint;
 
         protected readonly Action<byte[]> DirectSendOverTcp;
         protected readonly int MaxConcurrentRequests;
@@ -436,6 +436,9 @@ namespace EventStore.TestClient.Commands
             Piece = 100;
 
             CreateNewDbPath();
+
+            var ip = GetInterIpAddress();
+            _tcpEndPoint = new IPEndPoint(ip, 1113);
         }
 
         public abstract void Run();
@@ -561,6 +564,22 @@ namespace EventStore.TestClient.Commands
             Process.Start(fileName, arguments);
             Thread.Sleep(StartupWaitInterval);
             Log.Info("Started [{0} {1}]", fileName, arguments);
+        }
+
+        private IPAddress GetInterIpAddress()
+        {
+            var interIp = IPAddress.None;
+
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (IPAddress ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    interIp = ip;
+                    break;
+                }
+            }
+            return interIp;
         }
 
         protected void KillSingleNodes()
