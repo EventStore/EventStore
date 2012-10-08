@@ -62,7 +62,7 @@ namespace EventStore.Padmin
                     break;
                 case "continious":
                     Log("Creating continious projection {0}...", pname);
-                    store.Projections.CreateContinious(pname, query);
+                    store.Projections.CreateContinuous(pname, query);
                     Log("Created");
                     break;
                 case "persistent":
