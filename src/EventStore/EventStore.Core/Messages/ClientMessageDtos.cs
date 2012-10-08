@@ -655,6 +655,9 @@ namespace EventStore.Core.Messages
             [ProtoMember(3)]
             public int EventNumber { get; set; }
 
+            [ProtoMember(4)]
+            public Guid EventId { get; set; }
+
             [ProtoMember(5)]
             public string EventType { get; set; }
 
@@ -673,6 +676,7 @@ namespace EventStore.Core.Messages
                 CorrelationId = correlationId.ToByteArray();
                 EventStreamId = @event.EventStreamId;
                 EventNumber = eventNumber;
+                EventId = @event.EventId;
                 EventType = @event.EventType;
                 Data = @event.Data;
                 Metadata = @event.Metadata;
