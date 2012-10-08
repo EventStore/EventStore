@@ -28,16 +28,16 @@
 
 using System;
 using System.Collections.Generic;
+using Collections = System.Collections;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using EventStore.ClientAPI.Tcp;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
-    public class TcpConnection : TcpConnectionBase, ITcpConnection
+    internal class TcpConnection : TcpConnectionBase, ITcpConnection
     {
         private const int BufferSize = 512;
 
@@ -98,7 +98,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 #if __MonoCS__
         private readonly Common.ConcurrentCollections.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.ConcurrentCollections.ConcurrentQueue<ArraySegment<byte>>();
 #else
-        private readonly System.Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new System.Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
+        private readonly Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
 #endif
 
         private readonly Queue<Tuple<ArraySegment<byte>, Action>> _receiveQueue =
@@ -128,7 +128,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void InitSocket(Socket socket)
         {
-            Console.WriteLine("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
+            //Console.WriteLine("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
             base.InitSocket(socket, EffectiveEndPoint);
             lock (_sendingLock)
             {
@@ -395,17 +395,17 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             NotifyClosed();
 
-            Console.WriteLine(
-                "[{0}]:\nReceived packages: {1}, bytes: {2}\nSend packages: {3}, bytes: {4}\nSendAsync calls: {5}, callbacks: {6}\nReceiveAsync calls: {7}, callbacks: {8}\n",
-                EffectiveEndPoint,
-                _packagesReceived,
-                _bytesReceived,
-                _packagesSent,
-                _bytesSent,
-                _sentAsyncs,
-                _sentAsyncCallbacks,
-                _recvAsyncs,
-                _recvAsyncCallbacks);
+            //Console.WriteLine(
+            //    "[{0}]:\nReceived packages: {1}, bytes: {2}\nSend packages: {3}, bytes: {4}\nSendAsync calls: {5}, callbacks: {6}\nReceiveAsync calls: {7}, callbacks: {8}\n",
+            //    EffectiveEndPoint,
+            //    _packagesReceived,
+            //    _bytesReceived,
+            //    _packagesSent,
+            //    _bytesSent,
+            //    _sentAsyncs,
+            //    _sentAsyncCallbacks,
+            //    _recvAsyncs,
+            //    _recvAsyncCallbacks);
 
             if (_socket != null)
             {

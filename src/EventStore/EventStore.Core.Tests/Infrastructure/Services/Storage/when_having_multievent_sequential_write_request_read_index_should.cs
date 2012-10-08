@@ -1,4 +1,4 @@
-/*// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -61,14 +61,15 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             Thread.Sleep(500);
             TableIndex.ClearAll(removeFiles: false);
 
-            TableIndex = new TableIndex(Path.Combine(PathName, "index"),
-                                        () => new HashListMemTable(),
-                                        new InMemoryCheckpoint(),
-                                        maxSizeForMemory: 5);
+            TableIndex = new TableIndex(Path.Combine(PathName, "index"), () => new HashListMemTable(), maxSizeForMemory: 5);
             TableIndex.Initialize();
 
-            var reader = new MultifileTransactionFileReader(_dbConfig, _writerCheckpoint);
-            ReadIndex = new ReadIndex(new NoopPublisher(), () => reader, 1, _writerCheckpoint, TableIndex, new ByLengthHasher());
+            ReadIndex = new ReadIndex(new NoopPublisher(),
+                                      pos => new MultifileTransactionFileChaser(_dbConfig, new InMemoryCheckpoint(0)), 
+                                      () => new MultifileTransactionFileReader(_dbConfig, _writerCheckpoint),
+                                      1,
+                                      TableIndex,
+                                      new ByLengthHasher());
             ReadIndex.Build();
         }
 
@@ -98,9 +99,9 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         [Test]
         public void sequence_numbers_are_not_broken()
         {
-            EventRecord record;
             for (int i = 0; i < 15; ++i)
             {
+                EventRecord record;
                 Assert.AreEqual(SingleReadResult.Success, ReadIndex.TryReadRecord("ES", i, out record));
                 Assert.AreEqual(Encoding.UTF8.GetBytes("data" + i), record.Data);
             }
@@ -195,4 +196,4 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             Assert.AreEqual(_p1, records[2]);
         }
     }
-}*/
+}

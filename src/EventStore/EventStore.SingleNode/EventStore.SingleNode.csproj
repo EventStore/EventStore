@@ -40,7 +40,7 @@
     <Optimize>false</Optimize>
     <Externalconsole>true</Externalconsole>
     <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
@@ -51,7 +51,7 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>EventStore.SingleNode.SingleNodeWithProjections</StartupObject>
+    <StartupObject>EventStore.SingleNode.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -61,7 +61,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="SingleNodeOptions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SingleNodeWithProjections.cs" />
+    <Compile Include="Projections.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config">

@@ -30,6 +30,8 @@ using System.Net;
 using EventStore.Common.Settings;
 using EventStore.Core;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Common.Utils;
+using System.Linq;
 
 namespace EventStore.SingleNode
 {
@@ -41,22 +43,38 @@ namespace EventStore.SingleNode
         private SingleVNodeAppSettings _appSets;
         private SingleVNodeSettings _vNodeSets;
 
+        private Projections _projections;
+        private bool _noProjections;
+
+        public static int Main(string[] args)
+        {
+            var p = new Program();
+            return p.Run(args);
+        }
+
         protected override void OnArgsParsed(SingleNodeOptions options)
         {
             var now = DateTime.UtcNow;
             TfDb = GetTfDb(options, now);
             _appSets = GetAppSettings(options);
             _vNodeSets = GetVNodeSettings(options);
+            _noProjections = options.NoProjections;
         }
 
         protected override void Create()
         {
             Node = new SingleVNode(TfDb, _vNodeSets, _appSets);
+
+            if (!_noProjections)
+                _projections = new Projections(Node, TfDb);
         }
 
         protected override void Start()
         {
             Node.Start();
+
+            if (!_noProjections)
+                _projections.Start();
         }
 
         public override void Stop()
@@ -67,6 +85,11 @@ namespace EventStore.SingleNode
         protected override string GetLogsDirectory()
         {
             return TfDb.Config.Path + "-logs" ;
+        }
+
+        protected override string GetComponentName(SingleNodeOptions options)
+        {
+            return string.Format("{0}-{1}", options.Ip, options.HttpPort);
         }
 
         private static TFChunkDb GetTfDb(SingleNodeOptions options, DateTime timeStamp)
@@ -83,10 +106,13 @@ namespace EventStore.SingleNode
 
         private static SingleVNodeSettings GetVNodeSettings(SingleNodeOptions options)
         {
-            var http = new IPEndPoint(options.Ip, options.HttpPort);
             var tcp = new IPEndPoint(options.Ip, options.TcpPort);
+            var http = new IPEndPoint(options.Ip, options.HttpPort);
+            var prefixes = !String.IsNullOrEmpty(options.PrefixesString)
+                               ? options.PrefixesString.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)
+                               : new[] {http.ToHttpUrl()};
 
-            var vnodeSettings = new SingleVNodeSettings(tcp, http);
+            var vnodeSettings = new SingleVNodeSettings(tcp, http, prefixes.Select(p => p.Trim()).ToArray());
             return vnodeSettings;
         }
     }

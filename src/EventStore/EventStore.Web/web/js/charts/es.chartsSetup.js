@@ -1,21 +1,8 @@
 $(function () {
 
-    // fix of IE caching
-    $.ajaxSetup({ cache: false });
 
-    var unloading = false;  // hack around ajax errors
-    $(window).bind('beforeunload', function() {
-        unloading = true;
-    });
 
     var newDataEvent = "es.newStats";
-
-    var getPollFrequency = function () {
-        return 1000;
-    };
-    var getFreshStatsUrl = function () {
-        return "/stats/?format=json";
-    };
 
     es.TimeSeries.setUp({
         updateEvent: newDataEvent,
@@ -24,45 +11,91 @@ $(function () {
     });
 
 
+    buildCharts();
 
-    var bindedStats;
-    
-    if (typeof graphtypeview == "undefined" || graphtypeview == "") {
-        bindedStats = es.statsBinding();
-    } else if (typeof graphtypeview != "undefined" && graphtypeview == "Queue") {
-        bindedStats = es.statsBindingQueue();
+    function buildCharts() {
+
+        $.ajax("/stats?metadata=true&group=false", {
+            cache: false,
+            headers: {
+                Accept: "application/json"
+            },
+            success: onGotStats,
+            error: error
+        });
+
+        function onGotStats(stats) {
+            bindCharts(stats);
+            poll();
+        }
+
+        function bindCharts(stats) {
+            for (var statName in stats) {
+                (function () {
+                    var currentStatName = statName; // closure
+                    var stat = stats[currentStatName];
+                    if (stat && stat.drawChart && !skipStatCategory(stat.category)) {
+                        es.TimeSeries({
+                            title: stat.title,
+                            getData: function (data) {
+                                return data[currentStatName];
+                            }
+                        });
+
+                    }
+                })();
+            }
+        }
+
+        function skipStatCategory(cat) {
+            // todo remove after categories are implemented and queues moved to same page
+            if (window.queueStats)
+                return cat !== "Queue Stats";
+            else
+                return cat === "Queue Stats"; 
+        }
     }
 
-    poll();
     function poll() {
 
         // no matter what - repoll after a while
         setTimeout(function () {
             poll();
-        }, getPollFrequency());
+        }, 1000);
 
-        $.getJSON(getFreshStatsUrl())
-    		.done(function (stats) {
-    		    $(".error").hide();
-    		    publishNewStat(stats);
-    		})
-    		.fail(onFail);
-        return;
+        $.ajax("/stats?group=false", {
+            cache: false,
+            headers: {
+                Accept: "application/json"
+            },
+            success: success,
+            error: error
+        });
     };
+
+    function success(data) {
+        $(".error").hide();
+        publishNewStat(data);
+    }
 
     function publishNewStat(stat) {
         $(document).trigger(newDataEvent, [stat]);
     };
 
-    function onFail(xhr, status, error) {
+    function error(xhr, status, err) {
         if (unloading)
             return;
         var msg;
-        
+
         if (xhr.status === 0)
             msg = "cannot connect to server";
         else
-            msg = "error: " + error;
+            msg = "error: " + err;
         $(".error").text(msg).show();
     };
+
+    var unloading = false;  // hack around ajax errors
+    $(window).bind('beforeunload', function () {
+        unloading = true;
+    });
 });

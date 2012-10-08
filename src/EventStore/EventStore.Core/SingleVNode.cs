@@ -25,7 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
 using System.IO;
 using System.Net;
 using EventStore.Common.Settings;
@@ -69,7 +68,7 @@ namespace EventStore.Core
             db.OpenVerifyAndClean();
 
             _tcpEndPoint = vNodeSettings.ExternalTcpEndPoint;
-            _httpEndPoint = vNodeSettings.HttpEndPoint;
+            _httpEndPoint = vNodeSettings.ExternalHttpEndPoint;
 
             _outputBus = new InMemoryBus("OutputBus");
             _controller = new SingleVNodeController(Bus, _httpEndPoint);
@@ -91,15 +90,13 @@ namespace EventStore.Core
             var indexPath = Path.Combine(db.Config.Path, "index");
             var tableIndex = new TableIndex(indexPath,
                                             () => new HashListMemTable(),
-                                            new InMemoryCheckpoint(),
                                             maxSizeForMemory: 1000000,
                                             maxTablesPerLevel: 2);
 
             var readIndex = new ReadIndex(_mainQueue,
-                                          db,
+                                          pos => new TFChunkChaser(db, db.Config.WriterCheckpoint, new InMemoryCheckpoint(pos)),
                                           () => new TFChunkReader(db, db.Config.WriterCheckpoint),
                                           TFConsts.ReadIndexReaderCount,
-                                          db.Config.WriterCheckpoint,
                                           tableIndex,
                                           new XXHashUnsafe());
             var writer = new TFChunkWriter(db);
@@ -125,7 +122,7 @@ namespace EventStore.Core
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             //HTTP
-            HttpService = new HttpService(MainQueue, _httpEndPoint.ToHttpUrl());
+            HttpService = new HttpService(MainQueue, vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
@@ -139,7 +136,6 @@ namespace EventStore.Core
 
             //REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(MainQueue, 1, 1);
-            Bus.Subscribe<ReplicationMessage.EventCommited>(requestManagement);
             Bus.Subscribe<ReplicationMessage.CreateStreamRequestCreated>(requestManagement);
             Bus.Subscribe<ReplicationMessage.WriteRequestCreated>(requestManagement);
             Bus.Subscribe<ReplicationMessage.TransactionStartRequestCreated>(requestManagement);
@@ -147,6 +143,7 @@ namespace EventStore.Core
             Bus.Subscribe<ReplicationMessage.TransactionCommitRequestCreated>(requestManagement);
             Bus.Subscribe<ReplicationMessage.DeleteStreamRequestCreated>(requestManagement);
             Bus.Subscribe<ReplicationMessage.RequestCompleted>(requestManagement);
+            Bus.Subscribe<ReplicationMessage.AlreadyCommitted>(requestManagement);
             Bus.Subscribe<ReplicationMessage.CommitAck>(requestManagement);
             Bus.Subscribe<ReplicationMessage.PrepareAck>(requestManagement);
             Bus.Subscribe<ReplicationMessage.WrongExpectedVersion>(requestManagement);

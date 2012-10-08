@@ -25,11 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Net.Sockets;
 using System.Threading;
+using Collections = System.Collections;
 
-namespace EventStore.ClientAPI.Tcp
+namespace EventStore.ClientAPI.Transport.Tcp
 {
     internal class SocketArgsPool
     {
@@ -39,7 +41,7 @@ namespace EventStore.ClientAPI.Tcp
 #if __MonoCS__
         private readonly Common.ConcurrentCollections.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Common.ConcurrentCollections.ConcurrentStack<SocketAsyncEventArgs>();
 #else
-        private readonly System.Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new System.Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
+        private readonly Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
 #endif
 
         private int _getArgs = 0;

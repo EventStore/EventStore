@@ -411,10 +411,8 @@ namespace EventStore.Core.TransactionLog.Chunks
             _memoryStreams = BuildCacheReaders();
             if (_writerWorkItem != null)
             {
-                _writerWorkItem.UnmanagedMemoryStream = new UnmanagedMemoryStream(_cachedData,
-                                                                                  _cachedDataLength,
-                                                                                  _cachedDataLength,
-                                                                                  FileAccess.ReadWrite);
+                _writerWorkItem.UnmanagedMemoryStream = 
+                    new UnmanagedMemoryStream(_cachedData, _cachedDataLength, _cachedDataLength, FileAccess.ReadWrite);
             }
             _cached = true;
 
@@ -523,7 +521,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var workItem = GetReaderWorkItem();
             try
             {
-                LogRecord record = null;
+                LogRecord record;
                 if (_actualDataSize == 0)
                     return new RecordReadResult(false, null, -1);
                 int length;
@@ -537,14 +535,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (_chunkFooter.MapSize > sizeof(ulong))
                         nextLogicalPos = ReadPosMap(workItem, 1).LogPos;
                     else
-                    {
                         nextLogicalPos = (int)(record.Position % _chunkHeader.ChunkSize) + 4 + length;
-                    }
                 }
                 else
-                {
                     nextLogicalPos = GetLogicalPosition(workItem);
-                }
                 return new RecordReadResult(true, record, nextLogicalPos);
 
             }
@@ -563,6 +557,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var actualPosition = pos.Item1.ActualPos;
                 if (actualPosition == -1 || actualPosition >= _actualDataSize)
                     return new RecordReadResult(false, null, -1);
+
                 int length;
                 LogRecord record;
                 if (!TryReadRecordInternal(workItem, actualPosition, out length, out record))
@@ -577,9 +572,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                         nextLogicalPos = (int)(record.Position % _chunkHeader.ChunkSize) + 4 + length;
                 }
                 else
-                {
                     nextLogicalPos = GetLogicalPosition(workItem);
-                }
 
                 return new RecordReadResult(true, record, nextLogicalPos);
             }
@@ -592,16 +585,16 @@ namespace EventStore.Core.TransactionLog.Chunks
         private Tuple<PosMap, int> TranslateToSameOrClosestPosition(ReaderWorkItem workItem, int logicalPosition)
         {
             if (!_isReadonly || _chunkFooter.MapSize == 0)
-            {
                 return Tuple.Create(new PosMap(logicalPosition, logicalPosition), -1);
+
+            var midpoints = _midpoints;
+            if (workItem.IsMemory || midpoints == null)
+            {
+                var mapCount = _chunkFooter.MapSize / sizeof(ulong);
+                return TranslateSameOrClosestWithoutMidpoints(workItem, logicalPosition, 0, mapCount - 1);
             }
             else
-            {
-                return TranslateSameOrClosestWithoutMidpoints(workItem,
-                                                              logicalPosition,
-                                                              0,
-                                                              _chunkFooter.MapSize/sizeof(ulong) - 1);
-            }
+                return TranslateSameOrClosestWithMidpoints(workItem, midpoints, logicalPosition);
         }
 
         private bool TryReadRecordInternal(ReaderWorkItem workItem, int actualPosition, out int length, out LogRecord record)
@@ -668,57 +661,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             return TranslateWithoutMidpoints(workItem, pos, recordRange.Item1, recordRange.Item2);
         }
 
-        private int TranslateWithoutMidpoints(ReaderWorkItem workItem, int pos, int startIndex, int endIndex)
-        {
-            int low = startIndex;
-            int high = endIndex;
-            while (low <= high)
-            {
-                var mid = low + (high - low) / 2;
-                var v = ReadPosMap(workItem, mid);
-
-                if (v.LogPos == pos)
-                    return v.ActualPos;
-                if (v.LogPos < pos)
-                    low = mid + 1;
-                else
-                    high = mid - 1;
-            }
-            return -1;
-        }
-
-//        private int TranslateClosestWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, int prevPos)
-//        {
-//            if (prevPos < midpoints[0].LogPos || prevPos >= midpoints[midpoints.Length - 1].LogPos)
-//                return -1;
-//
-//            var recordRange = LocateClosestPosRange(midpoints, prevPos);
-//            return TranslateClosestWithoutMidpoints(workItem, prevPos, recordRange.Item1, recordRange.Item2);
-//        }
-
-        private Tuple<PosMap, int> TranslateSameOrClosestWithoutMidpoints(ReaderWorkItem workItem, int pos, int startIndex, int endIndex)
-        {
-            PosMap res = ReadPosMap(workItem, endIndex);
-            if (pos > res.LogPos)
-                return Tuple.Create(new PosMap(-1, -1), -1);
-            int low = startIndex;
-            int high = endIndex;
-            while (low < high)
-            {
-                var mid = low + (high - low) / 2;
-                var v = ReadPosMap(workItem, mid);
-
-                if (v.LogPos < pos)
-                    low = mid + 1;
-                else
-                {
-                    high = mid;
-                    res = v;
-                }
-            }
-            return Tuple.Create(res, high);
-        }
-
         private static Tuple<int, int> LocatePosRange(Midpoint[] midpoints, int pos)
         {
             int lowerMidpoint = LowerMidpointBound(midpoints, pos);
@@ -763,6 +705,57 @@ namespace EventStore.Core.TransactionLog.Chunks
                     l = m + 1;
             }
             return l;
+        }
+
+        private int TranslateWithoutMidpoints(ReaderWorkItem workItem, int pos, int startIndex, int endIndex)
+        {
+            int low = startIndex;
+            int high = endIndex;
+            while (low <= high)
+            {
+                var mid = low + (high - low) / 2;
+                var v = ReadPosMap(workItem, mid);
+
+                if (v.LogPos == pos)
+                    return v.ActualPos;
+                if (v.LogPos < pos)
+                    low = mid + 1;
+                else
+                    high = mid - 1;
+            }
+            return -1;
+        }
+
+        private Tuple<PosMap, int> TranslateSameOrClosestWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, int pos)
+        {
+            if (pos > midpoints[midpoints.Length - 1].LogPos)
+                return Tuple.Create(new PosMap(-1, -1), -1);
+
+            var recordRange = LocatePosRange(midpoints, pos);
+            return TranslateSameOrClosestWithoutMidpoints(workItem, pos, recordRange.Item1, recordRange.Item2);
+        }
+
+        private Tuple<PosMap, int> TranslateSameOrClosestWithoutMidpoints(ReaderWorkItem workItem, int pos, int startIndex, int endIndex)
+        {
+            PosMap res = ReadPosMap(workItem, endIndex);
+            if (pos > res.LogPos)
+                return Tuple.Create(new PosMap(-1, -1), -1);
+            int low = startIndex;
+            int high = endIndex;
+            while (low < high)
+            {
+                var mid = low + (high - low) / 2;
+                var v = ReadPosMap(workItem, mid);
+
+                if (v.LogPos < pos)
+                    low = mid + 1;
+                else
+                {
+                    high = mid;
+                    res = v;
+                }
+            }
+            return Tuple.Create(res, high);
         }
 
         private static int GetRealPosition(int logicalPosition, bool inMemory)
@@ -942,62 +935,24 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         private int _destructedFileStreams;
         private int _destructedMemStreams;
+        private int _lockedCount = 0;
 
         private void TryDestruct()
         {
             ReaderWorkItem workItem;
+            var destructed = _destructedFileStreams;
             while (_streams.TryDequeue(out workItem))
             {
-                var destructed = Interlocked.Increment(ref _destructedFileStreams);
+                destructed = Interlocked.Increment(ref _destructedFileStreams);
                 workItem.Stream.Close();
                 workItem.Stream.Dispose();
-
-                if (destructed == _maxReadThreads)
-                {
-                    if (File.Exists(_filename))
-                        File.SetAttributes(_filename, FileAttributes.Normal);
-
-                    if (_writerWorkItem != null)
-                    {
-                        _writerWorkItem.Stream.Close();
-                        _writerWorkItem.Stream.Dispose();
-                        if (_writerWorkItem.UnmanagedMemoryStream != null)
-                        {
-                            _writerWorkItem.UnmanagedMemoryStream.Dispose();
-                            _writerWorkItem.UnmanagedMemoryStream = null;
-                        }
-                    }
-
-                    if (_deleteFile)
-                        Helper.EatException(() => File.Delete(_filename));
-
-                    _destroyEvent.Set();
-                }
+                
             }
-        }
-
-        private void TryDestructOld()
-        {
-            if (_streams.Count == _maxReadThreads)
+            if (destructed == _maxReadThreads)
             {
                 if (File.Exists(_filename))
                     File.SetAttributes(_filename, FileAttributes.Normal);
 
-                var dequeuedCount = 0;
-                ReaderWorkItem workItem;
-                while (_streams.TryDequeue(out workItem))
-                {
-                    workItem.Stream.Close();
-                    workItem.Stream.Dispose();
-                    dequeuedCount += 1;
-                }
-                Debug.Assert(dequeuedCount == _maxReadThreads,
-                             string.Format(
-                                 "Concurrency problem when TryDestruct: " +
-                                 "should be able to dequeue {0} work items, but dequeued just {1}.",
-                                 _maxReadThreads,
-                                 dequeuedCount));
-                
                 if (_writerWorkItem != null)
                 {
                     _writerWorkItem.Stream.Close();
@@ -1008,12 +963,12 @@ namespace EventStore.Core.TransactionLog.Chunks
                         _writerWorkItem.UnmanagedMemoryStream = null;
                     }
                 }
-
-                if (_deleteFile)
+                if (_deleteFile && _lockedCount == 0)
                     Helper.EatException(() => File.Delete(_filename));
-                
+
                 _destroyEvent.Set();
             }
+            
         }
 
         private void TryDestructUnmanagedMemory()
@@ -1026,27 +981,6 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var destructed = Interlocked.Increment(ref _destructedMemStreams);
                 if (destructed == _maxReadThreads)
                     FreeCachedData();
-            }
-        }
-
-        private void TryDestructUnmanagedMemoryOld()
-        {
-            var memStreams = _memoryStreams;
-            if (memStreams != null && memStreams.Count == _maxReadThreads)
-            {
-                ReaderWorkItem workItem;
-                int dequeuedCount = 0;
-                while (_memoryStreams.TryDequeue(out workItem))
-                {
-                    dequeuedCount += 1;
-                }
-                Debug.Assert(dequeuedCount == _maxReadThreads,
-                             string.Format(
-                                 "Concurrency problem when TryDestructUnamangedMemory: " +
-                                 "should be able to dequeue {0} work items, but dequeued just {1}.",
-                                 _maxReadThreads,
-                                 dequeuedCount));
-                FreeCachedData();
             }
         }
 
@@ -1108,6 +1042,25 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
+        public TFChunkBulkReader AcquireReader()
+        {
+            if(_selfdestructin54321)
+            {
+                throw new FileBeingDeletedException();
+            }
+            Interlocked.Increment(ref _lockedCount);
+            return new TFChunkBulkReader(this);
+        }
+
+        internal void ReleaseReader(TFChunkBulkReader reader)
+        {
+            Interlocked.Decrement(ref _lockedCount);
+            if(_selfdestructin54321)
+            {
+                TryDestruct();
+            }
+        }
+
         private struct Midpoint
         {
             public readonly int ItemIndex;
@@ -1118,6 +1071,29 @@ namespace EventStore.Core.TransactionLog.Chunks
                 ItemIndex = itemIndex;
                 LogPos = posmap.LogPos;
             }
+        }
+
+    }
+
+    //TODO GFY ACTUALLY GET STREAM HERE AND USE IT. 
+    public class TFChunkBulkReader : IDisposable
+    {
+        private readonly TFChunk _chunk;
+
+        internal TFChunkBulkReader(TFChunk chunk)
+        {
+            _chunk = chunk;
+        }
+
+        public void Release()
+        {
+            //Kill bulk stream
+            _chunk.ReleaseReader(this);
+        }
+
+        public void Dispose()
+        {
+            Release();
         }
     }
 

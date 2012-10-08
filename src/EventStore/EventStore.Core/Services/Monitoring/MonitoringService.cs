@@ -83,7 +83,7 @@ namespace EventStore.Core.Services.Monitoring
                 var stats = GetStats();
                 if (stats != null)
                 {
-                    var rawStats = stats.GetRawStats();
+                    var rawStats = stats.GetStats(useGrouping: false, useMetadata: false);
 
                     var header = StatsCsvEncoder.GetHeader(rawStats);
                     if (header != _lastWrittenCsvHeader)
@@ -131,8 +131,9 @@ namespace EventStore.Core.Services.Monitoring
                 Dictionary<string, object> selectedStats = null;
                 if (stats != null)
                 {
-                    var groupedStats = stats.GetGroupedStats();
-                    selectedStats = message.StatsSelector(groupedStats) ;
+                    selectedStats = stats.GetStats(message.UseGrouping, message.UseMetadata);
+                    if (message.UseGrouping)
+                        selectedStats = message.StatsSelector(selectedStats) ;
                 }
 
                 message.Envelope.ReplyWith(

@@ -134,9 +134,10 @@ namespace EventStore.Core.Services.Transport.Http
                                                      "Created",
                                                      null,
                                                      new KeyValuePair<string, string>("Location",
-                                                                                      entity.ServerHttpEndPoint.ToHttpUrl("/streams/{0}/{1}",
-                                                                                             completed.EventStreamId,
-                                                                                             completed.EventNumber == 0 ? 1 : completed.EventNumber)));
+                                                                                      HostName.Combine(entity.UserHostName,
+                                                                                                  "/streams/{0}/{1}",
+                                                                                                  completed.EventStreamId,
+                                                                                                  completed.EventNumber == 0 ? 1 : completed.EventNumber)));
                 case OperationErrorCode.PrepareTimeout:
                 case OperationErrorCode.CommitTimeout:
                 case OperationErrorCode.ForwardTimeout:
@@ -178,7 +179,9 @@ namespace EventStore.Core.Services.Transport.Http
                                                      "Stream created", 
                                                      null,
                                                      new KeyValuePair<string, string>("Location", 
-                                                         entity.ServerHttpEndPoint.ToHttpUrl("/streams/{0}", completed.EventStreamId)));
+                                                                                      HostName.Combine(entity.UserHostName, 
+                                                                                                  "/streams/{0}", 
+                                                                                                  completed.EventStreamId)));
                 case OperationErrorCode.PrepareTimeout:
                 case OperationErrorCode.CommitTimeout:
                 case OperationErrorCode.ForwardTimeout:
@@ -226,9 +229,9 @@ namespace EventStore.Core.Services.Transport.Http
             Debug.Assert(message.GetType() == typeof(ClientMessage.ListStreamsCompleted));
 
             var completed = message as ClientMessage.ListStreamsCompleted;
-            return (completed != null && completed.Success) 
-                ? Ok(entity, message) 
-                : InternalServerEror(entity, message);
+            return (completed != null && completed.Success)
+                       ? Ok(entity, message)
+                       : new ResponseConfiguration(500, "Couldn't get streams list. Try turning projection 'Index By Streams' on", null);
         }
     }
 }

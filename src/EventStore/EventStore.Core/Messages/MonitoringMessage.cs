@@ -37,11 +37,18 @@ namespace EventStore.Core.Messages
         {
             public readonly IEnvelope Envelope;
             public readonly Func<Dictionary<string, object>, Dictionary<string, object>> StatsSelector;
+            public readonly bool UseMetadata;
+            public readonly bool UseGrouping;
 
-            public GetFreshStats(IEnvelope envelope, Func<Dictionary<string, object>, Dictionary<string, object>> statsSelector)
+            public GetFreshStats(IEnvelope envelope, 
+                Func<Dictionary<string, object>, Dictionary<string, object>> statsSelector, 
+                bool useMetadata,
+                bool useGrouping)
             {
                 Envelope = envelope;
                 StatsSelector = statsSelector;
+                UseMetadata = useMetadata;
+                UseGrouping = useGrouping;
             }
         }
 

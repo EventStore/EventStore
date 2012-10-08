@@ -25,16 +25,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 
-namespace EventStore.ClientAPI.Tcp
+namespace EventStore.ClientAPI.Transport.Tcp
 {
-    public class TcpStats
+    internal class TcpStats
     {
         public readonly int Connections;
         public readonly long SentBytesTotal;
@@ -84,7 +84,7 @@ namespace EventStore.ClientAPI.Tcp
         }
     }
 
-    public class TcpConnectionMonitor
+    internal class TcpConnectionMonitor
     {
         public static readonly TcpConnectionMonitor Default = new TcpConnectionMonitor();
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionMonitor>();

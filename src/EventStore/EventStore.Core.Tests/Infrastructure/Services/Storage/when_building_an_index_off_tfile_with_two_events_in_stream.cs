@@ -1,4 +1,4 @@
-/*// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -77,9 +77,13 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             chaserchk.Write(writerchk.Read());
             chaserchk.Flush();
 
-            var tableIndex = new TableIndex(Path.Combine(PathName, "index"), () => new HashListMemTable(), new InMemoryCheckpoint(), 1000);
-            var reader = new MultifileTransactionFileReader(config, config.WriterCheckpoint);
-            _idx = new ReadIndex(new NoopPublisher(), () => reader, 1, config.WriterCheckpoint, tableIndex, new XXHashUnsafe());
+            var tableIndex = new TableIndex(Path.Combine(PathName, "index"), () => new HashListMemTable(), 1000);
+            _idx = new ReadIndex(new NoopPublisher(),
+                                 pos => new MultifileTransactionFileChaser(config, new InMemoryCheckpoint(pos)),
+                                 () => new MultifileTransactionFileReader(config, config.WriterCheckpoint),
+                                 1,
+                                 tableIndex,
+                                 new XXHashUnsafe());
             _idx.Build();
         }
 
@@ -161,4 +165,4 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             base.TearDown();
         }
     }
-}*/
+}

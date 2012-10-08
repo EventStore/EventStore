@@ -27,6 +27,7 @@
 // 
 using System;
 using System.IO;
+using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -38,8 +39,7 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
     {
         private readonly TransactionFileDatabaseConfig _config;
 
-        private readonly string _checksumName;
-        private readonly ICheckpoint _myReaderCheckpoint;
+        private readonly ICheckpoint _chaserCheckpoint;
 
         private readonly int _bufferSize;
         private readonly byte[] _tmpBuffer;
@@ -49,8 +49,8 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
         private FileStream _currentStream;
         private BinaryReader _reader;
 
-        private long _lastReaderCheck;
-        private long _lastReaderLocalCheck;
+        private long _lastChaserCheck;
+        private long _lastChaserLocalCheck;
         private int _lastFileIndex;
 
         private long _curPos;
@@ -61,49 +61,35 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
 
         private readonly long _segmentSize;
 
-        public MultifileTransactionFileChaser(TransactionFileDatabaseConfig config)
-            : this(config, null)
+        public MultifileTransactionFileChaser(TransactionFileDatabaseConfig config, ICheckpoint chaserCheckpoint)
+            : this(config, chaserCheckpoint, 8096)
         {
         }
 
-        public MultifileTransactionFileChaser(TransactionFileDatabaseConfig config, string checksumName)
-            : this(config, checksumName, 8096)
+        public MultifileTransactionFileChaser(TransactionFileDatabaseConfig config, 
+                                              ICheckpoint chaserCheckpoint, 
+                                              int bufferSize)
         {
-        }
-
-        public MultifileTransactionFileChaser(TransactionFileDatabaseConfig config, string checksumName, int bufferSize)
-        {
-            if (config == null)
-                throw new ArgumentNullException("config");
+            Ensure.NotNull(config, "config");
+            Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
 
             _config = config;
             _segmentSize = config.SegmentSize;
-            _checksumName = checksumName;
+            _chaserCheckpoint = chaserCheckpoint;
             _bufferSize = bufferSize;
             _tmpBuffer = new byte[bufferSize];
             _buffer = new MemoryStream();
             _bufferReader = new BinaryReader(_buffer);
-
-            if (_checksumName != null)
-            {
-                _myReaderCheckpoint = config.GetNamedCheckpoint(checksumName);
-                if (_myReaderCheckpoint == null)
-                    throw new ArgumentException("checksumName");
-            }
-            else
-            {
-                _myReaderCheckpoint = new InMemoryCheckpoint(0);
-            }
         }
 
         public void Open()
         {
-            _lastReaderCheck = _myReaderCheckpoint.Read();
-            _lastReaderLocalCheck = _lastReaderCheck%_segmentSize;
-            _lastFileIndex = (int) (_lastReaderCheck/_segmentSize);
+            _lastChaserCheck = _chaserCheckpoint.Read();
+            _lastChaserLocalCheck = _lastChaserCheck % _segmentSize;
+            _lastFileIndex = (int) (_lastChaserCheck / _segmentSize);
 
-            _curPos = _lastReaderCheck;
-            _curLocalPos = _lastReaderLocalCheck;
+            _curPos = _lastChaserCheck;
+            _curLocalPos = _lastChaserLocalCheck;
             _curFileIndex = _lastFileIndex;
 
             if (!TryOpenFileByIndex(_lastFileIndex, _curLocalPos))
@@ -143,12 +129,12 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
                 return new RecordReadResult(false, null, _curPos);
 
             var record = LogRecord.ReadFrom(_bufferReader);
-            var logPosition = _lastReaderCheck;
+            var logPosition = _lastChaserCheck;
 
-            _lastReaderCheck = _curPos;
-            _lastReaderLocalCheck = _curLocalPos;
+            _lastChaserCheck = _curPos;
+            _lastChaserLocalCheck = _curLocalPos;
             _lastFileIndex = _curFileIndex;
-            _myReaderCheckpoint.Write(_lastReaderCheck);
+            _chaserCheckpoint.Write(_lastChaserCheck);
 
             return new RecordReadResult(true, record, logPosition);
         }
@@ -204,15 +190,15 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
         {
             if (_curFileIndex != _lastFileIndex)
             {
-                if (!TryOpenFileByIndex(_lastFileIndex, _lastReaderLocalCheck))
+                if (!TryOpenFileByIndex(_lastFileIndex, _lastChaserLocalCheck))
                     throw new CorruptDatabaseException(
                         new ChunkNotFoundException(_config.FileNamingStrategy.GetFilenameFor(_curFileIndex)));
             }
             else
-                _currentStream.Position = _lastReaderLocalCheck; // VERY IMPORTANT! Flushes reader buffer. 
+                _currentStream.Position = _lastChaserLocalCheck; // VERY IMPORTANT! Flushes reader buffer. 
 
-            _curPos = _lastReaderCheck;
-            _curLocalPos = _lastReaderLocalCheck;
+            _curPos = _lastChaserCheck;
+            _curLocalPos = _lastChaserLocalCheck;
             _curFileIndex = _lastFileIndex;
         }
 
@@ -244,12 +230,12 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
         {
             Flush();
             CloseCurrentStream();
-            _myReaderCheckpoint.Close();
+            _chaserCheckpoint.Close();
         }
 
         public void Flush()
         {
-            _myReaderCheckpoint.Flush();
+            _chaserCheckpoint.Flush();
         }
 
         private void CloseCurrentStream()

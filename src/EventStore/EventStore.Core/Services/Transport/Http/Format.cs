@@ -48,7 +48,7 @@ namespace EventStore.Core.Services.Transport.Http
                 return streams != null
                            ? entity.ResponseCodec.To(Convert.ToServiceDocument(streams.Streams,
                                                                                new string[0],
-                                                                               entity.ServerHttpEndPoint))
+                                                                               entity.UserHostName))
                            : string.Empty;
             }
 
@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Transport.Http
                     switch (completed.Result)
                     {
                         case SingleReadResult.Success:
-                            return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.ServerHttpEndPoint));
+                            return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.UserHostName));
                         case SingleReadResult.NotFound:
                         case SingleReadResult.NoStream:
                         case SingleReadResult.StreamDeleted:
@@ -93,7 +93,7 @@ namespace EventStore.Core.Services.Transport.Http
                                                                           updateTime,
                                                                           completed.Events,
                                                                           Convert.ToEntry,
-                                                                          entity.ServerHttpEndPoint));
+                                                                          entity.UserHostName));
                         case RangeReadResult.NoStream:
                         case RangeReadResult.StreamDeleted:
                             return string.Empty;

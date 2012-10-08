@@ -376,6 +376,29 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class AlreadyCommitted: Message
+        {
+            public readonly Guid CorrelationId;
+
+            public readonly string EventStreamId;
+            public readonly int StartEventNumber;
+            public readonly int EndEventNumber;
+
+            public AlreadyCommitted(Guid correlationId, string eventStreamId, int startEventNumber, int endEventNumber)
+            {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                Ensure.Nonnegative(startEventNumber, "startEventNumber");
+                if (endEventNumber < startEventNumber)
+                    throw new ArgumentOutOfRangeException("endEventNumber", "EndEventNumber is less than StartEventNumber");
+
+                CorrelationId = correlationId;
+                EventStreamId = eventStreamId;
+                StartEventNumber = startEventNumber;
+                EndEventNumber = endEventNumber;
+            }
+        }
+
         public class InvalidTransaction : Message
         {
             public readonly Guid CorrelationId;
@@ -441,7 +464,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ForwardingTimeout: Message
+        public class ForwardingTimeout : Message
         {
             public readonly Guid ForwardingId;
             public readonly Guid CorrelationId;

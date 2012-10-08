@@ -25,14 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Net;
 using System.Net.Sockets;
-using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
+using EventStore.ClientAPI.Common.Utils;
 
-namespace EventStore.ClientAPI.Tcp
+namespace EventStore.ClientAPI.Transport.Tcp
 {
-    public class TcpConnectionBase : IMonitoredTcpConnection
+    internal class TcpConnectionBase : IMonitoredTcpConnection
     {
         private Socket _socket;
         private IPEndPoint _endPoint;

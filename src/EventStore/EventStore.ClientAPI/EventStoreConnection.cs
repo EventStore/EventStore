@@ -29,108 +29,129 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Defines;
+using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.Messages;
-using EventStore.ClientAPI.TaskWrappers;
-using EventStore.ClientAPI.Tcp;
+using EventStore.ClientAPI.System;
+using EventStore.ClientAPI.Transport.Tcp;
 using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
 using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
+using System.Linq;
 
 namespace EventStore.ClientAPI
 {
-    class WorkItem
+    internal class WorkItem
     {
-        public TcpPackage TcpPackage;
+        private static long _seqNumber = -1;
+
+        public readonly long SeqNo;
+        public IClientOperation Operation;
+
         public int Attempt;
         public long LastUpdatedTicks;
 
-        public WorkItem(TcpPackage tcpPackage)
+        public WorkItem(IClientOperation operation)
         {
-            TcpPackage = tcpPackage;
+            Ensure.NotNull(operation, "operation");
+            SeqNo = NextSeqNo();
+            Operation = operation;
 
             Attempt = 0;
             LastUpdatedTicks = DateTime.UtcNow.Ticks;
         }
+
+        private static long NextSeqNo()
+        {
+            return Interlocked.Increment(ref _seqNumber);
+        }
     }
 
-    public class EventStoreConnection : IDisposable
+    public class EventStoreConnection : IDisposable, IEventStore
     {
-        private const int TcpSentReceiveWindow = 50;
+        private const int MaxQueueSize = 5000;
+
+        private readonly int _maxConcurrentItems;
+        private readonly int _maxAttempts;
+        private readonly int _maxReconnections;
 
         private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(0.5);
-        private static readonly TimeSpan EventTimeoutDelay = TimeSpan.FromSeconds(11);
+        private static readonly TimeSpan EventTimeoutDelay = TimeSpan.FromSeconds(7);
         private static readonly TimeSpan EventTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
         private readonly IPEndPoint _tcpEndPoint;
 
         private readonly TcpConnector _connector;
         private Connection _connection;
+        private readonly object _connectionLock = new object();
+
+        private readonly SubscriptionsChannel _subscriptionsChannel;
+        private readonly object _subscriptionChannelLock = new object();
         
-        private readonly ConcurrentQueue<TcpPackage> _sendQueue = new ConcurrentQueue<TcpPackage>();
+        private readonly ConcurrentQueue<IClientOperation> _queue = new ConcurrentQueue<IClientOperation>();
         private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
-        private long _inProgressCount;
+        private int _inProgressCount;
+
         private DateTime _lastReconnectionTimestamp;
         private readonly Stopwatch _reconnectionStopwatch = new Stopwatch();
         private readonly Stopwatch _timeoutCheckStopwatch = new Stopwatch();
         private int _reconnectionsCount;
-        private readonly object _connectionLock = new object();
 
-        private Thread _monitoringThread;
-        private volatile bool _monitoringThreadStop;
-
-        private readonly ConcurrentDictionary<Guid, ITaskCompletionWrapper> _outstandingOperations;
-
-        private bool _enableReconnect;
+        private readonly Thread _worker;
+        private volatile bool _stopping;
 
         public int OutstandingAsyncOperations
         {
-            get { return _outstandingOperations.Count; }
+            get
+            {
+                return _inProgressCount;
+            }
         }
 
-        public EventStoreConnection(IPEndPoint tcpEndPoint)
+        public EventStoreConnection(IPEndPoint tcpEndPoint, 
+                                    int maxConcurrentRequests = 5000,
+                                    int maxAttemptsForOperation = 10,
+                                    int maxReconnections = 10)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+            Ensure.Positive(maxConcurrentRequests, "maxConcurrentRequests");
+            Ensure.Nonnegative(maxAttemptsForOperation, "maxAttemptsForOperation");
+            Ensure.Nonnegative(maxReconnections, "maxReconnections");
 
             _tcpEndPoint = tcpEndPoint;
+            _maxConcurrentItems = maxConcurrentRequests;
+            _maxAttempts = maxAttemptsForOperation;
+            _maxReconnections = maxReconnections;
+
             _connector = new TcpConnector(_tcpEndPoint);
-            _outstandingOperations = new ConcurrentDictionary<Guid, ITaskCompletionWrapper>();
+            _subscriptionsChannel = new SubscriptionsChannel(_tcpEndPoint);
 
             _lastReconnectionTimestamp = DateTime.UtcNow;
-            _connection = _connector.CreateTcpConnection(OnPackageReceived, ConnectionEstablished, ConnectionClosed);
+            _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
             _timeoutCheckStopwatch.Start();
 
-            _monitoringThread = new Thread(MonitoringLoop)
+            _worker = new Thread(MainLoop)
             {
                 IsBackground = true,
-                Name = string.Format("Monitoring thread")
+                Name = string.Format("Worker thread")
             };
-            _monitoringThread.Start();
+            _worker.Start();
         }
-
-        //public void EnableAutoReconnect()
-        //{
-        //    _enableReconnect = true;
-        //}
-
-        //public void DisableAutoReconnect()
-        //{
-        //    _enableReconnect = false;
-        //}
 
         public void Close()
         {
-            _monitoringThreadStop = true;
+            _stopping = true;
+
             _connection.Close();
-            foreach(var val in _outstandingOperations.Values)
-            {
-                val.Fail(new ConnectionClosingException());
-            }
+            _subscriptionsChannel.Close();
+
+            const string err = "Work item was still in progress at the moment of manual connection closing";
+            var items = _inProgress.Values;
+            _inProgress.Clear();
+            foreach(var workItem in items)
+                workItem.Operation.Fail(new ConnectionClosingException(err));
         }
 
         void IDisposable.Dispose()
@@ -138,193 +159,212 @@ namespace EventStore.ClientAPI
             Close();
         }
 
-        private void ConnectionEstablished(Connection tcpTypedConnection)
-        {
-            
-        }
-
-        private void ConnectionClosed(Connection tcpTypedConnection, IPEndPoint endPoint, SocketError socketError)
-        {
-            lock (_connectionLock)
-                _reconnectionStopwatch.Restart();
-        }
-
-        public EventStream ReadEventStream(string stream, int start, int count)
-        {
-            var task = ReadEventStreamAsync(stream, start, count);
-            task.Wait();
-
-            //TODO GFY THiS SHOULD HAPPEN IN COMPLETiON
-            return new EventStream(stream, task.Result.Events);
-        }
-
-        public Task<ReadResult> ReadEventStreamAsync(string stream, int start, int count)
-        {
-            var correlationId = Guid.NewGuid();
-
-            var dto = new ClientMessages.ReadEventsFromBeginning(correlationId, stream, start, count);
-
-            var package = new TcpPackage(TcpCommand.ReadEventsFromBeginning, correlationId, dto.Serialize());
-
-            var taskCompletionSource = new TaskCompletionSource<ReadResult>();
-            var taskWrapper = new ReadFromBeginningTaskCompletionWrapper(taskCompletionSource);
-            RegisterHandler(correlationId, taskWrapper);
-            EnqueueForSend(package);
-
-            return taskCompletionSource.Task;
-        }
-
-        public void AppendToStream(string stream, int expectedVersion, IEnumerable<Event> events)
-        {
-            var task = AppendToStreamAsync(stream, expectedVersion, events);
-            task.Wait();
-        }
-
-        public Task<WriteResult> AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<Event> events)
-        {
-            var correlationId = Guid.NewGuid();
-
-            var eventDtos = events.Select(x => new ClientMessages.Event(x.EventId,
-                                                                          x.Type,
-                                                                          x.Data,
-                                                                          x.Metadata)).ToArray();
-
-            var dto = new ClientMessages.WriteEvents(correlationId,
-                                                       stream,
-                                                       expectedVersion,
-                                                       eventDtos);
-
-            var package = new TcpPackage(TcpCommand.WriteEvents, correlationId, dto.Serialize());
-            var taskCompletionSource = new TaskCompletionSource<WriteResult>();
-            var taskWrapper = new WriteTaskCompletionWrapper(taskCompletionSource);
-            RegisterHandler(correlationId, taskWrapper);
-            EnqueueForSend(package);
-
-            return taskCompletionSource.Task;
-        }
-
-        public void CreateStreamWithProtoBufMetadata(string stream, object metadata)
-        {
-            Ensure.NotNull(metadata, "metadata");
-            var metadataBytes = metadata.Serialize();
-            CreateStream(stream, metadataBytes.Array);
-        }
-
-        public Task<CreateStreamResult> CreateStreamWithProtoBufMetadataAsync(string stream, object metadata)
-        {
-            Ensure.NotNull(metadata, "metadata");
-            var metadataBytes = metadata.Serialize();
-            return CreateStreamAsync(stream, metadataBytes.Array);
-        }
-
         public void CreateStream(string stream, byte[] metadata)
         {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
             var task = CreateStreamAsync(stream, metadata);
             task.Wait();
         }
 
-        public Task<CreateStreamResult> CreateStreamAsync(string stream, byte[] metadata)
+        public Task CreateStreamAsync(string stream, byte[] metadata)
         {
-            var correlationId = Guid.NewGuid();
+            Ensure.NotNullOrEmpty(stream, "stream");
 
-            var dto = new ClientMessages.CreateStream(correlationId,
-                                                        stream,
-                                                        metadata);
+            var source = new TaskCompletionSource<object>();
+            var operation = new CreateStreamOperation(source, Guid.NewGuid(), stream, metadata);
 
-            var package = new TcpPackage(TcpCommand.CreateStream, correlationId, dto.Serialize());
-            var taskCompletionSource = new TaskCompletionSource<CreateStreamResult>();
-            var taskWrapper = new CreateStreamCompletionWrapper(taskCompletionSource);
-            RegisterHandler(correlationId, taskWrapper);
-            EnqueueForSend(package);
-
-            return taskCompletionSource.Task;
+            EnqueueOperation(operation);
+            return source.Task;
         }
 
         public void DeleteStream(string stream, int expectedVersion)
         {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
             var task = DeleteStreamAsync(stream, expectedVersion);
             task.Wait();
         }
 
-        public Task<DeleteResult> DeleteStreamAsync(string stream, int expectedVersion)
+        public Task DeleteStreamAsync(string stream, int expectedVersion)
         {
-            var correlationId = Guid.NewGuid();
-            var dto = new ClientMessages.DeleteStream(correlationId, stream, expectedVersion);
+            Ensure.NotNullOrEmpty(stream, "stream");
 
-            var package = new TcpPackage(TcpCommand.DeleteStream, correlationId, dto.Serialize());
-            var taskCompletionSource = new TaskCompletionSource<DeleteResult>();
-            var taskWrapper = new DeleteTaskCompletionWrapper(taskCompletionSource);
-            RegisterHandler(correlationId, taskWrapper);
-            EnqueueForSend(package);
+            var source = new TaskCompletionSource<object>();
+            var operation = new DeleteStreamOperation(source, Guid.NewGuid(), stream, expectedVersion);
 
-            return taskCompletionSource.Task;
+            EnqueueOperation(operation);
+            return source.Task;
         }
 
-        internal void RegisterHandler(Guid correlationId, ITaskCompletionWrapper wrapper)
+        public void AppendToStream(string stream, int expectedVersion, IEnumerable<IEvent> events)
         {
-            _outstandingOperations.TryAdd(correlationId, wrapper);
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
+
+            var task = AppendToStreamAsync(stream, expectedVersion, events);
+            task.Wait();
         }
 
-        private void OnPackageReceived(Connection typedTcpConnection, TcpPackage package)
+        public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<IEvent> events)
         {
-            WorkItem workItem;
-            ITaskCompletionWrapper wrapper;
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
 
-            if (RemoveInProgressItem(package.CorrelationId, "PR", out workItem, out wrapper))
-            {
-            }
-            else
-            {
-                if (!_outstandingOperations.TryGetValue(package.CorrelationId, out wrapper))
-                {
-                    // "SKIPPED [[ "
-                    return;
-                }
-            }
+            var source = new TaskCompletionSource<object>();
+            var operation = new AppendToStreamOperation(source, Guid.NewGuid(), stream, expectedVersion, events);
 
-            var result = wrapper.Process(package);
-            switch (result.Status)
-            {
-                case ProcessResultStatus.Success:
-                    wrapper.Complete();
-                    break;
-                case ProcessResultStatus.Retry:
-                        if (wrapper.UpdateForNextAttempt())
-                        {
-                            RegisterHandler(wrapper.SentPackage.CorrelationId, wrapper);
-                            EnqueueForSend(wrapper.SentPackage);
-                        }
-                        else
-                            wrapper.Fail(new Exception(string.Format("Retry is not supported in wrapper {0}.", wrapper.GetType())));
-                    break;
-                case ProcessResultStatus.NotifyError:
-                    wrapper.Fail(result.Exception);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            EnqueueOperation(operation);
+            return source.Task;
         }
 
-        internal void EnqueueForSend(TcpPackage package)
+        public EventStoreTransaction StartTransaction(string stream, int expectedVersion)
         {
-            while (_sendQueue.Count > TcpSentReceiveWindow)
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var task = StartTransactionAsync(stream, expectedVersion);
+            task.Wait();
+            return task.Result;
+        }
+
+        public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var source = new TaskCompletionSource<EventStoreTransaction>();
+            var operation = new StartTransactionOperation(source, Guid.NewGuid(), stream, expectedVersion);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public void TransactionalWrite(long transactionId, string stream, IEnumerable<IEvent> events)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
+
+            var task = TransactionalWriteAsync(transactionId, stream, events);
+            task.Wait();
+        }
+
+        public Task TransactionalWriteAsync(long transactionId, string stream, IEnumerable<IEvent> events)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(events, "events");
+
+            var source = new TaskCompletionSource<object>();
+            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), transactionId, stream, events);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public void CommitTransaction(long transactionId, string stream)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var task = CommitTransactionAsync(transactionId, stream);
+            task.Wait();
+        }
+
+        public Task CommitTransactionAsync(long transactionId, string stream)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var source = new TaskCompletionSource<object>();
+            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), transactionId, stream);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public EventStreamSlice ReadEventStream(string stream, int start, int count)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var task = ReadEventStreamAsync(stream, start, count);
+            task.Wait();
+
+            return task.Result;
+        }
+
+        public Task<EventStreamSlice> ReadEventStreamAsync(string stream, int start, int count)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            var source = new TaskCompletionSource<EventStreamSlice>();
+            var operation = new ReadFromBeginningOperation(source, Guid.NewGuid(), stream, start, count, true);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public Task SubscribeAsync(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+            Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
+
+            EnsureSubscriptionChannelConnected();
+            return _subscriptionsChannel.Subscribe(stream, eventAppeared, subscriptionDropped);
+        }
+
+        public void Unsubscribe(string stream)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+
+            EnsureSubscriptionChannelConnected();
+            _subscriptionsChannel.Unsubscribe(stream);
+        }
+
+        public Task SubscribeToAllStreamsAsync(Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        {
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+            Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
+
+            EnsureSubscriptionChannelConnected();
+            return _subscriptionsChannel.SubscribeToAllStreams(eventAppeared, subscriptionDropped);
+        }
+
+        public void UnsubscribeFromAllStreams()
+        {
+            EnsureSubscriptionChannelConnected();
+            _subscriptionsChannel.UnsubscribeFromAllStreams();
+        }
+
+        private void EnqueueOperation(IClientOperation operation)
+        {
+            while (_queue.Count >= MaxQueueSize)
                 Thread.Sleep(1);
             
-            _sendQueue.Enqueue(package);
+            _queue.Enqueue(operation);
         }
 
-        private void MonitoringLoop()
+        private void EnsureSubscriptionChannelConnected()
         {
-            while (!_monitoringThreadStop)
+            if (!_subscriptionsChannel.ConnectedEvent.WaitOne(0))
             {
-                TcpPackage nextPackage;
-                if (_inProgressCount < TcpSentReceiveWindow && _sendQueue.TryDequeue(out nextPackage))
+                lock (_subscriptionChannelLock)
+                {
+                    if (!_subscriptionsChannel.ConnectedEvent.WaitOne(0))
+                    {
+                        _subscriptionsChannel.Connect();
+                        if (!_subscriptionsChannel.ConnectedEvent.WaitOne(500))
+                            throw new CannotEstablishConnectionException(string.Format("Cannot connect to {0}", _tcpEndPoint));
+                    }
+                }
+            }
+        }
+
+        private void MainLoop()
+        {
+            while (!_stopping)
+            {
+                IClientOperation operation;
+                if (_inProgressCount < _maxConcurrentItems && _queue.TryDequeue(out operation))
                 {
                     Interlocked.Increment(ref _inProgressCount);
-
-                    var workItem = new WorkItem(nextPackage);
-
-                    Send(workItem, null);
+                    Send(new WorkItem(operation));
                 }
                 else
                     Thread.Sleep(1);
@@ -334,10 +374,11 @@ namespace EventStore.ClientAPI
                     if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= ReconnectionDelay)
                     {
                         _reconnectionsCount += 1;
+                        if(_reconnectionsCount > _maxReconnections)
+                            throw new CannotEstablishConnectionException();
+
                         _lastReconnectionTimestamp = DateTime.UtcNow;
-                        _connection = _connector.CreateTcpConnection(OnPackageReceived, 
-                                                                     ConnectionEstablished, 
-                                                                     ConnectionClosed);
+                        _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
                         _reconnectionStopwatch.Stop();
                     }
                 }
@@ -345,116 +386,327 @@ namespace EventStore.ClientAPI
                 if (_timeoutCheckStopwatch.Elapsed > EventTimeoutCheckPeriod)
                 {
                     var now = DateTime.UtcNow;
-                    foreach (var kvp in _inProgress)
+                    var retriable = new List<WorkItem>();
+                    foreach (var workerItem in _inProgress.Values)
                     {
-                        var correlationId = kvp.Key;
-                        var workerItem = kvp.Value;
-
                         var lastUpdated = new DateTime(Interlocked.Read(ref workerItem.LastUpdatedTicks));
-                        if (now - lastUpdated > EventTimeoutDelay || _reconnectionsCount > 10)
+                        if (now - lastUpdated > EventTimeoutDelay)
                         {
-                            if (lastUpdated > _lastReconnectionTimestamp || _reconnectionsCount > 10)
+                            if (lastUpdated > _lastReconnectionTimestamp)
                             {
-                                WorkItem workItem;
-                                ITaskCompletionWrapper completionWrapper;
-                                if (RemoveInProgressItem(correlationId, " -ML timeout", out workItem, out completionWrapper))
-                                {
-                                    completionWrapper.Fail(
-                                        new Exception(
-                                                string.Format("Timed out event {0} which "
-                                                            + "never got response from server was discovered. "
-                                                            + "Last state update: {1}, last reconnect: {2}, now: {3}.",
-                                                            workerItem.TcpPackage.CorrelationId,
-                                                            lastUpdated,
-                                                            _lastReconnectionTimestamp,
-                                                            now)));
-                                }
-
-                                
+                                var err = string.Format("Timed out event which never got response from server was discovered. "+ 
+                                                        "Last state update : {0}, last reconnect : {1}, now(utc) : {2}.",
+                                                        lastUpdated,
+                                                        _lastReconnectionTimestamp,
+                                                        now);
+                                if(TryRemoveWorkItem(workerItem))
+                                    workerItem.Operation.Fail(new OperationTimedOutException(err));
                             }
                             else
-                                Retry(correlationId);
+                                retriable.Add(workerItem);
                         }
                     }
+
+                    foreach (var workItem in retriable.OrderBy(wi => wi.SeqNo))
+                        Retry(workItem);
+
                     _timeoutCheckStopwatch.Restart();
                 }
             }
-
         }
 
-        private bool RemoveInProgressItem(Guid correlationId, string marker, 
-            out WorkItem workItem, out ITaskCompletionWrapper wrapper)
+        private bool TryRemoveWorkItem(WorkItem workItem)
         {
-            lock (_connectionLock)
-            {
-                if (_inProgress.TryRemove(correlationId, out workItem))
-                {
-                    Interlocked.Decrement(ref _inProgressCount);
-                    return _outstandingOperations.TryRemove(correlationId, out wrapper);
-                }
-                wrapper = null;
+            WorkItem removed;
+            if (!_inProgress.TryRemove(workItem.Operation.CorrelationId, out removed))
                 return false;
-            }
+
+            Interlocked.Decrement(ref _inProgressCount);
+            return true;
         }
 
-        private void Send(WorkItem workItem, ITaskCompletionWrapper wrapper)
+        private void Send(WorkItem workItem)
         {
             lock (_connectionLock)
             {
-                var correlationId = workItem.TcpPackage.CorrelationId;
-                _inProgress.TryAdd(correlationId, workItem);
-
-                if (wrapper != null)
-                    _outstandingOperations.TryAdd(correlationId, wrapper);
-                else
-                {
-                    ITaskCompletionWrapper unused;
-                    Debug.Assert(_outstandingOperations.TryGetValue(correlationId, out unused),
-                        "Initially wrapper should be prsebt in outstanding tasks");
-                }
-                _connection.EnqueueSend(workItem.TcpPackage.AsByteArray());
+                _inProgress.TryAdd(workItem.Operation.CorrelationId, workItem);
+                _connection.EnqueueSend(workItem.Operation.CreateNetworkPackage().AsByteArray());
             }
         }
 
-        private void Retry(Guid correlationId)
+        private void Retry(WorkItem workItem)
         {
-            //lock (_connectionLock)
+            lock (_connectionLock)
             {
                 WorkItem inProgressItem;
-                ITaskCompletionWrapper wrapper;
-
-                if (RemoveInProgressItem(correlationId, " IN Retry", out inProgressItem, out wrapper))
+                if (_inProgress.TryRemove(workItem.Operation.CorrelationId, out inProgressItem))
                 {
-                    var newCorrelationId = Guid.NewGuid();
-                    var newPackage = new TcpPackage(inProgressItem.TcpPackage.Command, 
-                                                    newCorrelationId,
-                                                    inProgressItem.TcpPackage.Data);
+                    inProgressItem.Operation.SetRetryId(Guid.NewGuid());
                     inProgressItem.Attempt += 1;
-                    inProgressItem.TcpPackage = newPackage;
                     Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
 
-                    if (inProgressItem.Attempt > 100)
-                    {
-                       wrapper.Fail(new Exception(string.Format("Item's {0} current attempt is {1}!",
-                                                                            inProgressItem,
-                                                                            inProgressItem.Attempt)));
-                    }
+                    if (inProgressItem.Attempt > _maxAttempts)
+                        inProgressItem.Operation.Fail(new RetriesLimitReachedException(inProgressItem.Operation.ToString(),
+                                                                                       inProgressItem.Attempt));
                     else
-                    {
-                            wrapper.SentPackage = newPackage;
-                            Send(inProgressItem, wrapper);
-                    }
+                        Send(inProgressItem);
                 }
                 else
+                    Debug.WriteLine("Concurrency failure. Unable to remove in progress item on retry");
+            }
+        }
+
+        private void OnPackageReceived(Connection connection, TcpPackage package)
+        {
+            var corrId = package.CorrelationId;
+            WorkItem workItem;
+
+            if (!_inProgress.TryGetValue(corrId, out workItem))
+            {
+                Debug.WriteLine("Unexpected corrid received {0}", corrId);
+                return;
+            }
+
+            var result = workItem.Operation.InspectPackage(package);
+            switch (result.Decision)
+            {
+                case InspectionDecision.Succeed:
+                    if (TryRemoveWorkItem(workItem))
+                        workItem.Operation.Complete();
+                    break;
+                case InspectionDecision.Retry:
+                    Retry(workItem);
+                    break;
+                case InspectionDecision.NotifyError:
+                    if(TryRemoveWorkItem(workItem))
+                        workItem.Operation.Fail(result.Error);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private void OnConnectionEstablished(Connection tcpTypedConnection)
+        {
+            lock(_connectionLock)
+                _reconnectionsCount = 0;
+        }
+
+        private void OnConnectionClosed(Connection connection, IPEndPoint endPoint, SocketError error)
+        {
+            lock (_connectionLock)
+                _reconnectionStopwatch.Restart();
+        }
+    }
+
+    internal class Subscription
+    {
+        public readonly TaskCompletionSource<object> Source;
+
+        public readonly Guid Id;
+        public readonly string Stream;
+
+        public readonly Action<RecordedEvent> EventAppeared;
+        public readonly Action SubscriptionDropped;
+
+        public Subscription(TaskCompletionSource<object> source,
+                            Guid id,
+                            string stream,
+                            Action<RecordedEvent> eventAppeared,
+                            Action subscriptionDropped)
+        {
+            Source = source;
+
+            Id = id;
+            Stream = stream;
+
+            EventAppeared = eventAppeared;
+            SubscriptionDropped = subscriptionDropped;
+        }
+
+        public Subscription(TaskCompletionSource<object> source,
+                            Guid id,
+                            Action<RecordedEvent> eventAppeared,
+                            Action subscriptionDropped)
+        {
+            Source = source;
+
+            Id = id;
+            Stream = null;
+
+            EventAppeared = eventAppeared;
+            SubscriptionDropped = subscriptionDropped;
+        }
+    }
+
+    internal class SubscriptionsChannel
+    {
+        private readonly IPEndPoint _tcpEndPoint;
+
+        private readonly TcpConnector _connector;
+        private Connection _connection;
+
+        internal ManualResetEvent ConnectedEvent = new ManualResetEvent(false);
+
+        private readonly ConcurrentDictionary<Guid, Subscription> _subscriptions = new ConcurrentDictionary<Guid, Subscription>();
+
+        public SubscriptionsChannel(IPEndPoint tcpEndPoint)
+        {
+            _tcpEndPoint = tcpEndPoint;
+            _connector = new TcpConnector(_tcpEndPoint);
+        }
+
+        public void Connect()
+        {
+            _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
+        }
+
+        public void Close()
+        {
+            if(_connection != null)
+                _connection.Close();
+        }
+
+        public Task Subscribe(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        {
+            var id = Guid.NewGuid();
+            var source = new TaskCompletionSource<object>();
+
+            if (_subscriptions.TryAdd(id, new Subscription(source, id, stream, eventAppeared, subscriptionDropped)))
+            {
+                var subscribe = new ClientMessages.SubscribeToStream(id, stream);
+                _connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, id, subscribe.Serialize()).AsByteArray());
+                return source.Task;
+            }
+
+            source.SetException(new Exception("Failed to add subscription. Concurrency failure"));
+            return source.Task;
+        }
+
+        public void Unsubscribe(string stream)
+        {
+            var all = _subscriptions.Values;
+            var ids = all.Where(s => s.Stream == stream).Select(s => s.Id);
+
+            foreach (var id in ids)
+            {
+                Subscription removed;
+                if(_subscriptions.TryRemove(id, out removed))
                 {
-                    ITaskCompletionWrapper completionWrapper;
-                    if (_outstandingOperations.TryRemove(correlationId, out completionWrapper))
-                    {
-                        completionWrapper.Fail(new Exception(string.Format("Item {0} was not found to perform retry on ",
-                                                                           correlationId)));
-                    }
+                    removed.Source.SetResult(null);
+                    ExecuteUserCallbackAsync(removed.SubscriptionDropped);
+
+                    _connection.EnqueueSend(new TcpPackage(TcpCommand.UnsubscribeFromStream,
+                                                           id,
+                                                           new ClientMessages.UnsubscribeFromStream(id, stream).Serialize())
+                                                .AsByteArray());
                 }
             }
+        }
+
+        public Task SubscribeToAllStreams(Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        {
+            var id = Guid.NewGuid();
+            var source = new TaskCompletionSource<object>();
+
+            if (_subscriptions.TryAdd(id, new Subscription(source, id, eventAppeared, subscriptionDropped)))
+            {
+                var subscribe = new ClientMessages.SubscribeToAllStreams(id);
+                _connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToAllStreams, id, subscribe.Serialize()).AsByteArray());
+                return source.Task;
+            }
+
+            source.SetException(new Exception("Failed to add subscription to all streams. Concurrency failure"));
+            return source.Task;
+        }
+
+        public void UnsubscribeFromAllStreams()
+        {
+            var all = _subscriptions.Values;
+            var ids = all.Where(s => s.Stream == null).Select(s => s.Id);
+
+            foreach (var id in ids)
+            {
+                Subscription removed;
+                if (_subscriptions.TryRemove(id, out removed))
+                {
+                    removed.Source.SetResult(null);
+                    ExecuteUserCallbackAsync(removed.SubscriptionDropped);
+
+                    _connection.EnqueueSend(new TcpPackage(TcpCommand.UnsubscribeFromAllStreams,
+                                                           id,
+                                                           new ClientMessages.UnsubscribeFromAllStreams(id).Serialize())
+                                                .AsByteArray());
+                }
+            }
+        }
+
+        private void RemoveDroppedSubscription(Subscription subscription)
+        {
+            Subscription removed;
+            _subscriptions.TryRemove(subscription.Id, out removed);
+        }
+
+        private void ExecuteUserCallbackAsync(Action callback)
+        {
+            ThreadPool.QueueUserWorkItem(_ =>
+                                             {
+                                                 try
+                                                 {
+                                                     callback();
+                                                 }
+                                                 catch (Exception e)
+                                                 {
+                                                     Debug.WriteLine("User callback thrown : {0}", e.StackTrace);
+                                                 }
+                                             });
+        }
+
+        private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
+        {
+            Subscription subscription;
+            if(!_subscriptions.TryGetValue(package.CorrelationId, out subscription))
+            {
+                Debug.WriteLine("Unexpected package received : {0} ({1})", package.CorrelationId, package.Command);
+                return;
+            }
+
+            try
+            {
+                switch (package.Command)
+                {
+                    case TcpCommand.StreamEventAppeared:
+                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(new RecordedEvent(package.Data.Deserialize<ClientMessages.StreamEventAppeared>())));
+                        break;
+                    case TcpCommand.SubscriptionDropped:
+                    case TcpCommand.SubscriptionToAllDropped:
+                        RemoveDroppedSubscription(subscription);
+                        ExecuteUserCallbackAsync(subscription.SubscriptionDropped);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(string.Format("Unexpected command : {0}", package.Command));
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Error on package received : {0}. Stacktrace : {1}", e.Message, e.StackTrace);
+            }
+        }
+
+        private void OnConnectionEstablished(TcpTypedConnection tcpTypedConnection)
+        {
+            ConnectedEvent.Set();
+        }
+
+        private void OnConnectionClosed(TcpTypedConnection connection, IPEndPoint endPoint, SocketError error)
+        {
+            ConnectedEvent.Reset();
+
+            var subscriptions = _subscriptions.Values;
+            _subscriptions.Clear();
+
+            foreach (var subscription in subscriptions)
+                ExecuteUserCallbackAsync(subscription.SubscriptionDropped);
         }
     }
 }

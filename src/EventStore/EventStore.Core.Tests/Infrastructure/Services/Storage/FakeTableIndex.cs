@@ -29,7 +29,6 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Tests.Infrastructure.Services.Storage
 {
@@ -37,7 +36,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
     {
         public long LastPosition { get { throw new NotImplementedException();} }
         public long PrepareCheckpoint { get { throw new NotImplementedException(); } }
-        public ICheckpoint CommitCheckpoint { get { throw new NotImplementedException(); } }
+        public long CommitCheckpoint { get { throw new NotImplementedException(); } }
 
         public void Initialize()
         {
@@ -47,7 +46,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         {
         }
 
-        public void Add(uint stream, int version, long position)
+        public void Add(long commitPos, uint stream, int version, long position)
         {
             throw new System.NotImplementedException();
         }

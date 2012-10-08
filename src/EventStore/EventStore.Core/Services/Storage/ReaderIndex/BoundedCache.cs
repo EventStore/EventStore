@@ -43,7 +43,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly Func<TValue, long> _valueSize;
 
         private readonly Dictionary<TKey, TValue> _cache = new Dictionary<TKey, TValue>();
-        private readonly QueueWithIndexer<TKey> _queue = new QueueWithIndexer<TKey>();
+        private readonly Queue<TKey> _queue = new Queue<TKey>();
 
         private long _currentSize;
         private long _missCount;
@@ -70,44 +70,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             else
                 _missCount++;
             return found;
-        }
-
-        public IEnumerable<TValue> GetRecordsUntil(TKey fromKey, 
-                                                   Func<TKey, TValue, bool> validPred, 
-                                                   Func<TKey, TValue, bool> stopPred, 
-                                                   Func<TKey, TKey, int> compare)
-        {
-            TValue curValue;
-            if (!_cache.TryGetValue(fromKey, out curValue))
-                yield break;
-
-            if (validPred(fromKey, curValue))
-                yield return curValue;
-            else
-                throw new InvalidOperationException("The first requested record is not valid!");
-
-            if (stopPred(fromKey, curValue))
-                yield break;
-
-            var start = _queue.BinarySearch(fromKey, compare);
-            Debug.Assert(start.Item2 >= 0);
-
-            for (int i = start.Item2 + 1; i < _queue.Count; ++i)
-            {
-                var curKey = _queue[i];
-
-                if (_cache.TryGetValue(curKey, out curValue))
-                {
-                    if (validPred(curKey, curValue))
-                    {
-                        yield return curValue;
-                        if (stopPred(curKey, curValue))
-                            yield break;
-                    }
-                }
-            }
-
-            throw new InvalidOperationException("Stop predicate haven't signaled stop.");
         }
 
         public void PutRecord(TKey key, TValue value)

@@ -1574,8 +1574,6 @@ namespace EventStore.Common.CommandLine.lib
     /// </summary>
     public abstract class CommandLineOptionsBase
     {
-        public abstract IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs();
-
         protected CommandLineOptionsBase()
         {
             LastPostParsingState = new PostParsingState();

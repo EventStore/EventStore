@@ -33,7 +33,6 @@ using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Index
 {
@@ -45,7 +44,7 @@ namespace EventStore.Core.Index
         private static readonly ILogger Log = LogManager.GetLoggerFor<TableIndex>();
         internal static readonly IndexEntry InvalidIndexEntry = new IndexEntry(0, -1, -1);
 
-        public ICheckpoint CommitCheckpoint { get { return _commitCheckpoint; } }
+        public long CommitCheckpoint { get { return Interlocked.Read(ref _commitCheckpoint); } }
         public long PrepareCheckpoint { get { return Interlocked.Read(ref _prepareCheckpoint); } }
 
         private readonly int _maxSizeForMemory;
@@ -54,12 +53,12 @@ namespace EventStore.Core.Index
         private readonly string _directory;
         private readonly Func<IMemTable> _memTableFactory;
         private readonly IIndexFilenameProvider _fileNameProvider;
-        private readonly ICheckpoint _commitCheckpoint;
 
         private readonly object _awaitingTablesLock = new object();
 
         private IndexMap _indexMap;
         private List<TableItem> _awaitingMemTables;
+        private long _commitCheckpoint = -1;
         private long _prepareCheckpoint = -1;
 
         private volatile bool _backgroundRunning;
@@ -67,21 +66,18 @@ namespace EventStore.Core.Index
 
         public TableIndex(string directory, 
                           Func<IMemTable> memTableFactory, 
-                          ICheckpoint commitCheckpoint,
                           int maxSizeForMemory = 1000000, 
                           int maxTablesPerLevel = 4,
                           bool additionalReclaim = false)
         {
             Ensure.NotNullOrEmpty(directory, "directory");
             Ensure.NotNull(memTableFactory, "memTableFactory");
-            Ensure.NotNull(commitCheckpoint, "CommitCheckpoint");
             if (maxTablesPerLevel <= 1)
                 throw new ArgumentOutOfRangeException("maxTablesPerLevel");
 
             _directory = directory;
             _memTableFactory = memTableFactory;
             _fileNameProvider = new GuidFilenameProvider(directory);
-            _commitCheckpoint = commitCheckpoint;
             _maxSizeForMemory = maxSizeForMemory;
             _maxTablesPerLevel = maxTablesPerLevel;
             _additionalReclaim = additionalReclaim;
@@ -92,9 +88,29 @@ namespace EventStore.Core.Index
         {
             //NOT THREAD SAFE (assumes one thread)
             CreateIfDoesNotExist(_directory);
-            _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename), IsHashCollision, _maxTablesPerLevel);
+
+            try
+            {
+                _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename),
+                                              IsHashCollision,
+                                              _maxTablesPerLevel);
+                if (_indexMap.IsCorrupt(_directory))
+                    throw new CorruptIndexException("IndexMap is in unsafe state.");
+            }
+            catch (CorruptIndexException exc)
+            {
+                Log.ErrorException(exc, "ReadIndex was corrupted. Rebuilding from scratch...");
+                foreach (var filePath in Directory.EnumerateFiles(_directory))
+                {
+                    File.Delete(filePath);
+                }
+                _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename),
+                                              IsHashCollision,
+                                              _maxTablesPerLevel);
+            } 
+
             _prepareCheckpoint = _indexMap.PrepareCheckpoint;
-            _commitCheckpoint.Write(_indexMap.CommitCheckpoint);
+            _commitCheckpoint = _indexMap.CommitCheckpoint;
         }
 
         private bool IsHashCollision(IndexEntry entry)
@@ -112,12 +128,11 @@ namespace EventStore.Core.Index
                 Directory.CreateDirectory(directory);
         }        
 
-        public void Add(uint stream, int version, long position)
+        public void Add(long commitPos, uint stream, int version, long position)
         {
-            if (version < 0)
-                throw new ArgumentOutOfRangeException("version");
-            if (position < 0)
-                throw new ArgumentOutOfRangeException("position");
+            Ensure.Nonnegative(commitPos, "commitPos");
+            Ensure.Nonnegative(version, "version");
+            Ensure.Nonnegative(position, "position");
 
             //should only be called on a single thread.
             var table = (IMemTable) _awaitingMemTables[0].Table; // always a memtable
@@ -126,13 +141,12 @@ namespace EventStore.Core.Index
             if (table.Count >= _maxSizeForMemory)
             {
                 var prepareCheckpoint = position;
-                var commitCheckpoint = _commitCheckpoint.ReadNonFlushed();
 
                 lock (_awaitingTablesLock)
                 {
                     var newTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1)};
                     newTables.AddRange(_awaitingMemTables.Select(
-                        (x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitCheckpoint) : x));
+                        (x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos) : x));
 
                     Log.Trace("Switching MemTable, currently: {0} awaiting tables.", newTables.Count);
 

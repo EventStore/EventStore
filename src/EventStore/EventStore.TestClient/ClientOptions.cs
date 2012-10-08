@@ -27,11 +27,12 @@
 // 
 using System;
 using System.Collections.Generic;
+using EventStore.Common.CommandLine;
 using EventStore.Common.CommandLine.lib;
 
 namespace EventStore.TestClient
 {
-    public sealed class ClientOptions: CommandLineOptionsBase
+    public sealed class ClientOptions : EventStoreCmdLineOptionsBase
     {
         [Option("i", "ip", DefaultValue = "127.0.0.1", HelpText = "IP address of server")]
         public string Ip { get; set; }
@@ -58,7 +59,7 @@ namespace EventStore.TestClient
         public IList<string> Command { get; set; }
 
         [HelpOption]
-        public string GetUsage()
+        public override string GetUsage()
         {
             var help = new HelpText
             {
