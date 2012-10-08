@@ -292,19 +292,22 @@ namespace EventStore.Core.TransactionLog.Chunks
             var workItem = GetReaderWorkItem();
             try
             {
-                workItem.Stream.Seek(0, SeekOrigin.Begin);
                 var header = ReadHeader(workItem.Stream);
                 var footer = ReadFooter(workItem.Stream);
 
                 byte[] hash;
                 using (var md5 = MD5.Create())
                 {
+                    workItem.Stream.Seek(0, SeekOrigin.Begin);
                     // hash header and data
-                    MD5Hash.ContinuousHashFor(md5, workItem.Stream, 0, ChunkHeader.Size + header.ChunkSize);
+                    MD5Hash.ContinuousHashFor(md5,
+                                              workItem.Stream,
+                                              0,
+                                              ChunkHeader.Size + footer.ActualDataSize);
                     // hash footer except MD5 hash sum which should always be last
                     MD5Hash.ContinuousHashFor(md5,
                                               workItem.Stream,
-                                              ChunkHeader.Size + header.ChunkSize,
+                                              ChunkHeader.Size + footer.ActualChunkSize,
                                               ChunkFooter.Size - ChunkFooter.ChecksumSize);
                     md5.TransformFinalBlock(new byte[0], 0, 0);
                     hash = md5.Hash;
