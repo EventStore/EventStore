@@ -468,16 +468,16 @@ namespace EventStore.ClientAPI
             return _projectionsManager.ListAdHoc();
         }
 
-        string IProjectionsManagement.ListContinious()
+        string IProjectionsManagement.ListContinuous()
         {
-            var task = ((IProjectionsManagement) this).ListContiniousAsync();
+            var task = ((IProjectionsManagement) this).ListContinuousAsync();
             task.Wait();
             return task.Result;
         }
 
-        Task<string> IProjectionsManagement.ListContiniousAsync()
+        Task<string> IProjectionsManagement.ListContinuousAsync()
         {
-            return _projectionsManager.ListContinious();
+            return _projectionsManager.ListContinuous();
         }
 
         string IProjectionsManagement.ListPersistent()
@@ -1016,7 +1016,7 @@ namespace EventStore.ClientAPI
             return SendGet(_httpEndPoint.ToHttpUrl("/projections/adhoc"), HttpStatusCode.OK);
         }
 
-        public Task<string> ListContinious()
+        public Task<string> ListContinuous()
         {
             return SendGet(_httpEndPoint.ToHttpUrl("/projections/continuous"), HttpStatusCode.OK);
         }

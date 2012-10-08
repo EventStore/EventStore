@@ -35,8 +35,8 @@ namespace EventStore.Padmin
             Log("enable <projection-name>");
             Log("disable <projection-name>");
 
-            Log("create <onetime | adhoc | continious | persistent> <projection-name> <query file>");
-            Log("list <all | onetime | adhoc | continious | persistent>");
+            Log("create <onetime | adhoc | continuous | persistent> <projection-name> <query file>");
+            Log("list <all | onetime | adhoc | continuous | persistent>");
 
             Log("status <projection-name>");
             Log("state <projection-name>");

@@ -59,8 +59,8 @@ namespace EventStore.ClientAPI
         string ListAdHoc();
         Task<string> ListAdHocAsync();
 
-        string ListContinious();
-        Task<string> ListContiniousAsync();
+        string ListContinuous();
+        Task<string> ListContinuousAsync();
 
         string ListPersistent();
         Task<string> ListPersistentAsync();

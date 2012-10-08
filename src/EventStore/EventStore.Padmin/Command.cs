@@ -60,9 +60,9 @@ namespace EventStore.Padmin
                     store.Projections.CreateAdHoc(pname, query);
                     Log("Created");
                     break;
-                case "continious":
-                    Log("Creating continious projection {0}...", pname);
-                    store.Projections.CreateContinious(pname, query);
+                case "continuous":
+                    Log("Creating continuous projection {0}...", pname);
+                    store.Projections.CreateContinuous(pname, query);
                     Log("Created");
                     break;
                 case "persistent":
@@ -102,10 +102,10 @@ namespace EventStore.Padmin
                     LogUnformatted(store.Projections.ListAdHoc());
                     Log("Adhoc projections listed");
                     break;
-                case "continious":
-                    Log("Listing continious projections...");
-                    LogUnformatted(store.Projections.ListContinious());
-                    Log("Continious projections listed");
+                case "continuous":
+                    Log("Listing continuous projections...");
+                    LogUnformatted(store.Projections.ListContinuous());
+                    Log("Continuous projections listed");
                     break;
                 case "persistent":
                     Log("Listing persistent projections...");
