@@ -51,7 +51,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             Manager = new TFChunkManager(Config);
         }
 
-        public void OpenVerifyAndClean()
+        public void OpenVerifyAndClean(bool verifyHash = true)
         {
             var tempFiles = Directory.GetFiles(Config.Path, "*.tmp");
             for (int i = 0; i < tempFiles.Length; i++)
@@ -91,7 +91,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (i == expectedFiles - 1)
                     {
                         var chunk = LoadLastChunk(chunkFileName);
-                        if (chunk.IsReadOnly)
+                        if (verifyHash && chunk.IsReadOnly)
                             chunk.VerifyFileHash();
                         Manager.AddChunk(chunk);
 
@@ -109,7 +109,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     else
                     {
                         var chunk = LoadChunk(chunkFileName);
-                        if (chunk.IsReadOnly)
+                        if (verifyHash && chunk.IsReadOnly)
                             chunk.VerifyFileHash();
                         Manager.AddChunk(chunk);
                     }
