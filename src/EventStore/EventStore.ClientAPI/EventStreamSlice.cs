@@ -45,12 +45,11 @@ namespace EventStore.ClientAPI
                                   EventRecord[] events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
-            Ensure.NotNull(events, "events");
 
             Stream = stream;
             StartIndex = startIndex;
             Count = count;
-            Events = events.Select(e => new RecordedEvent(e)).ToArray();
+            Events = (events ?? new EventRecord[0]).Select(e => new RecordedEvent(e)).ToArray();
         }
     }
 }
