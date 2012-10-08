@@ -76,9 +76,7 @@ namespace EventStore.TestClient.Commands
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
-            context.IsAsync();
-
-            if(args.Length != 0 && args.Length != 7)
+            if (args.Length != 0 && args.Length != 7)
                 return false;
 
             var maxConcurrentRequests = 100;
@@ -107,6 +105,8 @@ namespace EventStore.TestClient.Commands
                     return false;
                 }
             }
+
+            context.IsAsync();
 
             Log.Info("Running scenario {0} using {1} threads, {2} streams {3} events each deleting every {4}th stream. " +
                      "Period {5} minutes. " +

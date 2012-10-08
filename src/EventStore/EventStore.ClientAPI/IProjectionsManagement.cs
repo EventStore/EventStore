@@ -44,8 +44,8 @@ namespace EventStore.ClientAPI
         void CreateAdHoc(string name, string query);
         Task CreateAdHocAsync(string name, string query);
 
-        void CreateContinious(string name, string query);
-        Task CreateContiniousAsync(string name, string query);
+        void CreateContinuous(string name, string query);
+        Task CreateContinuousAsync(string name, string query);
 
         void CreatePersistent(string name, string query);
         Task CreatePersistentAsync(string name, string query);
