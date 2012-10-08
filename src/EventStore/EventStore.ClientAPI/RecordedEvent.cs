@@ -60,7 +60,7 @@ namespace EventStore.ClientAPI
         {
             EventStreamId = streamEvent.EventStreamId;
 
-            EventId = Guid.Empty;//TODO TR : update ClientMessages.StreamEventAppeared to return EventId
+            EventId = streamEvent.EventId;
             EventNumber = streamEvent.EventNumber;
 
             EventType = streamEvent.EventType;
