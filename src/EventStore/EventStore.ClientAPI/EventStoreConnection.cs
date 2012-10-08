@@ -398,16 +398,16 @@ namespace EventStore.ClientAPI
             return _projectionsManager.CreateAdHoc(name, query);
         }
 
-        void IProjectionsManagement.CreateContinious(string name, string query)
+        void IProjectionsManagement.CreateContinuous(string name, string query)
         {
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            var task = ((IProjectionsManagement) this).CreateContiniousAsync(name, query);
+            var task = ((IProjectionsManagement) this).CreateContinuousAsync(name, query);
             task.Wait();
         }
 
-        Task IProjectionsManagement.CreateContiniousAsync(string name, string query)
+        Task IProjectionsManagement.CreateContinuousAsync(string name, string query)
         {
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
