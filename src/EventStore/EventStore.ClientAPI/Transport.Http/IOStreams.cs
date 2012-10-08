@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,16 +25,36 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
+using System.IO;
+using EventStore.ClientAPI.Common.Log;
 
-namespace EventStore.Transport.Http.Client
+namespace EventStore.ClientAPI.Transport.Http
 {
-    public interface IHttpClient
+    public class IOStreams
     {
-        void Get(string url, Action<HttpResponse> onSuccess, Action<Exception> onException);
-        void Post(string url, string request, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException);
+        private static readonly ILogger Log = LogManager.GetLoggerFor<IOStreams>();
 
-        void Delete(string url, Action<HttpResponse> onSuccess, Action<Exception> onException);
-        void Put(string url, string request, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException);
+        public static void SafelyDispose(params Stream[] streams)
+        {
+            if (streams == null || streams.Length == 0)
+                return;
+
+            foreach (var stream in streams)
+            {
+                try
+                {
+                    if (stream != null)
+                        stream.Dispose();
+                }
+                catch (Exception e)
+                {
+                    //Exceptions may be thrown when client shutdowned and we were unable to write all the data,
+                    //Nothing we can do, ignore (another option - globally ignore write errors)
+                    Log.Info("Error while closing stream : {0}", e.Message);
+                }
+            }
+        }
     }
 }

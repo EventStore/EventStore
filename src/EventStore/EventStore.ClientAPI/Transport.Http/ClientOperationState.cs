@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,22 +24,40 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
 using System;
-using System.Threading.Tasks;
+using System.IO;
+using System.Net;
+using EventStore.ClientAPI.Common.Utils;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Transport.Http
 {
-    public interface IEventsConsumer
+    public class ClientOperationState
     {
-        EventStreamSlice ReadEventStream(string stream, int start, int count);
-        Task<EventStreamSlice> ReadEventStreamAsync(string stream, int start, int count);
+        public readonly HttpWebRequest Request;
+        public readonly Action<HttpResponse> OnSuccess;
+        public readonly Action<Exception> OnError;
 
-        Task SubscribeAsync(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped);
-        void Unsubscribe(string stream);
+        public HttpResponse Response { get; set; }
 
-        Task SubscribeToAllStreamsAsync(Action<RecordedEvent> eventAppeared, Action subscriptionDropped);
-        void UnsubscribeFromAllStreams();
+        public Stream InputStream { get; set; }
+        public Stream OutputStream { get; set; }
+
+        public ClientOperationState(HttpWebRequest request, Action<HttpResponse> onSuccess, Action<Exception> onError)
+        {
+            Ensure.NotNull(request, "request");
+            Ensure.NotNull(onSuccess, "onSuccess");
+            Ensure.NotNull(onError, "onError");
+
+            Request = request;
+            OnSuccess = onSuccess;
+            OnError = onError;
+        }
+
+        public void DisposeIOStreams()
+        {
+            IOStreams.SafelyDispose(InputStream, OutputStream);
+        }
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,16 +25,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-
-namespace EventStore.Transport.Http.Client
+namespace EventStore.ClientAPI.Transport.Http
 {
-    public interface IHttpClient
+    public static class HttpMethod
     {
-        void Get(string url, Action<HttpResponse> onSuccess, Action<Exception> onException);
-        void Post(string url, string request, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException);
-
-        void Delete(string url, Action<HttpResponse> onSuccess, Action<Exception> onException);
-        void Put(string url, string request, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException);
+        public const string Get = "GET";
+        public const string Post = "POST";
+        public const string Put = "PUT";
+        public const string Delete = "DELETE";
+        public const string Options = "OPTIONS";
+        public const string Head = "HEAD";
+        public const string Patch = "PATCH";
     }
 }
