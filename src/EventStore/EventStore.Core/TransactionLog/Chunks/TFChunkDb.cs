@@ -91,8 +91,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (i == expectedFiles - 1)
                     {
                         var chunk = LoadLastChunk(chunkFileName);
-//                        if (chunk.IsReadOnly)
-//                            chunk.VerifyFileHash();
+                        if (chunk.IsReadOnly)
+                            chunk.VerifyFileHash();
                         Manager.AddChunk(chunk);
 
                         if (checkpoint % Config.ChunkSize == 0)
@@ -109,8 +109,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                     else
                     {
                         var chunk = LoadChunk(chunkFileName);
-//                        if (chunk.IsReadOnly)
-//                            chunk.VerifyFileHash();
+                        if (chunk.IsReadOnly)
+                            chunk.VerifyFileHash();
                         Manager.AddChunk(chunk);
                     }
                 }

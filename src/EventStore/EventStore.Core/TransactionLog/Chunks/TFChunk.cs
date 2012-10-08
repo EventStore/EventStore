@@ -304,11 +304,11 @@ namespace EventStore.Core.TransactionLog.Chunks
                                               workItem.Stream,
                                               0,
                                               ChunkHeader.Size + footer.ActualDataSize);
-                    // hash footer except MD5 hash sum which should always be last
+                    // hash mapping and footer except MD5 hash sum which should always be last
                     MD5Hash.ContinuousHashFor(md5,
                                               workItem.Stream,
                                               ChunkHeader.Size + footer.ActualChunkSize,
-                                              ChunkFooter.Size - ChunkFooter.ChecksumSize);
+                                              footer.MapSize + ChunkFooter.Size - ChunkFooter.ChecksumSize);
                     md5.TransformFinalBlock(new byte[0], 0, 0);
                     hash = md5.Hash;
                 }
