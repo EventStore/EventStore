@@ -26,21 +26,61 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace EventStore.ClientAPI
 {
-    public interface IEventsProducer
+    public interface IProjectionsManagement
     {
-        void AppendToStream(string stream, int expectedVersion, IEnumerable<IEvent> events);
-        Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<IEvent> events);
+        void Enable(string name);
+        Task EnableAsync(string name);
 
-        EventStoreTransaction StartTransaction(string stream, int expectedVersion);
-        Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion);
-        void TransactionalWrite(long transactionId, string stream, IEnumerable<IEvent> events);
-        Task TransactionalWriteAsync(long transactionId, string stream, IEnumerable<IEvent> events);
-        void CommitTransaction(long transactionId, string stream);
-        Task CommitTransactionAsync(long transactionId, string stream);
+        void Disable(string name);
+        Task DisableAsync(string name);
+
+        void CreateOneTime(string query);
+        Task CreateOneTimeAsync(string query);
+
+        void CreateAdHoc(string name, string query);
+        Task CreateAdHocAsync(string name, string query);
+
+        void CreateContinuous(string name, string query);
+        Task CreateContinuousAsync(string name, string query);
+
+        void CreatePersistent(string name, string query);
+        Task CreatePersistentAsync(string name, string query);
+
+        string ListAll();
+        Task<string> ListAllAsync();
+
+        string ListOneTime();
+        Task<string> ListOneTimeAsync();
+
+        string ListAdHoc();
+        Task<string> ListAdHocAsync();
+
+        string ListContinuous();
+        Task<string> ListContinuousAsync();
+
+        string ListPersistent();
+        Task<string> ListPersistentAsync();
+
+        string GetStatus(string name);
+        Task<string> GetStatusAsync(string name);
+
+        string GetState(string name);
+        Task<string> GetStateAsync(string name);
+
+        string GetStatistics(string name);
+        Task<string> GetStatisticsAsync(string name);
+
+        string GetQuery(string name);
+        Task<string> GetQueryAsync(string name);
+
+        void UpdateQuery(string name, string query);
+        Task UpdateQueryAsync(string name, string query);
+
+        void Delete(string name);
+        Task DeleteAsync(string name);
     }
 }

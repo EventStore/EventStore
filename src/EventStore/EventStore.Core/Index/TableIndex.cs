@@ -425,7 +425,6 @@ namespace EventStore.Core.Index
             return idx;
         }
 
-
         public void ClearAll(bool removeFiles = true)
         {
             _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };

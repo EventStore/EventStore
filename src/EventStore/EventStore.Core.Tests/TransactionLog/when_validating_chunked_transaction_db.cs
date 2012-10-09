@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             File.WriteAllText(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), "this is just some test blahbydy blah");
-            var ex = Assert.Throws<CorruptDatabaseException>(db.OpenVerifyAndClean);
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<BadChunkInDatabaseException>(ex.InnerException);
             db.Dispose();
         }
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), 10000, 12000);
-            var ex = Assert.Throws<CorruptDatabaseException>(db.OpenVerifyAndClean);
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<BadChunkInDatabaseException>(ex.InnerException);
             db.Dispose();
         }
@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
-            var exc = Assert.Throws<CorruptDatabaseException>(db.OpenVerifyAndClean);
+            var exc = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<ChunkNotFoundException>(exc.InnerException);
             db.Dispose();
         }
@@ -98,7 +98,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
-            Assert.DoesNotThrow(db.OpenVerifyAndClean);
+            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
             db.Dispose();
         }
 
@@ -114,7 +114,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(1)), config.ChunkSize, config.ChunkSize);
-            Assert.DoesNotThrow(db.OpenVerifyAndClean);
+            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
             db.Dispose();
         }
 
@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(1)), config.ChunkSize-1000, config.ChunkSize);
-            var ex = Assert.Throws<CorruptDatabaseException>(db.OpenVerifyAndClean);
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<BadChunkInDatabaseException>(ex.InnerException);
             db.Dispose();
         }
@@ -147,7 +147,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(1)), config.ChunkSize, config.ChunkSize);
-            var ex = Assert.Throws<CorruptDatabaseException>(db.OpenVerifyAndClean);
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<ExtraneousFileFoundException>(ex.InnerException);
             db.Dispose();
         }
@@ -166,7 +166,7 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(1)), config.ChunkSize, config.ChunkSize);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(2)), config.ChunkSize, config.ChunkSize);
-            var ex = Assert.Throws<CorruptDatabaseException>(db.OpenVerifyAndClean);
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<ExtraneousFileFoundException>(ex.InnerException);
             db.Dispose();
         }
@@ -182,7 +182,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(4)), config.ChunkSize, config.ChunkSize);
-            var ex = Assert.Throws<CorruptDatabaseException>(db.OpenVerifyAndClean);
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<ExtraneousFileFoundException>(ex.InnerException);
             db.Dispose();
         }
@@ -198,7 +198,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new ICheckpoint[] {new InMemoryCheckpoint(11)});
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
-            var ex = Assert.Throws<CorruptDatabaseException>(db.OpenVerifyAndClean);
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<ReaderCheckpointHigherThanWriterException>(ex.InnerException);
             db.Dispose();
         }
@@ -213,7 +213,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
-            Assert.DoesNotThrow(db.OpenVerifyAndClean);
+            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
             db.Dispose();
         }
 
@@ -228,7 +228,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
-            Assert.DoesNotThrow(db.OpenVerifyAndClean);
+            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
             db.Dispose();
         }
 
@@ -255,7 +255,7 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(Path.Combine(PathName, "chunk-000003.000007"), config.ChunkSize, config.ChunkSize);
             CreateChunk(Path.Combine(PathName, "chunk-000003.000008"), config.ChunkSize, config.ChunkSize);
 
-            Assert.DoesNotThrow(db.OpenVerifyAndClean);
+            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
 
             Assert.IsTrue(File.Exists(Path.Combine(PathName, "foo")));
             Assert.IsTrue(File.Exists(Path.Combine(PathName, "bla")));
@@ -283,7 +283,7 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(Path.Combine(PathName, "chunk-000001.000001"), config.ChunkSize, config.ChunkSize);
             CreateChunk(Path.Combine(PathName, "chunk-000002.000000"), config.ChunkSize, config.ChunkSize);
 
-            Assert.DoesNotThrow(db.OpenVerifyAndClean);
+            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
 
             Assert.IsTrue(File.Exists(Path.Combine(PathName, "chunk-000000.000000")));
             Assert.IsTrue(File.Exists(Path.Combine(PathName, "chunk-000001.000001")));
@@ -308,7 +308,7 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(Path.Combine(PathName, "chunk-000002.000000"), config.ChunkSize, config.ChunkSize);
             CreateChunk(Path.Combine(PathName, "chunk-000002.000001"), config.ChunkSize, config.ChunkSize);
 
-            Assert.DoesNotThrow(db.OpenVerifyAndClean);
+            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
 
             Assert.IsTrue(File.Exists(Path.Combine(PathName, "chunk-000000.000000")));
             Assert.IsTrue(File.Exists(Path.Combine(PathName, "chunk-000001.000001")));
@@ -331,7 +331,7 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(Path.Combine(PathName, "chunk-000000.000000"), config.ChunkSize, config.ChunkSize);
             CreateChunk(Path.Combine(PathName, "chunk-000001.000001"), config.ChunkSize, config.ChunkSize);
 
-            Assert.DoesNotThrow(db.OpenVerifyAndClean);
+            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
 
             Assert.IsTrue(File.Exists(Path.Combine(PathName, "chunk-000000.000000")));
             Assert.IsTrue(File.Exists(Path.Combine(PathName, "chunk-000001.000001")));
@@ -358,7 +358,7 @@ namespace EventStore.Core.Tests.TransactionLog
             File.Create(Path.Combine(PathName, "bla.scavenge.tmp")).Close();
             File.Create(Path.Combine(PathName, "bla.tmp")).Close();
 
-            Assert.DoesNotThrow(db.OpenVerifyAndClean);
+            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
 
             Assert.IsTrue(File.Exists(Path.Combine(PathName, "chunk-000000.000000")));
             Assert.IsTrue(File.Exists(Path.Combine(PathName, "chunk-000001.000001")));

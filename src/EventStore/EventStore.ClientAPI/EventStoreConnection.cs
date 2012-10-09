@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -36,10 +37,12 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.System;
+using EventStore.ClientAPI.Transport.Http;
 using EventStore.ClientAPI.Transport.Tcp;
 using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
 using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
 using System.Linq;
+using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
 namespace EventStore.ClientAPI
 {
@@ -69,7 +72,8 @@ namespace EventStore.ClientAPI
         }
     }
 
-    public class EventStoreConnection : IDisposable, IEventStore
+    public class EventStoreConnection : IProjectionsManagement,
+                                        IDisposable
     {
         private const int MaxQueueSize = 5000;
 
@@ -89,7 +93,9 @@ namespace EventStore.ClientAPI
 
         private readonly SubscriptionsChannel _subscriptionsChannel;
         private readonly object _subscriptionChannelLock = new object();
-        
+
+        private readonly ProjectionsManager _projectionsManager;
+
         private readonly ConcurrentQueue<IClientOperation> _queue = new ConcurrentQueue<IClientOperation>();
         private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
         private int _inProgressCount;
@@ -102,11 +108,11 @@ namespace EventStore.ClientAPI
         private readonly Thread _worker;
         private volatile bool _stopping;
 
-        public int OutstandingAsyncOperations
+        public IProjectionsManagement Projections
         {
             get
             {
-                return _inProgressCount;
+                return this;
             }
         }
 
@@ -127,6 +133,7 @@ namespace EventStore.ClientAPI
 
             _connector = new TcpConnector(_tcpEndPoint);
             _subscriptionsChannel = new SubscriptionsChannel(_tcpEndPoint);
+            _projectionsManager = new ProjectionsManager(new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000));
 
             _lastReconnectionTimestamp = DateTime.UtcNow;
             _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
@@ -330,6 +337,250 @@ namespace EventStore.ClientAPI
         {
             EnsureSubscriptionChannelConnected();
             _subscriptionsChannel.UnsubscribeFromAllStreams();
+        }
+
+        void IProjectionsManagement.Enable(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).EnableAsync(name);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.EnableAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.Enable(name);
+        }
+
+        void IProjectionsManagement.Disable(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).DisableAsync(name);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.DisableAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.Disable(name);
+        }
+
+        void IProjectionsManagement.CreateOneTime(string query)
+        {
+            Ensure.NotNullOrEmpty(query, "query");
+
+            var task = ((IProjectionsManagement) this).CreateOneTimeAsync(query);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.CreateOneTimeAsync(string query)
+        {
+            Ensure.NotNullOrEmpty(query, "query");
+            return _projectionsManager.CreateOneTime(query);
+        }
+
+        void IProjectionsManagement.CreateAdHoc(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            var task = ((IProjectionsManagement) this).CreateAdHocAsync(name, query);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.CreateAdHocAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _projectionsManager.CreateAdHoc(name, query);
+        }
+
+        void IProjectionsManagement.CreateContinuous(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            var task = ((IProjectionsManagement) this).CreateContinuousAsync(name, query);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.CreateContinuousAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _projectionsManager.CreateContinious(name, query);
+        }
+
+        void IProjectionsManagement.CreatePersistent(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            var task = ((IProjectionsManagement) this).CreatePersistentAsync(name, query);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.CreatePersistentAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _projectionsManager.CreatePersistent(name, query);
+        }
+
+        string IProjectionsManagement.ListAll()
+        {
+            var task = ((IProjectionsManagement) this).ListAllAsync();
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.ListAllAsync()
+        {
+            return _projectionsManager.ListAll();
+        }
+
+        string IProjectionsManagement.ListOneTime()
+        {
+            var task = ((IProjectionsManagement) this).ListOneTimeAsync();
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.ListOneTimeAsync()
+        {
+            return _projectionsManager.ListOneTime();
+        }
+
+        string IProjectionsManagement.ListAdHoc()
+        {
+            var task = ((IProjectionsManagement) this).ListAdHocAsync();
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.ListAdHocAsync()
+        {
+            return _projectionsManager.ListAdHoc();
+        }
+
+        string IProjectionsManagement.ListContinuous()
+        {
+            var task = ((IProjectionsManagement) this).ListContinuousAsync();
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.ListContinuousAsync()
+        {
+            return _projectionsManager.ListContinuous();
+        }
+
+        string IProjectionsManagement.ListPersistent()
+        {
+            var task = ((IProjectionsManagement) this).ListPersistentAsync();
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.ListPersistentAsync()
+        {
+            return _projectionsManager.ListPersistent();
+        }
+
+        string IProjectionsManagement.GetStatus(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).GetStatusAsync(name);
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.GetStatusAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.GetStatus(name);
+        }
+
+        string IProjectionsManagement.GetState(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).GetStateAsync(name);
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.GetStateAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.GetState(name);
+        }
+
+        string IProjectionsManagement.GetStatistics(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).GetStatisticsAsync(name);
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.GetStatisticsAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.GetStatistics(name);
+        }
+
+        string IProjectionsManagement.GetQuery(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).GetQueryAsync(name);
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.GetQueryAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.GetQuery(name);
+        }
+
+        void IProjectionsManagement.UpdateQuery(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            var task = ((IProjectionsManagement) this).UpdateQueryAsync(name, query);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.UpdateQueryAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _projectionsManager.UpdateQuery(name, query);
+        }
+
+        void IProjectionsManagement.Delete(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).DeleteAsync(name);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.DeleteAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.Delete(name);
         }
 
         private void EnqueueOperation(IClientOperation operation)
@@ -707,6 +958,182 @@ namespace EventStore.ClientAPI
 
             foreach (var subscription in subscriptions)
                 ExecuteUserCallbackAsync(subscription.SubscriptionDropped);
+        }
+    }
+
+    internal class ProjectionsManager
+    {
+        private readonly IPEndPoint _httpEndPoint;
+        private readonly HttpAsyncClient _client = new HttpAsyncClient();
+
+        public ProjectionsManager(IPEndPoint httpEndPoint)
+        {
+            _httpEndPoint = httpEndPoint;
+        }
+
+        public Task Enable(string name)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projection/{0}/command/enable", name), string.Empty, HttpStatusCode.OK);
+        }
+
+        public Task Disable(string name)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projection/{0}/command/disable", name), string.Empty, HttpStatusCode.OK);
+        }
+
+        public Task CreateOneTime(string query)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projections/onetime?type=JS"), query, HttpStatusCode.Created);
+        }
+
+        public Task CreateAdHoc(string name, string query)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projections/adhoc?name={0}&type=JS", name), query, HttpStatusCode.Created);
+        }
+
+        public Task CreateContinious(string name, string query)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS", name), query, HttpStatusCode.Created);
+        }
+
+        public Task CreatePersistent(string name, string query)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projections/persistent?name={0}&type=JS", name), query, HttpStatusCode.Created);
+        }
+
+        public Task<string> ListAll()
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projections/any"), HttpStatusCode.OK);
+        }
+
+        public Task<string> ListOneTime()
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projections/onetime"), HttpStatusCode.OK);
+        }
+
+        public Task<string> ListAdHoc()
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projections/adhoc"), HttpStatusCode.OK);
+        }
+
+        public Task<string> ListContinuous()
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projections/continuous"), HttpStatusCode.OK);
+        }
+
+        public Task<string> ListPersistent()
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projections/persistent"), HttpStatusCode.OK);
+        }
+
+        public Task<string> GetStatus(string name)
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}", name), HttpStatusCode.OK);
+        }
+
+        public Task<string> GetState(string name)
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}/state", name), HttpStatusCode.OK);
+        }
+
+        public Task<string> GetStatistics(string name)
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}/statistics", name), HttpStatusCode.OK);
+        }
+
+        public Task<string> GetQuery(string name)
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}/query", name), HttpStatusCode.OK);
+        }
+
+        public Task UpdateQuery(string name, string query)
+        {
+            return SendPut(_httpEndPoint.ToHttpUrl("/projection/{0}/query?type=JS", name), query, HttpStatusCode.OK);
+        }
+
+        public Task Delete(string name)
+        {
+            return SendDelete(_httpEndPoint.ToHttpUrl("/projection/{0}", name), HttpStatusCode.OK);
+        }
+
+        private Task<string> SendGet(string url, int expectedCode)
+        {
+            var source = new TaskCompletionSource<string>();
+            _client.Get(url,
+                        response =>
+                            {
+                                if (response.HttpStatusCode == expectedCode)
+                                    source.SetResult(response.Body);
+                                else
+                                    source.SetException(new ProjectionCommandFailedException(
+                                                            string.Format("Server returned : {0} ({1})",
+                                                                          response.HttpStatusCode,
+                                                                          response.StatusDescription)));
+                            },
+                        source.SetException);
+
+            return source.Task;
+        }
+
+        private Task<string> SendDelete(string url, int expectedCode)
+        {
+            var source = new TaskCompletionSource<string>();
+            _client.Delete(url,
+                           response =>
+                               {
+                                   if (response.HttpStatusCode == expectedCode)
+                                       source.SetResult(response.Body);
+                                   else
+                                       source.SetException(new ProjectionCommandFailedException(
+                                                               string.Format("Server returned : {0} ({1})",
+                                                                             response.HttpStatusCode,
+                                                                             response.StatusDescription)));
+                               },
+                           source.SetException);
+
+            return source.Task;
+        }
+
+        private Task SendPut(string url, string content, int expectedCode)
+        {
+            var source = new TaskCompletionSource<object>();
+            _client.Put(url,
+                        content,
+                        ContentType.Json,
+                        response =>
+                            {
+                                if (response.HttpStatusCode == expectedCode)
+                                    source.SetResult(null);
+                                else
+                                    source.SetException(new ProjectionCommandFailedException(
+                                                            string.Format("Server returned : {0} ({1})",
+                                                                          response.HttpStatusCode,
+                                                                          response.StatusDescription)));
+                            },
+                        source.SetException);
+
+            return source.Task;
+        }
+
+        private Task SendPost(string url, string content, int expectedCode)
+        {
+            var source = new TaskCompletionSource<object>();
+            _client.Post(url,
+                         content,
+                         ContentType.Json,
+                         response =>
+                             {
+                                 if (response.HttpStatusCode == expectedCode)
+                                     source.SetResult(null);
+                                 else
+                                     source.SetException(new ProjectionCommandFailedException(
+                                                             string.Format("Server returned : {0} ({1})",
+                                                                           response.HttpStatusCode,
+                                                                           response.StatusDescription)));
+                             },
+                         source.SetException);
+
+            return source.Task;
         }
     }
 }

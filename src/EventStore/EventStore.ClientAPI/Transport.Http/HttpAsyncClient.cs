@@ -25,15 +25,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.IO;
 using System.Net;
 using System.Text;
-using EventStore.Common.Utils;
+using EventStore.ClientAPI.Common.Utils;
 
-namespace EventStore.Transport.Http.Client
+namespace EventStore.ClientAPI.Transport.Http
 {
-    public class HttpAsyncClient : IHttpClient
+    public class HttpAsyncClient
     {
         static HttpAsyncClient()
         {
@@ -150,7 +151,7 @@ namespace EventStore.Transport.Http.Client
 
             state.OutputStream.Seek(0, SeekOrigin.Begin);
             var memStream = (MemoryStream)state.OutputStream;
-            state.Response.Body = Encoding.UTF8.GetString(memStream.GetBuffer(), 0, (int) memStream.Length);
+            state.Response.Body = Encoding.UTF8.GetString(memStream.GetBuffer(), 0, (int)memStream.Length);
 
             state.DisposeIOStreams();
             state.OnSuccess(state.Response);
@@ -158,7 +159,7 @@ namespace EventStore.Transport.Http.Client
 
         private void GotRequestStream(IAsyncResult ar)
         {
-            var state = (ClientOperationState) ar.AsyncState;
+            var state = (ClientOperationState)ar.AsyncState;
             try
             {
                 var networkStream = state.Request.EndGetRequestStream(ar);

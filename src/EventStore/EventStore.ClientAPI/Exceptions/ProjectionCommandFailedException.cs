@@ -26,16 +26,29 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System.Threading.Tasks;
+using System;
+using System.Runtime.Serialization;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Exceptions
 {
-    public interface IEventStore : IEventsProducer, IEventsConsumer
+    public class ProjectionCommandFailedException : Exception
     {
-        void CreateStream(string stream, byte[] metadata);
-        Task CreateStreamAsync(string stream, byte[] metadata);
+        public ProjectionCommandFailedException()
+        {
+        }
 
-        void DeleteStream(string stream, int expectedVersion);
-        Task DeleteStreamAsync(string stream, int expectedVersion);
+        public ProjectionCommandFailedException(string message) : base(message)
+        {
+        }
+
+        public ProjectionCommandFailedException(string message,
+                 Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected ProjectionCommandFailedException(SerializationInfo info,
+                    StreamingContext context) : base(info, context)
+        {
+        }
     }
 }

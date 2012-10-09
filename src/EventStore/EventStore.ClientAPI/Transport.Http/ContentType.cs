@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,32 +24,25 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
-
-using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.System;
-using System.Linq;
-
-namespace EventStore.ClientAPI
+// 
+namespace EventStore.ClientAPI.Transport.Http
 {
-    public class EventStreamSlice
+    public static class ContentType
     {
-        public readonly string Stream;
-        public readonly int StartIndex;
-        public readonly int Count;
-        public readonly RecordedEvent[] Events;
+        public const string Any = "*/*";
 
-        internal EventStreamSlice(string stream,
-                                  int startIndex,
-                                  int count,
-                                  EventRecord[] events)
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
+        public const string Json = "application/json";
+        public const string Xml = "text/xml";
+        public const string PlainText = "text/plain";
+        public const string Html = "text/html";
 
-            Stream = stream;
-            StartIndex = startIndex;
-            Count = count;
-            Events = (events ?? new EventRecord[0]).Select(e => new RecordedEvent(e)).ToArray();
-        }
+        public const string Atom = "application/atom+xml";
+        public const string AtomJson = "application/atom+x.json";
+
+        public const string AtomServiceDoc = "application/atomsvc+xml";
+        public const string AtomServiceDocJson = "application/atomsvc+x.json";
+
+        public const string AtomCategories = "application/atomcat+xml";
+        public const string AtomCategoriesJson = "application/atomcat+x.json";
     }
 }

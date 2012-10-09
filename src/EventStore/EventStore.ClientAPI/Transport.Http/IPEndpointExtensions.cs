@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,32 +24,29 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
-using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.System;
-using System.Linq;
+using System;
+using System.Net;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Transport.Http
 {
-    public class EventStreamSlice
+    public static class IPEndPointExtensions
     {
-        public readonly string Stream;
-        public readonly int StartIndex;
-        public readonly int Count;
-        public readonly RecordedEvent[] Events;
-
-        internal EventStreamSlice(string stream,
-                                  int startIndex,
-                                  int count,
-                                  EventRecord[] events)
+        public static string ToHttpUrl(this IPEndPoint endPoint, string rawUrl = null)
         {
-            Ensure.NotNullOrEmpty(stream, "stream");
+            return String.Format("http://{0}:{1}/{2}",
+                                 endPoint.Address,
+                                 endPoint.Port,
+                                 rawUrl != null ? rawUrl.TrimStart('/') : String.Empty);
+        }
 
-            Stream = stream;
-            StartIndex = startIndex;
-            Count = count;
-            Events = (events ?? new EventRecord[0]).Select(e => new RecordedEvent(e)).ToArray();
+        public static string ToHttpUrl(this IPEndPoint endPoint, string formatString, params object[] args)
+        {
+            return String.Format("http://{0}:{1}/{2}",
+                                 endPoint.Address,
+                                 endPoint.Port,
+                                 String.Format(formatString.TrimStart('/'), args));
         }
     }
 }
