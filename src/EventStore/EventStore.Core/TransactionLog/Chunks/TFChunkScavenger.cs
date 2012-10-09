@@ -108,7 +108,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 if (result.NextPosition == -1)
                     break;
-                result = oldChunk.TryReadSameOrClosest((int)result.NextPosition);
+                result = oldChunk.TryReadClosestForward((int)result.NextPosition);
             }
 
             var oldSize = oldChunk.ChunkFooter.ActualChunkSize + oldChunk.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;

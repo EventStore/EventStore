@@ -513,7 +513,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (actualPosition == -1 || actualPosition >= _actualDataSize)
                     return new RecordReadResult(false, null, -1);
                 int length;
-                var result = TryReadRecordInternal(workItem, actualPosition, out length, out record);
+                var result = TryReadRecordForwardInternal(workItem, actualPosition, out length, out record);
                 return new RecordReadResult(result, record, -1);
             }
             finally
@@ -531,7 +531,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (_actualDataSize == 0)
                     return new RecordReadResult(false, null, -1);
                 int length;
-                var result = TryReadRecordInternal(workItem, 0, out length, out record);
+                var result = TryReadRecordForwardInternal(workItem, 0, out length, out record);
                 if (!result)
                     return new RecordReadResult(false, null, -1);
 
@@ -554,7 +554,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public RecordReadResult TryReadSameOrClosest(int logicalPosition)
+        public RecordReadResult TryReadClosestForward(int logicalPosition)
         {
             var workItem = GetReaderWorkItem();
             try
@@ -566,7 +566,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                 int length;
                 LogRecord record;
-                if (!TryReadRecordInternal(workItem, actualPosition, out length, out record))
+                if (!TryReadRecordForwardInternal(workItem, actualPosition, out length, out record))
                     return new RecordReadResult(false, null, -1);
 
                 int nextLogicalPos;
@@ -588,6 +588,42 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
+        public RecordReadResult TryReadClosestBackwards(int logicalPosition)
+        {
+            throw new NotImplementedException();
+        }
+
+        public RecordReadResult TryReadLast()
+        {
+            var workItem = GetReaderWorkItem();
+            try
+            {
+                LogRecord record;
+                if (_actualDataSize == 0)
+                    return new RecordReadResult(false, null, -1);
+                
+                int length;
+                var result = TryReadRecordBackwardsInternal(workItem, _actualDataSize, out length, out record);
+                if (!result)
+                    return new RecordReadResult(false, null, -1);
+
+                int nextLogicalPos;
+                if (_isReadonly && _chunkFooter.MapSize > 0)
+                {
+                    var mapCount = _chunkFooter.MapSize / sizeof(ulong);
+                    nextLogicalPos = mapCount > 1 ? ReadPosMap(workItem, mapCount - 2).LogPos : 0;
+                }
+                else
+                    nextLogicalPos = _actualDataSize - length - 2*sizeof(int);
+                return new RecordReadResult(true, record, nextLogicalPos);
+
+            }
+            finally
+            {
+                ReturnReaderWorkItem(workItem);
+            }
+        }
+
         private Tuple<PosMap, int> TranslateToSameOrClosestPosition(ReaderWorkItem workItem, int logicalPosition)
         {
             if (!_isReadonly || _chunkFooter.MapSize == 0)
@@ -599,33 +635,21 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var mapCount = _chunkFooter.MapSize / sizeof(ulong);
                 return TranslateSameOrClosestWithoutMidpoints(workItem, logicalPosition, 0, mapCount - 1);
             }
-            else
-                return TranslateSameOrClosestWithMidpoints(workItem, midpoints, logicalPosition);
+            return TranslateSameOrClosestWithMidpoints(workItem, midpoints, logicalPosition);
         }
 
-        private bool TryReadRecordInternal(ReaderWorkItem workItem, int actualPosition, out int length, out LogRecord record)
+        private bool TryReadRecordForwardInternal(ReaderWorkItem workItem, int actualPosition, out int length, out LogRecord record)
         {
             length = -1;
             record = null;
 
             workItem.Stream.Position = GetRealPosition(actualPosition, workItem.IsMemory);
 
-            if (!VerifyStreamLength(workItem.Stream, 8))
+            if (!VerifyDataLengthForward(workItem, 2*sizeof(int)))
                 return false;
             
             length = workItem.Reader.ReadInt32();
-            CheckLength(workItem, length, actualPosition);
 
-            record = LogRecord.ReadFrom(workItem.Reader);
-            
-            var suffixLength = workItem.Reader.ReadInt32();
-            Debug.Assert(suffixLength == length);
-
-            return true;
-        }
-
-        private void CheckLength(ReaderWorkItem workItem, int length, int actualPosition)
-        {
             if (length <= 0)
             {
                 throw new ArgumentException(
@@ -643,8 +667,63 @@ namespace EventStore.Core.TransactionLog.Chunks
                                       length,
                                       TFConsts.MaxLogRecordSize));
             }
-            if (!VerifyStreamLength(workItem.Stream, length + 4 /*suffix*/))
+
+            if (!VerifyDataLengthForward(workItem, length + sizeof(int) /*suffix*/))
                 throw new UnableToReadPastEndOfStreamException();
+
+            record = LogRecord.ReadFrom(workItem.Reader);
+           
+            Debug.Assert(workItem.Reader.ReadInt32() == length); // verify suffix length == prefix length
+
+            return true;
+        }
+
+        private bool TryReadRecordBackwardsInternal(ReaderWorkItem workItem, 
+                                                    int actualPosition, 
+                                                    out int length, 
+                                                    out LogRecord record)
+        {
+            length = -1;
+            record = null;
+
+            var realPos = GetRealPosition(actualPosition, workItem.IsMemory);
+            if (realPos < 2 * sizeof(int)) // no space even for length prefix and suffix 
+                return false;
+
+            workItem.Stream.Position = realPos - sizeof(int);
+
+            length = workItem.Reader.ReadInt32();
+
+            if (length <= 0)
+            {
+                throw new ArgumentException(
+                        string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
+                                      + "Something is seriously wrong.",
+                                      actualPosition,
+                                      length));
+            }
+            if (length > TFConsts.MaxLogRecordSize)
+            {
+                throw new ArgumentException(
+                        string.Format("Log record that ends at actual pos {0} has too large length: {1} bytes, "
+                                      + "while limit is {2} bytes.",
+                                      actualPosition,
+                                      length,
+                                      TFConsts.MaxLogRecordSize));
+            }
+
+            if (realPos < length + 2 * sizeof(int)) // no space for record + length prefix and suffix 
+                throw new UnableToReadPastEndOfStreamException();
+
+            workItem.Stream.Position = realPos - length - sizeof(int);
+            record = LogRecord.ReadFrom(workItem.Reader);
+
+#if DEBUG
+            workItem.Stream.Position = realPos - length - 2*sizeof(int);
+            var prefixLength = workItem.Reader.ReadInt32();
+            Debug.Assert(prefixLength == length);
+#endif
+            return true;
         }
 
         private int TranslatePosition(ReaderWorkItem workItem, int pos)
@@ -658,8 +737,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var mapCount = _chunkFooter.MapSize/sizeof (ulong);
                 return TranslateWithoutMidpoints(workItem, pos, 0, mapCount - 1);
             }
-            else
-                return TranslateWithMidpoints(workItem, midpoints, pos);
+            return TranslateWithMidpoints(workItem, midpoints, pos);
         }
 
         private int TranslateWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, int pos)
@@ -783,10 +861,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             return (int) workItem.Stream.Position - ChunkHeader.Size;
         }
 
-        private bool VerifyStreamLength(Stream stream, int length)
+        private bool VerifyDataLengthForward(ReaderWorkItem workItem, int length)
         {
-            // chunk header size is not included in _chunkSize value
-            return length + stream.Position <= _chunkHeader.ChunkSize + ChunkHeader.Size;
+            var chunkSize = _isReadonly ? _chunkFooter.ActualDataSize : _chunkHeader.ChunkSize;
+            return GetLogicalPosition(workItem) + length <= chunkSize;
         }
 
         public RecordWriteResult TryAppend(LogRecord record)
@@ -807,7 +885,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             buffer.Position = 0;
             bufferWriter.Write(length); // length prefix
 
-            if (!VerifyStreamLength(stream, length + 8)) 
+            if (stream.Position + length + 8 > ChunkHeader.Size + _chunkHeader.ChunkSize) 
                 return RecordWriteResult.Failed(GetLogicalPosition(workItem));
 
             var oldPosition = WriteRawData(buffer);
@@ -1025,10 +1103,12 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                 if (_selfdestructin54321)
                     throw new FileBeingDeletedException();
+
                 //there is an extremely unlikely race condition here 
                 //GFY TODO resolve it though impact is minimal
                 //as of now the worst thing thing that can happen is a chunk does not get deleted
                 //but gets picked up later when the database gets restarted
+
                 // if no cached reader - use usual
                 if (_streams.TryDequeue(out item))
                     return item;

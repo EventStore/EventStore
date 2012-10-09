@@ -34,7 +34,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_opening_existing_tf_chunk
+    public class when_opening_existing_tfchunk
     {
         private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
         private TFChunk _chunk;
@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [TearDown]
-        public void TD()
+        public void TearDown()
         {
             _chunk.Dispose();
             _testChunk.Dispose();

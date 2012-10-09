@@ -28,18 +28,19 @@
 using System;
 using System.IO;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_appending_to_a_TFChunk_and_flushing
+    public class when_appending_to_a_tfchunk_and_flushing
     {
-        readonly string filename = Path.Combine(Path.GetTempPath(), "foo");
-        private Core.TransactionLog.Chunks.TFChunk _chunk;
-        private Guid _corrId = Guid.NewGuid();
-        private Guid _eventId = Guid.NewGuid();
+        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
+        private TFChunk _chunk;
+        private readonly Guid _corrId = Guid.NewGuid();
+        private readonly Guid _eventId = Guid.NewGuid();
         private RecordWriteResult _result;
         private PrepareLogRecord _record;
 
@@ -48,7 +49,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             _record = new PrepareLogRecord(0, _corrId, _eventId, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                            PrepareFlags.None, "Foo", new byte[12], new byte[15]);
-            _chunk = Core.TransactionLog.Chunks.TFChunk.CreateNew(filename, 4096, 0, 0);
+            _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);
             _result = _chunk.TryAppend(_record);
             _chunk.Flush();
         }
@@ -82,20 +83,55 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void the_record_can_be_read()
+        public void the_record_can_be_read_at_exact_position()
         {
-            var res = _chunk.TryReadRecordAt((int)_result.OldPosition);
+            var res = _chunk.TryReadRecordAt(0);
             Assert.IsTrue(res.Success);
             Assert.AreEqual(_record, res.LogRecord);
             Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
-            //Assert.AreEqual(_result.NewPosition, res.NewPosition);
         }
-        
+
+        [Test]
+        public void the_record_can_be_read_as_first_one()
+        {
+            var res = _chunk.TryReadFirst();
+            Assert.IsTrue(res.Success);
+            Assert.AreEqual(_record, res.LogRecord);
+            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
+        }
+
+        [Test]
+        public void the_record_can_be_read_as_closest_forward_to_pos_zero()
+        {
+            var res = _chunk.TryReadClosestForward(0);
+            Assert.IsTrue(res.Success);
+            Assert.AreEqual(_record, res.LogRecord);
+            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
+        }
+
+        [Test]
+        public void the_record_can_be_read_as_closest_backwards_from_end()
+        {
+            var res = _chunk.TryReadClosestBackwards(_record.GetSizeWithLengthPrefixAndSuffix());
+            Assert.IsTrue(res.Success);
+            Assert.AreEqual(_record, res.LogRecord);
+            Assert.AreEqual(0, res.NextPosition);
+        }
+
+        [Test]
+        public void the_record_can_be_read_as_last_one()
+        {
+            var res = _chunk.TryReadLast();
+            Assert.IsTrue(res.Success);
+            Assert.AreEqual(_record, res.LogRecord);
+            Assert.AreEqual(0, res.NextPosition);
+        }
+
         [TearDown]
         public void TearDown()
         {
             _chunk.Dispose();
-            File.Delete(filename);
+            File.Delete(_filename);
         }
     }
 }
