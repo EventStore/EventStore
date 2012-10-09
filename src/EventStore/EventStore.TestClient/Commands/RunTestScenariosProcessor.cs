@@ -223,8 +223,7 @@ namespace EventStore.TestClient.Commands
         {
             ThreadPool.SetMaxThreads(Threads, Threads);
 
-            KillSingleNodes();
-            StartNode();
+            var nodeProcessId = StartNode();
 
             var streams = Enumerable.Range(0, Streams).Select(i => string.Format("test-stream-{0}", i)).ToArray();
             var slices = Split(streams, 3);
@@ -236,8 +235,8 @@ namespace EventStore.TestClient.Commands
             var deleted = streams.Where((s, i) => i % StreamDeleteStep == 0).ToArray();
             DeleteStreams(deleted);
 
-            KillSingleNodes();
-            StartNode();
+            KillSingleNodes(nodeProcessId);
+            nodeProcessId = StartNode();
 
             CheckStreamsDeleted(deleted);
 
@@ -246,7 +245,7 @@ namespace EventStore.TestClient.Commands
             Read(exceptDeleted, from: EventsPerStream - Piece, count: Piece + 1);
             Read(exceptDeleted, from: EventsPerStream / 2, count: Math.Min(Piece + 1, EventsPerStream - EventsPerStream / 2));
 
-            KillSingleNodes();
+            KillSingleNodes(nodeProcessId);
         }
     }
 
@@ -300,8 +299,7 @@ namespace EventStore.TestClient.Commands
             const int internalThreadsCount = 2;
             ThreadPool.SetMaxThreads(Threads + internalThreadsCount, Threads + internalThreadsCount);
 
-            KillSingleNodes();
-            StartNode();
+            var nodeProcessId = StartNode();
             if (runIndex % 2 == 0)
                 Scavenge();
 
@@ -321,8 +319,8 @@ namespace EventStore.TestClient.Commands
             if (!parallelWritesEvent.WaitOne(60000))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
-            KillSingleNodes();
-            StartNode();
+            KillSingleNodes(nodeProcessId);
+            nodeProcessId = StartNode();
 
             parallelWritesEvent = RunParallelWrites(runIndex);
 
@@ -356,7 +354,7 @@ namespace EventStore.TestClient.Commands
             if (!parallelWritesEvent.WaitOne(60000))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
-            KillSingleNodes();
+            KillSingleNodes(nodeProcessId);
         }
 
         private AutoResetEvent RunParallelWrites(int runIndex)
@@ -553,7 +551,7 @@ namespace EventStore.TestClient.Commands
             Log.Info("Done reading [{0}]", string.Join(",", streams));
         }
 
-        protected void StartNode()
+        protected int StartNode()
         {
             var clientFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
@@ -561,9 +559,15 @@ namespace EventStore.TestClient.Commands
             var arguments = string.Format("--ip {0} -t {1} -h {2} --db {3}", _tcpEndPoint.Address, _tcpEndPoint.Port, _tcpEndPoint.Port + 1000, _dbPath);
 
             Log.Info("Starting [{0} {1}]...", fileName, arguments);
-            Process.Start(fileName, arguments);
+            var nodeProcess = Process.Start(fileName, arguments);
+
+            if (nodeProcess == null)
+                throw new ApplicationException("Process was not started.");
+
             Thread.Sleep(StartupWaitInterval);
             Log.Info("Started [{0} {1}]", fileName, arguments);
+
+            return nodeProcess.Id;
         }
 
         private IPAddress GetInterIpAddress()
@@ -582,19 +586,41 @@ namespace EventStore.TestClient.Commands
             return interIp;
         }
 
-        protected void KillSingleNodes()
+        private bool TryGetProcessById(int processId, out Process process)
         {
-            var processes = Process.GetProcesses();
-            foreach (var process in processes.Where(p => p.ProcessName == "EventStore.SingleNode"))
+            process = null;
+
+            try
             {
-                Log.Info("Killing {0}...", process.ProcessName);
+                process = Process.GetProcessById(processId);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        protected void KillSingleNodes(int processId)
+        {
+            Log.Info("Killing {0}...", processId);
+
+            Process process;
+            if (TryGetProcessById(processId, out process))
+            {
                 process.Kill();
-                while (!process.HasExited) 
+                while (!process.HasExited)
                     Thread.Sleep(200);
 
                 Thread.Sleep(2000);
-                Log.Info("Killed {0}", process.ProcessName);
+                Log.Info("Killed process {0}", processId);
             }
+            else
+                Log.Error("Process with ID {0} was not found to be killed.", processId);
         }
 
         protected void Scavenge()
