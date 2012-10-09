@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public void the_updated_position_is_returned()
         {
             //position without header.
-            Assert.AreEqual(_record.GetSizeWithLengthPrefix(), _result.NewPosition);
+            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _result.NewPosition);
         }
 
         [Test]

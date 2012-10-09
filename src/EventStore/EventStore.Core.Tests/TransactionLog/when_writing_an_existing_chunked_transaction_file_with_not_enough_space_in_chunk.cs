@@ -105,7 +105,7 @@ namespace EventStore.Core.Tests.TransactionLog
             tf.Close();
             db.Dispose();
 
-            Assert.AreEqual(record3.GetSizeWithLengthPrefix() + 10000, _checkpoint.Read());
+            Assert.AreEqual(record3.GetSizeWithLengthPrefixAndSuffix() + 10000, _checkpoint.Read());
             using (var filestream = File.Open(filename2, FileMode.Open, FileAccess.Read))
             {
                 filestream.Seek(ChunkHeader.Size + sizeof(int), SeekOrigin.Begin);

@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
@@ -125,10 +126,13 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
                 throw new ArgumentOutOfRangeException("length", "Log record length is out of bounds.");
             }
             
-            if (!TryReadNextBytes(length))
+            if (!TryReadNextBytes(length + 4))
                 return new RecordReadResult(false, null, _curPos);
 
             var record = LogRecord.ReadFrom(_bufferReader);
+            var suffixLength = _bufferReader.ReadInt32();
+            Debug.Assert(suffixLength == length);
+
             var logPosition = _lastChaserCheck;
 
             _lastChaserCheck = _curPos;

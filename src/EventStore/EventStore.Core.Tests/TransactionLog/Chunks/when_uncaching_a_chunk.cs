@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             Assert.IsTrue(_result.Success);
             Assert.AreEqual(0, _result.OldPosition);
-            Assert.AreEqual(_record.GetSizeWithLengthPrefix(), _result.NewPosition);
+            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _result.NewPosition);
         }
 
         [Test]

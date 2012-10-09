@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.TransactionLog
             long tmp;
             tf.Write(record, out tmp);
             tf.Close();
-            Assert.AreEqual(record.GetSizeWithLengthPrefix() + 40, _checkpoint.Read()); //+orginal checkpoint position
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix() + 40, _checkpoint.Read()); //+orginal checkpoint position
             Assert.IsTrue(File.Exists(secondfilename));
             var stream = new MemoryStream();
             var buffer = new byte[256];

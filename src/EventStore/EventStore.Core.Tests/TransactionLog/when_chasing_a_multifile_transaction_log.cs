@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.TransactionLog
             using (var fs = new FileStream(Path.Combine(PathName, "prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
             {
                 var writer = new BinaryWriter(fs);
-                recordToWrite.WriteWithLengthPrefixTo(writer);
+                recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
                 fs.Close();
             }
             var reader = new MultifileTransactionFileChaser(config, readerchk);
@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var recordRead = reader.TryReadNext(out record);
             reader.Close();
             
-            Assert.AreEqual(record.GetSizeWithLengthPrefix(), readerchk.Read());
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), readerchk.Read());
             Assert.IsTrue(recordRead);
             Assert.AreEqual(recordToWrite, record);
         }
@@ -127,10 +127,10 @@ namespace EventStore.Core.Tests.TransactionLog
             using (var fs = new FileStream(Path.Combine(PathName, "prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
             {
                 var writer = new BinaryWriter(fs);
-                recordToWrite.WriteWithLengthPrefixTo(writer);
+                recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
                 fs.Close();
             }
-            writerchk.Write(recordToWrite.GetSizeWithLengthPrefix());
+            writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
 
             var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.TransactionLog
             reader.Close();
 
             Assert.IsTrue(readRecord);
-            Assert.AreEqual(record.GetSizeWithLengthPrefix(), readerchk.Read());
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), readerchk.Read());
             Assert.AreEqual(recordToWrite, record);
         }
 
@@ -164,10 +164,10 @@ namespace EventStore.Core.Tests.TransactionLog
             using (var fs = new FileStream(Path.Combine(PathName, "prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
             {
                 var writer = new BinaryWriter(fs);
-                recordToWrite.WriteWithLengthPrefixTo(writer);
+                recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
                 fs.Close();
             }
-            writerchk.Write(recordToWrite.GetSizeWithLengthPrefix());
+            writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
             
             var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
@@ -176,7 +176,7 @@ namespace EventStore.Core.Tests.TransactionLog
             reader.Close();
 
             Assert.IsTrue(readRecord);
-            Assert.AreEqual(record.GetSizeWithLengthPrefix(), readerchk.Read());
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), readerchk.Read());
             Assert.AreEqual(recordToWrite, record);
         }
 
@@ -200,7 +200,7 @@ namespace EventStore.Core.Tests.TransactionLog
             using (var fs = new FileStream(Path.Combine(PathName, "prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
             {
                 var writer = new BinaryWriter(fs);
-                recordToWrite.WriteWithLengthPrefixTo(writer);
+                recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
                 fs.Close();
             }
 
@@ -235,7 +235,7 @@ namespace EventStore.Core.Tests.TransactionLog
             using (var fs = new FileStream(Path.Combine(PathName, "prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
             {
                 var writer = new BinaryWriter(fs);
-                recordToWrite.WriteWithLengthPrefixTo(writer);
+                recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
                 fs.Close();
             }
 
@@ -267,7 +267,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                      metadata: new byte[] {7, 17});
             var memstream = new MemoryStream();
             var writer = new BinaryWriter(memstream);
-            recordToWrite.WriteWithLengthPrefixTo(writer);
+            recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
             var buf = memstream.GetBuffer();
             using (var fs = new FileStream(config.FileNamingStrategy.GetFilenameFor(0), FileMode.CreateNew, FileAccess.Write))
             {
@@ -278,7 +278,7 @@ namespace EventStore.Core.Tests.TransactionLog
             using (var fs = new FileStream(config.FileNamingStrategy.GetFilenameFor(1), FileMode.CreateNew, FileAccess.Write))
             {
                 fs.Seek(0, SeekOrigin.Begin);
-                fs.Write(buf, 10, recordToWrite.GetSizeWithLengthPrefix() - 10);
+                fs.Write(buf, 10, recordToWrite.GetSizeWithLengthPrefixAndSuffix() - 10);
                 fs.Close();
             }
 
@@ -290,7 +290,7 @@ namespace EventStore.Core.Tests.TransactionLog
             
             Assert.IsTrue(readRecord);
             Assert.That(recordToWrite, Is.EqualTo(record));
-            Assert.AreEqual(9990 + recordToWrite.GetSizeWithLengthPrefix(), readerchk.Read());
+            Assert.AreEqual(9990 + recordToWrite.GetSizeWithLengthPrefixAndSuffix(), readerchk.Read());
         }
 
         [Test]
@@ -312,7 +312,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                      metadata: new byte[] {7, 17});
             var memstream = new MemoryStream();
             var writer = new BinaryWriter(memstream);
-            recordToWrite.WriteWithLengthPrefixTo(writer);
+            recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
             var buf = memstream.GetBuffer();
             using (var fs = new FileStream(config.FileNamingStrategy.GetFilenameFor(0), FileMode.CreateNew, FileAccess.Write))
             {
@@ -323,7 +323,7 @@ namespace EventStore.Core.Tests.TransactionLog
             using (var fs = new FileStream(config.FileNamingStrategy.GetFilenameFor(1), FileMode.CreateNew, FileAccess.Write))
             {
                 fs.Seek(0, SeekOrigin.Begin);
-                fs.Write(buf, 2, recordToWrite.GetSizeWithLengthPrefix() - 2);
+                fs.Write(buf, 2, recordToWrite.GetSizeWithLengthPrefixAndSuffix() - 2);
                 fs.Close();
             }
 
@@ -335,7 +335,7 @@ namespace EventStore.Core.Tests.TransactionLog
             
             Assert.IsTrue(readRecord);
             Assert.AreEqual(recordToWrite, record);
-            Assert.AreEqual(9998 + recordToWrite.GetSizeWithLengthPrefix(), readerchk.Read());
+            Assert.AreEqual(9998 + recordToWrite.GetSizeWithLengthPrefixAndSuffix(), readerchk.Read());
         }
 
         [Test]
@@ -367,7 +367,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                      metadata: new byte[] {7, 17});
             var memstream = new MemoryStream();
             var writer = new BinaryWriter(memstream);
-            recordToWrite.WriteWithLengthPrefixTo(writer);
+            recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
 
             using (var fs = new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
             {
@@ -391,7 +391,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                       data: new byte[] { 3, 2, 1 },
                                                       metadata: new byte[] {9});
             memstream.SetLength(0);
-            recordToWrite2.WriteWithLengthPrefixTo(writer);
+            recordToWrite2.WriteWithLengthPrefixAndSuffixTo(writer);
 
             using (var fs = new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
             {

@@ -610,13 +610,17 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             workItem.Stream.Position = GetRealPosition(actualPosition, workItem.IsMemory);
 
-            if (!VerifyStreamLength(workItem.Stream, 4))
+            if (!VerifyStreamLength(workItem.Stream, 8))
                 return false;
             
             length = workItem.Reader.ReadInt32();
             CheckLength(workItem, length, actualPosition);
 
             record = LogRecord.ReadFrom(workItem.Reader);
+            
+            var suffixLength = workItem.Reader.ReadInt32();
+            Debug.Assert(suffixLength == length);
+
             return true;
         }
 
@@ -639,7 +643,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                                       length,
                                       TFConsts.MaxLogRecordSize));
             }
-            if (!VerifyStreamLength(workItem.Stream, length))
+            if (!VerifyStreamLength(workItem.Stream, length + 4 /*suffix*/))
                 throw new UnableToReadPastEndOfStreamException();
         }
 
@@ -798,11 +802,12 @@ namespace EventStore.Core.TransactionLog.Chunks
             buffer.SetLength(4);
             buffer.Position = 4;
             record.WriteTo(bufferWriter);
+            var length = (int) buffer.Length - 4;
+            bufferWriter.Write(length); // length suffix
             buffer.Position = 0;
-            var toWriteLength = (int) buffer.Length;
-            bufferWriter.Write(toWriteLength - 4);
+            bufferWriter.Write(length); // length prefix
 
-            if (!VerifyStreamLength(stream, toWriteLength)) 
+            if (!VerifyStreamLength(stream, length + 8)) 
                 return RecordWriteResult.Failed(GetLogicalPosition(workItem));
 
             var oldPosition = WriteRawData(buffer);
