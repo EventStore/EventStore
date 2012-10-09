@@ -590,7 +590,37 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public RecordReadResult TryReadClosestBackwards(int logicalPosition)
         {
-            throw new NotImplementedException();
+            var workItem = GetReaderWorkItem();
+            try
+            {
+                var pos = TranslateToSameOrClosestPosition(workItem, logicalPosition);
+                var actualPosition = pos.Item1.ActualPos;
+                // here we allow actualPosition == _actualDataSize as we can read backwards the very last record that way
+                if (actualPosition == -1 || actualPosition > _actualDataSize) 
+                    return new RecordReadResult(false, null, -1);
+
+                int length;
+                LogRecord record;
+                if (!TryReadRecordBackwardsInternal(workItem, actualPosition, out length, out record))
+                    return new RecordReadResult(false, null, -1);
+
+                int nextLogicalPos;
+                if (_isReadonly && _chunkFooter.MapSize > 0)
+                {
+                    if (pos.Item2 > 0)
+                        nextLogicalPos = ReadPosMap(workItem, pos.Item2 - 1).LogPos;
+                    else
+                        nextLogicalPos = 0;
+                }
+                else
+                    nextLogicalPos = actualPosition - length - 2*sizeof(int);
+
+                return new RecordReadResult(true, record, nextLogicalPos);
+            }
+            finally
+            {
+                ReturnReaderWorkItem(workItem);
+            }
         }
 
         public RecordReadResult TryReadLast()
@@ -686,10 +716,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             length = -1;
             record = null;
 
-            var realPos = GetRealPosition(actualPosition, workItem.IsMemory);
-            if (realPos < 2 * sizeof(int)) // no space even for length prefix and suffix 
+            if (actualPosition < 2 * sizeof(int)) // no space even for length prefix and suffix 
                 return false;
 
+            var realPos = GetRealPosition(actualPosition, workItem.IsMemory);
             workItem.Stream.Position = realPos - sizeof(int);
 
             length = workItem.Reader.ReadInt32();
@@ -712,7 +742,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                                       TFConsts.MaxLogRecordSize));
             }
 
-            if (realPos < length + 2 * sizeof(int)) // no space for record + length prefix and suffix 
+            if (actualPosition < length + 2 * sizeof(int)) // no space for record + length prefix and suffix 
                 throw new UnableToReadPastEndOfStreamException();
 
             workItem.Stream.Position = realPos - length - sizeof(int);

@@ -72,54 +72,6 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _result.NewPosition);
         }
 
-        [Test]
-        public void there_is_no_record_at_pos_zero()
-        {
-            Assert.Inconclusive("External user of TFChunk should care about checkpointing and not reading non-flushed data.");
-            var res = _chunk.TryReadRecordAt(0);
-            Assert.IsFalse(res.Success);
-        }
-
-        [Test]
-        public void there_is_no_first_record()
-        {
-            Assert.Inconclusive("External user of TFChunk should care about checkpointing and not reading non-flushed data.");
-            var res = _chunk.TryReadFirst();
-            Assert.IsFalse(res.Success);
-        }
-
-        [Test]
-        public void there_is_no_closest_forward_record_to_pos_zero()
-        {
-            Assert.Inconclusive("External user of TFChunk should care about checkpointing and not reading non-flushed data.");
-            var res = _chunk.TryReadClosestForward(0);
-            Assert.IsFalse(res.Success);
-        }
-
-        [Test]
-        public void there_is_no_closest_backwards_record_from_end()
-        {
-            Assert.Inconclusive("External user of TFChunk should care about checkpointing and not reading non-flushed data.");
-            var res = _chunk.TryReadClosestForward(_record.GetSizeWithLengthPrefixAndSuffix());
-            Assert.IsFalse(res.Success);
-        }
-
-        [Test]
-        public void there_is_no_closest_backwards_record_from_zero()
-        {
-            Assert.Inconclusive("External user of TFChunk should care about checkpointing and not reading non-flushed data.");
-            var res = _chunk.TryReadClosestForward(0);
-            Assert.IsFalse(res.Success);
-        }
-
-        [Test]
-        public void there_is_no_last_record()
-        {
-            Assert.Inconclusive("External user of TFChunk should care about checkpointing and not reading non-flushed data.");
-            var res = _chunk.TryReadLast();
-            Assert.IsFalse(res.Success);
-        }
-
         [TearDown]
         public void TearDown()
         {
