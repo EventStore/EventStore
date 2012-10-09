@@ -27,7 +27,6 @@
 // 
 using System.IO;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 
@@ -41,7 +40,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [Test]
         public void it_should_throw_a_file_not_found_exception()
         {
-            Assert.Throws<CorruptDatabaseException>(() => TFChunk.FromCompletedFile(_filename));
+            Assert.Throws<CorruptDatabaseException>(() => TFChunk.FromCompletedFile(_filename, verifyHash: true));
         }
     }
 
@@ -49,13 +48,13 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
     public class when_destroying_a_tf_chunk
     {
         private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
-        private TFChunk chunk;
+        private TFChunk _chunk;
 
         [SetUp]
-        public void setup()
+        public void Setup()
         {
-            chunk = TFChunk.CreateNew(_filename, 1000, 0, 0);
-            chunk.MarkForDeletion();
+            _chunk = TFChunk.CreateNew(_filename, 1000, 0, 0);
+            _chunk.MarkForDeletion();
         }
 
         [Test]

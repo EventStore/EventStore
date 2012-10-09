@@ -36,16 +36,16 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
     [TestFixture]
     public class when_opening_existing_tf_chunk
     {
-        readonly string filename = Path.Combine(Path.GetTempPath(), "foo");
+        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
         private TFChunk _chunk;
         private TFChunk _testChunk;
 
         [SetUp]
         public void Setup()
         {
-            _chunk = TFChunk.CreateNew(filename, 4096, 0, 0);
+            _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);
             _chunk.Complete();
-            _testChunk = TFChunk.FromCompletedFile(filename);
+            _testChunk = TFChunk.FromCompletedFile(_filename, verifyHash: true);
         }
 
         [Test]
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             _chunk.Dispose();
             _testChunk.Dispose();
-            File.Delete(filename);
+            File.Delete(_filename);
         }
     }
 }

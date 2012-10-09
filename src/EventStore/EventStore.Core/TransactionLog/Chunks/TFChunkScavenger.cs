@@ -139,7 +139,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                 File.Move(tmpChunkPath, newChunkPath);
 
-                newChunk = TFChunk.FromCompletedFile(newChunkPath);
+                newChunk = TFChunk.FromCompletedFile(newChunkPath, verifyHash: true);
                 var removedChunk = _db.Manager.SwapChunk(chunkNumber, newChunk);
                 Debug.Assert(ReferenceEquals(removedChunk, oldChunk)); // only scavenging could switch, so old should be always same
                 oldChunk.MarkForDeletion();

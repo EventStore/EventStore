@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             _result = _chunk.TryAppend(_record);
             _chunk.Flush();
             _chunk.Complete();
-            _uncachedChunk = TFChunk.FromCompletedFile(_filename);
+            _uncachedChunk = TFChunk.FromCompletedFile(_filename, verifyHash: true);
             _uncachedChunk.CacheInMemory();
             _uncachedChunk.UnCacheFromMemory();
         }
