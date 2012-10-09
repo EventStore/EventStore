@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,32 +24,37 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
-using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.System;
-using System.Linq;
+using System;
+using System.IO;
+using EventStore.ClientAPI.Common.Log;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Transport.Http
 {
-    public class EventStreamSlice
+    public class IOStreams
     {
-        public readonly string Stream;
-        public readonly int StartIndex;
-        public readonly int Count;
-        public readonly RecordedEvent[] Events;
+        private static readonly ILogger Log = LogManager.GetLoggerFor<IOStreams>();
 
-        internal EventStreamSlice(string stream,
-                                  int startIndex,
-                                  int count,
-                                  EventRecord[] events)
+        public static void SafelyDispose(params Stream[] streams)
         {
-            Ensure.NotNullOrEmpty(stream, "stream");
+            if (streams == null || streams.Length == 0)
+                return;
 
-            Stream = stream;
-            StartIndex = startIndex;
-            Count = count;
-            Events = (events ?? new EventRecord[0]).Select(e => new RecordedEvent(e)).ToArray();
+            foreach (var stream in streams)
+            {
+                try
+                {
+                    if (stream != null)
+                        stream.Dispose();
+                }
+                catch (Exception e)
+                {
+                    //Exceptions may be thrown when client shutdowned and we were unable to write all the data,
+                    //Nothing we can do, ignore (another option - globally ignore write errors)
+                    Log.Info("Error while closing stream : {0}", e.Message);
+                }
+            }
         }
     }
 }

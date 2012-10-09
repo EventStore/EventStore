@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        0,
                                                        new InMemoryCheckpoint(500),
                                                        new ICheckpoint[0]));
-            var exc = Assert.Throws<CorruptDatabaseException>(db.OpenVerifyAndClean);
+            var exc = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean());
             Assert.IsInstanceOf<ChunkNotFoundException>(exc.InnerException);
             db.Dispose();
         }
@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        0,
                                                        new InMemoryCheckpoint(0),
                                                        new ICheckpoint[0]));
-            Assert.DoesNotThrow(db.OpenVerifyAndClean);
+            Assert.DoesNotThrow(() => db.OpenVerifyAndClean());
             db.Dispose();
         }
     }
