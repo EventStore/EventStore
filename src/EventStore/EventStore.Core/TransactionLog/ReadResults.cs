@@ -41,5 +41,10 @@ namespace EventStore.Core.TransactionLog
             LogRecord = logRecord;
             NextPosition = nextPosition;
         }
+
+        public override string ToString()
+        {
+            return string.Format("Success: {0}, NextPosition: {1}, LogRecord: {2}", Success, NextPosition, LogRecord);
+        }
     }
 }

@@ -200,6 +200,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Infrastructure\Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
+    <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_few_scavenged_chunks.cs" />
+    <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_few_chunks.cs" />
+    <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_one_chunk.cs" />
     <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_last_two_records_removed.cs" />
     <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_first_two_records_removed.cs" />
     <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_original_last_record_removed.cs" />

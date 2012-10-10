@@ -127,7 +127,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             var res = _scavengedChunk.TryReadLast();
             Assert.IsTrue(res.Success);
             Assert.AreEqual(_rec3, res.LogRecord);
-            Assert.AreEqual(0, res.NextPosition);
+            Assert.AreEqual(_rec3.Position, res.NextPosition);
         }
 
         [Test]
