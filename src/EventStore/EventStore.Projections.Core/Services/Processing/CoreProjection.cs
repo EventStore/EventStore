@@ -351,33 +351,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(new ProjectionMessage.Projections.Faulted(_projectionCorrelationId, _faultedReason));
         }
 
-        private void SubscribeAndStartProcessing(CheckpointTag checkpointTag)
-        {
-            _processingQueue.InitializeQueue();
-            this._checkpointManager.Start();
-            _publisher.Publish(
-                new ProjectionMessage.Projections.SubscribeProjection(
-                    _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,
-                    _projectionConfig.CheckpointUnhandledBytesThreshold));
-            _publisher.Publish(new ProjectionMessage.Projections.Started(_projectionCorrelationId));
-        }
-
-        private void LoadProjectionStateAndSubscribe(string newState, CheckpointTag checkpointTag)
-        {
-            EnsureState(State.Initial | State.LoadStateRequsted);
-            _partitionStateCache.CacheAndLockPartitionState("", newState, null);
-            try
-            {
-                SetHandlerState("");
-                SubscribeAndStartProcessing(checkpointTag);
-                GoToState(State.StateLoadedSubscribed);
-            }
-            catch (Exception ex)
-            {
-                LoadProjectionStateFaulted(newState, ex);
-            }
-        }
-
         private void SetHandlerState(string partition)
         {
             if (_handlerPartition == partition)
@@ -604,10 +577,27 @@ namespace EventStore.Projections.Core.Services.Processing
         private void InitializeProjectionFromCheckpoint(
             string state, CheckpointTag checkpointTag, int checkpointEventNumber)
         {
-            _checkpointManager.InitializeProjectionFromCheckpoint(checkpointTag, checkpointEventNumber);
+            EnsureState(State.Initial | State.LoadStateRequsted);
             //TODO: initialize projection state here (test it)
             //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
-            LoadProjectionStateAndSubscribe(state, checkpointTag);
+            _partitionStateCache.CacheAndLockPartitionState("", state, null);
+            try
+            {
+                SetHandlerState("");
+                GoToState(State.StateLoadedSubscribed);
+            }
+            catch (Exception ex)
+            {
+                LoadProjectionStateFaulted(state, ex);
+                return;
+            }
+            _processingQueue.InitializeQueue();
+            _checkpointManager.InitializeProjectionFromCheckpoint(checkpointTag, checkpointEventNumber);
+            _publisher.Publish(
+                new ProjectionMessage.Projections.SubscribeProjection(
+                    _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,
+                    _projectionConfig.CheckpointUnhandledBytesThreshold));
+            _publisher.Publish(new ProjectionMessage.Projections.Started(_projectionCorrelationId));
         }
 
         private void BeginStatePartitionLoad(
