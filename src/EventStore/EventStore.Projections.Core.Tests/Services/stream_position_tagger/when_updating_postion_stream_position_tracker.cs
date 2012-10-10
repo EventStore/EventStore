@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
         [Test]
         public void position_is_updated()
         {
-            Assert.AreEqual(new EventPosition(100, 50), _positionTracker.LastEventPosition);
+            Assert.AreEqual(50, _positionTracker.LastEventPrepaprePosition);
         }
 
         [Test]
@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
         [Test]
         public void checkpoint_tag_is_for_correct_position()
         {
-            Assert.AreEqual(new EventPosition(100, 50), _positionTracker.LastEventPosition);
+            Assert.AreEqual(50, _positionTracker.LastEventPrepaprePosition);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]

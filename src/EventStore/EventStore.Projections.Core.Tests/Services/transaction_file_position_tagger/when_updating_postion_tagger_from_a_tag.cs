@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
         [Test]
         public void position_is_updated()
         {
-            Assert.AreEqual(new EventPosition(100, 50), _positionTracker.LastEventPosition);
+            Assert.AreEqual(50, _positionTracker.LastEventPrepaprePosition);
         }
     }
 }

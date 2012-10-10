@@ -48,12 +48,6 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
         }
 
         [Test]
-        public void commit_position_is_zero()
-        {
-            Assert.AreEqual(0, _positionTracker.LastEventPosition.CommitPosition);
-        }
-
-        [Test]
         public void it_can_be_updated()
         {
             // even not initialized (UpdateToZero can be removed)
@@ -66,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
         [Test]
         public void it_can_be_updated_to_zero()
         {
-            _positionTracker.UpdateToZero();
+            _positionTracker.UpdateByCheckpointTag(_tagger.MakeZeroCheckpointTag());
         }
     }
 }

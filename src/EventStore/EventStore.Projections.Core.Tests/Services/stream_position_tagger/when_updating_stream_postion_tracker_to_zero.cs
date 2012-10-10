@@ -44,19 +44,13 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
             _positionTracker = new PositionTracker(_tagger);
             // when 
 
-            _positionTracker.UpdateToZero();
+            _positionTracker.UpdateByCheckpointTag(_tagger.MakeZeroCheckpointTag());
         }
 
         [Test]
         public void streams_are_set_up()
         {
             Assert.Contains("stream1", _positionTracker.LastTag.Streams.Keys);
-        }
-
-        [Test]
-        public void commit_position_is_zero()
-        {
-            Assert.AreEqual(0, _positionTracker.LastEventPosition.CommitPosition);
         }
 
         [Test]
