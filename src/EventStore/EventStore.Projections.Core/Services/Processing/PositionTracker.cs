@@ -56,7 +56,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var newTag = _positionTagger.MakeCheckpointTag(comittedEvent);
             UpdateByCheckpointTagForward(newTag);
-            UpdatePosition(comittedEvent.Position);
+            EventPosition position = comittedEvent.Position;
+            UpdatePosition(position.PreparePosition);
         }
 
         public void UpdateByCheckpointTagForward(CheckpointTag newTag)
@@ -67,12 +68,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastTag = newTag;
         }
 
-        public void UpdatePosition(EventPosition position)
+        public void UpdatePosition(long preparePosition)
         {
-            if (position.PreparePosition <= _lastEventPreparePosition) // handle prepare only
+            if (preparePosition <= _lastEventPreparePosition) // handle prepare only
                 throw new InvalidOperationException(
-                    string.Format("Event at position {0} has been already processed", position));
-            _lastEventPreparePosition = position.PreparePosition;
+                    string.Format("Event at position {0} has been already processed", preparePosition));
+            _lastEventPreparePosition = preparePosition;
         }
 
         public void UpdateByCheckpointTag(CheckpointTag checkpointTag)

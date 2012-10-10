@@ -39,9 +39,16 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class CoreProjectionCheckpointManager
+    public class CoreProjectionCheckpointManager : IHandle<ProjectionMessage.Projections.ReadyForCheckpoint>
     {
+        private readonly IPublisher _publisher;
+        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
+        private readonly ILogger _logger;
         private readonly CoreProjection _coreProjection;
+        private readonly ProjectionConfig _projectionConfig;
+        private readonly string _name;
+        private readonly string _projectionCheckpointStreamId;
+
         private ProjectionCheckpoint _currentCheckpoint;
         private ProjectionCheckpoint _closingCheckpoint;
         private int _handledEventsAfterCheckpoint;
@@ -52,22 +59,19 @@ namespace EventStore.Projections.Core.Services.Processing
         private string _requestedCheckpointStateJson;
         private CheckpointTag _lastCompletedCheckpointPosition;
         private Event _checkpointEventToBePublished;
-        private readonly IPublisher _publisher;
-        private readonly ProjectionConfig _projectionConfig;
-        private readonly ILogger _logger;
-        private readonly string _projectionCheckpointStreamId;
         private readonly PositionTracker _lastProcessedEventPosition;
 
         private int _eventsProcessedAfterRestart;
-        private readonly string _name;
 
         public CoreProjectionCheckpointManager(
-            CoreProjection coreProjection, IPublisher publisher, ProjectionConfig projectionConfig, ILogger logger,
-            string projectionCheckpointStreamId, string name)
+            CoreProjection coreProjection, IPublisher publisher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+            ProjectionConfig projectionConfig, ILogger logger, string projectionCheckpointStreamId, string name)
         {
             _lastProcessedEventPosition = new PositionTracker(coreProjection._checkpointStrategy.PositionTagger);
             _coreProjection = coreProjection;
             _publisher = publisher;
+            _writeDispatcher = writeDispatcher;
             _projectionConfig = projectionConfig;
             _logger = logger;
             _projectionCheckpointStreamId = projectionCheckpointStreamId;
@@ -86,14 +90,17 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _closingCheckpoint = _currentCheckpoint;
             _currentCheckpoint = new ProjectionCheckpoint(
-                _publisher, _coreProjection, requestedCheckpointPosition, _projectionConfig.MaxWriteBatchLength,
+                _publisher, this, requestedCheckpointPosition, _projectionConfig.MaxWriteBatchLength,
                 _logger);
             // checkpoint only after assigning new current checkpoint, as it may call back immediately
             _closingCheckpoint.Prepare(requestedCheckpointPosition);
         }
 
-        public void WriteCheckpointEventCompleted(ClientMessage.WriteEventsCompleted message)
+        private void WriteCheckpointEventCompleted(ClientMessage.WriteEventsCompleted message)
         {
+            _coreProjection.EnsureState(
+                CoreProjection.State.Running | CoreProjection.State.Paused | CoreProjection.State.Stopping
+                | CoreProjection.State.FaultedStopping);
             if (!_inCheckpoint || _inCheckpointWriteAttempt == 0)
                 throw new InvalidOperationException();
             if (message.ErrorCode == OperationErrorCode.Success)
@@ -154,7 +161,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _requestedCheckpointPosition = null;
             _currentCheckpoint = new ProjectionCheckpoint(
-                _publisher, _coreProjection, _lastProcessedEventPosition.LastTag,
+                _publisher, this, _lastProcessedEventPosition.LastTag,
                 _projectionConfig.MaxWriteBatchLength, _logger);
             _currentCheckpoint.Start();
         }
@@ -227,6 +234,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void HandleReadyForcheckpoint()
         {
+            _coreProjection.EnsureState(CoreProjection.State.Running | CoreProjection.State.Paused | CoreProjection.State.Stopping | CoreProjection.State.FaultedStopping);
             if (!_inCheckpoint)
                 throw new InvalidOperationException();
             // all emitted events caused by events before the checkpoint position have been written  
@@ -247,10 +255,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 _logger.Trace(
                     "Writing checkpoint for {0} at {1} with expected version number {2}", _name,
                     _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
-            _publisher.Publish(
+            _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), new SendToThisEnvelope(_coreProjection), _projectionCheckpointStreamId,
-                    _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished));
+                    _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished), WriteCheckpointEventCompleted);
         }
 
         private void RequestCheckpoint(PositionTracker lastProcessedEventPosition)
@@ -290,7 +298,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_coreProjection.EventPassesSourceFilter(message))
                     _lastProcessedEventPosition.Update(message);
                 else
-                    _lastProcessedEventPosition.UpdatePosition(message.Position);
+                {
+                    EventPosition position = message.Position;
+                    _lastProcessedEventPosition.UpdatePosition(position.PreparePosition);
+                }
             }
         }
 
@@ -306,6 +317,11 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointSuggested.CheckpointTag);
             RequestCheckpoint(_lastProcessedEventPosition);
+        }
+
+        public void Handle(ProjectionMessage.Projections.ReadyForCheckpoint message)
+        {
+            HandleReadyForcheckpoint();
         }
     }
 }

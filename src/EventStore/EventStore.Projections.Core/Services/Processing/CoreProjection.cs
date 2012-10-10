@@ -47,8 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                   IHandle<ClientMessage.ReadEventsBackwardsCompleted>,
                                   IHandle<ClientMessage.WriteEventsCompleted>,
                                   IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
-                                  IHandle<ProjectionMessage.Projections.CheckpointSuggested>,
-                                  IHandle<ProjectionMessage.Projections.ReadyForCheckpoint>
+                                  IHandle<ProjectionMessage.Projections.CheckpointSuggested>
     {
         private const string ProjectionsStreamPrefix = "$projections-";
         private const string ProjectionsStateStreamSuffix = "-state";
@@ -96,10 +95,13 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher<ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>
             _readDispatcher;
 
+        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
+            _writeDispatcher;
+
         private string _handlerPartition;
         internal readonly PartitionStateCache _partitionStateCache;
         private readonly CoreProjectionQueue _processingQueue;
-        private readonly CoreProjectionCheckpointManager _coreProjectionCheckpointManager;
+        private readonly CoreProjectionCheckpointManager _checkpointManager;
 
 
         public CoreProjection(
@@ -120,6 +122,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 new RequestResponseDispatcher
                     <ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>(
                     _publisher, v => v.CorrelationId, v => v.CorrelationId);
+            _writeDispatcher =
+                new RequestResponseDispatcher
+                    <ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
+                    _publisher, v => v.CorrelationId, v => v.CorrelationId);
             _projectionCheckpointStreamId = ProjectionsStreamPrefix + _name + ProjectionCheckpointStreamSuffix;
             var builder = new CheckpointStrategy.Builder();
             _projectionStateHandler.ConfigureSourceProcessingStrategy(builder);
@@ -129,8 +135,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, _checkpointStrategy, Tick, _projectionConfig.CheckpointsEnabled,
                 projectionConfig.PendingEventsThreshold);
-            _coreProjectionCheckpointManager = new CoreProjectionCheckpointManager(
-                this, this._publisher, this._projectionConfig, this._logger, this._projectionCheckpointStreamId,
+            _checkpointManager = new CoreProjectionCheckpointManager(
+                this, this._publisher, _writeDispatcher, this._projectionConfig, this._logger, this._projectionCheckpointStreamId,
                 this._name);
             GoToState(State.Initial);
         }
@@ -156,7 +162,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ProjectionStatistics GetStatistics()
         {
-            var checkpointStatistics = _coreProjectionCheckpointManager.GetStatistics();
+            var checkpointStatistics = _checkpointManager.GetStatistics();
             return new ProjectionStatistics
                 {
                     Mode = _projectionConfig.Mode,
@@ -204,17 +210,10 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        // ready for checkpoint is sent directly to the core projection by a checkpoint object 
-        public void Handle(ProjectionMessage.Projections.ReadyForCheckpoint message)
-        {
-            EnsureState(State.Running | State.Paused | State.Stopping | State.FaultedStopping);
-            this._coreProjectionCheckpointManager.HandleReadyForcheckpoint();
-        }
-
         public void Handle(ClientMessage.WriteEventsCompleted message)
         {
-            EnsureState(State.Running | State.Paused | State.Stopping | State.FaultedStopping);
-            this._coreProjectionCheckpointManager.WriteCheckpointEventCompleted(message);
+            if (_writeDispatcher.Handle(message))
+                return;
         }
 
         public void Handle(ClientMessage.ReadEventsBackwardsCompleted message)
@@ -327,7 +326,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(new ProjectionMessage.Projections.UnsubscribeProjection(_projectionCorrelationId));
             // core projection may be stopped to change its configuration
             // it is important to checkpoint it so no writes pending remain when stopped
-            if (this._coreProjectionCheckpointManager.RequestCheckpointToStop())
+            if (this._checkpointManager.RequestCheckpointToStop())
                 return;
             GoToState(State.Stopped);
         }
@@ -342,7 +341,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _publisher.Publish(new ProjectionMessage.Projections.UnsubscribeProjection(_projectionCorrelationId));
             // checkpoint last known correct state on fault
-            if (this._coreProjectionCheckpointManager.RequestCheckpointToStop())
+            if (this._checkpointManager.RequestCheckpointToStop())
                 return;
             GoToState(State.Faulted);
         }
@@ -355,7 +354,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void SubscribeAndStartProcessing(CheckpointTag checkpointTag)
         {
             _processingQueue.InitializeQueue();
-            this._coreProjectionCheckpointManager.Start();
+            this._checkpointManager.Start();
             _publisher.Publish(
                 new ProjectionMessage.Projections.SubscribeProjection(
                     _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,
@@ -487,7 +486,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             EnsureState(State.Running);
             //TODO: move to separate projection method and cache result in work item
-            this._coreProjectionCheckpointManager.UpdateLastProcessedEventPosition(message);
+            this._checkpointManager.UpdateLastProcessedEventPosition(message);
         }
 
         private void SubmitScheduledWritesAndProcessCheckpoints(List<EmittedEvent[]> scheduledWrites)
@@ -495,7 +494,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_state == State.Faulted)
                 return;
             EnsureState(State.Running);
-            _coreProjectionCheckpointManager.SubmitScheduledWritesAndProcessCheckpoints(scheduledWrites);
+            _checkpointManager.SubmitScheduledWritesAndProcessCheckpoints(scheduledWrites);
         }
 
         private bool ProcessEventByHandler(
@@ -605,7 +604,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void InitializeProjectionFromCheckpoint(
             string state, CheckpointTag checkpointTag, int checkpointEventNumber)
         {
-            _coreProjectionCheckpointManager.InitializeProjectionFromCheckpoint(checkpointTag, checkpointEventNumber);
+            _checkpointManager.InitializeProjectionFromCheckpoint(checkpointTag, checkpointEventNumber);
             //TODO: initialize projection state here (test it)
             //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
             LoadProjectionStateAndSubscribe(state, checkpointTag);
@@ -806,7 +805,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             protected override void WriteOutput()
             {
-                _projection._coreProjectionCheckpointManager.ProcessCheckpointSuggestedEvent(_message);
+                _projection._checkpointManager.ProcessCheckpointSuggestedEvent(_message);
                 NextStage();
             }
         }
