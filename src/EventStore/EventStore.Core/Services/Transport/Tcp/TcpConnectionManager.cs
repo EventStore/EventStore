@@ -156,7 +156,17 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnMessageArrived(ArraySegment<byte> data)
         {
-            var package = TcpPackage.FromArraySegment(data);
+            TcpPackage package;
+            try
+            {
+                package = TcpPackage.FromArraySegment(data);
+            }
+            catch (Exception e)
+            {
+                Log.InfoException(e, "Received bad network package");
+                return;
+            }
+
             OnPackageReceived(package);
         }
 
@@ -174,6 +184,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                     var message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, this);
                     if (message != null)
                         _publisher.Publish(message);
+                    //TODO TR : probably drop client which sent bad package
                     break;
                 }
             }

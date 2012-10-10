@@ -117,6 +117,8 @@ namespace EventStore.TestClient
             _commands.Register(new SubscribeToStreamProcessor());
 
             _commands.Register(new ScavengeProcessor());
+
+            _commands.Register(new TcpSanitazationCheckProcessor());
         }
 
         public int Run()
