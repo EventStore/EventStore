@@ -35,14 +35,15 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_appending_to_a_tfchunk_and_flushing
+    public class when_reading_from_a_cached_tfchunk
     {
         private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
         private TFChunk _chunk;
         private readonly Guid _corrId = Guid.NewGuid();
         private readonly Guid _eventId = Guid.NewGuid();
-        private RecordWriteResult _result;
+        private TFChunk _cachedChunk;
         private PrepareLogRecord _record;
+        private RecordWriteResult _result;
 
         [SetUp]
         public void Setup()
@@ -52,6 +53,9 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);
             _result = _chunk.TryAppend(_record);
             _chunk.Flush();
+            _chunk.Complete();
+            _cachedChunk = TFChunk.FromCompletedFile(_filename, verifyHash: true);
+            _cachedChunk.CacheInMemory();
         }
 
         [Test]
@@ -63,75 +67,63 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void the_record_is_appended()
+        public void the_chunk_is_cached()
         {
-            Assert.IsTrue(_result.Success);
-        }
-
-        [Test]
-        public void correct_old_position_is_returned()
-        {
-            //position without header (logical position).
-            Assert.AreEqual(0, _result.OldPosition);
-        }
-
-        [Test]
-        public void the_updated_position_is_returned()
-        {
-            //position without header (logical position).
-            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _result.NewPosition);
+            Assert.IsTrue(_cachedChunk.IsCached);
         }
 
         [Test]
         public void the_record_can_be_read_at_exact_position()
         {
-            var res = _chunk.TryReadAt(0);
+            var res = _cachedChunk.TryReadAt(0);
             Assert.IsTrue(res.Success);
             Assert.AreEqual(_record, res.LogRecord);
             Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
         }
 
         [Test]
-        public void the_record_can_be_read_as_first_one()
+        public void the_record_can_be_read_as_first_record()
         {
-            var res = _chunk.TryReadFirst();
+            var res = _cachedChunk.TryReadFirst();
             Assert.IsTrue(res.Success);
-            Assert.AreEqual(_record, res.LogRecord);
             Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
+            Assert.AreEqual(_record, res.LogRecord);
+            Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
         }
 
         [Test]
-        public void the_record_can_be_read_as_closest_forward_to_pos_zero()
+        public void the_record_can_be_read_as_closest_forward_to_zero_pos()
         {
-            var res = _chunk.TryReadClosestForward(0);
+            var res = _cachedChunk.TryReadClosestForward(0);
             Assert.IsTrue(res.Success);
-            Assert.AreEqual(_record, res.LogRecord);
             Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
+            Assert.AreEqual(_record, res.LogRecord);
+            Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
         }
 
         [Test]
         public void the_record_can_be_read_as_closest_backwards_from_end()
         {
-            var res = _chunk.TryReadClosestBackwards(_record.GetSizeWithLengthPrefixAndSuffix());
+            var res = _cachedChunk.TryReadClosestBackwards(_record.GetSizeWithLengthPrefixAndSuffix());
             Assert.IsTrue(res.Success);
-            Assert.AreEqual(_record, res.LogRecord);
             Assert.AreEqual(0, res.NextPosition);
+            Assert.AreEqual(_record, res.LogRecord);
         }
 
         [Test]
-        public void the_record_can_be_read_as_last_one()
+        public void the_record_can_be_read_as_last()
         {
-            var res = _chunk.TryReadLast();
+            var res = _cachedChunk.TryReadLast();
             Assert.IsTrue(res.Success);
-            Assert.AreEqual(_record, res.LogRecord);
             Assert.AreEqual(0, res.NextPosition);
+            Assert.AreEqual(_record, res.LogRecord);
         }
 
         [TearDown]
-        public void TearDown()
+        public void Teardown()
         {
             _chunk.Dispose();
-            File.Delete(_filename);
+            _cachedChunk.Dispose();
         }
     }
 }

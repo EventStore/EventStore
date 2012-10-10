@@ -43,7 +43,7 @@ namespace EventStore.Core.Services.Storage
             try
             {
                 var scavenger = new TFChunkScavenger(_db, _readIndex);
-                scavenger.Scavenge();
+                scavenger.Scavenge(alwaysKeepScavenged: true);
             }
             catch (Exception exc)
             {

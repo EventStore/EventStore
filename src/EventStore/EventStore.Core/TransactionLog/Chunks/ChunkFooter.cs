@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Utils;
 
@@ -41,6 +40,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public readonly int ActualChunkSize;
         public readonly int ActualDataSize;
         public readonly int MapSize;
+        public int MapCount { get { return MapSize / sizeof(ulong); } }
         public byte[] MD5Hash;
 
         public ChunkFooter(bool completed, int actualChunkSize, int actualDataSize, int mapSize, byte[] md5Hash)

@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [Test]
         public void there_is_no_record_at_pos_zero()
         {
-            var res = _chunk.TryReadRecordAt(0);
+            var res = _chunk.TryReadAt(0);
             Assert.IsFalse(res.Success);
         }
 

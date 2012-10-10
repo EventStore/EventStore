@@ -35,14 +35,15 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_appending_to_a_tfchunk_and_flushing
+    public class when_uncaching_a_tfchunk
     {
-        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
+        readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
         private TFChunk _chunk;
         private readonly Guid _corrId = Guid.NewGuid();
         private readonly Guid _eventId = Guid.NewGuid();
         private RecordWriteResult _result;
         private PrepareLogRecord _record;
+        private TFChunk _uncachedChunk;
 
         [SetUp]
         public void Setup()
@@ -52,6 +53,17 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);
             _result = _chunk.TryAppend(_record);
             _chunk.Flush();
+            _chunk.Complete();
+            _uncachedChunk = TFChunk.FromCompletedFile(_filename, verifyHash: true);
+            _uncachedChunk.CacheInMemory();
+            _uncachedChunk.UnCacheFromMemory();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _chunk.Dispose();
+            _uncachedChunk.Dispose();
         }
 
         [Test]
@@ -63,75 +75,31 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void the_record_is_appended()
+        public void the_chunk_is_not_cached()
+        {
+            Assert.IsFalse(_uncachedChunk.IsCached);
+        }
+
+        [Test]
+        public void the_record_was_written()
         {
             Assert.IsTrue(_result.Success);
         }
 
         [Test]
-        public void correct_old_position_is_returned()
+        public void the_correct_position_is_returned()
         {
-            //position without header (logical position).
             Assert.AreEqual(0, _result.OldPosition);
         }
 
         [Test]
-        public void the_updated_position_is_returned()
+        public void the_record_can_be_read()
         {
-            //position without header (logical position).
-            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _result.NewPosition);
-        }
-
-        [Test]
-        public void the_record_can_be_read_at_exact_position()
-        {
-            var res = _chunk.TryReadAt(0);
+            var res = _uncachedChunk.TryReadAt(0);
             Assert.IsTrue(res.Success);
             Assert.AreEqual(_record, res.LogRecord);
             Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
-        }
-
-        [Test]
-        public void the_record_can_be_read_as_first_one()
-        {
-            var res = _chunk.TryReadFirst();
-            Assert.IsTrue(res.Success);
-            Assert.AreEqual(_record, res.LogRecord);
-            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
-        }
-
-        [Test]
-        public void the_record_can_be_read_as_closest_forward_to_pos_zero()
-        {
-            var res = _chunk.TryReadClosestForward(0);
-            Assert.IsTrue(res.Success);
-            Assert.AreEqual(_record, res.LogRecord);
-            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
-        }
-
-        [Test]
-        public void the_record_can_be_read_as_closest_backwards_from_end()
-        {
-            var res = _chunk.TryReadClosestBackwards(_record.GetSizeWithLengthPrefixAndSuffix());
-            Assert.IsTrue(res.Success);
-            Assert.AreEqual(_record, res.LogRecord);
-            Assert.AreEqual(0, res.NextPosition);
-        }
-
-        [Test]
-        public void the_record_can_be_read_as_last_one()
-        {
-            var res = _chunk.TryReadLast();
-            Assert.IsTrue(res.Success);
-            Assert.AreEqual(_record, res.LogRecord);
-            Assert.AreEqual(0, res.NextPosition);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _chunk.Dispose();
-            File.Delete(_filename);
+            //Assert.AreEqual(_result.NewPosition, res.NewPosition);
         }
     }
 }

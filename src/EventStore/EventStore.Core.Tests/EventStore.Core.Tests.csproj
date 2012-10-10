@@ -200,8 +200,15 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Infrastructure\Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_last_two_records_removed.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_first_two_records_removed.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_original_last_record_removed.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_middle_record_removed.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_all_records_removed.cs" />
+    <Compile Include="TransactionLog\Chunks\FakeReadIndex.cs" />
     <Compile Include="TransactionLog\Chunks\when_destroying_a_tfchunk.cs" />
     <Compile Include="TransactionLog\Chunks\when_destroying_a_tfchunk_that_is_locked.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_original_first_record_removed.cs" />
     <Compile Include="TransactionLog\Chunks\when_marking_for_deletion_a_tfchunk_that_has_been_locked_and_unlocked.cs" />
     <Compile Include="TransactionLog\Chunks\when_unlocking_a_tfchunk_that_has_been_marked_for_deletion.cs" />
     <Compile Include="TransactionLog\commit_log_record_should.cs" />

@@ -369,7 +369,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 int midPointsCnt = 1 << depth;
                 int segmentSize;
                 Midpoint[] midpoints;
-                var mapCount = _chunkFooter.MapSize / sizeof(ulong);
+                var mapCount = _chunkFooter.MapCount;
                 if (mapCount < midPointsCnt)
                 {
                     segmentSize = 1; // we cache all items
@@ -503,7 +503,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 Log.Trace("UNCACHED TFChunk #{0} at {1}", _chunkHeader.ChunkStartNumber, Path.GetFileName(_filename));
         }
 
-        public RecordReadResult TryReadRecordAt(int logicalPosition)
+        public RecordReadResult TryReadAt(int logicalPosition)
         {
             var workItem = GetReaderWorkItem();
             try
@@ -541,10 +541,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (_chunkFooter.MapSize > sizeof(ulong))
                         nextLogicalPos = ReadPosMap(workItem, 1).LogPos;
                     else
-                        nextLogicalPos = (int)(record.Position % _chunkHeader.ChunkSize) + 4 + length;
+                        nextLogicalPos = (int)(record.Position % _chunkHeader.ChunkSize) + length + 2*sizeof(int);
                 }
                 else
-                    nextLogicalPos = GetLogicalPosition(workItem);
+                    nextLogicalPos = 0 + length + 2*sizeof(int);
                 return new RecordReadResult(true, record, nextLogicalPos);
 
             }
@@ -572,13 +572,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                 int nextLogicalPos;
                 if (_isReadonly && _chunkFooter.MapSize > 0)
                 {
-                    if ((pos.Item2 + 1) * sizeof(ulong) < _chunkFooter.MapSize)
+                    if (pos.Item2 + 1 < _chunkFooter.MapCount)
                         nextLogicalPos = ReadPosMap(workItem, pos.Item2 + 1).LogPos;
                     else
-                        nextLogicalPos = (int)(record.Position % _chunkHeader.ChunkSize) + 4 + length;
+                        nextLogicalPos = (int)(record.Position % _chunkHeader.ChunkSize) + length + 2*sizeof(int);
                 }
                 else
-                    nextLogicalPos = GetLogicalPosition(workItem);
+                    nextLogicalPos = actualPosition + length + 2*sizeof(int);
 
                 return new RecordReadResult(true, record, nextLogicalPos);
             }
@@ -641,7 +641,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (_isReadonly && _chunkFooter.MapSize > 0)
                 {
                     var mapCount = _chunkFooter.MapSize / sizeof(ulong);
-                    nextLogicalPos = mapCount > 1 ? ReadPosMap(workItem, mapCount - 2).LogPos : 0;
+                    nextLogicalPos = mapCount > 1 ? ReadPosMap(workItem, mapCount - 1).LogPos : 0;
                 }
                 else
                     nextLogicalPos = _actualDataSize - length - 2*sizeof(int);

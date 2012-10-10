@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.TransactionLog
             {
                 LogRecord record = null;
                 reader.Open();
-                Assert.IsFalse(reader.TryReadRecordAt(ref record, 5));
+                Assert.IsFalse(reader.TryReadAt(ref record, 5));
             }
         }
 
