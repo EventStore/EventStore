@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
         [Test]
         public void prepapre_position_is_updated()
         {
-            Assert.AreEqual(50, _positionTracker.LastEventPosition.PreparePosition);
+            Assert.AreEqual(50, _positionTracker.LastEventPrepaprePosition);
         }
 
         [Test]

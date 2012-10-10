@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
         [Test]
         public void it_can_be_updated_to_zero()
         {
-            _positionTracker.UpdateToZero();
+            _positionTracker.UpdateByCheckpointTag(_tagger.MakeZeroCheckpointTag());
         }
     }
 }
