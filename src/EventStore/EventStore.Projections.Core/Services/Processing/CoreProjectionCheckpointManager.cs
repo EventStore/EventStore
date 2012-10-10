@@ -78,6 +78,138 @@ namespace EventStore.Projections.Core.Services.Processing
             _name = name;
         }
 
+        public ProjectionStatistics GetStatistics()
+        {
+            return new ProjectionStatistics
+                {
+                    Mode = _projectionConfig.Mode,
+                    Name = null,
+                    Position = _lastProcessedEventPosition.LastTag,
+                    StateReason = "",
+                    Status = "",
+                    LastCheckpoint =
+                        String.Format(CultureInfo.InvariantCulture, "{0}", _lastCompletedCheckpointPosition),
+                    EventsProcessedAfterRestart = _eventsProcessedAfterRestart,
+                    BufferedEvents = -1,
+                    WritePendingEventsBeforeCheckpoint =
+                        _closingCheckpoint != null ? _closingCheckpoint.GetWritePendingEvents() : 0,
+                    WritePendingEventsAfterCheckpoint =
+                        _currentCheckpoint != null ? _currentCheckpoint.GetWritePendingEvents() : 0,
+                    ReadsInProgress = /*_readDispatcher.ActiveRequestCount*/ +
+                                                                             + (_closingCheckpoint != null
+                                                                                    ? _closingCheckpoint.
+                                                                                          GetReadsInProgress()
+                                                                                    : 0)
+                                                                             +
+                                                                             (_currentCheckpoint != null
+                                                                                  ? _currentCheckpoint.GetReadsInProgress
+                                                                                        ()
+                                                                                  : 0),
+                    WritesInProgress =
+                        ((_inCheckpointWriteAttempt != 0) ? 1 : 0)
+                        + (_closingCheckpoint != null ? _closingCheckpoint.GetWritesInProgress() : 0)
+                        + (_currentCheckpoint != null ? _currentCheckpoint.GetWritesInProgress() : 0),
+                    PartitionsCached = -1,
+                    CheckpointStatus =
+                        _inCheckpointWriteAttempt > 0
+                            ? "Writing (" + _inCheckpointWriteAttempt + ")"
+                            : (_inCheckpoint ? "Requested" : ""),
+                };
+        }
+
+        public void SubmitScheduledWritesAndProcessCheckpoints(List<EmittedEvent[]> scheduledWrites)
+        {
+            if (scheduledWrites != null)
+                foreach (var scheduledWrite in scheduledWrites)
+                {
+                    _currentCheckpoint.EmitEvents(scheduledWrite, _lastProcessedEventPosition.LastTag);
+                }
+            _handledEventsAfterCheckpoint++;
+            if (_coreProjection._state != CoreProjection.State.Faulted
+                && _coreProjection._state != CoreProjection.State.FaultedStopping)
+                ProcessCheckpoints(_lastProcessedEventPosition);
+        }
+
+        public bool RequestCheckpointToStop()
+        {
+            if (_projectionConfig.CheckpointsEnabled)
+                // do not request checkpoint if no events were processed since last checkpoint
+                if (_lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
+                {
+                    RequestCheckpoint(_lastProcessedEventPosition);
+                    return true;
+                }
+            return false;
+        }
+
+        public void UpdateLastProcessedEventPosition(ProjectionMessage.Projections.CommittedEventReceived message)
+        {
+            bool passedFilter = _coreProjection.EventPassesFilter(message);
+            if (passedFilter)
+            {
+                _lastProcessedEventPosition.Update(message);
+                _eventsProcessedAfterRestart++;
+            }
+            else
+            {
+                if (_coreProjection.EventPassesSourceFilter(message))
+                    _lastProcessedEventPosition.Update(message);
+                else
+                {
+                    EventPosition position = message.Position;
+                    _lastProcessedEventPosition.UpdatePosition(position.PreparePosition);
+                }
+            }
+        }
+
+        public void InitializeProjectionFromCheckpoint(CheckpointTag checkpointTag, int lastWrittenCheckpointEventNumber)
+        {
+            _lastProcessedEventPosition.UpdateByCheckpointTag(checkpointTag);
+            _lastCompletedCheckpointPosition = checkpointTag;
+            _lastWrittenCheckpointEventNumber = lastWrittenCheckpointEventNumber;
+            _requestedCheckpointPosition = null;
+            _currentCheckpoint = new ProjectionCheckpoint(
+                _publisher, this, _lastProcessedEventPosition.LastTag,
+                _projectionConfig.MaxWriteBatchLength, _logger);
+            _currentCheckpoint.Start();
+        }
+
+        public void ProcessCheckpointSuggestedEvent(
+            ProjectionMessage.Projections.CheckpointSuggested checkpointSuggested)
+        {
+            _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointSuggested.CheckpointTag);
+            RequestCheckpoint(_lastProcessedEventPosition);
+        }
+
+        public void Handle(ProjectionMessage.Projections.ReadyForCheckpoint message)
+        {
+            _coreProjection.EnsureState(CoreProjection.State.Running | CoreProjection.State.Paused | CoreProjection.State.Stopping | CoreProjection.State.FaultedStopping);
+            if (!_inCheckpoint)
+                throw new InvalidOperationException();
+            // all emitted events caused by events before the checkpoint position have been written  
+            // unlock states, so the cache can be clean up as they can now be safely reloaded from the ES
+            _coreProjection._partitionStateCache.Unlock(_requestedCheckpointPosition);
+            _inCheckpointWriteAttempt = 1;
+            //TODO: pass correct expected version
+            _checkpointEventToBePublished = new Event(
+                Guid.NewGuid(), "ProjectionCheckpoint", false,
+                _requestedCheckpointStateJson == null ? null : Encoding.UTF8.GetBytes(_requestedCheckpointStateJson),
+                _requestedCheckpointPosition.ToJsonBytes());
+            PublishWriteCheckpointEvent();
+        }
+
+        private void RequestCheckpoint(PositionTracker lastProcessedEventPosition)
+        {
+            if (!_projectionConfig.CheckpointsEnabled)
+                throw new InvalidOperationException("Checkpoints are not allowed");
+            if (!_inCheckpoint)
+                CompleteCheckpoint(lastProcessedEventPosition);
+            else if (_coreProjection._state != CoreProjection.State.Stopping
+                     && _coreProjection._state != CoreProjection.State.FaultedStopping)
+                // stopping projection is already paused
+                _coreProjection.GoToState(CoreProjection.State.Paused);
+        }
+
         private void CompleteCheckpoint(PositionTracker lastProcessedEventPosition)
         {
             CheckpointTag requestedCheckpointPosition = lastProcessedEventPosition.LastTag;
@@ -157,58 +289,6 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public ProjectionStatistics GetStatistics()
-        {
-            return new ProjectionStatistics
-                {
-                    Mode = _projectionConfig.Mode,
-                    Name = null,
-                    Position = _lastProcessedEventPosition.LastTag,
-                    StateReason = "",
-                    Status = "",
-                    LastCheckpoint =
-                        String.Format(CultureInfo.InvariantCulture, "{0}", _lastCompletedCheckpointPosition),
-                    EventsProcessedAfterRestart = _eventsProcessedAfterRestart,
-                    BufferedEvents = -1,
-                    WritePendingEventsBeforeCheckpoint =
-                        _closingCheckpoint != null ? _closingCheckpoint.GetWritePendingEvents() : 0,
-                    WritePendingEventsAfterCheckpoint =
-                        _currentCheckpoint != null ? _currentCheckpoint.GetWritePendingEvents() : 0,
-                    ReadsInProgress = /*_readDispatcher.ActiveRequestCount*/ +
-                                                                             + (_closingCheckpoint != null
-                                                                                    ? _closingCheckpoint.
-                                                                                          GetReadsInProgress()
-                                                                                    : 0)
-                                                                             +
-                                                                             (_currentCheckpoint != null
-                                                                                  ? _currentCheckpoint.GetReadsInProgress
-                                                                                        ()
-                                                                                  : 0),
-                    WritesInProgress =
-                        ((_inCheckpointWriteAttempt != 0) ? 1 : 0)
-                        + (_closingCheckpoint != null ? _closingCheckpoint.GetWritesInProgress() : 0)
-                        + (_currentCheckpoint != null ? _currentCheckpoint.GetWritesInProgress() : 0),
-                    PartitionsCached = -1,
-                    CheckpointStatus =
-                        _inCheckpointWriteAttempt > 0
-                            ? "Writing (" + _inCheckpointWriteAttempt + ")"
-                            : (_inCheckpoint ? "Requested" : ""),
-                };
-        }
-
-        public void SubmitScheduledWritesAndProcessCheckpoints(List<EmittedEvent[]> scheduledWrites)
-        {
-            if (scheduledWrites != null)
-                foreach (var scheduledWrite in scheduledWrites)
-                {
-                    _currentCheckpoint.EmitEvents(scheduledWrite, _lastProcessedEventPosition.LastTag);
-                }
-            _handledEventsAfterCheckpoint++;
-            if (_coreProjection._state != CoreProjection.State.Faulted
-                && _coreProjection._state != CoreProjection.State.FaultedStopping)
-                ProcessCheckpoints(_lastProcessedEventPosition);
-        }
-
         private void ProcessCheckpoints(PositionTracker lastProcessedEventPosition)
         {
             _coreProjection.EnsureState(
@@ -233,86 +313,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), new SendToThisEnvelope(_coreProjection), _projectionCheckpointStreamId,
                     _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished), WriteCheckpointEventCompleted);
-        }
-
-        private void RequestCheckpoint(PositionTracker lastProcessedEventPosition)
-        {
-            if (!_projectionConfig.CheckpointsEnabled)
-                throw new InvalidOperationException("Checkpoints are not allowed");
-            if (!_inCheckpoint)
-                CompleteCheckpoint(lastProcessedEventPosition);
-            else if (_coreProjection._state != CoreProjection.State.Stopping
-                     && _coreProjection._state != CoreProjection.State.FaultedStopping)
-                // stopping projection is already paused
-                _coreProjection.GoToState(CoreProjection.State.Paused);
-        }
-
-        public bool RequestCheckpointToStop()
-        {
-            if (_projectionConfig.CheckpointsEnabled)
-                // do not request checkpoint if no events were processed since last checkpoint
-                if (_lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
-                {
-                    RequestCheckpoint(_lastProcessedEventPosition);
-                    return true;
-                }
-            return false;
-        }
-
-        public void UpdateLastProcessedEventPosition(ProjectionMessage.Projections.CommittedEventReceived message)
-        {
-            bool passedFilter = _coreProjection.EventPassesFilter(message);
-            if (passedFilter)
-            {
-                _lastProcessedEventPosition.Update(message);
-                _eventsProcessedAfterRestart++;
-            }
-            else
-            {
-                if (_coreProjection.EventPassesSourceFilter(message))
-                    _lastProcessedEventPosition.Update(message);
-                else
-                {
-                    EventPosition position = message.Position;
-                    _lastProcessedEventPosition.UpdatePosition(position.PreparePosition);
-                }
-            }
-        }
-
-        public void InitializeProjectionFromCheckpoint(CheckpointTag checkpointTag, int lastWrittenCheckpointEventNumber)
-        {
-            _lastProcessedEventPosition.UpdateByCheckpointTag(checkpointTag);
-            _lastCompletedCheckpointPosition = checkpointTag;
-            _lastWrittenCheckpointEventNumber = lastWrittenCheckpointEventNumber;
-            _requestedCheckpointPosition = null;
-            _currentCheckpoint = new ProjectionCheckpoint(
-                _publisher, this, _lastProcessedEventPosition.LastTag,
-                _projectionConfig.MaxWriteBatchLength, _logger);
-            _currentCheckpoint.Start();
-        }
-
-        public void ProcessCheckpointSuggestedEvent(
-            ProjectionMessage.Projections.CheckpointSuggested checkpointSuggested)
-        {
-            _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointSuggested.CheckpointTag);
-            RequestCheckpoint(_lastProcessedEventPosition);
-        }
-
-        public void Handle(ProjectionMessage.Projections.ReadyForCheckpoint message)
-        {
-            _coreProjection.EnsureState(CoreProjection.State.Running | CoreProjection.State.Paused | CoreProjection.State.Stopping | CoreProjection.State.FaultedStopping);
-            if (!_inCheckpoint)
-                throw new InvalidOperationException();
-            // all emitted events caused by events before the checkpoint position have been written  
-            // unlock states, so the cache can be clean up as they can now be safely reloaded from the ES
-            _coreProjection._partitionStateCache.Unlock(_requestedCheckpointPosition);
-            _inCheckpointWriteAttempt = 1;
-            //TODO: pass correct expected version
-            _checkpointEventToBePublished = new Event(
-                Guid.NewGuid(), "ProjectionCheckpoint", false,
-                _requestedCheckpointStateJson == null ? null : Encoding.UTF8.GetBytes(_requestedCheckpointStateJson),
-                _requestedCheckpointPosition.ToJsonBytes());
-            PublishWriteCheckpointEvent();
         }
     }
 }
