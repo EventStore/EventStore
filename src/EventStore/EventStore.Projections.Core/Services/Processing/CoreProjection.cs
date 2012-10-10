@@ -46,6 +46,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                   ICoreProjection,
                                   IHandle<ClientMessage.ReadEventsBackwardsCompleted>,
                                   IHandle<ClientMessage.WriteEventsCompleted>,
+                                  IHandle<ProjectionMessage.Projections.CheckpointCompleted>,
+                                  IHandle<ProjectionMessage.Projections.PauseRequested>,
                                   IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
                                   IHandle<ProjectionMessage.Projections.CheckpointSuggested>
     {
@@ -54,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private const string ProjectionCheckpointStreamSuffix = "-checkpoint";
 
         [Flags]
-        internal enum State : uint
+        private enum State : uint
         {
             Initial = 0x80000000,
             LoadStateRequsted = 0x1,
@@ -76,11 +78,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Guid _projectionCorrelationId;
         private readonly ProjectionConfig _projectionConfig;
         private readonly EventFilter _eventFilter;
-        internal readonly CheckpointStrategy _checkpointStrategy;
+        private readonly CheckpointStrategy _checkpointStrategy;
         private readonly ILogger _logger;
 
         private readonly IProjectionStateHandler _projectionStateHandler;
-        internal State _state;
+        private State _state;
 
         //NOTE: this queue hides the real length of projection stage incoming queue, so the almost empty stage queue may still handle many long projection queues
 
@@ -99,7 +101,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _writeDispatcher;
 
         private string _handlerPartition;
-        internal readonly PartitionStateCache _partitionStateCache;
+        private readonly PartitionStateCache _partitionStateCache;
         private readonly CoreProjectionQueue _processingQueue;
         private readonly CoreProjectionCheckpointManager _checkpointManager;
 
@@ -137,7 +139,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 projectionConfig.PendingEventsThreshold);
             _checkpointManager = new CoreProjectionCheckpointManager(
                 this, this._publisher, _writeDispatcher, this._projectionConfig, this._logger, this._projectionCheckpointStreamId,
-                this._name);
+                this._name, _checkpointStrategy.PositionTagger);
             GoToState(State.Initial);
         }
 
@@ -221,7 +223,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readDispatcher.Handle(message);
         }
 
-        internal void GoToState(State state)
+        private void GoToState(State state)
         {
             _state = state; // set state before transition to allow further state change
             switch (state)
@@ -234,6 +236,17 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 default:
                     _processingQueue.SetStopped();
+                    break;
+            }
+            switch (state)
+            {
+                case State.Stopped:
+                case State.Faulted:
+                    _checkpointManager.Stopped();
+                    break;
+                case State.Stopping:
+                case State.FaultedStopping:
+                    _checkpointManager.Stopping();
                     break;
             }
             switch (state)
@@ -379,7 +392,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return _projectionStateHandler.GetType().Namespace + "." + _projectionStateHandler.GetType().Name;
         }
 
-        internal void TryResume()
+        private void TryResume()
         {
             GoToState(State.Resumed);
         }
@@ -459,7 +472,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             EnsureState(State.Running);
             //TODO: move to separate projection method and cache result in work item
-            this._checkpointManager.UpdateLastProcessedEventPosition(message);
+            if (EventPassesSourceFilter(message))
+            {
+                var checkpointTag = _checkpointStrategy.PositionTagger.MakeCheckpointTag(message);
+                _checkpointManager.UpdateLastProcessedEventPosition(checkpointTag, EventPassesFilter(message));
+            }
         }
 
         private void SubmitScheduledWritesAndProcessCheckpoints(List<EmittedEvent[]> scheduledWrites)
@@ -467,7 +484,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_state == State.Faulted)
                 return;
             EnsureState(State.Running);
-            _checkpointManager.SubmitScheduledWritesAndProcessCheckpoints(scheduledWrites);
+            _checkpointManager.EventProcessed(scheduledWrites, GetProjectionState());
         }
 
         private bool ProcessEventByHandler(
@@ -482,12 +499,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 out emittedEvents);
         }
 
-        internal bool EventPassesFilter(ProjectionMessage.Projections.CommittedEventReceived message)
+        private bool EventPassesFilter(ProjectionMessage.Projections.CommittedEventReceived message)
         {
             return _eventFilter.Passes(message.ResolvedLinkTo, message.PositionStreamId, message.Data.EventType);
         }
 
-        internal bool EventPassesSourceFilter(ProjectionMessage.Projections.CommittedEventReceived message)
+        private bool EventPassesSourceFilter(ProjectionMessage.Projections.CommittedEventReceived message)
         {
             return _eventFilter.PassesSource(message.ResolvedLinkTo, message.PositionStreamId);
         }
@@ -521,7 +538,7 @@ namespace EventStore.Projections.Core.Services.Processing
             GoToState(State.FaultedStopping);
         }
 
-        internal void EnsureState(State expectedStates)
+        private void EnsureState(State expectedStates)
         {
             if ((_state & expectedStates) == 0)
             {
@@ -592,7 +609,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             _processingQueue.InitializeQueue();
-            _checkpointManager.InitializeProjectionFromCheckpoint(checkpointTag, checkpointEventNumber);
+            _checkpointManager.Start(checkpointTag, checkpointEventNumber);
             _publisher.Publish(
                 new ProjectionMessage.Projections.SubscribeProjection(
                     _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,
@@ -804,6 +821,40 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _faultedReason = ex.Message;
             GoToState(State.Faulted);
+        }
+
+        private void CheckpointCompleted(CheckpointTag lastCompletedCheckpointPosition)
+        {
+            // all emitted events caused by events before the checkpoint position have been written  
+            // unlock states, so the cache can be clean up as they can now be safely reloaded from the ES
+            _partitionStateCache.Unlock(lastCompletedCheckpointPosition);
+
+            if (_state == State.Paused)
+            {
+                TryResume();
+            }
+            else if (_state == State.Stopping)
+                GoToState(State.Stopped);
+            else if (_state == State.FaultedStopping)
+                GoToState(State.Faulted);
+        }
+
+        private void Pause()
+        {
+            if (_state != State.Stopping
+                && _state != State.FaultedStopping)
+                // stopping projection is already paused
+                GoToState(State.Paused);
+        }
+
+        public void Handle(ProjectionMessage.Projections.CheckpointCompleted message)
+        {
+            CheckpointCompleted(message.CheckpointTag);
+        }
+
+        public void Handle(ProjectionMessage.Projections.PauseRequested message)
+        {
+            Pause();
         }
     }
 }

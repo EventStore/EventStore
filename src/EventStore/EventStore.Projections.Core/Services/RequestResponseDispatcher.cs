@@ -33,7 +33,8 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Projections.Core.Services
 {
-    public class RequestResponseDispatcher<TRequest, TResponse> where TRequest : Message
+    public class RequestResponseDispatcher<TRequest, TResponse> : IHandle<TResponse>
+        where TRequest : Message where TResponse : Message
     {
         //NOTE: this class is not intened to be used from multiple threads, 
         //however we support count requests from other threads for statistics purposes
@@ -57,6 +58,11 @@ namespace EventStore.Projections.Core.Services
             lock (_map)
                 _map.Add(_getRequestCorrelationId(request), action);
             _publisher.Publish(request);
+        }
+
+        void IHandle<TResponse>.Handle(TResponse message)
+        {
+            Handle(message);
         }
 
         public bool Handle(TResponse message)
