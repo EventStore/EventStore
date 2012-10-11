@@ -55,7 +55,8 @@ namespace EventStore.TestClient.Commands
             context, 
             (connection, package) =>
             {
-                context.Fail(null, "Received stuff after sending invalid command");
+                if (package.Command != TcpCommand.BadRequest)
+                    context.Fail(null, string.Format("Bad request expected, got {0}!", package.Command));
             },
             connection =>
             {
@@ -64,15 +65,16 @@ namespace EventStore.TestClient.Commands
                     connection.EnqueueSend(new TcpPackage((TcpCommand)command, Guid.NewGuid(), new byte[] { 0, 1, 0, 1 }).AsByteArray());
                 }
 
-                //sent some bytes test
+                //just send some bytes
                 connection.EnqueueSend(BitConverter.GetBytes(int.MaxValue).Union(new byte[]{1,2,3,4}).ToArray());
+                connection.EnqueueSend(BitConverter.GetBytes(int.MinValue).Union(new byte[]{1,2,3,4}).ToArray());
+                connection.EnqueueSend(BitConverter.GetBytes(0).
+                                       Union(Enumerable.Range(0, 256).Select(x => (byte) x).ToArray()).ToArray());
             },
             (connection, error) =>
             {
-
             });
-
-            Log.Info("Sent [{0}] and received no package in response, which means server survived",
+            Log.Info("Sent [{0}, some random bytes] and received BadRequest or nothing in response, which means server survived",
                      string.Join(",", commandsToCkeck.Select(c => ((TcpCommand) c).ToString())));
             context.Success();
             return true;

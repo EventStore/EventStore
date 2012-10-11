@@ -184,7 +184,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                     var message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, this);
                     if (message != null)
                         _publisher.Publish(message);
-                    //TODO TR : probably drop client which sent bad package
+                    else
+                        SendPackage(new TcpPackage(TcpCommand.BadRequest, package.CorrelationId, null));
                     break;
                 }
             }
