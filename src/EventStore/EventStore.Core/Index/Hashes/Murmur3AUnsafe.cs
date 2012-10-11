@@ -29,7 +29,7 @@ using System;
 
 namespace EventStore.Core.Index.Hashes
 {
-    public class Murmur3AUnsafe: IHasher
+    public class Murmur3AUnsafe : IHasher
     {
         private const uint Seed = 0xc58f1a7b;
 
@@ -57,12 +57,12 @@ namespace EventStore.Core.Index.Hashes
         {
             UInt32 nblocks = len / 4;
             UInt32 h1 = seed;
-            
+
             //----------
             // body
 
             UInt32 k1;
-            UInt32* block = (UInt32*) data;
+            UInt32* block = (UInt32*)data;
             for (UInt32 i = nblocks; i > 0; --i, ++block)
             {
                 k1 = *block;
@@ -73,20 +73,22 @@ namespace EventStore.Core.Index.Hashes
 
                 h1 ^= k1;
                 h1 = Rotl32(h1, 13);
-                h1 = h1*5 + 0xe6546b64;
+                h1 = h1 * 5 + 0xe6546b64;
             }
 
             //----------
             // tail
 
-            k1 = 0;
             uint rem = len & 3;
-            if (rem >= 3)
-                k1 ^= block[2] << 16;
-            if (rem >= 2)
-                k1 ^= block[1] << 8;
             if (rem > 0)
             {
+                k1 = 0;
+                byte* lastbytes = (byte*)block;
+                while (rem-- > 0)
+                {
+                    k1 <<= 8;
+                    k1 ^= lastbytes++[0];
+                }
                 k1 ^= block[0];
                 k1 *= c1;
                 k1 = Rotl32(k1, 15);
