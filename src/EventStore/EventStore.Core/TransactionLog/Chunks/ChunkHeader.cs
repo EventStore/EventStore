@@ -34,7 +34,7 @@ using EventStore.Core.Index;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
-    internal class ChunkHeader
+    public class ChunkHeader
     {
         public static int Size = 128;
 
