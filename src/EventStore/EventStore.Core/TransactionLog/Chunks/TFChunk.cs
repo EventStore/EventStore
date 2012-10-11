@@ -59,8 +59,9 @@ namespace EventStore.Core.TransactionLog.Chunks
         public bool IsCached { get { return _cached; } }
         public int ActualDataSize { get { return _actualDataSize; } }
         public string FileName { get { return _filename; } }
-        internal ChunkHeader ChunkHeader { get { return _chunkHeader; } }
-        internal ChunkFooter ChunkFooter { get { return _chunkFooter; } }
+
+        public ChunkHeader ChunkHeader { get { return _chunkHeader; } }
+        public ChunkFooter ChunkFooter { get { return _chunkFooter; } }
         
         private readonly string _filename;
         private volatile bool _isReadonly;
