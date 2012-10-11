@@ -27,71 +27,43 @@
 // 
 
 using System;
-using System.IO;
 using EventStore.Core.Data;
-using EventStore.Core.Index;
-using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.TransactionLog.MultifileTransactionFile;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Infrastructure.Services.Storage
 {
     [TestFixture]
-    public class when_building_an_index_off_tfile_with_two_events_in_stream : SpecificationWithDirectory
+    public class when_building_an_index_off_tfile_with_two_events_in_stream : ReadIndexTestScenario
     {
-        private IReadIndex _idx;
         private Guid _id1;
         private Guid _id2;
 
         private PrepareLogRecord _prepare1;
         private PrepareLogRecord _prepare2;
 
-        [SetUp]
-        public void Setup()
+        protected override void WriteTestScenario()
         {
-            var writerchk = new InMemoryCheckpoint(0);
-            var chaserchk = new InMemoryCheckpoint(Checkpoint.Chaser, 0);
-            var config = new TransactionFileDatabaseConfig(PathName, "prefix.tf", 10000, writerchk, new[] { chaserchk });
-            // create db
-            var writer = new MultifileTransactionFileWriter(config);
-            writer.Open();
             _id1 = Guid.NewGuid();
             _id2 = Guid.NewGuid();
 
             long pos1, pos2, pos3, pos4;
             _prepare1 = new PrepareLogRecord(0, _id1, _id1, 0, "test1", ExpectedVersion.NoStream, DateTime.UtcNow,
-                                            PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]);
-            writer.Write(_prepare1, out pos1);
+                                             PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]);
+            Writer.Write(_prepare1, out pos1);
             _prepare2 = new PrepareLogRecord(pos1, _id2, _id2, pos1, "test1", 0, DateTime.UtcNow,
                                              PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]);
-            writer.Write(_prepare2, out pos2);
-            writer.Write(new CommitLogRecord(pos2, _id1, 0, DateTime.UtcNow, 0), out pos3);
-            writer.Write(new CommitLogRecord(pos3, _id2, pos1, DateTime.UtcNow, 1), out pos4);
-            writer.Close();
-
-            chaserchk.Write(writerchk.Read());
-            chaserchk.Flush();
-
-            var tableIndex = new TableIndex(Path.Combine(PathName, "index"), () => new HashListMemTable(), 1000);
-            _idx = new ReadIndex(new NoopPublisher(),
-                                 pos => new MultifileTransactionFileChaser(config, new InMemoryCheckpoint(pos)),
-                                 () => new MultifileTransactionFileReader(config, config.WriterCheckpoint),
-                                 1,
-                                 tableIndex,
-                                 new XXHashUnsafe());
-            _idx.Build();
+            Writer.Write(_prepare2, out pos2);
+            Writer.Write(new CommitLogRecord(pos2, _id1, 0, DateTime.UtcNow, 0), out pos3);
+            Writer.Write(new CommitLogRecord(pos3, _id2, pos1, DateTime.UtcNow, 1), out pos4);
         }
 
         [Test]
         public void the_first_event_can_be_read()
         {
             EventRecord record;
-            Assert.AreEqual(SingleReadResult.Success, _idx.TryReadRecord("test1", 0, out record));
+            Assert.AreEqual(SingleReadResult.Success, ReadIndex.TryReadRecord("test1", 0, out record));
             Assert.AreEqual(new EventRecord(0, _prepare1), record);
         }
 
@@ -99,7 +71,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_second_event_can_be_read()
         {
             EventRecord record;
-            Assert.AreEqual(SingleReadResult.Success, _idx.TryReadRecord("test1", 1, out record));
+            Assert.AreEqual(SingleReadResult.Success, ReadIndex.TryReadRecord("test1", 1, out record));
             Assert.AreEqual(new EventRecord(1, _prepare2), record);
         }
 
@@ -107,14 +79,14 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_nonexisting_event_can_not_be_read()
         {
             EventRecord record;
-            Assert.AreEqual(SingleReadResult.NotFound, _idx.TryReadRecord("test1", 2, out record));
+            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.TryReadRecord("test1", 2, out record));
         }
 
         [Test]
         public void the_first_event_can_be_read_through_range_query()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, _idx.TryReadRecordsBackwards("test1", 0, 1, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("test1", 0, 1, out records));
             Assert.AreEqual(1, records.Length);
             Assert.AreEqual(new EventRecord(0, _prepare1), records[0]);
         }
@@ -123,7 +95,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_second_event_can_be_read_through_range_query()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, _idx.TryReadRecordsBackwards("test1", 1, 1, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("test1", 1, 1, out records));
             Assert.AreEqual(1, records.Length);
             Assert.AreEqual(new EventRecord(1, _prepare2), records[0]);
         }
@@ -132,7 +104,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_stream_can_be_read_as_a_whole_with_specific_from_version()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, _idx.TryReadRecordsBackwards("test1", 1, 2, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("test1", 1, 2, out records));
             Assert.AreEqual(2, records.Length);
             Assert.AreEqual(new EventRecord(1, _prepare2), records[0]);
             Assert.AreEqual(new EventRecord(0, _prepare1), records[1]);
@@ -142,7 +114,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_stream_can_be_read_as_a_whole_with_from_end()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, _idx.TryReadRecordsBackwards("test1", -1, 2, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("test1", -1, 2, out records));
             Assert.AreEqual(2, records.Length);
             Assert.AreEqual(new EventRecord(1, _prepare2), records[0]);
             Assert.AreEqual(new EventRecord(0, _prepare1), records[1]);
@@ -152,17 +124,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_stream_cant_be_read_for_second_stream()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.NoStream, _idx.TryReadRecordsBackwards("test2", 0, 1, out records));
+            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.TryReadRecordsBackwards("test2", 0, 1, out records));
             Assert.AreEqual(0, records.Length);
-        }
-
-        [TearDown]
-        public override void TearDown()
-        {
-            _idx.Close();
-            _idx.Dispose();
-
-            base.TearDown();
         }
     }
 }

@@ -43,9 +43,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         SingleReadResult TryReadRecord(string eventStreamId, int version, out EventRecord record);
         RangeReadResult TryReadRecordsBackwards(string eventStreamId, int fromEventNumber, int maxCount, out EventRecord[] records);
         RangeReadResult TryReadEventsForward(string eventStreamId, int fromEventNumber, int maxCount, out EventRecord[] records);
+
         int GetLastStreamEventNumber(string eventStreamId);
         bool IsStreamDeleted(string eventStreamId);
-        List<ResolvedEventRecord> ReadEventsFromTF(long fromCommitPosition, long afterPreparePosition, int maxCount, bool resolveLinks);
+        
+        List<ResolvedEventRecord> ReadAllEventsForward(long commitPos, long preparePos, bool inclusivePos, int maxCount, bool resolveLinks);
+        List<ResolvedEventRecord> ReadAllEventsBackwards(long commitPos, long preparePos, bool inclusivePos, int maxCount, bool resolveLinks);
+
         EventRecord ResolveLinkToEvent(EventRecord eventRecord);
         CommitCheckResult CheckCommitStartingAt(long prepareStartPosition);
         string[] GetStreamIds();

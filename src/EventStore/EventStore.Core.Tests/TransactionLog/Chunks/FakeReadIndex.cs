@@ -54,7 +54,12 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             return _isStreamDeleted(eventStreamId);
         }
 
-        public List<ResolvedEventRecord> ReadEventsFromTF(long fromCommitPosition, long afterPreparePosition, int maxCount, bool resolveLinks)
+        public List<ResolvedEventRecord> ReadAllEventsForward(long commitPos, long preparePos, bool inclusivePos, int maxCount, bool resolveLinks)
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<ResolvedEventRecord> ReadAllEventsBackwards(long commitPos, long preparePos, bool inclusivePos, int maxCount, bool resolveLinks)
         {
             throw new NotImplementedException();
         }

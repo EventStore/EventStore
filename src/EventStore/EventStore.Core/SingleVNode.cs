@@ -94,7 +94,8 @@ namespace EventStore.Core
                                             maxTablesPerLevel: 2);
 
             var readIndex = new ReadIndex(_mainQueue,
-                                          pos => new TFChunkChaser(db, db.Config.WriterCheckpoint, new InMemoryCheckpoint(pos)),
+                                          () => new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0),
+                                          TFConsts.ReadIndexReaderCount,
                                           () => new TFChunkReader(db, db.Config.WriterCheckpoint),
                                           TFConsts.ReadIndexReaderCount,
                                           tableIndex,

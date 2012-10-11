@@ -27,11 +27,11 @@
 // 
 namespace EventStore.Core.Data
 {
-    public class ResolvedEventRecord
+    public struct ResolvedEventRecord
     {
-        public EventRecord Link;
-        public EventRecord Event;
-        public long CommitPosition;
+        public readonly EventRecord Link;
+        public readonly EventRecord Event;
+        public readonly long CommitPosition;
 
         public ResolvedEventRecord(EventRecord @event, EventRecord link, long commitPosition)
         {

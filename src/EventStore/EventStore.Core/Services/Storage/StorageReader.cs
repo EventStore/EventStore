@@ -256,10 +256,11 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadEventsFromTF>.Handle(ClientMessage.ReadEventsFromTF message)
         {
-            var records = _readIndex.ReadEventsFromTF(message.FromCommitPosition,
-                                                      message.AfterPreparePosition,
-                                                      message.MaxCount,
-                                                      message.ResolveLinks);
+            var records = _readIndex.ReadAllEventsForward(message.FromCommitPosition,
+                                                          message.AfterPreparePosition,
+                                                          false,
+                                                          message.MaxCount,
+                                                          message.ResolveLinks);
             message.Envelope.ReplyWith(new ClientMessage.ReadEventsFromTFCompleted(message.CorrelationId,
                                                                                    records.ToArray(),
                                                                                    RangeReadResult.Success));

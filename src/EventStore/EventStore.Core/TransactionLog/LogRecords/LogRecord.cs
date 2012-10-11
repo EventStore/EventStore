@@ -57,9 +57,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
             }
         }
 
-        public static PrepareLogRecord Prepare(long logPosition, Guid correlationId, Guid eventId, long transactionPos, string eventStreamId, int expectedVersion, PrepareFlags flags, string eventType, byte[] data, byte[] metadata)
+        public static PrepareLogRecord Prepare(long logPosition, Guid correlationId, Guid eventId, long transactionPos, 
+                                               string eventStreamId, int expectedVersion, PrepareFlags flags, string eventType, 
+                                               byte[] data, byte[] metadata)
         {
-            return new PrepareLogRecord(logPosition, correlationId, eventId, transactionPos, eventStreamId, expectedVersion, DateTime.UtcNow, flags, eventType, data, metadata);
+            return new PrepareLogRecord(logPosition, correlationId, eventId, transactionPos, eventStreamId, expectedVersion, 
+                                        DateTime.UtcNow, flags, eventType, data, metadata);
         }
 
         public static CommitLogRecord Commit(long logPosition, Guid correlationId, long startPosition, int eventNumber)
@@ -67,34 +70,45 @@ namespace EventStore.Core.TransactionLog.LogRecords
             return new CommitLogRecord(logPosition, correlationId, startPosition, DateTime.UtcNow, eventNumber);
         }
 
-        public static PrepareLogRecord SingleWrite(long logPosition, Guid correlationId, Guid eventId, string eventStreamId, int expectedVersion, string eventType, byte[] data, byte[] metadata)
+        public static PrepareLogRecord SingleWrite(long logPosition, Guid correlationId, Guid eventId, string eventStreamId, 
+                                                   int expectedVersion, string eventType, byte[] data, byte[] metadata)
         {
-            return new PrepareLogRecord(logPosition, correlationId, eventId, logPosition, eventStreamId, expectedVersion, DateTime.UtcNow, PrepareFlags.SingleWrite, eventType, data, metadata);
+            return new PrepareLogRecord(logPosition, correlationId, eventId, logPosition, eventStreamId, expectedVersion, DateTime.UtcNow, 
+                                        PrepareFlags.Data | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, 
+                                        eventType, data, metadata);
         }
 
         public static PrepareLogRecord TransactionBegin(long logPos, Guid correlationId, string eventStreamId, int expectedVersion)
         {
-            return new PrepareLogRecord(logPos, correlationId, Guid.NewGuid(), logPos, eventStreamId, expectedVersion, DateTime.UtcNow, PrepareFlags.TransactionBegin, null, NoData, NoData);
+            return new PrepareLogRecord(logPos, correlationId, Guid.NewGuid(), logPos, eventStreamId, expectedVersion, 
+                                        DateTime.UtcNow, PrepareFlags.TransactionBegin, null, NoData, NoData);
         }
 
-        public static PrepareLogRecord TransactionWrite(long logPosition, Guid correlationId, Guid eventId, long transactionPos, string eventStreamId, string eventType, byte[] data, byte[] metadata)
+        public static PrepareLogRecord TransactionWrite(long logPosition, Guid correlationId, Guid eventId, long transactionPos, 
+                                                        string eventStreamId, string eventType, byte[] data, byte[] metadata)
         {
-            return new PrepareLogRecord(logPosition, correlationId, eventId, transactionPos, eventStreamId, ExpectedVersion.Any, DateTime.UtcNow, PrepareFlags.Data, eventType, data, metadata);
+            return new PrepareLogRecord(logPosition, correlationId, eventId, transactionPos, eventStreamId, ExpectedVersion.Any, 
+                                        DateTime.UtcNow, PrepareFlags.Data, eventType, data, metadata);
         }
 
         public static PrepareLogRecord TransactionEnd(long logPos, Guid correlationId, Guid eventId, long transactionPos, string eventStreamId)
         {
-            return new PrepareLogRecord(logPos, correlationId, eventId, transactionPos, eventStreamId, ExpectedVersion.Any, DateTime.UtcNow, PrepareFlags.TransactionEnd, null, NoData, NoData);
+            return new PrepareLogRecord(logPos, correlationId, eventId, transactionPos, eventStreamId, ExpectedVersion.Any, 
+                                        DateTime.UtcNow, PrepareFlags.TransactionEnd, null, NoData, NoData);
         }
 
         public static PrepareLogRecord DeleteTombstone(long logPosition, Guid correlationId, string eventStreamId, int expectedVersion)
         {
-            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), logPosition, eventStreamId, expectedVersion, DateTime.UtcNow, PrepareFlags.DeleteTombstone, SystemEventTypes.StreamDeleted, NoData, NoData);
+            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), logPosition, eventStreamId, expectedVersion, DateTime.UtcNow, 
+                                        PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, 
+                                        SystemEventTypes.StreamDeleted, NoData, NoData);
         }
 
         public static PrepareLogRecord StreamCreated(long logPosition, Guid correlationId, long transactionPos, string eventStreamId, byte[] metadata)
         {
-            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionPos, eventStreamId, ExpectedVersion.NoStream, DateTime.UtcNow, PrepareFlags.Data | PrepareFlags.TransactionBegin, SystemEventTypes.StreamCreated, NoData, metadata);
+            return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionPos, eventStreamId, 
+                                        ExpectedVersion.NoStream, DateTime.UtcNow, PrepareFlags.Data | PrepareFlags.TransactionBegin, 
+                                        SystemEventTypes.StreamCreated, NoData, metadata);
         }
 
         protected LogRecord(LogRecordType recordType, byte version)

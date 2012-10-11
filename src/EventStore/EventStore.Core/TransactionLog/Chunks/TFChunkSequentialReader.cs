@@ -45,6 +45,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             // NOOP
         }
 
+        public void Reposition(long position)
+        {
+            _curPos = position;
+        }
+
         public RecordReadResult TryReadNext()
         {
             return TryReadNextInternal(_curPos, 0);

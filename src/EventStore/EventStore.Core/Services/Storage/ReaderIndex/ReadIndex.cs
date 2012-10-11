@@ -102,11 +102,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _failedReadCount;
 
         private readonly IPublisher _bus;
-        private readonly Func<long, ITransactionFileChaser> _chaserFactory;
 #if __MonoCS__
         private readonly Common.ConcurrentCollections.ConcurrentStack<ITransactionFileReader> _readers = new Common.ConcurrentCollections.ConcurrentStack<ITransactionFileReader>();
 #else
         private readonly System.Collections.Concurrent.ConcurrentStack<ITransactionFileReader> _readers = new System.Collections.Concurrent.ConcurrentStack<ITransactionFileReader>();
+#endif
+#if __MonoCS__
+        private readonly Common.ConcurrentCollections.ConcurrentStack<ITransactionFileSequentialReader> _seqReaders = new Common.ConcurrentCollections.ConcurrentStack<ITransactionFileSequentialReader>();
+#else
+        private readonly System.Collections.Concurrent.ConcurrentStack<ITransactionFileSequentialReader> _seqReaders = new System.Collections.Concurrent.ConcurrentStack<ITransactionFileSequentialReader>();
 #endif
         private readonly ITableIndex _tableIndex;
         private readonly IHasher _hasher;
@@ -119,21 +123,26 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, 10*1024*1024, x => 16 + 4 + 2*x.Item1.Length);
 
         public ReadIndex(IPublisher bus,
-                         Func<long, ITransactionFileChaser> chaserFactory,
+                         Func<ITransactionFileSequentialReader> seqReaderFactory,
+                         int seqReaderCount,
                          Func<ITransactionFileReader> readerFactory,
                          int readerCount,
                          ITableIndex tableIndex,
                          IHasher hasher)
         {
             Ensure.NotNull(bus, "bus");
+            Ensure.NotNull(seqReaderFactory, "seqReaderFactory");
+            Ensure.Positive(seqReaderCount, "seqReaderCount");
             Ensure.NotNull(readerFactory, "readerFactory");
-            Ensure.NotNull(chaserFactory, "chaserFactory");
             Ensure.Positive(readerCount, "readerCount");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(hasher, "hasher");
 
             _bus = bus;
-            _chaserFactory = chaserFactory;
+            for (int i = 0; i < seqReaderCount; ++i)
+            {
+                _seqReaders.Push(seqReaderFactory());
+            }
             for (int i = 0; i < readerCount; ++i)
             {
                 _readers.Push(readerFactory());
@@ -151,9 +160,22 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return reader;
         }
 
+        private ITransactionFileSequentialReader GetSeqReader()
+        {
+            ITransactionFileSequentialReader seqReader;
+            if (!_seqReaders.TryPop(out seqReader))
+                throw new InvalidOperationException("Unable to acquire sequential reader in ReadIndex.");
+            return seqReader;
+        }
+
         private void ReturnReader(ITransactionFileReader reader)
         {
             _readers.Push(reader);
+        }
+
+        private void ReturnSeqReader(ITransactionFileSequentialReader seqReader)
+        {
+            _seqReaders.Push(seqReader);
         }
 
         public void Build()
@@ -166,23 +188,31 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 rdr.Open();
             }
-
-            long pos = Math.Max(0, _persistedCommitCheckpoint);
-            long processed = 0;
-
-            using (var chaser = _chaserFactory(pos))
+            foreach (var seqRdr in _seqReaders)
             {
-                chaser.Open();
+                seqRdr.Open();
+            }
+
+            long processed = 0;
+            var seqReader = GetSeqReader();
+            try
+            {
+                seqReader.Reposition(Math.Max(0, _persistedCommitCheckpoint));
+
                 RecordReadResult result;
-                while ((result = chaser.TryReadNext()).Success)
+                while ((result = seqReader.TryReadNext()).Success)
                 {
                     if (result.LogRecord.RecordType == LogRecordType.Commit)
-                        Commit((CommitLogRecord) result.LogRecord);
+                        Commit((CommitLogRecord)result.LogRecord);
 
                     processed += 1;
-                    if (processed%100000 == 0)
+                    if (processed % 100000 == 0)
                         Log.Debug("ReadIndex Rebuilding: processed {0} records.", processed);
                 }
+            }
+            finally
+            {
+                ReturnSeqReader(seqReader);
             }
         }
 
@@ -245,7 +275,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         EventRecord rec;
                         if (TryReadRecord(eventStreamId, number, out rec) == SingleReadResult.Success)
                         {
-
                             Debugger.Break();
                             throw new Exception(
                                 string.Format(
@@ -290,25 +319,31 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 yield break;
             }
 
-            using (var chaser = _chaserFactory(transactionBeginPos))
+            var seqReader = GetSeqReader();
+            try
             {
-                chaser.Open();
+                seqReader.Reposition(transactionBeginPos);
+
                 while (true)
                 {
-                    result = chaser.TryReadNext();
+                    result = seqReader.TryReadNext();
                     if (!result.Success)
                         throw new InvalidOperationException("Couldn't read record which is supposed to be in file.");
 
                     var prepare = result.LogRecord as PrepareLogRecord;
-                    if (prepare != null
-                        && prepare.TransactionPosition == transactionBeginPos
-                        && prepare.EventStreamId == transactionRecord.EventStreamId)
+                    if (prepare != null && prepare.TransactionPosition == transactionBeginPos)
                     {
+                        /*&& prepare.EventStreamId == transactionRecord.EventStreamId*/
+                        Debug.Assert(prepare.EventStreamId == transactionRecord.EventStreamId);
                         yield return prepare;
                         if ((prepare.Flags & PrepareFlags.TransactionEnd) != 0)
                             yield break;
                     }
                 }
+            }
+            finally
+            {
+                ReturnSeqReader(seqReader);
             }
         }
 
@@ -444,36 +479,36 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.NotNull(eventStreamId, "eventStreamId");
             Ensure.Nonnegative(version, "version");
 
-            record = null;
-
             var streamHash = _hasher.Hash(eventStreamId);
 
             long position;
             if (_tableIndex.TryGetOneValue(streamHash, version, out position))
             {
-                record = ReadEventRecord(reader, new IndexEntry(streamHash, version, position));
-                if (record.EventStreamId == eventStreamId)
+                EventRecord rec = ReadEventRecord(reader, new IndexEntry(streamHash, version, position));
+                if (rec.EventStreamId == eventStreamId)
                 {
                     _succReadCount += 1;
+                    record = rec;
                     return true;
                 }
                 _failedReadCount += 1;
 
                 foreach (var indexEntry in _tableIndex.GetRange(streamHash, version, version))
                 {
-                    if (indexEntry.Position == record.LogPosition) // already checked that
+                    if (indexEntry.Position == rec.LogPosition) // already checked that
                         continue;
 
-                    record = ReadEventRecord(reader, indexEntry);
-                    if (record.EventStreamId == eventStreamId)
+                    rec = ReadEventRecord(reader, indexEntry);
+                    if (rec.EventStreamId == eventStreamId)
                     {
                         _succReadCount += 1;
+                        record = rec;
                         return true;
                     }
                     _failedReadCount += 1;
                 }
             }
-
+            record = null;
             return false;
         }
 
@@ -560,129 +595,169 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return TryGetRecordInternal(reader, eventStreamId, int.MaxValue, out record);
         }
 
-        public List<ResolvedEventRecord> ReadEventsFromTF(long fromCommitPosition,
-                                                          long afterPreparePosition,
-                                                          int maxCount,
-                                                          bool resolveLinks)
-        {
-            return ReadEventsFromTFInternal(fromCommitPosition, afterPreparePosition, maxCount, resolveLinks);
-        }
-
-        private List<ResolvedEventRecord> ReadEventsFromTFInternal(long fromCommitPosition,
-                                                                   long afterPreparePosition,
-                                                                   int maxCount,
-                                                                   bool resolveLinks)
+        public List<ResolvedEventRecord> ReadAllEventsForward(long commitPos, 
+                                                              long preparePos, 
+                                                              bool inclusivePos,
+                                                              int maxCount, 
+                                                              bool resolveLinks)
         {
             var records = new List<ResolvedEventRecord>();
-            long lastAddedCommit = 0;
-            long lastAddedPrepare = -1;
             var count = 0;
-            //var nextReadCommitPosition = fromCommitPosition;
-
-            using (var chaser = _chaserFactory(fromCommitPosition))
+            ITransactionFileSequentialReader seqReader = GetSeqReader();
+            try
             {
-                chaser.Open();
+                long nextCommitPos = commitPos;
                 while (count < maxCount)
                 {
-                    var result = chaser.TryReadNext();
-                    // skip until commit as we may start from just last know prepare position  
+                    seqReader.Reposition(nextCommitPos);
+                    var result = seqReader.TryReadNext();
+                    // skip until commit
                     while (result.Success && result.LogRecord.RecordType != LogRecordType.Commit)
                     {
-                        result = chaser.TryReadNext();
+                        result = seqReader.TryReadNext();
                     }
-                    if (!result.Success)
+
+                    if (!result.Success) // no more records in TF
                         break;
 
+                    nextCommitPos = seqReader.Position;
+
                     var commitLogRecord = (CommitLogRecord)result.LogRecord;
-                    //                if (commitLogRecord.Position < nextReadCommitPosition)
-                    //                {
-                    //                    throw new Exception(
-                    //                        string.Format("Commit record has been read at past position. First requested: {0} Read: {1}",
-                    //                                      nextReadCommitPosition,
-                    //                                      commitLogRecord.Position));
-                    //                }
-                    //                if (result.NewPosition <= commitLogRecord.Position)
-                    //                {
-                    //                    throw new Exception(
-                    //                        string.Format("Invalid new position has been returned. Record position: {0}. New position: {1}",
-                    //                                      commitLogRecord.Position,
-                    //                                      result.NewPosition));
-                    //                }
+                    int nextEventNumber = commitLogRecord.EventNumber;
 
-                    //nextReadCommitPosition = result.NewPosition; // likely prepare - but we will skip it
-
-                    using (var commitChaser = _chaserFactory(commitLogRecord.TransactionPosition))
+                    seqReader.Reposition(commitLogRecord.TransactionPosition);
+                    while (count < maxCount)
                     {
-                        commitChaser.Open();
-                        //long nextPreparePosition = commitLogRecord.TransactionPosition;
-                        //long nextPrepareMustBeGreaterThan = nextPreparePosition;
-                        long transactionPosition = commitLogRecord.TransactionPosition;
-                        int nextEventNumber = commitLogRecord.EventNumber;
+                        result = seqReader.TryReadNext();
 
-                        while (count < maxCount)
+                        if (!result.Success) // no more records in TF
+                            break;
+                        // prepare with TransactionEnd could be scavenged already
+                        // so we could reach the same commit record. In that case have to stop
+                        if (result.LogRecord.Position >= commitLogRecord.Position) 
+                            break;
+                        if (result.LogRecord.RecordType != LogRecordType.Prepare) 
+                            continue;
+
+                        var prepareRecord = (PrepareLogRecord)result.LogRecord;
+                        if (prepareRecord.TransactionPosition != commitLogRecord.TransactionPosition) // wrong prepare
+                            continue;
+
+                        if ((prepareRecord.Flags & PrepareFlags.Data) != 0) // prepare with useful data
                         {
-                            //                    if (nextPreparePosition >= commitLogRecord.Position)
-                            //                    {
-                            //                        throw new Exception(
-                            //                            string.Format("Did not find the end of the transaction.  Commit: {0} Transaction: {1} current: {2}",
-                            //                                          commitLogRecord.Position,
-                            //                                          transactionPosition,
-                            //                                          nextPreparePosition));
-                            //                    }
-
-                            result = commitChaser.TryReadNext();
-                            if (!result.Success)
-                                throw new Exception(string.Format("Cannot read TF at position."));//" {0}", nextPreparePosition));
-
-                            //nextPreparePosition = result.NewPosition;
-                            if (result.LogRecord.RecordType != LogRecordType.Prepare)
-                                continue;
-
-                            var prepareRecord = (PrepareLogRecord)result.LogRecord;
-                            //if (prepareRecord.Position < nextPrepareMustBeGreaterThan)
-                            //    throw new Exception("TF order is incorrect");
-
-                            //nextPrepareMustBeGreaterThan = result.NewPosition;
-                            if (prepareRecord.TransactionPosition == transactionPosition)
+                            if (inclusivePos ? prepareRecord.LogPosition >= preparePos : prepareRecord.LogPosition > preparePos)
                             {
-                                if (prepareRecord.LogPosition > afterPreparePosition) // AFTER means > 
+                                var eventRecord = new EventRecord(nextEventNumber, prepareRecord);
+
+                                EventRecord linkToEvent = null;
+                                if (resolveLinks)
                                 {
-                                    if (commitLogRecord.Position < lastAddedCommit ||
-                                        commitLogRecord.Position == lastAddedCommit && prepareRecord.Position <= lastAddedPrepare)
+                                    var resolved = ResolveLinkToEvent(eventRecord);
+                                    if (resolved != null)
                                     {
-                                        throw new Exception(string.Format(
-                                                "events were read in invalid order. Last event position was {0}/{1}.  "
-                                                + "Attempt to add event with position: {2}/{3}",
-                                                lastAddedCommit,
-                                                lastAddedPrepare,
-                                                commitLogRecord.Position,
-                                                prepareRecord.Position));
+                                        linkToEvent = eventRecord;
+                                        eventRecord = resolved;
                                     }
-
-                                    lastAddedCommit = commitLogRecord.Position;
-                                    lastAddedPrepare = prepareRecord.Position;
-                                    var eventRecord = new EventRecord(nextEventNumber, prepareRecord);
-                                    EventRecord linkToEvent = null;
-
-                                    if (resolveLinks)
-                                    {
-                                        var resolved = ResolveLinkToEvent(eventRecord);
-                                        if (resolved != null)
-                                        {
-                                            linkToEvent = eventRecord;
-                                            eventRecord = resolved;
-                                        }
-                                    }
-                                    records.Add(new ResolvedEventRecord(eventRecord, linkToEvent, commitLogRecord.Position));
-                                    count++;
                                 }
-                                nextEventNumber++;
-                                if ((prepareRecord.Flags & PrepareFlags.TransactionEnd) != 0)
-                                    break;
+
+                                records.Add(new ResolvedEventRecord(eventRecord, linkToEvent, commitLogRecord.Position));
+                                count++;
                             }
+                            nextEventNumber++;
                         }
+
+                        if ((prepareRecord.Flags & PrepareFlags.TransactionEnd) != 0)
+                            break;
                     }
                 }
+            }
+            finally
+            {
+                ReturnSeqReader(seqReader);
+            }
+            return records;
+        }
+
+        public List<ResolvedEventRecord> ReadAllEventsBackwards(long commitPos,
+                                                                long preparePos,
+                                                                bool inclusivePos,
+                                                                int maxCount,
+                                                                bool resolveLinks)
+        {
+            throw new NotImplementedException();
+            var records = new List<ResolvedEventRecord>();
+            var count = 0;
+            ITransactionFileSequentialReader seqReader = GetSeqReader();
+            try
+            {
+                long nextCommitPos = commitPos;
+                while (count < maxCount)
+                {
+                    seqReader.Reposition(nextCommitPos);
+                    var result = seqReader.TryReadPrev();
+                    // skip until commit
+                    while (result.Success && result.LogRecord.RecordType != LogRecordType.Commit)
+                    {
+                        result = seqReader.TryReadPrev();
+                    }
+
+                    if (!result.Success) // no more records in TF
+                        break;
+
+                    nextCommitPos = seqReader.Position;
+
+                    var commitLogRecord = (CommitLogRecord)result.LogRecord;
+                    int nextEventNumber = commitLogRecord.EventNumber;
+
+                    seqReader.Reposition(commitLogRecord.TransactionPosition);
+                    while (count < maxCount)
+                    {
+                        result = seqReader.TryReadNext();
+
+                        if (!result.Success) // no more records in TF
+                            break;
+                        // prepare with TransactionEnd could be scavenged already
+                        // so we could reach the same commit record. In that case have to stop
+                        if (result.LogRecord.Position >= commitLogRecord.Position)
+                            break;
+                        if (result.LogRecord.RecordType != LogRecordType.Prepare)
+                            continue;
+
+                        var prepareRecord = (PrepareLogRecord)result.LogRecord;
+                        if (prepareRecord.TransactionPosition != commitLogRecord.TransactionPosition) // wrong prepare
+                            continue;
+
+                        if ((prepareRecord.Flags & PrepareFlags.Data) != 0) // prepare with useful data
+                        {
+                            if (inclusivePos ? prepareRecord.LogPosition >= preparePos : prepareRecord.LogPosition > preparePos)
+                            {
+                                var eventRecord = new EventRecord(nextEventNumber, prepareRecord);
+
+                                EventRecord linkToEvent = null;
+                                if (resolveLinks)
+                                {
+                                    var resolved = ResolveLinkToEvent(eventRecord);
+                                    if (resolved != null)
+                                    {
+                                        linkToEvent = eventRecord;
+                                        eventRecord = resolved;
+                                    }
+                                }
+
+                                records.Add(new ResolvedEventRecord(eventRecord, linkToEvent, commitLogRecord.Position));
+                                count++;
+                            }
+                            nextEventNumber++;
+                        }
+
+                        if ((prepareRecord.Flags & PrepareFlags.TransactionEnd) != 0)
+                            break;
+                    }
+                }
+            }
+            finally
+            {
+                ReturnSeqReader(seqReader);
             }
             return records;
         }
@@ -704,7 +779,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private EventRecord ResolveLinkToEventInternal(ITransactionFileReader reader, EventRecord eventRecord)
         {
             EventRecord record = null;
-            if (eventRecord.EventType == "$>")
+            if (eventRecord.EventType == SystemEventTypes.LinkTo)
             {
                 bool faulted = false;
                 int eventNumber = -1;

@@ -5,8 +5,12 @@ namespace EventStore.Core.TransactionLog
 {
     public interface ITransactionFileSequentialReader: IDisposable
     {
+        long Position { get; }
+
         void Open();
         void Close();
+
+        void Reposition(long position);
 
         RecordReadResult TryReadNext();
         RecordReadResult TryReadPrev();

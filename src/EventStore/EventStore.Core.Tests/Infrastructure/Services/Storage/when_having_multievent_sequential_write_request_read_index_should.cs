@@ -35,6 +35,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.MultifileTransactionFile;
 using NUnit.Framework;
@@ -65,8 +66,9 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             TableIndex.Initialize();
 
             ReadIndex = new ReadIndex(new NoopPublisher(),
-                                      pos => new MultifileTransactionFileChaser(_dbConfig, new InMemoryCheckpoint(0)), 
-                                      () => new MultifileTransactionFileReader(_dbConfig, _writerCheckpoint),
+                                      () => new TFChunkSequentialReader(Db, WriterCheckpoint, 0), 
+                                      2,
+                                      () => new TFChunkReader(Db, WriterCheckpoint),
                                       1,
                                       TableIndex,
                                       new ByLengthHasher());
