@@ -89,6 +89,7 @@
     <Compile Include="Exceptions\InvalidFileException.cs" />
     <Compile Include="Exceptions\PTableNotFoundException.cs" />
     <Compile Include="Exceptions\ReaderCheckpointHigherThanWriterException.cs" />
+    <Compile Include="Exceptions\SystemStreamNotFoundException.cs" />
     <Compile Include="Exceptions\UnableToAcquireLockInReasonableTimeException.cs" />
     <Compile Include="Index\GuidFilenameProvider.cs" />
     <Compile Include="Index\Hashes\IHasher.cs" />
