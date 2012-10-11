@@ -429,9 +429,7 @@ namespace EventStore.Projections.Core.Services.Processing
             bool hasBeenProcessed;
             try
             {
-                bool passedFilter = EventPassesFilter(message);
-                hasBeenProcessed = passedFilter
-                                   && ProcessEventByHandler(partition, message, out newState, out emittedEvents);
+                hasBeenProcessed = ProcessEventByHandler(partition, message, out newState, out emittedEvents);
             }
             catch (Exception ex)
             {
@@ -484,26 +482,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 _eventFilter.GetCategory(message.PositionStreamId), message.Data.EventId, message.EventSequenceNumber,
                 Encoding.UTF8.GetString(message.Data.Metadata), Encoding.UTF8.GetString(message.Data.Data), out newState,
                 out emittedEvents);
-        }
-
-        private bool EventPassesFilter(ProjectionMessage.Projections.CommittedEventReceived message)
-        {
-            var passes = _eventFilter.Passes(message.ResolvedLinkTo, message.PositionStreamId, message.Data.EventType);
-            if (!passes)
-            {
-                _logger.Info("???");
-            }
-            return passes;
-        }
-
-        private bool EventPassesSourceFilter(ProjectionMessage.Projections.CommittedEventReceived message)
-        {
-            var passes = _eventFilter.PassesSource(message.ResolvedLinkTo, message.PositionStreamId);
-            if (!passes)
-            {
-                _logger.Info("???");
-            }
-            return passes;
         }
 
         private void EmitEmittedEvents(CommittedEventWorkItem committedEventWorkItem, EmittedEvent[] emittedEvents)
@@ -808,7 +786,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             protected override void WriteOutput()
             {
-                _projection._checkpointManager.ProcessCheckpointSuggestedEvent(_message);
+                _projection._checkpointManager.CheckpointSuggested(_message);
                 NextStage();
             }
         }
@@ -843,7 +821,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 GoToState(State.Paused);
         }
 
-        public void FinalizeEventProcessing(List<EmittedEvent[]> scheduledWrites, ProjectionMessage.Projections.CommittedEventReceived committedEventReceived)
+        private void FinalizeEventProcessing(List<EmittedEvent[]> scheduledWrites, ProjectionMessage.Projections.CommittedEventReceived committedEventReceived)
         {
             if (committedEventReceived.Data == null)
                 throw new NotSupportedException();
@@ -851,12 +829,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 EnsureState(State.Running);
                 //TODO: move to separate projection method and cache result in work item
-                if (EventPassesSourceFilter(committedEventReceived))
-                {
-                    var checkpointTag = _checkpointStrategy.PositionTagger.MakeCheckpointTag(committedEventReceived);
-                    _checkpointManager.UpdateLastProcessedEventPosition(checkpointTag, EventPassesFilter(committedEventReceived));
-                }
-                _checkpointManager.EventProcessed(scheduledWrites, GetProjectionState());
+                var checkpointTag = _checkpointStrategy.PositionTagger.MakeCheckpointTag(committedEventReceived);
+                _checkpointManager.EventProcessed(GetProjectionState(), scheduledWrites, checkpointTag);
             }
         }
     }
