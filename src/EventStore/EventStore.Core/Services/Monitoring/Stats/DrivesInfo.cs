@@ -48,7 +48,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         {
             var sysDrives = DriveInfo.GetDrives();
             var drives = sysDrives
-                .Where(drive => drive.IsReady && drive.TotalSize > 0)
+                .Where(drive => drive.IsReady && drive.DriveType != DriveType.Unknown && drive.TotalSize > 0)
                 .Select(drive => new EsDriveInfo(drive.Name, drive.TotalSize, drive.AvailableFreeSpace))
                 .ToArray();
 
