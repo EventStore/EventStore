@@ -1,6 +1,7 @@
 using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog.Chunks
@@ -12,14 +13,17 @@ namespace EventStore.Core.TransactionLog.Chunks
         public long Position { get { return _curPos; } }
 
         private readonly TFChunkDb _db;
+        private readonly ICheckpoint _writerCheckpoint;
         private long _curPos;
 
-        public TFChunkSequentialReader(TFChunkDb db, long initialPosition)
+        public TFChunkSequentialReader(TFChunkDb db, ICheckpoint writerCheckpoint, long initialPosition)
         {
             Ensure.NotNull(db, "dbConfig");
+            Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.Nonnegative(initialPosition, "initialPosition");
 
             _db = db;
+            _writerCheckpoint = writerCheckpoint;
             _curPos = initialPosition;
         }
 
@@ -29,6 +33,16 @@ namespace EventStore.Core.TransactionLog.Chunks
             var res = TryReadNext();
             record = res.LogRecord;
             return res.Success;
+        }
+
+        public void Open()
+        {
+            // NOOP
+        }
+
+        public void Close()
+        {
+            // NOOP
         }
 
         public RecordReadResult TryReadNext()
@@ -41,7 +55,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var pos = position;
             while (true)
             {
-                var writerChk = _db.Config.WriterCheckpoint.Read();
+                var writerChk = _writerCheckpoint.Read();
                 if (pos >= writerChk)
                     return new RecordReadResult(false, null, -1);
 
@@ -140,6 +154,11 @@ namespace EventStore.Core.TransactionLog.Chunks
                 // this will be handled correctly on next iteration
                 pos = chunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize; // the boundary of current and previous chunk
             }
+        }
+
+        public void Dispose()
+        {
+            Close();
         }
     }
 }

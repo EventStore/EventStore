@@ -176,23 +176,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 RecordReadResult result;
                 while ((result = chaser.TryReadNext()).Success)
                 {
-                    //Debug.WriteLine(result.LogRecord);
-
-                    switch (result.LogRecord.RecordType)
-                    {
-                        case LogRecordType.Prepare:
-                        {
-                            //Prepare((PrepareLogRecord) result.LogRecord);
-                            break;
-                        }
-                        case LogRecordType.Commit:
-                        {
-                            Commit((CommitLogRecord) result.LogRecord);
-                            break;
-                        }
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
+                    if (result.LogRecord.RecordType == LogRecordType.Commit)
+                        Commit((CommitLogRecord) result.LogRecord);
 
                     processed += 1;
                     if (processed%100000 == 0)

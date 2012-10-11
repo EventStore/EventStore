@@ -3,8 +3,11 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog
 {
-    public interface ITransactionFileSequentialReader
+    public interface ITransactionFileSequentialReader: IDisposable
     {
+        void Open();
+        void Close();
+
         RecordReadResult TryReadNext();
         RecordReadResult TryReadPrev();
 
