@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Net.Sockets;
+using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Tcp;
 using System.Linq;
+using EventStore.Transport.Tcp;
 
 namespace EventStore.TestClient.Commands
 {
@@ -31,7 +34,6 @@ namespace EventStore.TestClient.Commands
 
             var commandsToCkeck = new[]
                                       {
-                                          (byte) TcpCommand.Ping,
                                           (byte) TcpCommand.CreateStream,
                                           (byte) TcpCommand.WriteEvents,
                                           (byte) TcpCommand.TransactionStart,
@@ -48,34 +50,53 @@ namespace EventStore.TestClient.Commands
                                           (byte) TcpCommand.StreamEventAppeared,
                                           (byte) TcpCommand.SubscriptionDropped,
                                           (byte) TcpCommand.SubscriptionToAllDropped,
-                                          (byte) TcpCommand.ScavengeDatabase
                                       };
 
-            context.Client.CreateTcpConnection(
-            context, 
-            (connection, package) =>
-            {
-                if (package.Command != TcpCommand.BadRequest)
-                    context.Fail(null, string.Format("Bad request expected, got {0}!", package.Command));
-            },
-            connection =>
-            {
-                foreach (var command in commandsToCkeck)
-                {
-                    connection.EnqueueSend(new TcpPackage((TcpCommand)command, Guid.NewGuid(), new byte[] { 0, 1, 0, 1 }).AsByteArray());
-                }
+            var packages = commandsToCkeck.Select(c => new TcpPackage((TcpCommand)c, Guid.NewGuid(), new byte[] { 0, 1, 0, 1 }).AsByteArray())
+                                          .Union(new[]
+                                                     {
+                                                         BitConverter.GetBytes(int.MaxValue).Union(new byte[] {1, 2, 3, 4}).ToArray(),
+                                                         BitConverter.GetBytes(int.MinValue).Union(new byte[] {1, 2, 3, 4}).ToArray(),
+                                                         BitConverter.GetBytes(0).Union(Enumerable.Range(0, 256).Select(x => (byte) x)).ToArray()
+                                                     });
 
-                //just send some bytes
-                connection.EnqueueSend(BitConverter.GetBytes(int.MaxValue).Union(new byte[]{1,2,3,4}).ToArray());
-                connection.EnqueueSend(BitConverter.GetBytes(int.MinValue).Union(new byte[]{1,2,3,4}).ToArray());
-                connection.EnqueueSend(BitConverter.GetBytes(0).
-                                       Union(Enumerable.Range(0, 256).Select(x => (byte) x).ToArray()).ToArray());
-            },
-            (connection, error) =>
+            int step = 0;
+            foreach (var pkg in packages)
             {
-            });
-            Log.Info("Sent [{0}, some random bytes] and received BadRequest or nothing in response, which means server survived",
-                     string.Join(",", commandsToCkeck.Select(c => ((TcpCommand) c).ToString())));
+                var established = new AutoResetEvent(false);
+                var dropped = new AutoResetEvent(false);
+
+                if (step < commandsToCkeck.Length)
+                    Console.WriteLine("{0} Starting step {1} ({2}) {0}", new string('#', 20), step, (TcpCommand) commandsToCkeck[step]);
+                else
+                    Console.WriteLine("{0} Starting step {1} (RANDOM BYTES) {0}", new string('#', 20), step);
+
+                var connection = context.Client.CreateTcpConnection(context,
+                                                                    (conn, package) =>
+                                                                    {
+                                                                        if (package.Command != TcpCommand.BadRequest)
+                                                                            context.Fail(null, string.Format("Bad request expected, got {0}!", package.Command));
+                                                                    },
+                                                                    conn => established.Set(),
+                                                                    (conn, err) => dropped.Set());
+
+                established.WaitOne();
+                connection.EnqueueSend(pkg);
+                dropped.WaitOne();
+
+                if (step < commandsToCkeck.Length)
+                    Console.WriteLine("{0} Step {1} ({2}) Completed {0}", new string('#', 20), step, (TcpCommand)commandsToCkeck[step]);
+                else
+                    Console.WriteLine("{0} Step {1} (RANDOM BYTES) Completed {0}", new string('#', 20), step);
+
+                step++;
+            }
+
+            Log.Info("Sent {0} packages. {1} invalid dtos, {2} bar formatted packages. Got {3} BadRequests. Success",
+                     packages.Count(),
+                     commandsToCkeck.Length,
+                     packages.Count() - commandsToCkeck.Length,
+                     packages.Count());
             context.Success();
             return true;
         }

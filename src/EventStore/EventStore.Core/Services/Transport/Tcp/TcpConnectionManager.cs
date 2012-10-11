@@ -164,6 +164,10 @@ namespace EventStore.Core.Services.Transport.Tcp
             catch (Exception e)
             {
                 Log.InfoException(e, "Received bad network package");
+
+                SendPackage(new TcpPackage(TcpCommand.BadRequest, Guid.Empty, null));
+                Stop();
+
                 return;
             }
 
@@ -185,7 +189,10 @@ namespace EventStore.Core.Services.Transport.Tcp
                     if (message != null)
                         _publisher.Publish(message);
                     else
+                    {
                         SendPackage(new TcpPackage(TcpCommand.BadRequest, package.CorrelationId, null));
+                        Stop();
+                    }
                     break;
                 }
             }
