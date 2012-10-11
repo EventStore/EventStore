@@ -48,10 +48,10 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
             var tagger = new TransactionFilePositionTagger();
             var positionTracker = new PositionTracker(tagger);
 
-            positionTracker.Update(
-                new ProjectionMessage.Projections.CommittedEventReceived(
-                    Guid.NewGuid(), new EventPosition(100, 50), "stream", 1, false,
-                    new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
+            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
+                                                                               Guid.NewGuid(), new EventPosition(100, 50), "stream", 1, false,
+                                                                               new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
+            positionTracker.UpdateByCheckpointTagForward(newTag);
             _tag = positionTracker.LastTag;
             _tagger = new TransactionFilePositionTagger();
             _positionTracker = new PositionTracker(_tagger);
@@ -60,10 +60,5 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
             _positionTracker.UpdateByCheckpointTag(_tag);
         }
 
-        [Test]
-        public void position_is_updated()
-        {
-            Assert.AreEqual(50, _positionTracker.LastEventPrepaprePosition);
-        }
     }
 }

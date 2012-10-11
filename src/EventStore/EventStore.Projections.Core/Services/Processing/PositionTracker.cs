@@ -32,8 +32,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class PositionTracker
     {
-        internal readonly PositionTagger _positionTagger;
-        private long _lastEventPreparePosition = -1;
+        private readonly PositionTagger _positionTagger;
         private CheckpointTag _lastTag = null;
 
         public PositionTracker(PositionTagger positionTagger)
@@ -41,23 +40,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _positionTagger = positionTagger;
         }
 
-        //NOTE: to be used for statistics (90% done)
-        public long LastEventPrepaprePosition
-        {
-            get { return _lastEventPreparePosition; }
-        }
-
         public CheckpointTag LastTag
         {
             get { return _lastTag; }
-        }
-
-        public void Update(ProjectionMessage.Projections.CommittedEventReceived comittedEvent)
-        {
-            var newTag = _positionTagger.MakeCheckpointTag(comittedEvent);
-            UpdateByCheckpointTagForward(newTag);
-            EventPosition position = comittedEvent.Position;
-            UpdatePosition(position.PreparePosition);
         }
 
         public void UpdateByCheckpointTagForward(CheckpointTag newTag)
@@ -68,19 +53,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastTag = newTag;
         }
 
-        public void UpdatePosition(long preparePosition)
-        {
-            if (preparePosition <= _lastEventPreparePosition) // handle prepare only
-                throw new InvalidOperationException(
-                    string.Format("Event at position {0} has been already processed", preparePosition));
-            _lastEventPreparePosition = preparePosition;
-        }
-
         public void UpdateByCheckpointTag(CheckpointTag checkpointTag)
         {
-            if (_lastEventPreparePosition != -1 || _lastTag != null)
+            if (_lastTag != null)
                 throw new InvalidOperationException("Posistion tagger has be already updated");
-            _lastEventPreparePosition = checkpointTag.Position.PreparePosition;
             _lastTag = checkpointTag;
         }
     }

@@ -86,7 +86,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     message.PositionSequenceNumber, message.PositionStreamId, message.Position, _positionTracker.LastTag);
                 return;
             }
-            _positionTracker.Update(message);
+            var newTag = _positionTagger.MakeCheckpointTag(message);
+            _positionTracker.UpdateByCheckpointTagForward(newTag);
             if (_eventFilter.Passes(message.ResolvedLinkTo, message.PositionStreamId, message.Data.EventType))
             {
                 _lastPassedOrCheckpointedEventPosition = message.Position;

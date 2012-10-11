@@ -46,16 +46,10 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
             // given
             _tagger = new StreamPositionTagger("stream1");
             _positionTracker = new PositionTracker(_tagger);
-            _positionTracker.Update(
-                new ProjectionMessage.Projections.CommittedEventReceived(
-                    Guid.NewGuid(), new EventPosition(100, 50), "stream1", 1, false,
-                    new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
-        }
-
-        [Test]
-        public void position_is_updated()
-        {
-            Assert.AreEqual(50, _positionTracker.LastEventPrepaprePosition);
+            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
+                                                                                Guid.NewGuid(), new EventPosition(100, 50), "stream1", 1, false,
+                                                                                new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
+            _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 
         [Test]
@@ -64,19 +58,14 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
             Assert.AreEqual(1, _positionTracker.LastTag.Streams["stream1"]);
         }
 
-        [Test]
-        public void checkpoint_tag_is_for_correct_position()
-        {
-            Assert.AreEqual(50, _positionTracker.LastEventPrepaprePosition);
-        }
-
+        
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cannot_update_to_the_same_postion()
         {
-            _positionTracker.Update(
-                new ProjectionMessage.Projections.CommittedEventReceived(
-                    Guid.NewGuid(), new EventPosition(100, 50), "stream", 1, false,
-                    new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
+            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
+                                                                                Guid.NewGuid(), new EventPosition(100, 50), "stream", 1, false,
+                                                                                new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
+            _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 
         //TODO: write tests on updating with incompatible snapshot loaded

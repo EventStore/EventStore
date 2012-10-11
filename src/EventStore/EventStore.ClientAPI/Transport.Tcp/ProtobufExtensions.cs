@@ -27,6 +27,7 @@
 //  
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using ProtoBuf;
 
@@ -36,19 +37,35 @@ namespace EventStore.ClientAPI.Transport.Tcp
     {
         public static T Deserialize<T>(this ArraySegment<byte> data)
         {
-            using (var memory = new MemoryStream(data.Array, data.Offset, data.Count))
+            try
             {
-                var res = Serializer.Deserialize<T>(memory);
-                return res;
+                using (var memory = new MemoryStream(data.Array, data.Offset, data.Count))
+                {
+                    var res = Serializer.Deserialize<T>(memory);
+                    return res;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Deserialization to {0} failed : {1}", typeof(T).FullName, e);
+                return default(T);
             }
         }
 
         public static T Deserialize<T>(this byte[] data)
         {
-            using (var memory = new MemoryStream(data))
+            try
             {
-                var res = Serializer.Deserialize<T>(memory);
-                return res;
+                using (var memory = new MemoryStream(data))
+                {
+                    var res = Serializer.Deserialize<T>(memory);
+                    return res;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Deserialization to {0} failed : {1}", typeof(T).FullName, e);
+                return default(T);
             }
         }
 
@@ -57,7 +74,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             using (var memory = new MemoryStream())
             {
                 Serializer.Serialize(memory, protoContract);
-                var res = new ArraySegment<byte>(memory.GetBuffer(), 0, (int) memory.Length);
+                var res = new ArraySegment<byte>(memory.GetBuffer(), 0, (int)memory.Length);
                 return res;
             }
         }

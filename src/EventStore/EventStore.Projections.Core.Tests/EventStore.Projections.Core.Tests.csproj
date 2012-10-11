@@ -152,7 +152,6 @@
     <Compile Include="Services\transaction_file_position_tagger\when_creating_transaction_file_postion_tracker.cs" />
     <Compile Include="Services\transaction_file_position_tagger\when_updating_transaction_file_postion_tracker.cs" />
     <Compile Include="Services\transaction_file_position_tagger\when_updating_postion_tagger_from_a_tag.cs" />
-    <Compile Include="Services\core_projection\when_receiving_a_committed_event_not_passing_a_filter_the_projection_should.cs" />
     <Compile Include="Services\core_projection\when_starting_an_existing_projection_with_a_faulting_handler.cs" />
     <Compile Include="Services\core_projection\when_the_checkpoint_is_suggested.cs" />
     <Compile Include="Services\core_projection\when_the_projection_with_pending_writes_is_stopped.cs" />

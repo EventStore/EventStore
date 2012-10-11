@@ -36,7 +36,9 @@ using EventStore.Projections.Core.Services.Processing;
 namespace EventStore.Projections.Core.Messages
 {
     public interface ICoreProjection : IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
-                                       IHandle<ProjectionMessage.Projections.CheckpointSuggested>
+                                       IHandle<ProjectionMessage.Projections.CheckpointSuggested>,
+                                       IHandle<ProjectionMessage.Projections.CheckpointCompleted>,
+                                       IHandle<ProjectionMessage.Projections.PauseRequested>
     {
     }
 
@@ -230,6 +232,25 @@ namespace EventStore.Projections.Core.Messages
             }
 
             public class ReadyForCheckpoint : Message
+            {
+            }
+
+            public class CheckpointCompleted : Message
+            {
+                private readonly CheckpointTag _checkpointTag;
+
+                public CheckpointCompleted(CheckpointTag checkpointTag)
+                {
+                    _checkpointTag = checkpointTag;
+                }
+
+                public CheckpointTag CheckpointTag
+                {
+                    get { return _checkpointTag; }
+                }
+            }
+
+            public class PauseRequested : Message
             {
             }
 
