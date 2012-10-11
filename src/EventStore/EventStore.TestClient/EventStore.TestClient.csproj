@@ -81,6 +81,7 @@
     <Compile Include="Commands\PingFloodHttpProcessor.cs" />
     <Compile Include="Commands\ReadProcessor.cs" />
     <Compile Include="Commands\SubscribeToStreamProcessor.cs" />
+    <Compile Include="Commands\TcpSanitazationCheckProcessor.cs" />
     <Compile Include="Commands\TransactionWriteProcessor.cs" />
     <Compile Include="Commands\UsageProcessor.cs" />
     <Compile Include="Commands\WriteFloodProcessor.cs" />

@@ -76,6 +76,8 @@ namespace EventStore.Core.Services.Transport.Tcp
         SubscriptionDropped = 0xC5,
         SubscriptionToAllDropped = 0xC6,
 
-        ScavengeDatabase = 0xD0
+        ScavengeDatabase = 0xD0,
+
+        BadRequest = 0xF0
     }
 }
