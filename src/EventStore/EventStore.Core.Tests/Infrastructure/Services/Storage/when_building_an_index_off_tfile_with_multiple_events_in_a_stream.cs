@@ -45,10 +45,10 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             _id1 = Guid.NewGuid();
             _id2 = Guid.NewGuid();
             long pos1, pos2, pos3, pos4;
-            Writer.Write(new PrepareLogRecord(0, _id1, _id1, 0, "test1", ExpectedVersion.NoStream, DateTime.UtcNow,
+            Writer.Write(new PrepareLogRecord(0, _id1, _id1, 0, 0, "test1", ExpectedVersion.NoStream, DateTime.UtcNow,
                                               PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
                          out pos1);
-            Writer.Write(new PrepareLogRecord(pos1, _id2, _id2, pos1, "test1", 0, DateTime.UtcNow,
+            Writer.Write(new PrepareLogRecord(pos1, _id2, _id2, pos1, 0, "test1", 0, DateTime.UtcNow,
                                               PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
                          out pos2);
             Writer.Write(new CommitLogRecord(pos2, _id1, 0, DateTime.UtcNow, 0), out pos3);

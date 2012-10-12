@@ -13,7 +13,9 @@ namespace EventStore.Core.TransactionLog
         void Reposition(long position);
 
         RecordReadResult TryReadNext();
+        RecordReadResult TryReadNextNonFlushed();
         RecordReadResult TryReadPrev();
+        RecordReadResult TryReadPrevNonFlushed();
 
         bool TryReadNext(out LogRecord record);
         bool TryReadPrev(out LogRecord record);

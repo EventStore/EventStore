@@ -59,6 +59,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
         public readonly long LogPosition;
         public readonly PrepareFlags Flags;
         public readonly long TransactionPosition;
+        public readonly int TransactionOffset;
         public readonly int ExpectedVersion;
         public readonly string EventStreamId;
 
@@ -78,9 +79,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
         {
             get
             {
-                return 8
+                return sizeof(LogRecordType)
                        + 1
                        + 8
+                       + sizeof(PrepareFlags)
+                       + 8
+                       + 4
                        + 4
                        + IntPtr.Size + EventStreamId.Length * 2
 
@@ -97,6 +101,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                 Guid correlationId, 
                                 Guid eventId,
                                 long transactionPosition,
+                                int transactionOffset,
                                 string eventStreamId,
                                 int expectedVersion,
                                 DateTime timeStamp, 
@@ -110,6 +115,8 @@ namespace EventStore.Core.TransactionLog.LogRecords
             Ensure.NotEmptyGuid(correlationId, "correlationId");
             Ensure.NotEmptyGuid(eventId, "eventId");
             Ensure.Nonnegative(transactionPosition, "transactionPosition");
+            if (transactionOffset < -1)
+                throw new ArgumentOutOfRangeException("transactionOffset");
             Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
             if (expectedVersion < Core.Data.ExpectedVersion.Any)
                 throw new ArgumentOutOfRangeException("expectedVersion");
@@ -118,6 +125,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             LogPosition = logPosition;
             Flags = flags;
             TransactionPosition = transactionPosition;
+            TransactionOffset = transactionOffset;
             ExpectedVersion = expectedVersion;
             EventStreamId = eventStreamId;
             
@@ -134,6 +142,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             LogPosition = reader.ReadInt64();
             Flags = (PrepareFlags) reader.ReadUInt16();
             TransactionPosition = reader.ReadInt64();
+            TransactionOffset = reader.ReadInt32();
             ExpectedVersion = reader.ReadInt32();
             EventStreamId = reader.ReadString();
             EventId = new Guid(reader.ReadBytes(16));
@@ -155,6 +164,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             writer.Write(LogPosition);
             writer.Write((ushort) Flags);
             writer.Write(TransactionPosition);
+            writer.Write(TransactionOffset);
             writer.Write(ExpectedVersion);
             writer.Write(EventStreamId);
 
@@ -175,6 +185,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             return other.LogPosition == LogPosition
                    && other.Flags == Flags
                    && other.TransactionPosition == TransactionPosition
+                   && other.TransactionOffset == TransactionOffset
                    && other.ExpectedVersion == ExpectedVersion
                    && other.EventStreamId.Equals(EventStreamId)
 
@@ -201,6 +212,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
                 int result = LogPosition.GetHashCode();
                 result = (result * 397) ^ Flags.GetHashCode();
                 result = (result * 397) ^ TransactionPosition.GetHashCode();
+                result = (result * 397) ^ TransactionOffset;
                 result = (result * 397) ^ ExpectedVersion;
                 result = (result * 397) ^ EventStreamId.GetHashCode();
 
@@ -229,16 +241,18 @@ namespace EventStore.Core.TransactionLog.LogRecords
             return string.Format("LogPosition: {0}, "
                                  + "Flags: {1}, "
                                  + "TransactionPosition: {2}, "
-                                 + "ExpectedVersion: {3}, "
-                                 + "EventStreamId: {4}, "
-                                 + "EventId: {5}, "
-                                 + "CorrelationId: {6}, " 
-                                 + "TimeStamp: {7}, " 
-                                 + "EventType: {8}, " 
-                                 + "InMemorySize: {9}",
+                                 + "TransactionOffset: {3}, "
+                                 + "ExpectedVersion: {4}, "
+                                 + "EventStreamId: {5}, "
+                                 + "EventId: {6}, "
+                                 + "CorrelationId: {7}, " 
+                                 + "TimeStamp: {8}, " 
+                                 + "EventType: {9}, " 
+                                 + "InMemorySize: {10}",
                                  LogPosition,
                                  Flags,
                                  TransactionPosition,
+                                 TransactionOffset,
                                  ExpectedVersion,
                                  EventStreamId,
                                  EventId,

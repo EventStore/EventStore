@@ -47,11 +47,11 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             var t1 = WriteTransactionBegin("ES", ExpectedVersion.NoStream);
             var t2 = WriteTransactionBegin("ABC", ExpectedVersion.NoStream);
 
-            _p1 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, t1.EventStreamId, 0, "es1", PrepareFlags.Data);
-            _p2 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, t2.EventStreamId, 0, "abc1", PrepareFlags.Data);
-            _p3 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, t1.EventStreamId, 1, "es1", PrepareFlags.Data);
-            _p4 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, t2.EventStreamId, 1, "abc1", PrepareFlags.Data);
-            _p5 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, t1.EventStreamId, 2, "es1", PrepareFlags.Data);
+            _p1 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0, t1.EventStreamId, 0, "es1", PrepareFlags.Data);
+            _p2 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0, t2.EventStreamId, 0, "abc1", PrepareFlags.Data);
+            _p3 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1, t1.EventStreamId, 1, "es1", PrepareFlags.Data);
+            _p4 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1, t2.EventStreamId, 1, "abc1", PrepareFlags.Data);
+            _p5 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2, t1.EventStreamId, 2, "es1", PrepareFlags.Data);
 
             WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, t2.EventStreamId);
             WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, t1.EventStreamId);

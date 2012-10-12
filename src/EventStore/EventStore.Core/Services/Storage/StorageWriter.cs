@@ -199,6 +199,7 @@ namespace EventStore.Core.Services.Storage
                                                                       message.CorrelationId,
                                                                       evnt.EventId,
                                                                       transactionPosition,
+                                                                      shouldCreateStream ? i + 1 : i,
                                                                       message.EventStreamId,
                                                                       expectedVersion,
                                                                       flags,
@@ -219,7 +220,6 @@ namespace EventStore.Core.Services.Storage
             if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
 
             Interlocked.Decrement(ref _flushMessagesInQueue);
-
             try
             {
                 var logPosition = _writer.Checkpoint.ReadNonFlushed();
@@ -244,6 +244,14 @@ namespace EventStore.Core.Services.Storage
                 Debug.Assert(message.Events.Length > 0);
 
                 var logPosition = _writer.Checkpoint.ReadNonFlushed();
+                var transactionOffset = _readIndex.GetLastTransactionOffset(logPosition, message.TransactionId);
+                if (transactionOffset < -1)
+                {
+                    throw new Exception(
+                        string.Format("Invalid transaction offset {0} found for transaction ID {1}. Possibly wrong transactionId provided.",
+                                      transactionOffset,
+                                      message.TransactionId));
+                }
                 for (int i = 0; i < message.Events.Length; ++i)
                 {
                     var evnt = message.Events[i];
@@ -251,6 +259,7 @@ namespace EventStore.Core.Services.Storage
                                                             message.CorrelationId,
                                                             evnt.EventId,
                                                             message.TransactionId,
+                                                            transactionOffset + i + 1,
                                                             message.EventStreamId,
                                                             evnt.EventType,
                                                             evnt.Data,
@@ -353,6 +362,7 @@ namespace EventStore.Core.Services.Storage
                                                             message.CorrelationId,
                                                             Guid.NewGuid(),
                                                             transactionPos,
+                                                            0,
                                                             message.EventStreamId,
                                                             message.ExpectedVersion,
                                                             PrepareFlags.StreamDelete | PrepareFlags.TransactionEnd,
@@ -386,6 +396,7 @@ namespace EventStore.Core.Services.Storage
                                                   prepare.CorrelationId,
                                                   prepare.EventId,
                                                   transactionPos,
+                                                  prepare.TransactionOffset,
                                                   prepare.EventStreamId,
                                                   prepare.ExpectedVersion,
                                                   prepare.TimeStamp,

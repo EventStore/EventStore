@@ -51,9 +51,9 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [SetUp]
         public void Setup()
         {
-            _prepare1 = new PrepareLogRecord(0, _corrId, _eventId, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
+            _prepare1 = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                              PrepareFlags.None, "Foo", new byte[12], new byte[15]);
-            _prepare2 = new PrepareLogRecord(0, _corrId, _eventId, 0, "test2", 2, new DateTime(2000, 1, 1, 12, 0, 0),
+            _prepare2 = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test2", 2, new DateTime(2000, 1, 1, 12, 0, 0),
                                              PrepareFlags.None, "Foo2", new byte[12], new byte[15]);
 
             _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);

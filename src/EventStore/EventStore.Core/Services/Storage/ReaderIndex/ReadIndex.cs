@@ -684,7 +684,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                                                 int maxCount,
                                                                 bool resolveLinks)
         {
-            throw new NotImplementedException();
             var records = new List<ResolvedEventRecord>();
             var count = 0;
             ITransactionFileSequentialReader seqReader = GetSeqReader();
@@ -921,6 +920,31 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 ReturnReader(reader);
             }
+        }
+
+        public int GetLastTransactionOffset(long writerCheckpoint, long transactionId)
+        {
+            var seqReader = GetSeqReader();
+            try
+            {
+                seqReader.Reposition(writerCheckpoint);
+                RecordReadResult result;
+                while ((result = seqReader.TryReadPrevNonFlushed()).Success)
+                {
+                    if (result.LogRecord.Position < transactionId)
+                        break;
+                    if (result.LogRecord.RecordType != LogRecordType.Prepare)
+                        continue;
+                    var prepare = (PrepareLogRecord) result.LogRecord;
+                    if (prepare.TransactionPosition == transactionId)
+                        return prepare.TransactionOffset;
+                }
+            }
+            finally
+            {
+                ReturnSeqReader(seqReader);
+            }
+            return int.MinValue;
         }
 
         public ReadIndexStats GetStatistics()

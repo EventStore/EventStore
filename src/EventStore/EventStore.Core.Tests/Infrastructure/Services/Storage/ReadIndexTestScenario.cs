@@ -137,6 +137,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
                                             Guid.NewGuid(),
                                             Guid.NewGuid(),
                                             WriterCheckpoint.ReadNonFlushed(),
+                                            0,
                                             eventStreamId,
                                             expectedVersion,
                                             PrepareFlags.Data | PrepareFlags.TransactionBegin, 
@@ -158,6 +159,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
 
         protected EventRecord WriteTransactionEvent(Guid correlationId, 
                                                     long transactionPos, 
+                                                    int transactionOffset,
                                                     string eventStreamId, 
                                                     int eventNumber, 
                                                     string eventData,
@@ -167,6 +169,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
                                             correlationId,
                                             Guid.NewGuid(),
                                             transactionPos,
+                                            transactionOffset,
                                             eventStreamId,
                                             ExpectedVersion.Any,
                                             flags,

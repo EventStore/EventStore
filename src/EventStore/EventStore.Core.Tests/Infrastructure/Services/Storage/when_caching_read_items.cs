@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_item_can_be_read()
         {
             var cache = new DictionaryBasedCache();
-            cache.PutRecord(12000, new PrepareLogRecord(12000, _id, _id, 12000, "test", 1, DateTime.UtcNow, 
+            cache.PutRecord(12000, new PrepareLogRecord(12000, _id, _id, 12000, 0, "test", 1, DateTime.UtcNow, 
                                                         PrepareFlags.None, "type", new byte[0], new byte[0]));
             PrepareLogRecord read;
             Assert.IsTrue(cache.TryGetRecord(12000, out read));
@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         {
             var cache = new DictionaryBasedCache(9, 1024*1024*16);
             for (int i = 0; i < 10;i++ )
-                cache.PutRecord(i, new PrepareLogRecord(0, Guid.NewGuid(), _id, 0, "test", 1, DateTime.UtcNow, 
+                cache.PutRecord(i, new PrepareLogRecord(0, Guid.NewGuid(), _id, 0, 0, "test", 1, DateTime.UtcNow, 
                                                         PrepareFlags.None, "type", new byte[0], new byte[0]));
             PrepareLogRecord read;
             Assert.IsFalse(cache.TryGetRecord(0, out read));
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         {
             var cache = new DictionaryBasedCache(100, 1024 * 9);
             for (int i = 0; i < 10; i++)
-                cache.PutRecord(i, new PrepareLogRecord(0, Guid.NewGuid(), _id, 0, "test", 1, DateTime.UtcNow, 
+                cache.PutRecord(i, new PrepareLogRecord(0, Guid.NewGuid(), _id, 0, 0, "test", 1, DateTime.UtcNow, 
                                                         PrepareFlags.None, "type", new byte[1024], new byte[0]));
             PrepareLogRecord read;
             Assert.IsFalse(cache.TryGetRecord(0, out read));
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         {
             var cache = new DictionaryBasedCache(100, 1024 * 9);
             for (int i = 0; i < 10; i++)
-                cache.PutRecord(i, new PrepareLogRecord(0, Guid.NewGuid(), _id, 0, "test", 1, DateTime.UtcNow, 
+                cache.PutRecord(i, new PrepareLogRecord(0, Guid.NewGuid(), _id, 0, 0, "test", 1, DateTime.UtcNow, 
                                                         PrepareFlags.None, "type", new byte[0], new byte[1024]));
             PrepareLogRecord read;
             Assert.IsFalse(cache.TryGetRecord(0, out read));
@@ -97,7 +97,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void statistics_are_updated_with_hits()
         {
             var cache = new DictionaryBasedCache(100, 1024 * 9);
-            cache.PutRecord(1, new PrepareLogRecord(1, Guid.NewGuid(), _id, 1, "test", 1, DateTime.UtcNow, 
+            cache.PutRecord(1, new PrepareLogRecord(1, Guid.NewGuid(), _id, 1, 0, "test", 1, DateTime.UtcNow, 
                                                     PrepareFlags.None, "type", new byte[0], new byte[1024]));
             PrepareLogRecord read;
             cache.TryGetRecord(1, out read);
@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void statistics_are_updated_with_misses()
         {
             var cache = new DictionaryBasedCache(100, 1024 * 9);
-            cache.PutRecord(1, new PrepareLogRecord(1, Guid.NewGuid(), _id, 1, "test", 1, DateTime.UtcNow, 
+            cache.PutRecord(1, new PrepareLogRecord(1, Guid.NewGuid(), _id, 1, 0, "test", 1, DateTime.UtcNow, 
                                                     PrepareFlags.None, "type", new byte[0], new byte[1024]));
             PrepareLogRecord read;
             cache.TryGetRecord(0, out read);
@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void statistics_are_updated_with_total_count()
         {
             var cache = new DictionaryBasedCache(100, 1024 * 9);
-            cache.PutRecord(1, new PrepareLogRecord(1, Guid.NewGuid(), _id, 1, "test", 1, DateTime.UtcNow, 
+            cache.PutRecord(1, new PrepareLogRecord(1, Guid.NewGuid(), _id, 1, 0, "test", 1, DateTime.UtcNow, 
                                                     PrepareFlags.None, "type", new byte[0], new byte[1024]));
             PrepareLogRecord read;
             cache.TryGetRecord(0, out read);
@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void statistics_are_updated_with_total_size()
         {
             var cache = new DictionaryBasedCache(100, 1024 * 9);
-            var record = new PrepareLogRecord(1, Guid.NewGuid(), _id, 1, "test", 1, DateTime.UtcNow, 
+            var record = new PrepareLogRecord(1, Guid.NewGuid(), _id, 1, 0, "test", 1, DateTime.UtcNow, 
                                               PrepareFlags.None, "type", new byte[0], new byte[1024]);
             cache.PutRecord(1, record);
             PrepareLogRecord read;

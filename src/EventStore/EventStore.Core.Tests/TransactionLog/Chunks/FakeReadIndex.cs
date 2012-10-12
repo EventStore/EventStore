@@ -79,6 +79,11 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             throw new NotImplementedException();
         }
 
+        public int GetLastTransactionOffset(long writerCheckpoint, long transactionId)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Build()
         {
             throw new NotImplementedException();

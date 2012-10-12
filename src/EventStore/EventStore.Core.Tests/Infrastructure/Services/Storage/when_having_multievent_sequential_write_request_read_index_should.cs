@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             var begin = WriteTransactionBegin("ES", ExpectedVersion.Any);
             for (int i = 0; i < 15; ++i)
             {
-                WriteTransactionEvent(Guid.NewGuid(), begin.LogPosition, "ES", i, "data" + i, PrepareFlags.Data);
+                WriteTransactionEvent(Guid.NewGuid(), begin.LogPosition, i, "ES", i, "data" + i, PrepareFlags.Data);
             }
             WriteTransactionEnd(Guid.NewGuid(), begin.LogPosition, "ES");
             WriteCommit(Guid.NewGuid(), begin.LogPosition, "ES", 0);
@@ -122,8 +122,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         protected override void WriteTestScenario()
         {
             _p1 = WriteTransactionBegin("ES", ExpectedVersion.NoStream, 0, "test1");
-            _p2 = WriteTransactionEvent(_p1.CorrelationId, _p1.LogPosition, _p1.EventStreamId, 1, "test2", PrepareFlags.Data);
-            _p3 = WriteTransactionEvent(_p1.CorrelationId, _p1.LogPosition, _p1.EventStreamId, 2, "test3", PrepareFlags.TransactionEnd | PrepareFlags.Data);
+            _p2 = WriteTransactionEvent(_p1.CorrelationId, _p1.LogPosition, 0, _p1.EventStreamId, 1, "test2", PrepareFlags.Data);
+            _p3 = WriteTransactionEvent(_p1.CorrelationId, _p1.LogPosition, 1, _p1.EventStreamId, 2, "test3", PrepareFlags.TransactionEnd | PrepareFlags.Data);
 
             WriteCommit(_p1.CorrelationId, _p1.LogPosition, _p1.EventStreamId, _p1.EventNumber);
         }

@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 new EventRecord(
                     list.Count,
                     new PrepareLogRecord(
-                        _fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, streamId, list.Count - 1,
+                        _fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
                         DateTime.UtcNow, PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, eventType,
                         Encoding.UTF8.GetBytes(eventData),
                         eventMetadata == null ? new byte[0] : Encoding.UTF8.GetBytes(eventMetadata))));

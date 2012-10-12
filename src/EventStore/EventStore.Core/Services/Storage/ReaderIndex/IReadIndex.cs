@@ -53,7 +53,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         EventRecord ResolveLinkToEvent(EventRecord eventRecord);
         CommitCheckResult CheckCommitStartingAt(long prepareStartPosition);
         string[] GetStreamIds();
-        
+        int GetLastTransactionOffset(long writerCheckpoint, long transactionId);
+       
         void Build();
         ReadIndexStats GetStatistics();
         void Close();

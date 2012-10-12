@@ -47,15 +47,15 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         protected override void WriteTestScenario()
         {
             long p1;
-            Writer.Write(new PrepareLogRecord(0, Guid.NewGuid(), Guid.NewGuid(), 0, "test1", -1, DateTime.UtcNow,
+            Writer.Write(new PrepareLogRecord(0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "test1", -1, DateTime.UtcNow,
                                               PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
                          out p1);
             long p2;
-            Writer.Write(new PrepareLogRecord(p1, Guid.NewGuid(), Guid.NewGuid(), p1, "test2", -1, DateTime.UtcNow,
+            Writer.Write(new PrepareLogRecord(p1, Guid.NewGuid(), Guid.NewGuid(), p1, 0, "test2", -1, DateTime.UtcNow,
                                               PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
                          out p2);
             long p3;
-            Writer.Write(new PrepareLogRecord(p2, Guid.NewGuid(), Guid.NewGuid(), p2, "test3", -1, DateTime.UtcNow,
+            Writer.Write(new PrepareLogRecord(p2, Guid.NewGuid(), Guid.NewGuid(), p2, 0, "test3", -1, DateTime.UtcNow,
                                               PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
                          out p3);
         }
