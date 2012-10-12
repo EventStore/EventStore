@@ -50,6 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ICoreProjection _coreProjection;
         private readonly ProjectionConfig _projectionConfig;
         private readonly string _name;
+        private readonly PositionTagger _positionTagger;
         private readonly string _projectionCheckpointStreamId;
 
         private ProjectionCheckpoint _currentCheckpoint;
@@ -75,6 +76,15 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionConfig projectionConfig, ILogger logger, string projectionCheckpointStreamId, string name,
             PositionTagger positionTagger)
         {
+            if (coreProjection == null) throw new ArgumentNullException("coreProjection");
+            if (publisher == null) throw new ArgumentNullException("publisher");
+            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
+            if (projectionConfig == null) throw new ArgumentNullException("projectionConfig");
+            if (projectionCheckpointStreamId == null) throw new ArgumentNullException("projectionCheckpointStreamId");
+            if (projectionCheckpointStreamId == "") throw new ArgumentException("projectionCheckpointStreamId");
+            if (name == null) throw new ArgumentNullException("name");
+            if (positionTagger == null) throw new ArgumentNullException("positionTagger");
+            if (name == "") throw new ArgumentException("name");
             _lastProcessedEventPosition = new PositionTracker(positionTagger);
             _coreProjection = coreProjection;
             _publisher = publisher;
@@ -83,10 +93,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger = logger;
             _projectionCheckpointStreamId = projectionCheckpointStreamId;
             _name = name;
+            _positionTagger = positionTagger;
         }
 
         public void Start(CheckpointTag checkpointTag, int lastWrittenCheckpointEventNumber)
         {
+            if (_started)
+                throw new InvalidOperationException("Already started");
             _started = true;
             _lastProcessedEventPosition.UpdateByCheckpointTag(checkpointTag);
             _lastCompletedCheckpointPosition = checkpointTag;
@@ -99,11 +112,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Stopping()
         {
+            EnsureStarted();
+            if (_stopping)
+                throw new InvalidOperationException("Already stopping");
             _stopping = true;
         }
 
         public void Stopped()
         {
+            EnsureStarted();
             _started = false;
         }
 
@@ -146,20 +163,28 @@ namespace EventStore.Projections.Core.Services.Processing
                 };
         }
 
-        public bool RequestCheckpointToStop()
+        public void RequestCheckpointToStop()
         {
-            if (_projectionConfig.CheckpointsEnabled)
-                // do not request checkpoint if no events were processed since last checkpoint
-                if (_lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
-                {
-                    RequestCheckpoint(_lastProcessedEventPosition);
-                    return true;
-                }
-            return false;
+            if (!_projectionConfig.CheckpointsEnabled)
+                throw new InvalidOperationException("Checkpoints are not enabled");
+            EnsureStarted();
+            if (!_stopping)
+                throw new InvalidOperationException("Not stopping");
+            // do not request checkpoint if no events were processed since last checkpoint
+            if (_lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
+            {
+                RequestCheckpoint(_lastProcessedEventPosition);
+                return;
+            }
+            _coreProjection.Handle(
+                new ProjectionMessage.Projections.CheckpointCompleted(_lastCompletedCheckpointPosition));
         }
 
         public void EventProcessed(string state, List<EmittedEvent[]> scheduledWrites, CheckpointTag checkpointTag)
         {
+            EnsureStarted();
+            if (_stopping)
+                throw new InvalidOperationException("Stopping");
             _eventsProcessedAfterRestart++;
             _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointTag);
             // running state only
@@ -171,9 +196,14 @@ namespace EventStore.Projections.Core.Services.Processing
             ProcessCheckpoints();
         }
 
-        public void CheckpointSuggested(ProjectionMessage.Projections.CheckpointSuggested checkpointSuggested)
+        public void CheckpointSuggested(CheckpointTag checkpointTag)
         {
-            _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointSuggested.CheckpointTag);
+            if (!_projectionConfig.CheckpointsEnabled)
+                throw new InvalidOperationException("Checkpoints are not enabled");
+            EnsureStarted();
+            if (_stopping)
+                throw new InvalidOperationException("Stopping");
+            _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointTag);
             RequestCheckpoint(_lastProcessedEventPosition);
         }
 

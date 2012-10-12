@@ -25,41 +25,59 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using EventStore.Projections.Core.Messages;
+using System.Linq;
+using EventStore.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
 {
-    public class PositionTracker
+    [TestFixture]
+    public class when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop :
+        TestFixtureWithCoreProjectionCheckpointManager
     {
-        private readonly PositionTagger _positionTagger;
-        private CheckpointTag _lastTag = null;
+        private Exception _exception;
 
-        public PositionTracker(PositionTagger positionTagger)
+        protected override void Given()
         {
-            _positionTagger = positionTagger;
+            AllWritesSucceed();
+            base.Given();
+            this._checkpointHandledThreshold = 2;
         }
 
-        public CheckpointTag LastTag
+        protected override void When()
         {
-            get { return _lastTag; }
+            base.When();
+            _exception = null;
+            try
+            {
+                _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000), 5);
+                _manager.EventProcessed(
+                    @"{""state"":""state1""}", null, CheckpointTag.FromStreamPosition("stream", 11, 1100));
+                _manager.EventProcessed(
+                    @"{""state"":""state2""}", null, CheckpointTag.FromStreamPosition("stream", 12, 1200));
+                _manager.Stopping();
+                _manager.RequestCheckpointToStop();
+            }
+            catch (Exception ex)
+            {
+                _exception = ex;
+            }
         }
 
-        public void UpdateByCheckpointTagForward(CheckpointTag newTag)
+        [Test]
+        public void two_checkpoints_are_completed()
         {
-            if (newTag <= _lastTag)
-                throw new InvalidOperationException(
-                    string.Format("Event at checkpoint tag {0} has been already processed", newTag));
-            _lastTag = newTag;
+            Assert.AreEqual(2, _projection._checkpointCompletedMessages.Count);
         }
 
-        public void UpdateByCheckpointTag(CheckpointTag checkpointTag)
+
+        [Test]
+        public void only_one_checkpoint_has_been_written()
         {
-            if (_lastTag != null)
-                throw new InvalidOperationException("Posistion tagger has be already updated");
-            if (!_positionTagger.IsCompatible(checkpointTag))
-                throw new InvalidOperationException("Cannot update by incompatible checkpoint tag");
-            _lastTag = checkpointTag;
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
     }
 }

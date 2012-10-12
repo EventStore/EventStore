@@ -25,41 +25,44 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
+
+using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
 {
-    public class PositionTracker
+    public class FakeCoreProjection : ICoreProjection
     {
-        private readonly PositionTagger _positionTagger;
-        private CheckpointTag _lastTag = null;
+        public readonly List<ProjectionMessage.Projections.CommittedEventReceived> _committedEventReceivedMessages =
+            new List<ProjectionMessage.Projections.CommittedEventReceived>();
 
-        public PositionTracker(PositionTagger positionTagger)
+        public readonly List<ProjectionMessage.Projections.CheckpointSuggested> _checkpointSuggestedMessages =
+            new List<ProjectionMessage.Projections.CheckpointSuggested>();
+
+        public readonly List<ProjectionMessage.Projections.CheckpointCompleted> _checkpointCompletedMessages =
+            new List<ProjectionMessage.Projections.CheckpointCompleted>();
+
+        public readonly List<ProjectionMessage.Projections.PauseRequested> _pauseRequestedMessages =
+            new List<ProjectionMessage.Projections.PauseRequested>();
+
+        public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
         {
-            _positionTagger = positionTagger;
+            _committedEventReceivedMessages.Add(message);
         }
 
-        public CheckpointTag LastTag
+        public void Handle(ProjectionMessage.Projections.CheckpointSuggested message)
         {
-            get { return _lastTag; }
+            _checkpointSuggestedMessages.Add(message);
         }
 
-        public void UpdateByCheckpointTagForward(CheckpointTag newTag)
+        public void Handle(ProjectionMessage.Projections.CheckpointCompleted message)
         {
-            if (newTag <= _lastTag)
-                throw new InvalidOperationException(
-                    string.Format("Event at checkpoint tag {0} has been already processed", newTag));
-            _lastTag = newTag;
+            _checkpointCompletedMessages.Add(message);
         }
 
-        public void UpdateByCheckpointTag(CheckpointTag checkpointTag)
+        public void Handle(ProjectionMessage.Projections.PauseRequested message)
         {
-            if (_lastTag != null)
-                throw new InvalidOperationException("Posistion tagger has be already updated");
-            if (!_positionTagger.IsCompatible(checkpointTag))
-                throw new InvalidOperationException("Cannot update by incompatible checkpoint tag");
-            _lastTag = checkpointTag;
+            _pauseRequestedMessages.Add(message);
         }
     }
 }

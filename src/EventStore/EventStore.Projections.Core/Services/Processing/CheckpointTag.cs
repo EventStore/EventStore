@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
     [DataContract]
     public class CheckpointTag: IComparable<CheckpointTag>
     {
-        private enum Mode
+        internal enum Mode
         {
             Position,
             Stream,
@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Streams = new Dictionary<string, int> {{stream, sequenceNumber}};
         }
 
-        private Mode GetMode()
+        internal Mode GetMode()
         {
             if (Streams == null || Streams.Count == 0)
                 return Mode.Position;

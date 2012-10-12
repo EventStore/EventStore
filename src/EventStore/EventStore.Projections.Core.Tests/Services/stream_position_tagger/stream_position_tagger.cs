@@ -53,5 +53,27 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
         {
             var t = new StreamPositionTagger("");
         }
+
+        [Test]
+        public void position_checkpoint_tag_is_incompatible()
+        {
+            var t = new StreamPositionTagger("stream1");
+            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromPosition(1000, 500)));
+        }
+
+        [Test]
+        public void anothe_stream_checkpoint_tag_is_incompatible()
+        {
+            var t = new StreamPositionTagger("stream1");
+            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromStreamPosition("stream2", 100, 500)));
+        }
+
+        [Test]
+        public void the_same_stream_checkpoint_tag_is_compatible()
+        {
+            var t = new StreamPositionTagger("stream1");
+            Assert.IsTrue(t.IsCompatible(CheckpointTag.FromStreamPosition("stream1", 100, 500)));
+        }
+
     }
 }
