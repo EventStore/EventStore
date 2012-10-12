@@ -36,7 +36,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 {
     public class ChunkHeader
     {
-        public static int Size = 128;
+        public const int Size = 128;
 
         public readonly byte Version;
         public readonly int ChunkSize;
