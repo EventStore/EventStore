@@ -122,7 +122,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             while (true)
             {
                 var writerChk = allowNonFlushed ? _writerCheckpoint.ReadNonFlushed() : _writerCheckpoint.Read();
-                if (pos <= 0 || pos > writerChk) // we allow == writerChk, that means read the very last record
+                // we allow == writerChk, that means read the very last record
+                if (pos > writerChk)
+                    throw new ArgumentOutOfRangeException("position", string.Format("Requested position {0} is greater than writer checkpoint {1} when requesting to read previous record from TF.", pos, writerChk));
+                if (pos <= 0) 
                     return new RecordReadResult(false, null, -1);
 
                 var chunkNum = (int)(pos / _db.Config.ChunkSize);

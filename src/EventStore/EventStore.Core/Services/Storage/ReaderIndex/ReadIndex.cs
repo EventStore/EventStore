@@ -219,7 +219,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public void Commit(CommitLogRecord commit)
         {
             bool first = true;
-            int number = -1;
+            int eventNumber = -1;
             uint streamHash = 0;
             string eventStreamId = null;
             foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition))
@@ -236,50 +236,35 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 bool addToIndex = false;
                 if ((prepare.Flags & PrepareFlags.StreamDelete) != 0)
                 {
-                    //Debug.Assert(number == -1);
-                    number = EventNumber.DeletedStream;
-
-                    _commitedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, number), throwOnDuplicate: false);
-
-                    if (commit.LogPosition > _persistedCommitCheckpoint 
-                        || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint)
-                        addToIndex = true;
+                    eventNumber = EventNumber.DeletedStream;
+                    _commitedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
+                    addToIndex = commit.LogPosition > _persistedCommitCheckpoint
+                                 || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
                 }
                 else if ((prepare.Flags & PrepareFlags.Data) != 0)
                 {
-                    if (prepare.ExpectedVersion == ExpectedVersion.Any)
-                    {
-                        if (number == -1)
-                            number = commit.EventNumber - 1;
-                        number = number + 1;
-                    }
-                    else
-                    {
-                        Debug.Assert(number == -1 || number == prepare.ExpectedVersion);
-                        number = prepare.ExpectedVersion + 1;
-                    }
-
-                    _commitedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, number), throwOnDuplicate: false);
-
-                    if (commit.LogPosition > _persistedCommitCheckpoint
-                        || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint)
-                        addToIndex = true;
+                    eventNumber = commit.EventNumber + prepare.TransactionOffset;
+                    _commitedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
+                    addToIndex = commit.LogPosition > _persistedCommitCheckpoint
+                                 || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
                 }
+
                 // could be just empty prepares for TransactionBegin and TransactionEnd, for instance
+                // or records which are rebuilt but are already in PTables
                 if (addToIndex)
                 {
 #if DEBUG
                     long pos;
-                    if (_tableIndex.TryGetOneValue(streamHash, number, out pos))
+                    if (_tableIndex.TryGetOneValue(streamHash, eventNumber, out pos))
                     {
                         EventRecord rec;
-                        if (TryReadRecord(eventStreamId, number, out rec) == SingleReadResult.Success)
+                        if (TryReadRecord(eventStreamId, eventNumber, out rec) == SingleReadResult.Success)
                         {
                             Debugger.Break();
                             throw new Exception(
                                 string.Format(
                                     "Trying to add duplicate event #{0} for stream {1}(hash {2})\nCommit: {3}\nPrepare: {4}.",
-                                    number,
+                                    eventNumber,
                                     eventStreamId,
                                     streamHash,
                                     commit,
@@ -287,8 +272,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         }
                     }
 #endif
-                    _tableIndex.Add(commit.LogPosition, streamHash, number, prepare.LogPosition);
-                    _bus.Publish(new ReplicationMessage.EventCommited(commit.LogPosition, number, prepare));
+                    _tableIndex.Add(commit.LogPosition, streamHash, eventNumber, prepare.LogPosition);
+                    _bus.Publish(new ReplicationMessage.EventCommited(commit.LogPosition, eventNumber, prepare));
                 }
             }
         }
@@ -333,7 +318,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     var prepare = result.LogRecord as PrepareLogRecord;
                     if (prepare != null && prepare.TransactionPosition == transactionBeginPos)
                     {
-                        /*&& prepare.EventStreamId == transactionRecord.EventStreamId*/
                         Debug.Assert(prepare.EventStreamId == transactionRecord.EventStreamId);
                         yield return prepare;
                         if ((prepare.Flags & PrepareFlags.TransactionEnd) != 0)
@@ -595,7 +579,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return TryGetRecordInternal(reader, eventStreamId, int.MaxValue, out record);
         }
 
-        public List<ResolvedEventRecord> ReadAllEventsForward(long commitPos, 
+        public List<ResolvedEventRecord> ReadAllEventsForward(long commitPos,  
                                                               long preparePos, 
                                                               bool inclusivePos,
                                                               int maxCount, 
@@ -622,32 +606,30 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                     nextCommitPos = seqReader.Position;
 
-                    var commitLogRecord = (CommitLogRecord)result.LogRecord;
-                    int nextEventNumber = commitLogRecord.EventNumber;
-
-                    seqReader.Reposition(commitLogRecord.TransactionPosition);
+                    var commit = (CommitLogRecord)result.LogRecord;
+                    seqReader.Reposition(commit.TransactionPosition);
                     while (count < maxCount)
                     {
                         result = seqReader.TryReadNext();
-
                         if (!result.Success) // no more records in TF
                             break;
                         // prepare with TransactionEnd could be scavenged already
                         // so we could reach the same commit record. In that case have to stop
-                        if (result.LogRecord.Position >= commitLogRecord.Position) 
+                        if (result.LogRecord.Position >= commit.Position) 
                             break;
                         if (result.LogRecord.RecordType != LogRecordType.Prepare) 
                             continue;
 
-                        var prepareRecord = (PrepareLogRecord)result.LogRecord;
-                        if (prepareRecord.TransactionPosition != commitLogRecord.TransactionPosition) // wrong prepare
+                        var prepare = (PrepareLogRecord)result.LogRecord;
+                        if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
                             continue;
 
-                        if ((prepareRecord.Flags & PrepareFlags.Data) != 0) // prepare with useful data
+                        if ((prepare.Flags & PrepareFlags.Data) != 0) // prepare with useful data
                         {
-                            if (inclusivePos ? prepareRecord.LogPosition >= preparePos : prepareRecord.LogPosition > preparePos)
+                            if (commit.Position > commitPos 
+                                || (inclusivePos ? prepare.LogPosition >= preparePos : prepare.LogPosition > preparePos))
                             {
-                                var eventRecord = new EventRecord(nextEventNumber, prepareRecord);
+                                var eventRecord = new EventRecord(commit.EventNumber + prepare.TransactionOffset, prepare);
 
                                 EventRecord linkToEvent = null;
                                 if (resolveLinks)
@@ -660,13 +642,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     }
                                 }
 
-                                records.Add(new ResolvedEventRecord(eventRecord, linkToEvent, commitLogRecord.Position));
+                                records.Add(new ResolvedEventRecord(eventRecord, linkToEvent, commit.Position));
                                 count++;
                             }
-                            nextEventNumber++;
                         }
 
-                        if ((prepareRecord.Flags & PrepareFlags.TransactionEnd) != 0)
+                        if ((prepare.Flags & PrepareFlags.TransactionEnd) != 0)
                             break;
                     }
                 }
@@ -705,32 +686,30 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                     nextCommitPos = seqReader.Position;
 
-                    var commitLogRecord = (CommitLogRecord)result.LogRecord;
-                    int nextEventNumber = commitLogRecord.EventNumber;
-
-                    seqReader.Reposition(commitLogRecord.TransactionPosition);
+                    var commit = (CommitLogRecord)result.LogRecord;
+//                    seqReader.Reposition(commitLogRecord.TransactionPosition);
                     while (count < maxCount)
                     {
-                        result = seqReader.TryReadNext();
-
+                        result = seqReader.TryReadPrev();
                         if (!result.Success) // no more records in TF
                             break;
-                        // prepare with TransactionEnd could be scavenged already
-                        // so we could reach the same commit record. In that case have to stop
-                        if (result.LogRecord.Position >= commitLogRecord.Position)
+                        // prepare with TransactionBegin could be scavenged already
+                        // so we could reach beyond the start of transaction. In that case we have to stop.
+                        if (result.LogRecord.Position < commit.TransactionPosition)
                             break;
                         if (result.LogRecord.RecordType != LogRecordType.Prepare)
                             continue;
 
-                        var prepareRecord = (PrepareLogRecord)result.LogRecord;
-                        if (prepareRecord.TransactionPosition != commitLogRecord.TransactionPosition) // wrong prepare
+                        var prepare = (PrepareLogRecord)result.LogRecord;
+                        if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
                             continue;
 
-                        if ((prepareRecord.Flags & PrepareFlags.Data) != 0) // prepare with useful data
+                        if ((prepare.Flags & PrepareFlags.Data) != 0) // prepare with useful data
                         {
-                            if (inclusivePos ? prepareRecord.LogPosition >= preparePos : prepareRecord.LogPosition > preparePos)
+                            if (commit.Position < commitPos
+                                || (inclusivePos ? prepare.LogPosition <= preparePos : prepare.LogPosition < preparePos))
                             {
-                                var eventRecord = new EventRecord(nextEventNumber, prepareRecord);
+                                var eventRecord = new EventRecord(commit.EventNumber + prepare.TransactionOffset, prepare);
 
                                 EventRecord linkToEvent = null;
                                 if (resolveLinks)
@@ -743,13 +722,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                     }
                                 }
 
-                                records.Add(new ResolvedEventRecord(eventRecord, linkToEvent, commitLogRecord.Position));
+                                records.Add(new ResolvedEventRecord(eventRecord, linkToEvent, commit.Position));
                                 count++;
                             }
-                            nextEventNumber++;
                         }
-
-                        if ((prepareRecord.Flags & PrepareFlags.TransactionEnd) != 0)
+                        if ((prepare.Flags & PrepareFlags.TransactionBegin) != 0)
                             break;
                     }
                 }
@@ -830,7 +807,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     var dataStr = Encoding.UTF8.GetString(e.Data);
                     var parts = dataStr.Split('@');
                     if (parts.Length < 2)
-                        throw new FormatException("$streams stream event data is in bad format: {0}. Expected: eventNumber@streamid");
+                        throw new FormatException(string.Format("{0} stream event data is in bad format: {1}. Expected: eventNumber@streamid", SystemStreams.StreamsStream, dataStr));
                     var streamid = parts[1];
                     return streamid;
                 })
