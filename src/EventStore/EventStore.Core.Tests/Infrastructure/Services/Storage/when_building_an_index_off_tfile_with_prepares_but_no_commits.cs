@@ -27,16 +27,9 @@
 // 
 
 using System;
-using System.IO;
 using EventStore.Core.Data;
-using EventStore.Core.Index;
-using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.TransactionLog.MultifileTransactionFile;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Infrastructure.Services.Storage
@@ -72,6 +65,20 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         {
             EventRecord record;
             Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.TryReadRecord("test2", 0, out record));
+        }
+
+        [Test]
+        public void read_all_events_forward_returns_no_events()
+        {
+            var records = ReadIndex.ReadAllEventsForward(0, 0, true, 10, false);
+            Assert.AreEqual(0, records.Count);
+        }
+
+        [Test]
+        public void read_all_events_backward_returns_no_events_()
+        {
+            var records = ReadIndex.ReadAllEventsBackward(Db.Config.WriterCheckpoint.Read(), int.MaxValue, true, 10, false);
+            Assert.AreEqual(0, records.Count);
         }
     }
 }

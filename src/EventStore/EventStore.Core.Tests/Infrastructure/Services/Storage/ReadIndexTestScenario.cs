@@ -193,11 +193,12 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             return prepare;
         }
 
-        protected void WriteCommit(Guid correlationId, long transactionId, string eventStreamId, int eventNumber)
+        protected long WriteCommit(Guid correlationId, long transactionId, string eventStreamId, int eventNumber)
         {
             var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), correlationId, transactionId, eventNumber);
             long pos;
             Assert.IsTrue(Writer.Write(commit, out pos));
+            return commit.LogPosition;
         }
 
         protected void WriteDelete(string eventStreamId)

@@ -108,5 +108,28 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             Assert.AreEqual(1, records.Length);
             Assert.AreEqual(_id3, records[0].EventId);
         }
+    
+        [Test]
+        public void read_all_events_forward_returns_all_events_in_correct_order()
+        {
+            var records = ReadIndex.ReadAllEventsForward(0, 0, true, 10, false);
+
+            Assert.AreEqual(3, records.Count);
+            Assert.AreEqual(_id1, records[0].Event.EventId);
+            Assert.AreEqual(_id2, records[1].Event.EventId);
+            Assert.AreEqual(_id3, records[2].Event.EventId);
+        }
+
+        [Test]
+        public void read_all_events_backward_returns_all_events_in_correct_order()
+        {
+            var records = ReadIndex.ReadAllEventsBackward(Db.Config.WriterCheckpoint.Read(), int.MaxValue, true, 10, false);
+
+
+            Assert.AreEqual(3, records.Count);
+            Assert.AreEqual(_id1, records[2].Event.EventId);
+            Assert.AreEqual(_id2, records[1].Event.EventId);
+            Assert.AreEqual(_id3, records[0].Event.EventId);
+        }
     }
 }

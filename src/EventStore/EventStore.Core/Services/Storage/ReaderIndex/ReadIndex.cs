@@ -660,10 +660,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         }
 
         public List<ResolvedEventRecord> ReadAllEventsBackward(long commitPos,
-                                                                long preparePos,
-                                                                bool inclusivePos,
-                                                                int maxCount,
-                                                                bool resolveLinks)
+                                                               long preparePos,
+                                                               bool inclusivePos,
+                                                               int maxCount,
+                                                               bool resolveLinks)
         {
             var records = new List<ResolvedEventRecord>();
             var count = 0;

@@ -161,6 +161,7 @@
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_rebuilding_index_for_partially_persisted_transaction.cs" />
     <Compile Include="Integration\IntegrationTestBase.cs" />
     <Compile Include="Integration\EnvelopeCallback.cs" />
     <Compile Include="Integration\when_writing_single_event_and_then_reading_it.cs" />

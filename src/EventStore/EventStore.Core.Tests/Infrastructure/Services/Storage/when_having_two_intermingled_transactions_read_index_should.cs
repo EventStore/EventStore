@@ -42,6 +42,9 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         private EventRecord _p4;
         private EventRecord _p5;
 
+        private long _t1CommitPos;
+        private long _t2CommitPos;
+
         protected override void WriteTestScenario()
         {
             var t1 = WriteTransactionBegin("ES", ExpectedVersion.NoStream);
@@ -56,8 +59,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, t2.EventStreamId);
             WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, t1.EventStreamId);
 
-            WriteCommit(t2.CorrelationId, t2.TransactionPosition, t2.EventStreamId, _p2.EventNumber);
-            WriteCommit(t1.CorrelationId, t1.TransactionPosition, t1.EventStreamId, _p1.EventNumber);
+            _t2CommitPos = WriteCommit(t2.CorrelationId, t2.TransactionPosition, t2.EventStreamId, _p2.EventNumber);
+            _t1CommitPos = WriteCommit(t1.CorrelationId, t1.TransactionPosition, t1.EventStreamId, _p1.EventNumber);
         }
 
         [Test]
@@ -187,6 +190,71 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             Assert.AreEqual(2, records.Length);
             Assert.AreEqual(_p4, records[0]);
             Assert.AreEqual(_p2, records[1]);
+        }
+
+        [Test]
+        public void read_all_events_forward_returns_all_events_in_correct_order()
+        {
+            var records = ReadIndex.ReadAllEventsForward(0, 0, true, 10, false);
+
+            Assert.AreEqual(5, records.Count);
+            Assert.AreEqual(_p2, records[0].Event);
+            Assert.AreEqual(_p4, records[1].Event);
+            Assert.AreEqual(_p1, records[2].Event);
+            Assert.AreEqual(_p3, records[3].Event);
+            Assert.AreEqual(_p5, records[4].Event);
+        }
+
+        [Test]
+        public void read_all_events_backward_returns_all_events_in_correct_order()
+        {
+            var records = ReadIndex.ReadAllEventsBackward(Db.Config.WriterCheckpoint.Read(), int.MaxValue, true, 10, false);
+
+            Assert.AreEqual(5, records.Count);
+            Assert.AreEqual(_p5, records[0].Event);
+            Assert.AreEqual(_p3, records[1].Event);
+            Assert.AreEqual(_p1, records[2].Event);
+            Assert.AreEqual(_p4, records[3].Event);
+            Assert.AreEqual(_p2, records[4].Event);
+        }
+
+        [Test]
+        public void read_all_events_forward_returns_nothing_when_prepare_position_is_greater_than_last_prepare_in_commit()
+        {
+            var records = ReadIndex.ReadAllEventsForward(_t1CommitPos, _t1CommitPos, true, 10, false);
+            Assert.AreEqual(0, records.Count);
+        }
+
+        [Test]
+        public void read_all_events_backwards_returns_nothing_when_prepare_position_is_smaller_than_first_prepare_in_commit()
+        {
+            var records = ReadIndex.ReadAllEventsBackward(_t2CommitPos, 0, true, 10, false);
+            Assert.AreEqual(0, records.Count);
+        }
+
+        [Test]
+        public void read_all_events_forward_returns_correct_events_starting_in_the_middle_of_tf()
+        {
+            var records = ReadIndex.ReadAllEventsForward(_t2CommitPos, _p2.LogPosition, false, 10, false);
+
+            Assert.AreEqual(4, records.Count);
+            Assert.AreEqual(_p4, records[0].Event);
+            Assert.AreEqual(_p1, records[1].Event);
+            Assert.AreEqual(_p3, records[2].Event);
+            Assert.AreEqual(_p5, records[3].Event);
+        }
+
+        [Test]
+        public void read_all_events_backward_returns_correct_events_starting_in_the_middle_of_tf()
+        {
+            // TODO AN fix this positioning problem
+            Assert.Inconclusive();
+            var records = ReadIndex.ReadAllEventsBackward(Db.Config.WriterCheckpoint.Read(), _p3.LogPosition, true, 10, false);
+
+            Assert.AreEqual(3, records.Count);
+            Assert.AreEqual(_p1, records[0].Event);
+            Assert.AreEqual(_p4, records[1].Event);
+            Assert.AreEqual(_p2, records[2].Event);
         }
     }
 }
