@@ -94,6 +94,11 @@ namespace EventStore.Core.Services.Monitoring.Stats
         {
             // http://unix.stackexchange.com/questions/11311/how-do-i-find-on-which-physical-device-a-folder-is-located
 
+            // example
+
+            // Filesystem     1K-blocks      Used Available Use% Mounted on
+            // /dev/sda1      153599996 118777100  34822896  78% /media/CC88FD3288FD1C20
+
             try
             {
                 var driveInfo = ShellExecutor.GetOutput("df", directory);
@@ -101,7 +106,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
                 var ourline = driveInfoLines[1];
                 var spaces = new Regex(@"[\s\t]+", RegexOptions.Compiled);
                 var trimmedLine = spaces.Replace(ourline, " ");
-                var driveName = trimmedLine.Split(' ')[0];
+                var driveName = trimmedLine.Split(' ')[5]; //we choose the 'mounted on' column
                 return driveName;
             }
             catch (Exception ex)
