@@ -25,38 +25,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Services.Monitoring.Stats
 {
-    public class DrivesInfo
-    {
-        public readonly EsDriveInfo[] Drives;
-
-        private DrivesInfo(IEnumerable<EsDriveInfo> drives)
-        {
-            Ensure.NotNull(drives, "drives");
-
-            Drives = drives.ToArray();
-        }
-
-        public static DrivesInfo GetSystemDrives()
-        {
-            var sysDrives = DriveInfo.GetDrives();
-            var drives = sysDrives
-                .Where(drive => drive.IsReady && drive.DriveType != DriveType.Unknown && drive.TotalSize > 0)
-                .Select(drive => new EsDriveInfo(drive.Name, drive.TotalSize, drive.AvailableFreeSpace))
-                .ToArray();
-
-            var info = new DrivesInfo(drives);
-            return info;
-        }
-    }
-
     public class EsDriveInfo
     {
         public readonly string DiskName;
@@ -68,7 +47,23 @@ namespace EventStore.Core.Services.Monitoring.Stats
         public readonly string UsedBytesFriendly;
         public readonly string Usage;
 
-        public EsDriveInfo(string diskName, long totalBytes, long availableBytes)
+        public static EsDriveInfo FromDirectory(string path, ILogger log)
+        {
+            try
+            {
+                var driveName = Directory.GetDirectoryRoot(path);
+                var drive = new DriveInfo(driveName);
+                var esDrive = new EsDriveInfo(drive.Name, drive.TotalSize, drive.AvailableFreeSpace);
+                return esDrive;
+            }
+            catch (Exception ex)
+            {
+                log.DebugException(ex, "Error while reading drive info for path {0}", path);
+                return null;
+            }
+        }
+
+        private EsDriveInfo(string diskName, long totalBytes, long availableBytes)
         {
             DiskName = diskName;
             TotalBytes = totalBytes;
@@ -77,8 +72,8 @@ namespace EventStore.Core.Services.Monitoring.Stats
             AvailableBytesFriendly = AvailableBytes.ToFriendlySizeString();
             UsedBytes = TotalBytes - AvailableBytes;
             UsedBytesFriendly = UsedBytes.ToFriendlySizeString();
-            Usage = TotalBytes != 0 
-                    ? (UsedBytes * 100 / TotalBytes).ToString(CultureInfo.InvariantCulture) + "%" 
+            Usage = TotalBytes != 0
+                    ? (UsedBytes * 100 / TotalBytes).ToString(CultureInfo.InvariantCulture) + "%"
                     : "0%";
         }
     }

@@ -55,10 +55,7 @@ namespace EventStore.Core.Services.Monitoring
         private StatsContainer _memoizedStats;
         private const int _memoizedSeconds = 1;
 
-        public MonitoringService(IPublisher inputBus,
-                                 IPublisher servicesBus,
-                                 ICheckpoint writerCheckpoint,
-                                 TimeSpan statsCollectionPeriod)
+        public MonitoringService(IPublisher inputBus, IPublisher servicesBus, ICheckpoint writerCheckpoint, string dbPath, TimeSpan statsCollectionPeriod)
         {
             Ensure.NotNull(inputBus, "inputBus");
             Ensure.NotNull(servicesBus, "servicesBus");
@@ -67,7 +64,7 @@ namespace EventStore.Core.Services.Monitoring
             _servicesBus = servicesBus;
             _statsCollectionPeriodMs = (int)statsCollectionPeriod.TotalMilliseconds;
             _timer = new Timer(OnTimerTicked, null, Timeout.Infinite, Timeout.Infinite);
-            _systemStats = new SystemStatsHelper(Log, writerCheckpoint);
+            _systemStats = new SystemStatsHelper(Log, writerCheckpoint, dbPath);
         }
 
         private void OnTimerTicked(object state)

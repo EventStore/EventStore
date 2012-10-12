@@ -28,6 +28,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -43,9 +44,10 @@ namespace EventStore.Core.Services.Monitoring
     {
         private readonly ILogger _log;
         private readonly ICheckpoint _writerCheckpoint;
+        private readonly string _dbPath;
         private readonly PerfCounterHelper _perfCounter;
 
-        public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint)
+        public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath)
         {
             Ensure.NotNull(log, "log");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
@@ -53,6 +55,7 @@ namespace EventStore.Core.Services.Monitoring
             _log = log;
             _writerCheckpoint = writerCheckpoint;
             _perfCounter = new PerfCounterHelper(_log);
+            _dbPath = dbPath;
         }
 
         public IDictionary<string, object> GetSystemStats()
@@ -60,7 +63,7 @@ namespace EventStore.Core.Services.Monitoring
             var stats = new Dictionary<string, object>();
 
             var process = Process.GetCurrentProcess();
-            var drives = DrivesInfo.GetSystemDrives();
+            var drive = EsDriveInfo.FromDirectory(_dbPath, _log);
             var diskIo = DiskIo.GetDiskIo(process.Id, _log);
             var tcp = TcpConnectionMonitor.Default.GetTcpStats();
             var queues = QueueMonitor.Default.GetStats();
@@ -126,16 +129,17 @@ namespace EventStore.Core.Services.Monitoring
             stats["es-checksum"] = checksum;
             stats["es-checksumNonFlushed"] = checksumNonFlushed;
 
-            Func<string, string, string> driveStat = (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName, stat);
-            foreach (var driveInfo in drives.Drives)
+            if (drive != null)
             {
-                stats[driveStat(driveInfo.DiskName, "availableBytes")] = driveInfo.AvailableBytes;
-                stats[driveStat(driveInfo.DiskName, "totalBytes")] = driveInfo.TotalBytes;
-                stats[driveStat(driveInfo.DiskName, "usage")] = driveInfo.Usage;
-                stats[driveStat(driveInfo.DiskName, "usedBytes")] = driveInfo.UsedBytes;
-                stats[driveStat(driveInfo.DiskName, "availableBytesFriendly")] = driveInfo.AvailableBytesFriendly;
-                stats[driveStat(driveInfo.DiskName, "totalBytesFriendly")] = driveInfo.TotalBytesFriendly;
-                stats[driveStat(driveInfo.DiskName, "usedBytesFriendly")] = driveInfo.UsedBytesFriendly;
+                Func<string, string, string> driveStat = 
+                    (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName, stat);
+                stats[driveStat(drive.DiskName, "availableBytes")] = drive.AvailableBytes;
+                stats[driveStat(drive.DiskName, "totalBytes")] = drive.TotalBytes;
+                stats[driveStat(drive.DiskName, "usage")] = drive.Usage;
+                stats[driveStat(drive.DiskName, "usedBytes")] = drive.UsedBytes;
+                stats[driveStat(drive.DiskName, "availableBytesFriendly")] = drive.AvailableBytesFriendly;
+                stats[driveStat(drive.DiskName, "totalBytesFriendly")] = drive.TotalBytesFriendly;
+                stats[driveStat(drive.DiskName, "usedBytesFriendly")] = drive.UsedBytesFriendly;
             }
 
             Func<string, string, string> queueStat = (queueName, stat) => string.Format("es-queue-{0}-{1}", queueName, stat);
@@ -144,8 +148,8 @@ namespace EventStore.Core.Services.Monitoring
                 stats[queueStat(queue.Name, "queueName")] = queue.Name;
                 stats[queueStat(queue.Name, "avgItemsPerSecond")] = queue.AvgItemsPerSecond;
                 stats[queueStat(queue.Name, "avgProcessingTime")] = new StatMetadata(queue.AvgProcessingTime, "Queue Stats", queue.Name +  " Avg Proc Time");
-                stats[queueStat(queue.Name, "currentIdleTime")] = queue.CurrentIdleTime.HasValue ? queue.CurrentIdleTime.Value.ToString("G") : null;
-                stats[queueStat(queue.Name, "currentItemProcessingTime")] = queue.CurrentItemProcessingTime.HasValue ? queue.CurrentItemProcessingTime.Value.ToString("G") : null;
+                stats[queueStat(queue.Name, "currentIdleTime")] = queue.CurrentIdleTime.HasValue ? queue.CurrentIdleTime.Value.ToString("G", CultureInfo.InvariantCulture) : null;
+                stats[queueStat(queue.Name, "currentItemProcessingTime")] = queue.CurrentItemProcessingTime.HasValue ? queue.CurrentItemProcessingTime.Value.ToString("G", CultureInfo.InvariantCulture) : null;
                 stats[queueStat(queue.Name, "idleTimePercent")] = queue.IdleTimePercent;
                 stats[queueStat(queue.Name, "length")] = queue.Length;
                 stats[queueStat(queue.Name, "lengthCurrentTryPeak")] = queue.LengthCurrentTryPeak;
