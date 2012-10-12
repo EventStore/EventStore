@@ -7,7 +7,7 @@ using System.Linq;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
 {
     [TestFixture]
-    public class when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop_the_core_projection_checkpoint_manager : TestFixtureWithCoreProjectionCheckpointManager
+    public class when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop : TestFixtureWithCoreProjectionCheckpointManager
     {
         private Exception _exception;
 
