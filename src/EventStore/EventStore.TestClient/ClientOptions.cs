@@ -89,6 +89,8 @@ namespace EventStore.TestClient
 
         public override IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
         {
+            foreach (var pair in base.GetLoadedOptionsPairs())
+                yield return pair;
             yield return new KeyValuePair<string, string>("IP", Ip);
             yield return new KeyValuePair<string, string>("TCP PORT", TcpPort.ToString());
             yield return new KeyValuePair<string, string>("HTTP PORT", HttpPort.ToString());

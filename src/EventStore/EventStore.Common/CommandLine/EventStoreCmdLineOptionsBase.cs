@@ -8,7 +8,13 @@ namespace EventStore.Common.CommandLine
 {
     public abstract class EventStoreCmdLineOptionsBase : CommandLineOptionsBase
     {
-        public abstract IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs();
+        public virtual IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
+        {
+            yield return new KeyValuePair<string, string>("LOGSPATH", LogsPath);
+        }
+
+        [Option(null, "logspath", HelpText = "Path where to keep log files")]
+        public string LogsPath { get; set; }
 
         [HelpOption]
         public virtual string GetUsage()

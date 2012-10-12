@@ -41,8 +41,6 @@ namespace EventStore.TestClient
 
         private static int Main(string[] args)
         {
-            LogManager.Init("client", Helper.GetDefaultLogsDir());
-
             AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) =>
             {
                 var exc = eventArgs.ExceptionObject as Exception;
@@ -59,9 +57,12 @@ namespace EventStore.TestClient
                 var options = new ClientOptions();
                 if (!CommandLineParser.Default.ParseArguments(args, options))
                 {
-                    Log.Error("Error parsing arguments. Exiting...");
+                    Console.WriteLine("Error parsing arguments. Exiting...");
                     return -1;
                 }
+
+                var logsDir = !string.IsNullOrEmpty(options.LogsPath) ? options.LogsPath : Helper.GetDefaultLogsDir();
+                LogManager.Init("client", logsDir);
 
                 IPAddress ipAddr;
                 if (!IPAddress.TryParse(options.Ip, out ipAddr))
