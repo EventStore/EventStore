@@ -57,6 +57,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_lastTag != null)
                 throw new InvalidOperationException("Posistion tagger has be already updated");
+            if (!_positionTagger.IsCompatible(checkpointTag))
+                throw new InvalidOperationException("Cannot update by incompatible checkpoint tag");
             _lastTag = checkpointTag;
         }
     }

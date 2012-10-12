@@ -235,6 +235,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void GoToState(State state)
         {
+            var wasStopped = _state == State.Stopped || _state == State.Faulted;
+            var wasStopping = _state == State.Stopping || _state == State.FaultedStopping;
+            var wasStarted = _state == State.StateLoadedSubscribed || _state == State.Paused || _state == State.Resumed
+                             || _state == State.Running || _state == State.Stopping || _state == State.FaultedStopping;
             _state = state; // set state before transition to allow further state change
             switch (state)
             {
@@ -252,11 +256,13 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 case State.Stopped:
                 case State.Faulted:
-                    _checkpointManager.Stopped();
+                    if (wasStarted && !wasStopped)
+                        _checkpointManager.Stopped();
                     break;
                 case State.Stopping:
                 case State.FaultedStopping:
-                    _checkpointManager.Stopping();
+                    if (wasStarted && !wasStopping) 
+                        _checkpointManager.Stopping();
                     break;
             }
             switch (state)
@@ -349,9 +355,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(new ProjectionMessage.Projections.UnsubscribeProjection(_projectionCorrelationId));
             // core projection may be stopped to change its configuration
             // it is important to checkpoint it so no writes pending remain when stopped
-            if (this._checkpointManager.RequestCheckpointToStop())
-                return;
-            GoToState(State.Stopped);
+            if (this._projectionConfig.CheckpointsEnabled)
+                this._checkpointManager.RequestCheckpointToStop(); // should always report complted even if skipped
+            else
+                GoToState(State.Stopped);
         }
 
         private void EnterStopped()
@@ -364,9 +371,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _publisher.Publish(new ProjectionMessage.Projections.UnsubscribeProjection(_projectionCorrelationId));
             // checkpoint last known correct state on fault
-            if (this._checkpointManager.RequestCheckpointToStop())
-                return;
-            GoToState(State.Faulted);
+            if (this._projectionConfig.CheckpointsEnabled)
+                this._checkpointManager.RequestCheckpointToStop(); // should always report complted even if skipped
+            else
+                GoToState(State.Faulted);
         }
 
         private void EnterFaulted()
@@ -786,7 +794,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             protected override void WriteOutput()
             {
-                _projection._checkpointManager.CheckpointSuggested(_message);
+                _projection._checkpointManager.CheckpointSuggested(_message.CheckpointTag);
                 NextStage();
             }
         }
