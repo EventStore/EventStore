@@ -31,8 +31,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.Monitoring.Utils;
 
 namespace EventStore.Core.Services.Monitoring.Stats
 {
@@ -51,7 +53,18 @@ namespace EventStore.Core.Services.Monitoring.Stats
         {
             try
             {
-                var driveName = Directory.GetDirectoryRoot(path);
+                string driveName;
+                if (OS.IsLinux)
+                {
+                    driveName = GetDirectoryRootInLinux(path, log);
+                    if (driveName == null)
+                        return null;
+                }
+                else
+                {
+                    driveName = Directory.GetDirectoryRoot(path);
+                }
+
                 var drive = new DriveInfo(driveName);
                 var esDrive = new EsDriveInfo(drive.Name, drive.TotalSize, drive.AvailableFreeSpace);
                 return esDrive;
@@ -75,6 +88,27 @@ namespace EventStore.Core.Services.Monitoring.Stats
             Usage = TotalBytes != 0
                     ? (UsedBytes * 100 / TotalBytes).ToString(CultureInfo.InvariantCulture) + "%"
                     : "0%";
+        }
+
+        private static string GetDirectoryRootInLinux(string directory, ILogger log)
+        {
+            // http://unix.stackexchange.com/questions/11311/how-do-i-find-on-which-physical-device-a-folder-is-located
+
+            try
+            {
+                var driveInfo = ShellExecutor.GetOutput("df", directory);
+                var driveInfoLines = driveInfo.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                var ourline = driveInfoLines[1];
+                var spaces = new Regex(@"[\s\t]+", RegexOptions.Compiled);
+                var trimmedLine = spaces.Replace(ourline, " ");
+                var driveName = trimmedLine.Split(' ')[0];
+                return driveName;
+            }
+            catch (Exception ex)
+            {
+                log.DebugException(ex, "couldn't get drive name for directory {0} on linux", directory);
+                return null;
+            }
         }
     }
 }
