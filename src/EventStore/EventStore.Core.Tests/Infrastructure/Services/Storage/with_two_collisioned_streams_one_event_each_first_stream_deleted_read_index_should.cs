@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void return_empty_range_on_from_end_range_query_for_first_stream()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.StreamDeleted, ReadIndex.TryReadRecordsBackwards("AB", 0, 1, out records));
+            Assert.AreEqual(RangeReadResult.StreamDeleted, ReadIndex.TryReadRecordsBackward("AB", 0, 1, out records));
             Assert.AreEqual(0, records.Length);
         }
 
@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void return_empty_range_on_from_end_range_query_for_invalid_arguments_for_first_stream()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.StreamDeleted, ReadIndex.TryReadRecordsBackwards("AB", 1, 1, out records));
+            Assert.AreEqual(RangeReadResult.StreamDeleted, ReadIndex.TryReadRecordsBackward("AB", 1, 1, out records));
             Assert.AreEqual(0, records.Length);
         }
 
@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void return_correct_range_on_from_end_range_query_for_second_stream()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("CD", 0, 1, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackward("CD", 0, 1, out records));
             Assert.AreEqual(_prepare2, records[0]);
         }
 
@@ -137,7 +137,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void not_return_range_for_non_existing_stream_with_same_hash()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.TryReadRecordsBackwards("EF", 0, 1, out records));
+            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.TryReadRecordsBackward("EF", 0, 1, out records));
             Assert.AreEqual(0, records.Length);
         }
     }

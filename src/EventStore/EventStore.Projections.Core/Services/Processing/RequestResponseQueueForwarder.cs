@@ -32,9 +32,9 @@ using EventStore.Projections.Core.Messaging;
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class RequestResponseQueueForwarder : IHandle<ClientMessage.ReadEvent>,
-                                                 IHandle<ClientMessage.ReadEventsBackwards>,
-                                                 IHandle<ClientMessage.ReadEventsForward>,
-                                                 IHandle<ClientMessage.ReadEventsFromTF>,
+                                                 IHandle<ClientMessage.ReadStreamEventsBackward>,
+                                                 IHandle<ClientMessage.ReadStreamEventsForward>,
+                                                 IHandle<ClientMessage.ReadAllEventsForward>,
                                                  IHandle<ClientMessage.WriteEvents>
     {
         private readonly IPublisher _externalRequestQueue;
@@ -62,28 +62,28 @@ namespace EventStore.Projections.Core.Services.Processing
                     message.EventStreamId, message.ExpectedVersion, message.Events));
         }
 
-        public void Handle(ClientMessage.ReadEventsBackwards message)
+        public void Handle(ClientMessage.ReadStreamEventsBackward message)
         {
             _externalRequestQueue.Publish(
-                new ClientMessage.ReadEventsBackwards(
+                new ClientMessage.ReadStreamEventsBackward(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
                     message.EventStreamId, message.FromEventNumber, message.MaxCount, message.ResolveLinks));
         }
 
-        public void Handle(ClientMessage.ReadEventsForward message)
+        public void Handle(ClientMessage.ReadStreamEventsForward message)
         {
             _externalRequestQueue.Publish(
-                new ClientMessage.ReadEventsForward(
+                new ClientMessage.ReadStreamEventsForward(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
                     message.EventStreamId, message.FromEventNumber, message.MaxCount, message.ResolveLinks));
         }
 
-        public void Handle(ClientMessage.ReadEventsFromTF message)
+        public void Handle(ClientMessage.ReadAllEventsForward message)
         {
             _externalRequestQueue.Publish(
-                new ClientMessage.ReadEventsFromTF(
+                new ClientMessage.ReadAllEventsForward(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.FromCommitPosition, message.AfterPreparePosition, message.MaxCount, message.ResolveLinks));
+                    message.CommitPosition, message.PreparePosition, false, message.MaxCount, message.ResolveLinks));
         }
     }
 }

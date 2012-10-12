@@ -300,7 +300,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<EventStreamSlice>();
-            var operation = new ReadFromBeginningOperation(source, Guid.NewGuid(), stream, start, count, true);
+            var operation = new ReadStreamEventsForwardOperation(source, Guid.NewGuid(), stream, start, count, true);
 
             EnqueueOperation(operation);
             return source.Task;

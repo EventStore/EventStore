@@ -680,7 +680,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     return new RecordReadResult(false, null, -1);
                 
                 int length;
-                var result = TryReadBackwardsInternal(workItem, _actualDataSize, out length, out record);
+                var result = TryReadBackwardInternal(workItem, _actualDataSize, out length, out record);
                 if (!result)
                     return new RecordReadResult(false, null, -1);
 
@@ -703,20 +703,20 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public RecordReadResult TryReadClosestBackwards(int logicalPosition)
+        public RecordReadResult TryReadClosestBackward(int logicalPosition)
         {
             var workItem = GetReaderWorkItem();
             try
             {
                 var pos = TranslateClosestForwardPosition(workItem, logicalPosition);
                 var actualPosition = pos.Item1;
-                // here we allow actualPosition == _actualDataSize as we can read backwards the very last record that way
+                // here we allow actualPosition == _actualDataSize as we can read backward the very last record that way
                 if (actualPosition == -1 || actualPosition > _actualDataSize) 
                     return new RecordReadResult(false, null, -1);
 
                 int length;
                 LogRecord record;
-                if (!TryReadBackwardsInternal(workItem, actualPosition, out length, out record))
+                if (!TryReadBackwardInternal(workItem, actualPosition, out length, out record))
                     return new RecordReadResult(false, null, -1);
 
                 int nextLogicalPos;
@@ -737,7 +737,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private static bool TryReadBackwardsInternal(ReaderWorkItem workItem, int actualPosition, out int length, out LogRecord record)
+        private static bool TryReadBackwardInternal(ReaderWorkItem workItem, int actualPosition, out int length, out LogRecord record)
         {
             length = -1;
             record = null;
@@ -786,7 +786,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             if (!_isReadonly || _chunkFooter.MapSize == 0)
             {
-                // this is mostly for ability to read closest backwards from the very end
+                // this is mostly for ability to read closest backward from the very end
                 var logicalPos = Math.Min(_actualDataSize, logicalPosition); 
                 return Tuple.Create(logicalPos, -1);
             }
@@ -803,7 +803,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private Tuple<int, int> TranslateClosestForwardWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, int pos)
         {
             if (pos > midpoints[midpoints.Length - 1].LogPos)
-                return Tuple.Create(_actualDataSize, midpoints.Length); // to allow backwards reading of the last record, forward read will decline either way
+                return Tuple.Create(_actualDataSize, midpoints.Length); // to allow backward reading of the last record, forward read will decline anyway
 
             var recordRange = LocatePosRange(midpoints, pos);
             return TranslateClosestForwardWithoutMidpoints(workItem, pos, recordRange.Item1, recordRange.Item2);
@@ -814,7 +814,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             PosMap res = ReadPosMap(workItem, endIndex);
 
             if (pos > res.LogPos)
-                return Tuple.Create(_actualDataSize, endIndex + 1); // to allow backwards reading of the last record, forward read will decline either way
+                return Tuple.Create(_actualDataSize, endIndex + 1); // to allow backward reading of the last record, forward read will decline anyway
             int low = startIndex;
             int high = endIndex;
             while (low < high)

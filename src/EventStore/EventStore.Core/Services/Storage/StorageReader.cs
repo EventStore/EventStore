@@ -43,9 +43,9 @@ namespace EventStore.Core.Services.Storage
                                  IHandle<SystemMessage.SystemInit>,
                                  IHandle<SystemMessage.BecomeShuttingDown>,
                                  IHandle<ClientMessage.ReadEvent>,
-                                 IHandle<ClientMessage.ReadEventsBackwards>,
-                                 IHandle<ClientMessage.ReadEventsForward>,
-                                 IHandle<ClientMessage.ReadEventsFromTF>,
+                                 IHandle<ClientMessage.ReadStreamEventsBackward>,
+                                 IHandle<ClientMessage.ReadStreamEventsForward>,
+                                 IHandle<ClientMessage.ReadAllEventsForward>,
                                  IHandle<ClientMessage.ListStreams>,
                                  IHandle<MonitoringMessage.InternalStatsRequest>
     {
@@ -77,17 +77,17 @@ namespace EventStore.Core.Services.Storage
             storageReaderBus.Subscribe<SystemMessage.SystemInit>(this);
             storageReaderBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
             storageReaderBus.Subscribe<ClientMessage.ReadEvent>(this);
-            storageReaderBus.Subscribe<ClientMessage.ReadEventsBackwards>(this);
-            storageReaderBus.Subscribe<ClientMessage.ReadEventsForward>(this);
-            storageReaderBus.Subscribe<ClientMessage.ReadEventsFromTF>(this);
+            storageReaderBus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
+            storageReaderBus.Subscribe<ClientMessage.ReadStreamEventsForward>(this);
+            storageReaderBus.Subscribe<ClientMessage.ReadAllEventsForward>(this);
             storageReaderBus.Subscribe<ClientMessage.ListStreams>(this);
 
             subscriber.Subscribe(this.WidenFrom<SystemMessage.SystemInit, Message>());
             subscriber.Subscribe(this.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
             subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadEvent, Message>());
-            subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadEventsBackwards, Message>());
-            subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadEventsForward, Message>());
-            subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadEventsFromTF, Message>());
+            subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadStreamEventsBackward, Message>());
+            subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadStreamEventsForward, Message>());
+            subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadAllEventsForward, Message>());
             subscriber.Subscribe(this.WidenFrom<ClientMessage.ListStreams, Message>());
 
             _storageReaderQueues = new QueuedHandler[_threadCount];
@@ -156,14 +156,14 @@ namespace EventStore.Core.Services.Storage
                                                                             record));
         }
 
-        void IHandle<ClientMessage.ReadEventsBackwards>.Handle(ClientMessage.ReadEventsBackwards message)
+        void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)
         {
             EventRecord[] records;
             EventRecord[] links = null;
 
             var lastCommitPosition = _readIndex.LastCommitPosition;
 
-            var result = _readIndex.TryReadRecordsBackwards(message.EventStreamId, message.FromEventNumber, message.MaxCount, out records);
+            var result = _readIndex.TryReadRecordsBackward(message.EventStreamId, message.FromEventNumber, message.MaxCount, out records);
             var nextEventNumber = result == RangeReadResult.Success & records.Length > 0
                                       ? records[records.Length - 1].EventNumber - 1
                                       : -1;
@@ -188,16 +188,16 @@ namespace EventStore.Core.Services.Storage
                 links = ResolveLinkToEvents(records);
 
             message.Envelope.ReplyWith(
-                new ClientMessage.ReadEventsBackwardsCompleted(message.CorrelationId,
-                                                               message.EventStreamId,
-                                                               records,
-                                                               links,
-                                                               result,
-                                                               nextEventNumber,
-                                                               records.Length == 0 ? lastCommitPosition : (long?) null));
+                new ClientMessage.ReadStreamEventsBackwardCompleted(message.CorrelationId,
+                                                                    message.EventStreamId,
+                                                                    records,
+                                                                    links,
+                                                                    result,
+                                                                    nextEventNumber,
+                                                                    records.Length == 0 ? lastCommitPosition : (long?) null));
         }
 
-        void IHandle<ClientMessage.ReadEventsForward>.Handle(ClientMessage.ReadEventsForward message)
+        void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward message)
         {
             EventRecord[] records;
             EventRecord[] links = null;
@@ -229,13 +229,13 @@ namespace EventStore.Core.Services.Storage
                 links = ResolveLinkToEvents(records);
 
             message.Envelope.ReplyWith(
-                new ClientMessage.ReadEventsForwardCompleted(message.CorrelationId,
-                                                             message.EventStreamId,
-                                                             records,
-                                                             links,
-                                                             result,
-                                                             nextEventNumber,
-                                                             records.Length == 0 ? lastCommitPosition : (long?) null));
+                new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId,
+                                                                   message.EventStreamId,
+                                                                   records,
+                                                                   links,
+                                                                   result,
+                                                                   nextEventNumber,
+                                                                   records.Length == 0 ? lastCommitPosition : (long?) null));
         }
 
         private EventRecord[] ResolveLinkToEvents(EventRecord[] records)
@@ -254,16 +254,16 @@ namespace EventStore.Core.Services.Storage
             return links;
         }
 
-        void IHandle<ClientMessage.ReadEventsFromTF>.Handle(ClientMessage.ReadEventsFromTF message)
+        void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward message)
         {
-            var records = _readIndex.ReadAllEventsForward(message.FromCommitPosition,
-                                                          message.AfterPreparePosition,
+            var records = _readIndex.ReadAllEventsForward(message.CommitPosition,
+                                                          message.PreparePosition,
                                                           false,
                                                           message.MaxCount,
                                                           message.ResolveLinks);
-            message.Envelope.ReplyWith(new ClientMessage.ReadEventsFromTFCompleted(message.CorrelationId,
-                                                                                   records.ToArray(),
-                                                                                   RangeReadResult.Success));
+            message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId,
+                                                                                       records.ToArray(),
+                                                                                       RangeReadResult.Success));
             }
 
         void IHandle<ClientMessage.ListStreams>.Handle(ClientMessage.ListStreams message)

@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             throw new NotImplementedException();
         }
 
-        public RangeReadResult TryReadRecordsBackwards(string eventStreamId, int fromEventNumber, int maxCount, out EventRecord[] records)
+        public RangeReadResult TryReadRecordsBackward(string eventStreamId, int fromEventNumber, int maxCount, out EventRecord[] records)
         {
             throw new NotImplementedException();
         }
@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             throw new NotImplementedException();
         }
 
-        public List<ResolvedEventRecord> ReadAllEventsBackwards(long commitPos, long preparePos, bool inclusivePos, int maxCount, bool resolveLinks)
+        public List<ResolvedEventRecord> ReadAllEventsBackward(long commitPos, long preparePos, bool inclusivePos, int maxCount, bool resolveLinks)
         {
             throw new NotImplementedException();
         }

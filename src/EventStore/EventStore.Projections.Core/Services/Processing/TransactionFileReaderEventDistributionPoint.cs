@@ -82,9 +82,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused or pause requested");
             _eventsRequested = true;
             _publisher.Publish(
-                new ClientMessage.ReadEventsFromTF(
+                new ClientMessage.ReadAllEventsForward(
                     _distibutionPointCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
-                    _from.PreparePosition, _maxReadCount, true));
+                    _from.PreparePosition, false, _maxReadCount, true));
         }
 
         public override void Pause()
@@ -97,11 +97,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 _paused = true;
         }
 
-        public override void Handle(ClientMessage.ReadEventsForwardCompleted message)
+        public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
         {
         }
 
-        public override void Handle(ClientMessage.ReadEventsFromTFCompleted message)
+        public override void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
         {
             if (_disposed)
                 return;
@@ -113,7 +113,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (message.Result)
             {
                 case RangeReadResult.NoStream:
-                    throw new NotSupportedException("ReadEventsFromTF should not return NoStream");
+                    throw new NotSupportedException("ReadAllEventsForward should not return NoStream");
                 case RangeReadResult.Success:
                     if (message.Events.Length == 0)
                     {

@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void all_records_could_be_read_with_backwards_pass()
+        public void all_records_could_be_read_with_backward_pass()
         {
             var seqReader = new TFChunkSequentialReader(_db, _db.Config.WriterCheckpoint, _db.Config.WriterCheckpoint.Read());
 
@@ -175,7 +175,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void records_can_be_read_backwards_starting_from_any_position()
+        public void records_can_be_read_backward_starting_from_any_position()
         {
             for (int i = 0; i < RecordsCount; ++i)
             {

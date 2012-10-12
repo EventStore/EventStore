@@ -102,9 +102,9 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void the_record_can_be_read_as_closest_backwards_from_end()
+        public void the_record_can_be_read_as_closest_backward_from_end()
         {
-            var res = _cachedChunk.TryReadClosestBackwards(_record.GetSizeWithLengthPrefixAndSuffix());
+            var res = _cachedChunk.TryReadClosestBackward(_record.GetSizeWithLengthPrefixAndSuffix());
             Assert.IsTrue(res.Success);
             Assert.AreEqual(0, res.NextPosition);
             Assert.AreEqual(_record, res.LogRecord);

@@ -327,7 +327,7 @@ namespace EventStore.Core.Messages
         }
 
         [ProtoContract]
-        public class ReadEventsForward
+        public class ReadStreamEventsForward
         {
             [ProtoMember(1, IsRequired = false)]
             public byte[] CorrelationId { get; set; }
@@ -344,11 +344,11 @@ namespace EventStore.Core.Messages
             [ProtoMember(5)]
             public bool ResolveLinktos { get; set; }
 
-            public ReadEventsForward()
+            public ReadStreamEventsForward()
             {
             }
 
-            public ReadEventsForward(Guid correlationId, string eventStreamId, int startIndex, int maxCount)
+            public ReadStreamEventsForward(Guid correlationId, string eventStreamId, int startIndex, int maxCount)
             {
                 CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
@@ -358,7 +358,7 @@ namespace EventStore.Core.Messages
         }
 
         [ProtoContract]
-        public class ReadEventsForwardCompleted
+        public class ReadStreamEventsForwardCompleted
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -375,18 +375,93 @@ namespace EventStore.Core.Messages
             [ProtoMember(5)]
             public int Result { get; set; }
 
+            [ProtoMember(6)]
             public long? LastCommitPosition { get; set; }
 
-            public ReadEventsForwardCompleted()
+            public ReadStreamEventsForwardCompleted()
             {
             }
 
-            public ReadEventsForwardCompleted(Guid correlationId,
-                                              string eventStreamId,
-                                              EventRecord[] events,
-                                              EventRecord[] linkToEvents,
-                                              RangeReadResult result,
-                                              long? lastCommitPosition)
+            public ReadStreamEventsForwardCompleted(Guid correlationId,
+                                                    string eventStreamId,
+                                                    EventRecord[] events,
+                                                    EventRecord[] linkToEvents,
+                                                    RangeReadResult result,
+                                                    long? lastCommitPosition)
+            {
+                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+
+                CorrelationId = correlationId.ToByteArray();
+                EventStreamId = eventStreamId;
+                Events = events;
+                LinkToEvents = linkToEvents;
+                Result = (int)result;
+                LastCommitPosition = lastCommitPosition;
+            }
+        }
+
+        [ProtoContract]
+        public class ReadStreamEventsBackward
+        {
+            [ProtoMember(1, IsRequired = false)]
+            public byte[] CorrelationId { get; set; }
+
+            [ProtoMember(2)]
+            public string EventStreamId { get; set; }
+
+            [ProtoMember(3)]
+            public int StartIndex { get; set; }
+
+            [ProtoMember(4)]
+            public int MaxCount { get; set; }
+
+            [ProtoMember(5)]
+            public bool ResolveLinktos { get; set; }
+
+            public ReadStreamEventsBackward()
+            {
+            }
+
+            public ReadStreamEventsBackward(Guid correlationId, string eventStreamId, int startIndex, int maxCount)
+            {
+                CorrelationId = correlationId.ToByteArray();
+                EventStreamId = eventStreamId;
+                StartIndex = startIndex;
+                MaxCount = maxCount;
+            }
+        }
+
+        [ProtoContract]
+        public class ReadStreamEventsBackwardCompleted
+        {
+            [ProtoMember(1)]
+            public byte[] CorrelationId { get; set; }
+
+            [ProtoMember(2)]
+            public string EventStreamId { get; set; }
+
+            [ProtoMember(3)]
+            public EventRecord[] Events { get; set; }
+
+            [ProtoMember(4)]
+            public EventRecord[] LinkToEvents { get; set; }
+
+            [ProtoMember(5)]
+            public int Result { get; set; }
+
+            [ProtoMember(6)]
+            public long? LastCommitPosition { get; set; }
+
+            public ReadStreamEventsBackwardCompleted()
+            {
+            }
+
+            public ReadStreamEventsBackwardCompleted(Guid correlationId,
+                                                      string eventStreamId,
+                                                      EventRecord[] events,
+                                                      EventRecord[] linkToEvents,
+                                                      RangeReadResult result,
+                                                      long? lastCommitPosition)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 

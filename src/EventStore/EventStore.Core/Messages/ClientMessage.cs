@@ -376,7 +376,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public abstract class ReadEventsMessage : ReadMessage
+        public class ReadStreamEventsForward : ReadMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -385,12 +385,12 @@ namespace EventStore.Core.Messages
             public readonly int MaxCount;
             public readonly bool ResolveLinks;
 
-            protected ReadEventsMessage(Guid correlationId, 
-                                        IEnvelope envelope, 
-                                        string eventStreamId, 
-                                        int fromEventNumber, 
-                                        int maxCount,
-                                        bool resolveLinks)
+            public ReadStreamEventsForward(Guid correlationId,
+                                           IEnvelope envelope,
+                                           string eventStreamId,
+                                           int fromEventNumber,
+                                           int maxCount,
+                                           bool resolveLinks)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
@@ -406,7 +406,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public abstract class ReadEventsCompletedMessage : ReadMessage
+        public class ReadStreamEventsForwardCompleted : ReadMessage
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
@@ -416,13 +416,13 @@ namespace EventStore.Core.Messages
             public readonly int NextEventNumber;
             public readonly long? LastCommitPosition;
 
-            protected ReadEventsCompletedMessage(Guid correlationId, 
-                                                 string eventStreamId, 
-                                                 EventRecord[] events,
-                                                 EventRecord[] linkToEvents,
-                                                 RangeReadResult result, 
-                                                 int nextEventNumber,
-                                                 long? lastCommitPosition)
+            public ReadStreamEventsForwardCompleted(Guid correlationId,
+                                                    string eventStreamId,
+                                                    EventRecord[] events,
+                                                    EventRecord[] linkToEvents,
+                                                    RangeReadResult result,
+                                                    int nextEventNumber,
+                                                    long? lastCommitPosition)
             {
                 Ensure.NotNull(events, "events");
 
@@ -436,38 +436,101 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadEventsFromTF : ReadMessage
+        public class ReadStreamEventsBackward : ReadMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
-            public readonly long FromCommitPosition;
-            public readonly long AfterPreparePosition;
+            public readonly string EventStreamId;
+            public readonly int FromEventNumber;
             public readonly int MaxCount;
             public readonly bool ResolveLinks;
 
-            public ReadEventsFromTF(Guid correlationId,
+            public ReadStreamEventsBackward(Guid correlationId,
+                                             IEnvelope envelope,
+                                             string eventStreamId,
+                                             int fromEventNumber,
+                                             int maxCount,
+                                             bool resolveLinks)
+            {
+                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
+                Envelope = envelope;
+                EventStreamId = eventStreamId;
+                FromEventNumber = fromEventNumber;
+                MaxCount = maxCount;
+                ResolveLinks = resolveLinks;
+            }
+
+            public override string ToString()
+            {
+                return string.Format(GetType().Name + " CorrelationId: {0}, EventStreamId: {1}, FromEventNumber: {2}, MaxCount: {3}, ResolveLinks: {4}", CorrelationId, EventStreamId, FromEventNumber, MaxCount, ResolveLinks);
+            }
+        }
+
+        public class ReadStreamEventsBackwardCompleted : ReadMessage
+        {
+            public readonly Guid CorrelationId;
+            public readonly string EventStreamId;
+            public readonly EventRecord[] Events;
+            public readonly EventRecord[] LinkToEvents;
+            public readonly RangeReadResult Result;
+            public readonly int NextEventNumber;
+            public readonly long? LastCommitPosition;
+
+            public ReadStreamEventsBackwardCompleted(Guid correlationId,
+                                                     string eventStreamId,
+                                                     EventRecord[] events,
+                                                     EventRecord[] linkToEvents,
+                                                     RangeReadResult result,
+                                                     int nextEventNumber,
+                                                     long? lastCommitPosition)
+            {
+                Ensure.NotNull(events, "events");
+
+                CorrelationId = correlationId;
+                EventStreamId = eventStreamId;
+                Events = events;
+                LinkToEvents = linkToEvents;
+                Result = result;
+                NextEventNumber = nextEventNumber;
+                LastCommitPosition = lastCommitPosition;
+            }
+        }
+
+        public class ReadAllEventsForward : ReadMessage
+        {
+            public readonly Guid CorrelationId;
+            public readonly IEnvelope Envelope;
+            public readonly long CommitPosition;
+            public readonly long PreparePosition;
+            public readonly bool Inclusive;
+            public readonly int MaxCount;
+            public readonly bool ResolveLinks;
+
+            public ReadAllEventsForward(Guid correlationId,
                                     IEnvelope envelope,
-                                    long fromCommitPosition,
-                                    long afterPreparePosition,
+                                    long commitPosition,
+                                    long preparePosition,
+                                    bool inclusive,
                                     int maxCount,
                                     bool resolveLinks)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
-                FromCommitPosition = fromCommitPosition;
-                AfterPreparePosition = afterPreparePosition;
+                CommitPosition = commitPosition;
+                PreparePosition = preparePosition;
+                Inclusive = inclusive;
                 MaxCount = maxCount;
                 ResolveLinks = resolveLinks;
             }
         }
 
-        public class ReadEventsFromTFCompleted : ReadMessage
+        public class ReadAllEventsForwardCompleted : ReadMessage
         {
             public readonly Guid CorrelationId;
             public readonly ResolvedEventRecord[] Events;
             public readonly RangeReadResult Result;
 
-            public ReadEventsFromTFCompleted(Guid correlationId, ResolvedEventRecord[] events, RangeReadResult result)
+            public ReadAllEventsForwardCompleted(Guid correlationId, ResolvedEventRecord[] events, RangeReadResult result)
             {
                 Ensure.NotNull(events, "events");
 
@@ -477,57 +540,47 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadEventsBackwards : ReadEventsMessage
+        public class ReadAllEventsBackward : ReadMessage
         {
-            public ReadEventsBackwards(Guid correlationId, 
-                                       IEnvelope envelope, 
-                                       string eventStreamId, 
-                                       int fromEventNumber, 
-                                       int maxCount,
-                                       bool resolveLinks)
-                : base(correlationId, envelope, eventStreamId, fromEventNumber, maxCount, resolveLinks)
+            public readonly Guid CorrelationId;
+            public readonly IEnvelope Envelope;
+            public readonly long CommitPosition;
+            public readonly long PreparePosition;
+            public readonly bool Inclusive;
+            public readonly int MaxCount;
+            public readonly bool ResolveLinks;
+
+            public ReadAllEventsBackward(Guid correlationId,
+                                         IEnvelope envelope,
+                                         long commitPosition,
+                                         long preparePosition,
+                                         bool inclusive,
+                                         int maxCount,
+                                         bool resolveLinks)
             {
+                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
+                Envelope = envelope;
+                CommitPosition = commitPosition;
+                PreparePosition = preparePosition;
+                Inclusive = inclusive;
+                MaxCount = maxCount;
+                ResolveLinks = resolveLinks;
             }
         }
 
-        public class ReadEventsBackwardsCompleted : ReadEventsCompletedMessage
+        public class ReadAllEventsBackwardCompleted : ReadMessage
         {
-            public ReadEventsBackwardsCompleted(Guid correlationId, 
-                                                string eventStreamId, 
-                                                EventRecord[] events,
-                                                EventRecord[] linkToEvents,
-                                                RangeReadResult result, 
-                                                int nextEventNumber,
-                                                long? lastCommitPosition)
-                : base(correlationId, eventStreamId, events, linkToEvents, result, nextEventNumber, lastCommitPosition)
-            {
-            }
-        }
+            public readonly Guid CorrelationId;
+            public readonly ResolvedEventRecord[] Events;
+            public readonly RangeReadResult Result;
 
-        public class ReadEventsForward : ReadEventsMessage
-        {
-            public ReadEventsForward(Guid correlationId,
-                                     IEnvelope envelope,
-                                     string eventStreamId,
-                                     int fromEventNumber,
-                                     int maxCount,
-                                     bool resolveLinks)
-                : base(correlationId, envelope, eventStreamId, fromEventNumber, maxCount, resolveLinks)
+            public ReadAllEventsBackwardCompleted(Guid correlationId, ResolvedEventRecord[] events, RangeReadResult result)
             {
-            }
-        }
+                Ensure.NotNull(events, "events");
 
-        public class ReadEventsForwardCompleted : ReadEventsCompletedMessage
-        {
-            public ReadEventsForwardCompleted(Guid correlationId,
-                                              string eventStreamId,
-                                              EventRecord[] events,
-                                              EventRecord[] linkToEvents,
-                                              RangeReadResult result,
-                                              int nextEventNumber,
-                                              long? lastCommitPosition)
-                : base(correlationId, eventStreamId, events, linkToEvents, result, nextEventNumber, lastCommitPosition)
-            {
+                CorrelationId = correlationId;
+                Events = events;
+                Result = result;
             }
         }
 

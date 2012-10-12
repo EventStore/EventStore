@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             _writeDispatcher;
 
         protected
-            RequestResponseDispatcher<ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>
+            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
             _readDispatcher;
 
         protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             _bus = new InMemoryBus("bus");
             _readDispatcher =
                 new RequestResponseDispatcher
-                    <ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>(
+                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
                     _bus, e => e.CorrelationId, e => e.CorrelationId);
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(

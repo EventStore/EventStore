@@ -60,9 +60,9 @@ namespace EventStore.SingleNode
             _forwarder = new RequestResponseQueueForwarder(inputQueue: _coreQueue, externalRequestQueue: node.MainQueue);
             // forwarded messages
             _projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEvent>(_forwarder);
-            _projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEventsBackwards>(_forwarder);
-            _projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEventsForward>(_forwarder);
-            _projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEventsFromTF>(_forwarder);
+            _projectionNode.CoreOutput.Subscribe<ClientMessage.ReadStreamEventsBackward>(_forwarder);
+            _projectionNode.CoreOutput.Subscribe<ClientMessage.ReadStreamEventsForward>(_forwarder);
+            _projectionNode.CoreOutput.Subscribe<ClientMessage.ReadAllEventsForward>(_forwarder);
             _projectionNode.CoreOutput.Subscribe<ClientMessage.WriteEvents>(_forwarder);
             _coreInputBus.Subscribe(new UnwrapEnvelopeHandler());
 

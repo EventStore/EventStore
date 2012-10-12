@@ -46,8 +46,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionMessage.Projections.PauseProjectionSubscription>,
                                          IHandle<ProjectionMessage.Projections.ResumeProjectionSubscription>,
                                          IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
-                                         IHandle<ClientMessage.ReadEventsForwardCompleted>,
-                                         IHandle<ClientMessage.ReadEventsFromTFCompleted>
+                                         IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
+                                         IHandle<ClientMessage.ReadAllEventsForwardCompleted>
 
 
     {
@@ -180,14 +180,14 @@ namespace EventStore.Projections.Core.Services.Processing
             message.Action();
         }
 
-        public void Handle(ClientMessage.ReadEventsForwardCompleted message)
+        public void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
         {
             EventDistributionPoint distributionPoint;
             if (_distributionPoints.TryGetValue(message.CorrelationId, out distributionPoint))
                 distributionPoint.Handle(message);
         }
 
-        public void Handle(ClientMessage.ReadEventsFromTFCompleted message)
+        public void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
         {
             EventDistributionPoint distributionPoint;
             if (_distributionPoints.TryGetValue(message.CorrelationId, out distributionPoint))

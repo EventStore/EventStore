@@ -180,7 +180,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void return_correct_range_on_from_end_range_query_for_stream_with_specific_event_version()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("ES", 2, 3, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackward("ES", 2, 3, out records));
             Assert.AreEqual(3, records.Length);
             Assert.AreEqual(_p3, records[0]);
             Assert.AreEqual(_p2, records[1]);
@@ -191,7 +191,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void return_correct_range_on_from_end_range_query_for_stream_with_from_end_version()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("ES", -1, 3, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackward("ES", -1, 3, out records));
             Assert.AreEqual(3, records.Length);
             Assert.AreEqual(_p3, records[0]);
             Assert.AreEqual(_p2, records[1]);

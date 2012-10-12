@@ -90,11 +90,11 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public static ResponseConfiguration ReadEventsFromEndCompleted(HttpEntity entity, Message message)
+        public static ResponseConfiguration ReadStreamEventsBackwardCompleted(HttpEntity entity, Message message)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventsBackwardsCompleted));
+            Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 
-            var completed = message as ClientMessage.ReadEventsBackwardsCompleted;
+            var completed = message as ClientMessage.ReadStreamEventsBackwardCompleted;
             if (completed == null)
                 return InternalServerEror(entity, message);
 

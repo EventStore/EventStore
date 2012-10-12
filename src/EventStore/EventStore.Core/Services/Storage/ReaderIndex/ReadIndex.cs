@@ -408,7 +408,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        public RangeReadResult TryReadRecordsBackwards(string eventStreamId, 
+        public RangeReadResult TryReadRecordsBackward(string eventStreamId, 
                                                        int fromEventNumber, 
                                                        int maxCount, 
                                                        out EventRecord[] records)
@@ -659,7 +659,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return records;
         }
 
-        public List<ResolvedEventRecord> ReadAllEventsBackwards(long commitPos,
+        public List<ResolvedEventRecord> ReadAllEventsBackward(long commitPos,
                                                                 long preparePos,
                                                                 bool inclusivePos,
                                                                 int maxCount,

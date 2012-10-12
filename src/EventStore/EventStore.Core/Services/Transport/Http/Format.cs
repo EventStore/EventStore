@@ -74,11 +74,11 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
             }
 
-            public static string ReadEventsBackwardsCompletedFeed(HttpEntity entity, Message message, int start, int count)
+            public static string ReadStreamEventsBackwardCompletedFeed(HttpEntity entity, Message message, int start, int count)
             {
-                Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventsBackwardsCompleted));
+                Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 
-                var completed = message as ClientMessage.ReadEventsBackwardsCompleted;
+                var completed = message as ClientMessage.ReadStreamEventsBackwardCompleted;
                 if (completed != null)
                 {
                     switch (completed.Result)
@@ -133,12 +133,13 @@ namespace EventStore.Core.Services.Transport.Http
             if (writeEvents == null)
                 return string.Empty;
 
-            return codec.To(new ClientMessageDto.WriteEventText(writeEvents.CorrelationId,
-                                                                writeEvents.ExpectedVersion,
-                                                                writeEvents.Events.Select(e => new ClientMessageDto.EventText(e.EventId, 
-                                                                                                                              e.EventType,
-                                                                                                                              e.Data, 
-                                                                                                                              e.Metadata)).ToArray()));
+            return codec.To(new ClientMessageDto.WriteEventText(
+                writeEvents.CorrelationId,
+                writeEvents.ExpectedVersion,
+                writeEvents.Events.Select(e => new ClientMessageDto.EventText(e.EventId, 
+                                                                              e.EventType,
+                                                                              e.Data, 
+                                                                              e.Metadata)).ToArray()));
         }
 
         public static string WriteEventsCompleted(HttpEntity entity, Message message)

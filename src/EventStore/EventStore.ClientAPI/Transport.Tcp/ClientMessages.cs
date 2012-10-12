@@ -323,7 +323,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         }
 
         [ProtoContract]
-        internal class ReadEventsFromBeginning
+        internal class ReadStreamEventsForward
         {
             [ProtoMember(1, IsRequired = false)]
             public byte[] CorrelationId { get; set; }
@@ -340,11 +340,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
             [ProtoMember(5)]
             public bool ResolveLinktos { get; set; }
 
-            public ReadEventsFromBeginning()
+            public ReadStreamEventsForward()
             {
             }
 
-            public ReadEventsFromBeginning(Guid correlationId, string eventStreamId, int startIndex, int maxCount, bool resolveLinkTos)
+            public ReadStreamEventsForward(Guid correlationId, string eventStreamId, int startIndex, int maxCount, bool resolveLinkTos)
             {
                 CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
@@ -355,7 +355,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         }
 
         [ProtoContract]
-        internal class ReadEventsFromBeginningCompleted
+        internal class ReadStreamEventsForwardCompleted
         {
             [ProtoMember(1)]
             public byte[] CorrelationId { get; set; }
@@ -374,11 +374,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             public long? LastCommitPosition { get; set; }
 
-            public ReadEventsFromBeginningCompleted()
+            public ReadStreamEventsForwardCompleted()
             {
             }
 
-            public ReadEventsFromBeginningCompleted(Guid correlationId,
+            public ReadStreamEventsForwardCompleted(Guid correlationId,
                                                     string eventStreamId,
                                                     EventRecord[] events,
                                                     EventRecord[] linkToEvents,

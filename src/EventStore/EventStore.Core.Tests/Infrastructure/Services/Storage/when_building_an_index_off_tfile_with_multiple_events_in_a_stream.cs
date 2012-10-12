@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         {
             EventRecord[] records;
 
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("test1", 1, 10, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackward("test1", 1, 10, out records));
             Assert.AreEqual(2, records.Length);
 
             Assert.AreEqual(_id1, records[1].EventId);
@@ -100,11 +100,11 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         }
 
         [Test]
-        public void the_stream_can_be_read_with_two_events_backwards_from_end()
+        public void the_stream_can_be_read_with_two_events_backward_from_end()
         {
             EventRecord[] records;
 
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("test1", -1, 10, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackward("test1", -1, 10, out records));
             Assert.AreEqual(2, records.Length);
 
             Assert.AreEqual(_id1, records[1].EventId);
@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         {
             EventRecord[] records;
 
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("test1", 0, 10, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackward("test1", 0, 10, out records));
             Assert.AreEqual(1, records.Length);
 
             Assert.AreEqual(_id1, records[0].EventId);
@@ -126,7 +126,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_stream_returns_nothing_for_nonexistent_page()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("test1", 100, 10, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackward("test1", 100, 10, out records));
             Assert.AreEqual(0, records.Length);
         }
 
@@ -135,7 +135,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         {
             EventRecord[] records;
 
-            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.TryReadRecordsBackwards("test2", 0, 10, out records));
+            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.TryReadRecordsBackward("test2", 0, 10, out records));
             Assert.IsNotNull(records);
             Assert.IsEmpty(records);
         }

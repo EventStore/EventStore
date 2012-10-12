@@ -335,9 +335,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             entity.Manager.AsyncState = start;
             var envelope = new SendToHttpEnvelope(entity,
-                                                  (ent, msg) => Format.Atom.ReadEventsBackwardsCompletedFeed(ent, msg, start, count),
-                                                  Configure.ReadEventsFromEndCompleted);
-            Publish(new ClientMessage.ReadEventsBackwards(Guid.NewGuid(), envelope, stream, start, count, resolveLinks: true));
+                                                  (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, start, count),
+                                                  Configure.ReadStreamEventsBackwardCompleted);
+            Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), envelope, stream, start, count, resolveLinks: true));
         }
 
         public void GetEntry(HttpEntity entity, string stream, int version)
