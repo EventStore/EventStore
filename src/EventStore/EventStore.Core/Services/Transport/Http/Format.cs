@@ -104,6 +104,26 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
             }
 
+            public static string ReadAllEventsBackwardCompleted(HttpEntity entity, Message message)
+            {
+                Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
+
+                var completed = message as ClientMessage.ReadAllEventsBackwardCompleted;
+                return completed != null
+                    ? entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName)) 
+                    : string.Empty;
+            }
+
+            public static string ReadAllEventsForwardCompleted(HttpEntity entity, Message message)
+            {
+                Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
+
+                var completed = message as ClientMessage.ReadAllEventsForwardCompleted;
+                return completed != null
+                    ? entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName)) 
+                    : string.Empty;
+            }
+
             public static string CreateStreamCompleted(HttpEntity entity, Message message)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
