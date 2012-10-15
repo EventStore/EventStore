@@ -105,7 +105,7 @@
 //        {
 //            _prepareRecord = new PrepareLogRecord(0, Guid.NewGuid(), Guid.NewGuid(), 0, "TestStream", 0, DateTime.UtcNow, 
 //                                                  PrepareFlags.None, "type", new byte[] {1, 2, 3}, new byte[] {7, 6});
-//            _commitRecord = new CommitLogRecord(_prepareRecord.GetSizeWithLengthPrefix(), Guid.NewGuid(), 0, DateTime.UtcNow, 0);
+//            _commitRecord = new CommitLogRecord(_prepareRecord.GetSizeWithLengthPrefixAndSuffix(), Guid.NewGuid(), 0, DateTime.UtcNow, 0);
 //        }
 
 //        protected abstract void CreateDb(ICheckpoint writerCheckpoint);
@@ -145,12 +145,12 @@
 //            var res1 = _reader.TryReadAt(0);
 //            Assert.IsTrue(res1.Success);
 //            Assert.AreEqual(_prepareRecord, res1.LogRecord);
-//            Assert.AreEqual(_prepareRecord.GetSizeWithLengthPrefix(), res1.NewPosition);
+//            Assert.AreEqual(_prepareRecord.GetSizeWithLengthPrefixAndSuffix(), res1.NewPosition);
 
 //            var res2 = _reader.TryReadAt(res1.NewPosition);
 //            Assert.IsTrue(res2.Success);
 //            Assert.AreEqual(_commitRecord, res2.LogRecord);
-//            Assert.AreEqual(res1.NewPosition + _commitRecord.GetSizeWithLengthPrefix(), res2.NewPosition);
+//            Assert.AreEqual(res1.NewPosition + _commitRecord.GetSizeWithLengthPrefixAndSuffix(), res2.NewPosition);
 
 //            var res3 = _reader.TryReadAt(res2.NewPosition);
 //            Assert.IsFalse(res3.Success);
@@ -162,34 +162,34 @@
 //            var res1 = _reader.TryReadAt(0);
 //            Assert.IsTrue(res1.Success);
 //            Assert.AreEqual(_prepareRecord, res1.LogRecord);
-//            Assert.AreEqual(_prepareRecord.GetSizeWithLengthPrefix(), res1.NewPosition);
+//            Assert.AreEqual(_prepareRecord.GetSizeWithLengthPrefixAndSuffix(), res1.NewPosition);
 
 //            var res2 = _reader.TryReadAt(res1.NewPosition);
 //            Assert.IsTrue(res2.Success);
 //            Assert.AreEqual(_commitRecord, res2.LogRecord);
-//            //Assert.AreEqual(res1.NewPosition + _commitRecord.GetSizeWithLengthPrefix(), res2.NewPosition);
+//            //Assert.AreEqual(res1.NewPosition + _commitRecord.GetSizeWithLengthPrefixAndSuffix(), res2.NewPosition);
 
 //            var res3 = _reader.TryReadAt(0);
 //            Assert.IsTrue(res3.Success);
 //            Assert.AreEqual(_prepareRecord, res3.LogRecord);
-//            //Assert.AreEqual(_prepareRecord.GetSizeWithLengthPrefix(), res3.NextPosition);
+//            //Assert.AreEqual(_prepareRecord.GetSizeWithLengthPrefixAndSuffix(), res3.NextPosition);
 //        }
 
 //        [Test]
 //        public void reader_is_able_to_read_records_from_the_middle_of_db()
 //        {
-//            var res1 = _reader.TryReadAt(_prepareRecord.GetSizeWithLengthPrefix());
+//            var res1 = _reader.TryReadAt(_prepareRecord.GetSizeWithLengthPrefixAndSuffix());
 //            Assert.IsTrue(res1.Success);
 //            Assert.AreEqual(_commitRecord, res1.LogRecord);
-//            //Assert.AreEqual(_prepareRecord.GetSizeWithLengthPrefix() + _commitRecord.GetSizeWithLengthPrefix(), 
+//            //Assert.AreEqual(_prepareRecord.GetSizeWithLengthPrefixAndSuffix() + _commitRecord.GetSizeWithLengthPrefixAndSuffix(), 
 //            //                res1.NextPosition);
 //        }
 
 //        [Test]
 //        public void try_read_returns_record_once_it_is_written_later_when_previous_try_failed()
 //        {
-//            var p1 = _prepareRecord.GetSizeWithLengthPrefix();
-//            var p2 = p1 + _commitRecord.GetSizeWithLengthPrefix();
+//            var p1 = _prepareRecord.GetSizeWithLengthPrefixAndSuffix();
+//            var p2 = p1 + _commitRecord.GetSizeWithLengthPrefixAndSuffix();
 
 //            Assert.IsTrue(_reader.TryReadAt(0).Success);
 //            Assert.IsTrue(_reader.TryReadAt(p1).Success);
@@ -204,7 +204,7 @@
 //            var res = _reader.TryReadAt(p2);
 //            Assert.IsTrue(res.Success);
 //            Assert.AreEqual(rec, res.LogRecord);
-//            //Assert.AreEqual(p2 + rec.GetSizeWithLengthPrefix(), res.NextPosition);
+//            //Assert.AreEqual(p2 + rec.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
 //        }
 
 //    }

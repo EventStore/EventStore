@@ -54,5 +54,10 @@ namespace EventStore.Core.TransactionLog
         {
             return new RecordWriteResult(true, oldPosition, newPosition);
         }
+
+        public override string ToString()
+        {
+            return string.Format("Success: {0}, OldPosition: {1}, NewPosition: {2}", Success, OldPosition, NewPosition);
+        }
     }
 }

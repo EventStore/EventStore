@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.TransactionLog
             long tmp;
             tf.Write(record, out tmp);
             tf.Close();
-            Assert.AreEqual(record.GetSizeWithLengthPrefix() + 9990, _checkpoint.Read()); //9990 is fluff assigned to beginning of checkpoint
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix() + 9990, _checkpoint.Read()); //9990 is fluff assigned to beginning of checkpoint
             Assert.IsTrue(File.Exists(secondfilename));
             var stream = new MemoryStream();
             var buffer = new byte[256];
@@ -80,8 +80,8 @@ namespace EventStore.Core.Tests.TransactionLog
             using (var filestream = File.Open(secondfilename, FileMode.Open, FileAccess.Read))
             {
                 filestream.Seek(0, SeekOrigin.Begin);
-                filestream.Read(buffer, 0, record.GetSizeWithLengthPrefix() - 10);
-                stream.Write(buffer, 0, record.GetSizeWithLengthPrefix() - 10);
+                filestream.Read(buffer, 0, record.GetSizeWithLengthPrefixAndSuffix() - 10);
+                stream.Write(buffer, 0, record.GetSizeWithLengthPrefixAndSuffix() - 10);
             }
             stream.Seek(0 + sizeof(int), SeekOrigin.Begin);
             var reader = new BinaryReader(stream);

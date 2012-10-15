@@ -35,27 +35,35 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_reading_from_a_cached_chunk
+    public class when_uncaching_a_tfchunk
     {
-        readonly string filename = Path.Combine(Path.GetTempPath(), "foo");
+        readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
         private TFChunk _chunk;
-        private Guid _corrId = Guid.NewGuid();
-        private Guid _eventId = Guid.NewGuid();
-        private TFChunk _cachedChunk;
-        private PrepareLogRecord _record;
+        private readonly Guid _corrId = Guid.NewGuid();
+        private readonly Guid _eventId = Guid.NewGuid();
         private RecordWriteResult _result;
+        private PrepareLogRecord _record;
+        private TFChunk _uncachedChunk;
 
         [SetUp]
         public void Setup()
         {
             _record = new PrepareLogRecord(0, _corrId, _eventId, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                            PrepareFlags.None, "Foo", new byte[12], new byte[15]);
-            _chunk = TFChunk.CreateNew(filename, 4096, 0, 0);
+            _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);
             _result = _chunk.TryAppend(_record);
             _chunk.Flush();
             _chunk.Complete();
-            _cachedChunk = TFChunk.FromCompletedFile(filename);
-            _cachedChunk.CacheInMemory();
+            _uncachedChunk = TFChunk.FromCompletedFile(_filename, verifyHash: true);
+            _uncachedChunk.CacheInMemory();
+            _uncachedChunk.UnCacheFromMemory();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _chunk.Dispose();
+            _uncachedChunk.Dispose();
         }
 
         [Test]
@@ -63,31 +71,35 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             Assert.IsTrue(_result.Success);
             Assert.AreEqual(0, _result.OldPosition);
-            Assert.AreEqual(_record.GetSizeWithLengthPrefix(), _result.NewPosition);
+            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _result.NewPosition);
         }
 
         [Test]
-        public void the_chunk_is_cached()
+        public void the_chunk_is_not_cached()
         {
-            Assert.IsTrue(_cachedChunk.IsCached);
+            Assert.IsFalse(_uncachedChunk.IsCached);
+        }
+
+        [Test]
+        public void the_record_was_written()
+        {
+            Assert.IsTrue(_result.Success);
+        }
+
+        [Test]
+        public void the_correct_position_is_returned()
+        {
+            Assert.AreEqual(0, _result.OldPosition);
         }
 
         [Test]
         public void the_record_can_be_read()
         {
-            var res = _cachedChunk.TryReadRecordAt((int)_result.OldPosition);
+            var res = _uncachedChunk.TryReadAt(0);
             Assert.IsTrue(res.Success);
             Assert.AreEqual(_record, res.LogRecord);
             Assert.AreEqual(_result.OldPosition, res.LogRecord.Position);
-            //Assert.AreEqual(_result.NewPosition, res.NextPosition);
-            //TODO GFY check the rest of the fields for equality
-        }
-
-        [TearDown]
-        public void Teardown()
-        {
-            _chunk.Dispose();
-            _cachedChunk.Dispose();
+            //Assert.AreEqual(_result.NewPosition, res.NewPosition);
         }
     }
 }

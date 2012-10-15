@@ -33,7 +33,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_creating_TFChunk_from_empty_file
+    public class when_creating_tfchunk_from_empty_file
     {
         readonly string filename = Path.Combine(Path.GetTempPath(), "foo");
         private Core.TransactionLog.Chunks.TFChunk _chunk;
@@ -66,6 +66,41 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public void append_does_not_throw_exception()
         {
             Assert.DoesNotThrow(() => _chunk.TryAppend(new CommitLogRecord(0, Guid.NewGuid(), 0, DateTime.UtcNow, 0)));
+        }
+
+        [Test]
+        public void there_is_no_record_at_pos_zero()
+        {
+            var res = _chunk.TryReadAt(0);
+            Assert.IsFalse(res.Success);
+        }
+
+        [Test]
+        public void there_is_no_first_record()
+        {
+            var res = _chunk.TryReadFirst();
+            Assert.IsFalse(res.Success);
+        }
+
+        [Test]
+        public void there_is_no_closest_forward_record_to_pos_zero()
+        {
+            var res = _chunk.TryReadClosestForward(0);
+            Assert.IsFalse(res.Success);
+        }
+
+        [Test]
+        public void there_is_no_closest_backwards_record_from_end()
+        {
+            var res = _chunk.TryReadClosestForward(0);
+            Assert.IsFalse(res.Success);
+        }
+
+        [Test]
+        public void there_is_no_last_record()
+        {
+            var res = _chunk.TryReadLast();
+            Assert.IsFalse(res.Success);
         }
 
         [TearDown]
@@ -108,7 +143,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
     //    }
 
     //    [TearDown]
-    //    public void TD()
+    //    public void TearDown()
     //    {
     //        _chunk.Dispose();
     //        File.Delete(filename);

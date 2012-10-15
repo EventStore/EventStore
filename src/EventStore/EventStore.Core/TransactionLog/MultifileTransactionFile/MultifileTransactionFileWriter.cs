@@ -115,11 +115,13 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
             _buffer.SetLength(4);
             _buffer.Position = 4;
             record.WriteTo(_bufferWriter);
+            var length = (int) _buffer.Length - 4;
+            _bufferWriter.Write(length); // length suffix
             _buffer.Position = 0;
+            _bufferWriter.Write(length); // length prefix
 
             var written = 0;
-            var leftToWrite = (int)_buffer.Length;
-            _bufferWriter.Write(leftToWrite - 4);
+            var leftToWrite = length + 8;
 
             while (leftToWrite > 0)
             {

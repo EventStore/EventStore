@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void the_checksum_is_updated()
         {
-            Assert.AreEqual(_record.GetSizeWithLengthPrefix(), _checkSum.Read());
+            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _checkSum.Read());
         }
 
         [Test]
@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog
             {
                 LogRecord record = null;
                 reader.Open();
-                Assert.IsFalse(reader.TryReadRecordAt(ref record, 5));
+                Assert.IsFalse(reader.TryReadAt(ref record, 5));
             }
         }
 

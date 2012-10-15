@@ -49,7 +49,6 @@ namespace EventStore.Core.TransactionLog.Chunks
     public unsafe class TFChunk : IDisposable
     {
         public const int Version = 1;
-
         public const int WriteBufferSize = 4096;
         public const int ReadBufferSize = 512;
 
@@ -75,8 +74,8 @@ namespace EventStore.Core.TransactionLog.Chunks
         private volatile int _actualDataSize;
 
         private byte* _cachedData;
-        private volatile bool _cached;
         private int _cachedDataLength;
+        private volatile bool _cached;
 
         private Midpoint[] _midpoints;
         private readonly int _midpointsDepth;
@@ -100,21 +99,22 @@ namespace EventStore.Core.TransactionLog.Chunks
             FreeCachedData();
         }
 
-        private void InitCompleted()
+        private void InitCompleted(bool verifyHash)
         {
             if (!File.Exists(_filename))
                 throw new CorruptDatabaseException(new ChunkNotFoundException(_filename));
 
             _isReadonly = true;
             CreateReaderStreams();
+
             var reader = GetReaderWorkItem();
             try
             {
                 Debug.Assert(!reader.IsMemory);
 
+                _chunkHeader = ReadHeader(reader.Stream);
                 _chunkFooter = ReadFooter(reader.Stream);
                 _actualDataSize = _chunkFooter.ActualDataSize;
-                _chunkHeader = ReadHeader(reader.Stream);
 
                 var expectedFileSize = _chunkFooter.ActualChunkSize + _chunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
                 if (reader.Stream.Length != expectedFileSize)
@@ -134,7 +134,8 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
 
             SetAttributes();
-            //VerifyFileHash();
+            if (verifyHash)
+                VerifyFileHash();
         }
 
         private void InitNew(ChunkHeader chunkHeader)
@@ -144,11 +145,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             _isReadonly = false;
             _chunkHeader = chunkHeader;
             _actualDataSize = 0;
+
             CreateWriterWorkItemForNewChunk(chunkHeader);
             CreateReaderStreams();
 
             SetAttributes();
-            //VerifyFileHash();
         }
 
         private void InitOngoing(int writePosition)
@@ -159,6 +160,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             _isReadonly = false;
             _actualDataSize = writePosition;
+
             CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
             CreateReaderStreams();
 
@@ -173,15 +175,14 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
 
             SetAttributes();
-            //VerifyFileHash();
         }
 
-        public static TFChunk FromCompletedFile(string filename)
+        public static TFChunk FromCompletedFile(string filename, bool verifyHash)
         {
             var chunk = new TFChunk(filename, TFConsts.TFChunkReaderCount, TFConsts.MidpointsDepth);
             try
             {
-                chunk.InitCompleted();
+                chunk.InitCompleted(verifyHash);
             }
             catch
             {
@@ -293,7 +294,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             var workItem = GetReaderWorkItem();
             try
             {
-                var header = ReadHeader(workItem.Stream);
                 var footer = ReadFooter(workItem.Stream);
 
                 byte[] hash;
@@ -370,7 +370,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 int midPointsCnt = 1 << depth;
                 int segmentSize;
                 Midpoint[] midpoints;
-                var mapCount = _chunkFooter.MapSize / sizeof (ulong);
+                var mapCount = _chunkFooter.MapCount;
                 if (mapCount < midPointsCnt)
                 {
                     segmentSize = 1; // we cache all items
@@ -382,7 +382,9 @@ namespace EventStore.Core.TransactionLog.Chunks
                     midpoints = new Midpoint[1 + (mapCount + segmentSize - 1) / segmentSize];
                 }
 
-                for (int x = 0, i = 0, xN = mapCount - 1; x < xN; x += segmentSize, i += 1)
+                for (int x = 0, i = 0, xN = mapCount - 1; 
+                     x < xN; 
+                     x += segmentSize, i += 1)
                 {
                     midpoints[i] = new Midpoint(x, ReadPosMap(workItem, x));
                 }
@@ -408,6 +410,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             if (_cached || _selfdestructin54321)
                 return;
+
             var sw = Stopwatch.StartNew();
 
             BuildCacheArray();
@@ -474,7 +477,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 var stream = new UnmanagedMemoryStream(_cachedData, _cachedDataLength);
                 var reader = new BinaryReader(stream);
-                queue.Enqueue(new ReaderWorkItem(stream, reader, true));
+                queue.Enqueue(new ReaderWorkItem(stream, reader, isMemory: true));
             }
             return queue;
         }
@@ -501,23 +504,65 @@ namespace EventStore.Core.TransactionLog.Chunks
                 Log.Trace("UNCACHED TFChunk #{0} at {1}", _chunkHeader.ChunkStartNumber, Path.GetFileName(_filename));
         }
 
-        public RecordReadResult TryReadRecordAt(int logicalPosition)
+        public RecordReadResult TryReadAt(int logicalPosition)
         {
             var workItem = GetReaderWorkItem();
             try
             {
                 LogRecord record;
-                var actualPosition = TranslatePosition(workItem, logicalPosition);
+                var actualPosition = TranslateExactPosition(workItem, logicalPosition);
                 if (actualPosition == -1 || actualPosition >= _actualDataSize)
                     return new RecordReadResult(false, null, -1);
                 int length;
-                var result = TryReadRecordInternal(workItem, actualPosition, out length, out record);
+                var result = TryReadForwardInternal(workItem, actualPosition, out length, out record);
                 return new RecordReadResult(result, record, -1);
             }
             finally
             {
                 ReturnReaderWorkItem(workItem);
             }
+        }
+
+        private int TranslateExactPosition(ReaderWorkItem workItem, int pos)
+        {
+            if (!_isReadonly || _chunkFooter.MapSize == 0)
+                return pos;
+
+            var midpoints = _midpoints;
+            if (workItem.IsMemory || midpoints == null)
+            {
+                var mapCount = _chunkFooter.MapSize / sizeof(ulong);
+                return TranslateExactWithoutMidpoints(workItem, pos, 0, mapCount - 1);
+            }
+            return TranslateExactWithMidpoints(workItem, midpoints, pos);
+        }
+
+        private int TranslateExactWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, int pos)
+        {
+            if (pos < midpoints[0].LogPos || pos > midpoints[midpoints.Length - 1].LogPos)
+                return -1;
+
+            var recordRange = LocatePosRange(midpoints, pos);
+            return TranslateExactWithoutMidpoints(workItem, pos, recordRange.Item1, recordRange.Item2);
+        }
+
+        private int TranslateExactWithoutMidpoints(ReaderWorkItem workItem, int pos, int startIndex, int endIndex)
+        {
+            int low = startIndex;
+            int high = endIndex;
+            while (low <= high)
+            {
+                var mid = low + (high - low) / 2;
+                var v = ReadPosMap(workItem, mid);
+
+                if (v.LogPos == pos)
+                    return v.ActualPos;
+                if (v.LogPos < pos)
+                    low = mid + 1;
+                else
+                    high = mid - 1;
+            }
+            return -1;
         }
 
         public RecordReadResult TryReadFirst()
@@ -529,7 +574,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (_actualDataSize == 0)
                     return new RecordReadResult(false, null, -1);
                 int length;
-                var result = TryReadRecordInternal(workItem, 0, out length, out record);
+                var result = TryReadForwardInternal(workItem, 0, out length, out record);
                 if (!result)
                     return new RecordReadResult(false, null, -1);
 
@@ -539,10 +584,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (_chunkFooter.MapSize > sizeof(ulong))
                         nextLogicalPos = ReadPosMap(workItem, 1).LogPos;
                     else
-                        nextLogicalPos = (int)(record.Position % _chunkHeader.ChunkSize) + 4 + length;
+                        nextLogicalPos = (int)(record.Position % _chunkHeader.ChunkSize) + length + 2*sizeof(int);
                 }
                 else
-                    nextLogicalPos = GetLogicalPosition(workItem);
+                    nextLogicalPos = 0 + length + 2*sizeof(int);
                 return new RecordReadResult(true, record, nextLogicalPos);
 
             }
@@ -552,31 +597,31 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public RecordReadResult TryReadSameOrClosest(int logicalPosition)
+        public RecordReadResult TryReadClosestForward(int logicalPosition)
         {
             var workItem = GetReaderWorkItem();
             try
             {
-                var pos = TranslateToSameOrClosestPosition(workItem, logicalPosition);
-                var actualPosition = pos.Item1.ActualPos;
+                var pos = TranslateClosestForwardPosition(workItem, logicalPosition);
+                var actualPosition = pos.Item1;
                 if (actualPosition == -1 || actualPosition >= _actualDataSize)
                     return new RecordReadResult(false, null, -1);
 
                 int length;
                 LogRecord record;
-                if (!TryReadRecordInternal(workItem, actualPosition, out length, out record))
+                if (!TryReadForwardInternal(workItem, actualPosition, out length, out record))
                     return new RecordReadResult(false, null, -1);
 
                 int nextLogicalPos;
                 if (_isReadonly && _chunkFooter.MapSize > 0)
                 {
-                    if ((pos.Item2 + 1) * sizeof(ulong) < _chunkFooter.MapSize)
+                    if (pos.Item2 + 1 < _chunkFooter.MapCount)
                         nextLogicalPos = ReadPosMap(workItem, pos.Item2 + 1).LogPos;
                     else
-                        nextLogicalPos = (int)(record.Position % _chunkHeader.ChunkSize) + 4 + length;
+                        nextLogicalPos = (int)(record.Position % _chunkHeader.ChunkSize) + length + 2*sizeof(int);
                 }
                 else
-                    nextLogicalPos = GetLogicalPosition(workItem);
+                    nextLogicalPos = actualPosition + length + 2*sizeof(int);
 
                 return new RecordReadResult(true, record, nextLogicalPos);
             }
@@ -586,40 +631,18 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private Tuple<PosMap, int> TranslateToSameOrClosestPosition(ReaderWorkItem workItem, int logicalPosition)
-        {
-            if (!_isReadonly || _chunkFooter.MapSize == 0)
-                return Tuple.Create(new PosMap(logicalPosition, logicalPosition), -1);
-
-            var midpoints = _midpoints;
-            if (workItem.IsMemory || midpoints == null)
-            {
-                var mapCount = _chunkFooter.MapSize / sizeof(ulong);
-                return TranslateSameOrClosestWithoutMidpoints(workItem, logicalPosition, 0, mapCount - 1);
-            }
-            else
-                return TranslateSameOrClosestWithMidpoints(workItem, midpoints, logicalPosition);
-        }
-
-        private bool TryReadRecordInternal(ReaderWorkItem workItem, int actualPosition, out int length, out LogRecord record)
+        private bool TryReadForwardInternal(ReaderWorkItem workItem, int actualPosition, out int length, out LogRecord record)
         {
             length = -1;
             record = null;
 
             workItem.Stream.Position = GetRealPosition(actualPosition, workItem.IsMemory);
 
-            if (!VerifyStreamLength(workItem.Stream, 4))
+            if (!VerifyDataLengthForward(workItem, 2*sizeof(int)))
                 return false;
             
             length = workItem.Reader.ReadInt32();
-            CheckLength(workItem, length, actualPosition);
 
-            record = LogRecord.ReadFrom(workItem.Reader);
-            return true;
-        }
-
-        private void CheckLength(ReaderWorkItem workItem, int length, int actualPosition)
-        {
             if (length <= 0)
             {
                 throw new ArgumentException(
@@ -637,32 +660,178 @@ namespace EventStore.Core.TransactionLog.Chunks
                                       length,
                                       TFConsts.MaxLogRecordSize));
             }
-            if (!VerifyStreamLength(workItem.Stream, length))
+
+            if (!VerifyDataLengthForward(workItem, length + sizeof(int) /*suffix*/))
                 throw new UnableToReadPastEndOfStreamException();
+
+            record = LogRecord.ReadFrom(workItem.Reader);
+           
+            Debug.Assert(workItem.Reader.ReadInt32() == length); // verify suffix length == prefix length
+
+            return true;
         }
 
-        private int TranslatePosition(ReaderWorkItem workItem, int pos)
+        public RecordReadResult TryReadLast()
+        {
+            var workItem = GetReaderWorkItem();
+            try
+            {
+                LogRecord record;
+                if (_actualDataSize == 0)
+                    return new RecordReadResult(false, null, -1);
+                
+                int length;
+                var result = TryReadBackwardsInternal(workItem, _actualDataSize, out length, out record);
+                if (!result)
+                    return new RecordReadResult(false, null, -1);
+
+                int nextLogicalPos;
+                if (_isReadonly && _chunkFooter.MapSize > 0)
+                {
+                    var mapCount = _chunkFooter.MapSize / sizeof(ulong);
+                    nextLogicalPos = mapCount > 1
+                                             ? ReadPosMap(workItem, mapCount - 1).LogPos
+                                             : (int) (record.Position % _chunkHeader.ChunkSize);
+                }
+                else
+                    nextLogicalPos = _actualDataSize - length - 2*sizeof(int);
+                return new RecordReadResult(true, record, nextLogicalPos);
+
+            }
+            finally
+            {
+                ReturnReaderWorkItem(workItem);
+            }
+        }
+
+        public RecordReadResult TryReadClosestBackwards(int logicalPosition)
+        {
+            var workItem = GetReaderWorkItem();
+            try
+            {
+                var pos = TranslateClosestForwardPosition(workItem, logicalPosition);
+                var actualPosition = pos.Item1;
+                // here we allow actualPosition == _actualDataSize as we can read backwards the very last record that way
+                if (actualPosition == -1 || actualPosition > _actualDataSize) 
+                    return new RecordReadResult(false, null, -1);
+
+                int length;
+                LogRecord record;
+                if (!TryReadBackwardsInternal(workItem, actualPosition, out length, out record))
+                    return new RecordReadResult(false, null, -1);
+
+                int nextLogicalPos;
+                if (_isReadonly && _chunkFooter.MapSize > 0)
+                {
+                    nextLogicalPos = pos.Item2 > 0
+                                             ? ReadPosMap(workItem, pos.Item2 - 1).LogPos
+                                             : (int) (record.Position % _chunkHeader.ChunkSize);
+                }
+                else
+                    nextLogicalPos = actualPosition - length - 2*sizeof(int);
+
+                return new RecordReadResult(true, record, nextLogicalPos);
+            }
+            finally
+            {
+                ReturnReaderWorkItem(workItem);
+            }
+        }
+
+        private static bool TryReadBackwardsInternal(ReaderWorkItem workItem, int actualPosition, out int length, out LogRecord record)
+        {
+            length = -1;
+            record = null;
+
+            if (actualPosition < 2 * sizeof(int)) // no space even for length prefix and suffix 
+                return false;
+
+            var realPos = GetRealPosition(actualPosition, workItem.IsMemory);
+            workItem.Stream.Position = realPos - sizeof(int);
+
+            length = workItem.Reader.ReadInt32();
+
+            if (length <= 0)
+            {
+                throw new ArgumentException(
+                        string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
+                                      + "Something is seriously wrong.",
+                                      actualPosition,
+                                      length));
+            }
+            if (length > TFConsts.MaxLogRecordSize)
+            {
+                throw new ArgumentException(
+                        string.Format("Log record that ends at actual pos {0} has too large length: {1} bytes, "
+                                      + "while limit is {2} bytes.",
+                                      actualPosition,
+                                      length,
+                                      TFConsts.MaxLogRecordSize));
+            }
+
+            if (actualPosition < length + 2 * sizeof(int)) // no space for record + length prefix and suffix 
+                throw new UnableToReadPastEndOfStreamException();
+
+            workItem.Stream.Position = realPos - length - sizeof(int);
+            record = LogRecord.ReadFrom(workItem.Reader);
+
+#if DEBUG
+            workItem.Stream.Position = realPos - length - 2*sizeof(int);
+            var prefixLength = workItem.Reader.ReadInt32();
+            Debug.Assert(prefixLength == length);
+#endif
+            return true;
+        }
+
+        private Tuple<int, int> TranslateClosestForwardPosition(ReaderWorkItem workItem, int logicalPosition)
         {
             if (!_isReadonly || _chunkFooter.MapSize == 0)
-                return pos;
+            {
+                // this is mostly for ability to read closest backwards from the very end
+                var logicalPos = Math.Min(_actualDataSize, logicalPosition); 
+                return Tuple.Create(logicalPos, -1);
+            }
 
             var midpoints = _midpoints;
             if (workItem.IsMemory || midpoints == null)
             {
-                var mapCount = _chunkFooter.MapSize/sizeof (ulong);
-                return TranslateWithoutMidpoints(workItem, pos, 0, mapCount - 1);
+                var mapCount = _chunkFooter.MapSize / sizeof(ulong);
+                return TranslateClosestForwardWithoutMidpoints(workItem, logicalPosition, 0, mapCount - 1);
             }
-            else
-                return TranslateWithMidpoints(workItem, midpoints, pos);
+            return TranslateClosestForwardWithMidpoints(workItem, midpoints, logicalPosition);
         }
 
-        private int TranslateWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, int pos)
+        private Tuple<int, int> TranslateClosestForwardWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, int pos)
         {
-            if (pos < midpoints[0].LogPos || pos > midpoints[midpoints.Length - 1].LogPos)
-                return -1;
+            if (pos > midpoints[midpoints.Length - 1].LogPos)
+                return Tuple.Create(_actualDataSize, midpoints.Length); // to allow backwards reading of the last record, forward read will decline either way
 
             var recordRange = LocatePosRange(midpoints, pos);
-            return TranslateWithoutMidpoints(workItem, pos, recordRange.Item1, recordRange.Item2);
+            return TranslateClosestForwardWithoutMidpoints(workItem, pos, recordRange.Item1, recordRange.Item2);
+        }
+
+        private Tuple<int, int> TranslateClosestForwardWithoutMidpoints(ReaderWorkItem workItem, int pos, int startIndex, int endIndex)
+        {
+            PosMap res = ReadPosMap(workItem, endIndex);
+
+            if (pos > res.LogPos)
+                return Tuple.Create(_actualDataSize, endIndex + 1); // to allow backwards reading of the last record, forward read will decline either way
+            int low = startIndex;
+            int high = endIndex;
+            while (low < high)
+            {
+                var mid = low + (high - low) / 2;
+                var v = ReadPosMap(workItem, mid);
+
+                if (v.LogPos < pos)
+                    low = mid + 1;
+                else
+                {
+                    high = mid;
+                    res = v;
+                }
+            }
+            return Tuple.Create(res.ActualPos, high);
         }
 
         private static Tuple<int, int> LocatePosRange(Midpoint[] midpoints, int pos)
@@ -682,7 +851,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             int r = midpoints.Length - 1;
             while (l < r)
             {
-                int m = l + (r - l + 1)/2;
+                int m = l + (r - l + 1) / 2;
                 if (midpoints[m].LogPos <= pos)
                     l = m;
                 else
@@ -702,7 +871,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             int r = midpoints.Length - 1;
             while (l < r)
             {
-                int m = l + (r - l)/2;
+                int m = l + (r - l) / 2;
                 if (midpoints[m].LogPos >= pos)
                     r = m;
                 else
@@ -711,76 +880,25 @@ namespace EventStore.Core.TransactionLog.Chunks
             return l;
         }
 
-        private int TranslateWithoutMidpoints(ReaderWorkItem workItem, int pos, int startIndex, int endIndex)
-        {
-            int low = startIndex;
-            int high = endIndex;
-            while (low <= high)
-            {
-                var mid = low + (high - low) / 2;
-                var v = ReadPosMap(workItem, mid);
-
-                if (v.LogPos == pos)
-                    return v.ActualPos;
-                if (v.LogPos < pos)
-                    low = mid + 1;
-                else
-                    high = mid - 1;
-            }
-            return -1;
-        }
-
-        private Tuple<PosMap, int> TranslateSameOrClosestWithMidpoints(ReaderWorkItem workItem, Midpoint[] midpoints, int pos)
-        {
-            if (pos > midpoints[midpoints.Length - 1].LogPos)
-                return Tuple.Create(new PosMap(-1, -1), -1);
-
-            var recordRange = LocatePosRange(midpoints, pos);
-            return TranslateSameOrClosestWithoutMidpoints(workItem, pos, recordRange.Item1, recordRange.Item2);
-        }
-
-        private Tuple<PosMap, int> TranslateSameOrClosestWithoutMidpoints(ReaderWorkItem workItem, int pos, int startIndex, int endIndex)
-        {
-            PosMap res = ReadPosMap(workItem, endIndex);
-            if (pos > res.LogPos)
-                return Tuple.Create(new PosMap(-1, -1), -1);
-            int low = startIndex;
-            int high = endIndex;
-            while (low < high)
-            {
-                var mid = low + (high - low) / 2;
-                var v = ReadPosMap(workItem, mid);
-
-                if (v.LogPos < pos)
-                    low = mid + 1;
-                else
-                {
-                    high = mid;
-                    res = v;
-                }
-            }
-            return Tuple.Create(res, high);
-        }
-
         private static int GetRealPosition(int logicalPosition, bool inMemory)
         {
             return inMemory ? logicalPosition : ChunkHeader.Size + logicalPosition;
         }
 
-        private int GetLogicalPosition(ReaderWorkItem workItem)
+        private static int GetLogicalPosition(ReaderWorkItem workItem)
         {
             return workItem.IsMemory ? (int)workItem.Stream.Position : (int)workItem.Stream.Position - ChunkHeader.Size;
         }
 
-        private int GetLogicalPosition(WriterWorkItem workItem)
+        private static int GetLogicalPosition(WriterWorkItem workItem)
         {
             return (int) workItem.Stream.Position - ChunkHeader.Size;
         }
 
-        private bool VerifyStreamLength(Stream stream, int length)
+        private bool VerifyDataLengthForward(ReaderWorkItem workItem, int length)
         {
-            // chunk header size is not included in _chunkSize value
-            return length + stream.Position <= _chunkHeader.ChunkSize + ChunkHeader.Size;
+            var chunkSize = _isReadonly ? _chunkFooter.ActualDataSize : _chunkHeader.ChunkSize;
+            return GetLogicalPosition(workItem) + length <= chunkSize;
         }
 
         public RecordWriteResult TryAppend(LogRecord record)
@@ -796,11 +914,12 @@ namespace EventStore.Core.TransactionLog.Chunks
             buffer.SetLength(4);
             buffer.Position = 4;
             record.WriteTo(bufferWriter);
+            var length = (int) buffer.Length - 4;
+            bufferWriter.Write(length); // length suffix
             buffer.Position = 0;
-            var toWriteLength = (int) buffer.Length;
-            bufferWriter.Write(toWriteLength - 4);
+            bufferWriter.Write(length); // length prefix
 
-            if (!VerifyStreamLength(stream, toWriteLength)) 
+            if (stream.Position + length + 8 > ChunkHeader.Size + _chunkHeader.ChunkSize) 
                 return RecordWriteResult.Failed(GetLogicalPosition(workItem));
 
             var oldPosition = WriteRawData(buffer);
@@ -938,8 +1057,8 @@ namespace EventStore.Core.TransactionLog.Chunks
         }
 
         private int _destructedFileStreams;
-        private int _destructedMemStreams;
-        private int _lockedCount = 0;
+        private volatile int _destructedMemStreams;
+        private volatile int _lockedCount;
 
         private void TryDestruct()
         {
@@ -950,7 +1069,6 @@ namespace EventStore.Core.TransactionLog.Chunks
                 destructed = Interlocked.Increment(ref _destructedFileStreams);
                 workItem.Stream.Close();
                 workItem.Stream.Dispose();
-                
             }
             if (destructed == _maxReadThreads)
             {
@@ -1019,10 +1137,12 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                 if (_selfdestructin54321)
                     throw new FileBeingDeletedException();
+
                 //there is an extremely unlikely race condition here 
                 //GFY TODO resolve it though impact is minimal
                 //as of now the worst thing thing that can happen is a chunk does not get deleted
                 //but gets picked up later when the database gets restarted
+
                 // if no cached reader - use usual
                 if (_streams.TryDequeue(out item))
                     return item;
@@ -1046,12 +1166,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public TFChunkBulkReader AcquireReader()
+        internal TFChunkBulkReader AcquireReader()
         {
             if(_selfdestructin54321)
-            {
                 throw new FileBeingDeletedException();
-            }
             Interlocked.Increment(ref _lockedCount);
             return new TFChunkBulkReader(this);
         }
@@ -1060,9 +1178,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             Interlocked.Decrement(ref _lockedCount);
             if(_selfdestructin54321)
-            {
                 TryDestruct();
-            }
         }
 
         private struct Midpoint
@@ -1075,8 +1191,12 @@ namespace EventStore.Core.TransactionLog.Chunks
                 ItemIndex = itemIndex;
                 LogPos = posmap.LogPos;
             }
-        }
 
+            public override string ToString()
+            {
+                return string.Format("ItemIndex: {0}, LogPos: {1}", ItemIndex, LogPos);
+            }
+        }
     }
 
     //TODO GFY ACTUALLY GET STREAM HERE AND USE IT. 
@@ -1121,6 +1241,11 @@ namespace EventStore.Core.TransactionLog.Chunks
         public ulong AsUInt64()
         {
             return (((ulong)LogPos) << 32) | (uint)ActualPos;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("LogPos: {0}, ActualPos: {1}", LogPos, ActualPos);
         }
     }
 }

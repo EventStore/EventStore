@@ -89,7 +89,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             try
             {
-                return chunk.TryReadRecordAt(chunkPos);
+                return chunk.TryReadAt(chunkPos);
             }
             catch (FileBeingDeletedException)
             {

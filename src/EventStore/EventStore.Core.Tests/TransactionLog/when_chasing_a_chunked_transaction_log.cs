@@ -112,7 +112,7 @@ namespace EventStore.Core.Tests.TransactionLog
                 var chunkHeader = new ChunkHeader(1, 10000, 0, 0, 0).AsByteArray();
                 var writer = new BinaryWriter(fs);
                 writer.Write(chunkHeader);
-                recordToWrite.WriteWithLengthPrefixTo(writer);
+                recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
                 fs.Close();
             }
             
@@ -133,7 +133,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var recordRead = chaser.TryReadNext(out record);
             chaser.Close();
 
-            Assert.AreEqual(record.GetSizeWithLengthPrefix(), chaserchk.Read());
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), chaserchk.Read());
             Assert.IsTrue(recordRead);
             Assert.AreEqual(recordToWrite, record);
 
@@ -171,7 +171,7 @@ namespace EventStore.Core.Tests.TransactionLog
             Assert.IsTrue(writer.Write(recordToWrite, out pos));
             writer.Close();
 
-            writerchk.Write(recordToWrite.GetSizeWithLengthPrefix());
+            writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
 
             var reader = new TFChunkChaser(db, writerchk, chaserchk);
             reader.Open();
@@ -181,7 +181,7 @@ namespace EventStore.Core.Tests.TransactionLog
             reader.Close();
 
             Assert.IsTrue(readRecord);
-            Assert.AreEqual(record.GetSizeWithLengthPrefix(), chaserchk.Read());
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), chaserchk.Read());
             Assert.AreEqual(recordToWrite, record);
 
             db.Close();
@@ -217,7 +217,7 @@ namespace EventStore.Core.Tests.TransactionLog
             Assert.IsTrue(writer.Write(recordToWrite, out pos));
             writer.Close();
 
-            writerchk.Write(recordToWrite.GetSizeWithLengthPrefix());
+            writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
 
             var chaser = new TFChunkChaser(db, writerchk, chaserchk);
             chaser.Open();
@@ -227,7 +227,7 @@ namespace EventStore.Core.Tests.TransactionLog
             chaser.Close();
 
             Assert.IsTrue(readRecord);
-            Assert.AreEqual(record.GetSizeWithLengthPrefix(), chaserchk.Read());
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), chaserchk.Read());
             Assert.AreEqual(recordToWrite, record);
         
             db.Close();
@@ -253,7 +253,7 @@ namespace EventStore.Core.Tests.TransactionLog
             using (var fs = new FileStream(Path.Combine(PathName, "prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
             {
                 var writer = new BinaryWriter(fs);
-                recordToWrite.WriteWithLengthPrefixTo(writer);
+                recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
                 fs.Close();
             }
 
@@ -288,7 +288,7 @@ namespace EventStore.Core.Tests.TransactionLog
             using (var fs = new FileStream(Path.Combine(PathName, "prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
             {
                 var writer = new BinaryWriter(fs);
-                recordToWrite.WriteWithLengthPrefixTo(writer);
+                recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
                 fs.Close();
             }
 
@@ -330,7 +330,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                      metadata: new byte[] { 7, 17 });
             var memstream = new MemoryStream();
             var writer = new BinaryWriter(memstream);
-            recordToWrite.WriteWithLengthPrefixTo(writer);
+            recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
 
             using (var fs = new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
             {
@@ -354,7 +354,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                       data: new byte[] { 3, 2, 1 },
                                                       metadata: new byte[] { 9 });
             memstream.SetLength(0);
-            recordToWrite2.WriteWithLengthPrefixTo(writer);
+            recordToWrite2.WriteWithLengthPrefixAndSuffixTo(writer);
 
             using (var fs = new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
             {

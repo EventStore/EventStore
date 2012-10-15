@@ -18,13 +18,14 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public TFChunkScavenger(TFChunkDb db, IReadIndex readIndex)
         {
-            _db = db;
-            _readIndex = readIndex;
             Ensure.NotNull(db, "db");
             Ensure.NotNull(readIndex, "readIndex");
+ 
+            _db = db;
+            _readIndex = readIndex;
         }
 
-        public void Scavenge()
+        public void Scavenge(bool alwaysKeepScavenged)
         {
             var sw = Stopwatch.StartNew();
 
@@ -40,13 +41,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                     Log.Trace("Stopping scavenging due to non-completed TFChunk #{0}.", i);
                     break;
                 }
-                ScavengeChunk(chunk);
+                ScavengeChunk(chunk, alwaysKeepScavenged);
             }
 
             Log.Trace("Scavenging pass COMPLETED in {0}.", sw.Elapsed);
         }
 
-        private void ScavengeChunk(TFChunk oldChunk)
+        private void ScavengeChunk(TFChunk oldChunk, bool alwaysKeepScavenged)
         {
             var sw = Stopwatch.StartNew();
 
@@ -108,7 +109,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 if (result.NextPosition == -1)
                     break;
-                result = oldChunk.TryReadSameOrClosest((int)result.NextPosition);
+                result = oldChunk.TryReadClosestForward((int)result.NextPosition);
             }
 
             var oldSize = oldChunk.ChunkFooter.ActualChunkSize + oldChunk.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
@@ -117,7 +118,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                           + ChunkHeader.Size 
                           + ChunkFooter.Size;
 
-            if (false && oldSize <= newSize)
+            if (!alwaysKeepScavenged && oldSize <= newSize)
             {
                 Log.Trace("Scavenging of chunk #{0} ({1}) completed in {2}.\n"
                           + "Old version is kept as it is smaller.\n"
@@ -139,7 +140,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                 File.Move(tmpChunkPath, newChunkPath);
 
-                newChunk = TFChunk.FromCompletedFile(newChunkPath);
+                newChunk = TFChunk.FromCompletedFile(newChunkPath, verifyHash: true);
                 var removedChunk = _db.Manager.SwapChunk(chunkNumber, newChunk);
                 Debug.Assert(ReferenceEquals(removedChunk, oldChunk)); // only scavenging could switch, so old should be always same
                 oldChunk.MarkForDeletion();

@@ -31,7 +31,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -42,7 +41,6 @@ using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
-using Newtonsoft.Json;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
