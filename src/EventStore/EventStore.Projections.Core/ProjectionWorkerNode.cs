@@ -93,7 +93,7 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<ProjectionMessage.Projections.Stopped>(_projectionManager);
             coreInputBus.Subscribe<ProjectionMessage.Projections.Faulted>(_projectionManager);
             coreInputBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
-            coreInputBus.Subscribe<ClientMessage.ReadEventsBackwardsCompleted>(_projectionManager);
+            coreInputBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);
             //NOTE: message forwarding is set up outside (for Read/Write events)
 
 

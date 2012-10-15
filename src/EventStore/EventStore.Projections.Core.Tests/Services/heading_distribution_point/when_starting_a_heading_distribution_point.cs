@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
         [Test]
         public void transaction_file_reader_publishes_read_events_from_tf()
         {
-            Assert.IsTrue(_consumer.HandledMessages.OfType<ClientMessage.ReadEventsFromTF>().Any());
+            Assert.IsTrue(_consumer.HandledMessages.OfType<ClientMessage.ReadAllEventsForward>().Any());
         }
 
         [Test]

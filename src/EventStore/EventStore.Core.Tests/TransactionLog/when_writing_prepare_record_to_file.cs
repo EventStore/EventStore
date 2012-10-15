@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.TransactionLog
             {
                 reader.Open();
                 LogRecord r = null;
-                Assert.IsTrue(reader.TryReadRecord(ref r));
+                Assert.IsTrue(reader.ReadEvent(ref r));
 
                 Assert.True(r is PrepareLogRecord);
                 var p = (PrepareLogRecord) r;

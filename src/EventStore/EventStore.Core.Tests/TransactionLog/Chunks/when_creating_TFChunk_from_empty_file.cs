@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void there_is_no_closest_backwards_record_from_end()
+        public void there_is_no_closest_backward_record_from_end()
         {
             var res = _chunk.TryReadClosestForward(0);
             Assert.IsFalse(res.Success);

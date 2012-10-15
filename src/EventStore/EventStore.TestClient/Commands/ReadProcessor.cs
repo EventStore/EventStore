@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
@@ -59,9 +58,8 @@ namespace EventStore.TestClient.Commands
 
             context.IsAsync();
 
-            var corrid = Guid.NewGuid();
-            var readDto = new ClientMessageDto.ReadEvent(corrid, eventStreamId, fromNumber);
-            var package = new TcpPackage(TcpCommand.ReadEvent, corrid, readDto.Serialize());
+            var readDto = new ClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos: false);
+            var package = new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), readDto.Serialize());
 
             var sw = new Stopwatch();
 
@@ -94,7 +92,7 @@ namespace EventStore.TestClient.Commands
                                      + "\tData:          {6}\n"
                                      + "\tMetadata:      {7}\n",
                                      eventStreamId,
-                                     dto.CorrelationId,
+                                     package.CorrelationId,
                                      dto.EventStreamId,
                                      dto.EventNumber,
                                      (SingleReadResult) dto.Result,

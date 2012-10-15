@@ -60,9 +60,7 @@ namespace EventStore.TestClient.Commands
             }
 
             context.IsAsync();
-            var corrid = Guid.NewGuid();
             var writeDto = new ClientMessageDto.WriteEvents(
-                corrid,
                 eventStreamId,
                 expectedVersion,
                 Enumerable.Range(0, writeCount).Select(x =>
@@ -71,7 +69,7 @@ namespace EventStore.TestClient.Commands
                                                                                   Encoding.UTF8.GetBytes(data),
                                                                                   new byte[0])).ToArray());
 
-            var package = new TcpPackage(TcpCommand.WriteEvents, corrid, writeDto.Serialize());
+            var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
 
             var sw = new Stopwatch();
 
@@ -96,14 +94,12 @@ namespace EventStore.TestClient.Commands
                     var dto = pkg.Data.Deserialize<ClientMessageDto.WriteEventsCompleted>();
                     if (dto.ErrorCode == (int)OperationErrorCode.Success)
                     {
-                        context.Log.Info("Successfully written {0} events. CorrelationId: {1}.",
-                                         writeCount,
-                                         dto.CorrelationId);
+                        context.Log.Info("Successfully written {0} events. CorrelationId: {1}.", writeCount, package.CorrelationId);
                         PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
                     }
                     else
                     {
-                        context.Log.Info("Error while writing: {0}. CorrelationId: {1}.", dto.Error, dto.CorrelationId);
+                        context.Log.Info("Error while writing: {0}. CorrelationId: {1}.", dto.Error, package.CorrelationId);
                     }
                     context.Log.Info("Write request took: {0}.", sw.Elapsed);
                     

@@ -25,8 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-
-using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -36,22 +34,27 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     {
         long LastCommitPosition { get; }
 
+        void Build();
         void Commit(CommitLogRecord record);
+        ReadIndexStats GetStatistics();
         
-        PrepareLogRecord GetPrepare(long pos);
+        PrepareLogRecord ReadPrepare(long pos);
 
-        SingleReadResult TryReadRecord(string eventStreamId, int version, out EventRecord record);
-        RangeReadResult TryReadRecordsBackwards(string eventStreamId, int fromEventNumber, int maxCount, out EventRecord[] records);
-        RangeReadResult TryReadEventsForward(string eventStreamId, int fromEventNumber, int maxCount, out EventRecord[] records);
-        int GetLastStreamEventNumber(string eventStreamId);
-        bool IsStreamDeleted(string eventStreamId);
-        List<ResolvedEventRecord> ReadEventsFromTF(long fromCommitPosition, long afterPreparePosition, int maxCount, bool resolveLinks);
+        SingleReadResult ReadEvent(string streamId, int eventNumber, out EventRecord record);
+        RangeReadResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount, out EventRecord[] records);
+        RangeReadResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount, out EventRecord[] records);
+
+        int GetLastStreamEventNumber(string streamId);
+        bool IsStreamDeleted(string streamId);
+        string[] GetStreamIds();
+
+        ReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, bool resolveLinks);
+        ReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount, bool resolveLinks);
+
         EventRecord ResolveLinkToEvent(EventRecord eventRecord);
         CommitCheckResult CheckCommitStartingAt(long prepareStartPosition);
-        string[] GetStreamIds();
-        
-        void Build(bool buildMemTable = true);
-        ReadIndexStats GetStatistics();
+        int GetLastTransactionOffset(long writerCheckpoint, long transactionId);
+       
         void Close();
         void Dispose();
     }

@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
     //TODO: separate check-pointing from projection handling
     public class CoreProjection : IDisposable,
                                   ICoreProjection,
-                                  IHandle<ClientMessage.ReadEventsBackwardsCompleted>,
+                                  IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
                                   IHandle<ClientMessage.WriteEventsCompleted>,
                                   IHandle<ProjectionMessage.Projections.CheckpointCompleted>,
                                   IHandle<ProjectionMessage.Projections.PauseRequested>,
@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private string _faultedReason;
 
         private readonly
-            RequestResponseDispatcher<ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>
+            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
             _readDispatcher;
 
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
@@ -122,7 +122,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionStateHandler = projectionStateHandler;
             _readDispatcher =
                 new RequestResponseDispatcher
-                    <ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>(
+                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
                     _publisher, v => v.CorrelationId, v => v.CorrelationId);
             _writeDispatcher =
                 new RequestResponseDispatcher
@@ -218,7 +218,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
         }
 
-        public void Handle(ClientMessage.ReadEventsBackwardsCompleted message)
+        public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
         {
             _readDispatcher.Handle(message);
         }
@@ -315,7 +315,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 const int recordsToRequest = 10;
                 _readDispatcher.Publish(
-                    new ClientMessage.ReadEventsBackwards(
+                    new ClientMessage.ReadStreamEventsBackward(
                         Guid.NewGuid(), new SendToThisEnvelope(this), _projectionCheckpointStreamId,
                         _nextStateIndexToRequest, recordsToRequest, resolveLinks: false), OnLoadStateCompleted);
             }
@@ -544,7 +544,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void OnLoadStateCompleted(ClientMessage.ReadEventsBackwardsCompleted message)
+        private void OnLoadStateCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message)
         {
             EnsureState(State.LoadStateRequsted);
             if (message.Events.Length > 0)
@@ -617,7 +617,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 string partitionStateStreamName = MakePartitionStateStreamName(statePartition);
                 _readDispatcher.Publish(
-                    new ClientMessage.ReadEventsBackwards(
+                    new ClientMessage.ReadStreamEventsBackward(
                         Guid.NewGuid(), new SendToThisEnvelope(this), partitionStateStreamName, -1, 1,
                         resolveLinks: false),
                     m => OnLoadStatePartitionCompleted(statePartition, @event, m, loadCompleted));
@@ -632,7 +632,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void OnLoadStatePartitionCompleted(
             string partition, ProjectionMessage.Projections.CommittedEventReceived committedEventReceived,
-            ClientMessage.ReadEventsBackwardsCompleted message, Action loadCompleted)
+            ClientMessage.ReadStreamEventsBackwardCompleted message, Action loadCompleted)
         {
             var positionTag = _checkpointStrategy.PositionTagger.MakeCheckpointTag(committedEventReceived);
             if (message.Events.Length == 1)
@@ -663,7 +663,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             string partitionStateStreamName = MakePartitionStateStreamName(partition);
             _readDispatcher.Publish(
-                new ClientMessage.ReadEventsBackwards(
+                new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), new SendToThisEnvelope(this), partitionStateStreamName, message.NextEventNumber, 1,
                     resolveLinks: false),
                 m => OnLoadStatePartitionCompleted(partition, committedEventReceived, m, loadCompleted));

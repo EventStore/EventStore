@@ -165,9 +165,7 @@ namespace EventStore.TestClient.Commands
                 {
                     for (int j = 0; j < count; ++j)
                     {
-                        var corrid = Guid.NewGuid();
                         var write = new ClientMessageDto.WriteEvents(
-                            Guid.Empty,
                             streams[rnd.Next(streamsCnt)],
                             ExpectedVersion.Any,
                             new[] { 
@@ -176,7 +174,7 @@ namespace EventStore.TestClient.Commands
                                                            Encoding.UTF8.GetBytes("DATA" + new string('*', 256)),
                                                            Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
                             });
-                        var package = new TcpPackage(TcpCommand.WriteEvents, corrid, write.Serialize());
+                        var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                         client.EnqueueSend(package.AsByteArray());
 
                         Interlocked.Increment(ref sent);

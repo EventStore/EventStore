@@ -99,6 +99,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     }
                     case LogRecordType.Commit:
                     {
+                        //TODO AN scavenge commits that belong to deleted stream, except if this is commit of delete tombstone
                         var posMap = WriteRecord(newChunk, record);
                         positionMapping.Add(posMap);
                         positioningNeeded = posMap.LogPos != posMap.ActualPos;

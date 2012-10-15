@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Management
     public class ProjectionManager : IDisposable,
                                      IHandle<SystemMessage.SystemInit>,
                                      IHandle<SystemMessage.SystemStart>,
-                                     IHandle<ClientMessage.ReadEventsBackwardsCompleted>,
+                                     IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
                                      IHandle<ClientMessage.WriteEventsCompleted>,
                                      IHandle<ProjectionManagementMessage.Post>,
                                      IHandle<ProjectionManagementMessage.UpdateQuery>,
@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher;
 
         private readonly
-            RequestResponseDispatcher<ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>
+            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
             _readDispatcher;
 
         private int _readEventsBatchSize = 100;
@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Management
                     coreOutput, v => v.CorrelationId, v => v.CorrelationId);
             _readDispatcher =
                 new RequestResponseDispatcher
-                    <ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>(
+                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
                     coreOutput, v => v.CorrelationId, v => v.CorrelationId);
 
             _coreOutput = coreOutput;
@@ -242,7 +242,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(ClientMessage.ReadEventsBackwardsCompleted message)
+        public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
         {
             _readDispatcher.Handle(message);
         }
@@ -273,13 +273,13 @@ namespace EventStore.Projections.Core.Services.Management
         private void BeginLoadProjectionList(int from = -1)
         {
             _readDispatcher.Publish(
-                new ClientMessage.ReadEventsBackwards(
+                new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), new PublishEnvelope(_coreOutput), "$projections-$all", from, _readEventsBatchSize,
                     resolveLinks: false), m => LoadProjectionListCompleted(m, from));
         }
 
         private void LoadProjectionListCompleted(
-            ClientMessage.ReadEventsBackwardsCompleted completed, int requestedFrom)
+            ClientMessage.ReadStreamEventsBackwardCompleted completed, int requestedFrom)
         {
             if (completed.Result == RangeReadResult.Success && completed.Events.Length > 0)
             {

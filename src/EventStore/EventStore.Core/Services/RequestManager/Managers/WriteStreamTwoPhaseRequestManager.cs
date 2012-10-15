@@ -57,8 +57,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                               allowImplicitStreamCreation: true,
                                                               liveUntil: DateTime.UtcNow.AddSeconds(Timeouts.PrepareTimeout.Seconds)));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
-                                                      _publishEnvelope,
-                                                      new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
+                                                           _publishEnvelope,
+                                                           new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
         }
 
         protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)

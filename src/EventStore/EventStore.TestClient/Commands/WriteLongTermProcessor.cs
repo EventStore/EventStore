@@ -188,9 +188,7 @@ namespace EventStore.TestClient.Commands
                         }
 
                         var dataSize = dataSizeCoefficient * 8;
-                        var corrid = Guid.NewGuid();
                         var write = new ClientMessageDto.WriteEvents(
-                            corrid,
                             esId,
                             ExpectedVersion.Any,
                             new[] { 
@@ -200,7 +198,7 @@ namespace EventStore.TestClient.Commands
                                     Encoding.UTF8.GetBytes("DATA" + dataSize.ToString(" 00000 ") + new string('*', dataSize)),
                                     Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
                             });
-                        var package = new TcpPackage(TcpCommand.WriteEvents, corrid, write.Serialize());
+                        var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                         client.EnqueueSend(package.AsByteArray());
 
                         Interlocked.Increment(ref sent);

@@ -123,6 +123,7 @@ namespace EventStore.TestClient.Commands
             var allScenarios = new IScenario[]
                 {
                     new Scenario1(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
+                    //new Scenario2(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep) 
                     new LoopingScenario(directTcpSender, 
                                         maxConcurrentRequests, 
                                         threads, 

@@ -76,7 +76,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var startTransaction = new ClientMessages.TransactionStart(_corrId, _stream, _expectedVersion);
+                var startTransaction = new ClientMessages.TransactionStart(_stream, _expectedVersion);
                 return new TcpPackage(TcpCommand.TransactionStart, _corrId,  startTransaction.Serialize());
             }
         }

@@ -51,9 +51,9 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [SetUp]
         public void Setup()
         {
-            _prepare1 = new PrepareLogRecord(0, _corrId, _eventId, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
+            _prepare1 = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                              PrepareFlags.None, "Foo", new byte[12], new byte[15]);
-            _prepare2 = new PrepareLogRecord(0, _corrId, _eventId, 0, "test2", 2, new DateTime(2000, 1, 1, 12, 0, 0),
+            _prepare2 = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test2", 2, new DateTime(2000, 1, 1, 12, 0, 0),
                                              PrepareFlags.None, "Foo2", new byte[12], new byte[15]);
 
             _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);
@@ -147,18 +147,18 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void the_first_record_can_be_read_as_closest_backwards_after_last()
+        public void the_first_record_can_be_read_as_closest_backward_after_last()
         {
-            var res = _chunk.TryReadClosestBackwards(_prepare1.GetSizeWithLengthPrefixAndSuffix());
+            var res = _chunk.TryReadClosestBackward(_prepare1.GetSizeWithLengthPrefixAndSuffix());
             Assert.IsTrue(res.Success);
             Assert.AreEqual(0, res.NextPosition);
             Assert.AreEqual(_prepare1, res.LogRecord);
         }
 
         [Test]
-        public void cannot_read_backwards_from_zero_pos()
+        public void cannot_read_backward_from_zero_pos()
         {
-            var res = _chunk.TryReadClosestBackwards(0);
+            var res = _chunk.TryReadClosestBackward(0);
             Assert.IsFalse(res.Success);
         }
     }

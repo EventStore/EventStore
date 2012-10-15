@@ -131,9 +131,9 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void the_next_closest_backwards_cant_be_read()
+        public void the_next_closest_backward_cant_be_read()
         {
-            var res = _scavengedChunk.TryReadClosestBackwards((int)_res3.OldPosition);
+            var res = _scavengedChunk.TryReadClosestBackward((int)_res3.OldPosition);
             Assert.IsFalse(res.Success);
         }
     }

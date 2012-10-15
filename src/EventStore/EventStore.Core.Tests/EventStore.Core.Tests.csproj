@@ -161,6 +161,7 @@
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_rebuilding_index_for_partially_persisted_transaction.cs" />
     <Compile Include="Integration\IntegrationTestBase.cs" />
     <Compile Include="Integration\EnvelopeCallback.cs" />
     <Compile Include="Integration\when_writing_single_event_and_then_reading_it.cs" />
@@ -171,7 +172,6 @@
     <Compile Include="Infrastructure\Services\Storage\FakeTableIndex.cs" />
     <Compile Include="Infrastructure\Services\Storage\NullCache.cs" />
     <Compile Include="Infrastructure\Services\Storage\ReadIndexTestScenario.cs" />
-    <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_nonempty_tfile_with_chaser_lagging_behind.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_multiple_events_in_a_stream.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_prepares_and_commits.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_prepares_but_no_commits.cs" />
@@ -200,7 +200,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Infrastructure\Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
-    <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_few_scavenged_chunks.cs" />
+    <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_scavenged_odd_records.cs" />
+    <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_scavenged_even_records.cs" />
     <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_few_chunks.cs" />
     <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_one_chunk.cs" />
     <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_last_two_records_removed.cs" />

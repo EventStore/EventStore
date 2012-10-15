@@ -60,9 +60,7 @@ namespace EventStore.TestClient.Commands
             }
 
             context.IsAsync();
-            var corrid = Guid.NewGuid();
             var writeDto = new ClientMessageDto.WriteEvents(
-                corrid,
                 eventStreamId,
                 expectedVersion,
                 new[] 
@@ -72,7 +70,7 @@ namespace EventStore.TestClient.Commands
                                                Encoding.UTF8.GetBytes(data),
                                                Encoding.UTF8.GetBytes(metadata ?? string.Empty))
                 });
-            var package = new TcpPackage(TcpCommand.WriteEvents, corrid, writeDto.Serialize());
+            var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
 
             var sw = new Stopwatch();
 
@@ -97,15 +95,12 @@ namespace EventStore.TestClient.Commands
                     var dto = pkg.Data.Deserialize<ClientMessageDto.WriteEventsCompleted>();
                     if ((OperationErrorCode)dto.ErrorCode == OperationErrorCode.Success)
                     {
-                        context.Log.Info("Successfully written. EventId: {0}.", dto.CorrelationId);
+                        context.Log.Info("Successfully written. EventId: {0}.", package.CorrelationId);
                         PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
                     }
                     else
                     {
-                        context.Log.Info("Error while writing: {0} ({1}). EventId: {2}.",
-                                         dto.Error,
-                                         (OperationErrorCode) dto.ErrorCode,
-                                         dto.CorrelationId);
+                        context.Log.Info("Error while writing: {0} ({1}).", dto.Error, (OperationErrorCode) dto.ErrorCode);
                     }
 
                     context.Log.Info("Write request took: {0}.", sw.Elapsed);

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -9,12 +10,13 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_sequentially_reading_db_with_few_chunks: SpecificationWithDirectoryPerTestFixture
+    public class when_sequentially_reading_db_with_scavenged_even_records: SpecificationWithDirectoryPerTestFixture
     {
-        private const int RecordsCount = 8;
+        private const int RecordsCount = 16;
 
         private TFChunkDb _db;
         private LogRecord[] _records;
+        private LogRecord[] _keptRecords;
         private RecordWriteResult[] _results;
 
         public override void TestFixtureSetUp()
@@ -45,16 +47,22 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 }
 
                 _records[i] = LogRecord.SingleWrite(pos,
-                                                    Guid.NewGuid(), Guid.NewGuid(), "es1", ExpectedVersion.Any, "et1",
-                                                    new byte[1200], new byte[] { 5, 7 });
+                                                    Guid.NewGuid(), Guid.NewGuid(), i%2 == 0 ? "es-to-scavenge": "es1", 
+                                                    ExpectedVersion.Any, "et1", new byte[1200], new byte[] { 5, 7 });
                 _results[i] = chunk.TryAppend(_records[i]);
 
                 pos += _records[i].GetSizeWithLengthPrefixAndSuffix();
             }
 
+            _keptRecords = _records.Where((x, i) => i%2 == 1).ToArray();
+
             chunk.Flush();
+            chunk.Complete();
             _db.Config.WriterCheckpoint.Write((RecordsCount / 3) * _db.Config.ChunkSize + _results[RecordsCount - 1].NewPosition);
             _db.Config.WriterCheckpoint.Flush();
+
+            var scavenger = new TFChunkScavenger(_db, new FakeReadIndex(x => x == "es-to-scavenge"));
+            scavenger.Scavenge(alwaysKeepScavenged: true);
         }
 
         public override void TestFixtureTearDown()
@@ -90,13 +98,12 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             int count = 0;
             while ((res = seqReader.TryReadNext()).Success)
             {
-                var rec = _records[count];
+                var rec = _keptRecords[count];
                 Assert.AreEqual(rec, res.LogRecord);
-                Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), seqReader.Position);
 
                 ++count;
             }
-            Assert.AreEqual(RecordsCount, count);
+            Assert.AreEqual(_keptRecords.Length, count);
         }
 
         [Test]
@@ -108,13 +115,13 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             int count = 0;
             while ((res = seqReader.TryReadPrev()).Success)
             {
-                var rec = _records[RecordsCount - count - 1];
+                var rec = _keptRecords[_keptRecords.Length - count - 1];
                 Assert.AreEqual(rec, res.LogRecord);
                 Assert.AreEqual(rec.Position, seqReader.Position);
 
                 ++count;
             }
-            Assert.AreEqual(RecordsCount, count);
+            Assert.AreEqual(_keptRecords.Length, count);
         }
 
         [Test]
@@ -126,24 +133,24 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             int count1 = 0;
             while ((res = seqReader.TryReadNext()).Success)
             {
-                var rec = _records[count1];
+                var rec = _keptRecords[count1];
                 Assert.AreEqual(rec, res.LogRecord);
-                Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), seqReader.Position);
+                //Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), seqReader.Position);
 
                 ++count1;
             }
-            Assert.AreEqual(RecordsCount, count1);
+            Assert.AreEqual(_keptRecords.Length, count1);
 
             int count2 = 0;
             while ((res = seqReader.TryReadPrev()).Success)
             {
-                var rec = _records[RecordsCount - count2 - 1];
+                var rec = _keptRecords[_keptRecords.Length - count2 - 1];
                 Assert.AreEqual(rec, res.LogRecord);
-                Assert.AreEqual(rec.Position, seqReader.Position);
+                //Assert.AreEqual(rec.Position, seqReader.Position);
 
                 ++count2;
             }
-            Assert.AreEqual(RecordsCount, count2);
+            Assert.AreEqual(_keptRecords.Length, count2);
         }
 
         [Test]
@@ -157,13 +164,13 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 int count = 0;
                 while ((res = seqReader.TryReadNext()).Success)
                 {
-                    var rec = _records[i + count];
+                    var rec = _keptRecords[i/2 + count];
                     Assert.AreEqual(rec, res.LogRecord);
-                    Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), seqReader.Position);
+                    //Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), seqReader.Position);
 
                     ++count;
                 }
-                Assert.AreEqual(RecordsCount - i, count);
+                Assert.AreEqual(_keptRecords.Length - i/2, count);
             }
         }
 
@@ -178,13 +185,13 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 int count = 0;
                 while ((res = seqReader.TryReadPrev()).Success)
                 {
-                    var rec = _records[i - count - 1];
+                    var rec = _keptRecords[i/2 - count - 1];
                     Assert.AreEqual(rec, res.LogRecord);
                     Assert.AreEqual(rec.Position, seqReader.Position);
 
                     ++count;
                 }
-                Assert.AreEqual(i, count);
+                Assert.AreEqual(i/2, count);
             }
         }
     }

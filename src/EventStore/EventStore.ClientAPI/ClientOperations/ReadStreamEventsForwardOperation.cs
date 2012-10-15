@@ -34,10 +34,10 @@ using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class ReadFromBeginningOperation : IClientOperation
+    internal class ReadStreamEventsForwardOperation : IClientOperation
     {
         private readonly TaskCompletionSource<EventStreamSlice> _source;
-        private ClientMessages.ReadEventsFromBeginningCompleted _result;
+        private ClientMessages.ReadStreamEventsForwardCompleted _result;
 
         private Guid _correlationId;
         private readonly object _corrIdLock = new object();
@@ -56,12 +56,12 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        public ReadFromBeginningOperation(TaskCompletionSource<EventStreamSlice> source,
-                                          Guid corrId, 
-                                          string stream, 
-                                          int start, 
-                                          int count,
-                                          bool resolveLinkTos)
+        public ReadStreamEventsForwardOperation(TaskCompletionSource<EventStreamSlice> source,
+                                                Guid corrId, 
+                                                string stream, 
+                                                int start, 
+                                                int count,
+                                                bool resolveLinkTos)
         {
             _source = source;
 
@@ -82,8 +82,8 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.ReadEventsFromBeginning(_correlationId, _stream, _start, _count, _resolveLinkTos);
-                return new TcpPackage(TcpCommand.ReadEventsFromBeginning, _correlationId, dto.Serialize());
+                var dto = new ClientMessages.ReadStreamEventsForward(_stream, _start, _count, _resolveLinkTos);
+                return new TcpPackage(TcpCommand.ReadStreamEventsForward, _correlationId, dto.Serialize());
             }
         }
 
@@ -91,15 +91,15 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             try
             {
-                if (package.Command != TcpCommand.ReadEventsFromBeginningCompleted)
+                if (package.Command != TcpCommand.ReadStreamEventsForwardCompleted)
                 {
                     return new InspectionResult(InspectionDecision.NotifyError,
-                        new CommandNotExpectedException(TcpCommand.ReadEventsFromBeginningCompleted.ToString(), 
+                        new CommandNotExpectedException(TcpCommand.ReadStreamEventsForwardCompleted.ToString(), 
                                                         package.Command.ToString()));
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessages.ReadEventsFromBeginningCompleted>();
+                var dto = data.Deserialize<ClientMessages.ReadStreamEventsForwardCompleted>();
                 _result = dto;
 
                 switch ((RangeReadResult)dto.Result)

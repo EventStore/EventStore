@@ -70,7 +70,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.DeleteStream(_correlationId, _stream, _expectedVersion);
+                var dto = new ClientMessages.DeleteStream(_stream, _expectedVersion);
                 return new TcpPackage(TcpCommand.DeleteStream, _correlationId, dto.Serialize());
             }
         }

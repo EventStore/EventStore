@@ -39,10 +39,7 @@ namespace EventStore.ClientAPI
         public readonly int Count;
         public readonly RecordedEvent[] Events;
 
-        internal EventStreamSlice(string stream,
-                                  int startIndex,
-                                  int count,
-                                  EventRecord[] events)
+        internal EventStreamSlice(string stream, int startIndex, int count, EventRecord[] events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 

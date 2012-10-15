@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [SetUp]
         public void Setup()
         {
-            _record = new PrepareLogRecord(0, _corrId, _eventId, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
+            _record = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                            PrepareFlags.None, "Foo", new byte[12], new byte[15]);
             _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);
             _result = _chunk.TryAppend(_record);
@@ -102,9 +102,9 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void the_record_can_be_read_as_closest_backwards_from_end()
+        public void the_record_can_be_read_as_closest_backward_from_end()
         {
-            var res = _cachedChunk.TryReadClosestBackwards(_record.GetSizeWithLengthPrefixAndSuffix());
+            var res = _cachedChunk.TryReadClosestBackward(_record.GetSizeWithLengthPrefixAndSuffix());
             Assert.IsTrue(res.Success);
             Assert.AreEqual(0, res.NextPosition);
             Assert.AreEqual(_record, res.LogRecord);
