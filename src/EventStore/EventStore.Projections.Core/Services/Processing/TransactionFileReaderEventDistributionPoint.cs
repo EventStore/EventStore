@@ -82,13 +82,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused or pause requested");
             _eventsRequested = true;
 
-            throw new NotImplementedException();
-            // TODO: remove ugly (message.PreparePosition - 1) hack. 
-            // TODO: It was added because ReadAllEventsForward has inclusive commit/prepare pos always.
             _publisher.Publish(
                 new ClientMessage.ReadAllEventsForward(
                     _distibutionPointCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
-                    _from.PreparePosition - 1, _maxReadCount, true));
+                    _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, true));
         }
 
         public override void Pause()
@@ -115,38 +112,28 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
 
-            throw new NotImplementedException();
-//            switch (message.Result)
-//            {
-//                case RangeReadResult.NoStream:
-//                    throw new NotSupportedException("ReadAllEventsForward should not return NoStream");
-//                case RangeReadResult.Success:
-//                    if (message.Events.Length == 0)
-//                    {
-//                        // the end
-//                        DeliverLastCommitPosition(_from.CommitPosition);
-//                        // allow joining heading distribution
-//                    }
-//                    else
-//                    {
-//                        for (int index = 0; index < message.Events.Length; index++)
-//                        {
-//                            var @event = message.Events[index];
-//                            DeliverEvent(@event);
-//                        }
-//                    }
-//                    if (_pauseRequested)
-//                        _paused = true;
-//                    else
-//                        //TODO: we may publish this message somewhere 10 events before the end of the chunk
-//                        _publisher.Publish(
-//                            new ProjectionMessage.CoreService.Tick(
-//                                () => { if (!_paused && !_disposed) RequestEvents(); }));
-//                    break;
-//                default:
-//                    throw new NotSupportedException(
-//                        string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
-//            }
+            if (message.Result.Records.Count == 0)
+            {
+                // the end
+                DeliverLastCommitPosition(_from.CommitPosition);
+                // allow joining heading distribution
+            }
+            else
+            {
+                for (int index = 0; index < message.Result.Records.Count; index++)
+                {
+                    var @event = message.Result.Records[index];
+                    DeliverEvent(index, @event);
+                }
+                _from = message.Result.NextPos;
+            }
+            if (_pauseRequested)
+                _paused = true;
+            else
+                //TODO: we may publish this message somewhere 10 events before the end of the chunk
+                _publisher.Publish(
+                    new ProjectionMessage.CoreService.Tick(
+                        () => { if (!_paused && !_disposed) RequestEvents(); }));
         }
 
         public override void Dispose()
@@ -162,10 +149,12 @@ namespace EventStore.Projections.Core.Services.Processing
                     null, int.MinValue, false, null));
         }
 
-        private void DeliverEvent(ResolvedEventRecord @event)
+        private void DeliverEvent(int index, ResolvedEventRecord @event)
         {
             EventRecord positionEvent = (@event.Link ?? @event.Event);
             var receivedPosition = new EventPosition(@event.CommitPosition, positionEvent.LogPosition);
+            if (_from == receivedPosition && index == 0)
+                return; // ignore duplicate as we requested it
             if (_from >= receivedPosition)
                 throw new Exception(
                     string.Format(
@@ -179,7 +168,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     new Event(
                         @event.Event.EventId, @event.Event.EventType,
                         (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata)));
-            _from = receivedPosition;
         }
     }
 }

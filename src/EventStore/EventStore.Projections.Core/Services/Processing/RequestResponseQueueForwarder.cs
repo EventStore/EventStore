@@ -82,13 +82,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ClientMessage.ReadAllEventsForward message)
         {
-            throw new NotImplementedException();
-            // TODO: remove ugly (message.PreparePosition - 1) hack. 
-            // TODO: It was added because ReadAllEventsForward has inclusive commit/prepare pos always.
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadAllEventsForward(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.CommitPosition, message.PreparePosition - 1, message.MaxCount, message.ResolveLinks));
+                    message.CommitPosition, message.PreparePosition, message.MaxCount, message.ResolveLinks));
         }
     }
 }
