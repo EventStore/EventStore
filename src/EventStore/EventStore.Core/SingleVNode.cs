@@ -96,7 +96,6 @@ namespace EventStore.Core
                                             maxSizeForMemory: 1000000,
                                             maxTablesPerLevel: 2);
 
-            int seqReaderCount = TFConsts.ReadIndexReaderCount;
             var readIndex = new ReadIndex(_mainQueue, TFConsts.ReadIndexReaderCount, () => new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0), () => new TFChunkReader(db, db.Config.WriterCheckpoint), tableIndex, new XXHashUnsafe());
             var writer = new TFChunkWriter(db);
             var storageWriter = new StorageWriter(_mainQueue, _outputBus, writer, readIndex);

@@ -502,23 +502,20 @@ namespace EventStore.Core.Messages
             public readonly IEnvelope Envelope;
             public readonly long CommitPosition;
             public readonly long PreparePosition;
-            public readonly bool Inclusive;
             public readonly int MaxCount;
             public readonly bool ResolveLinks;
 
             public ReadAllEventsForward(Guid correlationId,
-                                    IEnvelope envelope,
-                                    long commitPosition,
-                                    long preparePosition,
-                                    bool inclusive,
-                                    int maxCount,
-                                    bool resolveLinks)
+                                        IEnvelope envelope,
+                                        long commitPosition,
+                                        long preparePosition,
+                                        int maxCount,
+                                        bool resolveLinks)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
                 CommitPosition = commitPosition;
                 PreparePosition = preparePosition;
-                Inclusive = inclusive;
                 MaxCount = maxCount;
                 ResolveLinks = resolveLinks;
             }
@@ -527,15 +524,11 @@ namespace EventStore.Core.Messages
         public class ReadAllEventsForwardCompleted : ReadMessage
         {
             public readonly Guid CorrelationId;
-            public readonly ResolvedEventRecord[] Events;
-            public readonly RangeReadResult Result;
+            public readonly ReadAllResult Result;
 
-            public ReadAllEventsForwardCompleted(Guid correlationId, ResolvedEventRecord[] events, RangeReadResult result)
+            public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result)
             {
-                Ensure.NotNull(events, "events");
-
                 CorrelationId = correlationId;
-                Events = events;
                 Result = result;
             }
         }
@@ -546,7 +539,6 @@ namespace EventStore.Core.Messages
             public readonly IEnvelope Envelope;
             public readonly long CommitPosition;
             public readonly long PreparePosition;
-            public readonly bool Inclusive;
             public readonly int MaxCount;
             public readonly bool ResolveLinks;
 
@@ -554,7 +546,6 @@ namespace EventStore.Core.Messages
                                          IEnvelope envelope,
                                          long commitPosition,
                                          long preparePosition,
-                                         bool inclusive,
                                          int maxCount,
                                          bool resolveLinks)
             {
@@ -562,7 +553,6 @@ namespace EventStore.Core.Messages
                 Envelope = envelope;
                 CommitPosition = commitPosition;
                 PreparePosition = preparePosition;
-                Inclusive = inclusive;
                 MaxCount = maxCount;
                 ResolveLinks = resolveLinks;
             }
@@ -571,15 +561,11 @@ namespace EventStore.Core.Messages
         public class ReadAllEventsBackwardCompleted : ReadMessage
         {
             public readonly Guid CorrelationId;
-            public readonly ResolvedEventRecord[] Events;
-            public readonly RangeReadResult Result;
+            public readonly ReadAllResult Result;
 
-            public ReadAllEventsBackwardCompleted(Guid correlationId, ResolvedEventRecord[] events, RangeReadResult result)
+            public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result)
             {
-                Ensure.NotNull(events, "events");
-
                 CorrelationId = correlationId;
-                Events = events;
                 Result = result;
             }
         }

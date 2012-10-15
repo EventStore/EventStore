@@ -81,10 +81,14 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_pauseRequested || _paused)
                 throw new InvalidOperationException("Paused or pause requested");
             _eventsRequested = true;
+
+            throw new NotImplementedException();
+            // TODO: remove ugly (message.PreparePosition - 1) hack. 
+            // TODO: It was added because ReadAllEventsForward has inclusive commit/prepare pos always.
             _publisher.Publish(
                 new ClientMessage.ReadAllEventsForward(
                     _distibutionPointCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
-                    _from.PreparePosition, false, _maxReadCount, true));
+                    _from.PreparePosition - 1, _maxReadCount, true));
         }
 
         public override void Pause()
@@ -110,37 +114,39 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_paused)
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
-            switch (message.Result)
-            {
-                case RangeReadResult.NoStream:
-                    throw new NotSupportedException("ReadAllEventsForward should not return NoStream");
-                case RangeReadResult.Success:
-                    if (message.Events.Length == 0)
-                    {
-                        // the end
-                        DeliverLastCommitPosition(_from.CommitPosition);
-                        // allow joining heading distribution
-                    }
-                    else
-                    {
-                        for (int index = 0; index < message.Events.Length; index++)
-                        {
-                            var @event = message.Events[index];
-                            DeliverEvent(@event);
-                        }
-                    }
-                    if (_pauseRequested)
-                        _paused = true;
-                    else
-                        //TODO: we may publish this message somewhere 10 events before the end of the chunk
-                        _publisher.Publish(
-                            new ProjectionMessage.CoreService.Tick(
-                                () => { if (!_paused && !_disposed) RequestEvents(); }));
-                    break;
-                default:
-                    throw new NotSupportedException(
-                        string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
-            }
+
+            throw new NotImplementedException();
+//            switch (message.Result)
+//            {
+//                case RangeReadResult.NoStream:
+//                    throw new NotSupportedException("ReadAllEventsForward should not return NoStream");
+//                case RangeReadResult.Success:
+//                    if (message.Events.Length == 0)
+//                    {
+//                        // the end
+//                        DeliverLastCommitPosition(_from.CommitPosition);
+//                        // allow joining heading distribution
+//                    }
+//                    else
+//                    {
+//                        for (int index = 0; index < message.Events.Length; index++)
+//                        {
+//                            var @event = message.Events[index];
+//                            DeliverEvent(@event);
+//                        }
+//                    }
+//                    if (_pauseRequested)
+//                        _paused = true;
+//                    else
+//                        //TODO: we may publish this message somewhere 10 events before the end of the chunk
+//                        _publisher.Publish(
+//                            new ProjectionMessage.CoreService.Tick(
+//                                () => { if (!_paused && !_disposed) RequestEvents(); }));
+//                    break;
+//                default:
+//                    throw new NotSupportedException(
+//                        string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
+//            }
         }
 
         public override void Dispose()

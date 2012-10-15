@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messaging;
@@ -80,10 +82,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ClientMessage.ReadAllEventsForward message)
         {
+            throw new NotImplementedException();
+            // TODO: remove ugly (message.PreparePosition - 1) hack. 
+            // TODO: It was added because ReadAllEventsForward has inclusive commit/prepare pos always.
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadAllEventsForward(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.CommitPosition, message.PreparePosition, false, message.MaxCount, message.ResolveLinks));
+                    message.CommitPosition, message.PreparePosition - 1, message.MaxCount, message.ResolveLinks));
         }
     }
 }
