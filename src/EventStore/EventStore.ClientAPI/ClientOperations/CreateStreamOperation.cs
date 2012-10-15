@@ -76,7 +76,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.CreateStream(_correlationId, _stream, _metadata);
+                var dto = new ClientMessages.CreateStream(_stream, _metadata);
                 return new TcpPackage(TcpCommand.CreateStream, _correlationId, dto.Serialize());
             }
         }

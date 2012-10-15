@@ -27,7 +27,6 @@
 //  
 
 using System;
-using System.Configuration;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.System;
@@ -77,7 +76,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var commit = new ClientMessages.TransactionCommit(_corrId, _transactionId, _stream);
+                var commit = new ClientMessages.TransactionCommit(_transactionId, _stream);
                 return new TcpPackage(TcpCommand.TransactionCommit, _corrId, commit.Serialize());
             }
         }

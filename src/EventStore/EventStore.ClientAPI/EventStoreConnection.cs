@@ -300,7 +300,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<EventStreamSlice>();
-            var operation = new ReadFromBeginningOperation(source, Guid.NewGuid(), stream, start, count, true);
+            var operation = new ReadStreamEventsForwardOperation(source, Guid.NewGuid(), stream, start, count, true);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -842,7 +842,7 @@ namespace EventStore.ClientAPI
 
             if (_subscriptions.TryAdd(id, new Subscription(source, id, stream, eventAppeared, subscriptionDropped)))
             {
-                var subscribe = new ClientMessages.SubscribeToStream(id, stream);
+                var subscribe = new ClientMessages.SubscribeToStream(stream);
                 _connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, id, subscribe.Serialize()).AsByteArray());
                 return source.Task;
             }
@@ -866,7 +866,7 @@ namespace EventStore.ClientAPI
 
                     _connection.EnqueueSend(new TcpPackage(TcpCommand.UnsubscribeFromStream,
                                                            id,
-                                                           new ClientMessages.UnsubscribeFromStream(id, stream).Serialize())
+                                                           new ClientMessages.UnsubscribeFromStream(stream).Serialize())
                                                 .AsByteArray());
                 }
             }
@@ -879,7 +879,7 @@ namespace EventStore.ClientAPI
 
             if (_subscriptions.TryAdd(id, new Subscription(source, id, eventAppeared, subscriptionDropped)))
             {
-                var subscribe = new ClientMessages.SubscribeToAllStreams(id);
+                var subscribe = new ClientMessages.SubscribeToAllStreams();
                 _connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToAllStreams, id, subscribe.Serialize()).AsByteArray());
                 return source.Task;
             }
@@ -903,7 +903,7 @@ namespace EventStore.ClientAPI
 
                     _connection.EnqueueSend(new TcpPackage(TcpCommand.UnsubscribeFromAllStreams,
                                                            id,
-                                                           new ClientMessages.UnsubscribeFromAllStreams(id).Serialize())
+                                                           new ClientMessages.UnsubscribeFromAllStreams().Serialize())
                                                 .AsByteArray());
                 }
             }

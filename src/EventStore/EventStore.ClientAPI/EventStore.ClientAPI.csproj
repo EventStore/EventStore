@@ -105,7 +105,7 @@
     <Compile Include="Configure.cs" />
     <Compile Include="ClientOperations\DeleteStreamOperation.cs" />
     <Compile Include="ClientOperations\IClientOperation.cs" />
-    <Compile Include="ClientOperations\ReadFromBeginningOperation.cs" />
+    <Compile Include="ClientOperations\ReadStreamEventsForwardOperation.cs" />
     <Compile Include="Common\Utils\Ensure.cs" />
     <Compile Include="IProjectionsManagement.cs" />
     <Compile Include="RecordedEvent.cs" />

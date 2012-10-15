@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<ProjectionMessage.Projections.Management.StateReport>(_projectionManager);
             mainBus.Subscribe<ProjectionMessage.Projections.Management.StatisticsReport>(_projectionManager);
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
-            mainBus.Subscribe<ClientMessage.ReadEventsBackwardsCompleted>(_projectionManager);
+            mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);
         }
 
         public static ProjectionManagerNode Create(TFChunkDb db, IPublisher publisher, QueuedHandler mainQueue, HttpService httpService, IPublisher[] queues)

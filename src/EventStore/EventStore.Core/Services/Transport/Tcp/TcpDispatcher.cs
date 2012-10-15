@@ -27,12 +27,15 @@
 // 
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Log;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
     public abstract class TcpDispatcher: ITcpDispatcher
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<TcpDispatcher>();
+
         private readonly Func<TcpPackage, IEnvelope, TcpConnectionManager, Message>[] _unwrappers;
         private readonly IDictionary<Type, Func<Message, TcpPackage>> _wrappers;
 
@@ -63,9 +66,16 @@ namespace EventStore.Core.Services.Transport.Tcp
             if (message == null)
                 throw new ArgumentNullException("message");
 
-            Func<Message, TcpPackage> wrapper;
-            if (_wrappers.TryGetValue(message.GetType(), out wrapper))
-                return wrapper(message);
+            try
+            {
+                Func<Message, TcpPackage> wrapper;
+                if (_wrappers.TryGetValue(message.GetType(), out wrapper))
+                    return wrapper(message);
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Error while wrapping message {0}.", message);
+            }
             return null;
         }
 
@@ -75,7 +85,18 @@ namespace EventStore.Core.Services.Transport.Tcp
                 throw new ArgumentNullException("envelope");
 
             Func<TcpPackage, IEnvelope, TcpConnectionManager, Message> unwrapper = _unwrappers[(byte)package.Command];
-            return unwrapper == null ? null : unwrapper(package, envelope, connection);
+            if (unwrapper != null)
+            {
+                try
+                {
+                    return unwrapper(package, envelope, connection);
+                }
+                catch (Exception exc)
+                {
+                    Log.ErrorException(exc, "Error while unwrapping TcpPackage with command {0}.", package.Command);
+                }
+            }
+            return null;
         }
     }
 }

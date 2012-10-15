@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _paused = true;
         }
 
-        public override void Handle(ClientMessage.ReadEventsForwardCompleted message)
+        public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
         {
             if (_disposed)
                 return;
@@ -139,7 +139,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public override void Handle(ClientMessage.ReadEventsFromTFCompleted message)
+        public override void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
         {
             throw new NotImplementedException();
         }
@@ -159,7 +159,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested = true;
 
 
-            var readEventsForward = new ClientMessage.ReadEventsForward(
+            var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                 _distibutionPointCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
                 _maxReadCount, _resolveLinkTos);
             if (delay)

@@ -63,10 +63,14 @@ namespace EventStore.ClientAPI.System
 
         ReadEvent = 0xB0,
         ReadEventCompleted = 0xB1,
-        ReadEventsFromBeginning = 0xB2,
-        ReadEventsFromBeginningCompleted = 0xB3,
-        ReadEventsFromEnd = 0xB4,
-        ReadEventsFromEndCompleted = 0xB5,
+        ReadStreamEventsForward = 0xB2,
+        ReadStreamEventsForwardCompleted = 0xB3,
+        ReadStreamEventsBackward = 0xB4,
+        ReadStreamEventsBackwardCompleted = 0xB5,
+        ReadAllEventsForward = 0xB6,
+        ReadAllEventsForwardCompleted = 0xB7,
+        ReadAllEventsBackward = 0xB8,
+        ReadAllEventsBackwardCompleted = 0xB9,
 
         SubscribeToStream = 0xC0,
         UnsubscribeFromStream = 0xC1,

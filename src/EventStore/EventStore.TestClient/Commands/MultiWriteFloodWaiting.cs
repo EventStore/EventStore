@@ -131,9 +131,7 @@ namespace EventStore.TestClient.Commands
                 {
                     for (int j = 0; j < count; ++j)
                     {
-                        var corrid = Guid.Empty;
                         var writeDto = new ClientMessageDto.WriteEvents(
-                            corrid,
                             eventStreamId,
                             ExpectedVersion.Any,
                             Enumerable.Range(0, writeCnt).Select(x =>
@@ -141,7 +139,7 @@ namespace EventStore.TestClient.Commands
                                                                "type",
                                                                Encoding.UTF8.GetBytes(data),
                                                                new byte[0])).ToArray());
-                        var package = new TcpPackage(TcpCommand.WriteEvents, corrid, writeDto.Serialize());
+                        var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
                         client.EnqueueSend(package.AsByteArray());
                         autoEvent.WaitOne();
                     }

@@ -71,7 +71,7 @@ namespace EventStore.TestClient.Commands
                         context.Log.Info("[{0}]: Starting transaction...", conn.EffectiveEndPoint);
                         sw.Start();
                         
-                        var tranStart = new ClientMessageDto.TransactionStart(corrid, eventStreamId, expectedVersion);
+                        var tranStart = new ClientMessageDto.TransactionStart(eventStreamId, expectedVersion);
                         var package = new TcpPackage(TcpCommand.TransactionStart, corrid, tranStart.Serialize());
                         conn.EnqueueSend(package.AsByteArray());
                     },
@@ -103,9 +103,7 @@ namespace EventStore.TestClient.Commands
                                     stage = Stage.Writing;
                                     for (int i = 0; i < eventsCnt; ++i)
                                     {
-                                        var writeDto = new ClientMessageDto.TransactionWrite(
-                                                corrid,
-                                                transactionId,
+                                        var writeDto = new ClientMessageDto.TransactionWrite(transactionId,
                                                 eventStreamId,
                                                 new[] 
                                                 { 
@@ -144,7 +142,7 @@ namespace EventStore.TestClient.Commands
                                         context.Log.Info("Written all events. Committing...");
 
                                         stage = Stage.Committing;
-                                        var commitDto = new ClientMessageDto.TransactionCommit(corrid, transactionId, eventStreamId);
+                                        var commitDto = new ClientMessageDto.TransactionCommit(transactionId, eventStreamId);
                                         var package = new TcpPackage(TcpCommand.TransactionCommit, corrid, commitDto.Serialize());
                                         conn.EnqueueSend(package.AsByteArray());
                                     }

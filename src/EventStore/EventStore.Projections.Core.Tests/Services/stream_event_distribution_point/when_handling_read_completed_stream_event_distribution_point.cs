@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
             _edp.Handle(
-                new ClientMessage.ReadEventsForwardCompleted(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream",
                     new[]
                         {
@@ -118,18 +118,18 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
         [Test]
         public void publishes_read_events_from_beginning_with_correct_next_event_number()
         {
-            Assert.AreEqual(2, _consumer.HandledMessages.OfType<ClientMessage.ReadEventsForward>().Count());
+            Assert.AreEqual(2, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
             Assert.AreEqual(
-                "stream", _consumer.HandledMessages.OfType<ClientMessage.ReadEventsForward>().Last().EventStreamId);
+                "stream", _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().EventStreamId);
             Assert.AreEqual(
-                12, _consumer.HandledMessages.OfType<ClientMessage.ReadEventsForward>().Last().FromEventNumber);
+                12, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().FromEventNumber);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cannot_handle_repeated_read_events_completed()
         {
             _edp.Handle(
-                new ClientMessage.ReadEventsForwardCompleted(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream",
                     new[]
                         {
@@ -144,7 +144,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
         public void can_handle_following_read_events_completed()
         {
             _edp.Handle(
-                new ClientMessage.ReadEventsForwardCompleted(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream",
                     new[]
                         {

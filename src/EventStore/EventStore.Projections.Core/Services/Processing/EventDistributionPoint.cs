@@ -32,8 +32,8 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class EventDistributionPoint : IHandle<ClientMessage.ReadEventsForwardCompleted>,
-                                                   IHandle<ClientMessage.ReadEventsFromTFCompleted>,
+    public abstract class EventDistributionPoint : IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
+                                                   IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
                                                    IDisposable
     {
         protected readonly Guid _distibutionPointCorrelationId;
@@ -51,8 +51,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public abstract void Resume();
         public abstract void Pause();
-        public abstract void Handle(ClientMessage.ReadEventsForwardCompleted message);
-        public abstract void Handle(ClientMessage.ReadEventsFromTFCompleted message);
+        public abstract void Handle(ClientMessage.ReadStreamEventsForwardCompleted message);
+        public abstract void Handle(ClientMessage.ReadAllEventsForwardCompleted message);
         public abstract void Dispose();
 
     }

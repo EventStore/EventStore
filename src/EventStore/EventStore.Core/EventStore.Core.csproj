@@ -80,6 +80,7 @@
     <Compile Include="Data\EventNumber.cs" />
     <Compile Include="Data\EventRecord.cs" />
     <Compile Include="Data\ResolvedEventRecord.cs" />
+    <Compile Include="Data\TFPos.cs" />
     <Compile Include="Exceptions\BadChunkInDatabaseException.cs" />
     <Compile Include="Exceptions\ChunkNotFoundException.cs" />
     <Compile Include="Exceptions\CorruptIndexException.cs" />

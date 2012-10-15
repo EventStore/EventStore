@@ -45,13 +45,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private const string _projectionCheckpointStream = "$projections-projection-checkpoint";
         private CoreProjection _coreProjection;
         private InMemoryBus _bus;
-        private TestMessageHandler<ClientMessage.ReadEventsBackwards> _listEventsHandler;
+        private TestMessageHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 
         [SetUp]
         public void setup()
         {
             _bus = new InMemoryBus("bus");
-            _listEventsHandler = new TestMessageHandler<ClientMessage.ReadEventsBackwards>();
+            _listEventsHandler = new TestMessageHandler<ClientMessage.ReadStreamEventsBackward>();
             _bus.Subscribe(_listEventsHandler);
             _coreProjection = new CoreProjection(
                 "projection", Guid.NewGuid(), _bus, new FakeProjectionStateHandler(),
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void should_accept_no_event_stream_response()
         {
             _coreProjection.Handle(
-                new ClientMessage.ReadEventsBackwardsCompleted(
+                new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
                     _listEventsHandler.HandledMessages[0].EventStreamId, new EventRecord[0], null,
                     RangeReadResult.NoStream, -1, 1000));
@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void should_accept_events_not_found_response()
         {
             _coreProjection.Handle(
-                new ClientMessage.ReadEventsBackwardsCompleted(
+                new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
                     _listEventsHandler.HandledMessages[0].EventStreamId, new EventRecord[0], null,
                     RangeReadResult.Success, -1, 1000));

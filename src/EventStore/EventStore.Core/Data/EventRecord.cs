@@ -64,7 +64,6 @@ namespace EventStore.Core.Data
                    prepare.Data,
                    prepare.Metadata)
         {
-            
         }
 
         public EventRecord(int eventNumber, 

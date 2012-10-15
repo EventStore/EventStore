@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using System.IO;
 using System.Net;
 using EventStore.Common.Settings;
@@ -43,6 +45,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Services.VNode;
 using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 
@@ -93,15 +96,10 @@ namespace EventStore.Core
                                             maxSizeForMemory: 1000000,
                                             maxTablesPerLevel: 2);
 
-            var readIndex = new ReadIndex(_mainQueue,
-                                          pos => new TFChunkChaser(db, db.Config.WriterCheckpoint, new InMemoryCheckpoint(pos)),
-                                          () => new TFChunkReader(db, db.Config.WriterCheckpoint),
-                                          TFConsts.ReadIndexReaderCount,
-                                          tableIndex,
-                                          new XXHashUnsafe());
+            var readIndex = new ReadIndex(_mainQueue, TFConsts.ReadIndexReaderCount, () => new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0), () => new TFChunkReader(db, db.Config.WriterCheckpoint), tableIndex, new XXHashUnsafe());
             var writer = new TFChunkWriter(db);
             var storageWriter = new StorageWriter(_mainQueue, _outputBus, writer, readIndex);
-            var storageReader = new StorageReader(_mainQueue, _outputBus, readIndex, TFConsts.StorageReaderHandlerCount);
+            var storageReader = new StorageReader(_mainQueue, _outputBus, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
             var chaser = new TFChunkChaser(db,

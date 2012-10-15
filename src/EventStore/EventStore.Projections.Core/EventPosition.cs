@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Core.Data;
 
 namespace EventStore.Projections.Core
 {
@@ -40,6 +41,11 @@ namespace EventStore.Projections.Core
             // do not compare - required to deserialize in any order
             _commitPosition = commitPosition;
             _preparePosition = preparePosition;
+        }
+
+        public static implicit operator EventPosition(TFPos pos)
+        {
+            return new EventPosition(pos.CommitPosition, pos.PreparePosition);
         }
 
         public long CommitPosition

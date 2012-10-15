@@ -59,6 +59,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                               correlationId: _correlationId,
                                               eventId: _eventId,
                                               transactionPosition: 0,
+                                              transactionOffset: 0,
                                               eventStreamId: "WorldEnding",
                                               expectedVersion: 1234,
                                               timeStamp: new DateTime(2012, 12, 21),

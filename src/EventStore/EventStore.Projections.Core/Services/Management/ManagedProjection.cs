@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher;
 
         private readonly
-            RequestResponseDispatcher<ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>
+            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
             _readDispatcher;
 
 
@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Services.Management
             IPublisher coreQueue, 
             Guid id, string name, ILogger logger,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            RequestResponseDispatcher<ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>
+            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
                 readDispatcher, IPublisher publisher, ProjectionStateHandlerFactory projectionStateHandlerFactory)
         {
             if (id == Guid.Empty) throw new ArgumentException("id");
@@ -258,11 +258,11 @@ namespace EventStore.Projections.Core.Services.Management
         private void BeginLoad(string name)
         {
             _readDispatcher.Publish(
-                new ClientMessage.ReadEventsBackwards(
+                new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), new PublishEnvelope(_publisher), "$projections-" + name, -1, 1, resolveLinks: false), LoadCompleted);
         }
 
-        private void LoadCompleted(ClientMessage.ReadEventsBackwardsCompleted completed)
+        private void LoadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed)
         {
             if (completed.Result == RangeReadResult.Success && completed.Events.Length == 1)
             {

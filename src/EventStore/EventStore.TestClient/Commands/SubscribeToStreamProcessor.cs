@@ -68,18 +68,16 @@ namespace EventStore.TestClient.Commands
             if (args.Length == 0)
             {
                 context.Log.Info("SUBSCRIBING TO ALL STREAMS...");
-                var corrid = Guid.NewGuid();
-                var cmd = new ClientMessageDto.SubscribeToAllStreams(corrid);
-                connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToAllStreams, corrid, cmd.Serialize()).AsByteArray());
+                var cmd = new ClientMessageDto.SubscribeToAllStreams();
+                connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToAllStreams, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
             }
             else
             {
                 foreach (var stream in args)
                 {
                     context.Log.Info("SUBSCRIBING TO STREAM <{0}>...", stream);
-                    var corrid = Guid.NewGuid();
-                    var cmd = new ClientMessageDto.SubscribeToStream(corrid, stream);
-                    connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, corrid, cmd.Serialize()).AsByteArray());
+                    var cmd = new ClientMessageDto.SubscribeToStream(stream);
+                    connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
                 }
             }
 

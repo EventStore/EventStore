@@ -100,6 +100,7 @@ namespace EventStore.TestClient
             
             _commands.Register(new DeleteProcessor());
 
+            _commands.Register(new ReadAllProcessor());
             _commands.Register(new ReadProcessor());
             _commands.Register(new ReadFloodProcessor());
 

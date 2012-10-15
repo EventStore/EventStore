@@ -70,9 +70,9 @@ namespace EventStore.SingleNode
                     inputQueue: coreQueue, externalRequestQueue: mainQueue);
                 // forwarded messages
                 projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEvent>(forwarder);
-                projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEventsBackwards>(forwarder);
-                projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEventsForward>(forwarder);
-                projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEventsFromTF>(forwarder);
+                projectionNode.CoreOutput.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
+                projectionNode.CoreOutput.Subscribe<ClientMessage.ReadStreamEventsForward>(forwarder);
+                projectionNode.CoreOutput.Subscribe<ClientMessage.ReadAllEventsForward>(forwarder);
                 projectionNode.CoreOutput.Subscribe<ClientMessage.WriteEvents>(forwarder);
                 projectionNode.CoreOutput.Subscribe(Forwarder.Create<ProjectionMessage.Projections.Management.StateReport>(mainQueue));
                 projectionNode.CoreOutput.Subscribe(Forwarder.Create<ProjectionMessage.Projections.Management.StatisticsReport>(mainQueue));
