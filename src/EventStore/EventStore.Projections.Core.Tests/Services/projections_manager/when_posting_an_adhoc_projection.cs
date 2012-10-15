@@ -27,6 +27,7 @@
 // 
 
 using System.Linq;
+using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
@@ -45,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void setup()
         {
             _publisher = new FakePublisher();
-            _manager = new ProjectionManager(_publisher, checkpointForStatistics: null);
+            _manager = new ProjectionManager(_publisher, new IPublisher[] { _publisher }, checkpointForStatistics: null);
 
             _manager.Handle(new ProjectionManagementMessage.Post(new PublishEnvelope(_publisher), @"log(1);", enabled: true));
         }

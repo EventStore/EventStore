@@ -36,10 +36,10 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<ClientMessage.ReadEventsBackwardsCompleted>(_projectionManager);
         }
 
-        public static ProjectionManagerNode Create(TFChunkDb db, QueuedHandler mainQueue, HttpService httpService)
+        public static ProjectionManagerNode Create(TFChunkDb db, QueuedHandler mainQueue, HttpService httpService, IPublisher[] queues)
         {
             var projectionManagerNode =
-                new ProjectionManagerNode(new ProjectionManager(mainQueue, db.Config.WriterCheckpoint));
+                new ProjectionManagerNode(new ProjectionManager(mainQueue, queues, db.Config.WriterCheckpoint));
             httpService.SetupController(new ProjectionsController(mainQueue));
 
             return projectionManagerNode;

@@ -46,6 +46,10 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionMessage.Projections.PauseProjectionSubscription>,
                                          IHandle<ProjectionMessage.Projections.ResumeProjectionSubscription>,
                                          IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
+                                         IHandle<ProjectionMessage.CoreService.Management.Create>,
+                                         IHandle<ProjectionMessage.CoreService.Management.Dispose>,
+                                         IHandle<ProjectionMessage.Projections.Management.Start>,
+                                         IHandle<ProjectionMessage.Projections.Management.Stop>,
                                          IHandle<ClientMessage.ReadEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadEventsFromTFCompleted>
 
@@ -58,8 +62,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly ICheckpoint _writerCheckpoint;
 
-        private readonly Dictionary<Guid, ProjectionSubscription> _projections =
+        private readonly Dictionary<Guid, ProjectionSubscription> _subscriptions =
             new Dictionary<Guid, ProjectionSubscription>();
+
+        private readonly Dictionary<Guid, CoreProjection> _projections =
+            new Dictionary<Guid, CoreProjection>();
 
         private readonly Dictionary<Guid, EventDistributionPoint> _distributionPoints =
             new Dictionary<Guid, EventDistributionPoint>();
@@ -106,7 +113,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_pausedProjections.Add(message.CorrelationId))
                 throw new InvalidOperationException("Already paused projection");
-            var projectionSubscription = _projections[message.CorrelationId];
+            var projectionSubscription = _subscriptions[message.CorrelationId];
             var distributionPointId = _projectionDistributionPoints[message.CorrelationId];
             if (distributionPointId == Guid.Empty) // head
             {
@@ -142,7 +149,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var projectionSubscription = new ProjectionSubscription(
                 message.CorrelationId, fromCheckpointTag, message.Subscriber, message.Subscriber,
                 message.CheckpointStrategy, message.CheckpointUnhandledBytesThreshold);
-            _projections.Add(message.CorrelationId, projectionSubscription);
+            _subscriptions.Add(message.CorrelationId, projectionSubscription);
 
             bool subscribedHeading = _headingEventDistributionPoint.TrySubscribe(
                 message.CorrelationId, projectionSubscription, fromCheckpointTag);
@@ -172,7 +179,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _pausedProjections.Remove(message.CorrelationId);
             _projectionDistributionPoints.Remove(message.CorrelationId);
-            _projections.Remove(message.CorrelationId);
+            _subscriptions.Remove(message.CorrelationId);
         }
 
         public void Handle(ProjectionMessage.CoreService.Tick message)
@@ -206,7 +213,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (TrySubscribeHeadingDistributionPoint(message, projectionId)) 
                 return;
             if (message.Data != null) // means notification about the end of the stream/source
-                _projections[projectionId].Handle(message);
+                _subscriptions[projectionId].Handle(message);
         }
 
         private bool TrySubscribeHeadingDistributionPoint(ProjectionMessage.Projections.CommittedEventReceived message, Guid projectionId)
@@ -214,7 +221,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_pausedProjections.Contains(projectionId)) 
                 return false;
 
-            var projectionSubscription = _projections[projectionId];
+            var projectionSubscription = _subscriptions[projectionId];
 
             if (!_headingEventDistributionPoint.TrySubscribe(
                 projectionId, projectionSubscription, projectionSubscription.MakeCheckpointTag(message)))
@@ -226,6 +233,45 @@ namespace EventStore.Projections.Core.Services.Processing
             _distributionPointSubscriptions.Remove(distributionPointId);
             _projectionDistributionPoints[projectionId] = Guid.Empty;
             return true;
+        }
+
+        public void Handle(ProjectionMessage.CoreService.Management.Create message)
+        {
+            try
+            {
+                //TODO: factory method can throw!
+                IProjectionStateHandler stateHandler = message.HandlerFactory();
+                // constructor can fail if wrong source defintion
+                //TODO: revise it
+                var projection = new CoreProjection(message.Name, message.CorrelationId, _publisher, stateHandler, message.Config, _logger);
+                _projections.Add(message.CorrelationId, projection);
+            }
+            catch (Exception ex)
+            {
+                message.Envelope.ReplyWith(new ProjectionMessage.Projections.Faulted(message.CorrelationId, ex.Message));
+            }
+        }
+
+        public void Handle(ProjectionMessage.CoreService.Management.Dispose message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.CorrelationId, out projection))
+            {
+                _projections.Remove(message.CorrelationId);
+                projection.Dispose();
+            }
+        }
+
+        public void Handle(ProjectionMessage.Projections.Management.Start message)
+        {
+            var projection = _projections[message.CorrelationId];
+            projection.Start();
+        }
+
+        public void Handle(ProjectionMessage.Projections.Management.Stop message)
+        {
+            var projection = _projections[message.CorrelationId];
+            projection.Stop();
         }
     }
 }

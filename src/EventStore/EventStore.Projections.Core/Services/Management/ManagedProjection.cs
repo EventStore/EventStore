@@ -66,6 +66,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private readonly ILogger _logger;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
+        private readonly IPublisher _coreQueue;
         private readonly Guid _id;
         private readonly string _name;
         private CoreProjection _coreProjection;
@@ -76,6 +77,7 @@ namespace EventStore.Projections.Core.Services.Management
         private Action _stopCompleted;
 
         public ManagedProjection(
+            IPublisher coreQueue, 
             Guid id, string name, ILogger logger,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             RequestResponseDispatcher<ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>
@@ -84,6 +86,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (id == Guid.Empty) throw new ArgumentException("id");
             if (name == null) throw new ArgumentNullException("name");
             if (name == "") throw new ArgumentException("name");
+            _coreQueue = coreQueue;
             _id = id;
             _name = name;
             _logger = logger;
@@ -125,8 +128,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Dispose()
         {
-            if (_coreProjection != null)
-                _coreProjection.Dispose();
+            DisposeCoreProjection();
         }
 
         public ProjectionMode GetMode()
@@ -315,24 +317,13 @@ namespace EventStore.Projections.Core.Services.Management
             if (Enabled)
             {
                 var config = CreateDefaultProjectionConfiguration(GetMode());
-                Start(_publisher, _projectionStateHandlerFactory, config);
+                Start(_projectionStateHandlerFactory, config);
             }
         }
 
         private void DisposeCoreProjection()
         {
-            if (_coreProjection != null)
-            {
-                try
-                {
-                    _coreProjection.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    _logger.ErrorException(ex, "Failed to dispose core projection: {0}", _name);
-                }
-            }
-            _coreProjection = null;
+            _coreQueue.Publish(new ProjectionMessage.CoreService.Management.Dispose(_id));
         }
 
         /// <summary>
@@ -361,41 +352,41 @@ namespace EventStore.Projections.Core.Services.Management
             Query = query;
         }
 
-        private void Start(IPublisher coreOutput, ProjectionStateHandlerFactory handlerFactory, ProjectionConfig config)
+        private void Start(ProjectionStateHandlerFactory handlerFactory, ProjectionConfig config)
         {
-            if (coreOutput == null) throw new ArgumentNullException("coreOutput");
             if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
             if (config == null) throw new ArgumentNullException("config");
 
-            if (_coreProjection != null)
-                throw new InvalidOperationException("CoreProjection has been already created");
-
-            IProjectionStateHandler stateHandler = null;
-            try
-            {
-                stateHandler = handlerFactory.Create(HandlerType, Query, Console.WriteLine);
-                var checkpointStrategyBuilder = new CheckpointStrategy.Builder();
-                stateHandler.ConfigureSourceProcessingStrategy(checkpointStrategyBuilder);
-                checkpointStrategyBuilder.Validate(this.Mode); // avoid future exceptions in coreprojection
-                // constructor can fail if wrong source defintion
-                //TODO: revise it
-                _coreProjection = new CoreProjection(_name, _id, coreOutput, stateHandler, config, _logger);
-            }
-            catch (Exception ex)
-            {
-                SetFaulted(
-                    String.Format(
-                        "Cannot create a projection state handler.\r\n\r\nHandler type: {0}\r\nQuery:\r\n\r\n{1}\r\n\r\nMessage:\r\n\r\n{2}",
-                        HandlerType, Query, ex.Message), ex);
-                if (stateHandler != null)
-                    stateHandler.Dispose();
-                return;
-            }
+            if (_state == ManagedProjectionState.Running)
+                throw new InvalidOperationException("Already started");
 
             //TODO: load configuration from the definition
-            _state = ManagedProjectionState.Running;
+
+
+            var createProjectionMessage = new ProjectionMessage.CoreService.Management.Create(new PublishEnvelope(_publisher), _id, _name, config, delegate
+                {
+                    IProjectionStateHandler stateHandler = null;
+                    try
+                    {
+                        stateHandler = handlerFactory.Create(this.HandlerType, this.Query, Console.WriteLine);
+                        var checkpointStrategyBuilder = new CheckpointStrategy.Builder();
+                        stateHandler.ConfigureSourceProcessingStrategy(checkpointStrategyBuilder);
+                        checkpointStrategyBuilder.Validate(Mode); // avoid future exceptions in coreprojection
+                        return stateHandler;
+                    }
+                    catch (Exception ex)
+                    {
+                        SetFaulted(String.Format("Cannot create a projection state handler.\r\n\r\nHandler type: {0}\r\nQuery:\r\n\r\n{1}\r\n\r\nMessage:\r\n\r\n{2}", HandlerType, Query, ex.Message), ex);
+                        if (stateHandler != null)
+                            stateHandler.Dispose();
+                        throw;
+                    }
+                });
+
             //note: set runnign before start as coreProjection.start() can respond with faulted
-            _coreProjection.Start();
+            _state = ManagedProjectionState.Running;
+            _coreQueue.Publish(createProjectionMessage);
+            _coreQueue.Publish(new ProjectionMessage.Projections.Management.Start(_id));
         }
 
         private void Stop(Action completed)
@@ -418,7 +409,7 @@ namespace EventStore.Projections.Core.Services.Management
                 case ManagedProjectionState.Running:
                     _state = ManagedProjectionState.Stopping;
                     _stopCompleted = completed;
-                    _coreProjection.Stop();
+                    _coreQueue.Publish(new ProjectionMessage.Projections.Management.Stop(_id));
                     break;
                 default:
                     throw new NotSupportedException();

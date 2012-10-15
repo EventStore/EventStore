@@ -27,6 +27,7 @@
 // 
 
 using System.Linq;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
@@ -51,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [SetUp]
         public void setup()
         {
-            _manager = new ProjectionManager(_bus, checkpointForStatistics: null);
+            _manager = new ProjectionManager(_bus, new IPublisher[]{_bus}, checkpointForStatistics: null);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _projectionName = "test-projection";
             _manager.Handle(

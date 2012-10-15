@@ -31,6 +31,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
@@ -104,9 +105,38 @@ namespace EventStore.Projections.Core.Messages
             {
                 public class Create : ManagementMessage
                 {
-                    public Create(Guid correlationId)
+                    private readonly IEnvelope _envelope;
+                    private readonly ProjectionConfig _config;
+                    private readonly Func<IProjectionStateHandler> _handlerFactory;
+                    private readonly string _name;
+
+                    public Create(IEnvelope envelope, Guid correlationId, string name, ProjectionConfig config, Func<IProjectionStateHandler> handlerFactory)
                         : base(correlationId)
                     {
+                        _envelope = envelope;
+                        _name = name;
+                        _config = config;
+                        _handlerFactory = handlerFactory;
+                    }
+
+                    public ProjectionConfig Config
+                    {
+                        get { return _config; }
+                    }
+
+                    public Func<IProjectionStateHandler> HandlerFactory
+                    {
+                        get { return _handlerFactory; }
+                    }
+
+                    public string Name
+                    {
+                        get { return _name; }
+                    }
+
+                    public IEnvelope Envelope
+                    {
+                        get { return _envelope; }
                     }
                 }
 

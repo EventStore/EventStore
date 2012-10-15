@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _consumer = new WatchingConsumer();
             _bus.Subscribe(_consumer);
 
-            _manager = new ProjectionManager(_bus, checkpointForStatistics: null);
+            _manager = new ProjectionManager(_bus, new IPublisher[] { _bus }, checkpointForStatistics: null);
             _bus.Subscribe<ProjectionMessage.Projections.Stopped>(_manager);
             _projectionName = "test-projection";
             _manager.Handle(

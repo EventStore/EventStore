@@ -27,6 +27,7 @@
 // 
 
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -34,9 +35,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Projections.Core;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
-using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.SingleNode
@@ -52,9 +51,10 @@ namespace EventStore.SingleNode
             _projectionWorkerThreadCount = projectionWorkerThreadCount;
         }
 
-        private void SetupMessaging(TFChunkDb db, QueuedHandler mainQueue, InMemoryBus mainBus, TimerService timerService, HttpService httpService)
+        private void SetupMessaging(
+            TFChunkDb db, QueuedHandler mainQueue, InMemoryBus mainBus, TimerService timerService,
+            HttpService httpService)
         {
-
             _coreQueues = new List<QueuedHandler>();
 
             while (_coreQueues.Count < _projectionWorkerThreadCount)
@@ -65,7 +65,8 @@ namespace EventStore.SingleNode
                 projectionNode.SetupMessaging(coreInputBus);
 
 
-                var forwarder = new RequestResponseQueueForwarder(inputQueue: coreQueue, externalRequestQueue: mainQueue);
+                var forwarder = new RequestResponseQueueForwarder(
+                    inputQueue: coreQueue, externalRequestQueue: mainQueue);
                 // forwarded messages
                 projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEvent>(forwarder);
                 projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEventsBackwards>(forwarder);
@@ -84,10 +85,9 @@ namespace EventStore.SingleNode
             }
 
 
-            var projectionManagerNode = ProjectionManagerNode.Create(db, mainQueue, httpService);
+            var projectionManagerNode = ProjectionManagerNode.Create(
+                db, mainQueue, httpService, _coreQueues.Cast<IPublisher>().ToArray());
             projectionManagerNode.SetupMessaging(mainBus);
-
-
         }
 
         public void Start()

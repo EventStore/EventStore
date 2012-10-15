@@ -353,7 +353,7 @@ namespace EventStore.Projections.Core.Services.Management
         private ManagedProjection CreateManagedProjectionInstance(string name)
         {
             var projectionCorrelationId = Guid.NewGuid();
-            var managedProjectionInstance = new ManagedProjection(
+            var managedProjectionInstance = new ManagedProjection(_queues[0], //TODO: route to appropriate queue
                 projectionCorrelationId, name, _logger, _writeDispatcher, _readDispatcher, _publisher,
                 _projectionStateHandlerFactory);
             _projectionsMap.Add(projectionCorrelationId, name);
