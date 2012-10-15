@@ -48,6 +48,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _responseEnvelope = request.Envelope;
             _correlationId = request.CorrelationId;
             _preparePos = request.TransactionId;
+            _eventStreamId = request.EventStreamId;
 
             Publisher.Publish(new ReplicationMessage.WriteTransactionPrepare(request.CorrelationId, _publishEnvelope, request.TransactionId, request.EventStreamId));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout, _publishEnvelope, new ReplicationMessage.PreparePhaseTimeout(_correlationId)));

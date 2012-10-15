@@ -63,6 +63,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Transport.Http
         }
 
         [Test]
+        [Category("Network")]
         public void start_after_system_message_system_init_published()
         {
             Assert.IsFalse(_portableServer.IsListening);
@@ -71,6 +72,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Transport.Http
         }
 
         [Test]
+        [Category("Network")]
         public void ignore_any_shutdown_messages()
         {
             _portableServer.Publish(new SystemMessage.SystemInit());
@@ -82,6 +84,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Transport.Http
         }
 
         [Test]
+        [Category("Network")]
         public void reply_with_404_to_every_request_when_there_are_no_registered_controllers()
         {
             var requests = new[] {"/ping", "/streams", "/gossip", "/stuff", "/notfound", "/magic/url.exe"};
@@ -117,6 +120,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Transport.Http
         }
 
         [Test]
+        [Category("Network")]
         public void handle_invalid_characters_in_url()
         {
             var url = _serverEndPoint.ToHttpUrl("/ping^\"");

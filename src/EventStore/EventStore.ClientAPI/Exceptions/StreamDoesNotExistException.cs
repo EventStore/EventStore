@@ -26,21 +26,27 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using System;
+using System.Runtime.Serialization;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Exceptions
 {
-    public interface IEventsProducer
+    public class StreamDoesNotExistException : Exception
     {
-        void AppendToStream(string stream, int expectedVersion, IEnumerable<IEvent> events);
-        Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<IEvent> events);
+        public StreamDoesNotExistException()
+        {
+        }
 
-        EventStoreTransaction StartTransaction(string stream, int expectedVersion);
-        Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion);
-        void TransactionalWrite(long transactionId, string stream, IEnumerable<IEvent> events);
-        Task TransactionalWriteAsync(long transactionId, string stream, IEnumerable<IEvent> events);
-        void CommitTransaction(long transactionId, string stream);
-        Task CommitTransactionAsync(long transactionId, string stream);
+        public StreamDoesNotExistException(string message) : base(message)
+        {
+        }
+
+        public StreamDoesNotExistException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected StreamDoesNotExistException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
     }
 }

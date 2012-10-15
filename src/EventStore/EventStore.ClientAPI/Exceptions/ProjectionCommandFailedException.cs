@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,55 +24,31 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//  
 
 using System;
-using System.Text;
-using EventStore.Core.Data;
-using EventStore.Projections.Core.Messages;
-using NUnit.Framework;
+using System.Runtime.Serialization;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection
+namespace EventStore.ClientAPI.Exceptions
 {
-    [TestFixture]
-    public class when_receiving_a_committed_event_not_passing_a_filter_the_projection_should :
-        TestFixtureWithCoreProjection
+    public class ProjectionCommandFailedException : Exception
     {
-        private Guid _eventId;
-
-        protected override void Given()
+        public ProjectionCommandFailedException()
         {
-            _configureBuilderByQuerySource = source =>
-                {
-                    source.FromAll();
-                    source.IncludeEvent("non-existing");
-                };
-            NoStream("$projections-projection-state");
-            NoStream("$projections-projection-checkpoint");
         }
 
-        protected override void When()
+        public ProjectionCommandFailedException(string message) : base(message)
         {
-            //projection subscribes here
-            _eventId = Guid.NewGuid();
-            _coreProjection.Handle(
-                new ProjectionMessage.Projections.CommittedEventReceived(
-                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, "/event_category/1", -1, false,
-                    new Event(
-                        _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                        Encoding.UTF8.GetBytes("metadata"))));
         }
 
-        [Test]
-        public void not_update_state_snapshot_at_correct_position()
+        public ProjectionCommandFailedException(string message,
+                 Exception innerException) : base(message, innerException)
         {
-            Assert.AreEqual(0, _writeEventHandler.HandledMessages.Count);
         }
 
-        [Test]
-        public void not_pass_event_to_state_handler()
+        protected ProjectionCommandFailedException(SerializationInfo info,
+                    StreamingContext context) : base(info, context)
         {
-            Assert.AreEqual(0, _stateHandler._eventsProcessed);
         }
     }
 }

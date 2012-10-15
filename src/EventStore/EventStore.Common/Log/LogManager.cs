@@ -47,7 +47,7 @@ namespace EventStore.Common.Log
 
         public static ILogger GetLoggerFor<T>()
         {
-            return GetLogger(typeof (T).Name);
+            return GetLogger(typeof(T).Name);
         }
 
         public static ILogger GetLogger(string logName)
@@ -63,7 +63,7 @@ namespace EventStore.Common.Log
 
             _Initialized = true;
 
-            SetLogsDirectoryIfNeeded(logsDirectory);
+            SetLogsDirectoryInternal(logsDirectory);
             SetComponentName(componentName);
             RegisterGlobalExceptionHandler();
         }
@@ -79,15 +79,10 @@ namespace EventStore.Common.Log
                 throw new InvalidOperationException("Init method must be called");
         }
 
-        private static void SetLogsDirectoryIfNeeded(string logsDirectory)
+        private static void SetLogsDirectoryInternal(string logsDirectory)
         {
             const string logsDirEnvVar = Constants.EnvVarPrefix + Constants.EnvVarLogsSuffix;
-            var directory = Environment.GetEnvironmentVariable(logsDirEnvVar);
-            if (directory == null)
-            {
-                directory = logsDirectory;
-                Environment.SetEnvironmentVariable(logsDirEnvVar, directory, EnvironmentVariableTarget.Process);
-            }
+            Environment.SetEnvironmentVariable(logsDirEnvVar, logsDirectory, EnvironmentVariableTarget.Process);
         }
 
         private static void SetComponentName(string componentName)

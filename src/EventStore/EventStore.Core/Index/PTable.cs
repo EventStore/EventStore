@@ -40,7 +40,7 @@ using EventStore.Core.Util;
 
 namespace EventStore.Core.Index
 {
-    internal enum FileType
+    public enum FileType
     {
         PTableFile = 1,
         ChunkFile = 2

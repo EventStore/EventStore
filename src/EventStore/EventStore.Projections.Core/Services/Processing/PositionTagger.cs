@@ -25,7 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
+
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -46,9 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new CheckpointTag(new EventPosition(0, -1));
         }
-    }
 
-    public class TransactionFilePositionTagger : PositionTagger
-    {
+        public abstract bool IsCompatible(CheckpointTag checkpointTag);
     }
 }

@@ -750,7 +750,7 @@ namespace EventStore.Common.CommandLine.lib
 
                 ArgumentParser.EnsureOptionArrayAttributeIsNotBoundToScalar(option);
 
-                if (!option.IsBoolean)
+                if (!option.IsBoolean && !option.IsNullableBoolean)
                 {
                     if (argumentEnumerator.IsLast && group.IsLast)
                         return ParserState.Failure;
@@ -1085,6 +1085,11 @@ namespace EventStore.Common.CommandLine.lib
         public bool IsBoolean
         {
             get { return _property.PropertyType == typeof(bool); }
+        }
+
+        public bool IsNullableBoolean
+        {
+            get { return _property.PropertyType == typeof(bool?); }
         }
 
         public bool IsArray

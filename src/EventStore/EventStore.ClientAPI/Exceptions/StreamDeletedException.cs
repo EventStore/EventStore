@@ -1,10 +1,10 @@
 ﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,22 +24,29 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
 using System;
-using System.Threading.Tasks;
+using System.Runtime.Serialization;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Exceptions
 {
-    public interface IEventsConsumer
+    public class StreamDeletedException : Exception
     {
-        EventStreamSlice ReadEventStream(string stream, int start, int count);
-        Task<EventStreamSlice> ReadEventStreamAsync(string stream, int start, int count);
+        public StreamDeletedException()
+        {
+        }
 
-        Task SubscribeAsync(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped);
-        void Unsubscribe(string stream);
+        public StreamDeletedException(string message) : base(message)
+        {
+        }
 
-        Task SubscribeToAllStreamsAsync(Action<RecordedEvent> eventAppeared, Action subscriptionDropped);
-        void UnsubscribeFromAllStreams();
+        public StreamDeletedException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected StreamDeletedException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
     }
 }

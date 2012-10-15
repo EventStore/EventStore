@@ -33,7 +33,6 @@ namespace EventStore.Projections.Core.Services.Processing
     public class PositionTracker
     {
         private readonly PositionTagger _positionTagger;
-        private EventPosition _lastEventPosition = new EventPosition(0, -1);
         private CheckpointTag _lastTag = null;
 
         public PositionTracker(PositionTagger positionTagger)
@@ -41,22 +40,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _positionTagger = positionTagger;
         }
 
-        //NOTE: to be used for statistics (90% done)
-        public EventPosition LastEventPosition
-        {
-            get { return _lastEventPosition; }
-        }
-
         public CheckpointTag LastTag
         {
             get { return _lastTag; }
-        }
-
-        public void Update(ProjectionMessage.Projections.CommittedEventReceived comittedEvent)
-        {
-            var newTag = _positionTagger.MakeCheckpointTag(comittedEvent);
-            UpdateByCheckpointTagForward(newTag);
-            UpdatePosition(comittedEvent.Position);
         }
 
         public void UpdateByCheckpointTagForward(CheckpointTag newTag)
@@ -67,28 +53,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastTag = newTag;
         }
 
-        public void UpdatePosition(EventPosition position)
-        {
-            if (position.PreparePosition <= _lastEventPosition.PreparePosition) // handle prepare only
-                throw new InvalidOperationException(
-                    string.Format("Event at position {0} has been already processed", position));
-            _lastEventPosition = position;
-        }
-
-        public void UpdateToZero()
-        {
-            var zero = new EventPosition(0, -1);
-            if (_lastEventPosition != zero || _lastTag != null)
-                throw new InvalidOperationException("Posistion tagger has be already updated");
-            _lastTag = _positionTagger.MakeZeroCheckpointTag();
-        }
-
         public void UpdateByCheckpointTag(CheckpointTag checkpointTag)
         {
-            var zero = new EventPosition(0, -1);
-            if (_lastEventPosition != zero || _lastTag != null)
+            if (_lastTag != null)
                 throw new InvalidOperationException("Posistion tagger has be already updated");
-            _lastEventPosition = checkpointTag.Position;
+            if (!_positionTagger.IsCompatible(checkpointTag))
+                throw new InvalidOperationException("Cannot update by incompatible checkpoint tag");
             _lastTag = checkpointTag;
         }
     }

@@ -59,8 +59,9 @@ namespace EventStore.Core.TransactionLog.Chunks
         public bool IsCached { get { return _cached; } }
         public int ActualDataSize { get { return _actualDataSize; } }
         public string FileName { get { return _filename; } }
-        internal ChunkHeader ChunkHeader { get { return _chunkHeader; } }
-        internal ChunkFooter ChunkFooter { get { return _chunkFooter; } }
+
+        public ChunkHeader ChunkHeader { get { return _chunkHeader; } }
+        public ChunkFooter ChunkFooter { get { return _chunkFooter; } }
         
         private readonly string _filename;
         private volatile bool _isReadonly;
@@ -292,20 +293,23 @@ namespace EventStore.Core.TransactionLog.Chunks
             var workItem = GetReaderWorkItem();
             try
             {
-                workItem.Stream.Seek(0, SeekOrigin.Begin);
                 var header = ReadHeader(workItem.Stream);
                 var footer = ReadFooter(workItem.Stream);
 
                 byte[] hash;
                 using (var md5 = MD5.Create())
                 {
+                    workItem.Stream.Seek(0, SeekOrigin.Begin);
                     // hash header and data
-                    MD5Hash.ContinuousHashFor(md5, workItem.Stream, 0, ChunkHeader.Size + header.ChunkSize);
-                    // hash footer except MD5 hash sum which should always be last
                     MD5Hash.ContinuousHashFor(md5,
                                               workItem.Stream,
-                                              ChunkHeader.Size + header.ChunkSize,
-                                              ChunkFooter.Size - ChunkFooter.ChecksumSize);
+                                              0,
+                                              ChunkHeader.Size + footer.ActualDataSize);
+                    // hash mapping and footer except MD5 hash sum which should always be last
+                    MD5Hash.ContinuousHashFor(md5,
+                                              workItem.Stream,
+                                              ChunkHeader.Size + footer.ActualChunkSize,
+                                              footer.MapSize + ChunkFooter.Size - ChunkFooter.ChecksumSize);
                     md5.TransformFinalBlock(new byte[0], 0, 0);
                     hash = md5.Hash;
                 }

@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -36,10 +37,12 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.System;
+using EventStore.ClientAPI.Transport.Http;
 using EventStore.ClientAPI.Transport.Tcp;
 using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
 using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
 using System.Linq;
+using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
 namespace EventStore.ClientAPI
 {
@@ -69,13 +72,14 @@ namespace EventStore.ClientAPI
         }
     }
 
-    public class EventStoreConnection : IDisposable, IEventStore
+    public class EventStoreConnection : IProjectionsManagement,
+                                        IDisposable
     {
-        private const int MaxConcurrentItems = 5000;
         private const int MaxQueueSize = 5000;
 
-        private const int MaxAttempts = 10;
-        private const int MaxReconnections = 10;
+        private readonly int _maxConcurrentItems;
+        private readonly int _maxAttempts;
+        private readonly int _maxReconnections;
 
         private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(0.5);
         private static readonly TimeSpan EventTimeoutDelay = TimeSpan.FromSeconds(7);
@@ -89,7 +93,9 @@ namespace EventStore.ClientAPI
 
         private readonly SubscriptionsChannel _subscriptionsChannel;
         private readonly object _subscriptionChannelLock = new object();
-        
+
+        private readonly ProjectionsManager _projectionsManager;
+
         private readonly ConcurrentQueue<IClientOperation> _queue = new ConcurrentQueue<IClientOperation>();
         private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
         private int _inProgressCount;
@@ -102,21 +108,32 @@ namespace EventStore.ClientAPI
         private readonly Thread _worker;
         private volatile bool _stopping;
 
-        public int OutstandingAsyncOperations
+        public IProjectionsManagement Projections
         {
             get
             {
-                return _inProgressCount;
+                return this;
             }
         }
 
-        public EventStoreConnection(IPEndPoint tcpEndPoint)
+        public EventStoreConnection(IPEndPoint tcpEndPoint, 
+                                    int maxConcurrentRequests = 5000,
+                                    int maxAttemptsForOperation = 10,
+                                    int maxReconnections = 10)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+            Ensure.Positive(maxConcurrentRequests, "maxConcurrentRequests");
+            Ensure.Nonnegative(maxAttemptsForOperation, "maxAttemptsForOperation");
+            Ensure.Nonnegative(maxReconnections, "maxReconnections");
 
             _tcpEndPoint = tcpEndPoint;
+            _maxConcurrentItems = maxConcurrentRequests;
+            _maxAttempts = maxAttemptsForOperation;
+            _maxReconnections = maxReconnections;
+
             _connector = new TcpConnector(_tcpEndPoint);
             _subscriptionsChannel = new SubscriptionsChannel(_tcpEndPoint);
+            _projectionsManager = new ProjectionsManager(new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000));
 
             _lastReconnectionTimestamp = DateTime.UtcNow;
             _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
@@ -283,7 +300,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<EventStreamSlice>();
-            var operation = new ReadFromBeginningOperation(source, Guid.NewGuid(), stream, start, count);
+            var operation = new ReadFromBeginningOperation(source, Guid.NewGuid(), stream, start, count, true);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -322,6 +339,250 @@ namespace EventStore.ClientAPI
             _subscriptionsChannel.UnsubscribeFromAllStreams();
         }
 
+        void IProjectionsManagement.Enable(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).EnableAsync(name);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.EnableAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.Enable(name);
+        }
+
+        void IProjectionsManagement.Disable(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).DisableAsync(name);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.DisableAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.Disable(name);
+        }
+
+        void IProjectionsManagement.CreateOneTime(string query)
+        {
+            Ensure.NotNullOrEmpty(query, "query");
+
+            var task = ((IProjectionsManagement) this).CreateOneTimeAsync(query);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.CreateOneTimeAsync(string query)
+        {
+            Ensure.NotNullOrEmpty(query, "query");
+            return _projectionsManager.CreateOneTime(query);
+        }
+
+        void IProjectionsManagement.CreateAdHoc(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            var task = ((IProjectionsManagement) this).CreateAdHocAsync(name, query);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.CreateAdHocAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _projectionsManager.CreateAdHoc(name, query);
+        }
+
+        void IProjectionsManagement.CreateContinuous(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            var task = ((IProjectionsManagement) this).CreateContinuousAsync(name, query);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.CreateContinuousAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _projectionsManager.CreateContinious(name, query);
+        }
+
+        void IProjectionsManagement.CreatePersistent(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            var task = ((IProjectionsManagement) this).CreatePersistentAsync(name, query);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.CreatePersistentAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _projectionsManager.CreatePersistent(name, query);
+        }
+
+        string IProjectionsManagement.ListAll()
+        {
+            var task = ((IProjectionsManagement) this).ListAllAsync();
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.ListAllAsync()
+        {
+            return _projectionsManager.ListAll();
+        }
+
+        string IProjectionsManagement.ListOneTime()
+        {
+            var task = ((IProjectionsManagement) this).ListOneTimeAsync();
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.ListOneTimeAsync()
+        {
+            return _projectionsManager.ListOneTime();
+        }
+
+        string IProjectionsManagement.ListAdHoc()
+        {
+            var task = ((IProjectionsManagement) this).ListAdHocAsync();
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.ListAdHocAsync()
+        {
+            return _projectionsManager.ListAdHoc();
+        }
+
+        string IProjectionsManagement.ListContinuous()
+        {
+            var task = ((IProjectionsManagement) this).ListContinuousAsync();
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.ListContinuousAsync()
+        {
+            return _projectionsManager.ListContinuous();
+        }
+
+        string IProjectionsManagement.ListPersistent()
+        {
+            var task = ((IProjectionsManagement) this).ListPersistentAsync();
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.ListPersistentAsync()
+        {
+            return _projectionsManager.ListPersistent();
+        }
+
+        string IProjectionsManagement.GetStatus(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).GetStatusAsync(name);
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.GetStatusAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.GetStatus(name);
+        }
+
+        string IProjectionsManagement.GetState(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).GetStateAsync(name);
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.GetStateAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.GetState(name);
+        }
+
+        string IProjectionsManagement.GetStatistics(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).GetStatisticsAsync(name);
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.GetStatisticsAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.GetStatistics(name);
+        }
+
+        string IProjectionsManagement.GetQuery(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).GetQueryAsync(name);
+            task.Wait();
+            return task.Result;
+        }
+
+        Task<string> IProjectionsManagement.GetQueryAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.GetQuery(name);
+        }
+
+        void IProjectionsManagement.UpdateQuery(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            var task = ((IProjectionsManagement) this).UpdateQueryAsync(name, query);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.UpdateQueryAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _projectionsManager.UpdateQuery(name, query);
+        }
+
+        void IProjectionsManagement.Delete(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+
+            var task = ((IProjectionsManagement) this).DeleteAsync(name);
+            task.Wait();
+        }
+
+        Task IProjectionsManagement.DeleteAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _projectionsManager.Delete(name);
+        }
+
         private void EnqueueOperation(IClientOperation operation)
         {
             while (_queue.Count >= MaxQueueSize)
@@ -351,7 +612,7 @@ namespace EventStore.ClientAPI
             while (!_stopping)
             {
                 IClientOperation operation;
-                if (_inProgressCount < MaxConcurrentItems && _queue.TryDequeue(out operation))
+                if (_inProgressCount < _maxConcurrentItems && _queue.TryDequeue(out operation))
                 {
                     Interlocked.Increment(ref _inProgressCount);
                     Send(new WorkItem(operation));
@@ -364,8 +625,8 @@ namespace EventStore.ClientAPI
                     if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= ReconnectionDelay)
                     {
                         _reconnectionsCount += 1;
-                        if(_reconnectionsCount > MaxReconnections)
-                            throw new CannotEstablishConnectionException(string.Format("Tried {0} times without success", MaxReconnections));
+                        if(_reconnectionsCount > _maxReconnections)
+                            throw new CannotEstablishConnectionException();
 
                         _lastReconnectionTimestamp = DateTime.UtcNow;
                         _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
@@ -435,7 +696,7 @@ namespace EventStore.ClientAPI
                     inProgressItem.Attempt += 1;
                     Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
 
-                    if (inProgressItem.Attempt > MaxAttempts)
+                    if (inProgressItem.Attempt > _maxAttempts)
                         inProgressItem.Operation.Fail(new RetriesLimitReachedException(inProgressItem.Operation.ToString(),
                                                                                        inProgressItem.Attempt));
                     else
@@ -538,6 +799,10 @@ namespace EventStore.ClientAPI
 
         internal ManualResetEvent ConnectedEvent = new ManualResetEvent(false);
 
+        private Thread _executionThread;
+        private volatile bool _stopExecutionThread;
+        private readonly ConcurrentQueue<Action> _executionQueue = new ConcurrentQueue<Action>(); 
+
         private readonly ConcurrentDictionary<Guid, Subscription> _subscriptions = new ConcurrentDictionary<Guid, Subscription>();
 
         public SubscriptionsChannel(IPEndPoint tcpEndPoint)
@@ -549,12 +814,25 @@ namespace EventStore.ClientAPI
         public void Connect()
         {
             _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
+
+            if(_executionThread == null)
+            {
+                _executionThread = new Thread(ExecuteUserCallbacks)
+                                       {
+                                           IsBackground = true,
+                                           Name = "User callbacks execution thread in sub channel"
+                                       };
+                _executionThread.Start();
+            }
         }
 
         public void Close()
         {
             if(_connection != null)
                 _connection.Close();
+
+            if(_executionThread != null)
+                _stopExecutionThread = true;
         }
 
         public Task Subscribe(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
@@ -631,25 +909,30 @@ namespace EventStore.ClientAPI
             }
         }
 
-        private void RemoveDroppedSubscription(Subscription subscription)
-        {
-            Subscription removed;
-            _subscriptions.TryRemove(subscription.Id, out removed);
-        }
-
         private void ExecuteUserCallbackAsync(Action callback)
         {
-            ThreadPool.QueueUserWorkItem(_ =>
-                                             {
-                                                 try
-                                                 {
-                                                     callback();
-                                                 }
-                                                 catch (Exception e)
-                                                 {
-                                                     Debug.WriteLine("User callback thrown : {0}", e.StackTrace);
-                                                 }
-                                             });
+            _executionQueue.Enqueue(callback);
+        }
+
+        private void ExecuteUserCallbacks()
+        {
+            while (!_stopExecutionThread)
+            {
+                Action callback;
+                if (_executionQueue.TryDequeue(out callback))
+                {
+                    try
+                    {
+                        callback();
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine("User callback thrown : {0}", e);
+                    }
+                }
+                else
+                    Thread.Sleep(1);
+            }
         }
 
         private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
@@ -670,8 +953,12 @@ namespace EventStore.ClientAPI
                         break;
                     case TcpCommand.SubscriptionDropped:
                     case TcpCommand.SubscriptionToAllDropped:
-                        RemoveDroppedSubscription(subscription);
-                        ExecuteUserCallbackAsync(subscription.SubscriptionDropped);
+                        Subscription removed;
+                        if(_subscriptions.TryRemove(subscription.Id, out removed))
+                        {
+                            removed.Source.SetResult(null);
+                            ExecuteUserCallbackAsync(removed.SubscriptionDropped);
+                        }
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(string.Format("Unexpected command : {0}", package.Command));
@@ -696,7 +983,186 @@ namespace EventStore.ClientAPI
             _subscriptions.Clear();
 
             foreach (var subscription in subscriptions)
+            {
+                subscription.Source.SetResult(null);
                 ExecuteUserCallbackAsync(subscription.SubscriptionDropped);
+            }
+        }
+    }
+
+    internal class ProjectionsManager
+    {
+        private readonly IPEndPoint _httpEndPoint;
+        private readonly HttpAsyncClient _client = new HttpAsyncClient();
+
+        public ProjectionsManager(IPEndPoint httpEndPoint)
+        {
+            _httpEndPoint = httpEndPoint;
+        }
+
+        public Task Enable(string name)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projection/{0}/command/enable", name), string.Empty, HttpStatusCode.OK);
+        }
+
+        public Task Disable(string name)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projection/{0}/command/disable", name), string.Empty, HttpStatusCode.OK);
+        }
+
+        public Task CreateOneTime(string query)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projections/onetime?type=JS"), query, HttpStatusCode.Created);
+        }
+
+        public Task CreateAdHoc(string name, string query)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projections/adhoc?name={0}&type=JS", name), query, HttpStatusCode.Created);
+        }
+
+        public Task CreateContinious(string name, string query)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS", name), query, HttpStatusCode.Created);
+        }
+
+        public Task CreatePersistent(string name, string query)
+        {
+            return SendPost(_httpEndPoint.ToHttpUrl("/projections/persistent?name={0}&type=JS", name), query, HttpStatusCode.Created);
+        }
+
+        public Task<string> ListAll()
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projections/any"), HttpStatusCode.OK);
+        }
+
+        public Task<string> ListOneTime()
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projections/onetime"), HttpStatusCode.OK);
+        }
+
+        public Task<string> ListAdHoc()
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projections/adhoc"), HttpStatusCode.OK);
+        }
+
+        public Task<string> ListContinuous()
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projections/continuous"), HttpStatusCode.OK);
+        }
+
+        public Task<string> ListPersistent()
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projections/persistent"), HttpStatusCode.OK);
+        }
+
+        public Task<string> GetStatus(string name)
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}", name), HttpStatusCode.OK);
+        }
+
+        public Task<string> GetState(string name)
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}/state", name), HttpStatusCode.OK);
+        }
+
+        public Task<string> GetStatistics(string name)
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}/statistics", name), HttpStatusCode.OK);
+        }
+
+        public Task<string> GetQuery(string name)
+        {
+            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}/query", name), HttpStatusCode.OK);
+        }
+
+        public Task UpdateQuery(string name, string query)
+        {
+            return SendPut(_httpEndPoint.ToHttpUrl("/projection/{0}/query?type=JS", name), query, HttpStatusCode.OK);
+        }
+
+        public Task Delete(string name)
+        {
+            return SendDelete(_httpEndPoint.ToHttpUrl("/projection/{0}", name), HttpStatusCode.OK);
+        }
+
+        private Task<string> SendGet(string url, int expectedCode)
+        {
+            var source = new TaskCompletionSource<string>();
+            _client.Get(url,
+                        response =>
+                            {
+                                if (response.HttpStatusCode == expectedCode)
+                                    source.SetResult(response.Body);
+                                else
+                                    source.SetException(new ProjectionCommandFailedException(
+                                                            string.Format("Server returned : {0} ({1})",
+                                                                          response.HttpStatusCode,
+                                                                          response.StatusDescription)));
+                            },
+                        source.SetException);
+
+            return source.Task;
+        }
+
+        private Task<string> SendDelete(string url, int expectedCode)
+        {
+            var source = new TaskCompletionSource<string>();
+            _client.Delete(url,
+                           response =>
+                               {
+                                   if (response.HttpStatusCode == expectedCode)
+                                       source.SetResult(response.Body);
+                                   else
+                                       source.SetException(new ProjectionCommandFailedException(
+                                                               string.Format("Server returned : {0} ({1})",
+                                                                             response.HttpStatusCode,
+                                                                             response.StatusDescription)));
+                               },
+                           source.SetException);
+
+            return source.Task;
+        }
+
+        private Task SendPut(string url, string content, int expectedCode)
+        {
+            var source = new TaskCompletionSource<object>();
+            _client.Put(url,
+                        content,
+                        ContentType.Json,
+                        response =>
+                            {
+                                if (response.HttpStatusCode == expectedCode)
+                                    source.SetResult(null);
+                                else
+                                    source.SetException(new ProjectionCommandFailedException(
+                                                            string.Format("Server returned : {0} ({1})",
+                                                                          response.HttpStatusCode,
+                                                                          response.StatusDescription)));
+                            },
+                        source.SetException);
+
+            return source.Task;
+        }
+
+        private Task SendPost(string url, string content, int expectedCode)
+        {
+            var source = new TaskCompletionSource<object>();
+            _client.Post(url,
+                         content,
+                         ContentType.Json,
+                         response =>
+                             {
+                                 if (response.HttpStatusCode == expectedCode)
+                                     source.SetResult(null);
+                                 else
+                                     source.SetException(new ProjectionCommandFailedException(
+                                                             string.Format("Server returned : {0} ({1})",
+                                                                           response.HttpStatusCode,
+                                                                           response.StatusDescription)));
+                             },
+                         source.SetException);
+
+            return source.Task;
         }
     }
 }

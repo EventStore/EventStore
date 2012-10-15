@@ -47,13 +47,7 @@ namespace EventStore.Transport.Http.Client
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
-            var request = (HttpWebRequest) WebRequest.Create(url);
-
-            request.Method = HttpMethod.Get;
-            request.KeepAlive = false;//TODO TR : hangs on mono
-            request.Pipelined = false;
-
-            request.BeginGetResponse(ResponseAcquired, new ClientOperationState(request, onSuccess, onException));
+            Receive(HttpMethod.Get, url, onSuccess, onException);
         }
 
         public void Post(string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
@@ -64,19 +58,55 @@ namespace EventStore.Transport.Http.Client
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onException, "onException");
 
+            Send(HttpMethod.Post, url, body, contentType, onSuccess, onException);
+        }
+
+        public void Delete(string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        {
+            Ensure.NotNull(url, "url");
+            Ensure.NotNull(onSuccess, "onSuccess");
+            Ensure.NotNull(onException, "onException");
+
+            Receive(HttpMethod.Delete, url, onSuccess, onException);
+        }
+
+        public void Put(string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        {
+            Ensure.NotNull(url, "url");
+            Ensure.NotNull(body, "body");
+            Ensure.NotNull(contentType, "contentType");
+            Ensure.NotNull(onSuccess, "onSuccess");
+            Ensure.NotNull(onException, "onException");
+
+            Send(HttpMethod.Put, url, body, contentType, onSuccess, onException);
+        }
+
+        private void Receive(string method, string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        {
+            var request = (HttpWebRequest)WebRequest.Create(url);
+
+            request.Method = method;
+            request.KeepAlive = false;//TODO TR : hangs on mono
+            request.Pipelined = false;
+
+            request.BeginGetResponse(ResponseAcquired, new ClientOperationState(request, onSuccess, onException));
+        }
+
+        private void Send(string method, string url, string body, string contentType, Action<HttpResponse> onSuccess, Action<Exception> onException)
+        {
             var request = (HttpWebRequest)WebRequest.Create(url);
             var bodyBytes = Encoding.UTF8.GetBytes(body);
 
-            request.Method = HttpMethod.Post;
+            request.Method = method;
             request.KeepAlive = false;//TODO TR : hangs on mono
             request.Pipelined = false;
             request.ContentLength = bodyBytes.Length;
             request.ContentType = contentType;
 
             var state = new ClientOperationState(request, onSuccess, onException)
-                            {
-                                InputStream = new MemoryStream(bodyBytes)
-                            };
+            {
+                InputStream = new MemoryStream(bodyBytes)
+            };
             request.BeginGetRequestStream(GotRequestStream, state);
         }
 
@@ -95,7 +125,7 @@ namespace EventStore.Transport.Http.Client
                 state.InputStream = networkStream;
                 state.OutputStream = new MemoryStream();
 
-                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, state.OutputStream, state, "CLIENT RESPONSE READ COPIER");
+                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, state.OutputStream, state);
                 copier.Completed += ResponseRead;
                 copier.Start();
             }
@@ -133,7 +163,7 @@ namespace EventStore.Transport.Http.Client
             {
                 var networkStream = state.Request.EndGetRequestStream(ar);
                 state.OutputStream = networkStream;
-                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, networkStream, state, "CLIENT REQUEST WRITE COPIER");
+                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, networkStream, state);
                 copier.Completed += RequestWrote;
                 copier.Start();
             }

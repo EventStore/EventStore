@@ -117,7 +117,8 @@ namespace EventStore.Core
         {
             if (!BoxMode)
             {
-                LogManager.Init(GetComponentName(options), GetLogsDirectory());
+                var logsDir = !string.IsNullOrEmpty(options.LogsPath) ? options.LogsPath : GetLogsDirectory();
+                LogManager.Init(GetComponentName(options), logsDir);
             }
 
             var systemInfo = String.Format("{0} {1}", OS.IsLinux ? "Linux" : "Windows", Runtime.IsMono ? "MONO" : ".NET");

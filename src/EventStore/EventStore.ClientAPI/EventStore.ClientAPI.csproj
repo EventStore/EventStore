@@ -17,7 +17,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\..\..\bin\eventstore\debug\anycpu\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -25,14 +25,15 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <OutputPath>..\..\..\bin\eventstore\release\anycpu\</OutputPath>
+    <DefineConstants>
+    </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x86\Debug\</OutputPath>
+    <OutputPath>..\..\..\bin\eventstore\debug\x86\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -48,8 +49,9 @@
     <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>bin\x86\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <OutputPath>..\..\..\bin\eventstore\release\x86\</OutputPath>
+    <DefineConstants>
+    </DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -80,7 +82,11 @@
     <Compile Include="ClientOperations\StartTransactionOperation.cs" />
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
     <Compile Include="Exceptions\CannotEstablishConnectionException.cs" />
-    <Compile Include="IEventsConsumer.cs" />
+    <Compile Include="Exceptions\ProjectionCommandFailedException.cs" />
+    <Compile Include="Exceptions\InvalidTransactionException.cs" />
+    <Compile Include="Exceptions\StreamDeletedException.cs" />
+    <Compile Include="Exceptions\StreamDoesNotExistException.cs" />
+    <Compile Include="Exceptions\WrongExpectedVersionException.cs" />
     <Compile Include="IEvent.cs" />
     <Compile Include="EventStoreTransaction.cs" />
     <Compile Include="EventStreamSlice.cs" />
@@ -101,8 +107,7 @@
     <Compile Include="ClientOperations\IClientOperation.cs" />
     <Compile Include="ClientOperations\ReadFromBeginningOperation.cs" />
     <Compile Include="Common\Utils\Ensure.cs" />
-    <Compile Include="IEventStore.cs" />
-    <Compile Include="IEventsProducer.cs" />
+    <Compile Include="IProjectionsManagement.cs" />
     <Compile Include="RecordedEvent.cs" />
     <Compile Include="System\Event.cs" />
     <Compile Include="System\EventRecord.cs" />
@@ -115,6 +120,16 @@
     <Compile Include="System\SingleReadResult.cs" />
     <Compile Include="System\TcpCommand.cs" />
     <Compile Include="System\TcpPackage.cs" />
+    <Compile Include="Transport.Http\AsyncStreamCopier.cs" />
+    <Compile Include="Transport.Http\ClientOperationState.cs" />
+    <Compile Include="Transport.Http\ContentType.cs" />
+    <Compile Include="Transport.Http\HttpAsyncClient.cs" />
+    <Compile Include="Transport.Http\HttpMethod.cs" />
+    <Compile Include="Transport.Http\HttpResponse.cs" />
+    <Compile Include="Transport.Http\HttpStatusCode.cs" />
+    <Compile Include="Transport.Http\IOStreams.cs" />
+    <Compile Include="Transport.Http\IPEndpointExtensions.cs" />
+    <Compile Include="Transport.Http\WebRequestExtensions.cs" />
     <Compile Include="Transport.Tcp\ClientMessages.cs" />
     <Compile Include="Transport.Tcp\ProtobufExtensions.cs" />
     <Compile Include="Transport.Tcp\TcpConfiguratin.cs" />

@@ -48,25 +48,19 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
         }
 
         [Test]
-        public void commit_position_is_zero()
-        {
-            Assert.AreEqual(0, _positionTracker.LastEventPosition.CommitPosition);
-        }
-
-        [Test]
         public void it_can_be_updated()
         {
             // even not initialized (UpdateToZero can be removed)
-            _positionTracker.Update(
-                new ProjectionMessage.Projections.CommittedEventReceived(
-                    Guid.NewGuid(), new EventPosition(100, 50), "stream", 1, false,
-                    new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
+            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
+                                                                                Guid.NewGuid(), new EventPosition(100, 50), "stream", 1, false,
+                                                                                new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
+            _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 
         [Test]
         public void it_can_be_updated_to_zero()
         {
-            _positionTracker.UpdateToZero();
+            _positionTracker.UpdateByCheckpointTag(_tagger.MakeZeroCheckpointTag());
         }
     }
 }

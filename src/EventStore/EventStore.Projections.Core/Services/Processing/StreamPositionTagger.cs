@@ -27,6 +27,7 @@
 // 
 using System;
 using EventStore.Projections.Core.Messages;
+using System.Linq;
 
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -52,6 +53,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public override CheckpointTag MakeZeroCheckpointTag()
         {
             return CheckpointTag.FromStreamPosition(_stream, -1, -1);
+        }
+
+        public override bool IsCompatible(CheckpointTag checkpointTag)
+        {
+            return checkpointTag.GetMode() == CheckpointTag.Mode.Stream && checkpointTag.Streams.Keys.First() == this._stream;
         }
     }
 }

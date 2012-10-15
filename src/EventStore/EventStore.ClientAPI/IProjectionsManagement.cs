@@ -30,12 +30,57 @@ using System.Threading.Tasks;
 
 namespace EventStore.ClientAPI
 {
-    public interface IEventStore : IEventsProducer, IEventsConsumer
+    public interface IProjectionsManagement
     {
-        void CreateStream(string stream, byte[] metadata);
-        Task CreateStreamAsync(string stream, byte[] metadata);
+        void Enable(string name);
+        Task EnableAsync(string name);
 
-        void DeleteStream(string stream, int expectedVersion);
-        Task DeleteStreamAsync(string stream, int expectedVersion);
+        void Disable(string name);
+        Task DisableAsync(string name);
+
+        void CreateOneTime(string query);
+        Task CreateOneTimeAsync(string query);
+
+        void CreateAdHoc(string name, string query);
+        Task CreateAdHocAsync(string name, string query);
+
+        void CreateContinuous(string name, string query);
+        Task CreateContinuousAsync(string name, string query);
+
+        void CreatePersistent(string name, string query);
+        Task CreatePersistentAsync(string name, string query);
+
+        string ListAll();
+        Task<string> ListAllAsync();
+
+        string ListOneTime();
+        Task<string> ListOneTimeAsync();
+
+        string ListAdHoc();
+        Task<string> ListAdHocAsync();
+
+        string ListContinuous();
+        Task<string> ListContinuousAsync();
+
+        string ListPersistent();
+        Task<string> ListPersistentAsync();
+
+        string GetStatus(string name);
+        Task<string> GetStatusAsync(string name);
+
+        string GetState(string name);
+        Task<string> GetStateAsync(string name);
+
+        string GetStatistics(string name);
+        Task<string> GetStatisticsAsync(string name);
+
+        string GetQuery(string name);
+        Task<string> GetQueryAsync(string name);
+
+        void UpdateQuery(string name, string query);
+        Task UpdateQueryAsync(string name, string query);
+
+        void Delete(string name);
+        Task DeleteAsync(string name);
     }
 }

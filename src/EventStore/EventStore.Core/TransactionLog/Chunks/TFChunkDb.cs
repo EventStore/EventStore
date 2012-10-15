@@ -51,7 +51,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             Manager = new TFChunkManager(Config);
         }
 
-        public void OpenVerifyAndClean()
+        public void OpenVerifyAndClean(bool verifyHash = true)
         {
             var tempFiles = Directory.GetFiles(Config.Path, "*.tmp");
             for (int i = 0; i < tempFiles.Length; i++)
@@ -91,6 +91,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (i == expectedFiles - 1)
                     {
                         var chunk = LoadLastChunk(chunkFileName);
+                        if (verifyHash && chunk.IsReadOnly)
+                            chunk.VerifyFileHash();
                         Manager.AddChunk(chunk);
 
                         if (checkpoint % Config.ChunkSize == 0)
@@ -107,12 +109,60 @@ namespace EventStore.Core.TransactionLog.Chunks
                     else
                     {
                         var chunk = LoadChunk(chunkFileName);
+                        if (verifyHash && chunk.IsReadOnly)
+                            chunk.VerifyFileHash();
                         Manager.AddChunk(chunk);
                     }
                 }
             }
 
             EnsureNoOtherFiles(expectedFiles);
+
+            Manager.EnableCaching();
+        }
+
+        public void OpenForRead()
+        {
+            ValidateReaderChecksumsMustBeLess(Config.WriterCheckpoint, Config.Checkpoints);
+
+            var checkpoint = Config.WriterCheckpoint.Read();
+
+            var expectedFiles = (int)((checkpoint + Config.ChunkSize - 1) / Config.ChunkSize);
+            if (checkpoint == 0 && Config.FileNamingStrategy.GetAllVersionsFor(0).Length == 0)
+            {
+                Manager.AddNewChunk();
+                expectedFiles = 1;
+            }
+            else
+            {
+                if (checkpoint == 0)
+                    expectedFiles = 1;
+                for (int i = 0; i < expectedFiles; ++i)
+                {
+                    var versions = Config.FileNamingStrategy.GetAllVersionsFor(i);
+                    if (versions.Length == 0)
+                    {
+                        throw new CorruptDatabaseException(
+                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i)));
+                    }
+
+                    var chunkFileName = versions[0];
+                    if (i == expectedFiles - 1)
+                    {
+                        var chunk = LoadLastChunk(chunkFileName);
+                        if (chunk.IsReadOnly)
+                            chunk.VerifyFileHash();
+                        Manager.AddChunk(chunk);
+                    }
+                    else
+                    {
+                        var chunk = LoadChunk(chunkFileName);
+                        if (chunk.IsReadOnly)
+                            chunk.VerifyFileHash();
+                        Manager.AddChunk(chunk);
+                    }
+                }
+            }
 
             Manager.EnableCaching();
         }
