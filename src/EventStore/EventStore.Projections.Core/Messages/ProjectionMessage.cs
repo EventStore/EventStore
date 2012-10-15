@@ -187,22 +187,6 @@ namespace EventStore.Projections.Core.Messages
                     }
                 }
 
-                public class GetStatistics : ManagementMessage
-                {
-                    private readonly IEnvelope _envelope;
-
-                    public GetStatistics(IEnvelope envelope, Guid correlationId)
-                        : base(correlationId)
-                    {
-                        _envelope = envelope;
-                    }
-
-                    public IEnvelope Envelope
-                    {
-                        get { return _envelope; }
-                    }
-                }
-
                 public class StateReport : ManagementMessage
                 {
                     private readonly string _state;

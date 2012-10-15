@@ -136,11 +136,17 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStateCache = new PartitionStateCache();
             _processingQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, _checkpointStrategy, Tick, _projectionConfig.CheckpointsEnabled,
-                projectionConfig.PendingEventsThreshold);
+                projectionConfig.PendingEventsThreshold, UpdateStatistics);
             _checkpointManager = new CoreProjectionCheckpointManager(
                 this, this._publisher, _writeDispatcher, this._projectionConfig, this._logger, this._projectionCheckpointStreamId,
                 this._name, _checkpointStrategy.PositionTagger);
             GoToState(State.Initial);
+        }
+
+        private void UpdateStatistics()
+        {
+            _publisher.Publish(
+                new ProjectionMessage.Projections.Management.StatisticsReport(_projectionCorrelationId, GetStatistics()));
         }
 
         public void Start()
@@ -162,7 +168,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return _partitionStateCache.GetLockedPartitionState("");
         }
 
-        public ProjectionStatistics GetStatistics()
+        private ProjectionStatistics GetStatistics()
         {
             var checkpointStatistics = _checkpointManager.GetStatistics();
             return new ProjectionStatistics
@@ -332,6 +338,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             try
             {
+                UpdateStatistics();
                 this._processingQueue.ProcessEvent();
             }
             catch (Exception ex)
@@ -530,6 +537,8 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
+
         private void Tick()
         {
             EnsureState(State.Running | State.Paused | State.Stopping | State.FaultedStopping | State.Faulted);
@@ -542,6 +551,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 SetFaulted(ex);
             }
+
         }
 
         private void OnLoadStateCompleted(ClientMessage.ReadEventsBackwardsCompleted message)
@@ -581,6 +591,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //TODO: initialize projection state here (test it)
             //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
             _partitionStateCache.CacheAndLockPartitionState("", state, null);
+            _checkpointManager.Start(checkpointTag, checkpointEventNumber);
             try
             {
                 SetHandlerState("");
@@ -592,7 +603,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             _processingQueue.InitializeQueue();
-            _checkpointManager.Start(checkpointTag, checkpointEventNumber);
             _publisher.Publish(
                 new ProjectionMessage.Projections.SubscribeProjection(
                     _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,

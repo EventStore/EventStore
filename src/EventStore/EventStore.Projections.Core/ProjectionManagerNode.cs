@@ -32,14 +32,16 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<ProjectionMessage.Projections.Started>(_projectionManager);
             mainBus.Subscribe<ProjectionMessage.Projections.Stopped>(_projectionManager);
             mainBus.Subscribe<ProjectionMessage.Projections.Faulted>(_projectionManager);
+            mainBus.Subscribe<ProjectionMessage.Projections.Management.StateReport>(_projectionManager);
+            mainBus.Subscribe<ProjectionMessage.Projections.Management.StatisticsReport>(_projectionManager);
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
             mainBus.Subscribe<ClientMessage.ReadEventsBackwardsCompleted>(_projectionManager);
         }
 
-        public static ProjectionManagerNode Create(TFChunkDb db, QueuedHandler mainQueue, HttpService httpService, IPublisher[] queues)
+        public static ProjectionManagerNode Create(TFChunkDb db, IPublisher publisher, QueuedHandler mainQueue, HttpService httpService, IPublisher[] queues)
         {
             var projectionManagerNode =
-                new ProjectionManagerNode(new ProjectionManager(mainQueue, queues, db.Config.WriterCheckpoint));
+                new ProjectionManagerNode(new ProjectionManager(mainQueue, publisher, queues, db.Config.WriterCheckpoint));
             httpService.SetupController(new ProjectionsController(mainQueue));
 
             return projectionManagerNode;

@@ -50,7 +50,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ICoreProjection _coreProjection;
         private readonly ProjectionConfig _projectionConfig;
         private readonly string _name;
-        private readonly PositionTagger _positionTagger;
         private readonly string _projectionCheckpointStreamId;
 
         private ProjectionCheckpoint _currentCheckpoint;
@@ -93,7 +92,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger = logger;
             _projectionCheckpointStreamId = projectionCheckpointStreamId;
             _name = name;
-            _positionTagger = positionTagger;
         }
 
         public void Start(CheckpointTag checkpointTag, int lastWrittenCheckpointEventNumber)

@@ -58,11 +58,16 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<ProjectionMessage.CoreService.Start>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionMessage.CoreService.Stop>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionMessage.CoreService.Tick>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionMessage.CoreService.Management.Create>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionMessage.CoreService.Management.Dispose>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionMessage.Projections.SubscribeProjection>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionMessage.Projections.UnsubscribeProjection>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionMessage.Projections.PauseProjectionSubscription>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionMessage.Projections.ResumeProjectionSubscription>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionMessage.Projections.CommittedEventReceived>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionMessage.Projections.Management.Start>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionMessage.Projections.Management.Stop>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionMessage.Projections.Management.GetState>(_projectionCoreService);
             //NOTE: message forwarding is set up outside (for Read/Write events)
         }
     }

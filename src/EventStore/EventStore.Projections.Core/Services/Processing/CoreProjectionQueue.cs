@@ -48,15 +48,19 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _subscriptionPaused;
         private bool _tickPending;
         private readonly int _pendingEventsThreshold;
+        private readonly Action _updateStatistics;
         private readonly bool _checkpointsEnabled;
 
-        public CoreProjectionQueue(Guid projectionCorrelationId, IPublisher publisher, CheckpointStrategy checkpointStrategy, Action tick, bool checkpointsEnabled, int pendingEventsThreshold)
+        public CoreProjectionQueue(
+            Guid projectionCorrelationId, IPublisher publisher, CheckpointStrategy checkpointStrategy, Action tick,
+            bool checkpointsEnabled, int pendingEventsThreshold, Action updateStatistics = null)
         {
             _checkpointStrategy = checkpointStrategy;
             _publisher = publisher;
             _projectionCorrelationId = projectionCorrelationId;
             _tick = tick;
             _pendingEventsThreshold = pendingEventsThreshold;
+            _updateStatistics = updateStatistics;
             _checkpointsEnabled = checkpointsEnabled;
         }
 
@@ -173,6 +177,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(new ProjectionMessage.CoreService.Tick(_tick));
         }
 
+        private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
+
         private void ProcessOneEvent()
         {
             int pendingEventsCount = _queuePendingEvents.Count;
@@ -183,6 +189,12 @@ namespace EventStore.Projections.Core.Services.Processing
             int processed = _queuePendingEvents.Process();
             if (processed > 0)
                 EnsureTickPending();
+
+            if (_updateStatistics != null
+                &&
+                ((_queuePendingEvents.Count == 0)
+                 || (DateTime.UtcNow - _lastReportedStatisticsTimeStamp).TotalMilliseconds > 500)) _updateStatistics();
+            _lastReportedStatisticsTimeStamp = DateTime.UtcNow;
         }
 
         private enum QueueState

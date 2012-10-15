@@ -70,13 +70,13 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _coreQueue;
         private readonly Guid _id;
         private readonly string _name;
-        private CoreProjection _coreProjection;
         private ManagedProjectionState _state;
         private PersistedState _persistedState = new PersistedState();
 
         private string _faultedReason;
         private Action _stopCompleted;
         private List<IEnvelope> _stateRequests;
+        private ProjectionStatistics _lastReceivedStatistics;
 
         public ManagedProjection(
             IPublisher coreQueue, 
@@ -141,14 +141,14 @@ namespace EventStore.Projections.Core.Services.Management
         public ProjectionStatistics GetStatistics()
         {
             ProjectionStatistics status;
-            if (_coreProjection == null)
+            if (_lastReceivedStatistics == null || _state != ManagedProjectionState.Running)
             {
                 status = new ProjectionStatistics
                     {Name = _name, Mode = GetMode(), Status = _state.EnumVaueName(), MasterStatus = _state};
             }
             else
             {
-                status = _coreProjection.GetStatistics();
+                status = _lastReceivedStatistics.Clone();
                 status.Status = _state.EnumVaueName() + "/" + status.Status;
                 status.MasterStatus = _state;
             }
@@ -238,7 +238,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionMessage.Projections.Management.StatisticsReport message)
         {
-            throw new NotImplementedException();
+            _lastReceivedStatistics = message.Statistics;
         }
 
         public void InitializeNew(ProjectionManagementMessage.Post message, Action completed)

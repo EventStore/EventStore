@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public void setup()
         {
             _publisher = new FakePublisher();
-            _manager = new ProjectionManager(_publisher, new IPublisher[] { _publisher}, checkpointForStatistics: null);
+            _manager = new ProjectionManager(_publisher, _publisher, new IPublisher[] { _publisher}, checkpointForStatistics: null);
 
             _projectionQuery = @"fromAll(); on_any(function(){});log(1);";
             _manager.Handle(new ProjectionManagementMessage.Post(new PublishEnvelope(_publisher), _projectionQuery, enabled: true));

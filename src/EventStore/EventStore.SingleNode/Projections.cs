@@ -35,6 +35,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Projections.Core;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -47,8 +48,8 @@ namespace EventStore.SingleNode
 
         public Projections(TFChunkDb db, QueuedHandler mainQueue, InMemoryBus mainBus, TimerService timerService, HttpService httpService, int projectionWorkerThreadCount)
         {
-            SetupMessaging(db, mainQueue, mainBus, timerService, httpService);
             _projectionWorkerThreadCount = projectionWorkerThreadCount;
+            SetupMessaging(db, mainQueue, mainBus, timerService, httpService);
         }
 
         private void SetupMessaging(
@@ -60,7 +61,7 @@ namespace EventStore.SingleNode
             while (_coreQueues.Count < _projectionWorkerThreadCount)
             {
                 var coreInputBus = new InMemoryBus("bus");
-                var coreQueue = new QueuedHandler(coreInputBus, "ProjectionCoreQueue");
+                var coreQueue = new QueuedHandler(coreInputBus, "ProjectionCoreQueue #" + _coreQueues.Count);
                 var projectionNode = new ProjectionWorkerNode(db);
                 projectionNode.SetupMessaging(coreInputBus);
 
@@ -73,6 +74,8 @@ namespace EventStore.SingleNode
                 projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEventsForward>(forwarder);
                 projectionNode.CoreOutput.Subscribe<ClientMessage.ReadEventsFromTF>(forwarder);
                 projectionNode.CoreOutput.Subscribe<ClientMessage.WriteEvents>(forwarder);
+                projectionNode.CoreOutput.Subscribe(Forwarder.Create<ProjectionMessage.Projections.Management.StateReport>(mainQueue));
+                projectionNode.CoreOutput.Subscribe(Forwarder.Create<ProjectionMessage.Projections.Management.StatisticsReport>(mainQueue));
 
                 projectionNode.CoreOutput.Subscribe(timerService);
 
@@ -86,7 +89,7 @@ namespace EventStore.SingleNode
 
 
             var projectionManagerNode = ProjectionManagerNode.Create(
-                db, mainQueue, httpService, _coreQueues.Cast<IPublisher>().ToArray());
+                db, mainBus, mainQueue, httpService, _coreQueues.Cast<IPublisher>().ToArray());
             projectionManagerNode.SetupMessaging(mainBus);
         }
 

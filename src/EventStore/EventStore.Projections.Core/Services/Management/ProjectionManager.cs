@@ -63,6 +63,7 @@ namespace EventStore.Projections.Core.Services.Management
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
 
+        private readonly IPublisher _mainQueue;
         private readonly IPublisher _publisher;
         private readonly ICheckpoint _checkpointForStatistics;
         private readonly IPublisher[] _queues;
@@ -79,8 +80,9 @@ namespace EventStore.Projections.Core.Services.Management
 
         private int _readEventsBatchSize = 100;
 
-        public ProjectionManager(IPublisher publisher, IPublisher[] queues, ICheckpoint checkpointForStatistics)
+        public ProjectionManager(IPublisher mainQueue, IPublisher publisher, IPublisher[] queues, ICheckpoint checkpointForStatistics)
         {
+            if (mainQueue == null) throw new ArgumentNullException("mainQueue");
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (queues == null) throw new ArgumentNullException("queues");
             if (queues.Length == 0) throw new ArgumentException("queues");
@@ -93,6 +95,7 @@ namespace EventStore.Projections.Core.Services.Management
                     <ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>(
                     publisher, v => v.CorrelationId, v => v.CorrelationId);
 
+            _mainQueue = mainQueue;
             _publisher = publisher;
             _checkpointForStatistics = checkpointForStatistics;
             _queues = queues;
@@ -301,7 +304,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _readDispatcher.Publish(
                 new ClientMessage.ReadEventsBackwards(
-                    Guid.NewGuid(), new PublishEnvelope(_publisher), "$projections-$all", from, _readEventsBatchSize,
+                    Guid.NewGuid(), new PublishEnvelope(_mainQueue), "$projections-$all", from, _readEventsBatchSize,
                     resolveLinks: false), m => LoadProjectionListCompleted(m, from));
         }
 
@@ -387,7 +390,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), new PublishEnvelope(_publisher), "$projections-$all", ExpectedVersion.Any,
+                    Guid.NewGuid(), new PublishEnvelope(_mainQueue), "$projections-$all", ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "ProjectionCreated", false, Encoding.UTF8.GetBytes(name), new byte[0])),
                 m => WriteProjectionRegistrationCompleted(m, completed, name));
         }
