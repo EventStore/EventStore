@@ -2,10 +2,13 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading;
+using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Index;
+using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -15,10 +18,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
     [TestFixture]
     public class when_rebuilding_index_for_partially_persisted_transaction : ReadIndexTestScenario
     {
-        public when_rebuilding_index_for_partially_persisted_transaction()
-                : base(maxEntriesInMemTable: 10)
+        public when_rebuilding_index_for_partially_persisted_transaction(): base(maxEntriesInMemTable: 10)
         {
-
         }
 
         public override void TestFixtureSetUp()
@@ -34,13 +35,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             TableIndex = new TableIndex(Path.Combine(PathName, "index"), () => new HashListMemTable(), maxSizeForMemory: 5);
             TableIndex.Initialize();
 
-            ReadIndex = new ReadIndex(new NoopPublisher(),
-                                      () => new TFChunkSequentialReader(Db, WriterCheckpoint, 0), 
-                                      2,
-                                      () => new TFChunkReader(Db, WriterCheckpoint),
-                                      1,
-                                      TableIndex,
-                                      new ByLengthHasher());
+            ReadIndex = new ReadIndex(new NoopPublisher(), 2, () => new TFChunkSequentialReader(Db, WriterCheckpoint, 0), () => new TFChunkReader(Db, WriterCheckpoint), TableIndex, new ByLengthHasher());
             ReadIndex.Build();
         }
 
@@ -73,11 +68,9 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             for (int i = 0; i < 15; ++i)
             {
                 EventRecord record;
-                Assert.AreEqual(SingleReadResult.Success, ReadIndex.TryReadRecord("ES", i, out record));
+                Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", i, out record));
                 Assert.AreEqual(Encoding.UTF8.GetBytes("data" + i), record.Data);
             }
-
         }
-
     }
 }

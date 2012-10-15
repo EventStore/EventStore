@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -24,42 +23,37 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             throw new NotImplementedException();
         }
 
-        public PrepareLogRecord GetPrepare(long pos)
+        public PrepareLogRecord ReadPrepare(long pos)
         {
             throw new NotImplementedException();
         }
 
-        public SingleReadResult TryReadRecord(string eventStreamId, int version, out EventRecord record)
+        public SingleReadResult ReadEvent(string streamId, int eventNumber, out EventRecord record)
         {
             throw new NotImplementedException();
         }
 
-        public RangeReadResult TryReadRecordsBackward(string eventStreamId, int fromEventNumber, int maxCount, out EventRecord[] records)
+        public RangeReadResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount, out EventRecord[] records)
         {
             throw new NotImplementedException();
         }
 
-        public RangeReadResult TryReadEventsForward(string eventStreamId, int fromEventNumber, int maxCount, out EventRecord[] records)
+        public RangeReadResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount, out EventRecord[] records)
         {
             throw new NotImplementedException();
         }
 
-        public int GetLastStreamEventNumber(string eventStreamId)
+        public int GetLastStreamEventNumber(string streamId)
         {
             throw new NotImplementedException();
         }
 
-        public bool IsStreamDeleted(string eventStreamId)
+        public bool IsStreamDeleted(string streamId)
         {
-            return _isStreamDeleted(eventStreamId);
+            return _isStreamDeleted(streamId);
         }
 
-        public List<ResolvedEventRecord> ReadAllEventsForward(long commitPos, long preparePos, bool inclusivePos, int maxCount, bool resolveLinks)
-        {
-            throw new NotImplementedException();
-        }
-
-        public List<ResolvedEventRecord> ReadAllEventsBackward(long commitPos, long preparePos, bool inclusivePos, int maxCount, bool resolveLinks)
+        public ReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount, bool resolveLinks)
         {
             throw new NotImplementedException();
         }
@@ -75,6 +69,11 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         public string[] GetStreamIds()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, bool resolveLinks)
         {
             throw new NotImplementedException();
         }

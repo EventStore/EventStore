@@ -65,28 +65,28 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_first_event_can_be_read()
         {
             EventRecord record;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.TryReadRecord("test1", 0, out record));
+            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("test1", 0, out record));
         }
 
         [Test]
         public void the_nonexisting_event_can_not_be_read()
         {
             EventRecord record;
-            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.TryReadRecord("test1", 1, out record));
+            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("test1", 1, out record));
         }
 
         [Test]
         public void the_second_event_can_be_read()
         {
             EventRecord record;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.TryReadRecord("test2", 0, out record));
+            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("test2", 0, out record));
         }
 
         [Test]
         public void the_stream_can_be_read_for_first_stream()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackward("test1", 0, 1, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("test1", 0, 1, out records));
             Assert.AreEqual(1, records.Length);
             Assert.AreEqual(_id1, records[0].EventId);
         }
@@ -95,7 +95,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_stream_can_be_read_for_second_stream_from_end()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackward("test2", -1, 1, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("test2", -1, 1, out records));
             Assert.AreEqual(1, records.Length);
             Assert.AreEqual(_id3, records[0].EventId);
         }
@@ -104,7 +104,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_stream_can_be_read_for_second_stream_from_event_number()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackward("test2", 1, 1, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("test2", 1, 1, out records));
             Assert.AreEqual(1, records.Length);
             Assert.AreEqual(_id3, records[0].EventId);
         }
@@ -112,7 +112,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         [Test]
         public void read_all_events_forward_returns_all_events_in_correct_order()
         {
-            var records = ReadIndex.ReadAllEventsForward(0, 0, true, 10, false);
+            var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10, false).Records;
 
             Assert.AreEqual(3, records.Count);
             Assert.AreEqual(_id1, records[0].Event.EventId);
@@ -123,8 +123,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         [Test]
         public void read_all_events_backward_returns_all_events_in_correct_order()
         {
-            var records = ReadIndex.ReadAllEventsBackward(Db.Config.WriterCheckpoint.Read(), int.MaxValue, true, 10, false);
-
+            var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
+            var records = ReadIndex.ReadAllEventsBackward(pos, 10, false).Records;
 
             Assert.AreEqual(3, records.Count);
             Assert.AreEqual(_id1, records[2].Event.EventId);

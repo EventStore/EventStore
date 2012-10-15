@@ -57,28 +57,29 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void the_first_stream_is_not_in_index_yet()
         {
             EventRecord record;
-            Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.TryReadRecord("test1", 0, out record));
+            Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.ReadEvent("test1", 0, out record));
         }
 
         [Test]
         public void the_second_stream_is_not_in_index_yet()
         {
             EventRecord record;
-            Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.TryReadRecord("test2", 0, out record));
+            Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.ReadEvent("test2", 0, out record));
         }
 
         [Test]
         public void read_all_events_forward_returns_no_events()
         {
-            var records = ReadIndex.ReadAllEventsForward(0, 0, true, 10, false);
-            Assert.AreEqual(0, records.Count);
+            var result = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10, false);
+            Assert.AreEqual(0, result.Records.Count);
         }
 
         [Test]
         public void read_all_events_backward_returns_no_events_()
         {
-            var records = ReadIndex.ReadAllEventsBackward(Db.Config.WriterCheckpoint.Read(), int.MaxValue, true, 10, false);
-            Assert.AreEqual(0, records.Count);
+            var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
+            var result = ReadIndex.ReadAllEventsBackward(pos, 10, false);
+            Assert.AreEqual(0, result.Records.Count);
         }
     }
 }

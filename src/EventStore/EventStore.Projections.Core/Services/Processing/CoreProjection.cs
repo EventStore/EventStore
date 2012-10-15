@@ -239,7 +239,7 @@ namespace EventStore.Projections.Core.Services.Processing
             // unlock states, so the cache can be clean up as they can now be safely reloaded from the ES
             _partitionStateCache.Unlock(_requestedCheckpointPosition);
             _inCheckpointWriteAttempt = 1;
-            //TODO: pass correct expected version
+            //TODO: pass correct expected eventNumber
             _checkpointEventToBePublished = new Event(
                 Guid.NewGuid(), "ProjectionCheckpoint", false,
                 _requestedCheckpointStateJson == null ? null : Encoding.UTF8.GetBytes(_requestedCheckpointStateJson),
@@ -757,7 +757,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_logger != null)
                 _logger.Trace(
-                    "Writing checkpoint for {0} at {1} with expected version number {2}", _name,
+                    "Writing checkpoint for {0} at {1} with expected eventNumber number {2}", _name,
                     _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
             _publisher.Publish(
                 new ClientMessage.WriteEvents(

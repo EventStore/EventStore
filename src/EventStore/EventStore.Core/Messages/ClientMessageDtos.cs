@@ -59,7 +59,7 @@ namespace EventStore.Core.Messages
                                 string eventStreamId,
                                 byte[] metadata)
             {
-                Ensure.NotNull(eventStreamId, "eventStreamId");
+                Ensure.NotNull(eventStreamId, "streamId");
 
                 CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
@@ -212,7 +212,7 @@ namespace EventStore.Core.Messages
 
             public DeleteStream(Guid correlationId, string eventStreamId, int expectedVersion)
             {
-                Ensure.NotNull(eventStreamId, "eventStreamId");
+                Ensure.NotNull(eventStreamId, "streamId");
 
                 CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
@@ -311,7 +311,7 @@ namespace EventStore.Core.Messages
                                       byte[] data, 
                                       byte[] metadata)
             {
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                Ensure.NotNullOrEmpty(eventStreamId, "streamId");
                 Ensure.Nonnegative(eventNumber, "eventNumber");
                 if (result == SingleReadResult.Success)
                     Ensure.NotNull(data, "data");
@@ -389,7 +389,7 @@ namespace EventStore.Core.Messages
                                                     RangeReadResult result,
                                                     long? lastCommitPosition)
             {
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                Ensure.NotNullOrEmpty(eventStreamId, "streamId");
 
                 CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
@@ -463,7 +463,7 @@ namespace EventStore.Core.Messages
                                                       RangeReadResult result,
                                                       long? lastCommitPosition)
             {
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                Ensure.NotNullOrEmpty(eventStreamId, "streamId");
 
                 CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;

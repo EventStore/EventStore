@@ -143,7 +143,7 @@ namespace EventStore.Core.Services.Storage
         void IHandle<ClientMessage.ReadEvent>.Handle(ClientMessage.ReadEvent message)
         {
             EventRecord record;
-            var result = _readIndex.TryReadRecord(message.EventStreamId, message.EventNumber, out record);
+            var result = _readIndex.ReadEvent(message.EventStreamId, message.EventNumber, out record);
 
             if (result == SingleReadResult.Success && message.ResolveLinkTos && record != null)
                 record = _readIndex.ResolveLinkToEvent(record) ?? record;
@@ -163,7 +163,7 @@ namespace EventStore.Core.Services.Storage
 
             var lastCommitPosition = _readIndex.LastCommitPosition;
 
-            var result = _readIndex.TryReadRecordsBackward(message.EventStreamId, message.FromEventNumber, message.MaxCount, out records);
+            var result = _readIndex.ReadStreamEventsBackward(message.EventStreamId, message.FromEventNumber, message.MaxCount, out records);
             var nextEventNumber = result == RangeReadResult.Success & records.Length > 0
                                       ? records[records.Length - 1].EventNumber - 1
                                       : -1;
@@ -199,12 +199,14 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward message)
         {
+            // TODO AN resolving should belong to ReadIndex, not to StorageReader
+
             EventRecord[] records;
             EventRecord[] links = null;
             
             var lastCommitPosition = _readIndex.LastCommitPosition;
             
-            var result = _readIndex.TryReadEventsForward(message.EventStreamId, message.FromEventNumber, message.MaxCount, out records);
+            var result = _readIndex.ReadStreamEventsForward(message.EventStreamId, message.FromEventNumber, message.MaxCount, out records);
             var nextEventNumber = result == RangeReadResult.Success & records.Length > 0
                                       ? records[records.Length - 1].EventNumber + 1
                                       : -1;
@@ -256,13 +258,12 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward message)
         {
-            var records = _readIndex.ReadAllEventsForward(message.CommitPosition,
-                                                          message.PreparePosition,
-                                                          false,
-                                                          message.MaxCount,
-                                                          message.ResolveLinks);
+            // TODO AN minus one hack is ugly, ask Yuriy to maybe do something with this
+            var result = _readIndex.ReadAllEventsForward(new TFPos(message.CommitPosition, message.PreparePosition - 1),
+                                                         message.MaxCount,
+                                                         message.ResolveLinks);
             message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId,
-                                                                                       records.ToArray(),
+                                                                                       result.Records.ToArray(),
                                                                                        RangeReadResult.Success));
             }
 

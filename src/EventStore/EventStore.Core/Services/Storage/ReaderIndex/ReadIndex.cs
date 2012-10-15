@@ -91,6 +91,26 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         }
     }
 
+    public struct ReadAllResult
+    {
+        public readonly List<ResolvedEventRecord> Records;
+        public readonly int MaxCount;
+        public readonly TFPos CurrentPos;
+        public readonly TFPos NextPos;
+        public readonly TFPos PrevPos;
+
+        public ReadAllResult(List<ResolvedEventRecord> records, int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos)
+        {
+            Ensure.NotNull(records, "records");
+
+            Records = records;
+            MaxCount = maxCount;
+            CurrentPos = currentPos;
+            NextPos = nextPos;
+            PrevPos = prevPos;
+        }
+    }
+
     public class ReadIndex : IDisposable, IReadIndex
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ReadIndex>();
@@ -101,7 +121,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _succReadCount;
         private long _failedReadCount;
 
-        private readonly IPublisher _bus;
 #if __MonoCS__
         private readonly Common.ConcurrentCollections.ConcurrentStack<ITransactionFileReader> _readers = new Common.ConcurrentCollections.ConcurrentStack<ITransactionFileReader>();
 #else
@@ -114,42 +133,38 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 #endif
         private readonly ITableIndex _tableIndex;
         private readonly IHasher _hasher;
+        private readonly IPublisher _bus;
 
         private long _persistedPrepareCheckpoint = -1;
         private long _persistedCommitCheckpoint = -1;
         private long _lastCommitPosition = -1;
 
-        private readonly BoundedCache<Guid, Tuple<string, int>> _commitedEvents = 
+        private readonly BoundedCache<Guid, Tuple<string, int>> _committedEvents = 
             new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, 10*1024*1024, x => 16 + 4 + 2*x.Item1.Length);
 
         public ReadIndex(IPublisher bus,
-                         Func<ITransactionFileSequentialReader> seqReaderFactory,
-                         int seqReaderCount,
-                         Func<ITransactionFileReader> readerFactory,
                          int readerCount,
+                         Func<ITransactionFileSequentialReader> seqReaderFactory,
+                         Func<ITransactionFileReader> readerFactory,
                          ITableIndex tableIndex,
                          IHasher hasher)
         {
             Ensure.NotNull(bus, "bus");
-            Ensure.NotNull(seqReaderFactory, "seqReaderFactory");
-            Ensure.Positive(seqReaderCount, "seqReaderCount");
-            Ensure.NotNull(readerFactory, "readerFactory");
             Ensure.Positive(readerCount, "readerCount");
+            Ensure.NotNull(seqReaderFactory, "seqReaderFactory");
+            Ensure.NotNull(readerFactory, "readerFactory");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(hasher, "hasher");
 
             _bus = bus;
-            for (int i = 0; i < seqReaderCount; ++i)
-            {
-                _seqReaders.Push(seqReaderFactory());
-            }
-            for (int i = 0; i < readerCount; ++i)
-            {
-                _readers.Push(readerFactory());
-            }
-
             _tableIndex = tableIndex;
             _hasher = hasher;
+
+            for (int i = 0; i < readerCount; ++i)
+            {
+                _seqReaders.Push(seqReaderFactory());
+                _readers.Push(readerFactory());
+            }
         }
 
         private ITransactionFileReader GetReader()
@@ -237,14 +252,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if ((prepare.Flags & PrepareFlags.StreamDelete) != 0)
                 {
                     eventNumber = EventNumber.DeletedStream;
-                    _commitedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
+                    _committedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
                     addToIndex = commit.LogPosition > _persistedCommitCheckpoint
                                  || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
                 }
                 else if ((prepare.Flags & PrepareFlags.Data) != 0)
                 {
                     eventNumber = commit.EventNumber + prepare.TransactionOffset;
-                    _commitedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
+                    _committedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
                     addToIndex = commit.LogPosition > _persistedCommitCheckpoint
                                  || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
                 }
@@ -258,7 +273,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     if (_tableIndex.TryGetOneValue(streamHash, eventNumber, out pos))
                     {
                         EventRecord rec;
-                        if (TryReadRecord(eventStreamId, eventNumber, out rec) == SingleReadResult.Success)
+                        if (ReadEvent(eventStreamId, eventNumber, out rec) == SingleReadResult.Success)
                         {
                             Debugger.Break();
                             throw new Exception(
@@ -278,13 +293,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private IEnumerable<PrepareLogRecord> GetTransactionPrepares(long transactionBeginPos)
+        private IEnumerable<PrepareLogRecord> GetTransactionPrepares(long transactionPos)
         {
             var reader = GetReader();
             RecordReadResult result;
             try
             {
-                result = reader.TryReadAt(transactionBeginPos);
+                result = reader.TryReadAt(transactionPos);
             }
             finally
             {
@@ -293,8 +308,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             if (!result.Success)
                 throw new InvalidOperationException("Couldn't read record which is supposed to be in file.");
-            Debug.Assert(result.LogRecord.RecordType == LogRecordType.Prepare,
-                            "Incorrect type of log record, expected Prepare record.");
+            Debug.Assert(result.LogRecord.RecordType == LogRecordType.Prepare, "Incorrect type of log record, expected Prepare record.");
             
             var transactionRecord = (PrepareLogRecord) result.LogRecord;
             
@@ -307,7 +321,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var seqReader = GetSeqReader();
             try
             {
-                seqReader.Reposition(transactionBeginPos);
+                seqReader.Reposition(transactionPos);
 
                 while (true)
                 {
@@ -316,7 +330,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         throw new InvalidOperationException("Couldn't read record which is supposed to be in file.");
 
                     var prepare = result.LogRecord as PrepareLogRecord;
-                    if (prepare != null && prepare.TransactionPosition == transactionBeginPos)
+                    if (prepare != null && prepare.TransactionPosition == transactionPos)
                     {
                         Debug.Assert(prepare.EventStreamId == transactionRecord.EventStreamId);
                         yield return prepare;
@@ -331,12 +345,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        public SingleReadResult TryReadRecord(string eventStreamId, int version, out EventRecord record)
+        public SingleReadResult ReadEvent(string streamId, int eventNumber, out EventRecord record)
         {
             var reader = GetReader();
             try
             {
-                return TryReadRecordInternal(reader, eventStreamId, version, out record);
+                return ReadEventInternal(reader, streamId, eventNumber, out record);
             }
             finally
             {
@@ -344,53 +358,42 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private SingleReadResult TryReadRecordInternal(ITransactionFileReader reader, 
-                                                       string eventStreamId,
-                                                       int version, 
-                                                       out EventRecord record)
+        private SingleReadResult ReadEventInternal(ITransactionFileReader reader, string streamId, int version, out EventRecord record)
         {
-            Ensure.NotNull(eventStreamId, "eventStreamId");
-            Ensure.Nonnegative(version, "version");
+            Ensure.NotNull(streamId, "streamId");
+            Ensure.Nonnegative(version, "eventNumber");
 
             record = null;
-
-            if (IsStreamDeletedInternal(reader, eventStreamId))
+            if (IsStreamDeletedInternal(reader, streamId))
                 return SingleReadResult.StreamDeleted;
-
-            var success = TryGetRecordInternal(reader, eventStreamId, version, out record);
+            
+            var success = GetStreamRecord(reader, streamId, version, out record);
             if (success)
                 return SingleReadResult.Success;
 
             if (version == 0)
                 return SingleReadResult.NoStream;
-
             EventRecord rec;
-            return TryGetRecordInternal(reader, eventStreamId, 0, out rec)
-                            ? SingleReadResult.NotFound
-                            : SingleReadResult.NoStream;
+            return GetStreamRecord(reader, streamId, 0, out rec) ? SingleReadResult.NotFound : SingleReadResult.NoStream;
         }
 
-        public RangeReadResult TryReadEventsForward(string eventStreamId, 
-                                                    int fromEventNumber, 
-                                                    int maxCount, 
-                                                    out EventRecord[] records)
+        public RangeReadResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount, out EventRecord[] records)
         {
-            Ensure.NotNull(eventStreamId, "eventStreamId");
+            Ensure.NotNull(streamId, "streamId");
             Ensure.Nonnegative(fromEventNumber, "fromEventNumber");
             Ensure.Positive(maxCount, "maxCount");
 
             records = EmptyRecords;
-            var streamHash = _hasher.Hash(eventStreamId);
-
+            var streamHash = _hasher.Hash(streamId);
             var reader = GetReader();
             try
             {
-                if (IsStreamDeletedInternal(reader, eventStreamId))
+                if (IsStreamDeletedInternal(reader, streamId))
                     return RangeReadResult.StreamDeleted;
 
                 records = _tableIndex.GetRange(streamHash, fromEventNumber, fromEventNumber + maxCount - 1)
-                                     .Select(x => ReadEventRecord(reader, x))
-                                     .Where(x => x.EventStreamId == eventStreamId)
+                                     .Select(x => GetEventRecord(reader, x))
+                                     .Where(x => x.EventStreamId == streamId)
                                      .Reverse()
                                      .ToArray();
                 if (records.Length > 0)
@@ -398,9 +401,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (fromEventNumber == 0)
                     return RangeReadResult.NoStream;
                 EventRecord record;
-                return TryGetRecordInternal(reader, eventStreamId, 0, out record) 
-                               ? RangeReadResult.Success
-                               : RangeReadResult.NoStream;
+                return GetStreamRecord(reader, streamId, 0, out record) ? RangeReadResult.Success : RangeReadResult.NoStream;
             }
             finally
             {
@@ -408,27 +409,27 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        public RangeReadResult TryReadRecordsBackward(string eventStreamId, 
-                                                       int fromEventNumber, 
-                                                       int maxCount, 
-                                                       out EventRecord[] records)
+        public RangeReadResult ReadStreamEventsBackward(string streamId, 
+                                                      int fromEventNumber, 
+                                                      int maxCount, 
+                                                      out EventRecord[] records)
         {
-            Ensure.NotNull(eventStreamId, "eventStreamId");
+            Ensure.NotNull(streamId, "streamId");
             Ensure.Positive(maxCount, "maxCount");
 
             records = EmptyRecords;
-            var streamHash = _hasher.Hash(eventStreamId);
+            var streamHash = _hasher.Hash(streamId);
 
             var reader = GetReader();
             try
             {
-                if (IsStreamDeletedInternal(reader, eventStreamId))
+                if (IsStreamDeletedInternal(reader, streamId))
                     return RangeReadResult.StreamDeleted;
 
                 int endEventNumber = fromEventNumber;
                 if (endEventNumber < 0)
                 {
-                    endEventNumber = GetLastStreamEventNumberInternal(reader, eventStreamId);
+                    endEventNumber = GetLastStreamEventNumberInternal(reader, streamId);
                     if (endEventNumber == -1) // optimization to reduce index lookups
                         return RangeReadResult.NoStream;
                 }
@@ -436,17 +437,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 var startEventNumber = Math.Max(0, endEventNumber - maxCount + 1);
 
                 records = _tableIndex.GetRange(streamHash, startEventNumber, endEventNumber)
-                                     .Select(x => ReadEventRecord(reader, x))
-                                     .Where(x => x.EventStreamId == eventStreamId)
+                                     .Select(x => GetEventRecord(reader, x))
+                                     .Where(x => x.EventStreamId == streamId)
                                      .ToArray();
                 if (records.Length > 0)
                     return RangeReadResult.Success;
                 if (fromEventNumber == 0) // optimization to reduce index lookups
                     return RangeReadResult.NoStream; 
                 EventRecord record;
-                return TryGetRecordInternal(reader, eventStreamId, 0, out record) 
-                               ? RangeReadResult.Success
-                               : RangeReadResult.NoStream;
+                return GetStreamRecord(reader, streamId, 0, out record) ? RangeReadResult.Success : RangeReadResult.NoStream;
             }
             finally
             {
@@ -454,22 +453,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private bool TryGetRecordInternal(ITransactionFileReader reader, 
-                                          string eventStreamId, 
-                                          int version, 
-                                          out EventRecord record)
+        private bool GetStreamRecord(ITransactionFileReader reader, string streamId, int version, out EventRecord record)
         {
             // we assume that you already did check for stream deletion
-            Ensure.NotNull(eventStreamId, "eventStreamId");
-            Ensure.Nonnegative(version, "version");
+            Ensure.NotNull(streamId, "streamId");
+            Ensure.Nonnegative(version, "eventNumber");
 
-            var streamHash = _hasher.Hash(eventStreamId);
+            var streamHash = _hasher.Hash(streamId);
 
             long position;
             if (_tableIndex.TryGetOneValue(streamHash, version, out position))
             {
-                EventRecord rec = ReadEventRecord(reader, new IndexEntry(streamHash, version, position));
-                if (rec.EventStreamId == eventStreamId)
+                EventRecord rec = GetEventRecord(reader, new IndexEntry(streamHash, version, position));
+                if (rec.EventStreamId == streamId)
                 {
                     _succReadCount += 1;
                     record = rec;
@@ -482,8 +478,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     if (indexEntry.Position == rec.LogPosition) // already checked that
                         continue;
 
-                    rec = ReadEventRecord(reader, indexEntry);
-                    if (rec.EventStreamId == eventStreamId)
+                    rec = GetEventRecord(reader, indexEntry);
+                    if (rec.EventStreamId == streamId)
                     {
                         _succReadCount += 1;
                         record = rec;
@@ -496,19 +492,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return false;
         }
 
-        private EventRecord ReadEventRecord(ITransactionFileReader reader, IndexEntry indexEntry)
+        private static EventRecord GetEventRecord(ITransactionFileReader reader, IndexEntry indexEntry)
         {
-            var prepare = GetPrepareInternal(reader, indexEntry.Position);
+            var prepare = ReadPrepareInternal(reader, indexEntry.Position);
             var eventRecord = new EventRecord(indexEntry.Version, prepare);
             return eventRecord;
         }
 
-        public PrepareLogRecord GetPrepare(long pos)
+        public PrepareLogRecord ReadPrepare(long pos)
         {
             var reader = GetReader();
             try
             {
-                return GetPrepareInternal(reader, pos);
+                return ReadPrepareInternal(reader, pos);
             }
             finally
             {
@@ -516,20 +512,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private PrepareLogRecord GetPrepareInternal(ITransactionFileReader reader, long pos)
+        private static PrepareLogRecord ReadPrepareInternal(ITransactionFileReader reader, long pos)
         {
             var result = reader.TryReadAt(pos);
-            if (!result.Success) throw new InvalidOperationException("Couldn't read record which is supposed to be in file.");
+            // TODO AN need to change this to account for possibly scavenged records, shouldn't throw exception,
+            // TODO AN rather return meaningful result
+            if (!result.Success) 
+                throw new InvalidOperationException("Couldn't read record which is supposed to be in file.");
             Debug.Assert(result.LogRecord.RecordType == LogRecordType.Prepare, "Incorrect type of log record, expected Prepare record.");
             return (PrepareLogRecord)result.LogRecord;
         }
 
-        public int GetLastStreamEventNumber(string eventStreamId)
+        public int GetLastStreamEventNumber(string streamId)
         {
             var reader = GetReader();
             try
             {
-                return GetLastStreamEventNumberInternal(reader, eventStreamId);
+                return GetLastStreamEventNumberInternal(reader, streamId);
             }
             finally
             {
@@ -537,35 +536,35 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private int GetLastStreamEventNumberInternal(ITransactionFileReader reader, string eventStreamId)
+        private int GetLastStreamEventNumberInternal(ITransactionFileReader reader, string streamId)
         {
-            Ensure.NotNull(eventStreamId, "eventStreamId");
+            Ensure.NotNull(streamId, "streamId");
 
-            var streamHash = _hasher.Hash(eventStreamId);
+            var streamHash = _hasher.Hash(streamId);
             IndexEntry latestEntry;
             if (!_tableIndex.TryGetLatestEntry(streamHash, out latestEntry))
                 return ExpectedVersion.NoStream;
 
-            var prepare = GetPrepareInternal(reader, latestEntry.Position);
-            if (prepare.EventStreamId == eventStreamId) // LUCKY!!!
+            var prepare = ReadPrepareInternal(reader, latestEntry.Position);
+            if (prepare.EventStreamId == streamId) // LUCKY!!!
                 return latestEntry.Version;
 
             // TODO AN here lie the problem of out of memory if the stream have A LOT of events in them
             foreach (var indexEntry in _tableIndex.GetRange(streamHash, 0, int.MaxValue))
             {
-                var p = GetPrepareInternal(reader, indexEntry.Position);
-                if (p.EventStreamId == eventStreamId)
+                var p = ReadPrepareInternal(reader, indexEntry.Position);
+                if (p.EventStreamId == streamId)
                     return indexEntry.Version; // AT LAST!!!
             }
             return ExpectedVersion.NoStream; // no such event stream
         }
 
-        public bool IsStreamDeleted(string eventStreamId)
+        public bool IsStreamDeleted(string streamId)
         {
             var reader = GetReader();
             try
             {
-                return IsStreamDeletedInternal(reader, eventStreamId);
+                return IsStreamDeletedInternal(reader, streamId);
             }
             finally
             {
@@ -573,40 +572,51 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private bool IsStreamDeletedInternal(ITransactionFileReader reader, string eventStreamId)
+        private bool IsStreamDeletedInternal(ITransactionFileReader reader, string streamId)
         {
             EventRecord record;
-            return TryGetRecordInternal(reader, eventStreamId, int.MaxValue, out record);
+            return GetStreamRecord(reader, streamId, int.MaxValue, out record);
         }
 
-        public List<ResolvedEventRecord> ReadAllEventsForward(long commitPos,  
-                                                              long preparePos, 
-                                                              bool inclusivePos,
-                                                              int maxCount, 
-                                                              bool resolveLinks)
+        /// <summary>
+        /// Returns event records in the sequence they were committed into TF.
+        /// Positions is specified as pre-positions (pointer at the beginning of the record).
+        /// </summary>
+        public ReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, bool resolveLinks)
         {
             var records = new List<ResolvedEventRecord>();
+            var nextPos = pos;
+            var prevPos = pos;
             var count = 0;
+            bool firstCommit = true;
             ITransactionFileSequentialReader seqReader = GetSeqReader();
             try
             {
-                long nextCommitPos = commitPos;
+                long commitPostPos = pos.CommitPosition;
                 while (count < maxCount)
                 {
-                    seqReader.Reposition(nextCommitPos);
-                    var result = seqReader.TryReadNext();
-                    // skip until commit
-                    while (result.Success && result.LogRecord.RecordType != LogRecordType.Commit)
+                    seqReader.Reposition(commitPostPos);
+                    
+                    RecordReadResult result;
+                    do
                     {
                         result = seqReader.TryReadNext();
                     }
+                    while (result.Success && result.LogRecord.RecordType != LogRecordType.Commit); // skip until commit
 
                     if (!result.Success) // no more records in TF
                         break;
-
-                    nextCommitPos = seqReader.Position;
+                    commitPostPos = seqReader.Position;
 
                     var commit = (CommitLogRecord)result.LogRecord;
+                    if (firstCommit)
+                    {
+                        firstCommit = false;
+                        // for backward pass we want to allow read the same commit and skip read prepares, 
+                        // so we put post-position of commit and post-position of prepare as TFPos for backward pass
+                        prevPos = new TFPos(commitPostPos, pos.PreparePosition);
+                    }
+
                     seqReader.Reposition(commit.TransactionPosition);
                     while (count < maxCount)
                     {
@@ -626,8 +636,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                         if ((prepare.Flags & PrepareFlags.Data) != 0) // prepare with useful data
                         {
-                            if (commit.Position > commitPos 
-                                || (inclusivePos ? prepare.LogPosition >= preparePos : prepare.LogPosition > preparePos))
+                            if (new TFPos(commit.Position, prepare.LogPosition) >= pos)
                             {
                                 var eventRecord = new EventRecord(commit.EventNumber + prepare.TransactionOffset, prepare);
 
@@ -644,6 +653,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                                 records.Add(new ResolvedEventRecord(eventRecord, linkToEvent, commit.Position));
                                 count++;
+
+                                // for forward pass position is inclusive, 
+                                // so we put pre-position of commit and post-position of prepare
+                                nextPos = new TFPos(commit.LogPosition, seqReader.Position); 
                             }
                         }
 
@@ -656,40 +669,57 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 ReturnSeqReader(seqReader);
             }
-            return records;
+            return new ReadAllResult(records, maxCount, pos, nextPos, prevPos);
         }
 
-        public List<ResolvedEventRecord> ReadAllEventsBackward(long commitPos,
-                                                               long preparePos,
-                                                               bool inclusivePos,
-                                                               int maxCount,
-                                                               bool resolveLinks)
+        /// <summary>
+        /// Returns event records in the reverse sequence they were committed into TF.
+        /// Positions is specified as post-positions (pointer after the end of record).
+        /// </summary>
+        public ReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount, bool resolveLinks)
         {
             var records = new List<ResolvedEventRecord>();
+            var nextPos = pos;
+            var prevPos = pos;
             var count = 0;
+            bool firstCommit = true;            
             ITransactionFileSequentialReader seqReader = GetSeqReader();
             try
             {
-                long nextCommitPos = commitPos;
+                long commitPostPos = pos.CommitPosition;
+                long nextCommitPostPos = pos.CommitPosition;
                 while (count < maxCount)
                 {
-                    seqReader.Reposition(nextCommitPos);
-                    var result = seqReader.TryReadPrev();
-                    // skip until commit
-                    while (result.Success && result.LogRecord.RecordType != LogRecordType.Commit)
+                    seqReader.Reposition(nextCommitPostPos);
+
+                    RecordReadResult result;
+                    do
                     {
+                        commitPostPos = seqReader.Position;
                         result = seqReader.TryReadPrev();
                     }
-
+                    while (result.Success && result.LogRecord.RecordType != LogRecordType.Commit); // skip until commit
+                    
                     if (!result.Success) // no more records in TF
                         break;
-
-                    nextCommitPos = seqReader.Position;
+                    nextCommitPostPos = seqReader.Position;
 
                     var commit = (CommitLogRecord)result.LogRecord;
-//                    seqReader.Reposition(commitLogRecord.TransactionPosition);
+                    if (firstCommit)
+                    {
+                        firstCommit = false;
+                        // for forward pass we allow read the same commit and as we have post-positions here
+                        // we can put just prepare post-position as prepare pre-position for forward read
+                        // so we put pre-position of commit and post-position of prepare
+                        prevPos = new TFPos(commit.LogPosition, pos.PreparePosition);
+                    }
+
+                    // as we don't know exact position of the last record of transaction,
+                    // we have to sequentially scan backwards, so no need to reposition
+                    //seqReader.Reposition(commitLogRecord.TransactionPosition);
                     while (count < maxCount)
                     {
+                        long preparePostPos = seqReader.Position;
                         result = seqReader.TryReadPrev();
                         if (!result.Success) // no more records in TF
                             break;
@@ -706,8 +736,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                         if ((prepare.Flags & PrepareFlags.Data) != 0) // prepare with useful data
                         {
-                            if (commit.Position < commitPos
-                                || (inclusivePos ? prepare.LogPosition <= preparePos : prepare.LogPosition < preparePos))
+                            if (new TFPos(commitPostPos, preparePostPos) <= pos)
                             {
                                 var eventRecord = new EventRecord(commit.EventNumber + prepare.TransactionOffset, prepare);
 
@@ -724,6 +753,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                                 records.Add(new ResolvedEventRecord(eventRecord, linkToEvent, commit.Position));
                                 count++;
+
+                                // for backward pass we allow read the same commit, but force to skip last read prepare
+                                // so we put post-position of commit and pre-position of prepare
+                                nextPos = new TFPos(commitPostPos, prepare.LogPosition);
                             }
                         }
                         if ((prepare.Flags & PrepareFlags.TransactionBegin) != 0)
@@ -735,7 +768,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 ReturnSeqReader(seqReader);
             }
-            return records;
+            return new ReadAllResult(records, maxCount, pos, nextPos, prevPos);
         }
 
         public EventRecord ResolveLinkToEvent(EventRecord eventRecord)
@@ -773,7 +806,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 }
                 if (faulted)
                     return null;
-                TryGetRecordInternal(reader, streamId, eventNumber, out record);
+                GetStreamRecord(reader, streamId, eventNumber, out record);
             }
             return record;
         }
@@ -787,7 +820,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             int from = 0;
             do
             {
-                var result = TryReadEventsForward(SystemStreams.StreamsStream, from, batchSize, out eventsBatch);
+                var result = ReadStreamEventsForward(SystemStreams.StreamsStream, from, batchSize, out eventsBatch);
                 if (result != RangeReadResult.Success)
                 {
                     throw new SystemStreamNotFoundException(
@@ -826,7 +859,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 int expectedVersion;
                 try
                 {
-                    var firstPrepare = GetPrepareInternal(reader, prepareStartPosition);
+                    var firstPrepare = ReadPrepareInternal(reader, prepareStartPosition);
                     streamId = firstPrepare.EventStreamId;
                     expectedVersion = firstPrepare.ExpectedVersion;
                 }
@@ -849,7 +882,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     foreach (var prepare in GetTransactionPrepares(prepareStartPosition))
                     {
                         Tuple<string, int> commitedInfo;
-                        if (!_commitedEvents.TryGetRecord(prepare.EventId, out commitedInfo)
+                        if (!_committedEvents.TryGetRecord(prepare.EventId, out commitedInfo)
                             || commitedInfo.Item1 != prepare.EventStreamId)
                         {
                             return first
@@ -874,7 +907,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         EventRecord record;
                         // TODO AN need to discriminate implicit and explicit $stream-created event
                         // TODO AN and avoid checking implicit as it has always different EventId
-                        if (!TryGetRecordInternal(reader, streamId, eventNumber, out record) 
+                        if (!GetStreamRecord(reader, streamId, eventNumber, out record) 
                             || (eventNumber > 0 && record.EventId != prepare.EventId)) 
                         {
                             return first || eventNumber == 1 // because right now $stream-created is always considered equal

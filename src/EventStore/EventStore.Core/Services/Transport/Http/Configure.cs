@@ -143,7 +143,7 @@ namespace EventStore.Core.Services.Transport.Http
                 case OperationErrorCode.ForwardTimeout:
                     return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Write timeout", null);
                 case OperationErrorCode.WrongExpectedVersion:
-                    return new ResponseConfiguration(HttpStatusCode.BadRequest, "Wrong expected version", null);
+                    return new ResponseConfiguration(HttpStatusCode.BadRequest, "Wrong expected eventNumber", null);
                 case OperationErrorCode.StreamDeleted:
                     return new ResponseConfiguration(HttpStatusCode.Gone, "Stream deleted", null);
                 case OperationErrorCode.InvalidTransaction:

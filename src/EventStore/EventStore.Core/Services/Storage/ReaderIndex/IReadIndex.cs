@@ -36,27 +36,27 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     {
         long LastCommitPosition { get; }
 
+        void Build();
         void Commit(CommitLogRecord record);
+        ReadIndexStats GetStatistics();
         
-        PrepareLogRecord GetPrepare(long pos);
+        PrepareLogRecord ReadPrepare(long pos);
 
-        SingleReadResult TryReadRecord(string eventStreamId, int version, out EventRecord record);
-        RangeReadResult TryReadRecordsBackward(string eventStreamId, int fromEventNumber, int maxCount, out EventRecord[] records);
-        RangeReadResult TryReadEventsForward(string eventStreamId, int fromEventNumber, int maxCount, out EventRecord[] records);
+        SingleReadResult ReadEvent(string streamId, int eventNumber, out EventRecord record);
+        RangeReadResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount, out EventRecord[] records);
+        RangeReadResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount, out EventRecord[] records);
 
-        int GetLastStreamEventNumber(string eventStreamId);
-        bool IsStreamDeleted(string eventStreamId);
-        
-        List<ResolvedEventRecord> ReadAllEventsForward(long commitPos, long preparePos, bool inclusivePos, int maxCount, bool resolveLinks);
-        List<ResolvedEventRecord> ReadAllEventsBackward(long commitPos, long preparePos, bool inclusivePos, int maxCount, bool resolveLinks);
+        int GetLastStreamEventNumber(string streamId);
+        bool IsStreamDeleted(string streamId);
+        string[] GetStreamIds();
+
+        ReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, bool resolveLinks);
+        ReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount, bool resolveLinks);
 
         EventRecord ResolveLinkToEvent(EventRecord eventRecord);
         CommitCheckResult CheckCommitStartingAt(long prepareStartPosition);
-        string[] GetStreamIds();
         int GetLastTransactionOffset(long writerCheckpoint, long transactionId);
        
-        void Build();
-        ReadIndexStats GetStatistics();
         void Close();
         void Dispose();
     }
