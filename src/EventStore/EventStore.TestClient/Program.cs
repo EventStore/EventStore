@@ -61,7 +61,7 @@ namespace EventStore.TestClient
                     return -1;
                 }
 
-                var logsDir = !string.IsNullOrEmpty(options.LogsPath) ? options.LogsPath : Helper.GetDefaultLogsDir();
+                var logsDir = !string.IsNullOrEmpty(options.LogsDir) ? options.LogsDir : Helper.GetDefaultLogsDir();
                 LogManager.Init("client", logsDir);
 
                 IPAddress ipAddr;

@@ -116,7 +116,7 @@ namespace EventStore.Core
         {
             if (!BoxMode)
             {
-                var logsDir = !string.IsNullOrEmpty(options.LogsPath) ? options.LogsPath : GetLogsDirectory();
+                var logsDir = !string.IsNullOrEmpty(options.LogsDir) ? options.LogsDir : GetLogsDirectory();
                 LogManager.Init(GetComponentName(options), logsDir);
             }
 
