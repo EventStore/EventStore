@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
 
@@ -89,52 +90,45 @@ namespace EventStore.Core.Services.Transport.Http
         }
 
         public static FeedElement ToFeed(string eventStreamId, 
-                                            int start, 
-                                            int count, 
-                                            DateTime updateTime,
-                                            EventRecord[] items, 
-                                            Func<EventRecord, string, EntryElement> itemToEntry,
-                                            string userHostName)
+                                         int start, 
+                                         int count, 
+                                         DateTime updateTime,
+                                         EventRecord[] items, 
+                                         Func<EventRecord, string, EntryElement> itemToEntry,
+                                         string userHostName)
         {
             if (string.IsNullOrEmpty(eventStreamId) || items == null || userHostName == null)
                 return null;
-
             if (start == -1)
                 start = GetActualStart(items);
 
             var self = HostName.Combine(userHostName, "/streams/{0}", eventStreamId);
-
             var feed = new FeedElement();
-
             feed.SetTitle(String.Format("Event stream '{0}'", eventStreamId));
             feed.SetId(self);
-
             feed.SetUpdated(updateTime);
             feed.SetAuthor(AtomSpecs.Author);
 
             feed.AddLink(self, "self", null);
-            
-            feed.AddLink(HostName.Combine(userHostName, 
-                                     "/streams/{0}/range/{1}/{2}",
-                                     eventStreamId,
-                                     AtomSpecs.FeedPageSize - 1,
-                                     AtomSpecs.FeedPageSize),
+            feed.AddLink(HostName.Combine(userHostName,
+                                          "/streams/{0}/range/{1}/{2}",
+                                          eventStreamId,
+                                          AtomSpecs.FeedPageSize - 1,
+                                          AtomSpecs.FeedPageSize),
                          "first",
                          null);
-
-
-            feed.AddLink(HostName.Combine(userHostName, 
-                                     "/streams/{0}/range/{1}/{2}",
-                                     eventStreamId,
-                                     PrevStart(start),
-                                     AtomSpecs.FeedPageSize),
+            feed.AddLink(HostName.Combine(userHostName,
+                                          "/streams/{0}/range/{1}/{2}",
+                                          eventStreamId,
+                                          PrevStart(start),
+                                          AtomSpecs.FeedPageSize),
                          "prev",
                          null);
-            feed.AddLink(HostName.Combine(userHostName, 
-                                     "/streams/{0}/range/{1}/{2}",
-                                     eventStreamId,
-                                     NextStart(start),
-                                     AtomSpecs.FeedPageSize),
+            feed.AddLink(HostName.Combine(userHostName,
+                                          "/streams/{0}/range/{1}/{2}",
+                                          eventStreamId,
+                                          NextStart(start),
+                                          AtomSpecs.FeedPageSize),
                          "next",
                          null);
 
@@ -142,7 +136,97 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 feed.AddEntry(itemToEntry(item, userHostName));
             }
+            return feed;
+        }
 
+        public static FeedElement ToAllEventsBackwardFeed(ReadAllResult result,
+                                                          Func<EventRecord, string, EntryElement> itemToEntry,
+                                                          string userHostName)
+        {
+            var self = HostName.Combine(userHostName, "/streams/$all");
+            var feed = new FeedElement();
+            feed.SetTitle(String.Format("All events"));
+            feed.SetId(self);
+
+            var items = result.Records.Select(rer => rer.Event).ToList();
+
+            feed.SetUpdated(items.Any() ? items.First().TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetAuthor(AtomSpecs.Author);
+
+            feed.AddLink(self, "self", null);
+            feed.AddLink(HostName.Combine(userHostName,
+                                          "/streams/$all/{0}",
+                                          result.MaxCount),
+                         "first",
+                         null);
+            feed.AddLink(HostName.Combine(userHostName,
+                                          "/streams/$all/after/{0}/{1}",
+                                          new TFPos(0, 0).AsString(),
+                                          result.MaxCount),
+                         "last",
+                         null);
+            feed.AddLink(HostName.Combine(userHostName,
+                                          "/streams/$all/after/{0}/{1}",
+                                          result.PrevPos.AsString(),
+                                          result.MaxCount),
+                         "prev",
+                         null);
+            feed.AddLink(HostName.Combine(userHostName,
+                                          "/streams/$all/before/{0}/{1}",
+                                          result.NextPos.AsString(),
+                                          result.MaxCount),
+                         "next",
+                         null);
+
+            foreach (var item in items)
+            {
+                feed.AddEntry(itemToEntry(item, userHostName));
+            }
+            return feed;
+        }
+
+        public static FeedElement ToAllEventsForwardFeed(ReadAllResult result,
+                                                         Func<EventRecord, string, EntryElement> itemToEntry,
+                                                         string userHostName)
+        {
+            var self = HostName.Combine(userHostName, "/streams/$all");
+            var feed = new FeedElement();
+            feed.SetTitle(String.Format("All events"));
+            feed.SetId(self);
+
+            var items = result.Records.Select(rer => rer.Event).OrderByDescending(re => re.TimeStamp).ToList();
+
+            feed.SetUpdated(items.Any() ? items.First().TimeStamp : DateTime.MinValue.ToUniversalTime());
+            feed.SetAuthor(AtomSpecs.Author);
+
+            feed.AddLink(self, "self", null);
+            feed.AddLink(HostName.Combine(userHostName,
+                                          "/streams/$all/{0}",
+                                          result.MaxCount),
+                         "first",
+                         null);
+            feed.AddLink(HostName.Combine(userHostName,
+                                          "/streams/$all/after/{0}/{1}",
+                                          new TFPos(0, 0).AsString(),
+                                          result.MaxCount),
+                         "last",
+                         null);
+            feed.AddLink(HostName.Combine(userHostName,
+                                          "/streams/$all/after/{0}/{1}",
+                                          result.NextPos.AsString(),
+                                          result.MaxCount),
+                         "prev",
+                         null);
+            feed.AddLink(HostName.Combine(userHostName,
+                                          "/streams/$all/before/{0}/{1}",
+                                          result.PrevPos.AsString(),
+                                          result.MaxCount),
+                         "next",
+                         null);
+            foreach (var item in items)
+            {
+                feed.AddEntry(itemToEntry(item, userHostName));
+            }
             return feed;
         }
 
