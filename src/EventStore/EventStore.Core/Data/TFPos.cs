@@ -85,19 +85,9 @@ namespace EventStore.Core.Data
                    || (left.CommitPosition == right.CommitPosition && left.PreparePosition > right.PreparePosition);
         }
 
-        public static bool TryParse(string s, out TFPos pos)
-        {
-            throw new NotImplementedException();
-        }
-
         public override string ToString()
         {
             return string.Format("C:{0}/P:{1}", CommitPosition, PreparePosition);
-        }
-
-        public string AsString()
-        {
-            throw new NotImplementedException();
         }
     }
 }
