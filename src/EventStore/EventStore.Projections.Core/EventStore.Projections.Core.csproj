@@ -94,6 +94,7 @@
     <Compile Include="Messaging\PublishToWrapEnvelop.cs" />
     <Compile Include="Messaging\UnwrapEnvelopeHandler.cs" />
     <Compile Include="Messaging\UnwrapEnvelopeMessage.cs" />
+    <Compile Include="ProjectionManagerNode.cs" />
     <Compile Include="Services\Http\ProjectionsStatisticsHttpFormatted.cs" />
     <Compile Include="Services\Management\ManagedProjection.cs" />
     <Compile Include="Services\Management\ManagedProjectionState.cs" />

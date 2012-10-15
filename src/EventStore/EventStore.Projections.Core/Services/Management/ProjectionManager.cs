@@ -61,8 +61,9 @@ namespace EventStore.Projections.Core.Services.Management
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
 
-        private readonly IPublisher _coreOutput;
+        private readonly IPublisher _publisher;
         private readonly ICheckpoint _checkpointForStatistics;
+        private readonly IPublisher[] _queues;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
         private readonly Dictionary<string, ManagedProjection> _projections;
         private readonly Dictionary<Guid, string> _projectionsMap;
@@ -76,20 +77,23 @@ namespace EventStore.Projections.Core.Services.Management
 
         private int _readEventsBatchSize = 100;
 
-        public ProjectionManager(IPublisher coreOutput, ICheckpoint checkpointForStatistics)
+        public ProjectionManager(IPublisher publisher, IPublisher[] queues, ICheckpoint checkpointForStatistics)
         {
-            if (coreOutput == null) throw new ArgumentNullException("coreOutput");
+            if (publisher == null) throw new ArgumentNullException("publisher");
+            if (queues == null) throw new ArgumentNullException("queues");
+            if (queues.Length == 0) throw new ArgumentException("queues");
 
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
-                    coreOutput, v => v.CorrelationId, v => v.CorrelationId);
+                    publisher, v => v.CorrelationId, v => v.CorrelationId);
             _readDispatcher =
                 new RequestResponseDispatcher
                     <ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>(
-                    coreOutput, v => v.CorrelationId, v => v.CorrelationId);
+                    publisher, v => v.CorrelationId, v => v.CorrelationId);
 
-            _coreOutput = coreOutput;
+            _publisher = publisher;
             _checkpointForStatistics = checkpointForStatistics;
+            _queues = queues;
 
             _projectionStateHandlerFactory = new ProjectionStateHandlerFactory();
             _projections = new Dictionary<string, ManagedProjection>();
@@ -102,7 +106,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(SystemMessage.SystemStart message)
         {
-            _coreOutput.Publish(new ProjectionMessage.CoreService.Start());
+            foreach (var queue in _queues)
+                queue.Publish(new ProjectionMessage.CoreService.Start());
             StartExistingProjections();
         }
 
@@ -274,7 +279,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _readDispatcher.Publish(
                 new ClientMessage.ReadEventsBackwards(
-                    Guid.NewGuid(), new PublishEnvelope(_coreOutput), "$projections-$all", from, _readEventsBatchSize,
+                    Guid.NewGuid(), new PublishEnvelope(_publisher), "$projections-$all", from, _readEventsBatchSize,
                     resolveLinks: false), m => LoadProjectionListCompleted(m, from));
         }
 
@@ -324,7 +329,7 @@ namespace EventStore.Projections.Core.Services.Management
                 envelope, ProjectionMode.Persistent, name, "native:" + handlerType.Namespace + "." + handlerType.Name,
                 config, enabled: false);
 
-            _coreOutput.Publish(postMessage);
+            _publisher.Publish(postMessage);
         }
 
         private void PostNewProjection(ProjectionManagementMessage.Post message, Action<ManagedProjection> completed)
@@ -349,7 +354,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             var projectionCorrelationId = Guid.NewGuid();
             var managedProjectionInstance = new ManagedProjection(
-                projectionCorrelationId, name, _logger, _writeDispatcher, _readDispatcher, _coreOutput,
+                projectionCorrelationId, name, _logger, _writeDispatcher, _readDispatcher, _publisher,
                 _projectionStateHandlerFactory);
             _projectionsMap.Add(projectionCorrelationId, name);
             _projections.Add(name, managedProjectionInstance);
@@ -360,7 +365,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), new PublishEnvelope(_coreOutput), "$projections-$all", ExpectedVersion.Any,
+                    Guid.NewGuid(), new PublishEnvelope(_publisher), "$projections-$all", ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "ProjectionCreated", false, Encoding.UTF8.GetBytes(name), new byte[0])),
                 m => WriteProjectionRegistrationCompleted(m, completed, name));
         }
