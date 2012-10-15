@@ -15,6 +15,25 @@ namespace EventStore.Core.Data
             PreparePosition = preparePosition;
         }
 
+        public string AsString()
+        {
+            return string.Format("{0:X16}{1:X16}", CommitPosition, PreparePosition);
+        }
+
+        public static bool TryParse(string s, out TFPos pos)
+        {
+            pos = Invalid;
+            if (s == null || s.Length != 32)
+                return false;
+
+            long commitPos;
+            long preparePos;
+            if (!long.TryParse(s.Substring(0, 16), out commitPos) || !long.TryParse(s.Substring(16, 16), out preparePos))
+                return false;
+            pos = new TFPos(commitPos, preparePos);
+            return true;
+        }
+
         public bool Equals(TFPos other)
         {
             return this == other;

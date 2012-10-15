@@ -97,15 +97,14 @@ namespace EventStore.TestClient.Commands.DvuAdvanced
                 switch (_step)
                 {
                     case 0:
-                        var writeDto = new ClientMessageDto.WriteEvents(correlationId,
-                                                                        _event.EventStreamId,
+                        var writeDto = new ClientMessageDto.WriteEvents(_event.EventStreamId,
                                                                         _event.ExpectedVersion,
                                                                         new[] { new ClientMessageDto.Event(_event.Event) });
                         return new TcpPackage(TcpCommand.WriteEvents, correlationId, writeDto.Serialize());
                     case 1:
-                        var readDto = new ClientMessageDto.ReadEvent(correlationId, 
-                                                                     _event.EventStreamId, 
-                                                                     _event.ShouldBeVersion);
+                        var readDto = new ClientMessageDto.ReadEvent(_event.EventStreamId, 
+                                                                     _event.ShouldBeVersion,
+                                                                     resolveLinkTos: false);
                         return new TcpPackage(TcpCommand.ReadEvent, correlationId, readDto.Serialize());
                     default:
                         throw new ArgumentOutOfRangeException("_step", "step can be 0 or 1 for write task");
@@ -249,7 +248,7 @@ namespace EventStore.TestClient.Commands.DvuAdvanced
 
         public override TcpPackage CreateNetworkPackage(Guid correlationId)
         {
-            var dto = new ClientMessageDto.DeleteStream(correlationId, EventStreamId, ExpectedVersion);
+            var dto = new ClientMessageDto.DeleteStream(EventStreamId, ExpectedVersion);
             return new TcpPackage(TcpCommand.DeleteStream, correlationId, dto.Serialize());
         }
 

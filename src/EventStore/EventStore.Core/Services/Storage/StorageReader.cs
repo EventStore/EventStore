@@ -35,6 +35,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -55,19 +56,22 @@ namespace EventStore.Core.Services.Storage
         private readonly IPublisher _bus;
         private readonly IReadIndex _readIndex;
         private readonly int _threadCount;
+        private readonly ICheckpoint _writerCheckpoint;
         private QueuedHandler[] _storageReaderQueues;
         private int _nextQueueNumber;
 
-        public StorageReader(IPublisher bus, ISubscriber subscriber, IReadIndex readIndex, int threadCount)
+        public StorageReader(IPublisher bus, ISubscriber subscriber, IReadIndex readIndex, int threadCount, ICheckpoint writerCheckpoint)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(subscriber, "subscriber");
             Ensure.NotNull(readIndex, "readIndex");
             Ensure.Positive(threadCount, "threadCount");
+            Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 
             _bus = bus;
             _readIndex = readIndex;
             _threadCount = threadCount;
+            _writerCheckpoint = writerCheckpoint;
 
             SetupMessaging(subscriber);
         }
@@ -261,17 +265,20 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward message)
         {
-            var result = _readIndex.ReadAllEventsForward(new TFPos(message.CommitPosition, message.PreparePosition),
-                                                         message.MaxCount,
-                                                         message.ResolveLinks);
+            var pos = new TFPos(message.CommitPosition, message.PreparePosition);
+            var result = _readIndex.ReadAllEventsForward(pos, message.MaxCount, message.ResolveLinks);
             message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, result));
         }
 
         void IHandle<ClientMessage.ReadAllEventsBackward>.Handle(ClientMessage.ReadAllEventsBackward message)
         {
-            var result = _readIndex.ReadAllEventsBackward(new TFPos(message.CommitPosition, message.PreparePosition),
-                                                          message.MaxCount,
-                                                          message.ResolveLinks);
+            var pos = new TFPos(message.CommitPosition, message.PreparePosition);
+            if (pos == new TFPos(-1, -1))
+            {
+                var checkpoint = _writerCheckpoint.Read();
+                pos = new TFPos(checkpoint, checkpoint);
+            }
+            var result = _readIndex.ReadAllEventsBackward(pos, message.MaxCount, message.ResolveLinks);
             message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsBackwardCompleted(message.CorrelationId, result));
         }
 

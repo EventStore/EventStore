@@ -99,7 +99,7 @@ namespace EventStore.Core
             var readIndex = new ReadIndex(_mainQueue, TFConsts.ReadIndexReaderCount, () => new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0), () => new TFChunkReader(db, db.Config.WriterCheckpoint), tableIndex, new XXHashUnsafe());
             var writer = new TFChunkWriter(db);
             var storageWriter = new StorageWriter(_mainQueue, _outputBus, writer, readIndex);
-            var storageReader = new StorageReader(_mainQueue, _outputBus, readIndex, TFConsts.StorageReaderHandlerCount);
+            var storageReader = new StorageReader(_mainQueue, _outputBus, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
             var chaser = new TFChunkChaser(db,
