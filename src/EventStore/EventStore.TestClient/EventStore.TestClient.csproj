@@ -56,6 +56,7 @@
     <Compile Include="ClientOptions.cs" />
     <Compile Include="CommandProcessorContext.cs" />
     <Compile Include="CommandsProcessor.cs" />
+    <Compile Include="Commands\ReadAllProcessor.cs" />
     <Compile Include="Commands\RunTestScenariosProcessor.cs" />
     <Compile Include="Commands\ScavengeProcessor.cs" />
     <Compile Include="Commands\CreateStreamProcessor.cs" />

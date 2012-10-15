@@ -80,7 +80,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             AddUnwrapper(TcpCommand.ReadAllEventsForward, UnwrapReadAllEventsForward);
             AddWrapper<ClientMessage.ReadAllEventsForwardCompleted>(WrapReadAllEventsForwardCompleted);
-            AddUnwrapper(TcpCommand.ReadStreamEventsBackward, UnwrapReadAllEventsBackward);
+            AddUnwrapper(TcpCommand.ReadAllEventsBackward, UnwrapReadAllEventsBackward);
             AddWrapper<ClientMessage.ReadAllEventsBackwardCompleted>(WrapReadAllEventsBackwardCompleted);
 
             AddUnwrapper(TcpCommand.SubscribeToStream, UnwrapSubscribeToStream);
@@ -369,7 +369,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                                          msg.Result.Records.Select(x => x.Link).ToArray(),
                                                                          msg.Result.NextPos.CommitPosition,
                                                                          msg.Result.NextPos.PreparePosition);
-            return new TcpPackage(TcpCommand.ReadStreamEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
+            return new TcpPackage(TcpCommand.ReadAllEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 
         private static ClientMessage.ReadAllEventsBackward UnwrapReadAllEventsBackward(TcpPackage package, IEnvelope envelope, TcpConnectionManager connection)
@@ -391,7 +391,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                                           msg.Result.Records.Select(x => x.Link).ToArray(),
                                                                           msg.Result.NextPos.CommitPosition,
                                                                           msg.Result.NextPos.PreparePosition);
-            return new TcpPackage(TcpCommand.ReadStreamEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
+            return new TcpPackage(TcpCommand.ReadAllEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 
 

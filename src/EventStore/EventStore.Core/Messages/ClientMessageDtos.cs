@@ -474,6 +474,10 @@ namespace EventStore.Core.Messages
             [ProtoMember(6)]
             public long NextPreparePosition { get; set; }
 
+            public ReadAllEventsForwardCompleted()
+            {
+            }
+
             public ReadAllEventsForwardCompleted(long commitPosition,
                                                  long preparePosition,
                                                  EventRecord[] events,
@@ -538,6 +542,10 @@ namespace EventStore.Core.Messages
 
             [ProtoMember(6)]
             public long NextPreparePosition { get; set; }
+
+            public ReadAllEventsBackwardCompleted()
+            {
+            }
 
             public ReadAllEventsBackwardCompleted(long commitPosition,
                                                   long preparePosition,
