@@ -57,7 +57,9 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<ProjectionManagementMessage.Enable>,
                                      IHandle<ProjectionMessage.Projections.Started>,
                                      IHandle<ProjectionMessage.Projections.Stopped>,
-                                     IHandle<ProjectionMessage.Projections.Faulted>
+                                     IHandle<ProjectionMessage.Projections.Faulted>,
+                                     IHandle<ProjectionMessage.Projections.Management.StateReport>,
+                                     IHandle<ProjectionMessage.Projections.Management.StatisticsReport>
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
 
@@ -238,6 +240,26 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
         public void Handle(ProjectionMessage.Projections.Faulted message)
+        {
+            string name;
+            if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
+            {
+                var projection = _projections[name];
+                projection.Handle(message);
+            }
+        }
+
+        public void Handle(ProjectionMessage.Projections.Management.StateReport message)
+        {
+            string name;
+            if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
+            {
+                var projection = _projections[name];
+                projection.Handle(message);
+            }
+        }
+
+        public void Handle(ProjectionMessage.Projections.Management.StatisticsReport message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.CorrelationId, out name))

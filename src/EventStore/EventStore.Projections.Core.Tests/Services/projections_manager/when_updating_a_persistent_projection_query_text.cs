@@ -27,19 +27,16 @@
 // 
 
 using System.Linq;
-using EventStore.Core.Bus;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_updating_a_persistent_projection_query_text : TestFixtureWithExistingEvents
+    public class when_updating_a_persistent_projection_query_text : TestFixtureWithProjectionCoreAndManagementServices
     {
         protected override void Given()
         {
@@ -50,16 +47,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             AllWritesSucceed();
         }
 
-        private ProjectionManager _manager;
         private string _projectionName;
         private string _newProjectionSource;
 
-        [SetUp]
-        public void setup()
+        protected override void When()
         {
-            _manager = new ProjectionManager(_bus, new IPublisher[]{_bus}, checkpointForStatistics: null);
-            _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
-            _bus.Subscribe<ProjectionMessage.Projections.Stopped>(_manager);
             _projectionName = "test-projection";
             _manager.Handle(
                 new ProjectionManagementMessage.Post(

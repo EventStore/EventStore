@@ -173,17 +173,65 @@ namespace EventStore.Projections.Core.Messages
 
                 public class GetState : ManagementMessage
                 {
-                    public GetState(Guid correlationId)
+                    private readonly IEnvelope _envelope;
+
+                    public GetState(IEnvelope envelope, Guid correlationId)
                         : base(correlationId)
                     {
+                        _envelope = envelope;
+                    }
+
+                    public IEnvelope Envelope
+                    {
+                        get { return _envelope; }
                     }
                 }
 
                 public class GetStatistics : ManagementMessage
                 {
-                    public GetStatistics(Guid correlationId)
+                    private readonly IEnvelope _envelope;
+
+                    public GetStatistics(IEnvelope envelope, Guid correlationId)
                         : base(correlationId)
                     {
+                        _envelope = envelope;
+                    }
+
+                    public IEnvelope Envelope
+                    {
+                        get { return _envelope; }
+                    }
+                }
+
+                public class StateReport : ManagementMessage
+                {
+                    private readonly string _state;
+
+                    public StateReport(Guid correlationId, string state)
+                        : base(correlationId)
+                    {
+                        _state = state;
+                    }
+
+                    public string State
+                    {
+                        get { return _state; }
+                    }
+                }
+
+                public class StatisticsReport : ManagementMessage
+                {
+                    private readonly ProjectionStatistics _statistics;
+
+                    public StatisticsReport(Guid correlationId, ProjectionStatistics statistics)
+                        : base(correlationId)
+                    {
+                        _statistics = statistics;
+                    }
+
+                    public ProjectionStatistics Statistics
+                    {
+                        get { return _statistics; }
                     }
                 }
 

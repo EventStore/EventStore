@@ -27,9 +27,7 @@
 // 
 
 using System.Linq;
-using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -38,36 +36,10 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_updating_an_adhoc_projection_query_text
+    public class when_updating_an_adhoc_projection_query_text : TestFixtureWithProjectionCoreAndManagementServices
     {
-        private ProjectionManager _manager;
         private string _projectionName;
         private string _newProjectionSource;
-
-        protected InMemoryBus _bus;
-        protected WatchingConsumer _consumer;
-
-
-        [SetUp]
-        public void setup()
-        {
-            _bus = new InMemoryBus("bus");
-            _consumer = new WatchingConsumer();
-            _bus.Subscribe(_consumer);
-
-            _manager = new ProjectionManager(_bus, new IPublisher[] { _bus }, checkpointForStatistics: null);
-            _bus.Subscribe<ProjectionMessage.Projections.Stopped>(_manager);
-            _projectionName = "test-projection";
-            _manager.Handle(
-                new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), ProjectionMode.AdHoc, _projectionName, "JS",
-                    @"fromAll(); on_any(function(){});log(1);", enabled: true));
-            // when
-            _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
-            _manager.Handle(
-                new ProjectionManagementMessage.UpdateQuery(
-                    new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource));
-        }
 
         [TearDown]
         public void TearDown()
@@ -117,6 +89,20 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().Name);
             Assert.AreEqual(
                 "", _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().State);
+        }
+
+        protected override void When()
+        {
+            _projectionName = "test-projection";
+            _manager.Handle(
+                new ProjectionManagementMessage.Post(
+                    new PublishEnvelope(_bus), ProjectionMode.AdHoc, _projectionName, "JS",
+                    @"fromAll(); on_any(function(){});log(1);", enabled: true));
+            // when
+            _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
+            _manager.Handle(
+                new ProjectionManagementMessage.UpdateQuery(
+                    new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource));
         }
     }
 }

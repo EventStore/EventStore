@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Json;
 using EventStore.Common.Log;
@@ -75,6 +76,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private string _faultedReason;
         private Action _stopCompleted;
+        private List<IEnvelope> _stateRequests;
 
         public ManagedProjection(
             IPublisher coreQueue, 
@@ -167,9 +169,22 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.GetState message)
         {
-            //TODO: allow requesting valid only state
-            var state = GetProjectionState();
-            message.Envelope.ReplyWith(new ProjectionManagementMessage.ProjectionState(message.Name, state));
+            if (_state == ManagedProjectionState.Running)
+            {
+                var needRequest = _stateRequests == null;
+                if (_stateRequests == null)
+                {
+                    _stateRequests = new List<IEnvelope>();
+                }
+                _stateRequests.Add(message.Envelope);
+                if (needRequest)
+                    _coreQueue.Publish(new ProjectionMessage.Projections.Management.GetState(new PublishEnvelope(_publisher), _id));
+            }
+            else
+            {
+                //TODO: report right state here
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.ProjectionState(message.Name, "*** UNKNOWN ***"));
+            }
         }
 
         public void Handle(ProjectionManagementMessage.Disable message)
@@ -212,6 +227,20 @@ namespace EventStore.Projections.Core.Services.Management
             DisposeCoreProjection();
         }
 
+        public void Handle(ProjectionMessage.Projections.Management.StateReport message)
+        {
+            var stateRequests = _stateRequests;
+            _stateRequests = null;
+
+            foreach (var request in stateRequests)
+                request.ReplyWith(new ProjectionManagementMessage.ProjectionState(_name, message.State));
+        }
+
+        public void Handle(ProjectionMessage.Projections.Management.StatisticsReport message)
+        {
+            throw new NotImplementedException();
+        }
+
         public void InitializeNew(ProjectionManagementMessage.Post message, Action completed)
         {
             LoadPersistedState(
@@ -224,13 +253,6 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _state = ManagedProjectionState.Loading;
             BeginLoad(name);
-        }
-
-        private string GetProjectionState()
-        {
-            if (_coreProjection == null)
-                return null;
-            return _coreProjection.GetProjectionState();
         }
 
         private void BeginLoad(string name)

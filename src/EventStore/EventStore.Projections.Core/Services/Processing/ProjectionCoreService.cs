@@ -50,6 +50,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionMessage.CoreService.Management.Dispose>,
                                          IHandle<ProjectionMessage.Projections.Management.Start>,
                                          IHandle<ProjectionMessage.Projections.Management.Stop>,
+                                         IHandle<ProjectionMessage.Projections.Management.GetState>,
+                                         IHandle<ProjectionMessage.Projections.Management.GetStatistics>,
                                          IHandle<ClientMessage.ReadEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadEventsFromTFCompleted>
 
@@ -272,6 +274,20 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var projection = _projections[message.CorrelationId];
             projection.Stop();
+        }
+
+        public void Handle(ProjectionMessage.Projections.Management.GetState message)
+        {
+            var projection = _projections[message.CorrelationId];
+            var projectionState = projection.GetProjectionState();
+            message.Envelope.ReplyWith(new ProjectionMessage.Projections.Management.StateReport(message.CorrelationId, projectionState));
+        }
+
+        public void Handle(ProjectionMessage.Projections.Management.GetStatistics message)
+        {
+            var projection = _projections[message.CorrelationId];
+            var statistics = projection.GetStatistics();
+            message.Envelope.ReplyWith(new ProjectionMessage.Projections.Management.StatisticsReport(message.CorrelationId, statistics));
         }
     }
 }
