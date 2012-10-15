@@ -156,7 +156,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _readers.Push(reader);
         }
 
-        public void Build()
+        public void Build(bool buildMemTable = true)
         {
             _tableIndex.Initialize();
             _persistedPrepareCheckpoint = _tableIndex.PrepareCheckpoint;
@@ -166,6 +166,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 rdr.Open();
             }
+
+            if (!buildMemTable)
+                return;
 
             long pos = Math.Max(0, _persistedCommitCheckpoint);
             long processed = 0;

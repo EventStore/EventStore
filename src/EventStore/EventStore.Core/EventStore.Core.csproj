@@ -177,7 +177,7 @@
     <Compile Include="Services\VNode\VNodeFSMHandling.cs" />
     <Compile Include="Services\VNode\VNodeFSMStatesDefinition.cs" />
     <Compile Include="Services\Monitoring\MonitoringService.cs" />
-    <Compile Include="Services\Monitoring\Stats\DrivesInfo.cs" />
+    <Compile Include="Services\Monitoring\Stats\EsDriveInfo.cs" />
     <Compile Include="Services\Monitoring\Stats\DiskIo.cs" />
     <Compile Include="Services\Monitoring\Utils\ShellExecutor.cs" />
     <Compile Include="Services\Monitoring\Utils\StatsCsvEncoder.cs" />

@@ -468,16 +468,16 @@ namespace EventStore.ClientAPI
             return _projectionsManager.ListAdHoc();
         }
 
-        string IProjectionsManagement.ListContinious()
+        string IProjectionsManagement.ListContinuous()
         {
-            var task = ((IProjectionsManagement) this).ListContiniousAsync();
+            var task = ((IProjectionsManagement) this).ListContinuousAsync();
             task.Wait();
             return task.Result;
         }
 
-        Task<string> IProjectionsManagement.ListContiniousAsync()
+        Task<string> IProjectionsManagement.ListContinuousAsync()
         {
-            return _projectionsManager.ListContinious();
+            return _projectionsManager.ListContinuous();
         }
 
         string IProjectionsManagement.ListPersistent()
@@ -799,6 +799,10 @@ namespace EventStore.ClientAPI
 
         internal ManualResetEvent ConnectedEvent = new ManualResetEvent(false);
 
+        private Thread _executionThread;
+        private volatile bool _stopExecutionThread;
+        private readonly ConcurrentQueue<Action> _executionQueue = new ConcurrentQueue<Action>(); 
+
         private readonly ConcurrentDictionary<Guid, Subscription> _subscriptions = new ConcurrentDictionary<Guid, Subscription>();
 
         public SubscriptionsChannel(IPEndPoint tcpEndPoint)
@@ -810,12 +814,25 @@ namespace EventStore.ClientAPI
         public void Connect()
         {
             _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
+
+            if(_executionThread == null)
+            {
+                _executionThread = new Thread(ExecuteUserCallbacks)
+                                       {
+                                           IsBackground = true,
+                                           Name = "User callbacks execution thread in sub channel"
+                                       };
+                _executionThread.Start();
+            }
         }
 
         public void Close()
         {
             if(_connection != null)
                 _connection.Close();
+
+            if(_executionThread != null)
+                _stopExecutionThread = true;
         }
 
         public Task Subscribe(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
@@ -892,25 +909,30 @@ namespace EventStore.ClientAPI
             }
         }
 
-        private void RemoveDroppedSubscription(Subscription subscription)
-        {
-            Subscription removed;
-            _subscriptions.TryRemove(subscription.Id, out removed);
-        }
-
         private void ExecuteUserCallbackAsync(Action callback)
         {
-            ThreadPool.QueueUserWorkItem(_ =>
-                                             {
-                                                 try
-                                                 {
-                                                     callback();
-                                                 }
-                                                 catch (Exception e)
-                                                 {
-                                                     Debug.WriteLine("User callback thrown : {0}", e.StackTrace);
-                                                 }
-                                             });
+            _executionQueue.Enqueue(callback);
+        }
+
+        private void ExecuteUserCallbacks()
+        {
+            while (!_stopExecutionThread)
+            {
+                Action callback;
+                if (_executionQueue.TryDequeue(out callback))
+                {
+                    try
+                    {
+                        callback();
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine("User callback thrown : {0}", e);
+                    }
+                }
+                else
+                    Thread.Sleep(1);
+            }
         }
 
         private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
@@ -931,8 +953,12 @@ namespace EventStore.ClientAPI
                         break;
                     case TcpCommand.SubscriptionDropped:
                     case TcpCommand.SubscriptionToAllDropped:
-                        RemoveDroppedSubscription(subscription);
-                        ExecuteUserCallbackAsync(subscription.SubscriptionDropped);
+                        Subscription removed;
+                        if(_subscriptions.TryRemove(subscription.Id, out removed))
+                        {
+                            removed.Source.SetResult(null);
+                            ExecuteUserCallbackAsync(removed.SubscriptionDropped);
+                        }
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(string.Format("Unexpected command : {0}", package.Command));
@@ -957,7 +983,10 @@ namespace EventStore.ClientAPI
             _subscriptions.Clear();
 
             foreach (var subscription in subscriptions)
+            {
+                subscription.Source.SetResult(null);
                 ExecuteUserCallbackAsync(subscription.SubscriptionDropped);
+            }
         }
     }
 
@@ -1016,7 +1045,7 @@ namespace EventStore.ClientAPI
             return SendGet(_httpEndPoint.ToHttpUrl("/projections/adhoc"), HttpStatusCode.OK);
         }
 
-        public Task<string> ListContinious()
+        public Task<string> ListContinuous()
         {
             return SendGet(_httpEndPoint.ToHttpUrl("/projections/continuous"), HttpStatusCode.OK);
         }

@@ -156,7 +156,21 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnMessageArrived(ArraySegment<byte> data)
         {
-            var package = TcpPackage.FromArraySegment(data);
+            TcpPackage package;
+            try
+            {
+                package = TcpPackage.FromArraySegment(data);
+            }
+            catch (Exception e)
+            {
+                Log.InfoException(e, "Received bad network package");
+
+                SendPackage(new TcpPackage(TcpCommand.BadRequest, Guid.Empty, null));
+                Stop();
+
+                return;
+            }
+
             OnPackageReceived(package);
         }
 
@@ -174,6 +188,11 @@ namespace EventStore.Core.Services.Transport.Tcp
                     var message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, this);
                     if (message != null)
                         _publisher.Publish(message);
+                    else
+                    {
+                        SendPackage(new TcpPackage(TcpCommand.BadRequest, package.CorrelationId, null));
+                        Stop();
+                    }
                     break;
                 }
             }

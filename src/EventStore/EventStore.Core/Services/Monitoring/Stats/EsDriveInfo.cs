@@ -25,38 +25,19 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.Monitoring.Utils;
 
 namespace EventStore.Core.Services.Monitoring.Stats
 {
-    public class DrivesInfo
-    {
-        public readonly EsDriveInfo[] Drives;
-
-        private DrivesInfo(IEnumerable<EsDriveInfo> drives)
-        {
-            Ensure.NotNull(drives, "drives");
-
-            Drives = drives.ToArray();
-        }
-
-        public static DrivesInfo GetSystemDrives()
-        {
-            var sysDrives = DriveInfo.GetDrives();
-            var drives = sysDrives
-                .Where(drive => drive.IsReady && drive.TotalSize > 0)
-                .Select(drive => new EsDriveInfo(drive.Name, drive.TotalSize, drive.AvailableFreeSpace))
-                .ToArray();
-
-            var info = new DrivesInfo(drives);
-            return info;
-        }
-    }
-
     public class EsDriveInfo
     {
         public readonly string DiskName;
@@ -68,7 +49,34 @@ namespace EventStore.Core.Services.Monitoring.Stats
         public readonly string UsedBytesFriendly;
         public readonly string Usage;
 
-        public EsDriveInfo(string diskName, long totalBytes, long availableBytes)
+        public static EsDriveInfo FromDirectory(string path, ILogger log)
+        {
+            try
+            {
+                string driveName;
+                if (OS.IsLinux)
+                {
+                    driveName = GetDirectoryRootInLinux(path, log);
+                    if (driveName == null)
+                        return null;
+                }
+                else
+                {
+                    driveName = Directory.GetDirectoryRoot(path);
+                }
+
+                var drive = new DriveInfo(driveName);
+                var esDrive = new EsDriveInfo(drive.Name, drive.TotalSize, drive.AvailableFreeSpace);
+                return esDrive;
+            }
+            catch (Exception ex)
+            {
+                log.DebugException(ex, "Error while reading drive info for path {0}", path);
+                return null;
+            }
+        }
+
+        private EsDriveInfo(string diskName, long totalBytes, long availableBytes)
         {
             DiskName = diskName;
             TotalBytes = totalBytes;
@@ -77,9 +85,35 @@ namespace EventStore.Core.Services.Monitoring.Stats
             AvailableBytesFriendly = AvailableBytes.ToFriendlySizeString();
             UsedBytes = TotalBytes - AvailableBytes;
             UsedBytesFriendly = UsedBytes.ToFriendlySizeString();
-            Usage = TotalBytes != 0 
-                    ? (UsedBytes * 100 / TotalBytes).ToString(CultureInfo.InvariantCulture) + "%" 
+            Usage = TotalBytes != 0
+                    ? (UsedBytes * 100 / TotalBytes).ToString(CultureInfo.InvariantCulture) + "%"
                     : "0%";
+        }
+
+        private static string GetDirectoryRootInLinux(string directory, ILogger log)
+        {
+            // http://unix.stackexchange.com/questions/11311/how-do-i-find-on-which-physical-device-a-folder-is-located
+
+            // example
+
+            // Filesystem     1K-blocks      Used Available Use% Mounted on
+            // /dev/sda1      153599996 118777100  34822896  78% /media/CC88FD3288FD1C20
+
+            try
+            {
+                var driveInfo = ShellExecutor.GetOutput("df", directory);
+                var driveInfoLines = driveInfo.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                var ourline = driveInfoLines[1];
+                var spaces = new Regex(@"[\s\t]+", RegexOptions.Compiled);
+                var trimmedLine = spaces.Replace(ourline, " ");
+                var driveName = trimmedLine.Split(' ')[5]; //we choose the 'mounted on' column
+                return driveName;
+            }
+            catch (Exception ex)
+            {
+                log.DebugException(ex, "couldn't get drive name for directory {0} on linux", directory);
+                return null;
+            }
         }
     }
 }

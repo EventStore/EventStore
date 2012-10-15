@@ -27,27 +27,46 @@
 // 
 using System;
 using System.IO;
+using EventStore.Common.Log;
 using ProtoBuf;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
     public static class ProtobufExtensions
     {
+        private static readonly ILogger Log = LogManager.GetLogger("ProtobufExtensions");
+
         public static T Deserialize<T>(this ArraySegment<byte> data)
         {
-            using (var memory = new MemoryStream(data.Array, data.Offset, data.Count))
+            try
             {
-                var res = Serializer.Deserialize<T>(memory);
-                return res;
+                using (var memory = new MemoryStream(data.Array, data.Offset, data.Count))
+                {
+                    var res = Serializer.Deserialize<T>(memory);
+                    return res;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.InfoException(e, "Deserialization to {0} failed", typeof (T).FullName);
+                return default(T);
             }
         }
 
         public static T Deserialize<T>(this byte[] data)
         {
-            using (var memory = new MemoryStream(data))
+            try
             {
-                var res = Serializer.Deserialize<T>(memory);
-                return res;
+                using (var memory = new MemoryStream(data))
+                {
+                    var res = Serializer.Deserialize<T>(memory);
+                    return res;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.InfoException(e, "Deserialization to {0} failed", typeof(T).FullName);
+                return default(T);
             }
         }
 

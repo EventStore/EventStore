@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         CommitCheckResult CheckCommitStartingAt(long prepareStartPosition);
         string[] GetStreamIds();
         
-        void Build();
+        void Build(bool buildMemTable = true);
         ReadIndexStats GetStatistics();
         void Close();
         void Dispose();

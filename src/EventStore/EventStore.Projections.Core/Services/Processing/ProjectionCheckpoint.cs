@@ -40,7 +40,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ILogger _logger;
 
         private readonly Dictionary<string, EmittedStream> _emittedStreams = new Dictionary<string, EmittedStream>();
-        private readonly bool _recoveryMode;
         private readonly CheckpointTag _from;
         private CheckpointTag _last;
         private readonly IPublisher _publisher;
@@ -51,8 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _started = false;
 
         public ProjectionCheckpoint(
-            IPublisher publisher, IHandle<ProjectionMessage.Projections.ReadyForCheckpoint> readyHandler,
-            bool recoveryMode, CheckpointTag from, int maxWriteBatchLength,
+            IPublisher publisher, IHandle<ProjectionMessage.Projections.ReadyForCheckpoint> readyHandler, CheckpointTag from, int maxWriteBatchLength,
             ILogger logger = null)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -61,7 +59,6 @@ namespace EventStore.Projections.Core.Services.Processing
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
             _publisher = publisher;
             _readyHandler = readyHandler;
-            _recoveryMode = recoveryMode;
             _from = _last = from;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;

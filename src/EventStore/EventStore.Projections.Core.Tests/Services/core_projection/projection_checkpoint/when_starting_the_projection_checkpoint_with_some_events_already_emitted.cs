@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         public void setup()
         {
             _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
-            _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, false, CheckpointTag.FromPosition(100, 50), 250);
+            _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), 250);
             _checkpoint.EmitEvents(
                 new[]
                     {

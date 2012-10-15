@@ -28,6 +28,7 @@
 using System;
 using System.Net;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Http;
 
 namespace EventStore.Core.Messages
 {
@@ -81,7 +82,15 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class UpdatePendingRequests : Message{}
+        public class UpdatePendingRequests : Message
+        {
+            public readonly ServiceAccessibility Accessibility;
+
+            public UpdatePendingRequests(ServiceAccessibility accessibility)
+            {
+                Accessibility = accessibility;
+            }
+        }
 
         public class TextMessage : Message
         {

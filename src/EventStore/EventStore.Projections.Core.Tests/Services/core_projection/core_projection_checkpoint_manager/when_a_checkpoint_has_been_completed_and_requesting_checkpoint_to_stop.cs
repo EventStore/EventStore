@@ -27,52 +27,57 @@
 // 
 
 using System;
-using System.Text;
-using EventStore.Core.Data;
-using EventStore.Projections.Core.Messages;
+using System.Linq;
+using EventStore.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection
+namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
 {
     [TestFixture]
-    public class when_receiving_a_committed_event_not_passing_a_filter_the_projection_should :
-        TestFixtureWithCoreProjection
+    public class when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop :
+        TestFixtureWithCoreProjectionCheckpointManager
     {
-        private Guid _eventId;
+        private Exception _exception;
 
         protected override void Given()
         {
-            _configureBuilderByQuerySource = source =>
-                {
-                    source.FromAll();
-                    source.IncludeEvent("non-existing");
-                };
-            NoStream("$projections-projection-state");
-            NoStream("$projections-projection-checkpoint");
+            AllWritesSucceed();
+            base.Given();
+            this._checkpointHandledThreshold = 2;
         }
 
         protected override void When()
         {
-            //projection subscribes here
-            _eventId = Guid.NewGuid();
-            _coreProjection.Handle(
-                new ProjectionMessage.Projections.CommittedEventReceived(
-                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, "/event_category/1", -1, false,
-                    new Event(
-                        _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                        Encoding.UTF8.GetBytes("metadata"))));
+            base.When();
+            _exception = null;
+            try
+            {
+                _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000), 5);
+                _manager.EventProcessed(
+                    @"{""state"":""state1""}", null, CheckpointTag.FromStreamPosition("stream", 11, 1100));
+                _manager.EventProcessed(
+                    @"{""state"":""state2""}", null, CheckpointTag.FromStreamPosition("stream", 12, 1200));
+                _manager.Stopping();
+                _manager.RequestCheckpointToStop();
+            }
+            catch (Exception ex)
+            {
+                _exception = ex;
+            }
         }
 
         [Test]
-        public void not_update_state_snapshot_at_correct_position()
+        public void two_checkpoints_are_completed()
         {
-            Assert.AreEqual(0, _writeEventHandler.HandledMessages.Count);
+            Assert.AreEqual(2, _projection._checkpointCompletedMessages.Count);
         }
 
+
         [Test]
-        public void not_pass_event_to_state_handler()
+        public void only_one_checkpoint_has_been_written()
         {
-            Assert.AreEqual(0, _stateHandler._eventsProcessed);
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
     }
 }

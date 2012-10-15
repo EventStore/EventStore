@@ -79,7 +79,7 @@ namespace EventStore.Core
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
             var monitoringQueue = new QueuedHandler(monitoringInnerBus, "MonitoringQueue", watchSlowMsg: true, slowMsgThresholdMs: 100);
-            var monitoring = new MonitoringService(monitoringQueue, monitoringRequestBus, db.Config.WriterCheckpoint, appSettings.StatsPeriod);
+            var monitoring = new MonitoringService(monitoringQueue, monitoringRequestBus, db.Config.WriterCheckpoint, db.Config.Path, appSettings.StatsPeriod);
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
@@ -122,7 +122,7 @@ namespace EventStore.Core
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             //HTTP
-            HttpService = new HttpService(MainQueue, vNodeSettings.HttpPrefixes);
+            HttpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);

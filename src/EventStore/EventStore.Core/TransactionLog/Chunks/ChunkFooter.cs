@@ -31,10 +31,10 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
-    internal class ChunkFooter
+    public class ChunkFooter
     {
-        public static int Size = 128;
-        public static int ChecksumSize = 16;
+        public const int Size = 128;
+        public const int ChecksumSize = 16;
 
         public readonly bool Completed;
         public readonly int ActualChunkSize;

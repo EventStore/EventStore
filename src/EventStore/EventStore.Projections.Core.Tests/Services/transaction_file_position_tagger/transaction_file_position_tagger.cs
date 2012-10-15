@@ -39,5 +39,20 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
         {
             var t = new TransactionFilePositionTagger();
         }
+
+        [Test]
+        public void position_checkpoint_tag_is_compatible()
+        {
+            var t = new TransactionFilePositionTagger();
+            Assert.IsTrue(t.IsCompatible(CheckpointTag.FromPosition(1000, 500)));
+        }
+
+        [Test]
+        public void tream_checkpoint_tag_is_incompatible()
+        {
+            var t = new TransactionFilePositionTagger();
+            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromStreamPosition("stream2", 100, 500)));
+        }
+
     }
 }

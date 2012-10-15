@@ -60,6 +60,12 @@ namespace EventStore.Core.Services.Transport.Http
         }
     }
 
+    public enum ServiceAccessibility
+    {
+        Private,
+        Public
+    }
+
     public interface IHttpService
     {
         void RegisterControllerAction(ControllerAction action, Action<HttpEntity, UriTemplateMatch> handler);
@@ -84,6 +90,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
+        private readonly ServiceAccessibility _accessibility;
         private readonly IPublisher _inputBus;
         private readonly IEnvelope _publishEnvelope;
 
@@ -94,11 +101,12 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly HttpMessagePipe _httpPipe;
         private readonly HttpAsyncServer _server;
 
-        public HttpService(IPublisher inputBus, string[] prefixes)
+        public HttpService(ServiceAccessibility accessibility, IPublisher inputBus, string[] prefixes)
         {
             Ensure.NotNull(inputBus, "inputBus");
             Ensure.NotNull(prefixes, "prefixes");
 
+            _accessibility = accessibility;
             _inputBus = inputBus;
             _publishEnvelope = new PublishEnvelope(inputBus);
 
@@ -116,7 +124,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (_server.TryStart())
                 _inputBus.Publish(TimerMessage.Schedule.Create(UpdateInterval,
                                                                _publishEnvelope,
-                                                               new HttpMessage.UpdatePendingRequests()));
+                                                               new HttpMessage.UpdatePendingRequests(_accessibility)));
             else
                 Application.Exit(ExitCode.Error, "http async server failed to start");
 
@@ -133,6 +141,9 @@ namespace EventStore.Core.Services.Transport.Http
 
         public void Handle(HttpMessage.UpdatePendingRequests message)
         {
+            if(_accessibility != message.Accessibility)
+                return;
+
             var now = DateTime.UtcNow;
             var garbage = new List<HttpEntity>();
 
@@ -159,7 +170,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             _inputBus.Publish(TimerMessage.Schedule.Create(UpdateInterval,
                                                            _publishEnvelope,
-                                                           new HttpMessage.UpdatePendingRequests()));
+                                                           new HttpMessage.UpdatePendingRequests(_accessibility)));
         }
 
         public void Shutdown()

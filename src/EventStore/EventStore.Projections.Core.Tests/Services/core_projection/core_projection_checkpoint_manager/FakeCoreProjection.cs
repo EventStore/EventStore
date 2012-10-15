@@ -26,45 +26,43 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Core.Tests.Bus.Helpers;
+using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint
+namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
 {
-    [TestFixture]
-    public class when_emitting_events_in_backward_order_the_projection_checkpoint : TestFixtureWithExistingEvents
+    public class FakeCoreProjection : ICoreProjection
     {
-        private ProjectionCheckpoint _checkpoint;
-        private Exception _lastException;
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        public readonly List<ProjectionMessage.Projections.CommittedEventReceived> _committedEventReceivedMessages =
+            new List<ProjectionMessage.Projections.CommittedEventReceived>();
 
-        [SetUp]
-        public void setup()
+        public readonly List<ProjectionMessage.Projections.CheckpointSuggested> _checkpointSuggestedMessages =
+            new List<ProjectionMessage.Projections.CheckpointSuggested>();
+
+        public readonly List<ProjectionMessage.Projections.CheckpointCompleted> _checkpointCompletedMessages =
+            new List<ProjectionMessage.Projections.CheckpointCompleted>();
+
+        public readonly List<ProjectionMessage.Projections.PauseRequested> _pauseRequestedMessages =
+            new List<ProjectionMessage.Projections.PauseRequested>();
+
+        public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
         {
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
-            _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), 250);
-            try
-            {
-                _checkpoint.EmitEvents(
-                    new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data")},
-                    CheckpointTag.FromPosition(140, 130));
-                _checkpoint.EmitEvents(
-                    new[] {new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2")},
-                    CheckpointTag.FromPosition(120, 110));
-            }
-            catch (Exception ex)
-            {
-                _lastException = ex;
-            }
+            _committedEventReceivedMessages.Add(message);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void throws_invalid_operation_exception()
+        public void Handle(ProjectionMessage.Projections.CheckpointSuggested message)
         {
-            if (_lastException != null) throw _lastException;
+            _checkpointSuggestedMessages.Add(message);
+        }
+
+        public void Handle(ProjectionMessage.Projections.CheckpointCompleted message)
+        {
+            _checkpointCompletedMessages.Add(message);
+        }
+
+        public void Handle(ProjectionMessage.Projections.PauseRequested message)
+        {
+            _pauseRequestedMessages.Add(message);
         }
     }
 }

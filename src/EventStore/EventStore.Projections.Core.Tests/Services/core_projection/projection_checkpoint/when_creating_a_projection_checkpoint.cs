@@ -49,27 +49,27 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            var c = new ProjectionCheckpoint(null, _readyHandler, false, CheckpointTag.FromPosition(100, 50), 250);
+            var c = new ProjectionCheckpoint(null, _readyHandler, CheckpointTag.FromPosition(100, 50), 250);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_ready_handler_throws_argument_null_exception()
         {
-            var c = new ProjectionCheckpoint(new FakePublisher(), null, false, CheckpointTag.FromPosition(100, 50), 250);
+            var c = new ProjectionCheckpoint(new FakePublisher(), null, CheckpointTag.FromPosition(100, 50), 250);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void commit_position_less_than_or_equal_to_prepare_position_throws_argument_exception()
         {
             var c = new ProjectionCheckpoint(
-                new FakePublisher(), _readyHandler, true, CheckpointTag.FromPosition(100, 101), 250);
+                new FakePublisher(), _readyHandler, CheckpointTag.FromPosition(100, 101), 250);
         }
 
         [Test]
         public void it_can_be_created()
         {
             var c = new ProjectionCheckpoint(
-                new FakePublisher(), _readyHandler, true, CheckpointTag.FromPosition(100, 50), 250);
+                new FakePublisher(), _readyHandler, CheckpointTag.FromPosition(100, 50), 250);
         }
     }
 }
