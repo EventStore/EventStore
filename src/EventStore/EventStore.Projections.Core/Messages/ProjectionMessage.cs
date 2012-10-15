@@ -44,6 +44,21 @@ namespace EventStore.Projections.Core.Messages
 
     public static class ProjectionMessage
     {
+        public abstract class ManagementMessage : Message
+        {
+            private readonly Guid _correlationId;
+
+            protected ManagementMessage(Guid correlationId)
+            {
+                _correlationId = correlationId;
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+        }
+
         public static class CoreService
         {
             public class Start : Message
@@ -83,10 +98,67 @@ namespace EventStore.Projections.Core.Messages
                     get { return _action; }
                 }
             }
+
+
+            public static class Management
+            {
+                public class Create : ManagementMessage
+                {
+                    public Create(Guid correlationId)
+                        : base(correlationId)
+                    {
+                    }
+                }
+
+                public class Dispose : ManagementMessage
+                {
+                    public Dispose(Guid correlationId)
+                        : base(correlationId)
+                    {
+                    }
+                }
+
+            }
         }
 
         public static class Projections
         {
+            public static class Management
+            {
+                public class Start : ManagementMessage
+                {
+                    public Start(Guid correlationId)
+                        : base(correlationId)
+                    {
+                    }
+                }
+
+                public class Stop : ManagementMessage
+                {
+                    public Stop(Guid correlationId)
+                        : base(correlationId)
+                    {
+                    }
+                }
+
+                public class GetState : ManagementMessage
+                {
+                    public GetState(Guid correlationId)
+                        : base(correlationId)
+                    {
+                    }
+                }
+
+                public class GetStatistics : ManagementMessage
+                {
+                    public GetStatistics(Guid correlationId)
+                        : base(correlationId)
+                    {
+                    }
+                }
+
+            }
+
             public class CheckpointSuggested : Message
             {
                 private readonly Guid _correlationId;
