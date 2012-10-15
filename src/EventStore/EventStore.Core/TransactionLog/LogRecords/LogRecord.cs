@@ -109,22 +109,24 @@ namespace EventStore.Core.TransactionLog.LogRecords
             writer.Write(Version);
         }
 
-        public int GetSizeWithLengthPrefix()
+        public int GetSizeWithLengthPrefixAndSuffix()
         {
             using (var memoryStream = new MemoryStream())
             {
                 WriteTo(new BinaryWriter(memoryStream));
-                return 4 + (int)memoryStream.Length;
+                return 8 + (int)memoryStream.Length;
             }
         }
 
-        internal void WriteWithLengthPrefixTo(BinaryWriter writer)
+        internal void WriteWithLengthPrefixAndSuffixTo(BinaryWriter writer)
         {
             using (var memoryStream = new MemoryStream())
             {
                 WriteTo(new BinaryWriter(memoryStream));
-                writer.Write((int)memoryStream.Length);
+                var length = (int) memoryStream.Length;
+                writer.Write(length);
                 writer.Write(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
+                writer.Write(length);
             }
         }
     }

@@ -101,7 +101,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             RecordReadResult result; 
             try
             {
-                result = position == 0 ? chunk.TryReadFirst() : chunk.TryReadSameOrClosest(chunkPos);
+                result = position == 0 ? chunk.TryReadFirst() : chunk.TryReadClosestForward(chunkPos);
             }
             catch(FileBeingDeletedException)
             {

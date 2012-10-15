@@ -74,15 +74,15 @@ namespace EventStore.Core.Tests.TransactionLog
                                               data: new byte[8000],
                                               metadata: new byte[] { 7, 17 });
 
-            Console.WriteLine(record.GetSizeWithLengthPrefix());
-            Console.WriteLine(record.GetSizeWithLengthPrefix() + 137);
+            Console.WriteLine(record.GetSizeWithLengthPrefixAndSuffix());
+            Console.WriteLine(record.GetSizeWithLengthPrefixAndSuffix() + 137);
 
             long pos;
             Assert.IsTrue(writer.Write(record, out pos));
             writer.Close();
             db.Dispose();
 
-            Assert.AreEqual(record.GetSizeWithLengthPrefix() + 137, _checkpoint.Read());
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix() + 137, _checkpoint.Read());
             using (var filestream = File.Open(filename, FileMode.Open, FileAccess.Read))
             {
                 filestream.Seek(ChunkHeader.Size + 137 + sizeof(int), SeekOrigin.Begin);

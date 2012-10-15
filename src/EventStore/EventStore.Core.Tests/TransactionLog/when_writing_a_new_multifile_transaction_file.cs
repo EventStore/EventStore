@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.TransactionLog
             long tmp;
             tf.Write(record, out tmp);
             tf.Close();
-            Assert.AreEqual(record.GetSizeWithLengthPrefix(), _checkpoint.Read());
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), _checkpoint.Read());
             using (var filestream = File.Open(Path.Combine(PathName, "prefix.tf0"), FileMode.Open, FileAccess.Read))
             {
                 var reader = new BinaryReader(filestream);

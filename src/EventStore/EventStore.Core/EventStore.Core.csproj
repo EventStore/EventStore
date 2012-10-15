@@ -139,6 +139,7 @@
     <Compile Include="TransactionLog\Chunks\TFChunkDbConfig.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkDb.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkReader.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkSequentialReader.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkWriter.cs" />
     <Compile Include="TransactionLog\Chunks\TFConsts.cs" />
     <Compile Include="Exceptions\UnableToReadPastEndOfStreamException.cs" />
@@ -146,7 +147,8 @@
     <Compile Include="Exceptions\CorruptDatabaseException.cs" />
     <Compile Include="TransactionLog\ITransactionFileChaser.cs" />
     <Compile Include="TransactionLog\ITransactionFileReader.cs" />
-    <Compile Include="TransactionLog\RecordReadResult.cs" />
+    <Compile Include="TransactionLog\ITransactionFileSequentialReader.cs" />
+    <Compile Include="TransactionLog\ReadResults.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkManager.cs" />
     <Compile Include="TransactionLog\RecordWriteResult.cs" />

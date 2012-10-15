@@ -25,59 +25,26 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.IO;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
-using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog.Chunks
+namespace EventStore.Core.TransactionLog
 {
-    [TestFixture]
-    public class when_opening_existing_tfchunk
+    public struct RecordReadResult
     {
-        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
-        private TFChunk _chunk;
-        private TFChunk _testChunk;
+        public readonly bool Success;
+        public readonly LogRecord LogRecord;
+        public readonly long NextPosition;
 
-        [SetUp]
-        public void Setup()
+        public RecordReadResult(bool success, LogRecord logRecord, long nextPosition)
         {
-            _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);
-            _chunk.Complete();
-            _testChunk = TFChunk.FromCompletedFile(_filename, verifyHash: true);
+            Success = success;
+            LogRecord = logRecord;
+            NextPosition = nextPosition;
         }
 
-        [Test]
-        public void the_chunk_is_not_cached()
+        public override string ToString()
         {
-            Assert.IsFalse(_testChunk.IsCached);
-        }
-
-        [Test]
-        public void the_chunk_is_readonly()
-        {
-            Assert.IsTrue(_testChunk.IsReadOnly);
-        }
-
-        [Test]
-        public void append_throws_invalid_operation_exception()
-        {
-            Assert.Throws<InvalidOperationException>(() => _testChunk.TryAppend(new CommitLogRecord(0, Guid.NewGuid(), 0, DateTime.UtcNow, 0)));
-        }
-
-        [Test]
-        public void flush_throws_invalid_operation_exception()
-        {
-            Assert.Throws<InvalidOperationException>(() => _testChunk.Flush());
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _chunk.Dispose();
-            _testChunk.Dispose();
-            File.Delete(_filename);
+            return string.Format("Success: {0}, NextPosition: {1}, LogRecord: {2}", Success, NextPosition, LogRecord);
         }
     }
 }

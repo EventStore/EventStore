@@ -25,21 +25,22 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using EventStore.Core.TransactionLog.LogRecords;
+using System.IO;
+using EventStore.Core.Exceptions;
+using EventStore.Core.TransactionLog.Chunks;
+using NUnit.Framework;
 
-namespace EventStore.Core.TransactionLog
+namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
-    public struct RecordReadResult
+    [TestFixture]
+    public class when_opening_tfchunk_from_non_existing_file
     {
-        public readonly bool Success;
-        public readonly LogRecord LogRecord;
-        public readonly long NextPosition;
-
-        public RecordReadResult(bool success, LogRecord logRecord, long nextPosition)
+        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
+        
+        [Test]
+        public void it_should_throw_a_file_not_found_exception()
         {
-            Success = success;
-            LogRecord = logRecord;
-            NextPosition = nextPosition;
+            Assert.Throws<CorruptDatabaseException>(() => TFChunk.FromCompletedFile(_filename, verifyHash: true));
         }
     }
 }

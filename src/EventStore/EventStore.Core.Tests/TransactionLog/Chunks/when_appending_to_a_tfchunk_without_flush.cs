@@ -69,14 +69,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public void the_updated_position_is_returned()
         {
             //position without header.
-            Assert.AreEqual(_record.GetSizeWithLengthPrefix(), _result.NewPosition);
-        }
-
-        [Test]
-        public void the_record_cannot_be_read()
-        {
-            Assert.Inconclusive("External user of TFChunk should care about checkpointing and not reading non-flushed data.");
-            Assert.IsFalse(_chunk.TryReadRecordAt((int)_result.OldPosition).Success);
+            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _result.NewPosition);
         }
 
         [TearDown]
