@@ -48,7 +48,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
     public unsafe class TFChunk : IDisposable
     {
-        public const int Version = 1;
+        public const byte CurrentChunkVersion = 2;
         public const int WriteBufferSize = 4096;
         public const int ReadBufferSize = 512;
 
@@ -113,6 +113,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 Debug.Assert(!reader.IsMemory);
 
                 _chunkHeader = ReadHeader(reader.Stream);
+                if (_chunkHeader.Version != CurrentChunkVersion)
+                    throw new CorruptDatabaseException(new WrongTFChunkVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
                 _chunkFooter = ReadFooter(reader.Stream);
                 _actualDataSize = _chunkFooter.ActualDataSize;
 
@@ -162,6 +164,8 @@ namespace EventStore.Core.TransactionLog.Chunks
             _actualDataSize = writePosition;
 
             CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
+            if (_chunkHeader.Version != CurrentChunkVersion)
+                throw new CorruptDatabaseException(new WrongTFChunkVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
             CreateReaderStreams();
 
             var expectedFileSize = _chunkHeader.ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
@@ -209,7 +213,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public static TFChunk CreateNew(string filename, int chunkSize, int chunkNumber, int chunkScavengeVersion)
         {
-            var chunkHeader = new ChunkHeader(Version, chunkSize, chunkNumber, chunkNumber, chunkScavengeVersion);
+            var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkNumber, chunkNumber, chunkScavengeVersion);
             var chunk = new TFChunk(filename, TFConsts.TFChunkReaderCount, TFConsts.MidpointsDepth);
             try
             {
