@@ -25,63 +25,21 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-namespace EventStore.ClientAPI.System
+
+namespace EventStore.ClientAPI
 {
-    internal enum TcpCommand: byte
+    public class Position
     {
-        HeartbeatRequestCommand = 0x01,
-        HeartbeatResponseCommand = 0x02,
+        public static readonly Position Start = new Position(0, 0);
+        public static readonly Position End = new Position(-1, -1);
 
-        Ping = 0x03,
-        Pong = 0x04,
+        internal long CommitPosition;
+        internal long PreparePosition;
 
-        PrepareAck = 0x05,
-        CommitAck = 0x06,
-
-        SubscribeReplica = 0x07,
-        LogBulk = 0x08,
-
-        SlaveAssignment = 0x09,
-        CloneAssignment = 0x0A,
-
-        // CLIENT COMMANDS
-        CreateStream = 0x80,
-        CreateStreamCompleted = 0x81,
-
-        WriteEvents = 0x82,
-        WriteEventsCompleted = 0x83,
-
-        TransactionStart = 0x84,
-        TransactionStartCompleted = 0x85,
-        TransactionWrite = 0x86,
-        TransactionWriteCompleted = 0x87,
-        TransactionCommit = 0x88,
-        TransactionCommitCompleted = 0x89,
-
-        DeleteStream = 0x8A,
-        DeleteStreamCompleted = 0x8B,
-
-        ReadEvent = 0xB0,
-        ReadEventCompleted = 0xB1,
-        ReadStreamEventsForward = 0xB2,
-        ReadStreamEventsForwardCompleted = 0xB3,
-        ReadStreamEventsBackward = 0xB4,
-        ReadStreamEventsBackwardCompleted = 0xB5,
-        ReadAllEventsForward = 0xB6,
-        ReadAllEventsForwardCompleted = 0xB7,
-        ReadAllEventsBackward = 0xB8,
-        ReadAllEventsBackwardCompleted = 0xB9,
-
-        SubscribeToStream = 0xC0,
-        UnsubscribeFromStream = 0xC1,
-        SubscribeToAllStreams = 0xC2,
-        UnsubscribeFromAllStreams = 0xC3,
-        StreamEventAppeared = 0xC4,
-        SubscriptionDropped = 0xC5,
-        SubscriptionToAllDropped = 0xC6,
-
-        ScavengeDatabase = 0xD0,
-
-        BadRequest = 0xF0
+        internal Position(long commitPosition, long preparePosition)
+        {
+            CommitPosition = commitPosition;
+            PreparePosition = preparePosition;
+        }
     }
 }

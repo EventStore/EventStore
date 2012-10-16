@@ -36,7 +36,7 @@ using EventStore.Core.Services.Monitoring.Stats;
 
 namespace EventStore.Core.Bus
 {
-    public class QueuedHandler : IHandle<Message>, IPublisher, IMonitoredQueue
+    public class QueuedHandler : IHandle<Message>, IPublisher, IMonitoredQueue, IThreadSafePublisher
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandler>();
 

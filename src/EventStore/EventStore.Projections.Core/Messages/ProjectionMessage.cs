@@ -187,6 +187,15 @@ namespace EventStore.Projections.Core.Messages
                     }
                 }
 
+                public class UpdateStatistics : ManagementMessage
+                {
+                    public UpdateStatistics(Guid correlationId)
+                        : base(correlationId)
+                    {
+                    }
+
+                }
+
                 public class StateReport : ManagementMessage
                 {
                     private readonly string _state;
@@ -433,55 +442,58 @@ namespace EventStore.Projections.Core.Messages
                 }
             }
 
-            public class Stopped : Message
+            public static class StatusReport
             {
-                private readonly Guid _correlationId;
-
-                public Stopped(Guid correlationId)
+                public class Stopped : Message
                 {
-                    _correlationId = correlationId;
+                    private readonly Guid _correlationId;
+
+                    public Stopped(Guid correlationId)
+                    {
+                        _correlationId = correlationId;
+                    }
+
+                    public Guid CorrelationId
+                    {
+                        get { return _correlationId; }
+                    }
                 }
 
-                public Guid CorrelationId
+                public class Started : Message
                 {
-                    get { return _correlationId; }
-                }
-            }
+                    private readonly Guid _correlationId;
 
-            public class Started : Message
-            {
-                private readonly Guid _correlationId;
+                    public Started(Guid correlationId)
+                    {
+                        _correlationId = correlationId;
+                    }
 
-                public Started(Guid correlationId)
-                {
-                    _correlationId = correlationId;
-                }
-
-                public Guid CorrelationId
-                {
-                    get { return _correlationId; }
-                }
-            }
-
-            public class Faulted : Message
-            {
-                private readonly Guid _correlationId;
-                private readonly string _faultedReason;
-
-                public Faulted(Guid correlationId, string faultedReason)
-                {
-                    _correlationId = correlationId;
-                    _faultedReason = faultedReason;
+                    public Guid CorrelationId
+                    {
+                        get { return _correlationId; }
+                    }
                 }
 
-                public Guid CorrelationId
+                public class Faulted : Message
                 {
-                    get { return _correlationId; }
-                }
+                    private readonly Guid _correlationId;
+                    private readonly string _faultedReason;
 
-                public string FaultedReason
-                {
-                    get { return _faultedReason; }
+                    public Faulted(Guid correlationId, string faultedReason)
+                    {
+                        _correlationId = correlationId;
+                        _faultedReason = faultedReason;
+                    }
+
+                    public Guid CorrelationId
+                    {
+                        get { return _correlationId; }
+                    }
+
+                    public string FaultedReason
+                    {
+                        get { return _faultedReason; }
+                    }
                 }
             }
         }
