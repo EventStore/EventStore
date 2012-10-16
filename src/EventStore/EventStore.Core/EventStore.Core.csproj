@@ -83,6 +83,7 @@
     <Compile Include="Data\TFPos.cs" />
     <Compile Include="Exceptions\BadChunkInDatabaseException.cs" />
     <Compile Include="Exceptions\ChunkNotFoundException.cs" />
+    <Compile Include="Exceptions\WrongTFChunkVersionException.cs" />
     <Compile Include="Exceptions\CorruptIndexException.cs" />
     <Compile Include="Exceptions\ExtraneousFileFoundException.cs" />
     <Compile Include="Exceptions\FileBeingDeletedException.cs" />
