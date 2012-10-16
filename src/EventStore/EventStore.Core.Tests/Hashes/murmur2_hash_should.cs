@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Hashes
         [Test, Category("LongRunning"), Explicit]
         public void pass_smhasher_sanity_test()
         {
-            Assert.IsTrue(SMHasher.SanityTest(new XXHashUnsafe()));
+            Assert.IsTrue(SMHasher.SanityTest(new Murmur2Unsafe()));
         }
     }
 }
