@@ -33,4 +33,8 @@ namespace EventStore.Core.Bus
     {
         void Publish(Message message);
     }
+
+    public interface IThreadSafePublisher 
+    {
+    }
 }

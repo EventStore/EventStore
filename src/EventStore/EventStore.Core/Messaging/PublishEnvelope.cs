@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System.Diagnostics;
+using System.Threading;
 using EventStore.Core.Bus;
 
 namespace EventStore.Core.Messaging
@@ -32,14 +35,18 @@ namespace EventStore.Core.Messaging
     public class PublishEnvelope : IEnvelope
     {
         private readonly IPublisher _publisher;
+        private readonly int _createdOnThread;
 
         public PublishEnvelope(IPublisher publisher) 
         {
             _publisher = publisher;
+            _createdOnThread = Thread.CurrentThread.ManagedThreadId;
         }
 
         public void ReplyWith<T>(T message) where T : Message
         {
+            Debug.Assert(
+                Thread.CurrentThread.ManagedThreadId == _createdOnThread || _publisher is IThreadSafePublisher);
             _publisher.Publish(message);
         }
     }
