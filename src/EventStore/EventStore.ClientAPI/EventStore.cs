@@ -44,12 +44,12 @@ namespace EventStore.ClientAPI
 
         public static EventStreamSlice ReadEventStream(string stream, int start, int count)
         {
-            return _connection.ReadEventStream(stream, start, count);
+            return _connection.ReadEventStreamForward(stream, start, count);
         }
 
         public static Task<EventStreamSlice> ReadEventStreamAsync(string stream, int start, int count)
         {
-            return _connection.ReadEventStreamAsync(stream, start, count);
+            return _connection.ReadEventStreamForwardAsync(stream, start, count);
         }
 
         public static void CreateStream(string stream, byte[] metadata)

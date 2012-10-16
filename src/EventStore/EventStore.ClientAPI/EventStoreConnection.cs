@@ -285,22 +285,93 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        public EventStreamSlice ReadEventStream(string stream, int start, int count)
+        public EventStreamSlice ReadEventStreamForward(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.Nonnegative(start, "start");
+            Ensure.Positive(count, "count");
 
-            var task = ReadEventStreamAsync(stream, start, count);
+            var task = ReadEventStreamForwardAsync(stream, start, count);
             task.Wait();
 
             return task.Result;
         }
 
-        public Task<EventStreamSlice> ReadEventStreamAsync(string stream, int start, int count)
+        public Task<EventStreamSlice> ReadEventStreamForwardAsync(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.Nonnegative(start, "start");
+            Ensure.Positive(count, "count");
 
             var source = new TaskCompletionSource<EventStreamSlice>();
             var operation = new ReadStreamEventsForwardOperation(source, Guid.NewGuid(), stream, start, count, true);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public EventStreamSlice ReadEventStreamBackward(string stream, int start, int count)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.Positive(count, "count");
+
+            var task = ReadEventStreamBackwardAsync(stream, start, count);
+            task.Wait();
+
+            return task.Result;
+        }
+
+        public Task<EventStreamSlice> ReadEventStreamBackwardAsync(string stream, int start, int count)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.Positive(count, "count");
+
+            var source = new TaskCompletionSource<EventStreamSlice>();
+            var operation = new ReadStreamEventsBackwardOperation(source, Guid.NewGuid(), stream, start, count, true);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public AllEventsSlice ReadAllEventsForward(Position position, int maxCount)
+        {
+            Ensure.NotNull(position, "position");
+            Ensure.Positive(maxCount, "maxCount");
+
+            var task = ReadAllEventsForwardAsync(position, maxCount);
+            task.Wait();
+            return task.Result;
+        }
+
+        public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount)
+        {
+            Ensure.NotNull(position, "position");
+            Ensure.Positive(maxCount, "maxCount");
+
+            var source = new TaskCompletionSource<AllEventsSlice>();
+            var operation = new ReadAllEventsForwardOperation(source, Guid.NewGuid(), position, maxCount, true);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public AllEventsSlice ReadAllEventsBackward(Position position, int maxCount)
+        {
+            Ensure.NotNull(position, "position");
+            Ensure.Positive(maxCount, "maxCount");
+
+            var task = ReadAllEventsBackwardAsync(position, maxCount);
+            task.Wait();
+            return task.Result;
+        }
+
+        public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount)
+        {
+            Ensure.NotNull(position, "position");
+            Ensure.Positive(maxCount, "maxCount");
+
+            var source = new TaskCompletionSource<AllEventsSlice>();
+            var operation = new ReadAllEventsBackwardOperation(source, Guid.NewGuid(), position, maxCount, true);
 
             EnqueueOperation(operation);
             return source.Task;
