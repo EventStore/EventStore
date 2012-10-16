@@ -537,8 +537,6 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
-
         private void Tick()
         {
             EnsureState(State.Running | State.Paused | State.Stopping | State.FaultedStopping | State.Faulted);

@@ -375,10 +375,18 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
+        private int _lastUsedQueue = 0;
+
         private ManagedProjection CreateManagedProjectionInstance(string name)
         {
             var projectionCorrelationId = Guid.NewGuid();
-            var managedProjectionInstance = new ManagedProjection(_queues[0], //TODO: route to appropriate queue
+            IPublisher queue;
+            if (_lastUsedQueue >= _queues.Length)
+                _lastUsedQueue = 0;
+            queue = _queues[_lastUsedQueue];
+            _lastUsedQueue++;
+
+            var managedProjectionInstance = new ManagedProjection(queue, 
                 projectionCorrelationId, name, _logger, _writeDispatcher, _readDispatcher, _publisher,
                 _projectionStateHandlerFactory);
             _projectionsMap.Add(projectionCorrelationId, name);
