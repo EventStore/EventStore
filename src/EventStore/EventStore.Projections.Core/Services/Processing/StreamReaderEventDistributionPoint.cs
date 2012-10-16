@@ -41,6 +41,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class StreamReaderEventDistributionPoint : EventDistributionPoint
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<StreamReaderEventDistributionPoint>();
+        private readonly IPublisher _inputQueue;
         private readonly string _streamName;
         private int _fromSequenceNumber;
         private readonly bool _resolveLinkTos;
@@ -53,13 +54,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _disposed;
 
         public StreamReaderEventDistributionPoint(
-            IPublisher publisher, Guid distibutionPointCorrelationId, string streamName, int fromSequenceNumber,
+            IPublisher publisher, IPublisher inputQueue, Guid distibutionPointCorrelationId, string streamName, int fromSequenceNumber,
             bool resolveLinkTos, string category = null)
             : base(publisher, distibutionPointCorrelationId)
         {
+            if (inputQueue == null) throw new ArgumentNullException("inputQueue");
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
             if (streamName == null) throw new ArgumentNullException("streamName");
             if (string.IsNullOrEmpty(streamName)) throw new ArgumentException("streamName");
+            _inputQueue = inputQueue;
             _streamName = streamName;
             _fromSequenceNumber = fromSequenceNumber;
             _resolveLinkTos = resolveLinkTos;
@@ -165,7 +168,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (delay)
                 _publisher.Publish(
                     TimerMessage.Schedule.Create(
-                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher), readEventsForward));
+                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_inputQueue), readEventsForward));
             else
                 _publisher.Publish(readEventsForward);
         }

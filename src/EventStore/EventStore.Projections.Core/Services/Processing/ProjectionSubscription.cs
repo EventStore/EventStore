@@ -108,9 +108,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public EventDistributionPoint CreatePausedEventDistributionPoint(IPublisher publisher, Guid distributionPointId)
+        public EventDistributionPoint CreatePausedEventDistributionPoint(IPublisher publisher, IPublisher inputQueue, Guid distributionPointId)
         {
-            return _checkpointStrategy.CreatePausedEventDistributionPoint(distributionPointId, publisher, _positionTracker.LastTag);
+            return _checkpointStrategy.CreatePausedEventDistributionPoint(distributionPointId, publisher, inputQueue, _positionTracker.LastTag);
         }
 
         public bool CanJoinAt(

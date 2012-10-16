@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _statePartitionSelector; }
         }
 
-        public EventDistributionPoint CreatePausedEventDistributionPoint(Guid distributionPointId, IPublisher publisher, CheckpointTag checkpointTag)
+        public EventDistributionPoint CreatePausedEventDistributionPoint(Guid distributionPointId, IPublisher publisher, IPublisher inputQueue, CheckpointTag checkpointTag)
         {
             if (_allStreams)
             {
@@ -83,26 +83,25 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var streamName = checkpointTag.Streams.Keys.First();
                 //TODO: handle if not the same
-                return CreatePausedStreamReaderEventDistributionPoint(distributionPointId, publisher, checkpointTag, streamName,
+                return CreatePausedStreamReaderEventDistributionPoint(distributionPointId, publisher, inputQueue, checkpointTag, streamName,
                     resolveLinkTos: true, category: null);
             }
             else if (_categories != null && _categories.Count == 1)
             {
                 var streamName = checkpointTag.Streams.Keys.First();
-                return CreatePausedStreamReaderEventDistributionPoint(distributionPointId, publisher, checkpointTag, streamName,
+                return CreatePausedStreamReaderEventDistributionPoint(distributionPointId, publisher, inputQueue, checkpointTag, streamName,
                     resolveLinkTos: true, category: _categories.First());
             }
             else
                 throw new NotSupportedException();
         }
 
-        private static EventDistributionPoint CreatePausedStreamReaderEventDistributionPoint(Guid distributionPointId, IPublisher publisher, CheckpointTag checkpointTag,
-            string streamName, bool resolveLinkTos, string category)
+        private static EventDistributionPoint CreatePausedStreamReaderEventDistributionPoint(Guid distributionPointId, IPublisher publisher, IPublisher inputQueue, CheckpointTag checkpointTag, string streamName, bool resolveLinkTos, string category)
         {
             var lastProcessedSequenceNumber = checkpointTag.Streams.Values.First();
             var fromSequenceNumber = lastProcessedSequenceNumber + 1;
             var distributionPoint = new StreamReaderEventDistributionPoint(
-                publisher, distributionPointId, streamName, fromSequenceNumber, resolveLinkTos,
+                publisher, inputQueue, distributionPointId, streamName, fromSequenceNumber, resolveLinkTos,
                 category);
             return distributionPoint;
         }

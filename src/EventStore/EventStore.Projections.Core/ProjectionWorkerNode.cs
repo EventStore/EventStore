@@ -38,13 +38,13 @@ namespace EventStore.Projections.Core
         private readonly ProjectionCoreService _projectionCoreService;
         private readonly InMemoryBus _coreOutput;
 
-        public ProjectionWorkerNode(TFChunkDb db)
+        public ProjectionWorkerNode(TFChunkDb db, QueuedHandler inputQueue)
         {
             Ensure.NotNull(db, "db");
 
             _coreOutput = new InMemoryBus("Core Output");
 
-            _projectionCoreService = new ProjectionCoreService(CoreOutput, 10, db.Config.WriterCheckpoint);
+            _projectionCoreService = new ProjectionCoreService(CoreOutput, inputQueue, 10, db.Config.WriterCheckpoint);
 
         }
 
@@ -68,6 +68,7 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<ProjectionMessage.Projections.Management.Start>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionMessage.Projections.Management.Stop>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionMessage.Projections.Management.GetState>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionMessage.Projections.Management.UpdateStatistics>(_projectionCoreService);
             //NOTE: message forwarding is set up outside (for Read/Write events)
         }
     }

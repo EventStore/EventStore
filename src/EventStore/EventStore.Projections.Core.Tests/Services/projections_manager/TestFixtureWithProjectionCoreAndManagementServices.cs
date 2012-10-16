@@ -49,8 +49,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe(_consumer);
 
             _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, checkpointForStatistics: null);
-            _coreService = new ProjectionCoreService(_bus, 10, new InMemoryCheckpoint(1000));
-            _bus.Subscribe<ProjectionMessage.Projections.Stopped>(_manager);
+            _coreService = new ProjectionCoreService(_bus, _bus, 10, new InMemoryCheckpoint(1000));
+            _bus.Subscribe<ProjectionMessage.Projections.StatusReport.Stopped>(_manager);
             _bus.Subscribe<ProjectionMessage.Projections.Management.StateReport>(_manager);
             _bus.Subscribe<ProjectionMessage.Projections.Management.StatisticsReport>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
@@ -60,6 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionMessage.Projections.Management.Start>(_coreService);
             _bus.Subscribe<ProjectionMessage.Projections.Management.Stop>(_coreService);
             _bus.Subscribe<ProjectionMessage.Projections.Management.GetState>(_coreService);
+            _bus.Subscribe<ProjectionMessage.Projections.Management.UpdateStatistics>(_coreService);
 
 
             When();
