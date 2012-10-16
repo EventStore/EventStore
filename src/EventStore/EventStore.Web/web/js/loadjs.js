@@ -88,10 +88,9 @@ function invokeLazyExecutedCallbacks(_lazyExecutedCallbacks)
  
 //execute all deferring JS when document is ready by using jQuery.
 jQuery(document).ready(function () {
-
+    
     var scriptarr = new Array();
     scriptarr.push(['lib/bootstrap/js/bootstrap.min.js', "script"]);
-    scriptarr.push(['lib/jsrender/jsrender.js', "script"]);
     scriptarr.push(['js/es.menu.js', "script"]);
 
     /*for graph selection*/
