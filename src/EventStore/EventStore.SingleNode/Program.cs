@@ -66,7 +66,7 @@ namespace EventStore.SingleNode
             Node = new SingleVNode(TfDb, _vNodeSets, _appSets);
 
             if (!_noProjections)
-                _projections = new Projections(TfDb, Node.MainQueue, Node.Bus, Node.TimerService, Node.HttpService, 3);
+                _projections = new Projections(TfDb, Node.MainQueue, Node.Bus, Node.TimerService, Node.HttpService, 1);
         }
 
         protected override void Start()

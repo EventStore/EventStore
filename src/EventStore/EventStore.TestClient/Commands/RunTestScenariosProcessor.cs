@@ -523,7 +523,7 @@ namespace EventStore.TestClient.Commands
                 {
                     try
                     {
-                        store.ReadEventStream(stream, 0, 1);
+                        store.ReadEventStreamForward(stream, 0, 1);
                         throw new ApplicationException(string.Format("Stream {0} should have been deleted!", stream));
                     }
                     catch (Exception e)
@@ -720,7 +720,7 @@ namespace EventStore.TestClient.Commands
             {
                 for (var i = @from; i < @from + count; i++)
                 {
-                    var slice = store.ReadEventStream(stream, i, 1);
+                    var slice = store.ReadEventStreamForward(stream, i, 1);
                     if(slice == null || slice.Events == null || slice.Events.Count() != 1)
                         throw new Exception(string.Format("Tried to read 1 event at position {0} from stream {1} but failed", i, stream));
                 }

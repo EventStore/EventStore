@@ -52,11 +52,19 @@ namespace EventStore.Core.Messages
         {
         }
 
-        public abstract class WriteMessage : Message
+        public abstract class WriteRequestMessage : Message
         {
         }
 
-        public abstract class ReadMessage: Message
+        public abstract class WriteResponseMessage : Message
+        {
+        }
+
+        public abstract class ReadRequestMessage: Message
+        {
+        }
+
+        public abstract class ReadResponseMessage : Message
         {
         }
 
@@ -70,7 +78,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class CreateStream: WriteMessage
+        public class CreateStream: WriteRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -90,7 +98,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class CreateStreamCompleted : WriteMessage
+        public class CreateStreamCompleted : WriteResponseMessage
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
@@ -108,7 +116,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteEvents : WriteMessage
+        public class WriteEvents : WriteRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -143,7 +151,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteEventsCompleted : WriteMessage
+        public class WriteEventsCompleted : WriteResponseMessage
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
@@ -177,7 +185,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class TransactionStart : WriteMessage
+        public class TransactionStart : WriteRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -193,7 +201,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class TransactionStartCompleted : WriteMessage
+        public class TransactionStartCompleted : WriteResponseMessage
         {
             public readonly Guid CorrelationId;
             public readonly long TransactionId;
@@ -215,7 +223,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class TransactionWrite : WriteMessage
+        public class TransactionWrite : WriteRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -233,7 +241,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class TransactionWriteCompleted : WriteMessage
+        public class TransactionWriteCompleted : WriteResponseMessage
         {
             public readonly Guid CorrelationId;
             public readonly long TransactionId;
@@ -255,7 +263,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class TransactionCommit : WriteMessage
+        public class TransactionCommit : WriteRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -271,7 +279,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class TransactionCommitCompleted : WriteMessage
+        public class TransactionCommitCompleted : WriteResponseMessage
         {
             public readonly Guid CorrelationId;
             public readonly long TransactionId;
@@ -290,7 +298,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class DeleteStream : WriteMessage
+        public class DeleteStream : WriteRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -312,7 +320,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class DeleteStreamCompleted : WriteMessage
+        public class DeleteStreamCompleted : WriteResponseMessage
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
@@ -330,7 +338,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadEvent : ReadMessage
+        public class ReadEvent : ReadRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -349,7 +357,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadEventCompleted : ReadMessage
+        public class ReadEventCompleted : ReadResponseMessage
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
@@ -376,7 +384,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadStreamEventsForward : ReadMessage
+        public class ReadStreamEventsForward : ReadRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -406,7 +414,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadStreamEventsForwardCompleted : ReadMessage
+        public class ReadStreamEventsForwardCompleted : ReadResponseMessage
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
@@ -436,7 +444,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadStreamEventsBackward : ReadMessage
+        public class ReadStreamEventsBackward : ReadRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -466,7 +474,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadStreamEventsBackwardCompleted : ReadMessage
+        public class ReadStreamEventsBackwardCompleted : ReadResponseMessage
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
@@ -496,7 +504,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadAllEventsForward : ReadMessage
+        public class ReadAllEventsForward : ReadRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -521,7 +529,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadAllEventsForwardCompleted : ReadMessage
+        public class ReadAllEventsForwardCompleted : ReadResponseMessage
         {
             public readonly Guid CorrelationId;
             public readonly ReadAllResult Result;
@@ -533,7 +541,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadAllEventsBackward : ReadMessage
+        public class ReadAllEventsBackward : ReadRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -558,7 +566,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ReadAllEventsBackwardCompleted : ReadMessage
+        public class ReadAllEventsBackwardCompleted : ReadResponseMessage
         {
             public readonly Guid CorrelationId;
             public readonly ReadAllResult Result;
@@ -570,7 +578,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ListStreams : ReadMessage
+        public class ListStreams : ReadRequestMessage
         {
             public readonly IEnvelope Envelope;
 
@@ -580,7 +588,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ListStreamsCompleted : ReadMessage
+        public class ListStreamsCompleted : ReadResponseMessage
         {
             public readonly string[] Streams;
             public readonly bool Success;
@@ -592,7 +600,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class SubscribeToStream : ReadMessage
+        public class SubscribeToStream : ReadRequestMessage
         {
             public readonly TcpConnectionManager Connection;
             public readonly Guid CorrelationId;
@@ -606,7 +614,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class UnsubscribeFromStream : ReadMessage
+        public class UnsubscribeFromStream : ReadRequestMessage
         {
             public readonly TcpConnectionManager Connection;
             public readonly Guid CorrelationId;
@@ -620,7 +628,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class SubscribeToAllStreams : ReadMessage
+        public class SubscribeToAllStreams : ReadRequestMessage
         {
             public readonly TcpConnectionManager Connection;
             public readonly Guid CorrelationId;
@@ -632,7 +640,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class UnsubscribeFromAllStreams : ReadMessage
+        public class UnsubscribeFromAllStreams : ReadRequestMessage
         {
             public readonly TcpConnectionManager Connection;
             public readonly Guid CorrelationId;

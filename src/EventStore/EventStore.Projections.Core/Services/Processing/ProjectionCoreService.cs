@@ -51,12 +51,14 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionMessage.Projections.Management.Start>,
                                          IHandle<ProjectionMessage.Projections.Management.Stop>,
                                          IHandle<ProjectionMessage.Projections.Management.GetState>,
+                                         IHandle<ProjectionMessage.Projections.Management.UpdateStatistics>,
                                          IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadAllEventsForwardCompleted>
 
 
     {
         private readonly IPublisher _publisher;
+        private readonly IPublisher _inputQueue;
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionCoreService>();
 
         private bool _stopped = true;
@@ -79,9 +81,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private TransactionFileReaderEventDistributionPoint _headDistributionPoint;
 
 
-        public ProjectionCoreService(IPublisher publisher, int eventCacheSize, ICheckpoint writerCheckpoint)
+        public ProjectionCoreService(IPublisher publisher, IPublisher inputQueue, int eventCacheSize, ICheckpoint writerCheckpoint)
         {
             _publisher = publisher;
+            _inputQueue = inputQueue;
             _headingEventDistributionPoint = new HeadingEventDistributionPoint(eventCacheSize);
             _writerCheckpoint = writerCheckpoint;
         }
@@ -122,7 +125,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _headingEventDistributionPoint.Unsubscribe(message.CorrelationId);
                 var forkedDistributionPointId = Guid.NewGuid();
                 var forkedDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
-                    _publisher, forkedDistributionPointId);
+                    _publisher, _inputQueue, forkedDistributionPointId);
                 _projectionDistributionPoints.Add(message.CorrelationId, forkedDistributionPointId);
                 _distributionPointSubscriptions.Add(forkedDistributionPointId, message.CorrelationId);
                 _distributionPoints.Add(forkedDistributionPointId, forkedDistributionPoint);
@@ -158,7 +161,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var distibutionPointCorrelationId = Guid.NewGuid();
                 var eventDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
-                    _publisher, distibutionPointCorrelationId);
+                    _publisher, _inputQueue, distibutionPointCorrelationId);
                 _distributionPoints.Add(distibutionPointCorrelationId, eventDistributionPoint);
                 _projectionDistributionPoints.Add(message.CorrelationId, distibutionPointCorrelationId);
                 _distributionPointSubscriptions.Add(distibutionPointCorrelationId, message.CorrelationId);
@@ -249,7 +252,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             catch (Exception ex)
             {
-                message.Envelope.ReplyWith(new ProjectionMessage.Projections.Faulted(message.CorrelationId, ex.Message));
+                message.Envelope.ReplyWith(new ProjectionMessage.Projections.StatusReport.Faulted(message.CorrelationId, ex.Message));
             }
         }
 
@@ -280,6 +283,15 @@ namespace EventStore.Projections.Core.Services.Processing
             var projection = _projections[message.CorrelationId];
             var projectionState = projection.GetProjectionState();
             message.Envelope.ReplyWith(new ProjectionMessage.Projections.Management.StateReport(message.CorrelationId, projectionState));
+        }
+
+        public void Handle(ProjectionMessage.Projections.Management.UpdateStatistics message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.CorrelationId, out projection))
+            {
+                projection.UpdateStatistics();
+            }
         }
 
     }

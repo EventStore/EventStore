@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Processing
             GoToState(State.Initial);
         }
 
-        private void UpdateStatistics()
+        internal void UpdateStatistics()
         {
             _publisher.Publish(
                 new ProjectionMessage.Projections.Management.StatisticsReport(_projectionCorrelationId, GetStatistics()));
@@ -370,8 +370,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterStopped()
         {
-            _publisher.Publish(new ProjectionMessage.Projections.Stopped(_projectionCorrelationId));
-            Console.WriteLine("Stopped");
+            _publisher.Publish(new ProjectionMessage.Projections.StatusReport.Stopped(_projectionCorrelationId));
         }
 
         private void EnterFaultedStopping()
@@ -386,7 +385,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterFaulted()
         {
-            _publisher.Publish(new ProjectionMessage.Projections.Faulted(_projectionCorrelationId, _faultedReason));
+            _publisher.Publish(new ProjectionMessage.Projections.StatusReport.Faulted(_projectionCorrelationId, _faultedReason));
         }
 
         private void SetHandlerState(string partition)
@@ -537,8 +536,6 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
-
         private void Tick()
         {
             EnsureState(State.Running | State.Paused | State.Stopping | State.FaultedStopping | State.Faulted);
@@ -607,7 +604,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ProjectionMessage.Projections.SubscribeProjection(
                     _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,
                     _projectionConfig.CheckpointUnhandledBytesThreshold));
-            _publisher.Publish(new ProjectionMessage.Projections.Started(_projectionCorrelationId));
+            _publisher.Publish(new ProjectionMessage.Projections.StatusReport.Started(_projectionCorrelationId));
         }
 
         private void BeginStatePartitionLoad(

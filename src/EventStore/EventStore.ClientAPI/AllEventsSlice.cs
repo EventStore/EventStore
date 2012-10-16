@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,30 +24,22 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//  
 
-using System.Diagnostics;
-using System.Threading;
-using EventStore.Core.Bus;
+using EventStore.ClientAPI.System;
+using System.Linq;
 
-namespace EventStore.Core.Messaging
+namespace EventStore.ClientAPI
 {
-    public class PublishEnvelope : IEnvelope
+    public class AllEventsSlice
     {
-        private readonly IPublisher _publisher;
-        private readonly int _createdOnThread;
+        public readonly Position Position;
+        public readonly RecordedEvent[] Events;
 
-        public PublishEnvelope(IPublisher publisher) 
+        internal AllEventsSlice(Position position, EventRecord[] events)
         {
-            _publisher = publisher;
-            _createdOnThread = Thread.CurrentThread.ManagedThreadId;
-        }
-
-        public void ReplyWith<T>(T message) where T : Message
-        {
-            Debug.Assert(
-                Thread.CurrentThread.ManagedThreadId == _createdOnThread || _publisher is IThreadSafePublisher);
-            _publisher.Publish(message);
+            Position = position;
+            Events = (events ?? new EventRecord[0]).Select(er => new RecordedEvent(er)).ToArray();
         }
     }
 }
