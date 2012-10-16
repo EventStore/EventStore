@@ -44,6 +44,8 @@ namespace EventStore.Core
 {
     public abstract class ProgramBase<TOptions> where TOptions : EventStoreCmdLineOptionsBase, new()
     {
+        private static readonly ILogger Log = LogManager.GetLogger("ProgramBase");
+
         public bool BoxMode { get; set; }
         private int _exitCode;
         private readonly ManualResetEventSlim _exitEvent = new ManualResetEventSlim(false);
@@ -81,15 +83,29 @@ namespace EventStore.Core
             }
             catch (ApplicationInitializationException ex)
             {
-                Application.Exit(ExitCode.Error, ex.Message);
+                Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Unhandled exception while starting application: {0}", ex);
-                Application.Exit(ExitCode.Error, ex.Message);
+                Log.ErrorException(ex, "Unhandled exception while starting application: {0}", FormatExceptionMessage(ex));
+                Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
 
             return _exitCode;
+        }
+
+        private string FormatExceptionMessage(Exception ex)
+        {
+            string msg = ex.Message;
+            var exc = ex.InnerException;
+            int cnt = 0;
+            while (exc != null)
+            {
+                cnt += 1;
+                msg += "\n" + new string(' ', 2 * cnt) + exc.Message;
+                exc = exc.InnerException;
+            }
+            return msg;
         }
 
         protected abstract void OnArgsParsed(TOptions options);

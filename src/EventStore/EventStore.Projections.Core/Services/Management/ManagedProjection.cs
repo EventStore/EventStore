@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Services.Management
             public bool Deleted { get; set; }
         }
 
-        private readonly IPublisher _publisher;
+        private readonly IPublisher _inputQueue;
 
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Services.Management
             Guid id, string name, ILogger logger,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-                readDispatcher, IPublisher publisher, ProjectionStateHandlerFactory projectionStateHandlerFactory)
+                readDispatcher, IPublisher inputQueue, ProjectionStateHandlerFactory projectionStateHandlerFactory)
         {
             if (id == Guid.Empty) throw new ArgumentException("id");
             if (name == null) throw new ArgumentNullException("name");
@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Management
             _logger = logger;
             _writeDispatcher = writeDispatcher;
             _readDispatcher = readDispatcher;
-            _publisher = publisher;
+            _inputQueue = inputQueue;
             _projectionStateHandlerFactory = projectionStateHandlerFactory;
         }
 
@@ -140,6 +140,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public ProjectionStatistics GetStatistics()
         {
+            _coreQueue.Publish(new ProjectionMessage.Projections.Management.UpdateStatistics(_id));
             ProjectionStatistics status;
             if (_lastReceivedStatistics == null || _state != ManagedProjectionState.Running)
             {
@@ -178,7 +179,7 @@ namespace EventStore.Projections.Core.Services.Management
                 }
                 _stateRequests.Add(message.Envelope);
                 if (needRequest)
-                    _coreQueue.Publish(new ProjectionMessage.Projections.Management.GetState(new PublishEnvelope(_publisher), _id));
+                    _coreQueue.Publish(new ProjectionMessage.Projections.Management.GetState(new PublishEnvelope(_inputQueue), _id));
             }
             else
             {
@@ -208,11 +209,11 @@ namespace EventStore.Projections.Core.Services.Management
                     });
         }
 
-        public void Handle(ProjectionMessage.Projections.Started message)
+        public void Handle(ProjectionMessage.Projections.StatusReport.Started message)
         {
         }
 
-        public void Handle(ProjectionMessage.Projections.Stopped message)
+        public void Handle(ProjectionMessage.Projections.StatusReport.Stopped message)
         {
             _state = ManagedProjectionState.Stopped;
             DisposeCoreProjection();
@@ -221,7 +222,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (stopCompleted != null) stopCompleted();
         }
 
-        public void Handle(ProjectionMessage.Projections.Faulted message)
+        public void Handle(ProjectionMessage.Projections.StatusReport.Faulted message)
         {
             SetFaulted(message.FaultedReason);
             DisposeCoreProjection();
@@ -259,7 +260,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), new PublishEnvelope(_publisher), "$projections-" + name, -1, 1, resolveLinks: false), LoadCompleted);
+                    Guid.NewGuid(), new PublishEnvelope(_inputQueue), "$projections-" + name, -1, 1, resolveLinks: false), LoadCompleted);
         }
 
         private void LoadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed)
@@ -306,7 +307,7 @@ namespace EventStore.Projections.Core.Services.Management
 			var managedProjectionSerializedState = _persistedState.ToJsonBytes ();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), new PublishEnvelope(_publisher), "$projections-" + _name, ExpectedVersion.Any,
+                    Guid.NewGuid(), new PublishEnvelope(_inputQueue), "$projections-" + _name, ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "ProjectionUpdated", false,  managedProjectionSerializedState, new byte[0])),
                 m => WriteCompleted(m, completed));
         }
@@ -385,7 +386,7 @@ namespace EventStore.Projections.Core.Services.Management
             //TODO: load configuration from the definition
 
 
-            var createProjectionMessage = new ProjectionMessage.CoreService.Management.Create(new PublishEnvelope(_publisher), _id, _name, config, delegate
+            var createProjectionMessage = new ProjectionMessage.CoreService.Management.Create(new PublishEnvelope(_inputQueue), _id, _name, config, delegate
                 {
                     IProjectionStateHandler stateHandler = null;
                     try

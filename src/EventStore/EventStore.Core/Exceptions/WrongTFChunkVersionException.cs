@@ -25,29 +25,19 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+using System;
 
-using System.Diagnostics;
-using System.Threading;
-using EventStore.Core.Bus;
-
-namespace EventStore.Core.Messaging
+namespace EventStore.Core.Exceptions
 {
-    public class PublishEnvelope : IEnvelope
+    public class WrongTFChunkVersionException : Exception
     {
-        private readonly IPublisher _publisher;
-        private readonly int _createdOnThread;
-
-        public PublishEnvelope(IPublisher publisher) 
+        public WrongTFChunkVersionException(string chunkFileName, byte chunkVersion, byte currentVersion)
+            :base(string.Format("TFChunk {0} has wrong version: {1}, while current version is: {2}.", 
+                                chunkFileName, 
+                                chunkVersion, 
+                                currentVersion))
         {
-            _publisher = publisher;
-            _createdOnThread = Thread.CurrentThread.ManagedThreadId;
-        }
-
-        public void ReplyWith<T>(T message) where T : Message
-        {
-            Debug.Assert(
-                Thread.CurrentThread.ManagedThreadId == _createdOnThread || _publisher is IThreadSafePublisher);
-            _publisher.Publish(message);
+            
         }
     }
 }

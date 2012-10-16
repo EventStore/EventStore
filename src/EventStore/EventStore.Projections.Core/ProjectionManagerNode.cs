@@ -1,6 +1,7 @@
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Http;
@@ -11,13 +12,20 @@ namespace EventStore.Projections.Core
     public class ProjectionManagerNode
     {
         private readonly ProjectionManager _projectionManager;
+        private readonly InMemoryBus _output;
 
-        private ProjectionManagerNode(ProjectionManager projectionManager)
+        private ProjectionManagerNode(IPublisher inputQueue, IPublisher[] queues, ICheckpoint checkpointForStatistics)
         {
-            _projectionManager = projectionManager;
+            _output = new InMemoryBus("ProjectionManagerOutput");
+            _projectionManager = new ProjectionManager(inputQueue, _output, queues, checkpointForStatistics);
         }
 
-        public void SetupMessaging(IBus mainBus)
+        public InMemoryBus Output
+        {
+            get { return _output; }
+        }
+
+        public void SetupMessaging(ISubscriber mainBus)
         {
             mainBus.Subscribe<SystemMessage.SystemInit>(_projectionManager);
             mainBus.Subscribe<SystemMessage.SystemStart>(_projectionManager);
@@ -29,20 +37,20 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<ProjectionManagementMessage.GetState>(_projectionManager);
             mainBus.Subscribe<ProjectionManagementMessage.Disable>(_projectionManager);
             mainBus.Subscribe<ProjectionManagementMessage.Enable>(_projectionManager);
-            mainBus.Subscribe<ProjectionMessage.Projections.Started>(_projectionManager);
-            mainBus.Subscribe<ProjectionMessage.Projections.Stopped>(_projectionManager);
-            mainBus.Subscribe<ProjectionMessage.Projections.Faulted>(_projectionManager);
+            mainBus.Subscribe<ProjectionMessage.Projections.StatusReport.Started>(_projectionManager);
+            mainBus.Subscribe<ProjectionMessage.Projections.StatusReport.Stopped>(_projectionManager);
+            mainBus.Subscribe<ProjectionMessage.Projections.StatusReport.Faulted>(_projectionManager);
             mainBus.Subscribe<ProjectionMessage.Projections.Management.StateReport>(_projectionManager);
             mainBus.Subscribe<ProjectionMessage.Projections.Management.StatisticsReport>(_projectionManager);
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);
         }
 
-        public static ProjectionManagerNode Create(TFChunkDb db, IPublisher publisher, QueuedHandler mainQueue, HttpService httpService, IPublisher[] queues)
+        public static ProjectionManagerNode Create(TFChunkDb db, QueuedHandler inputQueue, HttpService httpService, IPublisher[] queues)
         {
             var projectionManagerNode =
-                new ProjectionManagerNode(new ProjectionManager(mainQueue, publisher, queues, db.Config.WriterCheckpoint));
-            httpService.SetupController(new ProjectionsController(mainQueue));
+                new ProjectionManagerNode(inputQueue, queues, db.Config.WriterCheckpoint);
+            httpService.SetupController(new ProjectionsController(inputQueue));
 
             return projectionManagerNode;
         }
