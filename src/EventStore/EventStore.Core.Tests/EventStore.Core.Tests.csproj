@@ -82,6 +82,10 @@
     <Compile Include="Fakes\FakeLogger.cs" />
     <Compile Include="Fakes\FakePublisher.cs" />
     <Compile Include="Fakes\NoopPublisher.cs" />
+    <Compile Include="Hashes\murmur2_hash_should.cs" />
+    <Compile Include="Hashes\murmur3a_hash_should.cs" />
+    <Compile Include="Hashes\SMHasher.cs" />
+    <Compile Include="Hashes\xxhash_hash_should.cs" />
     <Compile Include="Helper\ReflectionDynamic.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
@@ -165,7 +169,7 @@
     <Compile Include="Integration\IntegrationTestBase.cs" />
     <Compile Include="Integration\EnvelopeCallback.cs" />
     <Compile Include="Integration\when_writing_single_event_and_then_reading_it.cs" />
-    <Compile Include="MD5HashTests.cs" />
+    <Compile Include="Hashes\MD5HashTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\FormatterTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\StatsParserTests.cs" />
     <Compile Include="Infrastructure\Services\Storage\ByLengthHasher.cs" />

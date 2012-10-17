@@ -33,8 +33,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public TwoPhaseRequestManagerBase(IPublisher publisher, int prepareCount, int commitCount)
         {
-            if(publisher == null) throw new ArgumentNullException();
-            if(prepareCount <= 0 || commitCount <= 0) throw new ArgumentOutOfRangeException("counts for prepare and commit acks must be a positive number");
+            if (publisher == null) 
+                throw new ArgumentNullException();
+            if (prepareCount <= 0 || commitCount <= 0) 
+                throw new ArgumentOutOfRangeException("counts for prepare and commit acks must be a positive number");
             Publisher = publisher;
             _awaitingCommit = commitCount;
             _awaitingPrepare = prepareCount;
@@ -93,11 +95,11 @@ namespace EventStore.Core.Services.RequestManager.Managers
             {
                 _awaitingPrepare -= 1;
                 if (_awaitingPrepare == 0)
-                {
+                { 
                     Publisher.Publish(new ReplicationMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _preparePos));
                     Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.CommitTimeout,
-                                                              _publishEnvelope,
-                                                              new ReplicationMessage.CommitPhaseTimeout(_correlationId)));
+                                                                   _publishEnvelope,
+                                                                   new ReplicationMessage.CommitPhaseTimeout(_correlationId)));
                 }
             }
         }

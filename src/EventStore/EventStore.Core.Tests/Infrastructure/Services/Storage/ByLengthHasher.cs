@@ -41,5 +41,10 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         {
             return (uint) data.Length;
         }
+
+        public uint Hash(byte[] data, int offset, uint len, uint seed)
+        {
+            return len;
+        }
     }
 }

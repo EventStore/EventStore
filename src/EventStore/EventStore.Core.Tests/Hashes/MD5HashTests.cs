@@ -25,13 +25,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.IO;
 using System.Security.Cryptography;
 using EventStore.Core.Util;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests
+namespace EventStore.Core.Tests.Hashes
 {
     [TestFixture]
     public class MD5HashTests

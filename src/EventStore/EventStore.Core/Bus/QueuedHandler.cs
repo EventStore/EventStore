@@ -45,7 +45,10 @@ namespace EventStore.Core.Bus
 
         private readonly IHandle<Message> _consumer;
         private readonly string _name;
+
         private readonly bool _watchSlowMsg;
+        private readonly Stopwatch _slowMsgWatch = new Stopwatch();
+        private readonly TimeSpan _slowMsgThreshold;
 
 #if __MonoCS__
         private readonly Common.ConcurrentCollections.ConcurrentQueue<Message> _queue = new Common.ConcurrentCollections.ConcurrentQueue<Message>();
@@ -62,27 +65,23 @@ namespace EventStore.Core.Bus
         private readonly QueueMonitor _queueMonitor;
         private readonly object _statisticsLock = new object(); // this lock is mostly acquired from a single thread (+ rarely to get statistics), so performance penalty is not too high
         
-        private DateTime? _currentItemProcessingStarted;
-        private DateTime? _idleTimeStarted;
+        private readonly Stopwatch _busyWatch = new Stopwatch();
+        private readonly Stopwatch _idleWatch = new Stopwatch();
+        private readonly Stopwatch _totalIdleWatch = new Stopwatch();
+        private readonly Stopwatch _totalBusyWatch = new Stopwatch();
+        private readonly Stopwatch _totalTimeWatch = new Stopwatch();
+        private TimeSpan _lastTotalIdleTime;
+        private TimeSpan _lastTotalBusyTime;
+        private TimeSpan _lastTotalTime;
 
-        private readonly Stopwatch _processingTime = new Stopwatch();
-        private readonly Stopwatch _idleTime = new Stopwatch();
-        private readonly Stopwatch _allTime = new Stopwatch();
-
-        private long _lastProcessingTime;
-        private long _lastIdleTime;
-        private long _lastAllTime;
-        private long _lastProcessed;
-
-        private long _totalItemsProcessed;
-        private long _lengthLifetimePeak;
-        private long _lengthCurrentTryPeak;
-
+        private long _totalItems;
+        private long _lastTotalItems;
+        private long _totalSkipped;
+        private long _lastTotalSkipped;
+        private long _lifetimeQueueLengthPeak;
+        private long _currentQueueLengthPeak;
         private Type _lastProcessedMsgType;
         private Type _inProgressMsgType;
-
-        private readonly Stopwatch _slowMsgWatch = new Stopwatch();
-        private readonly int _slowMsgThresholdMs;
 
         public QueuedHandler(IHandle<Message> consumer,
                              string name,
@@ -96,7 +95,7 @@ namespace EventStore.Core.Bus
             _consumer = consumer;
             _name = name;
             _watchSlowMsg = watchSlowMsg;
-            _slowMsgThresholdMs = slowMsgThresholdMs ?? InMemoryBus.DefaultSlowMessageThresholdMs;
+            _slowMsgThreshold = TimeSpan.FromMilliseconds(slowMsgThresholdMs ?? InMemoryBus.DefaultSlowMessageThresholdMs);
             _threadStopWaitTimeoutMs = threadStopWaitTimeoutMs;
 
             _queueMonitor = QueueMonitor.Default;
@@ -125,39 +124,46 @@ namespace EventStore.Core.Bus
 
         private void ReadFromQueue(object o)
         {
-            _allTime.Start();
+            _totalTimeWatch.Start();
             while (!_stop)
             {
                 Message msg = null;
                 try
                 {
-                    if (_queue.TryDequeue(out msg))
+                    if (!_queue.TryDequeue(out msg))
+                    {
+                        Thread.Sleep(1);
+                    }
+                    else
                     {
                         var ttlMessage = msg as IAmOnlyCaredAboutForTime;
-                        if (ttlMessage != null && !ttlMessage.AmStillCaredAbout()) 
+                        if (ttlMessage != null && !ttlMessage.AmStillCaredAbout())
+                        {
+                            _totalSkipped += 1;
                             continue;
+                        }
 
                         //NOTE: the following locks are primarily acquired in this thread, 
                         //      so not too high performance penalty
                         lock (_statisticsLock)
                         {
-                            _idleTime.Stop();
-                            _currentItemProcessingStarted = DateTime.UtcNow;
-                            _idleTimeStarted = null;
+                            _totalIdleWatch.Stop();
+                            _idleWatch.Reset();
+                           
+                            _totalBusyWatch.Start();
+                            _busyWatch.Restart();
 
                             var cnt = _queue.Count;
-                            _lengthLifetimePeak = Math.Max(_lengthLifetimePeak, cnt);
-                            _lengthCurrentTryPeak = Math.Max(_lengthCurrentTryPeak, cnt);
+                            _lifetimeQueueLengthPeak = _lifetimeQueueLengthPeak > cnt ? _lifetimeQueueLengthPeak : cnt;
+                            _currentQueueLengthPeak = _currentQueueLengthPeak > cnt ? _currentQueueLengthPeak : cnt;
 
                             _inProgressMsgType = msg.GetType();
-
-                            _processingTime.Start();
                         }
 
                         if (!_watchSlowMsg)
                         {
                             _consumer.Handle(msg);
-                            _totalItemsProcessed++;
+                            _totalItems += 1;
                         }
                         else
                         {
@@ -165,9 +171,9 @@ namespace EventStore.Core.Bus
                             var qSize = _queue.Count;
 
                             _consumer.Handle(msg);
-                            _totalItemsProcessed++;
+                            _totalItems += 1;
 
-                            if (_slowMsgWatch.ElapsedMilliseconds > _slowMsgThresholdMs)
+                            if (_slowMsgWatch.Elapsed > _slowMsgThreshold)
                             {
                                 Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
                                           _name,
@@ -180,17 +186,13 @@ namespace EventStore.Core.Bus
 
                         lock (_statisticsLock)
                         {
-                            _processingTime.Stop();
                             _lastProcessedMsgType = _inProgressMsgType;
                             _inProgressMsgType = null;
-                            _currentItemProcessingStarted = null;
-                            _idleTimeStarted = DateTime.UtcNow;
-                            _idleTime.Start();
+                            _totalIdleWatch.Start();
+                            _idleWatch.Restart();
+                            _totalBusyWatch.Stop();
+                            _busyWatch.Reset();
                         }
-                    }
-                    else
-                    {
-                        Thread.Sleep(1);
                     }
                 }
                 catch (Exception ex)
@@ -215,32 +217,43 @@ namespace EventStore.Core.Bus
 
         public QueueStats GetStatistics()
         {
-            var now = DateTime.UtcNow;
-            var itemsProcessedInTotal = Interlocked.Read(ref _totalItemsProcessed);
             lock (_statisticsLock)
             {
-                var itemProcessedInLastRun = (itemsProcessedInTotal - _lastProcessed);
-                var elapsedAllTimeInLastRun = _allTime.ElapsedMilliseconds - _lastAllTime;
+                var totalTime = _totalTimeWatch.Elapsed;
+                var totalIdleTime = _totalIdleWatch.Elapsed;
+                var totalBusyTime = _totalBusyWatch.Elapsed;
+                var totalItems = Interlocked.Read(ref _totalItems);
+                var totalSkipped = Interlocked.Read(ref _totalSkipped);
+
+                var lastRunMs = (long)(totalTime - _lastTotalTime).TotalMilliseconds;
+                var lastItems = totalItems - _lastTotalItems;
+                var avgItemsPerSecond = lastRunMs != 0 ? (int)(1000 * lastItems / lastRunMs) : 0;
+                var avgProcessingTime = lastItems != 0 ? (totalBusyTime - _lastTotalBusyTime).TotalMilliseconds / lastItems : 0;
+                var idleTimePercent = lastRunMs != 0 ? 100.0 * (totalIdleTime - _lastTotalIdleTime).TotalMilliseconds / lastRunMs : 0;
+
                 var stats = new QueueStats(
                     _name,
                     _queue.Count,
-                    elapsedAllTimeInLastRun == 0 ? 0 : (int)((1000 * itemProcessedInLastRun) / elapsedAllTimeInLastRun),
-                    itemProcessedInLastRun == 0  ? 0 : (float)(_processingTime.ElapsedMilliseconds - _lastProcessingTime) / itemProcessedInLastRun,
-                    elapsedAllTimeInLastRun == 0 ? 0 : 100.0f * (_idleTime.ElapsedMilliseconds - _lastIdleTime) / elapsedAllTimeInLastRun,
-                    now - _currentItemProcessingStarted,
-                    now - _idleTimeStarted,
-                    itemsProcessedInTotal,
-                    _lengthCurrentTryPeak,
-                    _lengthLifetimePeak,
+                    avgItemsPerSecond,
+                    avgProcessingTime,
+                    idleTimePercent,
+                    _busyWatch.IsRunning ? _busyWatch.Elapsed : (TimeSpan?)null,
+                    _idleWatch.IsRunning ? _idleWatch.Elapsed : (TimeSpan?)null,
+                    totalItems,
+                    _currentQueueLengthPeak,
+                    _lifetimeQueueLengthPeak,
                     _lastProcessedMsgType,
-                    _inProgressMsgType);
+                    _inProgressMsgType,
+                    totalSkipped,
+                    _totalSkipped - _lastTotalSkipped);
 
-                _lastProcessingTime = _processingTime.ElapsedMilliseconds;
-                _lastIdleTime = _idleTime.ElapsedMilliseconds;
-                _lastAllTime = _allTime.ElapsedMilliseconds;
-                _lastProcessed = itemsProcessedInTotal;
+                _lastTotalTime = totalTime;
+                _lastTotalIdleTime = totalIdleTime;
+                _lastTotalBusyTime = totalBusyTime;
+                _lastTotalItems = totalItems;
+                _lastTotalSkipped = totalSkipped;
 
-                _lengthCurrentTryPeak = 0;
+                _currentQueueLengthPeak = 0;
                 return stats;
             }
         }
