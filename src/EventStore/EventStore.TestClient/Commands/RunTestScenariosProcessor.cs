@@ -63,7 +63,7 @@ namespace EventStore.TestClient.Commands
             get
             {
                 return string.Format("{0} " +
-                                     "<max concurrent requests, default = 500> " +
+                                     "<max concurrent requests, default = 100> " +
                                      "<threads, default = 20> " +
                                      "<streams, default = 20> " +
                                      "<eventsPerStream, default = 10000> " +
@@ -288,7 +288,11 @@ namespace EventStore.TestClient.Commands
             var runIndex = 0;
             while (stopWatch.Elapsed < _executionPeriod)
             {
-                Log.Info("=================== Start run #{0} =================== ", runIndex);
+                Log.Info("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
+                    runIndex,
+                    (int)stopWatch.Elapsed.TotalMinutes,
+                    _executionPeriod.TotalMinutes);
+
                 SetStartupWaitInterval(TimeSpan.FromSeconds(7 + (2 * runIndex) % 200));
                 InnerRun(runIndex);
                 runIndex += 1;
