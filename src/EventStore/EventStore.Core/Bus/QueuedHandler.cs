@@ -124,6 +124,7 @@ namespace EventStore.Core.Bus
 
         private void ReadFromQueue(object o)
         {
+            Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
             _totalTimeWatch.Start();
             while (!_stop)
             {
@@ -194,13 +195,14 @@ namespace EventStore.Core.Bus
                             _busyWatch.Reset();
                         }
                     }
-                }
+                    }
                 catch (Exception ex)
                 {
                     Log.ErrorException(ex, "Error while processing message {0} in queued handler '{1}'.", msg, _name);
                 }
             }
             _stopped.Set();
+            Thread.EndThreadAffinity();
         }
 
         public void Publish(Message message)
