@@ -10,15 +10,15 @@ es.tmpl = (function () {
         renderTemplate("head", "#r-head", null);
     }
 
-    function renderBody() {
+    function renderBody(opts) {
         registerOnLoad();
 
         var $content = $("#content");
         var content = $content.html();
         $content.remove();
-        var data = {
+        var data = $.extend({}, opts, {
             content: content
-        };
+        });
         renderTemplate("body", "#r-body", data);
     }
 
