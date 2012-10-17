@@ -125,7 +125,6 @@ namespace EventStore.Core.Bus
         private void ReadFromQueue(object o)
         {
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
-            _allTime.Start();
             _totalTimeWatch.Start();
             while (!_stop)
             {
