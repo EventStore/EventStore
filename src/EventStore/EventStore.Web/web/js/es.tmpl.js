@@ -11,6 +11,8 @@ es.tmpl = (function () {
     }
 
     function renderBody() {
+        registerOnLoad();
+
         var $content = $("#content");
         var content = $content.html();
         $content.remove();
@@ -34,5 +36,35 @@ es.tmpl = (function () {
 
     function formatTemplatePath(name) {
         return "tmpl/_" + name + ".tmpl.html";
+    }
+
+    function registerOnLoad() {
+        var jqueryBackup = window.$;
+        if (typeof jqueryBackup == "undefined")
+            throw "jQuery msut be defined before register es-specific onload";
+
+        jqueryBackup.extend($esload, jqueryBackup);
+
+        window.$ = $esload;
+        window.__$esdoload = load;
+        var isLoaded = false;
+        var toLoad = [];
+
+        function $esload(onload) {
+            if (typeof onload !== "function") {
+                // call whatever was supposed to be done with jquery
+                return jqueryBackup.apply(window, arguments);
+            }
+
+            if (isLoaded)
+                onload();
+            else
+                toLoad.push(onload);
+        }
+        function load() {
+            isLoaded = true;
+            for (var i in toLoad)
+                toLoad[i]();
+        }
     }
 })();

@@ -56,7 +56,7 @@
     </script>
     <script>
             $(function(){
-                $(document).on('click','#post',function () {
+                $('#post').click(function () {
                     function on_posted(data, textStatus, jqXHR) {
                         var statusUrl = jqXHR.getResponseHeader('Location');
                         $('#log').append("<a href='" + statusUrl + "'>" + statusUrl + "</a>");

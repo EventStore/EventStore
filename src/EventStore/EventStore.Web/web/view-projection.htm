@@ -19,9 +19,9 @@
                     <ul style="display: inline;">
                         <li style="display: inline;" id="edit-source-container-top"></li>
                         <li style="display: inline;"><a href="#" id="commandDisable">
-                                                         <img src="img/stop_btn.png" title="Disable" alt="Disable" /></a> </li>
+                            <img src="img/stop_btn.png" title="Disable" alt="Disable" /></a> </li>
                         <li style="display: inline;"><a href="#" id="commandEnable">
-                                                         <img src="img/start_btn.png" title="Enable" alt="Enable" /></a> </li>
+                            <img src="img/start_btn.png" title="Enable" alt="Enable" /></a> </li>
                     </ul>
                 </div>
             </div>
@@ -96,174 +96,172 @@
                 <a href="{{>'edit-projection-source.htm#'+statusUrl}}" class="btn btn-success"><i class="icon-pencil"></i> Edit</a>
         </script>
     </div>
-
     <script id="r-body">
         es.tmpl.renderBody();
     </script>
-
     <script type="text/javascript">
 
-            var projectionStatusUrl = "";
+                var projectionStatusUrl = "";
 
-            function success(data, status, xhr) {
-                var projection = data.projections[0];
-                document.title = projection.name + " - Projection Status";
-                $("#raw_data").text(JSON.stringify(projection));
+                function success(data, status, xhr) {
+                    var projection = data.projections[0];
+                    document.title = projection.name + " - Projection Status";
+                    $("#raw_data").text(JSON.stringify(projection));
 
-                $("#projection-status").html(
-                    $.render.projectionTemplate(projection, {
-                        percentsDone: function (v) {
-                            return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
-                        }
-                    })
-                );
+                    $("#projection-status").html(
+                        $.render.projectionTemplate(projection, {
+                            percentsDone: function (v) {
+                                return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
+                            }
+                        })
+                    );
                 
-                $("#projection-status-button").html(
-                    $.render.projectionTemplateButton(projection, {
-                        percentsDone: function (v) {
-                            return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
-                        }
-                    })
-                );
+                    $("#projection-status-button").html(
+                        $.render.projectionTemplateButton(projection, {
+                            percentsDone: function (v) {
+                                return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
+                            }
+                        })
+                    );
                 
-                $("#projection-reason").html(
-                    $.render.projectionTemplateReason(projection, {
-                        percentsDone: function (v) {
-                            return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
-                        }
-                    })
-                );
+                    $("#projection-reason").html(
+                        $.render.projectionTemplateReason(projection, {
+                            percentsDone: function (v) {
+                                return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
+                            }
+                        })
+                    );
                 
                 
     
-                $("#edit-source-container").html(
-                    $.render.editSourceTemplate(projection)
-                );
-                $("#edit-source-container-top").html(
-                    $.render.editSourceTemplate(projection)
-                );
+                    $("#edit-source-container").html(
+                        $.render.editSourceTemplate(projection)
+                    );
+                    $("#edit-source-container-top").html(
+                        $.render.editSourceTemplate(projection)
+                    );
 
-                delayedRequestProjection();
-            }
-
-            function error(xhr, status) {
-                delayedRequestProjection();
-            }
-
-            function successState(data, status, xhr) {
-                if(data) {
-                    $("#raw_state").text(JSON.stringify(data));
+                    delayedRequestProjection();
                 }
-                delayedRequestProjectionState();
-            }
 
-            function errorState(xhr, status) {
-                delayedRequestProjectionState();
-            }
+                function error(xhr, status) {
+                    delayedRequestProjection();
+                }
 
-            function successSource(data, status, xhr) {
-                $("#source").text(data);
-                delayedRequestProjectionSource();
-            }
+                function successState(data, status, xhr) {
+                    if(data) {
+                        $("#raw_state").text(JSON.stringify(data));
+                    }
+                    delayedRequestProjectionState();
+                }
 
-            function errorSource(xhr, status) {
-                delayedRequestProjectionSource();
-            }
+                function errorState(xhr, status) {
+                    delayedRequestProjectionState();
+                }
 
-            function delayedRequestProjection() {
-                setTimeout(requestProjection, 1000);
-            }
+                function successSource(data, status, xhr) {
+                    $("#source").text(data);
+                    delayedRequestProjectionSource();
+                }
 
-            function delayedRequestProjectionState() {
-                setTimeout(requestProjectionState, 1000);
-            }
+                function errorSource(xhr, status) {
+                    delayedRequestProjectionSource();
+                }
 
-            function delayedRequestProjectionSource() {
-                setTimeout(requestProjectionSource, 5000);
-            }
+                function delayedRequestProjection() {
+                    setTimeout(requestProjection, 1000);
+                }
 
-            function requestProjection() {
-                $.ajax(projectionStatusUrl + "/statistics", {
-                    cache: false,
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    success: success,
-                    error: error
-                });
-            }
+                function delayedRequestProjectionState() {
+                    setTimeout(requestProjectionState, 1000);
+                }
 
-            function requestProjectionState() {
-                $.ajax(projectionStatusUrl + "/state", {
-                    cache: false,
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    success: successState,
-                    error: errorState
-                });
-            }
+                function delayedRequestProjectionSource() {
+                    setTimeout(requestProjectionSource, 5000);
+                }
 
-            function requestProjectionSource() {
-                $.ajax(projectionStatusUrl + "/query", {
-                    cache: false,
-                    headers: {
-                        Accept: "text/plain",
-                    },
-                    dataType: "text",
-                    success: successSource,
-                    error: errorSource
-                });
-            }
+                function requestProjection() {
+                    $.ajax(projectionStatusUrl + "/statistics", {
+                        cache: false,
+                        headers: {
+                            Accept: "application/json",
+                        },
+                        success: success,
+                        error: error
+                    });
+                }
 
-            function successPostCommand(data, status, xhr) {
-                window.location = "view-projection.htm#" + projectionStatusUrl;
-            }
+                function requestProjectionState() {
+                    $.ajax(projectionStatusUrl + "/state", {
+                        cache: false,
+                        headers: {
+                            Accept: "application/json",
+                        },
+                        success: successState,
+                        error: errorState
+                    });
+                }
+
+                function requestProjectionSource() {
+                    $.ajax(projectionStatusUrl + "/query", {
+                        cache: false,
+                        headers: {
+                            Accept: "text/plain",
+                        },
+                        dataType: "text",
+                        success: successSource,
+                        error: errorSource
+                    });
+                }
+
+                function successPostCommand(data, status, xhr) {
+                    window.location = "view-projection.htm#" + projectionStatusUrl;
+                }
 
 
-            function onDisable() {
-                $.ajax(projectionStatusUrl + "/command/disable", {
-                    cache: false,
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    type: "POST",
-                    success: successPostCommand,
-                    error: function() { alert("Failed!"); }
-                });
-            }
+                function onDisable() {
+                    $.ajax(projectionStatusUrl + "/command/disable", {
+                        cache: false,
+                        headers: {
+                            Accept: "application/json",
+                        },
+                        type: "POST",
+                        success: successPostCommand,
+                        error: function() { alert("Failed!"); }
+                    });
+                }
 
-            function onEnable() {
-                $.ajax(projectionStatusUrl + "/command/enable", {
-                    cache: false,
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    type: "POST",
-                    success: successPostCommand,
-                    error: function() { alert("Failed!"); }
-                });
-            }
+                function onEnable() {
+                    $.ajax(projectionStatusUrl + "/command/enable", {
+                        cache: false,
+                        headers: {
+                            Accept: "application/json",
+                        },
+                        type: "POST",
+                        success: successPostCommand,
+                        error: function() { alert("Failed!"); }
+                    });
+                }
 
-            $(function() {
-                $.templates("projectionTemplate", "#projectionTemplate");
-                $.templates("projectionTemplateButton", "#projectionTemplateButton");
-                $.templates("projectionTemplateReason", "#projectionTemplateReason");
-                $.templates("editSourceTemplate", "#editSourceTemplate");
+                $(function() {
+                    $.templates("projectionTemplate", "#projectionTemplate");
+                    $.templates("projectionTemplateButton", "#projectionTemplateButton");
+                    $.templates("projectionTemplateReason", "#projectionTemplateReason");
+                    $.templates("editSourceTemplate", "#editSourceTemplate");
 
-                projectionStatusUrl = location.hash.substr(1);
-                requestProjection();
-                requestProjectionState();
-                requestProjectionSource();
+                    projectionStatusUrl = location.hash.substr(1);
+                    requestProjection();
+                    requestProjectionState();
+                    requestProjectionSource();
 
-                $(document).on('click', "#commandDisable", onDisable);
-                $(document).on('click', "#commandEnable", onEnable)
+                    $('#commandDisable').click(onDisable);
+                    $("#commandEnable").click(onEnable);
 
-                /* $("#projectiontab a").click(function (e) {
+                    /* $("#projectiontab a").click(function (e) {
                     e.preventDefault();
                     $(this).tab('show');
                 });*/
-            });
+                });
     </script>
 </body>
 </html>

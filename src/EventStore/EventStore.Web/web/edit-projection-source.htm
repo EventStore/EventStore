@@ -138,7 +138,7 @@
             $.templates("editSourceTemplate", "#editSourceTemplate");
             projectionStatusUrl = location.hash.substr(1);
 
-            $(document).on('click', '#update-button', function() {
+            $('#update-button').click( function() {
                 $.ajax(projectionStatusUrl + "/query", {
                     cache: false,
                     headers: {

@@ -57,8 +57,7 @@
 
     <script type="text/javascript">
         $(function(){
-            debugger;
-            $(document).on('click', "#post", function () { // solution while using client-side templates
+            $("#post").click(function () {
                 debugger;
                 function on_posted(data, textStatus, jqXHR) {
                     var statusUrl = jqXHR.getResponseHeader('Location');

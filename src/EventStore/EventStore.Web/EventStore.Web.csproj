@@ -136,9 +136,6 @@
     <Content Include="web\js\es.menu.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\js\loadjs.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="web\js\projections\es.api.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
