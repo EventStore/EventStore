@@ -5,7 +5,7 @@
     <script src="lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
     <script src="lib/jsrender/jsrender.js" type="text/javascript"></script>
     <script src="js/es.tmpl.js" type="text/javascript"></script>
-    <script>
+    <script id="r-head">
         es.tmpl.renderHead();
     </script>
 </head>
@@ -16,8 +16,8 @@
         <a href="chat.htm" class="button-link">Check out EventStore based chatting room!</a>
     </div>
 
-    <script>
-        es.tmpl.renderBody("#content", []);
+    <script id="r-body">
+        es.tmpl.renderBody();
     </script>
 </body>
 </html>

@@ -7,18 +7,17 @@ es.tmpl = (function () {
     };
 
     function renderHead() {
-        renderTemplate("head", "head", null);
+        renderTemplate("head", "#r-head", null);
     }
 
-    function renderBody(contentSelector, scripts) {
-        var $content = $(contentSelector);
+    function renderBody() {
+        var $content = $("#content");
         var content = $content.html();
         $content.remove();
         var data = {
-            content: content,
-            scripts: scripts || []
+            content: content
         };
-        renderTemplate("body", "body", data);
+        renderTemplate("body", "#r-body", data);
     }
 
     function renderTemplate(tmplName, targetSelector, data) {
@@ -27,7 +26,7 @@ es.tmpl = (function () {
             var tmpl = $.templates(template);
             var htmlString = tmpl.render(data);
             if (targetSelector) {
-                $(targetSelector).html(htmlString);
+                $(targetSelector).replaceWith(htmlString);
             }
             return htmlString;
         });
