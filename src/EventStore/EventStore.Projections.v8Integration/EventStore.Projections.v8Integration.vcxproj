@@ -157,6 +157,7 @@
     <ClInclude Include="EventHandler.h" />
     <ClInclude Include="js1.h" />
     <ClInclude Include="ModuleScript.h" />
+    <ClInclude Include="PreludeScope.h" />
     <ClInclude Include="PreludeScript.h" />
     <ClInclude Include="QueryScript.h" />
     <ClInclude Include="stdafx.h" />

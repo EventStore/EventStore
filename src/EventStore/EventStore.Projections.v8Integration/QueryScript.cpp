@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "PreludeScope.h"
 #include "CompiledScript.h"
 #include "PreludeScript.h"
 #include "QueryScript.h"
@@ -83,6 +84,11 @@ namespace js1
 			return v8::Persistent<v8::String>::New(empty);
 		}
 		return v8::Persistent<v8::String>::New(result.As<v8::String>());
+	}
+
+	v8::Isolate *QueryScript::get_isolate()
+	{
+		return isolate;
 	}
 
 	v8::Persistent<v8::ObjectTemplate> QueryScript::create_global_template()

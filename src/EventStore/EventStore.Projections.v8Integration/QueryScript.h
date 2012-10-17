@@ -27,6 +27,7 @@ namespace js1 {
 			REGISTER_COMMAND_HANDLER_CALLBACK register_command_handler_callback_, 
 			REVERSE_COMMAND_CALLBACK reverse_command_callback_) : 
 		
+			isolate(v8::Isolate::GetCurrent()),
 			prelude(prelude_), 
 			register_command_handler_callback(register_command_handler_callback_),
 			reverse_command_callback(reverse_command_callback_)
@@ -40,9 +41,11 @@ namespace js1 {
 		v8::Persistent<v8::String> execute_handler(void* event_handler_handle, const uint16_t *data_json, const uint16_t *data_other[], int32_t other_length);
 
 	protected:
+		virtual v8::Isolate *get_isolate();
 		virtual v8::Persistent<v8::ObjectTemplate> create_global_template();
 
 	private:
+		v8::Isolate *isolate;
 		std::list<EventHandler *> registred_handlers;
 		REGISTER_COMMAND_HANDLER_CALLBACK register_command_handler_callback;
 		REVERSE_COMMAND_CALLBACK reverse_command_callback;

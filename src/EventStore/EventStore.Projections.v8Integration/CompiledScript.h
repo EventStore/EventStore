@@ -5,11 +5,13 @@ namespace js1 {
 
 	class CompiledScript {
 	public:
+		friend class PreludeScope;
 		CompiledScript();
 		virtual ~CompiledScript();
 		void report_errors(REPORT_ERROR_CALLBACK report_error_callback);
-
+		virtual bool owns_isolate() { return false; }
 	protected:
+		virtual v8::Isolate *get_isolate() = 0;
 		virtual v8::Persistent<v8::ObjectTemplate> create_global_template() = 0;
 
 		v8::Persistent<v8::Context> &get_context();

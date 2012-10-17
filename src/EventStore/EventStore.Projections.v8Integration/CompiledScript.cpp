@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "PreludeScope.h"
 #include "CompiledScript.h"
 #include "EventHandler.h"
 
