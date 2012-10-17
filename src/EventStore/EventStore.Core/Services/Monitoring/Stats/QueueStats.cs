@@ -41,16 +41,16 @@ namespace EventStore.Core.Services.Monitoring.Stats
         public readonly TimeSpan? CurrentIdleTime;
         public readonly long TotalItemsProcessed;
         public readonly int AvgItemsPerSecond;
-        public readonly float AvgProcessingTime;
-        public readonly float IdleTimePercent;
+        public readonly double AvgProcessingTime;
+        public readonly double IdleTimePercent;
         public readonly Type LastProcessedMessageType;
         public readonly Type InProgressMessageType;
 
         public QueueStats(string name,
                           int length,
                           int avgItemsPerSecond,
-                          float avgProcessingTime,
-                          float idleTimePercent,
+                          double avgProcessingTime,
+                          double idleTimePercent,
                           TimeSpan? currentItemProcessingTime,
                           TimeSpan? currentIdleTime,
                           long totalItemsProcessed, 

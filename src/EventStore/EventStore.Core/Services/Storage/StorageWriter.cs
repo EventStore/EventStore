@@ -47,6 +47,7 @@ namespace EventStore.Core.Services.Storage
 {
     public class StorageWriter : IDisposable,
                                  IHandle<Message>,
+                                 //IHandle<SystemMessage.ExpiredMessagesHappened>,
                                  IHandle<SystemMessage.SystemInit>,
                                  IHandle<SystemMessage.BecomeShuttingDown>,
                                  IHandle<ReplicationMessage.WritePrepares>,
