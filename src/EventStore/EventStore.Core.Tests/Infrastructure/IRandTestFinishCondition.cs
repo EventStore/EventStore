@@ -33,5 +33,6 @@ namespace EventStore.Core.Tests.Infrastructure
         bool Success { get; }
 
         void Process(int iteration, RandTestQueueItem item);
+        void Log();
     }
 }

@@ -30,7 +30,6 @@ using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages
@@ -50,16 +49,16 @@ namespace EventStore.Core.Messages
         {
         }
 
-        public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableWriterMessage, IAmOnlyCaredAboutForTime
+        public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableWriterMessage
         {
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
             public string EventStreamId { get; private set; }
             public int ExpectedVersion { get; private set; }
-            public DateTime LiveUntil { get; private set; }
             public readonly Event[] Events;
 
             public bool AllowImplicitStreamCreation { get; private set; }
+            public readonly DateTime LiveUntil;
 
             public WritePrepares(Guid correlationId, 
                                  IEnvelope envelope, 
@@ -85,7 +84,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableWriterMessage, IAmOnlyCaredAboutForTime
+        public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableWriterMessage
         {
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
@@ -93,20 +92,26 @@ namespace EventStore.Core.Messages
             public int ExpectedVersion { get; private set; }
 
             public bool AllowImplicitStreamCreation { get; private set; }
-            public DateTime LiveUntil { get; private set; }
+            public readonly DateTime LiveUntil;
 
-            public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, bool allowImplicitStreamCreation, DateTime liveUntil)
+            public WriteDelete(Guid correlationId, 
+                               IEnvelope envelope, 
+                               string eventStreamId, 
+                               int expectedVersion, 
+                               bool allowImplicitStreamCreation, 
+                               DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNull(eventStreamId, "eventStreamId");
-                LiveUntil = liveUntil;
+
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
 
                 AllowImplicitStreamCreation = allowImplicitStreamCreation;
+                LiveUntil = liveUntil;
             }
         }
 
@@ -132,8 +137,14 @@ namespace EventStore.Core.Messages
             public int ExpectedVersion { get; private set; }
 
             public bool AllowImplicitStreamCreation { get; private set; }
+            public readonly DateTime LiveUntil;
 
-            public WriteTransactionStart(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, bool allowImplicitStreamCreation)
+            public WriteTransactionStart(Guid correlationId, 
+                                         IEnvelope envelope, 
+                                         string eventStreamId, 
+                                         int expectedVersion, 
+                                         bool allowImplicitStreamCreation,
+                                         DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -145,6 +156,7 @@ namespace EventStore.Core.Messages
                 ExpectedVersion = expectedVersion;
 
                 AllowImplicitStreamCreation = allowImplicitStreamCreation;
+                LiveUntil = liveUntil;
             }
         }
 
@@ -177,12 +189,20 @@ namespace EventStore.Core.Messages
             public readonly long TransactionId;
             public readonly string EventStreamId;
 
-            public WriteTransactionPrepare(Guid correlationId, IEnvelope envelope, long transactionId, string eventStreamId)
+            public readonly DateTime LiveUntil;
+
+            public WriteTransactionPrepare(Guid correlationId, 
+                                           IEnvelope envelope, 
+                                           long transactionId, 
+                                           string eventStreamId,
+                                           DateTime liveUntil)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
+
+                LiveUntil = liveUntil;
             }
         }
 
