@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Collections.Generic;
-using js1test;
 
 namespace EventStore.Projections.Core.v8
 {

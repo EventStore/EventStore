@@ -5,11 +5,11 @@
 
 namespace js1 {
 
-	class ModuleScript : CompiledScript 
+	class ModuleScript : public CompiledScript 
 	{
 	public:
 		ModuleScript(PreludeScript *prelude_) :
-			prelude(prelude_) {};
+			isolate(v8::Isolate::GetCurrent()), prelude(prelude_) {};
 
 		virtual ~ModuleScript();
 
@@ -18,10 +18,13 @@ namespace js1 {
 
 		v8::Handle<v8::Object> get_module_object();
 
+
 	protected:
+		virtual v8::Isolate *get_isolate();
 		virtual v8::Persistent<v8::ObjectTemplate> create_global_template();
 
 	private:
+		v8::Isolate *isolate;
 		PreludeScript *prelude;
 		v8::Persistent<v8::Object> module_object;
 	};

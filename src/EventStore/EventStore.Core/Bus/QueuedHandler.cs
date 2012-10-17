@@ -125,6 +125,7 @@ namespace EventStore.Core.Bus
 
         private void ReadFromQueue(object o)
         {
+            Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
             _allTime.Start();
             while (!_stop)
             {
@@ -199,6 +200,7 @@ namespace EventStore.Core.Bus
                 }
             }
             _stopped.Set();
+            Thread.EndThreadAffinity();
         }
 
         public void Publish(Message message)
