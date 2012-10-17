@@ -49,7 +49,7 @@ namespace EventStore.Core.Messages
         {
         }
 
-        public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableWriterMessage, IAmOnlyCaredAboutForTime
+        public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableWriterMessage
         {
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
@@ -58,7 +58,7 @@ namespace EventStore.Core.Messages
             public readonly Event[] Events;
 
             public bool AllowImplicitStreamCreation { get; private set; }
-            public DateTime LiveUntil { get; private set; }
+            public readonly DateTime LiveUntil;
 
             public WritePrepares(Guid correlationId, 
                                  IEnvelope envelope, 
@@ -84,7 +84,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableWriterMessage, IAmOnlyCaredAboutForTime
+        public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableWriterMessage
         {
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
@@ -92,9 +92,14 @@ namespace EventStore.Core.Messages
             public int ExpectedVersion { get; private set; }
 
             public bool AllowImplicitStreamCreation { get; private set; }
-            public DateTime LiveUntil { get; private set; }
+            public readonly DateTime LiveUntil;
 
-            public WriteDelete(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, bool allowImplicitStreamCreation, DateTime liveUntil)
+            public WriteDelete(Guid correlationId, 
+                               IEnvelope envelope, 
+                               string eventStreamId, 
+                               int expectedVersion, 
+                               bool allowImplicitStreamCreation, 
+                               DateTime liveUntil)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
@@ -110,25 +115,21 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteCommit : Message, IFlushableWriterMessage, IAmOnlyCaredAboutForTime
+        public class WriteCommit : Message, IFlushableWriterMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long PrepareStartPosition;
 
-            public DateTime LiveUntil { get; private set; }
-
-            public WriteCommit(Guid correlationId, IEnvelope envelope, long prepareStartPosition, DateTime liveUntil)
+            public WriteCommit(Guid correlationId, IEnvelope envelope, long prepareStartPosition)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 PrepareStartPosition = prepareStartPosition;
-
-                LiveUntil = liveUntil;
             }
         }
 
-        public class WriteTransactionStart : Message, IPreconditionedWriteMessage, IFlushableWriterMessage, IAmOnlyCaredAboutForTime
+        public class WriteTransactionStart : Message, IPreconditionedWriteMessage, IFlushableWriterMessage
         {
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
@@ -136,7 +137,7 @@ namespace EventStore.Core.Messages
             public int ExpectedVersion { get; private set; }
 
             public bool AllowImplicitStreamCreation { get; private set; }
-            public DateTime LiveUntil { get; private set; }
+            public readonly DateTime LiveUntil;
 
             public WriteTransactionStart(Guid correlationId, 
                                          IEnvelope envelope, 
@@ -181,14 +182,14 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteTransactionPrepare : Message, IFlushableWriterMessage, IAmOnlyCaredAboutForTime
+        public class WriteTransactionPrepare : Message, IFlushableWriterMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long TransactionId;
             public readonly string EventStreamId;
 
-            public DateTime LiveUntil { get; private set; }
+            public readonly DateTime LiveUntil;
 
             public WriteTransactionPrepare(Guid correlationId, 
                                            IEnvelope envelope, 

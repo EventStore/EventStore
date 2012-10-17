@@ -121,16 +121,5 @@ namespace EventStore.Core.Messages
         public class ScavengeDatabase: Message
         {
         }
-
-        public class ExpiredMessagesHappened : Message
-        {
-            public readonly int SkippedMessageCount;
-
-            public ExpiredMessagesHappened(int skippedMessageCount)
-            {
-                Ensure.Positive(skippedMessageCount, "skippedMessageCount");
-                SkippedMessageCount = skippedMessageCount;
-            }
-        }
     }
 }

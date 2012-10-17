@@ -76,6 +76,8 @@ namespace EventStore.Core.Bus
 
         private long _totalItems;
         private long _lastTotalItems;
+        private long _totalSkipped;
+        private long _lastTotalSkipped;
         private long _lifetimeQueueLengthPeak;
         private long _currentQueueLengthPeak;
         private Type _lastProcessedMsgType;
@@ -136,7 +138,10 @@ namespace EventStore.Core.Bus
                     {
                         var ttlMessage = msg as IAmOnlyCaredAboutForTime;
                         if (ttlMessage != null && !ttlMessage.AmStillCaredAbout())
+                        {
+                            _totalSkipped += 1;
                             continue;
+                        }
 
                         //NOTE: the following locks are primarily acquired in this thread, 
                         //      so not too high performance penalty
@@ -218,6 +223,7 @@ namespace EventStore.Core.Bus
                 var totalIdleTime = _totalIdleWatch.Elapsed;
                 var totalBusyTime = _totalBusyWatch.Elapsed;
                 var totalItems = Interlocked.Read(ref _totalItems);
+                var totalSkipped = Interlocked.Read(ref _totalSkipped);
 
                 var lastRunMs = (long)(totalTime - _lastTotalTime).TotalMilliseconds;
                 var lastItems = totalItems - _lastTotalItems;
@@ -237,12 +243,15 @@ namespace EventStore.Core.Bus
                     _currentQueueLengthPeak,
                     _lifetimeQueueLengthPeak,
                     _lastProcessedMsgType,
-                    _inProgressMsgType);
+                    _inProgressMsgType,
+                    totalSkipped,
+                    _totalSkipped - _lastTotalSkipped);
 
                 _lastTotalTime = totalTime;
                 _lastTotalIdleTime = totalIdleTime;
                 _lastTotalBusyTime = totalBusyTime;
                 _lastTotalItems = totalItems;
+                _lastTotalSkipped = totalSkipped;
 
                 _currentQueueLengthPeak = 0;
                 return stats;

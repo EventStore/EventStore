@@ -95,12 +95,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
             {
                 _awaitingPrepare -= 1;
                 if (_awaitingPrepare == 0)
-                {
-                    Publisher.Publish(new ReplicationMessage.WriteCommit(message.CorrelationId,
-                                                                         _publishEnvelope,
-                                                                         _preparePos,
-                                                                         DateTime.UtcNow +
-                                                                         Timeouts.CommitWriteMessageTimeout));
+                { 
+                    Publisher.Publish(new ReplicationMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _preparePos));
                     Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.CommitTimeout,
                                                                    _publishEnvelope,
                                                                    new ReplicationMessage.CommitPhaseTimeout(_correlationId)));
