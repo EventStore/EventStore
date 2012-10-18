@@ -32,11 +32,11 @@ $(function () {
     var data = { "navmenuTemplate" :
         [
             { "name": "Home", "link": "index.htm", "active": "" },
-            { "name": "List Existing", "link": "list-projections.htm", "active": "" },
-            { "name": "Post New", "link": "post-projection.htm", "active": "" },
+            { "name": "Projections", "link": "list-projections.htm", "active": "" },
+            { "name": "New Projection", "link": "post-projection.htm", "active": "" },
             { "name": "Charts", "link": "dashboard.htm", "active": "" },
             { "name": "Health Charts", "link": "dashboard-health.htm", "active": "" },
-            { "name": "Statistics", "link": "statistics.htm", "active": "" }
+            { "name": "Queues", "link": "statistics.htm", "active": "" }
         ]
     };
 
