@@ -219,6 +219,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _tableIndex.Initialize();
             _persistedPrepareCheckpoint = _tableIndex.PrepareCheckpoint;
             _persistedCommitCheckpoint = _tableIndex.CommitCheckpoint;
+            _lastCommitPosition = _tableIndex.CommitCheckpoint;
 
             foreach (var rdr in _readers)
             {
@@ -311,6 +312,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     _tableIndex.Add(commit.LogPosition, streamHash, eventNumber, prepare.LogPosition);
                     _bus.Publish(new ReplicationMessage.EventCommited(commit.LogPosition, eventNumber, prepare));
                 }
+                _lastCommitPosition = Math.Max(_lastCommitPosition, commit.LogPosition);
             }
         }
 
