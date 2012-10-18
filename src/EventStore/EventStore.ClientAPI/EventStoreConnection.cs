@@ -73,7 +73,7 @@ namespace EventStore.ClientAPI
 
         public override string ToString()
         {
-            return string.Format("Workitem {0}: {1}, attempt {2}, seqNo {3}", 
+            return string.Format("Workitem {0} : {1}, attempt {2}, seqNo {3}", 
                                  Operation.GetType().FullName, 
                                  Operation,
                                  Attempt, 

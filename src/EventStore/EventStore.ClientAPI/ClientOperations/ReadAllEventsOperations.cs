@@ -120,6 +120,15 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             _source.SetException(exception);
         }
+
+        public override string ToString()
+        {
+            return string.Format("Position: {0}, MaxCount: {1}, ResolveLinkTos: {2}, CorrelationId: {3}",
+                                 _position,
+                                 _maxCount,
+                                 _resolveLinkTos,
+                                 CorrelationId);
+        }
     }
 
     internal class ReadAllEventsBackwardOperation : IClientOperation
@@ -208,6 +217,15 @@ namespace EventStore.ClientAPI.ClientOperations
         public void Fail(Exception exception)
         {
             _source.SetException(exception);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Position: {0}, MaxCount: {1}, ResolveLinkTos: {2}, CorrelationId: {3}", 
+                                 _position,
+                                 _maxCount, 
+                                 _resolveLinkTos, 
+                                 CorrelationId);
         }
     }
 }

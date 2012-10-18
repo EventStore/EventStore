@@ -145,13 +145,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return
-                string.Format(
-                    "AppendToStreamOperation, corrid: {0}, stream: {1}, eventsCount: {2}, expectedVersion: {3}",
-                    _correlationId,
-                    _stream,
-                    _events.Count(),
-                    _expectedVersion);
+            return string.Format("Stream: {0}, ExpectedVersion: {1}, CorrelationId: {2}", _stream, _expectedVersion, CorrelationId);
         }
     }
 }

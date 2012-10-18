@@ -142,5 +142,10 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             _source.SetException(exception);
         }
+
+        public override string ToString()
+        {
+            return string.Format("Stream: {0}, TransactionId: {1}, CorrelationId: {2}", _stream, _transactionId, CorrelationId);
+        }
     }
 }
