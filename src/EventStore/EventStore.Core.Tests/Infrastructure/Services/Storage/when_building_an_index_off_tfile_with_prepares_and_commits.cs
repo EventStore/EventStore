@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             Writer.Write(new PrepareLogRecord(pos2, _id3, _id3, pos2, 0, "test2", ExpectedVersion.Any, DateTime.UtcNow,
                                               PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
                          out pos3);
-            Writer.Write(new CommitLogRecord(pos2, _id1, 0, DateTime.UtcNow, 0), out pos4);
+            Writer.Write(new CommitLogRecord(pos3, _id1, 0, DateTime.UtcNow, 0), out pos4);
             Writer.Write(new CommitLogRecord(pos4, _id2, pos1, DateTime.UtcNow, 0), out pos5);
             Writer.Write(new CommitLogRecord(pos5, _id3, pos2, DateTime.UtcNow, 1), out pos6);
         }

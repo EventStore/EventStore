@@ -9,16 +9,6 @@ namespace js1 {
 	class QueryScript;
 	class PreludeScript;
 
-	class QueryScriptScope {
-	public:
-		QueryScriptScope(QueryScript *query_script);
-		~QueryScriptScope();
-		static QueryScript &Current();
-
-	private:
-		static THREADSTATIC QueryScript *current;
-	};
-
 	class QueryScript : public CompiledScript
 	{
 	public:
