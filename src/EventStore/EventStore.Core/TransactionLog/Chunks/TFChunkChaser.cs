@@ -34,8 +34,6 @@ namespace EventStore.Core.TransactionLog.Chunks
 {
     public class TFChunkChaser : ITransactionFileChaser
     {
-        public long Position { get { return _reader.Position; } }
-
         private readonly ICheckpoint _chaserCheckpoint;
         private readonly TFChunkSequentialReader _reader;
 
@@ -61,11 +59,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             return res.Success;
         }
 
-        public RecordReadResult TryReadNext()
+        public SeqReadResult TryReadNext()
         {
             var res = _reader.TryReadNext();
             if (res.Success)
-                _chaserCheckpoint.Write(_reader.Position);
+                _chaserCheckpoint.Write(res.RecordPostPosition);
             return res;
         }
 

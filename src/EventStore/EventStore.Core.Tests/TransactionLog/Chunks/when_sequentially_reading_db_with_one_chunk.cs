@@ -73,13 +73,14 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             var seqReader = new TFChunkSequentialReader(_db, _db.Config.WriterCheckpoint, 0);
 
-            RecordReadResult res;
+            SeqReadResult res;
             int count = 0;
             while ((res = seqReader.TryReadNext()).Success)
             {
                 var rec = _records[count];
                 Assert.AreEqual(rec, res.LogRecord);
-                Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), seqReader.Position);
+                Assert.AreEqual(rec.Position, res.RecordPrePosition);
+                Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), res.RecordPostPosition);
 
                 ++count;
             }
@@ -91,13 +92,14 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             var seqReader = new TFChunkSequentialReader(_db, _db.Config.WriterCheckpoint, _db.Config.WriterCheckpoint.Read());
 
-            RecordReadResult res;
+            SeqReadResult res;
             int count = 0;
             while ((res = seqReader.TryReadPrev()).Success)
             {
                 var rec = _records[RecordsCount - count - 1];
                 Assert.AreEqual(rec, res.LogRecord);
-                Assert.AreEqual(rec.Position, seqReader.Position);
+                Assert.AreEqual(rec.Position, res.RecordPrePosition);
+                Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), res.RecordPostPosition);
 
                 ++count;
             }
@@ -109,13 +111,14 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             var seqReader = new TFChunkSequentialReader(_db, _db.Config.WriterCheckpoint, 0);
 
-            RecordReadResult res;
+            SeqReadResult res;
             int count1 = 0;
             while ((res = seqReader.TryReadNext()).Success)
             {
                 var rec = _records[count1];
                 Assert.AreEqual(rec, res.LogRecord);
-                Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), seqReader.Position);
+                Assert.AreEqual(rec.Position, res.RecordPrePosition);
+                Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), res.RecordPostPosition);
 
                 ++count1;
             }
@@ -126,7 +129,8 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             {
                 var rec = _records[RecordsCount - count2 - 1];
                 Assert.AreEqual(rec, res.LogRecord);
-                Assert.AreEqual(rec.Position, seqReader.Position);
+                Assert.AreEqual(rec.Position, res.RecordPrePosition);
+                Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), res.RecordPostPosition);
 
                 ++count2;
             }
@@ -140,13 +144,14 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             {
                 var seqReader = new TFChunkSequentialReader(_db, _db.Config.WriterCheckpoint, _records[i].Position);
 
-                RecordReadResult res;
+                SeqReadResult res;
                 int count = 0;
                 while ((res = seqReader.TryReadNext()).Success)
                 {
                     var rec = _records[i + count];
                     Assert.AreEqual(rec, res.LogRecord);
-                    Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), seqReader.Position);
+                    Assert.AreEqual(rec.Position, res.RecordPrePosition);
+                    Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), res.RecordPostPosition);
 
                     ++count;
                 }
@@ -161,13 +166,14 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             {
                 var seqReader = new TFChunkSequentialReader(_db, _db.Config.WriterCheckpoint, _records[i].Position);
 
-                RecordReadResult res;
+                SeqReadResult res;
                 int count = 0;
                 while ((res = seqReader.TryReadPrev()).Success)
                 {
                     var rec = _records[i - count - 1];
                     Assert.AreEqual(rec, res.LogRecord);
-                    Assert.AreEqual(rec.Position, seqReader.Position);
+                    Assert.AreEqual(rec.Position, res.RecordPrePosition);
+                    Assert.AreEqual(rec.Position + rec.GetSizeWithLengthPrefixAndSuffix(), res.RecordPostPosition);
 
                     ++count;
                 }

@@ -138,5 +138,16 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             _source.SetException(exception);
         }
+
+        public override string ToString()
+        {
+            return
+                string.Format(
+                    "AppendToStreamOperation, corrid: {0}, stream: {1}, eventsCount: {2}, expectedVersion: {3}",
+                    _correlationId,
+                    _stream,
+                    _events.Count(),
+                    _expectedVersion);
+        }                               
     }
 }

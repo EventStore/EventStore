@@ -34,7 +34,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Infrastructure.Services.Storage
 {
     [TestFixture]
-    public class when_having_two_intermingled_transactions_read_index_should : ReadIndexTestScenario
+    public class when_having_two_intermingled_transactions_spanning_few_chunks_read_index_should : ReadIndexTestScenario
     {
         private EventRecord _p1;
         private EventRecord _p2;
@@ -50,11 +50,11 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             var t1 = WriteTransactionBegin("ES", ExpectedVersion.NoStream);
             var t2 = WriteTransactionBegin("ABC", ExpectedVersion.NoStream);
 
-            _p1 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0, t1.EventStreamId, 0, "es1", PrepareFlags.Data);
-            _p2 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0, t2.EventStreamId, 0, "abc1", PrepareFlags.Data);
-            _p3 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1, t1.EventStreamId, 1, "es1", PrepareFlags.Data);
-            _p4 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1, t2.EventStreamId, 1, "abc1", PrepareFlags.Data);
-            _p5 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2, t1.EventStreamId, 2, "es1", PrepareFlags.Data);
+            _p1 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0, t1.EventStreamId, 0, "es1" + new string('.', 3000), PrepareFlags.Data);
+            _p2 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0, t2.EventStreamId, 0, "abc1" + new string('.', 3000), PrepareFlags.Data);
+            _p3 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1, t1.EventStreamId, 1, "es1" + new string('.', 3000), PrepareFlags.Data);
+            _p4 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1, t2.EventStreamId, 1, "abc1" + new string('.', 3000), PrepareFlags.Data, retryOnFail: true);
+            _p5 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2, t1.EventStreamId, 2, "es1" + new string('.', 3000), PrepareFlags.Data);
 
             WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, t2.EventStreamId);
             WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, t1.EventStreamId);
@@ -255,7 +255,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), _p4.LogPosition); // p3 post-pos
             var res1 = ReadIndex.ReadAllEventsBackward(pos, 10, false);
 
-            Assert.AreEqual(4,   res1.Records.Count);
+            Assert.AreEqual(4, res1.Records.Count);
             Assert.AreEqual(_p3, res1.Records[0].Event);
             Assert.AreEqual(_p1, res1.Records[1].Event);
             Assert.AreEqual(_p4, res1.Records[2].Event);

@@ -161,14 +161,14 @@ namespace EventStore.Core.Services.Storage
                 var transactionPosition = logPosition;
 
                 var shouldCreateStream = ShouldCreateStreamFor(message);
-                if (ShouldCreateStreamFor(message))
+                if (shouldCreateStream)
                 {
                     var res = WritePrepareWithRetry(LogRecord.StreamCreated(logPosition,
                                                                             message.CorrelationId,
                                                                             transactionPosition,
                                                                             message.EventStreamId,
                                                                             LogRecord.NoData));
-                    transactionPosition = res.WrittenPos;
+                    transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
                     logPosition = res.NewPos;
                 }
 
@@ -198,6 +198,8 @@ namespace EventStore.Core.Services.Storage
                                                                       evnt.Data,
                                                                       evnt.Metadata));
                     logPosition = res.NewPos;
+                    if (i==0 && !shouldCreateStream)
+                        transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
                 }
             }
             finally
