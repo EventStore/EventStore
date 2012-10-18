@@ -37,6 +37,10 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.VNode
 {
+    /// <summary>
+    /// Implements finite state machine transitions for the Single VNode configuration.
+    /// Also maps certain client messages to request messages. 
+    /// </summary>
     public class SingleVNodeController : IHandle<Message>
     {
         public static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(5);
