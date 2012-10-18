@@ -51,7 +51,6 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _publishEnvelope = new PublishEnvelope(publisher);
 
             Interlocked.Increment(ref _inPrepare);
-            _log.Debug("In Prepare: {0}", _inPrepare);
         }
 
 
@@ -153,12 +152,6 @@ namespace EventStore.Core.Services.RequestManager.Managers
         protected virtual void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
         {
             Debug.Assert(errorCode != OperationErrorCode.Success);
-            _log.Debug("Failed Request! corrid: {0}, streamid: {1}, errorcode: {2}, error: {3}", 
-                correlationId,
-                eventStreamId,
-                errorCode,
-                error);
-
             _completed = true;
             Publisher.Publish(new ReplicationMessage.RequestCompleted(correlationId, false));
         }
