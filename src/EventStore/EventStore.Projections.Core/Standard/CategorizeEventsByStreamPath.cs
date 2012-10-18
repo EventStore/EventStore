@@ -37,8 +37,6 @@ namespace EventStore.Projections.Core.Standard
         private readonly char _separator;
         private readonly string _categoryStreamPrefix;
 
-        private static Dictionary<string, int> _knownPositions = new Dictionary<string, int>();
-
         public CategorizeEventsByStreamPath(string source, Action<string> logger)
         {
             var trimmedSource = source == null ? null : source.Trim();
@@ -83,14 +81,6 @@ namespace EventStore.Projections.Core.Standard
                 return true; // handled but not interesting to us
 
             var category = streamId.Substring(0, lastSlashPos);
-
-            int pos;
-            if (_knownPositions.TryGetValue(streamId, out pos))
-            {
-                if (sequenceNumber > pos + 1)
-                    throw new Exception(string.Format("Unexpected sequence numbe rin stream: '{0}' - Seq: {1}", streamId, sequenceNumber));
-            }
-            _knownPositions[streamId] = sequenceNumber;
 
             emittedEvents = new[]
                 {
