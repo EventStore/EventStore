@@ -33,6 +33,9 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.VNode
 {
+    /// <summary>
+    /// Builder syntax for constructing <see cref="VNodeFSM"/> in the code
+    /// </summary>
     public class VNodeFSMBuilder
     {
         private readonly Func<VNodeState> _getState;

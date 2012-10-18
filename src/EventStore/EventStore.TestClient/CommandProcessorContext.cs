@@ -32,12 +32,19 @@ using EventStore.Common.Log;
 
 namespace EventStore.TestClient
 {
+    /// <summary>
+    /// This context is passed to the instances of <see cref="ICmdProcessor"/>
+    /// when they are executed. It can also be used for async syncrhonization
+    /// </summary>
     public class CommandProcessorContext
     {
         public int ExitCode;
         public Exception Error;
         public string Reason;
 
+        /// <summary>
+        /// Current logger of the test client
+        /// </summary>
         public readonly ILogger Log;
         public readonly Client Client;
 

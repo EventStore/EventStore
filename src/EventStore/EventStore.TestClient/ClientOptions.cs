@@ -32,6 +32,10 @@ using EventStore.Common.CommandLine.lib;
 
 namespace EventStore.TestClient
 {
+    /// <summary>
+    /// Data contract for the command-line options accepted by test client.
+    /// This contract is handled by CommandLine project for .NET
+    /// </summary>
     public sealed class ClientOptions : EventStoreCmdLineOptionsBase
     {
         [Option("i", "ip", DefaultValue = "127.0.0.1", HelpText = "IP address of server")]
