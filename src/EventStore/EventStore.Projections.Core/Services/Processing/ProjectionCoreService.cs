@@ -157,7 +157,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
             bool subscribedHeading = _headingEventDistributionPoint.TrySubscribe(
                 message.CorrelationId, projectionSubscription, fromCheckpointTag);
-            if (!subscribedHeading)
+            if (subscribedHeading)
+            {
+                _projectionDistributionPoints.Add(message.CorrelationId, Guid.Empty);
+            }
+            else
             {
                 var distibutionPointCorrelationId = Guid.NewGuid();
                 var eventDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
