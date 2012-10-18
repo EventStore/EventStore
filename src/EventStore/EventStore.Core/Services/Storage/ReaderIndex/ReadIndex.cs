@@ -326,12 +326,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 {
                     var result = seqReader.TryReadNext();
                     if (!result.Success)
-                        throw new InvalidOperationException("Couldn't read record which is supposed to be in file.");
+                        throw new Exception("Couldn't read record which is supposed to be in file.");
 
-                    var prepare = result.LogRecord as PrepareLogRecord;
-                    Debug.Assert(!first || result.LogRecord.RecordType == LogRecordType.Prepare, "Incorrect type of log record, expected Prepare record.");
+                    if (first && result.LogRecord.RecordType != LogRecordType.Prepare)
+                        throw new Exception(string.Format("The first transaction record is not prepare: {0}. ", result.LogRecord.RecordType));
                     first = false;
 
+                    var prepare = result.LogRecord as PrepareLogRecord;
                     if (prepare != null && prepare.TransactionPosition == transactionPos)
                     {
                         yield return prepare;
