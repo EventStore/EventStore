@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function err() {
-    exit 
+    exit 1
 }
 
 pushd $(dirname $0)/../.. || err
