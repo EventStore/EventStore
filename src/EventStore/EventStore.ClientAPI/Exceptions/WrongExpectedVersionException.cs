@@ -33,10 +33,6 @@ namespace EventStore.ClientAPI.Exceptions
 {
     public class WrongExpectedVersionException : Exception
     {
-        public WrongExpectedVersionException()
-        {
-        }
-
         public WrongExpectedVersionException(string message) : base(message)
         {
         }
