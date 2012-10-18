@@ -41,6 +41,7 @@ using EventStore.ClientAPI;
 using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Tcp;
+using ILogger = EventStore.Common.Log.ILogger;
 
 namespace EventStore.TestClient.Commands
 {

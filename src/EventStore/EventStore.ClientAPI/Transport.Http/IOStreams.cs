@@ -34,8 +34,6 @@ namespace EventStore.ClientAPI.Transport.Http
 {
     public class IOStreams
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<IOStreams>();
-
         public static void SafelyDispose(params Stream[] streams)
         {
             if (streams == null || streams.Length == 0)
@@ -52,7 +50,7 @@ namespace EventStore.ClientAPI.Transport.Http
                 {
                     //Exceptions may be thrown when client shutdowned and we were unable to write all the data,
                     //Nothing we can do, ignore (another option - globally ignore write errors)
-                    Log.Info("Error while closing stream : {0}", e.Message);
+                    LogManager.GetLogger().Debug("Error while closing stream : {0}", e.Message);
                 }
             }
         }

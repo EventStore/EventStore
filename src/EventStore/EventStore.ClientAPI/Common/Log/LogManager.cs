@@ -26,42 +26,21 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-
 namespace EventStore.ClientAPI.Common.Log
 {
-    static class LogManager
+    internal static class LogManager
     {
-        public static ILogger GetLoggerFor<T>()
+        private static readonly ILogger Default = new DefaultLogger();
+        private static ILogger _userLogger;
+
+        public static ILogger GetLogger()
         {
-            return new DefaultLogger();
+            return _userLogger ?? Default;
         }
 
-        internal class DefaultLogger : ILogger
+        public static void RegisterLogger(ILogger logger)
         {
-            public void Error(string format, params object[] args)
-            {
-            }
-
-            public void Error(Exception ex, string format, params object[] args)
-            {
-            }
-
-            public void Debug(string format, params object[] args)
-            {
-            }
-
-            public void Debug(Exception ex, string format, params object[] args)
-            {
-            }
-
-            public void Info(Exception ex, string format, params object[] args)
-            {
-            }
-
-            public void Info(string format, params object[] args)
-            {
-            }
+            _userLogger = logger;
         }
     }
 }

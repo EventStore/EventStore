@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 
-namespace EventStore.ClientAPI.Common.Log
+namespace EventStore.ClientAPI
 {
-    interface ILogger
+    public interface ILogger
     {
         void Error(string format, params object[] args);
         void Error(Exception ex, string format, params object[] args);

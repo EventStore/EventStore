@@ -37,14 +37,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
 {
     internal class TcpConnector
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnector>();
-
+        private readonly ILogger _log;
         private readonly TcpClientConnector _connector = new TcpClientConnector();
         private readonly IPEndPoint _tcpEndpoint;
 
         public TcpConnector(IPEndPoint tcpEndpoint)
         {
             _tcpEndpoint = tcpEndpoint;
+            _log = LogManager.GetLogger();
         }
 
         public TcpTypedConnection CreateTcpConnection(Action<TcpTypedConnection, TcpPackage> handlePackage,
@@ -58,14 +58,14 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 _tcpEndpoint,
                 tcpConnection =>
                 {
-                    Log.Info("Connected to [{0}].", tcpConnection.EffectiveEndPoint);
+                    _log.Debug("Connected to [{0}].", tcpConnection.EffectiveEndPoint);
                     connectionCreatedEvent.WaitOne(500);
                     connectionEstablished(typedConnection);
                 },
                 (conn, error) =>
                 {
                     var message = string.Format("Connection to [{0}] failed. Error: {1}.", conn.EffectiveEndPoint, error);
-                    Log.Error(message);
+                    _log.Debug(message);
 
                     connectionClosed(null, conn.EffectiveEndPoint, error);
                 });
@@ -74,9 +74,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
             typedConnection.ConnectionClosed +=
                 (conn, error) =>
                 {
-                    Log.Info("Connection [{0}] was closed {1}",
-                             conn.EffectiveEndPoint,
-                             error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
+                    _log.Debug("Connection [{0}] was closed {1}",
+                               conn.EffectiveEndPoint,
+                               error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
 
                     connectionClosed(conn, conn.EffectiveEndPoint, error);
                 };
@@ -105,10 +105,10 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 {
                     var effectiveEndPoint = conn.EffectiveEndPoint;
                     var message = string.Format("[{0}] ERROR for {1}. Connection will be closed.",
-                                      effectiveEndPoint,
-                                      valid ? package.Command as object : "<invalid package>");
+                                                effectiveEndPoint,
+                                                valid ? package.Command as object : "<invalid package>");
 
-                    Log.Info(e, message);
+                    _log.Debug(e, message);
                     conn.Close();
                 }
             });
