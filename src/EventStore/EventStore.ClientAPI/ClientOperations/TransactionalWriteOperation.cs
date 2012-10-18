@@ -111,7 +111,11 @@ namespace EventStore.ClientAPI.ClientOperations
                     case OperationErrorCode.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
                     case OperationErrorCode.WrongExpectedVersion:
-                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException());
+                        return new InspectionResult(InspectionDecision.NotifyError,
+                                    new WrongExpectedVersionException(string.Format("WrongExpectedVersion for StreamId: {0}; " +
+                                                                                    "TransactionId: {1}; ",
+                                                                                    dto.EventStreamId, 
+                                                                                    dto.TransactionId)));
                     case OperationErrorCode.StreamDeleted:
                         return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException());
                     case OperationErrorCode.InvalidTransaction:

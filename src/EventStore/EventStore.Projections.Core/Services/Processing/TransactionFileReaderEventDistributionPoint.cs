@@ -32,7 +32,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
@@ -123,7 +122,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 for (int index = 0; index < message.Result.Records.Count; index++)
                 {
                     var @event = message.Result.Records[index];
-                    DeliverEvent(index, @event);
+                    DeliverEvent(@event);
                 }
                 _from = message.Result.NextPos;
             }
@@ -149,13 +148,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     null, int.MinValue, false, null));
         }
 
-        private void DeliverEvent(int index, ResolvedEventRecord @event)
+        private void DeliverEvent(ResolvedEventRecord @event)
         {
             EventRecord positionEvent = (@event.Link ?? @event.Event);
             var receivedPosition = new EventPosition(@event.CommitPosition, positionEvent.LogPosition);
-            if (_from == receivedPosition && index == 0)
-                return; // ignore duplicate as we requested it
-            if (_from >= receivedPosition)
+            if (_from > receivedPosition)
                 throw new Exception(
                     string.Format(
                         "ReadFromTF returned events in incorrect order.  Last known position is: {0}.  Received position is: {1}",

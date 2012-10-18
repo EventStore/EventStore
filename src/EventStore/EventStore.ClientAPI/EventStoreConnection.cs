@@ -70,6 +70,15 @@ namespace EventStore.ClientAPI
         {
             return Interlocked.Increment(ref _seqNumber);
         }
+
+        public override string ToString()
+        {
+            return string.Format("Workitem {0}: {1}, attempt {2}, seqNo {3}", 
+                                 Operation.GetType().FullName, 
+                                 Operation,
+                                 Attempt, 
+                                 SeqNo);
+        }
     }
 
     public class EventStoreConnection : IProjectionsManagement,
@@ -716,8 +725,9 @@ namespace EventStore.ClientAPI
                         {
                             if (lastUpdated > _lastReconnectionTimestamp)
                             {
-                                var err = string.Format("Timed out event which never got response from server was discovered. "+ 
-                                                        "Last state update : {0}, last reconnect : {1}, now(utc) : {2}.",
+                                var err = string.Format("{0} never got response from server"+ 
+                                                        "Last state update : {1}, last reconnect : {2}, now(utc) : {3}.",
+                                                        workerItem,
                                                         lastUpdated,
                                                         _lastReconnectionTimestamp,
                                                         now);

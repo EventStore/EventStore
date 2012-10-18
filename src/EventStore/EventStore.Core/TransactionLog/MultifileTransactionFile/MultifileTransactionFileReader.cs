@@ -111,12 +111,12 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
         public RecordReadResult TryReadAt(long position)
         {
             if (!SetPosition(position))
-                return new RecordReadResult(false, null, _curPos);
+                return new RecordReadResult(false, _curPos, null, 0);
 
             _lastCheck = _checkpoint.Read();
 
             if (!TryReadNextBytes(4))
-                return new RecordReadResult(false, null, _curPos);
+                return new RecordReadResult(false, _curPos, null, 0);
 
             var length = _bufferReader.ReadInt32();
             if (length < 0)
@@ -125,14 +125,14 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
                 throw new ArgumentOutOfRangeException("length", string.Format("Log record length is too large: {0} bytes, while limit is {1} bytes.", length, TFConsts.MaxLogRecordSize));
             
             if (!TryReadNextBytes(length + 4))
-                return new RecordReadResult(false, null, _curPos);
+                return new RecordReadResult(false, _curPos, null, 0);
 
             var record = LogRecord.ReadFrom(_bufferReader);
 
             var suffixLength = _bufferReader.ReadInt32();
             Debug.Assert(suffixLength == length);
 
-            return new RecordReadResult(true, record, _curPos);
+            return new RecordReadResult(true, _curPos, record, length);
         }
 
         private bool TryReadNextBytes(int length)

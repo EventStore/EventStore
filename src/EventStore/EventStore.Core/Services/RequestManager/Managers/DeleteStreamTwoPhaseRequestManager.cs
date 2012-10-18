@@ -49,11 +49,11 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _eventStreamId = request.EventStreamId;
 
             Publisher.Publish(new ReplicationMessage.WriteDelete(request.CorrelationId,
-                                                            _publishEnvelope,
-                                                            request.EventStreamId,
-                                                            request.ExpectedVersion,
-                                                            allowImplicitStreamCreation: true,
-                                                            liveUntil: DateTime.UtcNow.AddSeconds(Timeouts.PrepareTimeout.Seconds)));
+                                                                 _publishEnvelope,
+                                                                 request.EventStreamId,
+                                                                 request.ExpectedVersion,
+                                                                 allowImplicitStreamCreation: true,
+                                                                 liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                       _publishEnvelope,
                                                       new ReplicationMessage.PreparePhaseTimeout(_correlationId)));

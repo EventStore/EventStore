@@ -168,7 +168,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (delay)
                 _publisher.Publish(
                     TimerMessage.Schedule.Create(
-                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_inputQueue), readEventsForward));
+                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true), readEventsForward));
             else
                 _publisher.Publish(readEventsForward);
         }

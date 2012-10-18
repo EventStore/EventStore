@@ -63,7 +63,7 @@ namespace EventStore.TestClient.Commands
             get
             {
                 return string.Format("{0} " +
-                                     "<max concurrent requests, default = 500> " +
+                                     "<max concurrent requests, default = 100> " +
                                      "<threads, default = 20> " +
                                      "<streams, default = 20> " +
                                      "<eventsPerStream, default = 10000> " +
@@ -142,15 +142,18 @@ namespace EventStore.TestClient.Commands
 
             foreach (var scenario in scenarios)
             {
-                try
+                using (scenario)
                 {
-                    scenario.Run();
-                    scenario.Clean();
-                    Log.Info("Scenario run successfully");
-                }
-                catch (Exception e)
-                {
-                    context.Fail(e);
+                    try
+                    {
+                        scenario.Run();
+                        scenario.Clean();
+                        Log.Info("Scenario run successfully");
+                    }
+                    catch (Exception e)
+                    {
+                        context.Fail(e);
+                    }
                 }
             }
             Log.Info("Finished running test scenarios");
@@ -207,7 +210,7 @@ namespace EventStore.TestClient.Commands
         Transactional
     }
 
-    internal interface IScenario
+    internal interface IScenario : IDisposable
     {
         void Run();
         void Clean();
@@ -236,7 +239,7 @@ namespace EventStore.TestClient.Commands
             var deleted = streams.Where((s, i) => i % StreamDeleteStep == 0).ToArray();
             DeleteStreams(deleted);
 
-            KillSingleNodes(nodeProcessId);
+            KillNode(nodeProcessId);
             nodeProcessId = StartNode();
 
             CheckStreamsDeleted(deleted);
@@ -246,7 +249,7 @@ namespace EventStore.TestClient.Commands
             Read(exceptDeleted, from: EventsPerStream - Piece, count: Piece + 1);
             Read(exceptDeleted, from: EventsPerStream / 2, count: Math.Min(Piece + 1, EventsPerStream - EventsPerStream / 2));
 
-            KillSingleNodes(nodeProcessId);
+            KillNode(nodeProcessId);
         }
     }
 
@@ -288,7 +291,11 @@ namespace EventStore.TestClient.Commands
             var runIndex = 0;
             while (stopWatch.Elapsed < _executionPeriod)
             {
-                Log.Info("=================== Start run #{0} =================== ", runIndex);
+                Log.Info("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
+                    runIndex,
+                    (int)stopWatch.Elapsed.TotalMinutes,
+                    _executionPeriod.TotalMinutes);
+
                 SetStartupWaitInterval(TimeSpan.FromSeconds(7 + (2 * runIndex) % 200));
                 InnerRun(runIndex);
                 runIndex += 1;
@@ -320,7 +327,7 @@ namespace EventStore.TestClient.Commands
             if (!parallelWritesEvent.WaitOne(60000))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
-            KillSingleNodes(nodeProcessId);
+            KillNode(nodeProcessId);
             nodeProcessId = StartNode();
 
             parallelWritesEvent = RunParallelWrites(runIndex);
@@ -355,7 +362,7 @@ namespace EventStore.TestClient.Commands
             if (!parallelWritesEvent.WaitOne(60000))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
-            KillSingleNodes(nodeProcessId);
+            KillNode(nodeProcessId);
         }
 
         private AutoResetEvent RunParallelWrites(int runIndex)
@@ -414,6 +421,8 @@ namespace EventStore.TestClient.Commands
         protected readonly int StreamDeleteStep;
         protected readonly int Piece;
 
+        private readonly HashSet<int> _startedNodesProcIds; 
+
         protected virtual TimeSpan StartupWaitInterval
         {
             get { return TimeSpan.FromSeconds(7); }
@@ -433,6 +442,8 @@ namespace EventStore.TestClient.Commands
             EventsPerStream = eventsPerStream;
             StreamDeleteStep = streamDeleteStep;
             Piece = 100;
+
+            _startedNodesProcIds = new HashSet<int>();
 
             CreateNewDbPath();
 
@@ -560,10 +571,22 @@ namespace EventStore.TestClient.Commands
             var arguments = string.Format("--ip {0} -t {1} -h {2} --db {3}", _tcpEndPoint.Address, _tcpEndPoint.Port, _tcpEndPoint.Port + 1000, _dbPath);
 
             Log.Info("Starting [{0} {1}]...", fileName, arguments);
-            var nodeProcess = Process.Start(fileName, arguments);
+
+            var startInfo = new ProcessStartInfo(fileName, arguments);
+
+            if (Common.Utils.OS.IsLinux)
+            {
+                startInfo.UseShellExecute = false;
+                startInfo.RedirectStandardOutput = true;
+            }
+
+            var nodeProcess = Process.Start(startInfo);
 
             if (nodeProcess == null)
                 throw new ApplicationException("Process was not started.");
+
+            _startedNodesProcIds.Add(nodeProcess.Id);
+            Log.Info("Started node with process id {0}", nodeProcess.Id);
 
             Thread.Sleep(StartupWaitInterval);
             Log.Info("Started [{0} {1}]", fileName, arguments);
@@ -606,13 +629,15 @@ namespace EventStore.TestClient.Commands
             return true;
         }
 
-        protected void KillSingleNodes(int processId)
+        protected void KillNode(int processId)
         {
             Log.Info("Killing {0}...", processId);
 
             Process process;
             if (TryGetProcessById(processId, out process))
             {
+                _startedNodesProcIds.Remove(processId);
+
                 process.Kill();
                 while (!process.HasExited)
                     Thread.Sleep(200);
@@ -622,6 +647,18 @@ namespace EventStore.TestClient.Commands
             }
             else
                 Log.Error("Process with ID {0} was not found to be killed.", processId);
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                _startedNodesProcIds.ToList().ForEach(KillNode);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Failed to kill started nodes: {0}.", ex.Message);
+            }
         }
 
         protected void Scavenge()

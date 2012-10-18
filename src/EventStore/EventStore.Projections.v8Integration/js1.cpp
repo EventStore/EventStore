@@ -6,6 +6,7 @@
 #include "CompiledScript.h"
 #include "PreludeScript.h"
 #include "QueryScript.h"
+#include "PreludeScope.h"
 
 extern "C" 
 {
@@ -20,10 +21,12 @@ extern "C"
 	//TODO: revise error reporting - it is no the best way to create faulted objects and then immediately dispose them
 	JS1_API void * STDCALL compile_module(void *prelude, const uint16_t *script, const uint16_t *file_name)
 	{
-		v8::HandleScope scope;
-
 		js1::PreludeScript *prelude_script = reinterpret_cast<js1::PreludeScript *>(prelude);
 		js1::ModuleScript *module_script;
+
+		js1::PreludeScope prelude_scope(prelude_script);
+		v8::HandleScope scope;
+
 
 		module_script = new js1::ModuleScript(prelude_script);
 
@@ -34,11 +37,13 @@ extern "C"
 
 	JS1_API void * STDCALL compile_prelude(const uint16_t *prelude, const uint16_t *file_name, LOAD_MODULE_CALLBACK load_module_callback, LOG_CALLBACK log_callback)
 	{
-		v8::HandleScope scope;
 
 		js1::PreludeScript *prelude_script;
-
 		prelude_script = new js1::PreludeScript(load_module_callback, log_callback);
+		js1::PreludeScope prelude_scope(prelude_script);
+
+		v8::HandleScope scope;
+
 		if (prelude_script->compile_script(prelude, file_name))
 			prelude_script->run();
 
@@ -54,10 +59,12 @@ extern "C"
 		)
 	{
 
-		v8::HandleScope scope;
-
 		js1::PreludeScript *prelude_script = reinterpret_cast<js1::PreludeScript *>(prelude);
 		js1::QueryScript *query_script;
+		js1::PreludeScope prelude_scope(prelude_script);
+
+		v8::HandleScope scope;
+
 
 		query_script = new js1::QueryScript(prelude_script, register_command_handler_callback, reverse_command_callback);
 
@@ -69,8 +76,9 @@ extern "C"
 	JS1_API void STDCALL dispose_script(void *script_handle)
 	{
 		js1::CompiledScript *compiled_script;
-
 		compiled_script = reinterpret_cast<js1::CompiledScript *>(script_handle);
+		bool owns_isolate = compiled_script->owns_isolate();
+		js1::PreludeScope prelude_scope(compiled_script, owns_isolate);
 		delete compiled_script;
 	};
 
@@ -81,6 +89,7 @@ extern "C"
 		//TODO: add v8::try_catch here (and move scope/context to this level) and make errors reportable to theC# level
 		
 		query_script = reinterpret_cast<js1::QueryScript *>(script_handle);
+		js1::PreludeScope prelude_scope(query_script);
 
 		v8::Persistent<v8::String> result = query_script->execute_handler(event_handler_handle, data_json, data_other, other_length);
 		if (result.IsEmpty()) {
@@ -106,6 +115,7 @@ extern "C"
 	{
 		js1::QueryScript *query_script;
 		query_script = reinterpret_cast<js1::QueryScript *>(script_handle);
+		js1::PreludeScope prelude_scope(query_script);
 
 		query_script->report_errors(report_error_callback);
 	}

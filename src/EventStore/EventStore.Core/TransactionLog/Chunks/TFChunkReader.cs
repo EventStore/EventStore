@@ -70,8 +70,8 @@ namespace EventStore.Core.TransactionLog.Chunks
         private RecordReadResult TryReadAtInternal(long position, int retries)
         {
             var writerChk = _checkpoint.Read();
-            if (position + 4 > writerChk)
-                return new RecordReadResult(false, null, -1);
+            if (position + 2*sizeof(int) > writerChk)
+                return RecordReadResult.Failure;
 
             var chunkNum = (int)(position / _db.Config.ChunkSize);
             var chunkPos = (int)(position % _db.Config.ChunkSize);

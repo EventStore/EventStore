@@ -37,15 +37,15 @@ namespace EventStore.Core.Messaging
         private readonly IPublisher _publisher;
         private readonly int _createdOnThread;
 
-        public PublishEnvelope(IPublisher publisher) 
+        public PublishEnvelope(IPublisher publisher, bool crossThread = false) 
         {
             _publisher = publisher;
-            _createdOnThread = Thread.CurrentThread.ManagedThreadId;
+            _createdOnThread = crossThread ? -1 : Thread.CurrentThread.ManagedThreadId;
         }
 
         public void ReplyWith<T>(T message) where T : Message
         {
-            Debug.Assert(
+            Debug.Assert(_createdOnThread == -1 || 
                 Thread.CurrentThread.ManagedThreadId == _createdOnThread || _publisher is IThreadSafePublisher);
             _publisher.Publish(message);
         }

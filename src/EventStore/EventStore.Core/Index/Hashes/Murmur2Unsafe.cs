@@ -57,40 +57,50 @@ namespace EventStore.Core.Index.Hashes
             }
         }
 
+        public unsafe uint Hash(byte[] data, int offset, uint len, uint seed)
+        {
+            fixed (byte* input = &data[offset])
+            {
+                return Hash(input, len, seed);
+            }
+        }
+
         private unsafe static uint Hash(byte* data, uint len, uint seed)
         {
-            if (len == 0)
-                return 0;
             UInt32 h = seed ^ len;
-            UInt32 remainingBytes = len & 3; // mod 4
             UInt32 numberOfLoops = len >> 2; // div 4
 
             UInt32* realData = (UInt32*) data;
-            while (numberOfLoops != 0)
+            while (numberOfLoops > 0)
             {
                 UInt32 k = *realData;
+
                 k *= m;
                 k ^= k >> r;
                 k *= m;
 
                 h *= m;
                 h ^= k;
-                numberOfLoops--;
+
                 realData++;
+                numberOfLoops--;
             }
-            switch (remainingBytes)
+            var tail = (byte*) realData;
+            switch (len & 3) // mod 4
             {
                 case 3:
-                    h ^= (UInt16) (*realData);
-                    h ^= ((UInt32) (*(((Byte*) (realData)) + 2))) << 16;
+                    h ^= (uint)(tail[2] << 16);
+                    h ^= (uint)(tail[1] << 8);
+                    h ^= tail[0];
                     h *= m;
                     break;
                 case 2:
-                    h ^= (UInt16) (*realData);
+                    h ^= (uint)(tail[1] << 8);
+                    h ^= tail[0];
                     h *= m;
                     break;
                 case 1:
-                    h ^= *((Byte*) realData);
+                    h ^= tail[0];
                     h *= m;
                     break;
             }

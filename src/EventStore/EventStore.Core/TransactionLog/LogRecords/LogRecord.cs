@@ -71,9 +71,11 @@ namespace EventStore.Core.TransactionLog.LogRecords
         }
 
         public static PrepareLogRecord SingleWrite(long logPosition, Guid correlationId, Guid eventId, string eventStreamId, 
-                                                   int expectedVersion, string eventType, byte[] data, byte[] metadata)
+                                                   int expectedVersion, string eventType, byte[] data, byte[] metadata, 
+                                                   DateTime? timestamp = null)
         {
-            return new PrepareLogRecord(logPosition, correlationId, eventId, logPosition, 0, eventStreamId, expectedVersion, DateTime.UtcNow, 
+            return new PrepareLogRecord(logPosition, correlationId, eventId, logPosition, 0, eventStreamId, expectedVersion, 
+                                        timestamp ?? DateTime.UtcNow, 
                                         PrepareFlags.Data | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, 
                                         eventType, data, metadata);
         }
@@ -107,10 +109,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                         SystemEventTypes.StreamDeleted, NoData, NoData);
         }
 
-        public static PrepareLogRecord StreamCreated(long logPosition, Guid correlationId, long transactionPos, string eventStreamId, byte[] metadata)
+        public static PrepareLogRecord StreamCreated(long logPosition, Guid correlationId, long transactionPos, 
+                                                     string eventStreamId, byte[] metadata, DateTime? timestamp = null)
         {
             return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionPos, 0, eventStreamId, 
-                                        ExpectedVersion.NoStream, DateTime.UtcNow, PrepareFlags.Data | PrepareFlags.TransactionBegin, 
+                                        ExpectedVersion.NoStream, timestamp ?? DateTime.UtcNow, 
+                                        PrepareFlags.Data | PrepareFlags.TransactionBegin, 
                                         SystemEventTypes.StreamCreated, NoData, metadata);
         }
 

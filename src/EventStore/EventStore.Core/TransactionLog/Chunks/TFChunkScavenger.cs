@@ -108,8 +108,6 @@ namespace EventStore.Core.TransactionLog.Chunks
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-                if (result.NextPosition == -1)
-                    break;
                 result = oldChunk.TryReadClosestForward((int)result.NextPosition);
             }
 
