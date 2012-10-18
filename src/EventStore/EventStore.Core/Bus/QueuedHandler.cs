@@ -36,6 +36,11 @@ using EventStore.Core.Services.Monitoring.Stats;
 
 namespace EventStore.Core.Bus
 {
+    /// <summary>
+    /// Lightweight in-memory queue with a separate thread in which it passes messages
+    /// to the consumer. It also tracks statistics about the message processing to help
+    /// in identifying bottlenecks
+    /// </summary>
     public class QueuedHandler : IHandle<Message>, IPublisher, IMonitoredQueue, IThreadSafePublisher
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandler>();
