@@ -24,49 +24,49 @@
 
   <body>
 
-    <div class="wrapper">
-      <!-- ==================================== top navigation section ====================================-->
-        <div class="navbar navbar-inverse navbar-fixed-top">
-          <div class="navbar-inner">
-            <div class="container">
-              <!-- ==== show menu for device ====-->
-              <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-              </a>
+      <div class="wrapper">
+          <!-- ==================================== top navigation section ====================================-->
+          <div class="navbar navbar-inverse navbar-fixed-top">
+              <div class="navbar-inner">
+                  <div class="container">
+                      <!-- ==== show menu for device ====-->
+                      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                      </a>
 
-              <!-- ==== site logo ====-->
-              <a class="brand" href="#">
-                <img src="img/eventstore_logo.png">
-              </a>
+                      <!-- ==== site logo ====-->
+                      <a class="brand" href="#">
+                          <img src="img/eventstore_logo.png">
+                      </a>
 
-              <!-- ==== show menu for desktop device ====-->
-                <div class="nav-collapse collapse topmenu">
-                    <ul class="nav" id="navmenu">
-                    </ul>
-                </div><!--/.nav-collapse -->
-                <script id="navmenuTemplate" type="text/x-jsrender">
+                      <!-- ==== show menu for desktop device ====-->
+                      <div class="nav-collapse collapse topmenu">
+                          <ul class="nav" id="navmenu">
+                          </ul>
+                      </div><!--/.nav-collapse -->
+                      <script id="navmenuTemplate" type="text/x-jsrender">
                     <li class="{{>active}}">
                         <a href="{{>link}}">{{>name}}</a>
                     </li>
                 </script>
 
-            </div>
+                  </div>
+              </div>
           </div>
-        </div>
 
-        <!-- ==================================== content section ====================================-->
-        <div class="container content">
+          <!-- ==================================== content section ====================================-->
+          <div class="container content">
 
-          <h1>Post Projection</h1>
+              <h1>Post Projection</h1>
 
-          <div class="form-horizontal">
+              <div class="form-horizontal">
 
                   <div class="control-group">
                       <label class="control-label" for="name"><strong>Name</strong></label>
                       <div class="controls">
-                        <input id="name" type="text" class="span4"/>
+                          <input id="name" type="text" class="span4"/>
                       </div>
                   </div>
 
@@ -88,17 +88,22 @@
                           </select>
                       </div>
                   </div>
-              <div class="control-group">
-                  <div class="controls">
-                    <button id="post" class="btn btn-success">Post</button>
+                  <div class="control-group">
+                      <div class="controls">
+                          <button id="post" class="btn btn-success">Post</button>
+                      </div>
                   </div>
+                  <div id="log"></div>
               </div>
-              <div id="log"></div>
-          </div>
 
-        </div> <!-- /container -->
-        <div class="push"></div>
-    </div>
+          </div> <!-- /container -->
+          <div class="push"></div>
+      </div>
+      <div>
+          <header>
+            <a href="post-standard-projection.htm">Also you can post a standard projection</a>
+          </header>
+      </div>
 
     <!-- ==================================== footer section ====================================-->
     <footer>

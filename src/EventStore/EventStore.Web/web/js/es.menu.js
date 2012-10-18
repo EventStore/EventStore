@@ -34,7 +34,6 @@ $(function () {
             { "name": "Home", "link": "index.htm", "active": "" },
             { "name": "List Existing", "link": "list-projections.htm", "active": "" },
             { "name": "Post New", "link": "post-projection.htm", "active": "" },
-            { "name": "Create A Standard Projection", "link": "post-standard-projection.htm", "active": "" },
             { "name": "Charts", "link": "dashboard.htm", "active": "" },
             { "name": "Health Charts", "link": "dashboard-health.htm", "active": "" },
             { "name": "Statistics", "link": "statistics.htm", "active": "" }
