@@ -105,9 +105,11 @@ namespace EventStore.ClientAPI.ClientOperations
                     case OperationErrorCode.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
                     case OperationErrorCode.WrongExpectedVersion:
-                        return new InspectionResult(InspectionDecision.NotifyError, 
-                            new WrongExpectedVersionException(string.Format("WrongExpectedVersion for TransactionId: {0};",
-                                                                            dto.TransactionId)));
+                        var err = string.Format("Commit transaction failed due to WEV. Stream : {0}, TransID : {1}, CorrID : {2}",
+                                                _stream,
+                                                _transactionId,
+                                                CorrelationId);
+                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
                     case OperationErrorCode.StreamDeleted:
                         return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException());
                     case OperationErrorCode.InvalidTransaction:
