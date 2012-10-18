@@ -5,17 +5,15 @@ namespace EventStore.Core.TransactionLog
 {
     public interface ITransactionFileSequentialReader: IDisposable
     {
-        long Position { get; }
-
         void Open();
         void Close();
 
         void Reposition(long position);
 
-        RecordReadResult TryReadNext();
-        RecordReadResult TryReadNextNonFlushed();
-        RecordReadResult TryReadPrev();
-        RecordReadResult TryReadPrevNonFlushed();
+        SeqReadResult TryReadNext();
+        SeqReadResult TryReadNextNonFlushed();
+        SeqReadResult TryReadPrev();
+        SeqReadResult TryReadPrevNonFlushed();
 
         bool TryReadNext(out LogRecord record);
         bool TryReadPrev(out LogRecord record);

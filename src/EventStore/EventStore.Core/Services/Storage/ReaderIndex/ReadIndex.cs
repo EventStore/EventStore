@@ -122,6 +122,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             NextPos = nextPos;
             PrevPos = prevPos;
         }
+
+        public override string ToString()
+        {
+            return string.Format("NextPos: {0}, PrevPos: {1}, Records: {2}",
+                                 NextPos,
+                                 PrevPos,
+                                 string.Join("\n", Records.Select(x => x.ToString())));
+        }
     }
 
     public class ReadIndex : IDisposable, IReadIndex
@@ -227,7 +235,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 seqReader.Reposition(Math.Max(0, _persistedCommitCheckpoint));
 
                 long processed = 0;
-                RecordReadResult result;
+                SeqReadResult result;
                 while ((result = seqReader.TryReadNext()).Success)
                 {
                     if (result.LogRecord.RecordType == LogRecordType.Commit)
@@ -308,29 +316,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private IEnumerable<PrepareLogRecord> GetTransactionPrepares(long transactionPos)
         {
-            var reader = GetReader();
-            RecordReadResult result;
-            try
-            {
-                result = reader.TryReadAt(transactionPos);
-            }
-            finally
-            {
-                ReturnReader(reader);
-            }
-
-            if (!result.Success)
-                throw new InvalidOperationException("Couldn't read record which is supposed to be in file.");
-            Debug.Assert(result.LogRecord.RecordType == LogRecordType.Prepare, "Incorrect type of log record, expected Prepare record.");
-            
-            var transactionRecord = (PrepareLogRecord) result.LogRecord;
-            
-            if ((transactionRecord.Flags & PrepareFlags.TransactionEnd) != 0)
-            {
-                yield return transactionRecord;
-                yield break;
-            }
-
+            bool first = true;
             var seqReader = GetSeqReader();
             try
             {
@@ -338,14 +324,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                 while (true)
                 {
-                    result = seqReader.TryReadNext();
+                    var result = seqReader.TryReadNext();
                     if (!result.Success)
                         throw new InvalidOperationException("Couldn't read record which is supposed to be in file.");
 
                     var prepare = result.LogRecord as PrepareLogRecord;
+                    Debug.Assert(!first || result.LogRecord.RecordType == LogRecordType.Prepare, "Incorrect type of log record, expected Prepare record.");
+                    first = false;
+
                     if (prepare != null && prepare.TransactionPosition == transactionPos)
                     {
-                        Debug.Assert(prepare.EventStreamId == transactionRecord.EventStreamId);
                         yield return prepare;
                         if ((prepare.Flags & PrepareFlags.TransactionEnd) != 0)
                             yield break;
@@ -654,18 +642,21 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         {
             var records = new List<ResolvedEventRecord>();
             var nextPos = pos;
-            var prevPos = pos;
+            // in case we are at position after which there is no commit at all, in that case we have to force 
+            // PreparePosition to int.MaxValue, so if you decide to read backwards from PrevPos, 
+            // you will receive all prepares.
+            var prevPos = new TFPos(pos.CommitPosition, int.MaxValue);
             var count = 0;
             bool firstCommit = true;
             ITransactionFileSequentialReader seqReader = GetSeqReader();
             try
             {
-                long commitPostPos = pos.CommitPosition;
+                long nextCommitPos = pos.CommitPosition;
                 while (count < maxCount)
                 {
-                    seqReader.Reposition(commitPostPos);
-                    
-                    RecordReadResult result;
+                    seqReader.Reposition(nextCommitPos);
+
+                    SeqReadResult result;
                     do
                     {
                         result = seqReader.TryReadNext();
@@ -674,7 +665,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                     if (!result.Success) // no more records in TF
                         break;
-                    commitPostPos = seqReader.Position;
+
+                    nextCommitPos = result.RecordPostPosition;
 
                     var commit = (CommitLogRecord)result.LogRecord;
                     if (firstCommit)
@@ -682,7 +674,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         firstCommit = false;
                         // for backward pass we want to allow read the same commit and skip read prepares, 
                         // so we put post-position of commit and post-position of prepare as TFPos for backward pass
-                        prevPos = new TFPos(commitPostPos, pos.PreparePosition);
+                        prevPos = new TFPos(result.RecordPostPosition, pos.PreparePosition);
                     }
 
                     seqReader.Reposition(commit.TransactionPosition);
@@ -724,7 +716,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                                 // for forward pass position is inclusive, 
                                 // so we put pre-position of commit and post-position of prepare
-                                nextPos = new TFPos(commit.LogPosition, seqReader.Position); 
+                                nextPos = new TFPos(commit.LogPosition, result.RecordPostPosition); 
                             }
                         }
 
@@ -748,29 +740,32 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         {
             var records = new List<ResolvedEventRecord>();
             var nextPos = pos;
-            var prevPos = pos;
+            // in case we are at position after which there is no commit at all, in that case we have to force 
+            // PreparePosition to 0, so if you decide to read backwards from PrevPos, 
+            // you will receive all prepares.
+            var prevPos = new TFPos(pos.CommitPosition, 0);
             var count = 0;
             bool firstCommit = true;            
             ITransactionFileSequentialReader seqReader = GetSeqReader();
             try
             {
-                long commitPostPos = pos.CommitPosition;
                 long nextCommitPostPos = pos.CommitPosition;
                 while (count < maxCount)
                 {
                     seqReader.Reposition(nextCommitPostPos);
-
-                    RecordReadResult result;
+                    
+                    SeqReadResult result;
                     do
                     {
-                        commitPostPos = seqReader.Position;
                         result = seqReader.TryReadPrev();
                     }
                     while (result.Success && result.LogRecord.RecordType != LogRecordType.Commit); // skip until commit
                     
                     if (!result.Success) // no more records in TF
                         break;
-                    nextCommitPostPos = seqReader.Position;
+
+                    var commitPostPos = result.RecordPostPosition;
+                    nextCommitPostPos = result.RecordPrePosition;
 
                     var commit = (CommitLogRecord)result.LogRecord;
                     if (firstCommit)
@@ -787,7 +782,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     //seqReader.Reposition(commitLogRecord.TransactionPosition);
                     while (count < maxCount)
                     {
-                        long preparePostPos = seqReader.Position;
                         result = seqReader.TryReadPrev();
                         if (!result.Success) // no more records in TF
                             break;
@@ -804,7 +798,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                         if ((prepare.Flags & PrepareFlags.Data) != 0) // prepare with useful data
                         {
-                            if (new TFPos(commitPostPos, preparePostPos) <= pos)
+                            if (new TFPos(commitPostPos, result.RecordPostPosition) <= pos)
                             {
                                 var eventRecord = new EventRecord(commit.EventNumber + prepare.TransactionOffset, prepare);
 
@@ -1006,7 +1000,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             try
             {
                 seqReader.Reposition(writerCheckpoint);
-                RecordReadResult result;
+                SeqReadResult result;
                 while ((result = seqReader.TryReadPrevNonFlushed()).Success)
                 {
                     if (result.LogRecord.Position < transactionId)

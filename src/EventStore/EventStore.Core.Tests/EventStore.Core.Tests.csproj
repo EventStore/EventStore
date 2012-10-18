@@ -165,6 +165,9 @@
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_two_intermingled_transactions_and_some_uncommited_prepares_spanning_few_chunks_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_two_intermingled_transactions_spanning_few_chunks_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_two_intermingled_transactions_and_some_uncommited_prepares_in_the_end_read_index_should.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_having_stream_both_maxage_and_maxcount_specified_with_maxage_more_strict.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_having_stream_both_maxage_and_maxcount_specified_with_maxcount_more_strict.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_having_stream_with_maxage_specified.cs" />

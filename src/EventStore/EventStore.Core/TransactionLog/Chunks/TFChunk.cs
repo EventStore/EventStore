@@ -516,10 +516,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                 LogRecord record;
                 var actualPosition = TranslateExactPosition(workItem, logicalPosition);
                 if (actualPosition == -1 || actualPosition >= _actualDataSize)
-                    return new RecordReadResult(false, null, -1);
+                    return RecordReadResult.Failure;
                 int length;
                 var result = TryReadForwardInternal(workItem, actualPosition, out length, out record);
-                return new RecordReadResult(result, record, -1);
+                return new RecordReadResult(result, -1, record, length);
             }
             finally
             {
@@ -576,11 +576,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 LogRecord record;
                 if (_actualDataSize == 0)
-                    return new RecordReadResult(false, null, -1);
+                    return RecordReadResult.Failure;
                 int length;
                 var result = TryReadForwardInternal(workItem, 0, out length, out record);
                 if (!result)
-                    return new RecordReadResult(false, null, -1);
+                    return RecordReadResult.Failure;
 
                 int nextLogicalPos;
                 if (_isReadonly && _chunkFooter.MapSize > 0)
@@ -592,7 +592,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 else
                     nextLogicalPos = 0 + length + 2*sizeof(int);
-                return new RecordReadResult(true, record, nextLogicalPos);
+                return new RecordReadResult(true, nextLogicalPos, record, length);
 
             }
             finally
@@ -609,12 +609,12 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var pos = TranslateClosestForwardPosition(workItem, logicalPosition);
                 var actualPosition = pos.Item1;
                 if (actualPosition == -1 || actualPosition >= _actualDataSize)
-                    return new RecordReadResult(false, null, -1);
+                    return RecordReadResult.Failure;
 
                 int length;
                 LogRecord record;
                 if (!TryReadForwardInternal(workItem, actualPosition, out length, out record))
-                    return new RecordReadResult(false, null, -1);
+                    return RecordReadResult.Failure;
 
                 int nextLogicalPos;
                 if (_isReadonly && _chunkFooter.MapSize > 0)
@@ -627,7 +627,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 else
                     nextLogicalPos = actualPosition + length + 2*sizeof(int);
 
-                return new RecordReadResult(true, record, nextLogicalPos);
+                return new RecordReadResult(true, nextLogicalPos, record, length);
             }
             finally
             {
@@ -682,12 +682,12 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 LogRecord record;
                 if (_actualDataSize == 0)
-                    return new RecordReadResult(false, null, -1);
+                    return RecordReadResult.Failure;
                 
                 int length;
                 var result = TryReadBackwardInternal(workItem, _actualDataSize, out length, out record);
                 if (!result)
-                    return new RecordReadResult(false, null, -1);
+                    return RecordReadResult.Failure;
 
                 int nextLogicalPos;
                 if (_isReadonly && _chunkFooter.MapSize > 0)
@@ -699,8 +699,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 else
                     nextLogicalPos = _actualDataSize - length - 2*sizeof(int);
-                return new RecordReadResult(true, record, nextLogicalPos);
-
+                return new RecordReadResult(true, nextLogicalPos, record, length);
             }
             finally
             {
@@ -717,12 +716,12 @@ namespace EventStore.Core.TransactionLog.Chunks
                 var actualPosition = pos.Item1;
                 // here we allow actualPosition == _actualDataSize as we can read backward the very last record that way
                 if (actualPosition == -1 || actualPosition > _actualDataSize) 
-                    return new RecordReadResult(false, null, -1);
+                    return RecordReadResult.Failure;
 
                 int length;
                 LogRecord record;
                 if (!TryReadBackwardInternal(workItem, actualPosition, out length, out record))
-                    return new RecordReadResult(false, null, -1);
+                    return RecordReadResult.Failure;
 
                 int nextLogicalPos;
                 if (_isReadonly && _chunkFooter.MapSize > 0)
@@ -734,7 +733,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 else
                     nextLogicalPos = actualPosition - length - 2*sizeof(int);
 
-                return new RecordReadResult(true, record, nextLogicalPos);
+                return new RecordReadResult(true, nextLogicalPos, record, length);
             }
             finally
             {

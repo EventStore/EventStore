@@ -10,8 +10,6 @@ namespace EventStore.Core.TransactionLog.Chunks
     {
         private const int MaxRetries = 100;
 
-        public long Position { get { return _curPos; } }
-
         private readonly TFChunkDb _db;
         private readonly ICheckpoint _writerCheckpoint;
         private long _curPos;
@@ -50,24 +48,24 @@ namespace EventStore.Core.TransactionLog.Chunks
             _curPos = position;
         }
 
-        public RecordReadResult TryReadNext()
+        public SeqReadResult TryReadNext()
         {
             return TryReadNextInternal(_curPos, 0, allowNonFlushed: false);
         }
 
-        public RecordReadResult TryReadNextNonFlushed()
+        public SeqReadResult TryReadNextNonFlushed()
         {
             return TryReadNextInternal(_curPos, 0, allowNonFlushed: true);
         }
 
-        private RecordReadResult TryReadNextInternal(long position, int retries, bool allowNonFlushed)
+        private SeqReadResult TryReadNextInternal(long position, int retries, bool allowNonFlushed)
         {
             var pos = position;
             while (true)
             {
                 var writerChk = allowNonFlushed ? _writerCheckpoint.ReadNonFlushed() : _writerCheckpoint.Read();
                 if (pos >= writerChk)
-                    return new RecordReadResult(false, null, -1);
+                    return SeqReadResult.Failure;
 
                 var chunkNum = (int)(pos / _db.Config.ChunkSize);
                 var chunkPos = (int)(pos % _db.Config.ChunkSize);
@@ -91,7 +89,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (result.Success)
                 {
                     _curPos = chunkNum * (long)_db.Config.ChunkSize + result.NextPosition;
-                    return new RecordReadResult(true, result.LogRecord, -1);
+                    var postPos = result.LogRecord.Position + result.RecordLength + 2 * sizeof(int);
+                    return new SeqReadResult(true, result.LogRecord, result.RecordLength, result.LogRecord.Position, postPos);
                 }
 
                 // we are the end of chunk
@@ -106,17 +105,17 @@ namespace EventStore.Core.TransactionLog.Chunks
             return res.Success;
         }
 
-        public RecordReadResult TryReadPrev()
+        public SeqReadResult TryReadPrev()
         {
             return TryReadPrevInternal(_curPos, 0, allowNonFlushed: false);
         }
 
-        public RecordReadResult TryReadPrevNonFlushed()
+        public SeqReadResult TryReadPrevNonFlushed()
         {
             return TryReadPrevInternal(_curPos, 0, allowNonFlushed: true);
         }
 
-        private RecordReadResult TryReadPrevInternal(long position, int retries, bool allowNonFlushed)
+        private SeqReadResult TryReadPrevInternal(long position, int retries, bool allowNonFlushed)
         {
             var pos = position;
             while (true)
@@ -126,7 +125,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (pos > writerChk)
                     throw new ArgumentOutOfRangeException("position", string.Format("Requested position {0} is greater than writer checkpoint {1} when requesting to read previous record from TF.", pos, writerChk));
                 if (pos <= 0) 
-                    return new RecordReadResult(false, null, -1);
+                    return SeqReadResult.Failure;
 
                 var chunkNum = (int)(pos / _db.Config.ChunkSize);
                 var chunkPos = (int)(pos % _db.Config.ChunkSize);
@@ -164,7 +163,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (result.Success)
                 {
                     _curPos = chunkNum * (long)_db.Config.ChunkSize + result.NextPosition;
-                    return new RecordReadResult(true, result.LogRecord, -1);
+                    var postPos = result.LogRecord.Position + result.RecordLength + 2 * sizeof(int);
+                    return new SeqReadResult(true, result.LogRecord, result.RecordLength, result.LogRecord.Position, postPos);
                 }
 
                 // we are the beginning of chunk, so need to switch to previous one
