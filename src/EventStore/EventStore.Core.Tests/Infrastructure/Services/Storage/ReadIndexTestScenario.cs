@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
 
         protected abstract void WriteTestScenario();
 
-        protected EventRecord WriteSingleEvent(string eventStreamId, int eventNumber, string data)
+        protected EventRecord WriteSingleEvent(string eventStreamId, int eventNumber, string data, DateTime? timestamp = null)
         {
             var prepare = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),
                                                 Guid.NewGuid(),
@@ -116,7 +116,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
                                                 eventNumber - 1,
                                                 "some-type",
                                                 Encoding.UTF8.GetBytes(data),
-                                                null);
+                                                null,
+                                                timestamp);
             long pos;
             Assert.IsTrue(Writer.Write(prepare, out pos));
 
