@@ -572,11 +572,13 @@ namespace EventStore.TestClient.Commands
 
             Log.Info("Starting [{0} {1}]...", fileName, arguments);
 
-            var startInfo = new ProcessStartInfo(fileName, arguments)
-                                                {
-                                                    UseShellExecute = false, 
-                                                    RedirectStandardOutput = true
-                                                };
+            var startInfo = new ProcessStartInfo(fileName, arguments);
+
+            if (Common.Utils.OS.IsLinux)
+            {
+                startInfo.UseShellExecute = false;
+                startInfo.RedirectStandardOutput = true;
+            }
 
             var nodeProcess = Process.Start(startInfo);
 
