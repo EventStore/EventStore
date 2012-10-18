@@ -327,7 +327,7 @@ namespace EventStore.TestClient.Commands
             if (!parallelWritesEvent.WaitOne(60000))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
-            KillSingleNodes(nodeProcessId);
+            KillNode(nodeProcessId);
             nodeProcessId = StartNode();
 
             parallelWritesEvent = RunParallelWrites(runIndex);
