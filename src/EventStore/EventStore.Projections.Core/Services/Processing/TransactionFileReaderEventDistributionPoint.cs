@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
             
             _paused = false;
             _pauseRequested = false;
-            _logger.Info("Resuming event distribution {0} at '{1}", _from);
+            _logger.Trace("Resuming event distribution {0} at '{1}'", _distibutionPointCorrelationId, _from);
             RequestEvents();
         }
 
@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _pauseRequested = true;
             if (!_eventsRequested)
                 _paused = true;
-            _logger.Info("Pausing event distribution {0} at '{1}", _distibutionPointCorrelationId, _from);
+            _logger.Trace("Pausing event distribution {0} at '{1}", _distibutionPointCorrelationId, _from);
         }
 
         public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
@@ -144,7 +144,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverLastCommitPosition(long lastCommitPosition)
         {
-            _logger.Info("The '{0}' distribution point is delivering last commit position '{1}'", _distibutionPointCorrelationId, lastCommitPosition );
             _publisher.Publish(
                 new ProjectionMessage.Projections.CommittedEventReceived(
                     _distibutionPointCorrelationId, new EventPosition(long.MinValue, lastCommitPosition), null, int.MinValue,

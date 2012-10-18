@@ -114,7 +114,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     string.Format("Projection '{0}' has been already subscribed", projectionId));
             if (projectionSubscription.CanJoinAt(_subscribeFromPosition, fromCheckpointTag))
             {
-                _logger.Info("The '{0}' subscription has joined the heading distribution point at '{2}'", projectionId, fromCheckpointTag);
+                _logger.Trace("The '{0}' subscription has joined the heading distribution point at '{2}'", projectionId, fromCheckpointTag);
                 DispatchRecentMessagesTo(projectionSubscription);
                 AddSubscriber(projectionId, projectionSubscription);
                 return true;
@@ -128,7 +128,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_headSubscribers.ContainsKey(projectionId))
                 throw new InvalidOperationException(
                     string.Format("Projection '{0}' has not been subscribed", projectionId));
-            _logger.Info("The '{0}' subscription has unsubscribed from the '{1}' heading distributioon point", projectionId, _distributionPointId);
+            _logger.Trace("The '{0}' subscription has unsubscribed from the '{1}' heading distribution point", projectionId, _distributionPointId);
             _headSubscribers.Remove(projectionId);
         }
 
@@ -158,7 +158,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void AddSubscriber(Guid publishWithCorrelationId, IProjectionSubscription subscription)
         {
-            _logger.Info("The '{0}' projection subscribed to the '{1}' heading distribution point", publishWithCorrelationId, _distributionPointId);
+            _logger.Trace("The '{0}' projection subscribed to the '{1}' heading distribution point", publishWithCorrelationId, _distributionPointId);
             _headSubscribers.Add(publishWithCorrelationId, subscription);
             if (_headDistributionPointPaused)
             {

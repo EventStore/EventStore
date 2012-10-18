@@ -166,7 +166,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var distibutionPointCorrelationId = Guid.NewGuid();
                 var eventDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
                     _publisher, _inputQueue, distibutionPointCorrelationId);
-                _logger.Info("The '{0}' projection subscribed to the '{1}' distribution point", message.CorrelationId, distibutionPointCorrelationId);
+                _logger.Trace("The '{0}' projection subscribed to the '{1}' distribution point", message.CorrelationId, distibutionPointCorrelationId);
                 _distributionPoints.Add(distibutionPointCorrelationId, eventDistributionPoint);
                 _projectionDistributionPoints.Add(message.CorrelationId, distibutionPointCorrelationId);
                 _distributionPointSubscriptions.Add(distibutionPointCorrelationId, message.CorrelationId);
@@ -184,7 +184,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: test it
                 _distributionPoints.Remove(distributionPointId);
                 _distributionPointSubscriptions.Remove(distributionPointId);
-                _logger.Info("The '{0}' projection has unsubscribed from the '{1}' distribution point", message.CorrelationId, distributionPointId);
+                _logger.Trace("The '{0}' projection has unsubscribed from the '{1}' distribution point", message.CorrelationId, distributionPointId);
             }
 
             _pausedProjections.Remove(message.CorrelationId);
@@ -226,16 +226,27 @@ namespace EventStore.Projections.Core.Services.Processing
                 _subscriptions[projectionId].Handle(message);
         }
 
-        private bool TrySubscribeHeadingDistributionPoint(ProjectionMessage.Projections.CommittedEventReceived message, Guid projectionId)
+        private bool TrySubscribeHeadingDistributionPoint(
+            ProjectionMessage.Projections.CommittedEventReceived message, Guid projectionId)
         {
-            if (_pausedProjections.Contains(projectionId)) 
+            if (_pausedProjections.Contains(projectionId))
                 return false;
 
             var projectionSubscription = _subscriptions[projectionId];
 
+            if (message.Data == null)
+            {
+                _logger.Trace("The '{0}' attempts to join the heading distribution point with TF-EOF marker event at '{1}'", projectionId, message.Position);
+            }
+
             if (!_headingEventDistributionPoint.TrySubscribe(
-                projectionId, projectionSubscription, projectionSubscription.MakeCheckpointTag(message)))
+                    projectionId, projectionSubscription, projectionSubscription.MakeCheckpointTag(message)))
                 return false;
+
+            if (message.Data == null)
+            {
+                _logger.Trace("The '{0}' is subscribing to the heading distribution point with TF-EOF marker event at '{1}'", projectionId, message.Position);
+            }
 
             Guid distributionPointId = message.CorrelationId;
             _distributionPoints[distributionPointId].Dispose();

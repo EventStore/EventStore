@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var eventCheckpointTag = _positionTagger.MakeCheckpointTag(message);
             if (eventCheckpointTag <= _positionTracker.LastTag)
             {
-                _logger.Info(
+                _logger.Trace(
                     "Skipping replayed event {0}@{1} at position {2}. the last processed event checkpoint tag is: {3}",
                     message.PositionSequenceNumber, message.PositionStreamId, message.Position, _positionTracker.LastTag);
                 return;
@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public EventDistributionPoint CreatePausedEventDistributionPoint(IPublisher publisher, IPublisher inputQueue, Guid distributionPointId)
         {
-            _logger.Info("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
+            _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
             return _checkpointStrategy.CreatePausedEventDistributionPoint(distributionPointId, publisher, inputQueue, _positionTracker.LastTag);
         }
 
@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var result = _checkpointStrategy.IsCheckpointTagAfterEventPosition(eventCheckpointTag, firstAvailableTransactionFileEvent);
 
             if (result)
-                _logger.Info("Projection subscription '{0}' can join distribution at '{1}' when the first available event is '{2}'",
+                _logger.Trace("Projection subscription '{0}' can join distribution at '{1}' when the first available event is '{2}'",
                     _projectionCorrelationId, eventCheckpointTag, firstAvailableTransactionFileEvent);
 
 
