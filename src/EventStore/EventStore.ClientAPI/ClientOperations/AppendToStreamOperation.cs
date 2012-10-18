@@ -111,7 +111,11 @@ namespace EventStore.ClientAPI.ClientOperations
                     case OperationErrorCode.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
                     case OperationErrorCode.WrongExpectedVersion:
-                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException());
+                        var err = string.Format("Append failed due to WEV. Stream : {0}, Expected ver : {1}, CorrID : {2}",
+                                                _stream,
+                                                _expectedVersion,
+                                                CorrelationId);
+                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
                     case OperationErrorCode.StreamDeleted:
                         return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException());
                     case OperationErrorCode.InvalidTransaction:
@@ -148,6 +152,6 @@ namespace EventStore.ClientAPI.ClientOperations
                     _stream,
                     _events.Count(),
                     _expectedVersion);
-        }                               
+        }
     }
 }
