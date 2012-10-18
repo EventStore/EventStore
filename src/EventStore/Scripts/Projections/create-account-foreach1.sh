@@ -12,5 +12,5 @@ fromCategory("account").foreachStream().whenAny(
   }
 );     
 
-' http://127.0.0.1:2113/projections/persistent?name=foreach%20acocunt%20stream\&type=JS
+' http://127.0.0.1:2113/projections/persistent?name=foreach%20acocunt%20stream1\&type=JS
 

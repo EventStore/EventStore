@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -34,7 +35,9 @@ namespace EventStore.Projections.Core.Standard
     public class CategorizeEventsByStreamPath : IProjectionStateHandler
     {
         private readonly char _separator;
-        private string _categoryStreamPrefix;
+        private readonly string _categoryStreamPrefix;
+
+        private static Dictionary<string, int> _knownPositions = new Dictionary<string, int>();
 
         public CategorizeEventsByStreamPath(string source, Action<string> logger)
         {
@@ -80,6 +83,14 @@ namespace EventStore.Projections.Core.Standard
                 return true; // handled but not interesting to us
 
             var category = streamId.Substring(0, lastSlashPos);
+
+            int pos;
+            if (_knownPositions.TryGetValue(streamId, out pos))
+            {
+                if (sequenceNumber > pos + 1)
+                    throw new Exception(string.Format("Unexpected sequence numbe rin stream: '{0}' - Seq: {1}", streamId, sequenceNumber));
+            }
+            _knownPositions[streamId] = sequenceNumber;
 
             emittedEvents = new[]
                 {

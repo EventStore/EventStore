@@ -310,7 +310,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                               msg.Result,
                                                               msg.Record == null ? null : msg.Record.EventType,
                                                               msg.Record == null ? null : msg.Record.Data,
-                                                              msg.Record == null ? null : msg.Record.Metadata);
+                                                              msg.Record == null ? null : msg.Record.Metadata,
+                                                              msg.Record == null ? -1 : msg.Record.LogPosition);
             return new TcpPackage(TcpCommand.ReadEventCompleted, msg.CorrelationId, dto.Serialize());
         }
 

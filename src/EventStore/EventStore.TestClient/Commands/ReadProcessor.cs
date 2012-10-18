@@ -90,15 +90,17 @@ namespace EventStore.TestClient.Commands
                                      + "\tReadResult:    {4}\n"
                                      + "\tEventType:     {5}\n"
                                      + "\tData:          {6}\n"
-                                     + "\tMetadata:      {7}\n",
+                                     + "\tMetadata:      {7}\n"
+                                     + "\tPosition:      {8}\n",
                                      eventStreamId,
                                      package.CorrelationId,
                                      dto.EventStreamId,
                                      dto.EventNumber,
-                                     (SingleReadResult) dto.Result,
+                                     (SingleReadResult)dto.Result,
                                      dto.EventType,
                                      Encoding.UTF8.GetString(dto.Data ?? new byte[0]),
-                                     Encoding.UTF8.GetString(dto.Metadata ?? new byte[0]));
+                                     Encoding.UTF8.GetString(dto.Metadata ?? new byte[0]),
+                                     dto.LogPosition);
 
                     context.Log.Info("Read request took: {0}.", sw.Elapsed);
 

@@ -17,8 +17,8 @@ var $projections = {
                 return "OK";
             },
 
-            process_event_raw: function(event, streamId, eventType, category, sequenceNumber, metadata) {
-                processEvent(event, streamId, eventType, category, sequenceNumber, metadata);
+            process_event_raw: function (event, streamId, eventType, category, sequenceNumber, metadata, log_position) {
+                processEvent(event, streamId, eventType, category, sequenceNumber, metadata, log_position);
                 return "OK";
             },
 
@@ -56,7 +56,7 @@ var $projections = {
             rawEventHandlers.push(eventHandler);
         }
 
-        function processEvent(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw) {
+        function processEvent(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw, log_position) {
 
             var eventName = eventType;
 
@@ -72,6 +72,7 @@ var $projections = {
                 streamId: streamId,
                 sequenceNumber: sequenceNumber,
                 metadataRaw: metadataRaw,
+                logPosition: log_position,
             };
             // debug only
             for (index = 0; index < rawEventHandlers.length; index++) {

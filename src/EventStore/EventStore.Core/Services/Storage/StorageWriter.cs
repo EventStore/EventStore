@@ -152,8 +152,8 @@ namespace EventStore.Core.Services.Storage
 
             try
             {
-                if (message.LiveUntil < DateTime.UtcNow)
-                    return;
+//                if (message.LiveUntil < DateTime.UtcNow)
+//                    return;
 
                 Debug.Assert(message.Events.Length > 0);
 
@@ -213,8 +213,8 @@ namespace EventStore.Core.Services.Storage
             Interlocked.Decrement(ref _flushMessagesInQueue);
             try
             {
-                if (message.LiveUntil < DateTime.UtcNow)
-                    return;
+                //if (message.LiveUntil < DateTime.UtcNow)
+                //    return;
 
                 var logPosition = _writer.Checkpoint.ReadNonFlushed();
                 var record = ShouldCreateStreamFor(message)
@@ -271,8 +271,8 @@ namespace EventStore.Core.Services.Storage
             Interlocked.Decrement(ref _flushMessagesInQueue);
             try
             {
-                if (message.LiveUntil < DateTime.UtcNow)
-                    return;
+//                if (message.LiveUntil < DateTime.UtcNow)
+//                    return;
 
                 var record = LogRecord.TransactionEnd(_writer.Checkpoint.ReadNonFlushed(),
                                                       message.CorrelationId,
@@ -337,8 +337,8 @@ namespace EventStore.Core.Services.Storage
             Interlocked.Decrement(ref _flushMessagesInQueue);
             try
             {
-                if (message.LiveUntil < DateTime.UtcNow)
-                    return;
+//                if (message.LiveUntil < DateTime.UtcNow)
+//                    return;
 
                 if (ShouldCreateStreamFor(message))
                 {

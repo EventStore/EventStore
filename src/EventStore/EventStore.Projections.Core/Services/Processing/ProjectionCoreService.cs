@@ -166,6 +166,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var distibutionPointCorrelationId = Guid.NewGuid();
                 var eventDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
                     _publisher, _inputQueue, distibutionPointCorrelationId);
+                _logger.Info("The '{0}' projection subscribed to the '{1}' distribution point", message.CorrelationId, distibutionPointCorrelationId);
                 _distributionPoints.Add(distibutionPointCorrelationId, eventDistributionPoint);
                 _projectionDistributionPoints.Add(message.CorrelationId, distibutionPointCorrelationId);
                 _distributionPointSubscriptions.Add(distibutionPointCorrelationId, message.CorrelationId);
@@ -183,6 +184,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: test it
                 _distributionPoints.Remove(distributionPointId);
                 _distributionPointSubscriptions.Remove(distributionPointId);
+                _logger.Info("The '{0}' projection has unsubscribed from the '{1}' distribution point", message.CorrelationId, distributionPointId);
             }
 
             _pausedProjections.Remove(message.CorrelationId);
