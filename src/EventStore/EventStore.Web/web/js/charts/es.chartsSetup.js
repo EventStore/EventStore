@@ -16,7 +16,6 @@ $(function () {
     function buildCharts() {
 
         $.ajax("/stats?metadata=true&group=false", {
-            cache: false,
             headers: {
                 Accept: "application/json"
             },
@@ -64,7 +63,6 @@ $(function () {
         }, 1000);
 
         $.ajax("/stats?group=false", {
-            cache: false,
             headers: {
                 Accept: "application/json"
             },

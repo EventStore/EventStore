@@ -63,13 +63,11 @@
                         window.location = "view-projection.htm#" + statusUrl;
                     }
                     var name = $("#name").val();
-                    $.ajax("/projections/persistent?name=" + name + "&type=" + encodeURIComponent($("#type").val()),
-                            {
+                    $.ajax("/projections/persistent?name=" + name + "&type=" + encodeURIComponent($("#type").val()), {
                                 headers: {
                                     Accept: "application/json",
                                     "Content-Type": "text/plain",
                                 },
-
                                 data: $('#query').val(),
                                 type: 'POST',
                                 success: on_posted,

@@ -51,12 +51,6 @@ namespace EventStore.Projections.Core.Services.Http
 
         private readonly MiniWeb _miniWebPrelude;
 
-        private readonly ResponseConfiguration _jsonOkConfiguration = new ResponseConfiguration(
-            200, "OK", "application/json");
-
-        private readonly ResponseConfiguration _jsOkConfiguration = new ResponseConfiguration(
-            200, "OK", "application/javascript");
-
 
         public ProjectionsController(IPublisher publisher)
             : base(publisher)
@@ -254,7 +248,7 @@ namespace EventStore.Projections.Core.Services.Http
             var envelope =
                 new SendToHttpWithConversionEnvelope
                     <ProjectionManagementMessage.Statistics, ProjectionsStatisticsHttpFormatted>(
-                    http, DefaultFormatter, OkResponseConfigurator,
+                    http, DefaultFormatter, OkNoCacheResponseConfigurator,
                     status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(match, s)),
                     ErrorsEnvelope(http));
             this.Publish(
@@ -273,7 +267,7 @@ namespace EventStore.Projections.Core.Services.Http
             var envelope =
                 new SendToHttpWithConversionEnvelope
                     <ProjectionManagementMessage.Statistics, ProjectionsStatisticsHttpFormatted>(
-                    http, DefaultFormatter, OkResponseConfigurator,
+                    http, DefaultFormatter, OkNoCacheResponseConfigurator,
                     status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(match, s)),
                     ErrorsEnvelope(http));
             this.Publish(new ProjectionManagementMessage.GetStatistics(envelope, mode, null, true));
@@ -306,7 +300,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration StateConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionState state)
         {
-            return _jsonOkConfiguration;
+            return Configure.OkNoCache("application/json");
         }
 
         private string StateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionState state)
@@ -316,7 +310,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration QueryConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
         {
-            return _jsOkConfiguration;
+            return Configure.OkNoCache("application/javascript");
         }
 
         private string QueryFormatter(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
@@ -327,6 +321,11 @@ namespace EventStore.Projections.Core.Services.Http
         private ResponseConfiguration OkResponseConfigurator<T>(ICodec codec, T message)
         {
             return new ResponseConfiguration(200, "OK", codec.ContentType);
+        }
+
+        private ResponseConfiguration OkNoCacheResponseConfigurator<T>(ICodec codec, T message)
+        {
+            return Configure.OkNoCache(codec.ContentType);
         }
 
         private IEnvelope ErrorsEnvelope(HttpEntity http)

@@ -190,8 +190,8 @@ footer, .push {
 
 
 /* for devices and desktop when screen resolutions: width =< 640px */
-@media handheld, screen and (max-width: 980px),
-handheld, screen and (max-device-width: 980px)  {
+@media handheld, screen and (max-width: 979px),
+handheld, screen and (max-device-width: 979px)  {
 
     body {
         padding-top: 0;

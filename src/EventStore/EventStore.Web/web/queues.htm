@@ -1,7 +1,7 @@
 ﻿<!doctype html>
 <html>
 <head>
-    <title>Statistics</title>
+    <title>Queues</title>
     <script src="lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
     <script src="lib/jsrender/jsrender.js" type="text/javascript"></script>
     <script src="js/es.tmpl.js" type="text/javascript"></script>
@@ -12,7 +12,7 @@
 <body>
     <div id="content">
         <h1>
-            Statistics</h1>
+            Queues</h1>
         <div class="row">
             <div class="span6 offset3">
                 <div class="error label label-important" style="display: none">
@@ -79,7 +79,6 @@
 
             function requestStats() {
                 $.ajax("/stats/", {
-                    cache: false,
                     headers: {
                         Accept: "application/json"
                     },

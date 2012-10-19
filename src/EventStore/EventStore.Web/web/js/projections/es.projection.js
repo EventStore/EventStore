@@ -81,7 +81,6 @@ es.projection = function (settings) {
                         "Accept": "application/json"
                     },
                     contentType: "application/json",
-                    cache: false,
                     success: successFeed,
                     error: errorFeed
                 });

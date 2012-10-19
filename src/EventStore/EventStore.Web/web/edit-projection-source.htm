@@ -58,104 +58,105 @@
         es.tmpl.renderBody();
     </script>
     <script type="text/javascript">
-        var projectionStatusUrl = "";
 
-        function success(data, status, xhr) {
-            var projection = data.projections[0];
-        }
+        (function() {
 
-        function successUpdateSource(data, status, xhr) {
-            window.location = "view-projection.htm#" + projectionStatusUrl;
-        }
+            var projectionStatusUrl = "";
 
-        function error(xhr, status) {
-            delayedRequestProjection();
-        }
+            function success(data, status, xhr) {
+                var projection = data.projections[0];
+            }
 
-        function successState(data, status, xhr) {
-            $("#raw_state").text(JSON.stringify(data));
-        }
+            function successUpdateSource(data, status, xhr) {
+                window.location = "view-projection.htm#" + projectionStatusUrl;
+            }
 
-        function errorState(xhr, status) {
-            delayedRequestProjectionState();
-        }
+            function error(xhr, status) {
+                delayedRequestProjection();
+            }
 
-        function successSource(data, status, xhr) {
-            $("#source").text(data);
-        }
+            function successState(data, status, xhr) {
+                $("#raw_state").text(JSON.stringify(data));
+            }
 
-        function errorSource(xhr, status) {
-            delayedRequestProjectionSource();
-        }
+            function errorState(xhr, status) {
+                delayedRequestProjectionState();
+            }
 
-        function delayedRequestProjection() {
-            setTimeout(requestProjection, 1000);
-        }
+            function successSource(data, status, xhr) {
+                $("#source").text(data);
+            }
 
-        function delayedRequestProjectionState() {
-            setTimeout(requestProjectionState, 1000);
-        }
+            function errorSource(xhr, status) {
+                delayedRequestProjectionSource();
+            }
 
-        function delayedRequestProjectionSource() {
-            setTimeout(requestProjectionSource, 1000);
-        }
+            function delayedRequestProjection() {
+                setTimeout(requestProjection, 1000);
+            }
 
-        function requestProjection() {
-            $.ajax(projectionStatusUrl + "/statistics", {
-                cache: false,
-                headers: {
-                    Accept: "application/json",
-                },
-                success: success,
-                error: error
-            });
-        }
+            function delayedRequestProjectionState() {
+                setTimeout(requestProjectionState, 1000);
+            }
 
-        function requestProjectionState() {
-            $.ajax(projectionStatusUrl + "/state", {
-                cache: false,
-                headers: {
-                    Accept: "application/json",
-                },
-                success: successState,
-                error: errorState
-            });
-        }
+            function delayedRequestProjectionSource() {
+                setTimeout(requestProjectionSource, 1000);
+            }
 
-        function requestProjectionSource() {
-            $.ajax(projectionStatusUrl + "/query", {
-                cache: false,
-                headers: {
-                    Accept: "text/plain",
-                },
-                dataType: "text",
-                success: successSource,
-                error: errorSource
-            });
-        }
-
-        $(function() {
-            $.templates("editSourceTemplate", "#editSourceTemplate");
-            projectionStatusUrl = location.hash.substr(1);
-
-            $('#update-button').click( function() {
-                $.ajax(projectionStatusUrl + "/query", {
-                    cache: false,
+            function requestProjection() {
+                $.ajax(projectionStatusUrl + "/statistics", {
                     headers: {
                         Accept: "application/json",
                     },
-
-                    type: "PUT",
-                    data: $("#source").val(),
-                    success: successUpdateSource,
-                    error: function() { alert("Failed!"); }
+                    success: success,
+                    error: error
                 });
-            });
+            }
 
-            requestProjection();
-            requestProjectionState();
-            requestProjectionSource();
+            function requestProjectionState() {
+                $.ajax(projectionStatusUrl + "/state", {
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    success: successState,
+                    error: errorState
+                });
+            }
+
+            function requestProjectionSource() {
+                $.ajax(projectionStatusUrl + "/query", {
+                    headers: {
+                        Accept: "text/plain",
+                    },
+                    dataType: "text",
+                    success: successSource,
+                    error: errorSource
+                });
+            }
+
+            $(function() {
+                $.templates("editSourceTemplate", "#editSourceTemplate");
+                projectionStatusUrl = location.hash.substr(1);
+
+                $('#update-button').click(function() {
+                    $.ajax(projectionStatusUrl + "/query", {
+                        headers: {
+                            Accept: "application/json",
+                        },
+
+                        type: "PUT",
+                        data: $("#source").val(),
+                        success: successUpdateSource,
+                        error: function() { alert("Failed!"); }
+                    });
+                });
+
+                requestProjection();
+                requestProjectionState();
+                requestProjectionSource();
+            });
         });
+
     </script>
 </body>
 </html>
