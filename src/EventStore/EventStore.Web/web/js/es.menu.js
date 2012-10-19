@@ -1,44 +1,27 @@
-$(function () {
-
-    function renderMenu(data, status, xhr) {
-
-        $.templates("navmenuTemplate", "#navmenuTemplate");
-
-        $("#navmenu").html(
-            $.render.navmenuTemplate(data.navmenuTemplate)
-        );
-
-        var methodname = window.location.href.split("/");
-        methodname = methodname[methodname.length - 1];
-
-        $("#navmenu li a[href='"+methodname+"']").parent().addClass("active");
-
-    }
-
-    function error(xhr, status) {
-        menuList();
-    }
-
-    function menuList() {
-        $.ajax({
-            url: "menu_ajax",
-            success: renderMenu,
-            error: error
-        });
-    }
-
-
-    //menuList();
-    var data = { "navmenuTemplate" :
+(function () {
+    var pages =
         [
-            { "name": "Home", "link": "index.htm", "active": "" },
-            { "name": "Projections", "link": "list-projections.htm", "active": "" },
-            { "name": "New Projection", "link": "post-projection.htm", "active": "" },
-            { "name": "Charts", "link": "dashboard.htm", "active": "" },
-            { "name": "Health Charts", "link": "dashboard-health.htm", "active": "" },
-            { "name": "Queues", "link": "statistics.htm", "active": "" }
-        ]
-    };
+            { "name": "Home", "link": "index.htm", "class": "" },
+            { "name": "Projections", "link": "list-projections.htm", "class": "" },
+            { "name": "New Projection", "link": "post-projection.htm", "class": "" },
+            { "name": "Charts", "link": "dashboard.htm", "class": "" },
+            { "name": "Health Charts", "link": "dashboard-health.htm", "class": "" },
+            { "name": "Queues", "link": "statistics.htm", "class": "" }
+        ];
 
-    renderMenu(data);
-});
+    var tmplStr = '<li class="{{>class}}"> <a href="{{>link}}"> {{>name}} </a> </li>';
+    var tmpl = $.templates(tmplStr);
+    var htmlString = tmpl.render(pages);
+    
+    $("#navmenu").html(htmlString);
+
+    tryHighlightActivePageLink();
+
+    function tryHighlightActivePageLink() {
+        var urlParts = window.location.href.split("/");
+        var pageName = urlParts[urlParts.length - 1];
+        var active = $("#navmenu li a[href='" + pageName + "']");
+        if (active.length == 1)
+            active.parent().addClass("active");
+    }
+})();

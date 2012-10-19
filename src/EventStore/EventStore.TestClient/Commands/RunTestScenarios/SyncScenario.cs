@@ -78,7 +78,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             CheckStreamsDeleted(pickedFromAllStreamsDeleted);
 
             _stopParalleWrites = true;
-            if (!parallelWritesEvent.WaitOne(60000))
+            if (!parallelWritesEvent.WaitOne(180000))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
             KillNode(nodeProcessId);

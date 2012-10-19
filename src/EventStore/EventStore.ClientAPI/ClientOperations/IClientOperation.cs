@@ -27,7 +27,7 @@
 //  
 
 using System;
-using EventStore.ClientAPI.System;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.ClientOperations
 {

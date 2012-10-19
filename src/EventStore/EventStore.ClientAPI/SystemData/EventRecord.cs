@@ -30,7 +30,7 @@ using System;
 using System.Linq;
 using EventStore.ClientAPI.Common.Utils;
 
-namespace EventStore.ClientAPI.System
+namespace EventStore.ClientAPI.SystemData
 {
     internal class EventRecord : IEquatable<EventRecord>
     {
@@ -42,6 +42,7 @@ namespace EventStore.ClientAPI.System
         public readonly Guid CorrelationId;
         public readonly Guid EventId;
         public readonly long TransactionPosition;
+        public readonly int TransactionOffset;
         public readonly string EventStreamId;
         public readonly int ExpectedVersion;
         public readonly DateTime TimeStamp;
@@ -55,6 +56,7 @@ namespace EventStore.ClientAPI.System
                            Guid correlationId,
                            Guid eventId,
                            long transactionPosition,
+                           int transactionOffset,
                            string eventStreamId,
                            int expectedVersion,
                            DateTime timeStamp,
@@ -65,6 +67,8 @@ namespace EventStore.ClientAPI.System
         {
             Ensure.Nonnegative(logPosition, "logPosition");
             Ensure.Nonnegative(transactionPosition, "transactionPosition");
+            if (transactionOffset < -1)
+                throw new ArgumentOutOfRangeException("transactionOffset");
             Ensure.NotNull(eventStreamId, "eventStreamId");
             Ensure.Nonnegative(eventNumber, "eventNumber");
             Ensure.NotEmptyGuid(eventId, "eventId");
@@ -75,6 +79,7 @@ namespace EventStore.ClientAPI.System
             CorrelationId = correlationId;
             EventId = eventId;
             TransactionPosition = transactionPosition;
+            TransactionOffset = transactionOffset;
             EventStreamId = eventStreamId;
             ExpectedVersion = expectedVersion;
             TimeStamp = timeStamp;
@@ -93,6 +98,7 @@ namespace EventStore.ClientAPI.System
                    && CorrelationId.Equals(other.CorrelationId)
                    && EventId.Equals(other.EventId)
                    && TransactionPosition == other.TransactionPosition
+                   && TransactionOffset == other.TransactionOffset
                    && string.Equals(EventStreamId, other.EventStreamId)
                    && ExpectedVersion == other.ExpectedVersion
                    && TimeStamp.Equals(other.TimeStamp)
@@ -119,6 +125,7 @@ namespace EventStore.ClientAPI.System
                 hashCode = (hashCode * 397) ^ CorrelationId.GetHashCode();
                 hashCode = (hashCode * 397) ^ EventId.GetHashCode();
                 hashCode = (hashCode * 397) ^ TransactionPosition.GetHashCode();
+                hashCode = (hashCode * 397) ^ TransactionOffset;
                 hashCode = (hashCode * 397) ^ EventStreamId.GetHashCode();
                 hashCode = (hashCode * 397) ^ ExpectedVersion;
                 hashCode = (hashCode * 397) ^ TimeStamp.GetHashCode();
@@ -147,16 +154,18 @@ namespace EventStore.ClientAPI.System
                                  + "CorrelationId: {2}, "
                                  + "EventId: {3}, "
                                  + "TransactionPosition: {4}, "
-                                 + "EventStreamId: {5}, "
-                                 + "ExpectedVersion: {6}, "
-                                 + "TimeStamp: {7}, "
-                                 + "Flags: {8}, "
-                                 + "EventType: {9}",
+                                 + "TransactionOffset: {5}, "
+                                 + "EventStreamId: {6}, "
+                                 + "ExpectedVersion: {7}, "
+                                 + "TimeStamp: {8}, "
+                                 + "Flags: {9}, "
+                                 + "EventType: {10}",
                                  EventNumber,
                                  LogPosition,
                                  CorrelationId,
                                  EventId,
                                  TransactionPosition,
+                                 TransactionOffset,
                                  EventStreamId,
                                  ExpectedVersion,
                                  TimeStamp,

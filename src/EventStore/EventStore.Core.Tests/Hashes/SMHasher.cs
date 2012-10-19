@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.Hashes
             //----------
             for (int irep = 0; irep < reps; irep++)
             {
-                if(irep % (reps/10) == 0) Console.Write(".");
+                if (irep % (reps/10) == 0) Console.Write(".");
 
                 for (int len = 4; len <= keymax; len++)
                 {

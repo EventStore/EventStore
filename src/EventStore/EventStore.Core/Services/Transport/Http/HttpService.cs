@@ -141,7 +141,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public void Handle(HttpMessage.UpdatePendingRequests message)
         {
-            if(_accessibility != message.Accessibility)
+            if (_accessibility != message.Accessibility)
                 return;
 
             var now = DateTime.UtcNow;

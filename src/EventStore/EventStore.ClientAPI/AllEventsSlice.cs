@@ -26,8 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using EventStore.ClientAPI.System;
+using System.Collections.Generic;
 using System.Linq;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
@@ -36,10 +37,10 @@ namespace EventStore.ClientAPI
         public readonly Position Position;
         public readonly RecordedEvent[] Events;
 
-        internal AllEventsSlice(Position position, EventRecord[] events)
+        internal AllEventsSlice(Position position, IEnumerable<EventRecord> events)
         {
             Position = position;
-            Events = (events ?? new EventRecord[0]).Select(er => new RecordedEvent(er)).ToArray();
+            Events = events == null ? EventStreamSlice.EmptyEvents : events.Select(x => new RecordedEvent(x)).ToArray();
         }
     }
 }

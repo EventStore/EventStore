@@ -31,7 +31,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using EventStore.ClientAPI.Common.Log;
-using EventStore.ClientAPI.System;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {

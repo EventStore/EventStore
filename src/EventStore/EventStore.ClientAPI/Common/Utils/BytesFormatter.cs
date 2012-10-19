@@ -45,7 +45,7 @@ namespace EventStore.ClientAPI.Common.Utils
 
         public static string ToFriendlySizeString(this ulong bytes)
         {
-            return bytes > long.MaxValue ? "more then long.MaxValue" : ToFriendlySizeString((long) bytes);
+            return bytes > long.MaxValue ? "More than long.MaxValue." : ToFriendlySizeString((long) bytes);
         }
         public static string ToFriendlySizeString(this long bytes)
         {
@@ -54,7 +54,7 @@ namespace EventStore.ClientAPI.Common.Utils
 
         public static string ToFriendlyNumberString(this ulong number)
         {
-            return number > long.MaxValue ? "more then long.MaxValue" : ToFriendlyNumberString((long)number);
+            return number > long.MaxValue ? "More than long.MaxValue." : ToFriendlyNumberString((long)number);
         }
         public static string ToFriendlyNumberString(this long number)
         {
@@ -91,7 +91,7 @@ namespace EventStore.ClientAPI.Common.Utils
         private static string FormatSpeed(double bytesPerSec)
         {
             const int scale = 1024;
-            bool isNegative = bytesPerSec < 0; // verrry strange, but we need to show this if it happened already
+            bool isNegative = bytesPerSec < 0; // very strange, but we need to show this if it happened already
             bytesPerSec = Math.Abs(bytesPerSec);
             
             long max = 1;

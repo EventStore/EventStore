@@ -201,12 +201,39 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Log.Info("Done reading [{0}]", string.Join(",", streams));
         }
 
+        private bool TryGetPathToMono(out string pathToMono)
+        {
+            const string monopathVariable = "EVENTSTORE_MONOPATH";
+            pathToMono = Environment.GetEnvironmentVariable(monopathVariable);
+            return !string.IsNullOrEmpty(pathToMono);
+        }
+
         protected int StartNode()
         {
             var clientFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            var fileName = Path.Combine(clientFolder, "EventStore.SingleNode.exe");
-            var arguments = string.Format("--ip {0} -t {1} -h {2} --db {3}", _tcpEndPoint.Address, _tcpEndPoint.Port, _tcpEndPoint.Port + 1000, _dbPath);
+            string fileName;
+            string argumentsHead;
+
+            string pathToMono;
+            if (TryGetPathToMono(out pathToMono))
+            {
+                Log.Info("Mono at {0} will be used.", pathToMono);
+                fileName = pathToMono;
+                argumentsHead = string.Format("{0} {1}", "--gc=sgen", Path.Combine(clientFolder, "EventStore.SingleNode.exe"));
+            }
+            else
+            {
+                fileName = Path.Combine(clientFolder, "EventStore.SingleNode.exe");
+                argumentsHead = "";
+            }
+
+            var arguments = string.Format("{0} --ip {1} -t {2} -h {3} --db {4}",
+                                          argumentsHead,
+                                          _tcpEndPoint.Address, 
+                                          _tcpEndPoint.Port, 
+                                          _tcpEndPoint.Port + 1000, 
+                                          _dbPath);
 
             Log.Info("Starting [{0} {1}]...", fileName, arguments);
 
