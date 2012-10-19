@@ -27,10 +27,10 @@
 //  
 namespace EventStore.ClientAPI
 {
-    public class StreamPosition
+    public static class StreamPosition
     {
-        public static readonly int Start = 0;
-        public static readonly int FirstClientEvent = 1;
-        public static readonly int End = -1;
+        public const int Start = 0;
+        public const int FirstClientEvent = 1;
+        public const int End = -1;
     }
 }

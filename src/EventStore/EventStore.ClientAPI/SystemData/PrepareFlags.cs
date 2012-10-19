@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -28,32 +28,25 @@
 
 using System;
 
-namespace EventStore.ClientAPI.System
+namespace EventStore.ClientAPI.SystemData
 {
-    internal class Event
+    [Flags]
+    internal enum PrepareFlags : ushort
     {
-        public static readonly byte[] Empty = new byte[0];
+        None = 0x00,
+        Data = 0x01,                // prepare contains data
+        TransactionBegin = 0x02,    // prepare starts transaction
+        TransactionEnd = 0x04,      // prepare ends transaction
+        StreamDelete = 0x08,        // prepare deletes stream
 
-        public readonly Guid EventId;
-        public readonly string EventType;
-        public readonly bool IsJson;
+        IsCommited = 0x10,          // prepare should be considered committed immediately, no commit will follow in TF
+        //Snapshot = 0x20,          // prepare belongs to snapshot stream, only last event in stream will be kept after scavenging
 
-        public readonly byte[] Data;
-        public readonly byte[] Metadata;
+        //Update = 0x80,            // prepare updates previous instance of the same event, DANGEROUS!
+        IsJson = 0x100,             // indicates data & metadata are valid json
 
-        public Event(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata)
-        {
-            if (Guid.Empty == eventId)
-                throw new ArgumentException("Empty eventId provided.");
-            if (string.IsNullOrEmpty(eventType))
-                throw new ArgumentException("Empty eventType provided.");
-
-            EventId = eventId;
-            EventType = eventType;
-            IsJson = isJson;
-
-            Data = data ?? Empty;
-            Metadata = metadata ?? Empty;
-        }
+        // aggregate flag set
+        DeleteTombstone = TransactionBegin | TransactionEnd | StreamDelete,
+        SingleWrite = Data | TransactionBegin | TransactionEnd
     }
 }

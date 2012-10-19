@@ -29,9 +29,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.System;
+using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
@@ -40,6 +41,7 @@ namespace EventStore.ClientAPI.ClientOperations
     {
         private readonly TaskCompletionSource<object> _source;
         private ClientMessages.TransactionWriteCompleted _result;
+        private int _completed;
 
         private Guid _corrId;
         private readonly object _corrIdLock = new object();
@@ -111,13 +113,13 @@ namespace EventStore.ClientAPI.ClientOperations
                     case OperationErrorCode.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
                     case OperationErrorCode.WrongExpectedVersion:
-                        var err = string.Format("Transactional write failed due to WEV. Stream : {0}, TranID : {1}, CorrID : {2}",
+                        var err = string.Format("Transactional write failed due to WrongExpectedVersion. Stream: {0}, TransactionID: {1}, CorrID: {2}.",
                                                 _stream,
                                                 _transactionId,
                                                 CorrelationId);
                         return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
                     case OperationErrorCode.StreamDeleted:
-                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException());
+                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
                     case OperationErrorCode.InvalidTransaction:
                         return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
                     default:
@@ -132,15 +134,21 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public void Complete()
         {
-            if (_result != null)
-                _source.SetResult(null);
-            else
-                _source.SetException(new NoResultException());
+            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
+            {
+                if (_result != null)
+                    _source.SetResult(null);
+                else
+                    _source.SetException(new NoResultException());
+            }
         }
 
         public void Fail(Exception exception)
         {
-            _source.SetException(exception);
+            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
+            {
+                _source.SetException(exception);
+            }
         }
 
         public override string ToString()

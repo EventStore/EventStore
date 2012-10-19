@@ -27,26 +27,18 @@
 // 
 
 using System;
-using System.Runtime.Serialization;
+using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Exceptions
 {
     public class StreamDeletedException : Exception
     {
-        public StreamDeletedException()
-        {
-        }
+        public readonly string Stream;
 
-        public StreamDeletedException(string message) : base(message)
+        public StreamDeletedException(string stream): base(string.Format("Event stream '{0}' is deleted.", stream))
         {
-        }
-
-        public StreamDeletedException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected StreamDeletedException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Stream = stream;
         }
     }
 }
