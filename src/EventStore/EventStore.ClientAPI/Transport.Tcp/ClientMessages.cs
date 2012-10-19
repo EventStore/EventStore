@@ -28,7 +28,7 @@
 
 using System;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.System;
+using EventStore.ClientAPI.SystemData;
 using ProtoBuf;
 
 namespace EventStore.ClientAPI.Transport.Tcp

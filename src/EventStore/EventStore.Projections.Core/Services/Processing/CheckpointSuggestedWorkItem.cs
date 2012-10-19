@@ -1,10 +1,10 @@
 // Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,15 +24,30 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
-namespace EventStore.ClientAPI.System
+using EventStore.Projections.Core.Messages;
+
+namespace EventStore.Projections.Core.Services.Processing
 {
-    internal enum SingleReadResult
+    class CheckpointSuggestedWorkItem : WorkItem
     {
-        Success,
-        NotFound,
-        NoStream,
-        StreamDeleted
+        private readonly ProjectionMessage.Projections.CheckpointSuggested _message;
+        private readonly CoreProjectionCheckpointManager _checkpointManager;
+
+        public CheckpointSuggestedWorkItem(
+            CoreProjection projection, ProjectionMessage.Projections.CheckpointSuggested message,
+            CoreProjectionCheckpointManager checkpointManager)
+            : base(projection, "") // checkpoints are serialized based on string.empty token stream name
+        {
+            _message = message;
+            _checkpointManager = checkpointManager;
+        }
+
+        protected override void WriteOutput()
+        {
+            _checkpointManager.CheckpointSuggested(_message.CheckpointTag);
+            NextStage();
+        }
     }
 }

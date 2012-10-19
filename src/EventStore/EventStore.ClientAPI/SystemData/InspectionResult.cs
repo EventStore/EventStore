@@ -25,16 +25,20 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-namespace EventStore.ClientAPI.System
+
+using System;
+
+namespace EventStore.ClientAPI.SystemData
 {
-    internal enum OperationErrorCode
+    internal class InspectionResult
     {
-        Success = 0,
-        PrepareTimeout,
-        CommitTimeout,
-        ForwardTimeout,
-        WrongExpectedVersion,
-        StreamDeleted,
-        InvalidTransaction
+        public readonly InspectionDecision Decision;
+        public readonly Exception Error;
+
+        public InspectionResult(InspectionDecision decision, Exception error = null)
+        {
+            Decision = decision;
+            Error = error;
+        }
     }
 }

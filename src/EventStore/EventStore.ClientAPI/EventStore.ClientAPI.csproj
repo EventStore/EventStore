@@ -79,10 +79,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClientOperations\CommitTransactionOperation.cs" />
-    <Compile Include="ClientOperations\ReadAllEventsOperations.cs" />
+    <Compile Include="ClientOperations\ReadAllEventsBackwardOperation.cs" />
+    <Compile Include="ClientOperations\ReadAllEventsForwardOperation.cs" />
+    <Compile Include="ClientOperations\ReadStreamEventsBackwardOperation.cs" />
     <Compile Include="ClientOperations\StartTransactionOperation.cs" />
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
     <Compile Include="Common\Log\DefaultLogger.cs" />
+    <Compile Include="Connection\ProjectionsManager.cs" />
+    <Compile Include="Connection\Subscription.cs" />
+    <Compile Include="Connection\SubscriptionsChannel.cs" />
+    <Compile Include="Connection\WorkItem.cs" />
     <Compile Include="Exceptions\CannotEstablishConnectionException.cs" />
     <Compile Include="Exceptions\ProjectionCommandFailedException.cs" />
     <Compile Include="Exceptions\InvalidTransactionException.cs" />
@@ -106,7 +112,7 @@
     <Compile Include="Configure.cs" />
     <Compile Include="ClientOperations\DeleteStreamOperation.cs" />
     <Compile Include="ClientOperations\IClientOperation.cs" />
-    <Compile Include="ClientOperations\ReadStreamEventsOperations.cs" />
+    <Compile Include="ClientOperations\ReadStreamEventsForwardOperation.cs" />
     <Compile Include="Common\Utils\Ensure.cs" />
     <Compile Include="ILogger.cs" />
     <Compile Include="IProjectionsManagement.cs" />
@@ -114,17 +120,16 @@
     <Compile Include="Position.cs" />
     <Compile Include="RecordedEvent.cs" />
     <Compile Include="StreamPosition.cs" />
-    <Compile Include="System\Event.cs" />
-    <Compile Include="System\EventRecord.cs" />
+    <Compile Include="SystemData\EventRecord.cs" />
     <Compile Include="ExpectedVersion.cs" />
-    <Compile Include="System\InspectionResult.cs" />
-    <Compile Include="System\OperationErrorCode.cs" />
-    <Compile Include="System\PrepareFlags.cs" />
-    <Compile Include="System\InspectionDecision.cs" />
-    <Compile Include="System\RangeReadResult.cs" />
-    <Compile Include="System\SingleReadResult.cs" />
-    <Compile Include="System\TcpCommand.cs" />
-    <Compile Include="System\TcpPackage.cs" />
+    <Compile Include="SystemData\InspectionResult.cs" />
+    <Compile Include="SystemData\OperationErrorCode.cs" />
+    <Compile Include="SystemData\PrepareFlags.cs" />
+    <Compile Include="SystemData\InspectionDecision.cs" />
+    <Compile Include="SystemData\RangeReadResult.cs" />
+    <Compile Include="SystemData\SingleReadResult.cs" />
+    <Compile Include="SystemData\TcpCommand.cs" />
+    <Compile Include="SystemData\TcpPackage.cs" />
     <Compile Include="Transport.Http\AsyncStreamCopier.cs" />
     <Compile Include="Transport.Http\ClientOperationState.cs" />
     <Compile Include="Transport.Http\ContentType.cs" />

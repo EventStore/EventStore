@@ -59,8 +59,8 @@ namespace EventStore.TestClient.Commands
                 return string.Format("{0} " +
                                      "<max concurrent requests, default = 100> " +
                                      "<threads, default = 20> " +
-                                     "<streams, default = 20> " +
-                                     "<eventsPerStream, default = 10000> " +
+                                     "<streams, default = 2000> " +
+                                     "<eventsPerStream, default = 300> " +
                                      "<streams delete step, default = 7> " +
                                      "<scenario name, default = LoopingScenario, " + AllScenariosFlag + " for all scenarios>" +
                                      "<execution period minutes, default = 10>",
@@ -75,8 +75,8 @@ namespace EventStore.TestClient.Commands
 
             var maxConcurrentRequests = 100;
             var threads = 20;
-            var streams = 20;
-            var eventsPerStream = 10000;
+            var streams = 2000;
+            var eventsPerStream = 300;
             var streamDeleteStep = 7;
             var scenarioName = "LoopingScenario";
             var executionPeriodMinutes = 10;
@@ -115,22 +115,15 @@ namespace EventStore.TestClient.Commands
 
             var directTcpSender = CreateDirectTcpSender(context);
             var allScenarios = new IScenario[]
-                {
-                    new Scenario1(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
-                    new LoopingScenario(directTcpSender, 
-                                        maxConcurrentRequests, 
-                                        threads, 
-                                        streams, 
-                                        eventsPerStream, 
-                                        streamDeleteStep, 
-                                        TimeSpan.FromMinutes(executionPeriodMinutes)),
-                   new SyncScenario(directTcpSender, 
+            {
+                new LoopingScenario(directTcpSender, 
                                     maxConcurrentRequests, 
                                     threads, 
                                     streams, 
                                     eventsPerStream, 
                                     streamDeleteStep, 
                                     TimeSpan.FromMinutes(executionPeriodMinutes)), 
+                   new ProjectionsScenario1(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
                 };
 
             Log.Info("Found scenarios ({0} total).", allScenarios.Length);

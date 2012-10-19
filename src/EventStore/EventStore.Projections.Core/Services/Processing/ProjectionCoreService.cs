@@ -234,11 +234,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var projectionSubscription = _subscriptions[projectionId];
 
-            if (message.Data == null)
-            {
-                _logger.Trace("The '{0}' attempts to join the heading distribution point with TF-EOF marker event at '{1}'", projectionId, message.Position);
-            }
-
             if (!_headingEventDistributionPoint.TrySubscribe(
                     projectionId, projectionSubscription, projectionSubscription.MakeCheckpointTag(message)))
                 return false;

@@ -1171,7 +1171,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         internal TFChunkBulkReader AcquireReader()
         {
-            if(_selfdestructin54321)
+            if (_selfdestructin54321)
                 throw new FileBeingDeletedException();
             Interlocked.Increment(ref _lockedCount);
             return new TFChunkBulkReader(this);
@@ -1180,7 +1180,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         internal void ReleaseReader(TFChunkBulkReader reader)
         {
             Interlocked.Decrement(ref _lockedCount);
-            if(_selfdestructin54321)
+            if (_selfdestructin54321)
                 TryDestruct();
         }
 

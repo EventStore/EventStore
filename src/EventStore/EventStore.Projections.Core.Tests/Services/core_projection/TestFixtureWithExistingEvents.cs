@@ -176,7 +176,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                                             select
                                                 new EventRecord(
                                                 list.Count, list.Count*1000, message.CorrelationId, e.EventId,
-                                                list.Count*1000, message.EventStreamId, ExpectedVersion.Any,
+                                                list.Count*1000, 0, message.EventStreamId, ExpectedVersion.Any,
                                                 DateTime.UtcNow, PrepareFlags.SingleWrite, e.EventType, e.Data,
                                                 e.Metadata))
                 {

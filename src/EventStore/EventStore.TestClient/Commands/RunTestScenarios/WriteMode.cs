@@ -4,9 +4,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
     {
         SingleEventAtTime,
         Bucket,
-        Transactional,
-        SingleEventAtTimeSync,
-        BucketSync,
-        TransactionalSync
+        Transactional
     }
 }

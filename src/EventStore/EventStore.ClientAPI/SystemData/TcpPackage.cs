@@ -28,7 +28,7 @@
 
 using System;
 
-namespace EventStore.ClientAPI.System
+namespace EventStore.ClientAPI.SystemData
 {
     internal struct TcpPackage
     {
@@ -40,6 +40,9 @@ namespace EventStore.ClientAPI.System
 
         public static TcpPackage FromArraySegment(ArraySegment<byte> data)
         {
+            if (data.Count < 17)
+                throw new ArgumentException(string.Format("ArraySegment too short, length: {0}", data.Count), "data");
+
             var guidBytes = new byte[16];
             Buffer.BlockCopy(data.Array, data.Offset + 1, guidBytes, 0, 16);
             var correlationId = new Guid(guidBytes);

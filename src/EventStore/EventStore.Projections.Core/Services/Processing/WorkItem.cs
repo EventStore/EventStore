@@ -1,10 +1,10 @@
 // Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,21 +24,65 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
 using System;
 
-namespace EventStore.ClientAPI.System
+namespace EventStore.Projections.Core.Services.Processing
 {
-    internal class InspectionResult
+    abstract class WorkItem : StagedTask
     {
-        public readonly InspectionDecision Decision;
-        public readonly Exception Error;
+        protected readonly CoreProjection _projection;
+        private readonly int _lastStage;
+        private Action<int> _complete;
+        private int _onStage;
 
-        public InspectionResult(InspectionDecision decision, Exception error = null)
+        protected WorkItem(CoreProjection projection, string stream)
+            : base(stream)
         {
-            Decision = decision;
-            Error = error;
+            _projection = projection;
+            _lastStage = 2;
+        }
+
+        public override void Process(int onStage, Action<int> readyForStage)
+        {
+            _complete = readyForStage;
+            _onStage = onStage;
+            switch (onStage)
+            {
+                case 0:
+                    Load();
+                    break;
+                case 1:
+                    ProcessEvent();
+                    break;
+                case 2:
+                    WriteOutput();
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
+            _projection.EnsureTickPending();
+        }
+
+        protected virtual void WriteOutput()
+        {
+            NextStage();
+        }
+
+        protected virtual void Load()
+        {
+            NextStage();
+        }
+
+        protected virtual void ProcessEvent()
+        {
+            NextStage();
+        }
+
+        protected void NextStage()
+        {
+            _complete(_onStage == _lastStage ? -1 : _onStage + 1);
         }
     }
 }
