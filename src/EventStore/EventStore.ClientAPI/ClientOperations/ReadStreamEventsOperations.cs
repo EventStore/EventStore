@@ -132,6 +132,16 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             _source.SetException(exception);
         }
+
+        public override string ToString()
+        {
+            return string.Format("Stream: {0}, Start: {1}, Count: {2}, ResolveLinkTos: {3}, CorrelationId: {4}", 
+                                 _stream, 
+                                 _start, 
+                                 _count, 
+                                 _resolveLinkTos, 
+                                 CorrelationId);
+        }
     }
 
     internal class ReadStreamEventsBackwardOperation : IClientOperation
@@ -231,6 +241,16 @@ namespace EventStore.ClientAPI.ClientOperations
         public void Fail(Exception exception)
         {
             _source.SetException(exception);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Stream: {0}, Start: {1}, Count: {2}, ResolveLinkTos: {3}, CorrelationId: {4}", 
+                                 _stream,
+                                 _start, 
+                                 _count, 
+                                 _resolveLinkTos, 
+                                 CorrelationId);
         }
     }
 }

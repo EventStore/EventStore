@@ -111,7 +111,11 @@ namespace EventStore.ClientAPI.ClientOperations
                     case OperationErrorCode.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
                     case OperationErrorCode.WrongExpectedVersion:
-                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException());
+                        var err = string.Format("Transactional write failed due to WEV. Stream : {0}, TranID : {1}, CorrID : {2}",
+                                                _stream,
+                                                _transactionId,
+                                                CorrelationId);
+                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
                     case OperationErrorCode.StreamDeleted:
                         return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException());
                     case OperationErrorCode.InvalidTransaction:
@@ -137,6 +141,11 @@ namespace EventStore.ClientAPI.ClientOperations
         public void Fail(Exception exception)
         {
             _source.SetException(exception);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Stream: {0}, TransactionId: {1}, CorrelationId: {2}", _stream, _transactionId, CorrelationId);
         }
     }
 }

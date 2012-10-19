@@ -58,7 +58,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                              ExpectedVersion.NoStream,
                              new[] { new Event(Guid.NewGuid(), "StreamCreated", true, LogRecord.NoData, request.Metadata) },
                              allowImplicitStreamCreation: false,
-                             liveUntil: DateTime.UtcNow.AddSeconds(Timeouts.PrepareTimeout.Seconds)));
+                             liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                       _publishEnvelope,
                                                       new ReplicationMessage.PreparePhaseTimeout(_correlationId)));

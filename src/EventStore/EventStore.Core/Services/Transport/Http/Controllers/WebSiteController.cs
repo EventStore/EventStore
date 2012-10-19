@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using EventStore.Core.Bus;
-using EventStore.Projections.Core.Services;
+using EventStore.Core.Util;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
 

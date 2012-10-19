@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics;
+using System.Threading;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -31,14 +33,24 @@ namespace EventStore.Core.Services.RequestManager.Managers
         protected bool _completed;
         protected bool _initialized;
 
+        private static volatile int _inPrepare;
+        private static volatile int _inCommit;
+        private static volatile int _preparesTimedOut;
+        private static volatile int _commitsTimedOut;
+        private static readonly ILogger _log = LogManager.GetLoggerFor<TwoPhaseRequestManagerBase>();
+
         public TwoPhaseRequestManagerBase(IPublisher publisher, int prepareCount, int commitCount)
         {
-            if(publisher == null) throw new ArgumentNullException();
-            if(prepareCount <= 0 || commitCount <= 0) throw new ArgumentOutOfRangeException("counts for prepare and commit acks must be a positive number");
+            if (publisher == null) 
+                throw new ArgumentNullException();
+            if (prepareCount <= 0 || commitCount <= 0) 
+                throw new ArgumentOutOfRangeException("counts for prepare and commit acks must be a positive number");
             Publisher = publisher;
             _awaitingCommit = commitCount;
             _awaitingPrepare = prepareCount;
             _publishEnvelope = new PublishEnvelope(publisher);
+
+            Interlocked.Increment(ref _inPrepare);
         }
 
 
@@ -46,6 +58,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
             if (_completed)
                 return;
+
+            Interlocked.Decrement(ref _inCommit);
 
             CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.WrongExpectedVersion, "Wrong expected version.");
         }
@@ -55,6 +69,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_completed)
                 return;
 
+            Interlocked.Decrement(ref _inPrepare);
+
             CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.StreamDeleted, "Stream is deleted.");
         }
 
@@ -62,6 +78,11 @@ namespace EventStore.Core.Services.RequestManager.Managers
         {
             if (_completed || _awaitingPrepare == 0)
                 return;
+
+            Interlocked.Increment(ref _preparesTimedOut);
+            Interlocked.Decrement(ref _inPrepare);
+
+            
 
             CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.PrepareTimeout, "Prepare phase timeout.");
         }
@@ -71,12 +92,16 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_completed || _awaitingCommit == 0 || _awaitingPrepare != 0)
                 return;
 
+            Interlocked.Increment(ref _commitsTimedOut);
+            Interlocked.Decrement(ref _inCommit);
+            
             CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.CommitTimeout, "Commit phase timeout.");
         }
 
 
         public void Handle(ReplicationMessage.AlreadyCommitted message)
         {
+            Interlocked.Decrement(ref _inCommit);
             Debug.Assert(message.EventStreamId == _eventStreamId && message.CorrelationId == _correlationId);
             CompleteSuccessRequest(_correlationId, _eventStreamId, message.StartEventNumber);
         }
@@ -94,10 +119,13 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 _awaitingPrepare -= 1;
                 if (_awaitingPrepare == 0)
                 {
+                    Interlocked.Decrement(ref _inPrepare);
+                    Interlocked.Increment(ref _inCommit);
+
                     Publisher.Publish(new ReplicationMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _preparePos));
                     Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.CommitTimeout,
-                                                              _publishEnvelope,
-                                                              new ReplicationMessage.CommitPhaseTimeout(_correlationId)));
+                                                                   _publishEnvelope,
+                                                                   new ReplicationMessage.CommitPhaseTimeout(_correlationId)));
                 }
             }
         }
@@ -109,7 +137,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _awaitingCommit -= 1;
             if (_awaitingCommit == 0)
+            {
+                Interlocked.Decrement(ref _inCommit);
                 CompleteSuccessRequest(message.CorrelationId, _eventStreamId, message.EventNumber);
+            }
         }
 
         protected virtual void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)

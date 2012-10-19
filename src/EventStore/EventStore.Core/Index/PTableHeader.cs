@@ -31,7 +31,7 @@ using EventStore.Core.Exceptions;
 
 namespace EventStore.Core.Index
 {
-    internal class PTableHeader
+    public class PTableHeader
     {
         public const int Size = 128;
 

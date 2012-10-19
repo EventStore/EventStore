@@ -25,10 +25,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using EventStore.Projections.Core.v8;
 
-namespace js1test
+using System;
+
+namespace EventStore.Projections.Core.v8
 {
     class CompiledScript : IDisposable
     {

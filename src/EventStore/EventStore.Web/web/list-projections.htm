@@ -11,32 +11,59 @@
 </head>
 <body>
     <div id="content">
-        <h1>List Projections</h1>
+        <h1>
+            List Projections</h1>
         <table class="table table-bordered table-striped">
-        <!--<colgroup>
-          <col class="span1">
-          <col class="span7">
-        </colgroup>-->
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Status</th>
-            <th>Reason</th>
-            <th>Mode</th>
-            <th>% Done</th>
-            <th>Position</th>
-            <th>Last Checkpoint</th>
-            <th>Checkpoint Status</th>
-            <th>Reads/Writes In-Progress</th>
-            <th>Writes Pending</th>
-            <th>Partitions Cached</th>
-            <th>Processed (since restart)</th>
-            <th>Buffered Events</th>
-          </tr>
-        </thead>
-        <tbody id="projections">
-        </tbody>
-      </table>
+            <!--<colgroup>
+                    <col class="span1">
+                    <col class="span7">
+                </colgroup>-->
+            <thead>
+                <tr>
+                    <th>
+                        Name
+                    </th>
+                    <th>
+                        Status
+                    </th>
+                    <th>
+                        Reason
+                    </th>
+                    <th>
+                        Mode
+                    </th>
+                    <th>
+                        % Done
+                    </th>
+                    <th>
+                        Position
+                    </th>
+                    <th>
+                        Last Checkpoint
+                    </th>
+                    <th>
+                        Checkpoint Status
+                    </th>
+                    <th>
+                        Reads/Writes In-Progress
+                    </th>
+                    <th>
+                        Writes Pending
+                    </th>
+                    <th>
+                        Partitions Cached
+                    </th>
+                    <th>
+                        Processed (since restart)
+                    </th>
+                    <th>
+                        Buffered Events
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="projections">
+            </tbody>
+        </table>
         <script id="projectionTemplate" type="text/x-jsrender">
         <tr>
           <td><a href="view-projection.htm#{{>statusUrl}}">{{>name}}</a></td>
@@ -53,13 +80,18 @@
           <td>{{>eventsProcessedAfterRestart}}</td>
           <td>{{>bufferedEvents}}</td>
         </tr>
-      </script>
+        </script>
+        <div>
+            <header>
+                <a href="post-projection.htm">New Projection</a>
+            </header>
+        </div>
     </div>
 
     <script id="r-body">
         es.tmpl.renderBody();
     </script>
-    
+
     <script type="text/javascript">
         function success(data, status, xhr) {
 

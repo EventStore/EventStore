@@ -53,6 +53,14 @@ namespace EventStore.Core.Index.Hashes
             }
         }
 
+        public unsafe uint Hash(byte[] data, int offset, uint len, uint seed)
+        {
+            fixed (byte* input = &data[offset])
+            {
+                return Hash(input, len, seed);
+            }
+        }
+
         private unsafe static uint Hash(byte* data, uint len, uint seed)
         {
             UInt32 nblocks = len / 4;
@@ -82,7 +90,7 @@ namespace EventStore.Core.Index.Hashes
 
             k1 = 0;
             uint rem = len & 3;
-            byte* tail = data + len - rem;
+            byte* tail = (byte*)block;
             if (rem >= 3)
                 k1 ^= (uint)(tail[2] << 16);
             if (rem >= 2)

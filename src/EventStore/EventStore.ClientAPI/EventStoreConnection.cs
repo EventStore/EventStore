@@ -35,6 +35,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.System;
 using EventStore.ClientAPI.Transport.Http;
@@ -70,11 +71,22 @@ namespace EventStore.ClientAPI
         {
             return Interlocked.Increment(ref _seqNumber);
         }
+
+        public override string ToString()
+        {
+            return string.Format("Workitem {0} : {1}, attempt {2}, seqNo {3}", 
+                                 Operation.GetType().FullName, 
+                                 Operation,
+                                 Attempt, 
+                                 SeqNo);
+        }
     }
 
     public class EventStoreConnection : IProjectionsManagement,
                                         IDisposable
     {
+        private readonly ILogger _log;
+
         private const int MaxQueueSize = 5000;
 
         private readonly int _maxConcurrentItems;
@@ -119,7 +131,8 @@ namespace EventStore.ClientAPI
         public EventStoreConnection(IPEndPoint tcpEndPoint, 
                                     int maxConcurrentRequests = 5000,
                                     int maxAttemptsForOperation = 10,
-                                    int maxReconnections = 10)
+                                    int maxReconnections = 10,
+                                    ILogger logger = null)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
             Ensure.Positive(maxConcurrentRequests, "maxConcurrentRequests");
@@ -130,6 +143,9 @@ namespace EventStore.ClientAPI
             _maxConcurrentItems = maxConcurrentRequests;
             _maxAttempts = maxAttemptsForOperation;
             _maxReconnections = maxReconnections;
+
+            LogManager.RegisterLogger(logger);
+            _log = LogManager.GetLogger();
 
             _connector = new TcpConnector(_tcpEndPoint);
             _subscriptionsChannel = new SubscriptionsChannel(_tcpEndPoint);
@@ -159,6 +175,8 @@ namespace EventStore.ClientAPI
             _inProgress.Clear();
             foreach(var workItem in items)
                 workItem.Operation.Fail(new ConnectionClosingException(err));
+
+            _log.Info("ESC Closed");
         }
 
         void IDisposable.Dispose()
@@ -672,7 +690,10 @@ namespace EventStore.ClientAPI
                     {
                         _subscriptionsChannel.Connect();
                         if (!_subscriptionsChannel.ConnectedEvent.WaitOne(500))
+                        {
+                            _log.Error("Cannot connect to {0}", _tcpEndPoint);
                             throw new CannotEstablishConnectionException(string.Format("Cannot connect to {0}", _tcpEndPoint));
+                        }
                     }
                 }
             }
@@ -716,13 +737,17 @@ namespace EventStore.ClientAPI
                         {
                             if (lastUpdated > _lastReconnectionTimestamp)
                             {
-                                var err = string.Format("Timed out event which never got response from server was discovered. "+ 
-                                                        "Last state update : {0}, last reconnect : {1}, now(utc) : {2}.",
+                                var err = string.Format("{0} never got response from server"+ 
+                                                        "Last state update : {1}, last reconnect : {2}, now(utc) : {3}.",
+                                                        workerItem,
                                                         lastUpdated,
                                                         _lastReconnectionTimestamp,
                                                         now);
                                 if(TryRemoveWorkItem(workerItem))
+                                {
+                                    _log.Error(err);
                                     workerItem.Operation.Fail(new OperationTimedOutException(err));
+                                }
                             }
                             else
                                 retriable.Add(workerItem);
@@ -768,13 +793,16 @@ namespace EventStore.ClientAPI
                     Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
 
                     if (inProgressItem.Attempt > _maxAttempts)
-                        inProgressItem.Operation.Fail(new RetriesLimitReachedException(inProgressItem.Operation.ToString(),
+                    {
+                        _log.Error("Retries limit reached for : {0}", inProgressItem);
+                        inProgressItem.Operation.Fail(new RetriesLimitReachedException(inProgressItem.ToString(),
                                                                                        inProgressItem.Attempt));
+                    }
                     else
                         Send(inProgressItem);
                 }
                 else
-                    Debug.WriteLine("Concurrency failure. Unable to remove in progress item on retry");
+                    _log.Error("Concurrency failure. Unable to remove in progress item on retry");
             }
         }
 
@@ -785,7 +813,7 @@ namespace EventStore.ClientAPI
 
             if (!_inProgress.TryGetValue(corrId, out workItem))
             {
-                Debug.WriteLine("Unexpected corrid received {0}", corrId);
+                _log.Error("Unexpected corrid received {0}", corrId);
                 return;
             }
 
@@ -863,6 +891,8 @@ namespace EventStore.ClientAPI
 
     internal class SubscriptionsChannel
     {
+        private readonly ILogger _log;
+
         private readonly IPEndPoint _tcpEndPoint;
 
         private readonly TcpConnector _connector;
@@ -880,6 +910,7 @@ namespace EventStore.ClientAPI
         {
             _tcpEndPoint = tcpEndPoint;
             _connector = new TcpConnector(_tcpEndPoint);
+            _log = LogManager.GetLogger();
         }
 
         public void Connect()
@@ -998,7 +1029,7 @@ namespace EventStore.ClientAPI
                     }
                     catch (Exception e)
                     {
-                        Debug.WriteLine("User callback thrown : {0}", e);
+                        _log.Error(e, "User callback thrown");
                     }
                 }
                 else
@@ -1011,7 +1042,7 @@ namespace EventStore.ClientAPI
             Subscription subscription;
             if(!_subscriptions.TryGetValue(package.CorrelationId, out subscription))
             {
-                Debug.WriteLine("Unexpected package received : {0} ({1})", package.CorrelationId, package.Command);
+                _log.Error("Unexpected package received : {0} ({1})", package.CorrelationId, package.Command);
                 return;
             }
 
@@ -1037,7 +1068,7 @@ namespace EventStore.ClientAPI
             }
             catch (Exception e)
             {
-                Debug.WriteLine("Error on package received : {0}. Stacktrace : {1}", e.Message, e.StackTrace);
+                _log.Error(e, "Error on package received");
             }
         }
 

@@ -28,6 +28,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Security.Policy;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -82,7 +83,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                                       _publishEnvelope,
                                                                       message.EventStreamId,
                                                                       message.ExpectedVersion,
-                                                                      allowImplicitStreamCreation: true));
+                                                                      allowImplicitStreamCreation: true,
+                                                                      liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             _bus.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                       _publishEnvelope,
                                                       new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
@@ -101,14 +103,11 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _transactionId = request.TransactionId;
 
             _bus.Publish(new ReplicationMessage.WriteTransactionData(request.CorrelationId,
-                                                                         _publishEnvelope,
-                                                                         _transactionId,
-                                                                         request.EventStreamId,
-                                                                         request.Events));
+                                                                     _publishEnvelope,
+                                                                     _transactionId,
+                                                                     request.EventStreamId,
+                                                                     request.Events));
             CompleteSuccessRequest(request.CorrelationId, request.TransactionId, request.EventStreamId);
-//            Publisher.Publish(TimerMessage.Schedule.Create(TwoPhaseCommitRequestManager.PrepareTimeout,
-//                                                      _publishEnvelope,
-//                                                      new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
         }
 
         public void Handle(ReplicationMessage.PrepareAck message)

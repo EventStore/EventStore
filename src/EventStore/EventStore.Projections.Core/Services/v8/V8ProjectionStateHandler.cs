@@ -142,7 +142,7 @@ namespace EventStore.Projections.Core.Services.v8
             _emittedEvents = null;
             _query.Push(
                 data.Trim(), // trimming data passed to a JS 
-                new string[] {streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture), metadata ?? ""});
+                new string[] {streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture), metadata ?? "", position.PreparePosition.ToString()});
             newState = _query.GetState();
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;

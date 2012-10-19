@@ -76,12 +76,23 @@
     <Compile Include="Bus\when_publishing.cs" />
     <Compile Include="Bus\when_subscribing.cs" />
     <Compile Include="Bus\when_unsubscribing.cs" />
+    <Compile Include="ClientAPI\api_tests_nunit_setup.cs" />
+    <Compile Include="ClientAPI\append_to_stream.cs" />
+    <Compile Include="ClientAPI\deleting_stream.cs" />
+    <Compile Include="ClientAPI\creating_stream.cs" />
+    <Compile Include="ClientAPI\MiniNode.cs" />
+    <Compile Include="ClientAPI\TestEvent.cs" />
+    <Compile Include="ClientAPI\transaction.cs" />
     <Compile Include="Common\CollectionsExtensions.cs" />
     <Compile Include="Common\HelperExtensions.cs" />
     <Compile Include="DataStructures\pairing_heap_should.cs" />
     <Compile Include="Fakes\FakeLogger.cs" />
     <Compile Include="Fakes\FakePublisher.cs" />
     <Compile Include="Fakes\NoopPublisher.cs" />
+    <Compile Include="Hashes\murmur2_hash_should.cs" />
+    <Compile Include="Hashes\murmur3a_hash_should.cs" />
+    <Compile Include="Hashes\SMHasher.cs" />
+    <Compile Include="Hashes\xxhash_hash_should.cs" />
     <Compile Include="Helper\ReflectionDynamic.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
@@ -161,11 +172,18 @@
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_two_intermingled_transactions_and_some_uncommited_prepares_spanning_few_chunks_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_two_intermingled_transactions_spanning_few_chunks_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_two_intermingled_transactions_and_some_uncommited_prepares_in_the_end_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_stream_both_maxage_and_maxcount_specified_with_maxage_more_strict.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_stream_both_maxage_and_maxcount_specified_with_maxcount_more_strict.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_stream_with_maxage_specified.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_stream_with_maxcount_specified.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_rebuilding_index_for_partially_persisted_transaction.cs" />
     <Compile Include="Integration\IntegrationTestBase.cs" />
     <Compile Include="Integration\EnvelopeCallback.cs" />
     <Compile Include="Integration\when_writing_single_event_and_then_reading_it.cs" />
-    <Compile Include="MD5HashTests.cs" />
+    <Compile Include="Hashes\MD5HashTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\FormatterTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\StatsParserTests.cs" />
     <Compile Include="Infrastructure\Services\Storage\ByLengthHasher.cs" />
@@ -263,6 +281,10 @@
     <Compile Include="TransactionLog\when_writing_prepare_record_to_file.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
+      <Project>{c7c0a3c2-a0eb-4ff4-a0cd-67eadf3f553f}</Project>
+      <Name>EventStore.ClientAPI</Name>
+    </ProjectReference>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
       <Name>EventStore.Common</Name>

@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void SetPaused()
         {
-            _queueState = QueueState.Stopped;
+            _queueState = QueueState.Paused;
             PauseSubscription();
         }
 

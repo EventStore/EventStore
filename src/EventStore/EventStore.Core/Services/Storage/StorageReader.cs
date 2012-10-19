@@ -173,7 +173,7 @@ namespace EventStore.Core.Services.Storage
             var lastCommitPosition = _readIndex.LastCommitPosition;
             
             var result = _readIndex.ReadStreamEventsForward(message.EventStreamId, message.FromEventNumber, message.MaxCount, out records);
-            var nextEventNumber = result == RangeReadResult.Success & records.Length > 0
+            var nextEventNumber = result == RangeReadResult.Success && records.Length > 0
                                           ? records[records.Length - 1].EventNumber + 1
                                           : -1;
             if (result == RangeReadResult.Success && records.Length > 1)

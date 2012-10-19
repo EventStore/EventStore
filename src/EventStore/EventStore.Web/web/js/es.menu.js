@@ -2,12 +2,11 @@
     var pages =
         [
             { "name": "Home", "link": "index.htm", "class": "" },
-            { "name": "List Existing", "link": "list-projections.htm", "class": "" },
-            { "name": "Post New", "link": "post-projection.htm", "class": "" },
-            { "name": "Create A Standard Projection", "link": "post-standard-projection.htm", "class": "" },
+            { "name": "Projections", "link": "list-projections.htm", "class": "" },
+            { "name": "New Projection", "link": "post-projection.htm", "class": "" },
             { "name": "Charts", "link": "dashboard.htm", "class": "" },
             { "name": "Health Charts", "link": "dashboard-health.htm", "class": "" },
-            { "name": "Statistics", "link": "statistics.htm", "class": "" }
+            { "name": "Queues", "link": "statistics.htm", "class": "" }
         ];
 
     var tmplStr = '<li class="{{>class}}"> <a href="{{>link}}"> {{>name}} </a> </li>';

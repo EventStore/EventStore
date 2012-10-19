@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var eventCheckpointTag = _positionTagger.MakeCheckpointTag(message);
             if (eventCheckpointTag <= _positionTracker.LastTag)
             {
-                _logger.Info(
+                _logger.Trace(
                     "Skipping replayed event {0}@{1} at position {2}. the last processed event checkpoint tag is: {3}",
                     message.PositionSequenceNumber, message.PositionStreamId, message.Position, _positionTracker.LastTag);
                 return;
@@ -110,6 +110,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public EventDistributionPoint CreatePausedEventDistributionPoint(IPublisher publisher, IPublisher inputQueue, Guid distributionPointId)
         {
+            _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
             return _checkpointStrategy.CreatePausedEventDistributionPoint(distributionPointId, publisher, inputQueue, _positionTracker.LastTag);
         }
 
@@ -119,8 +120,14 @@ namespace EventStore.Projections.Core.Services.Processing
             //NOTE: here the committed event MUST pass the projection subscription source filter as it was sent to us by specialized event
             // distribution point.  MakeCheckpointTag fails otherwise.
 
-            return _checkpointStrategy.IsCheckpointTagAfterEventPosition(
-                eventCheckpointTag, firstAvailableTransactionFileEvent);
+            var result = _checkpointStrategy.IsCheckpointTagAfterEventPosition(eventCheckpointTag, firstAvailableTransactionFileEvent);
+
+            if (result)
+                _logger.Trace("Projection subscription '{0}' can join distribution at '{1}' when the first available event is '{2}'",
+                    _projectionCorrelationId, eventCheckpointTag, firstAvailableTransactionFileEvent);
+
+
+            return result;
         }
 
         public CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventReceived committedEvent)

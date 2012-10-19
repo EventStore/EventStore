@@ -82,6 +82,7 @@
     <Compile Include="ClientOperations\ReadAllEventsOperations.cs" />
     <Compile Include="ClientOperations\StartTransactionOperation.cs" />
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
+    <Compile Include="Common\Log\DefaultLogger.cs" />
     <Compile Include="Exceptions\CannotEstablishConnectionException.cs" />
     <Compile Include="Exceptions\ProjectionCommandFailedException.cs" />
     <Compile Include="Exceptions\InvalidTransactionException.cs" />
@@ -98,7 +99,6 @@
     <Compile Include="Exceptions\OperationTimedOutException.cs" />
     <Compile Include="Exceptions\RetriesLimitReachedException.cs" />
     <Compile Include="ClientOperations\CreateStreamOperation.cs" />
-    <Compile Include="Common\Log\Logger.cs" />
     <Compile Include="Common\Log\LogManager.cs" />
     <Compile Include="Common\Utils\BytesFormatter.cs" />
     <Compile Include="Common\ConcurrentCollections\ConcurrentQueue.cs" />
@@ -108,6 +108,7 @@
     <Compile Include="ClientOperations\IClientOperation.cs" />
     <Compile Include="ClientOperations\ReadStreamEventsOperations.cs" />
     <Compile Include="Common\Utils\Ensure.cs" />
+    <Compile Include="ILogger.cs" />
     <Compile Include="IProjectionsManagement.cs" />
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="Position.cs" />

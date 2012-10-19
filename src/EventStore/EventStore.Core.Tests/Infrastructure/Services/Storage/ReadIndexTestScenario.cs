@@ -30,10 +30,8 @@ using System;
 using System.IO;
 using System.Text;
 using EventStore.Common.Utils;
-using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Index;
-using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.TransactionLog;
@@ -107,7 +105,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
 
         protected abstract void WriteTestScenario();
 
-        protected EventRecord WriteSingleEvent(string eventStreamId, int eventNumber, string data)
+        protected EventRecord WriteSingleEvent(string eventStreamId, int eventNumber, string data, DateTime? timestamp = null)
         {
             var prepare = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),
                                                 Guid.NewGuid(),
@@ -116,7 +114,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
                                                 eventNumber - 1,
                                                 "some-type",
                                                 Encoding.UTF8.GetBytes(data),
-                                                null);
+                                                null,
+                                                timestamp);
             long pos;
             Assert.IsTrue(Writer.Write(prepare, out pos));
 
@@ -159,7 +158,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
                                                     string eventStreamId, 
                                                     int eventNumber, 
                                                     string eventData,
-                                                    PrepareFlags flags)
+                                                    PrepareFlags flags,
+                                                    bool retryOnFail = false)
         {
             var prepare = LogRecord.Prepare(WriterCheckpoint.ReadNonFlushed(),
                                             correlationId,
@@ -172,6 +172,32 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
                                             "some-type",
                                             Encoding.UTF8.GetBytes(eventData),
                                             null);
+
+            if (retryOnFail)
+            {
+                long firstPos = prepare.LogPosition;
+                long newPos;
+                if (!Writer.Write(prepare, out newPos))
+                {
+                    var tPos = prepare.TransactionPosition == prepare.LogPosition ? newPos : prepare.TransactionPosition;
+                    prepare = new PrepareLogRecord(newPos,
+                                                   prepare.CorrelationId,
+                                                   prepare.EventId,
+                                                   tPos,
+                                                   prepare.TransactionOffset,
+                                                   prepare.EventStreamId,
+                                                   prepare.ExpectedVersion,
+                                                   prepare.TimeStamp,
+                                                   prepare.Flags,
+                                                   prepare.EventType,
+                                                   prepare.Data,
+                                                   prepare.Metadata);
+                    if (!Writer.Write(prepare, out newPos))
+                        Assert.Fail("Second write try failed when first writing prepare at {0}, then at {1}.", firstPos, prepare.LogPosition);
+                }
+                return new EventRecord(eventNumber, prepare);
+            }
+
             long pos;
             Assert.IsTrue(Writer.Write(prepare, out pos));
             return new EventRecord(eventNumber, prepare);

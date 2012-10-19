@@ -34,8 +34,8 @@ function scope($on, $notify) {
                 return eventProcessor.commandHandlers.initialize_raw();
             }, 
         
-            process_event: function(json, streamId, eventType, category, sequenceNumber, metadata) {
-                return eventProcessor.commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata);
+            process_event: function(json, streamId, eventType, category, sequenceNumber, metadata, log_position) {
+                return eventProcessor.commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata, log_position);
             }, 
 
             test_array: function(json, a, b, c) {

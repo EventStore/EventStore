@@ -236,26 +236,34 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         [Test]
         public void read_all_events_forward_returns_correct_events_starting_in_the_middle_of_tf()
         {
-            var records = ReadIndex.ReadAllEventsForward(new TFPos(_t2CommitPos, _p4.LogPosition), 10, false).Records;
+            var res1 = ReadIndex.ReadAllEventsForward(new TFPos(_t2CommitPos, _p4.LogPosition), 10, false);
 
-            Assert.AreEqual(4, records.Count);
-            Assert.AreEqual(_p4, records[0].Event);
-            Assert.AreEqual(_p1, records[1].Event);
-            Assert.AreEqual(_p3, records[2].Event);
-            Assert.AreEqual(_p5, records[3].Event);
+            Assert.AreEqual(4, res1.Records.Count);
+            Assert.AreEqual(_p4, res1.Records[0].Event);
+            Assert.AreEqual(_p1, res1.Records[1].Event);
+            Assert.AreEqual(_p3, res1.Records[2].Event);
+            Assert.AreEqual(_p5, res1.Records[3].Event);
+
+            var res2 = ReadIndex.ReadAllEventsBackward(res1.PrevPos, 10, false);
+            Assert.AreEqual(1, res2.Records.Count);
+            Assert.AreEqual(_p2, res2.Records[0].Event);
         }
 
         [Test]
         public void read_all_events_backward_returns_correct_events_starting_in_the_middle_of_tf()
         {
             var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), _p4.LogPosition); // p3 post-pos
-            var records = ReadIndex.ReadAllEventsBackward(pos, 10, false).Records;
+            var res1 = ReadIndex.ReadAllEventsBackward(pos, 10, false);
 
-            Assert.AreEqual(4, records.Count);
-            Assert.AreEqual(_p3, records[0].Event);
-            Assert.AreEqual(_p1, records[1].Event);
-            Assert.AreEqual(_p4, records[2].Event);
-            Assert.AreEqual(_p2, records[3].Event);
+            Assert.AreEqual(4,   res1.Records.Count);
+            Assert.AreEqual(_p3, res1.Records[0].Event);
+            Assert.AreEqual(_p1, res1.Records[1].Event);
+            Assert.AreEqual(_p4, res1.Records[2].Event);
+            Assert.AreEqual(_p2, res1.Records[3].Event);
+
+            var res2 = ReadIndex.ReadAllEventsForward(res1.PrevPos, 10, false);
+            Assert.AreEqual(1, res2.Records.Count);
+            Assert.AreEqual(_p5, res2.Records[0].Event);
         }
 
         [Test]
