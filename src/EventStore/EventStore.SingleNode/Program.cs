@@ -45,6 +45,7 @@ namespace EventStore.SingleNode
 
         private Projections _projections;
         private bool _noProjections;
+        private int _projectionThreads;
 
         public static int Main(string[] args)
         {
@@ -59,6 +60,7 @@ namespace EventStore.SingleNode
             _appSets = GetAppSettings(options);
             _vNodeSets = GetVNodeSettings(options);
             _noProjections = options.NoProjections;
+            _projectionThreads = options.ProjectionThreads;
         }
 
         protected override void Create()
@@ -66,7 +68,7 @@ namespace EventStore.SingleNode
             Node = new SingleVNode(TfDb, _vNodeSets, _appSets);
 
             if (!_noProjections)
-                _projections = new Projections(TfDb, Node.MainQueue, Node.Bus, Node.TimerService, Node.HttpService, 3);
+                _projections = new Projections(TfDb, Node.MainQueue, Node.Bus, Node.TimerService, Node.HttpService, _projectionThreads);
         }
 
         protected override void Start()

@@ -68,11 +68,11 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
                     new[]
                         {
                             new EventRecord(
-                        10, 50, Guid.NewGuid(), _firstEventId, 50, "stream", ExpectedVersion.Any, DateTime.UtcNow,
+                        10, 50, Guid.NewGuid(), _firstEventId, 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
                         PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                         "event_type1", new byte[] {1}, new byte[] {2}),
                             new EventRecord(
-                        11, 100, Guid.NewGuid(), _secondEventId, 100, "stream", ExpectedVersion.Any, DateTime.UtcNow,
+                        11, 100, Guid.NewGuid(), _secondEventId, 100, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
                         PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                         "event_type2", new byte[] {3}, new byte[] {4})
                         }, null, RangeReadResult.Success, 12, 200));
@@ -134,7 +134,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
                     new[]
                         {
                             new EventRecord(
-                        10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, "stream", ExpectedVersion.Any, DateTime.UtcNow,
+                        10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
                         PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                         "event_type", new byte[0], new byte[0])
                         }, null, RangeReadResult.Success, 11, 100));
@@ -149,7 +149,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
                     new[]
                         {
                             new EventRecord(
-                        12, 250, Guid.NewGuid(), Guid.NewGuid(), 250, "stream", ExpectedVersion.Any, DateTime.UtcNow,
+                        12, 250, Guid.NewGuid(), Guid.NewGuid(), 250, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
                         PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                         "event_type", new byte[0], new byte[0])
                         }, null, RangeReadResult.Success, 11, 300));

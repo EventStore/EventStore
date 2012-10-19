@@ -1,10 +1,10 @@
 // Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,13 +24,54 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
-namespace EventStore.ClientAPI.System
+// 
+
+using System.Collections.Generic;
+using EventStore.Projections.Core.Messages;
+
+namespace EventStore.Projections.Core.Services.Processing
 {
-    internal enum RangeReadResult
+    class CommittedEventWorkItem : WorkItem
     {
-        Success,
-        NoStream,
-        StreamDeleted
-    }    
+        private readonly ProjectionMessage.Projections.CommittedEventReceived _message;
+        private readonly string _partition;
+        private List<EmittedEvent[]> _scheduledWrites;
+
+        public CommittedEventWorkItem(
+            CoreProjection projection, ProjectionMessage.Projections.CommittedEventReceived message, string partition)
+            : base(projection, message.EventStreamId)
+        {
+            _message = message;
+            _partition = partition;
+        }
+
+        protected override void Load()
+        {
+            _projection.BeginStatePartitionLoad(_message, LoadCompleted);
+        }
+
+        private void LoadCompleted()
+        {
+            NextStage();
+        }
+
+        protected override void ProcessEvent()
+        {
+            _projection.ProcessCommittedEvent(this, _message, _partition);
+            NextStage();
+        }
+
+        protected override void WriteOutput()
+        {
+            _projection.FinalizeEventProcessing(_scheduledWrites, _message);
+            NextStage();
+        }
+
+        public void ScheduleEmitEvents(EmittedEvent[] emittedEvents)
+        {
+            if (_scheduledWrites == null)
+                _scheduledWrites = new List<EmittedEvent[]>();
+            _scheduledWrites.Add(emittedEvents);
+        }
+    }
 }
