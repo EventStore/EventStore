@@ -94,7 +94,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private string _faultedReason;
 
         private readonly
-            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
             _readDispatcher;
 
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
@@ -105,6 +106,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CoreProjectionQueue _processingQueue;
         private readonly CoreProjectionCheckpointManager _checkpointManager;
 
+        private bool _tickPending;
 
         public CoreProjection(
             string name, Guid projectionCorrelationId, IPublisher publisher,
@@ -125,8 +127,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
                     _publisher, v => v.CorrelationId, v => v.CorrelationId);
             _writeDispatcher =
-                new RequestResponseDispatcher
-                    <ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
+                new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
                     _publisher, v => v.CorrelationId, v => v.CorrelationId);
             _projectionCheckpointStreamId = ProjectionsStreamPrefix + _name + ProjectionCheckpointStreamSuffix;
             var builder = new CheckpointStrategy.Builder();
@@ -135,11 +136,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventFilter = _checkpointStrategy.EventFilter;
             _partitionStateCache = new PartitionStateCache();
             _processingQueue = new CoreProjectionQueue(
-                projectionCorrelationId, publisher, _checkpointStrategy, Tick, _projectionConfig.CheckpointsEnabled,
-                projectionConfig.PendingEventsThreshold, UpdateStatistics);
+                projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
             _checkpointManager = new CoreProjectionCheckpointManager(
-                this, this._publisher, _writeDispatcher, this._projectionConfig, this._logger, this._projectionCheckpointStreamId,
-                this._name, _checkpointStrategy.PositionTagger);
+                this, _publisher, _writeDispatcher, _projectionConfig, _logger, _projectionCheckpointStreamId, _name,
+                _checkpointStrategy.PositionTagger);
             GoToState(State.Initial);
         }
 
@@ -196,7 +196,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                this._processingQueue.HandleCommittedEventReceived(this, message);
+                if (_state == State.Running || _state == State.Paused)
+                {
+                    CheckpointTag eventTag = _checkpointStrategy.PositionTagger.MakeCheckpointTag(message);
+                    string partition = _checkpointStrategy.StatePartitionSelector.GetStatePartition(message);
+                    var committedEventWorkItem = new CommittedEventWorkItem(this, message, partition);
+                    _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
+                }
+                _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -210,7 +217,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                this._processingQueue.HandleCheckpointSuggested(this, message);
+                if ((_state == State.Running || _state == State.Paused) && _projectionConfig.CheckpointsEnabled)
+                {
+                    CheckpointTag checkpointTag = message.CheckpointTag;
+                    var checkpointSuggestedWorkItem = new CheckpointSuggestedWorkItem(this, message, _checkpointManager);
+                    _processingQueue.EnqueueTask(checkpointSuggestedWorkItem, checkpointTag);
+                }
+                _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -267,7 +280,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 case State.Stopping:
                 case State.FaultedStopping:
-                    if (wasStarted && !wasStopping) 
+                    if (wasStarted && !wasStopping)
                         _checkpointManager.Stopping();
                     break;
             }
@@ -339,7 +352,7 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 UpdateStatistics();
-                this._processingQueue.ProcessEvent();
+                _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -362,8 +375,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(new ProjectionMessage.Projections.UnsubscribeProjection(_projectionCorrelationId));
             // core projection may be stopped to change its configuration
             // it is important to checkpoint it so no writes pending remain when stopped
-            if (this._projectionConfig.CheckpointsEnabled)
-                this._checkpointManager.RequestCheckpointToStop(); // should always report complted even if skipped
+            if (_projectionConfig.CheckpointsEnabled)
+                _checkpointManager.RequestCheckpointToStop(); // should always report complted even if skipped
             else
                 GoToState(State.Stopped);
         }
@@ -377,15 +390,16 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _publisher.Publish(new ProjectionMessage.Projections.UnsubscribeProjection(_projectionCorrelationId));
             // checkpoint last known correct state on fault
-            if (this._projectionConfig.CheckpointsEnabled)
-                this._checkpointManager.RequestCheckpointToStop(); // should always report complted even if skipped
+            if (_projectionConfig.CheckpointsEnabled)
+                _checkpointManager.RequestCheckpointToStop(); // should always report complted even if skipped
             else
                 GoToState(State.Faulted);
         }
 
         private void EnterFaulted()
         {
-            _publisher.Publish(new ProjectionMessage.Projections.StatusReport.Faulted(_projectionCorrelationId, _faultedReason));
+            _publisher.Publish(
+                new ProjectionMessage.Projections.StatusReport.Faulted(_projectionCorrelationId, _faultedReason));
         }
 
         private void SetHandlerState(string partition)
@@ -421,7 +435,7 @@ namespace EventStore.Projections.Core.Services.Processing
             GoToState(State.Resumed);
         }
 
-        private void ProcessCommittedEvent(
+        internal void ProcessCommittedEvent(
             CommittedEventWorkItem committedEventWorkItem, ProjectionMessage.Projections.CommittedEventReceived message,
             string partition)
         {
@@ -542,13 +556,13 @@ namespace EventStore.Projections.Core.Services.Processing
             // we may get into faulted any time, so it is allowed
             try
             {
-                _processingQueue.QueueTick();
+                _tickPending = false;
+                _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
                 SetFaulted(ex);
             }
-
         }
 
         private void OnLoadStateCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message)
@@ -599,7 +613,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 LoadProjectionStateFaulted(state, ex);
                 return;
             }
-            _processingQueue.InitializeQueue();
+            _processingQueue.InitializeQueue(_checkpointStrategy.PositionTagger.MakeZeroCheckpointTag());
             _publisher.Publish(
                 new ProjectionMessage.Projections.SubscribeProjection(
                     _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,
@@ -607,7 +621,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(new ProjectionMessage.Projections.StatusReport.Started(_projectionCorrelationId));
         }
 
-        private void BeginStatePartitionLoad(
+        internal void BeginStatePartitionLoad(
             ProjectionMessage.Projections.CommittedEventReceived @event, Action loadCompleted)
         {
             string statePartition = _checkpointStrategy.StatePartitionSelector.GetStatePartition(@event);
@@ -656,7 +670,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         _partitionStateCache.CacheAndLockPartitionState(
                             partition, Encoding.UTF8.GetString(@event.Data), eventPositionTag);
                         loadCompleted();
-                        _processingQueue.EnsureTickPending();
+                        EnsureTickPending();
                         return;
                     }
                 }
@@ -665,7 +679,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _partitionStateCache.CacheAndLockPartitionState(partition, "", positionTag);
                 loadCompleted();
-                _processingQueue.EnsureTickPending();
+                EnsureTickPending();
                 return;
             }
             string partitionStateStreamName = MakePartitionStateStreamName(partition);
@@ -682,128 +696,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projectionStateHandler.Dispose();
         }
 
-        internal abstract class WorkItem : StagedTask
+        internal void EnsureTickPending()
         {
-            private readonly int _lastStage;
-            private Action<int> _complete;
-            private int _onStage;
-
-            protected WorkItem(string stream)
-                : base(stream)
-            {
-                _lastStage = 2;
-            }
-
-            public override void Process(int onStage, Action<int> readyForStage)
-            {
-                _complete = readyForStage;
-                _onStage = onStage;
-                switch (onStage)
-                {
-                    case 0:
-                        Load();
-                        break;
-                    case 1:
-                        ProcessEvent();
-                        break;
-                    case 2:
-                        WriteOutput();
-                        break;
-                    default:
-                        throw new NotSupportedException();
-                }
-            }
-
-            protected virtual void WriteOutput()
-            {
-                NextStage();
-            }
-
-            protected virtual void Load()
-            {
-                NextStage();
-            }
-
-            protected virtual void ProcessEvent()
-            {
-                NextStage();
-            }
-
-            protected void NextStage()
-            {
-                _complete(_onStage == _lastStage ? -1 : _onStage + 1);
-            }
-        }
-
-        internal class CommittedEventWorkItem : WorkItem
-        {
-            private readonly ProjectionMessage.Projections.CommittedEventReceived _message;
-            private readonly string _partition;
-            private readonly CoreProjection _projection;
-            private readonly CheckpointTag _tag;
-            private List<EmittedEvent[]> _scheduledWrites;
-
-            public CommittedEventWorkItem(
-                CoreProjection projection, ProjectionMessage.Projections.CommittedEventReceived message,
-                string partition, CheckpointTag tag)
-                : base(message.EventStreamId)
-            {
-                _projection = projection;
-                _message = message;
-                _partition = partition;
-                _tag = tag;
-            }
-
-            protected override void Load()
-            {
-                _projection.BeginStatePartitionLoad(_message, LoadCompleted);
-            }
-
-            private void LoadCompleted()
-            {
-                NextStage();
-            }
-
-            protected override void ProcessEvent()
-            {
-                _projection.ProcessCommittedEvent(this, _message, _partition);
-                NextStage();
-            }
-
-            protected override void WriteOutput()
-            {
-                _projection.FinalizeEventProcessing(_scheduledWrites, _message);
-                NextStage();
-            }
-
-            public void ScheduleEmitEvents(EmittedEvent[] emittedEvents)
-            {
-                if (_scheduledWrites == null)
-                    _scheduledWrites = new List<EmittedEvent[]>();
-                _scheduledWrites.Add(emittedEvents);
-            }
-        }
-
-        internal class CheckpointSuggestedWorkItem : WorkItem
-        {
-            private readonly ProjectionMessage.Projections.CheckpointSuggested _message;
-            private readonly CoreProjection _projection;
-            private readonly CheckpointTag _tag;
-
-            public CheckpointSuggestedWorkItem(
-                CoreProjection projection, ProjectionMessage.Projections.CheckpointSuggested message, CheckpointTag tag)
-                : base("")
-            {
-                _projection = projection;
-                _message = message;
-                _tag = tag;
-            }
-
-            protected override void WriteOutput()
-            {
-                _projection._checkpointManager.CheckpointSuggested(_message.CheckpointTag);
-                NextStage();
-            }
+            if (_tickPending)
+                return;
+            if (_state == State.Paused)
+                return;
+            _tickPending = true;
+            _publisher.Publish(new ProjectionMessage.CoreService.Tick(Tick));
         }
 
         private void SetFaulted(Exception ex)
@@ -830,13 +730,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void Pause()
         {
-            if (_state != State.Stopping
-                && _state != State.FaultedStopping)
+            if (_state != State.Stopping && _state != State.FaultedStopping)
                 // stopping projection is already paused
                 GoToState(State.Paused);
         }
 
-        private void FinalizeEventProcessing(List<EmittedEvent[]> scheduledWrites, ProjectionMessage.Projections.CommittedEventReceived committedEventReceived)
+        internal void FinalizeEventProcessing(
+            List<EmittedEvent[]> scheduledWrites,
+            ProjectionMessage.Projections.CommittedEventReceived committedEventReceived)
         {
             if (committedEventReceived.Data == null)
                 throw new NotSupportedException();

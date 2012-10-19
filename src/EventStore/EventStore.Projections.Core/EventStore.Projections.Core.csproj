@@ -101,6 +101,8 @@
     <Compile Include="Services\Management\ProjectionStateHandlerFactory.cs" />
     <Compile Include="Services\Processing\ByStreamStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\CategoryEventFilter.cs" />
+    <Compile Include="Services\Processing\CheckpointSuggestedWorkItem.cs" />
+    <Compile Include="Services\Processing\CommittedEventWorkItem.cs" />
     <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\CoreProjectionQueue.cs" />
     <Compile Include="Services\Processing\EventDistributionPoint.cs" />
@@ -129,6 +131,7 @@
     <Compile Include="Services\Processing\TransactionFileEventFilter.cs" />
     <Compile Include="Services\Processing\TransactionFilePositionTagger.cs" />
     <Compile Include="Services\Processing\TransactionFileReaderEventDistributionPoint.cs" />
+    <Compile Include="Services\Processing\WorkItem.cs" />
     <Compile Include="Services\ProjectionConfig.cs" />
     <Compile Include="Messages\ProjectionMessage.cs" />
     <Compile Include="Services\ProjectionClientConnectionManager.cs" />

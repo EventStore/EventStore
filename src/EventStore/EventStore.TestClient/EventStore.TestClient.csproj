@@ -61,8 +61,8 @@
     <Compile Include="Commands\RunTestScenarios\IScenario.cs" />
     <Compile Include="Commands\RunTestScenarios\ClientApiLogger.cs" />
     <Compile Include="Commands\RunTestScenarios\LoopingScenario.cs" />
-    <Compile Include="Commands\RunTestScenarios\ScenarioBase.cs" />
-    <Compile Include="Commands\RunTestScenarios\TestEvent.cs" />
+    <Compile Include="Commands\RunTestScenarios\ProjectionsScenario1.cs" />
+    <Compile Include="Commands\RunTestScenarios\ScenarioBase.cs" />    <Compile Include="Commands\RunTestScenarios\TestEvent.cs" />
     <Compile Include="Commands\RunTestScenarios\WriteMode.cs" />
     <Compile Include="Commands\ScavengeProcessor.cs" />
     <Compile Include="Commands\CreateStreamProcessor.cs" />

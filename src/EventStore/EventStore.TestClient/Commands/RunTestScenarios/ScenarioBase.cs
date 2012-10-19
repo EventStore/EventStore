@@ -28,7 +28,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             _dbPath = Path.Combine(Path.GetTempPath(), "ES_" + Guid.NewGuid());
         }
 
-        private readonly IPEndPoint _tcpEndPoint;
+        protected readonly IPEndPoint _tcpEndPoint;
 
         protected readonly Action<byte[]> DirectSendOverTcp;
         protected readonly int MaxConcurrentRequests;
