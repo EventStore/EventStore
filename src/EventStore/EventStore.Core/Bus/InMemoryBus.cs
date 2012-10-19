@@ -35,6 +35,10 @@ using System.Diagnostics;
 
 namespace EventStore.Core.Bus
 {
+    /// <summary>
+    /// Synchronously dispatches messages to zero or more subscribers.
+    /// Subscribers are responsible for handling exceptions
+    /// </summary>
     public class InMemoryBus : IBus, ISubscriber, IPublisher, IHandle<Message>
     {
         public const int DefaultSlowMessageThresholdMs = 32;

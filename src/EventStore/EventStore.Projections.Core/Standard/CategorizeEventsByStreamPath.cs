@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -34,7 +35,7 @@ namespace EventStore.Projections.Core.Standard
     public class CategorizeEventsByStreamPath : IProjectionStateHandler
     {
         private readonly char _separator;
-        private string _categoryStreamPrefix;
+        private readonly string _categoryStreamPrefix;
 
         public CategorizeEventsByStreamPath(string source, Action<string> logger)
         {

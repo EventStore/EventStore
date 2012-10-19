@@ -277,7 +277,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             _state = ManagedProjectionState.Creating;
 
-            _logger.Info(
+            _logger.Trace(
                 "Projection manager did not find any projection configuration records in the {0} stream.  Projection stays in CREATING state",
                 completed.EventStreamId);
         }

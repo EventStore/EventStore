@@ -69,6 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
             
             _paused = false;
             _pauseRequested = false;
+            _logger.Trace("Resuming event distribution {0} at '{1}'", _distibutionPointCorrelationId, _from);
             RequestEvents();
         }
 
@@ -95,6 +96,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _pauseRequested = true;
             if (!_eventsRequested)
                 _paused = true;
+            _logger.Trace("Pausing event distribution {0} at '{1}", _distibutionPointCorrelationId, _from);
         }
 
         public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)

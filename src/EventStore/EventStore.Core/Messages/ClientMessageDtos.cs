@@ -268,6 +268,9 @@ namespace EventStore.Core.Messages
             [ProtoMember(6)]
             public byte[] Metadata { get; set; }
 
+            [ProtoMember(7)]
+            public long LogPosition { get; set; }
+
             public ReadEventCompleted()
             {
             }
@@ -277,7 +280,7 @@ namespace EventStore.Core.Messages
                                       SingleReadResult result,
                                       string eventType, 
                                       byte[] data, 
-                                      byte[] metadata)
+                                      byte[] metadata, long logPosition)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "streamId");
                 Ensure.Nonnegative(eventNumber, "eventNumber");
@@ -290,6 +293,7 @@ namespace EventStore.Core.Messages
                 EventType = eventType;
                 Data = data;
                 Metadata = metadata;
+                LogPosition = logPosition;
             }
         }
 

@@ -83,7 +83,12 @@ namespace EventStore.TestClient
 
             Log.Value.Debug(sb.ToString());
         }
-
+        /// <summary>
+        /// Prints key-value point to the log in a way that TeamCity build server
+        /// would be able to capture and then plot on build statistics page,
+        /// tracking performance across multiple builds (need server-side config
+        /// per project).
+        /// </summary>
         public static void LogTeamCityGraphData(string key, long value)
         {
             if (value < 0)

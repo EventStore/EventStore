@@ -74,7 +74,7 @@ h6 { font-size: 1em; font-weight: bold; }
 }
 
 .ui-slider-handle.ui-state-default.ui-corner-all {
-    background: url("../../img/control.png");
+    background: url("../img/control.png");
     margin-top: -4px;
 }
 .slider.ui-slider.ui-slider-horizontal {
@@ -254,4 +254,7 @@ a.button-link:hover {
 }
 .queue-stats td.queuename {
     text-align: left;
+}
+#content {
+    display: none;
 }
