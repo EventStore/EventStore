@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopped = false;
             var distibutionPointCorrelationId = Guid.NewGuid();
             _headDistributionPoint = new TransactionFileReaderEventDistributionPoint(
-                _publisher, distibutionPointCorrelationId, new EventPosition(_writerCheckpoint.Read(), -1));
+                _publisher, distibutionPointCorrelationId, new EventPosition(_writerCheckpoint.Read(), -1), deliverEndOfTFPosition: false);
             _distributionPoints.Add(distibutionPointCorrelationId, _headDistributionPoint);
             _headingEventDistributionPoint.Start(distibutionPointCorrelationId, _headDistributionPoint);
             //NOTE: writing any event to avoid empty database which we don not handle properly

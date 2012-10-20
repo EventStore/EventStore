@@ -114,7 +114,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     string.Format("Projection '{0}' has been already subscribed", projectionId));
             if (projectionSubscription.CanJoinAt(_subscribeFromPosition, fromCheckpointTag))
             {
-                _logger.Trace("The '{0}' subscription has joined the heading distribution point at '{2}'", projectionId, fromCheckpointTag);
+                _logger.Trace("The '{0}' subscription has joined the heading distribution point at '{1}'", projectionId, fromCheckpointTag);
                 DispatchRecentMessagesTo(projectionSubscription);
                 AddSubscriber(projectionId, projectionSubscription);
                 return true;

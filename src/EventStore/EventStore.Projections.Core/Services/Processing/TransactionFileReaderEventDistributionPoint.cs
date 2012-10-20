@@ -47,13 +47,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _maxReadCount = 100;
         private bool _disposed;
         private EventPosition _from;
+        private readonly bool _deliverEndOfTfPosition;
 
         public TransactionFileReaderEventDistributionPoint(
-            IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition from)
+            IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition from, bool deliverEndOfTFPosition = true)
             : base(publisher, distibutionPointCorrelationId)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             _from = @from;
+            _deliverEndOfTfPosition = deliverEndOfTFPosition;
         }
 
         public override void Resume()
@@ -116,7 +118,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (message.Result.Records.Count == 0)
             {
                 // the end
-                DeliverLastCommitPosition(_from.CommitPosition);
+                if (_deliverEndOfTfPosition)
+                    DeliverLastCommitPosition(_from);
                 // allow joining heading distribution
             }
             else
@@ -142,11 +145,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _disposed = true;
         }
 
-        private void DeliverLastCommitPosition(long lastCommitPosition)
+        private void DeliverLastCommitPosition(EventPosition lastPosition)
         {
             _publisher.Publish(
                 new ProjectionMessage.Projections.CommittedEventReceived(
-                    _distibutionPointCorrelationId, new EventPosition(long.MinValue, lastCommitPosition), null, int.MinValue,
+                    _distibutionPointCorrelationId, lastPosition, null, int.MinValue,
                     null, int.MinValue, false, null));
         }
 
