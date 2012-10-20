@@ -41,6 +41,10 @@ using EventStore.Transport.Tcp.Framing;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
+    /// <summary>
+    /// Manager for individual TCP connection. It handles connection lifecycle,
+    /// heartbeats, message framing and dispatch to the memory bus.
+    /// </summary>
     public class TcpConnectionManager: IHandle<TcpMessage.Heartbeat>, 
                                        IHandle<TcpMessage.HeartbeatTimeout>
     {

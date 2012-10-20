@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store Ltd
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -10,7 +10,7 @@
 // Redistributions in binary form must reproduce the above copyright
 // notice, this list of conditions and the following disclaimer in the
 // documentation and/or other materials provided with the distribution.
-// Neither the name of the Event Store Ltd nor the names of its
+// Neither the name of the Event Store LLP nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -25,30 +25,27 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
-using EventStore.Core.Data;
+using NUnit.Framework;
+using EventStore.Core.Index.Hashes;
 
-namespace EventStore.TestClient.Commands.DvuAdvanced.Workers
+namespace EventStore.Core.Tests.Index
 {
-    public class TestProducer : IProducer
+    [TestFixture]
+    class create_hashcode_from_byte_arrays
     {
-        private const string StreamId = "test-producer-stream";
-
-        private int _expected = -1;
-        private int _shouldBe = 1;
-
-        public VerificationEvent Next()
+        [Test]
+        public void Murmur32Unsafe_works_with_byte_arrays_with_length_not_divisable_by_4()
         {
-            var expected = _expected == -1 ? _expected : _expected + 1;
-            var shouldBe = _shouldBe;
-
-            _expected++;
-            _shouldBe++;
-
-            var evnt = new Event(Guid.NewGuid(), "TEST", false,  Encoding.UTF8.GetBytes(string.Format("TEST-DATA exp: {0}. shd: {1}.", expected, shouldBe)), Encoding.UTF8.GetBytes(string.Format("TEST-METADATA exp: {0}. shd: {1}.", expected, shouldBe)));
-            return new VerificationEvent(evnt, StreamId, expected, shouldBe);
+            var byte_array_with_length_not_divisable_by_4 = new byte[]{0, 1, 2, 3, 4, 5, 6};
+            var SUT = new Murmur3AUnsafe();
+            unsafe
+            {
+                Assert.AreEqual((uint)0x7B5DE42E, SUT.Hash(byte_array_with_length_not_divisable_by_4));
+            }
         }
     }
 }

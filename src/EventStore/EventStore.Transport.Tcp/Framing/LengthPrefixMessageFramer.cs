@@ -27,10 +27,15 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace EventStore.Transport.Tcp.Framing
 {
+
+    /// <summary>
+    /// Uses length-prefixed framing to encode outgoing messages and decode
+    /// incoming messages, using internal state and raising a callback once 
+    /// full message arrives.
+    /// </summary>
     public class LengthPrefixMessageFramer : IMessageFramer
     {
         public const int HeaderLength = sizeof(Int32);
@@ -76,7 +81,9 @@ namespace EventStore.Transport.Tcp.Framing
             Parse(data);
         }
         /// <summary>
-        /// Parses a stream chunking based on length-prefixed framing. Calls are re-entrant and hold state internally.
+        /// Parses a stream chunking based on length-prefixed framing. 
+        /// Calls are re-entrant and hold state internally. Once full message arrives,
+        /// callback is raised (it is registered via <see cref="RegisterMessageArrivedCallback"/>
         /// </summary>
         /// <param name="bytes">A byte array of data to append</param>
         private void Parse(ArraySegment<byte> bytes)
