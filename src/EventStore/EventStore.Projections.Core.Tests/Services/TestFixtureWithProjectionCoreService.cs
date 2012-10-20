@@ -68,6 +68,11 @@ namespace EventStore.Projections.Core.Tests.Services
             {
                 throw new NotImplementedException();
             }
+
+            public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         protected WatchingConsumer _consumer;

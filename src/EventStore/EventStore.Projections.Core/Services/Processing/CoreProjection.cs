@@ -323,23 +323,33 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterInitial()
         {
-            _nextStateIndexToRequest = -1; // from the end
             _partitionStateCache.CacheAndLockPartitionState("", "", null);
             // NOTE: this is to workaround exception in GetState requests submitted by client
         }
 
         private void EnterLoadStateRequested()
         {
+            BeginLoadState();
+        }
+
+        private void BeginLoadState()
+        {
+            _nextStateIndexToRequest = -1; // from the end
             if (_projectionConfig.CheckpointsEnabled)
             {
-                const int recordsToRequest = 10;
-                _readDispatcher.Publish(
-                    new ClientMessage.ReadStreamEventsBackward(
-                        Guid.NewGuid(), new SendToThisEnvelope(this), _projectionCheckpointStreamId,
-                        _nextStateIndexToRequest, recordsToRequest, resolveLinks: false), OnLoadStateCompleted);
+                RequestLoadState();
             }
             else
-                InitializeNewProjection();
+                Handle(new ProjectionMessage.Projections.CheckpointLoaded(_projectionCorrelationId, null, null, ExpectedVersion.NoStream));
+        }
+
+        private void RequestLoadState()
+        {
+            const int recordsToRequest = 10;
+            _readDispatcher.Publish(
+                new ClientMessage.ReadStreamEventsBackward(
+                    Guid.NewGuid(), new SendToThisEnvelope(this), _projectionCheckpointStreamId, _nextStateIndexToRequest,
+                    recordsToRequest, resolveLinks: false), OnLoadStateReadRequestCompleted);
         }
 
         private void EnterStateLoadedSubscribed()
@@ -565,34 +575,48 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void OnLoadStateCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message)
+        public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
+        {
+            OnLoadStateCompleted(message.CheckpointTag, message.CheckpointData, message.CheckpointEventNumber);
+        }
+
+        private void OnLoadStateReadRequestCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message)
         {
             EnsureState(State.LoadStateRequsted);
+            string checkpointData = null;
+            CheckpointTag checkpointTag = null;
+            int checkpointEventNumber = -1;
             if (message.Events.Length > 0)
             {
                 EventRecord checkpoint = message.Events.FirstOrDefault(v => v.EventType == "ProjectionCheckpoint");
                 if (checkpoint != null)
                 {
-                    InitializeProjectionFromCheckpoint(
-                        Encoding.UTF8.GetString(checkpoint.Data), checkpoint.Metadata.ParseJson<CheckpointTag>(),
-                        checkpoint.EventNumber);
-                    return;
+                    checkpointData = Encoding.UTF8.GetString(checkpoint.Data);
+                    checkpointTag = checkpoint.Metadata.ParseJson<CheckpointTag>();
+                    checkpointEventNumber = checkpoint.EventNumber;
                 }
             }
 
-            if (message.NextEventNumber == -1)
-                InitializeNewProjection();
-            else
+            if (checkpointTag == null && message.NextEventNumber != -1)
             {
                 _nextStateIndexToRequest = message.NextEventNumber;
-                GoToState(State.LoadStateRequsted);
+                RequestLoadState();
+                return;
             }
+            Handle(new ProjectionMessage.Projections.CheckpointLoaded(_projectionCorrelationId, checkpointTag, checkpointData, checkpointEventNumber));
         }
 
-        private void InitializeNewProjection()
+        private void OnLoadStateCompleted(CheckpointTag checkpointTag, string checkpointData, int checkpointEventNumber)
         {
-            var zeroTag = _checkpointStrategy.PositionTagger.MakeZeroCheckpointTag();
-            InitializeProjectionFromCheckpoint("", zeroTag, ExpectedVersion.NoStream);
+            if (checkpointTag == null)
+            {
+                var zeroTag = _checkpointStrategy.PositionTagger.MakeZeroCheckpointTag();
+                InitializeProjectionFromCheckpoint("", zeroTag, ExpectedVersion.NoStream);
+            }
+            else
+            {
+                InitializeProjectionFromCheckpoint(checkpointData, checkpointTag, checkpointEventNumber);
+            }
         }
 
         private void InitializeProjectionFromCheckpoint(

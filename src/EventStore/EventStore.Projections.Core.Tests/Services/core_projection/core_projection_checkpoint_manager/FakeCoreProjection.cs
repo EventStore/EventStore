@@ -64,5 +64,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         {
             _pauseRequestedMessages.Add(message);
         }
+
+        public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

@@ -37,6 +37,7 @@ using EventStore.Projections.Core.Services.Processing;
 namespace EventStore.Projections.Core.Messages
 {
     public interface ICoreProjection : IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
+                                       IHandle<ProjectionMessage.Projections.CheckpointLoaded>,
                                        IHandle<ProjectionMessage.Projections.CheckpointSuggested>,
                                        IHandle<ProjectionMessage.Projections.CheckpointCompleted>,
                                        IHandle<ProjectionMessage.Projections.PauseRequested>
@@ -228,6 +229,42 @@ namespace EventStore.Projections.Core.Messages
                     }
                 }
 
+            }
+
+            public class CheckpointLoaded : Message
+            {
+                private readonly Guid _correlationId;
+                private readonly CheckpointTag _checkpointTag;
+                private readonly string _checkpointData;
+                private readonly int _checkpointEventNumber;
+
+                public CheckpointLoaded(Guid correlationId, CheckpointTag checkpointTag, string checkpointData, int checkpointEventNumber)
+                {
+                    _correlationId = correlationId;
+                    _checkpointTag = checkpointTag;
+                    _checkpointData = checkpointData;
+                    _checkpointEventNumber = checkpointEventNumber;
+                }
+
+                public Guid CorrelationId
+                {
+                    get { return _correlationId; }
+                }
+
+                public CheckpointTag CheckpointTag
+                {
+                    get { return _checkpointTag; }
+                }
+
+                public string CheckpointData
+                {
+                    get { return _checkpointData; }
+                }
+
+                public int CheckpointEventNumber
+                {
+                    get { return _checkpointEventNumber; }
+                }
             }
 
             public class CheckpointSuggested : Message
