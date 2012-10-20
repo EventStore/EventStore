@@ -118,9 +118,16 @@ h6 { font-size: 1em; font-weight: bold; }
 
 body {
     /*padding: 0;*/
-    padding-top: 60px;
-    padding-bottom: 40px;
+    
+    
 }
+
+.navbar 
+{
+    /*note MM: fixes extra blank space at page bottom problem, but with small side effects*/
+    position: static !important;
+}
+
 
 .control_btn_wrapper {
     display: block;
@@ -153,7 +160,7 @@ Footer Stick to the Bottom
     margin: 0;
 }
 
-html, body {
+html,body {
     height: 100%;
 }
 
@@ -161,12 +168,13 @@ html, body {
     min-height: 85%;
     height: auto !important;
     height: 100%;
-    margin: 0 auto -47px;
+    margin: 0 auto ;
 }
 
-footer, .push {
+
+footer  {
     height: 47px;
-    margin-top: 10px;
+    margin: 5px 0;
 }
 
 
@@ -190,8 +198,8 @@ footer, .push {
 
 
 /* for devices and desktop when screen resolutions: width =< 640px */
-@media handheld, screen and (max-width: 980px),
-handheld, screen and (max-device-width: 980px)  {
+@media handheld, screen and (max-width: 979px),
+handheld, screen and (max-device-width: 979px)  {
 
     body {
         padding-top: 0;

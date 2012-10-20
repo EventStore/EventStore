@@ -103,16 +103,13 @@
     <Content Include="web\css\es.style.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\dashboard-health.htm">
+    <Content Include="web\health-charts.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\dashboard.htm">
+    <Content Include="web\charts.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="web\edit-projection-source.htm">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\external-host-dyn.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="web\external-host.htm">
@@ -229,16 +226,16 @@
     <Content Include="web\lib\jsrender\readme.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\list-projections.htm">
+    <Content Include="web\projections.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\post-projection.htm">
+    <Content Include="web\new-projection.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="web\post-standard-projection.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\statistics.htm">
+    <Content Include="web\queues.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="web\tmpl\_body.tmpl.html" />

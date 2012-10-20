@@ -1,7 +1,7 @@
 ﻿<!doctype html>
 <html>
 <head>
-    <title>Post Projection</title>
+    <title>New Projection</title>
     <script src="lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
     <script src="lib/jsrender/jsrender.js" type="text/javascript"></script>
     <script src="js/es.tmpl.js" type="text/javascript"></script>
@@ -12,7 +12,7 @@
 <body>
     <div id="content">
         <h1>
-            Post Projection</h1>
+            New Projection</h1>
         <div class="form-horizontal">
             <div class="control-group">
                 <label class="control-label" for="name">
@@ -72,12 +72,10 @@
                     window.location = "view-projection.htm#" + statusUrl;
                 }
                 var name = $("#name").val();
-                $.ajax("/projections/" + $("#mode").val() + (name == "" ? "" : "?name=" + name),
-                {
+                $.ajax("/projections/" + $("#mode").val() + (name == "" ? "" : "?name=" + name), {
                     headers: {
                         Accept: "application/json",
                     },
-
                     data: $('#query').val(),
                     type: 'POST',
                     success: on_posted,

@@ -18,7 +18,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal abstract class ScenarioBase : IScenario
     {
-        protected static readonly ILogger Log = LogManager.GetLoggerFor<Scenario1>();
+        protected static readonly ILogger Log = LogManager.GetLoggerFor<ScenarioBase>();
         protected static readonly ClientAPI.ILogger ApiLogger = new ClientApiLogger();
 
         private string _dbPath;
@@ -28,7 +28,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             _dbPath = Path.Combine(Path.GetTempPath(), "ES_" + Guid.NewGuid());
         }
 
-        private readonly IPEndPoint _tcpEndPoint;
+        protected readonly IPEndPoint _tcpEndPoint;
 
         protected readonly Action<byte[]> DirectSendOverTcp;
         protected readonly int MaxConcurrentRequests;
@@ -38,18 +38,20 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         protected readonly int StreamDeleteStep;
         protected readonly int Piece;
 
-        private readonly HashSet<int> _startedNodesProcIds; 
+        private readonly HashSet<int> _startedNodesProcIds;
 
         protected virtual TimeSpan StartupWaitInterval
         {
             get { return TimeSpan.FromSeconds(7); }
         }
 
+        private readonly Dictionary<WriteMode, Func<string, int, Task>> _writeHandlers;
+
         protected ScenarioBase(Action<byte[]> directSendOverTcp,
-                               int maxConcurrentRequests, 
-                               int threads, 
-                               int streams, 
-                               int eventsPerStream, 
+                               int maxConcurrentRequests,
+                               int threads,
+                               int streams,
+                               int eventsPerStream,
                                int streamDeleteStep)
         {
             DirectSendOverTcp = directSendOverTcp;
@@ -66,6 +68,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var ip = GetInterIpAddress();
             _tcpEndPoint = new IPEndPoint(ip, 1113);
+
+            _writeHandlers = new Dictionary<WriteMode, Func<string, int, Task>>
+            {
+                    {WriteMode.SingleEventAtTime, WriteSingleEventAtTime},
+                    {WriteMode.Bucket, WriteBucketOfEventsAtTime},
+                    {WriteMode.Transactional, WriteEventsInTransactionalWay}
+            };
         }
 
         public abstract void Run();
@@ -79,73 +88,38 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected T[][] Split<T>(IEnumerable<T> sequence, int parts)
         {
-            var i = 0;
-            return sequence.GroupBy(item => i++ % parts).Select(part => part.ToArray()).ToArray();
+            return sequence.Select((x, i) => new { GroupNum = i % parts, Item = x })
+                           .GroupBy(x => x.GroupNum, y => y.Item)
+                           .Select(x => x.ToArray())
+                           .ToArray();
         }
 
-        protected void Write(WriteMode mode, string[] streams, int eventsPerStream)
+        protected Task Write(WriteMode mode, string[] streams, int eventsPerStream)
         {
-            Log.Info("Writing. Mode : {0,-15} Streams : {1,-10} Events per stream : {2,-10}", 
-                     mode, 
-                     streams.Length, 
+            Log.Info("Writing. Mode : {0,-15} Streams : {1,-10} Events per stream : {2,-10}",
+                     mode,
+                     streams.Length,
                      eventsPerStream);
 
-            var written = new CountdownEvent(streams.Length);
+            Func<string, int, Task> handler;
+            if (!_writeHandlers.TryGetValue(mode, out handler))
+                throw new ArgumentOutOfRangeException("mode");
 
-            switch (mode)
+            var tasks = new List<Task>();
+            for (var i = 0; i < streams.Length; i++)
             {
-                case WriteMode.SingleEventAtTime:
-                    for (var i = 0; i < streams.Length; i++)
-                    {
-                        int i1 = i;
-                        ThreadPool.QueueUserWorkItem(_ => WriteSingleEventAtTime(written, streams[i1], eventsPerStream));
-                    }
-                    break;
-                case WriteMode.SingleEventAtTimeSync:
-                    for (var i = 0; i < streams.Length; i++)
-                    {
-                        int i1 = i;
-                        ThreadPool.QueueUserWorkItem(_ => WriteSingleEventAtTimeSync(written, streams[i1], eventsPerStream));
-                    }
-                    break;
-                case WriteMode.Bucket:
-                    for (var i = 0; i < streams.Length; i++)
-                    {
-                        int i1 = i;
-                        ThreadPool.QueueUserWorkItem(_ => WriteBucketOfEventsAtTime(written, streams[i1], eventsPerStream));
-                    }
-                    break;
-                case WriteMode.BucketSync:
-                    for (var i = 0; i < streams.Length; i++)
-                    {
-                        int i1 = i;
-                        ThreadPool.QueueUserWorkItem(_ => WriteBucketOfEventsAtTimeSync(written, streams[i1], eventsPerStream));
-                    }
-                    break;
-                case WriteMode.Transactional:
-                    for (var i = 0; i < streams.Length; i++)
-                    {
-                        int i1 = i;
-                        ThreadPool.QueueUserWorkItem(_ => WriteEventsInTransactionalWay(written, streams[i1], eventsPerStream));
-                    }
-                    break;
-                case WriteMode.TransactionalSync:
-                    for (var i = 0; i < streams.Length; i++)
-                    {
-                        int i1 = i;
-                        ThreadPool.QueueUserWorkItem(_ => WriteEventsInTransactionalWaySync(written, streams[i1], eventsPerStream));
-                    }
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException("mode");
+                //Console.WriteLine("WRITING TO {0}", streams[i]);
+                tasks.Add(handler(streams[i], eventsPerStream));
             }
 
-            written.Wait();
-
-            Log.Info("Finished writing. Mode : {0,-15} Streams : {1,-10} Events per stream : {2,-10}", 
-                     mode,
-                     streams.Length, 
-                     eventsPerStream);
+            return Task.Factory.ContinueWhenAll(tasks.ToArray(), _ =>
+            {
+                Task.WaitAll();
+                Log.Info("Finished writing. Mode : {0,-15} Streams : {1,-10} Events per stream : {2,-10}",
+                         mode,
+                         streams.Length,
+                         eventsPerStream);
+            });
         }
 
         protected void DeleteStreams(IEnumerable<string> streams)
@@ -153,52 +127,64 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Log.Info("Deleting streams...");
             using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
             {
+                var tasks = new List<Task>();
                 foreach (var stream in streams)
                 {
+                    var s = stream;
                     Log.Info("Deleting stream {0}...", stream);
-                    store.DeleteStream(stream, EventsPerStream);
-                    Log.Info("Stream {0} successfully deleted", stream);
+                    var task = store.DeleteStreamAsync(stream, EventsPerStream)
+                                    .ContinueWith(x => Log.Info("Stream {0} successfully deleted", s));
+                    tasks.Add(task);
                 }
+                Task.WaitAll(tasks.ToArray());
             }
             Log.Info("All streams successfully deleted");
         }
 
-        protected void CheckStreamsDeleted(IEnumerable<string> streams)
+        protected Task CheckStreamsDeleted(IEnumerable<string> streams)
         {
             Log.Info("Verifying streams are deleted...");
-            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests))
+
+            var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger);
+            var tasks = new List<Task>();
+
+            foreach (var stream in streams)
             {
-                foreach (var stream in streams)
+                var s = stream;
+                var task = store.ReadEventStreamForwardAsync(stream, 0, 1).ContinueWith(t =>
                 {
-                    try
-                    {
-                        store.ReadEventStreamForward(stream, 0, 1);
-                        throw new ApplicationException(string.Format("Stream {0} should have been deleted!", stream));
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Info("Reading from {0} lead to {1}", stream, e.Message);
-                        if(e is ApplicationException)
-                            throw;
-                    }
-                }
+                    if (!t.IsFaulted)
+                        throw new Exception(string.Format("Stream '{0}' is not deleted, but should be!", s));
+                });
+
+                tasks.Add(task);
             }
-            Log.Info("Verification succeded");
+
+            return Task.Factory.ContinueWhenAll(tasks.ToArray(), tsks =>
+            {
+                store.Close();
+                Task.WaitAll(tsks);
+                Log.Info("Stream deletion verification succeeded.");
+            });
         }
 
-        protected void Read(string[] streams, int @from, int count)
+        protected Task Read(string[] streams, int @from, int count)
         {
             Log.Info("Reading [{0}]\nfrom {1,-10} count {2,-10}", string.Join(",", streams), @from, count);
-            var read = new CountdownEvent(streams.Length);
+
+            var tasks = new List<Task>();
 
             for (int i = 0; i < streams.Length; i++)
             {
-                int i1 = i;
-                ThreadPool.QueueUserWorkItem(_ => ReadStream(read, streams[i1], @from, count));
+                var task = ReadStream(streams[i], from, count);
+                tasks.Add(task);
             }
 
-            read.Wait();
-            Log.Info("Done reading [{0}]", string.Join(",", streams));
+            return Task.Factory.ContinueWhenAll(tasks.ToArray(), tsks =>
+            {
+                Task.WaitAll(tsks);
+                Log.Info("Done reading [{0}]", string.Join(",", streams));
+            });
         }
 
         private bool TryGetPathToMono(out string pathToMono)
@@ -230,9 +216,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var arguments = string.Format("{0} --ip {1} -t {2} -h {3} --db {4}",
                                           argumentsHead,
-                                          _tcpEndPoint.Address, 
-                                          _tcpEndPoint.Port, 
-                                          _tcpEndPoint.Port + 1000, 
+                                          _tcpEndPoint.Address,
+                                          _tcpEndPoint.Port,
+                                          _tcpEndPoint.Port + 1000,
                                           _dbPath);
 
             Log.Info("Starting [{0} {1}]...", fileName, arguments);
@@ -333,171 +319,210 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             DirectSendOverTcp(package);
         }
 
-        private void WriteSingleEventAtTime(CountdownEvent written, string stream, int events)
+        private Task WriteSingleEventAtTime(string stream, int events)
         {
+            var resSource = new TaskCompletionSource<object>();
+
             Log.Info("Starting to write {0} events to [{1}]", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
+            var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger);
+
+            int eventVersion = 0;
+
+            var createTask = store.CreateStreamAsync(stream, Encoding.UTF8.GetBytes("metadata"));
+
+            Action<Task> fail = prevTask =>
             {
-                store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
+                Log.Info("WriteSingleEventAtTime for stream {0} failed.", stream);
+                store.Close();
+                resSource.SetException(prevTask.Exception);
+            };
 
-                var tasks = new List<Task>();
-                for (var i = 0; i < events; i++)
+            Action<Task> writeSingleEvent = null;
+            writeSingleEvent = prevTask =>
+            {
+                if (eventVersion == events)
                 {
-                    var task = store.AppendToStreamAsync(stream, i, new[] {new TestEvent(i + 1)});
-
-                    tasks.Add(task);
-                    if (i % 100 == 0)
-                        tasks.RemoveAll(t => t.IsCompleted);
+                    Log.Info("Wrote {0} events to [{1}]", events, stream);
+                    store.Close();
+                    resSource.SetResult(null);
                 }
 
-                Task.WaitAll(tasks.ToArray());
-            }
-            Log.Info("Wrote {0} events to [{1}]", events, stream);
-            written.Signal();
+                eventVersion += 1;
+                var writeTask = store.AppendToStreamAsync(stream,
+                                                            eventVersion - 1,
+                                                            new[] { new TestEvent(eventVersion) });
+                writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
+                writeTask.ContinueWith(writeSingleEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
+            };
+
+            createTask.ContinueWith(writeSingleEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
+            createTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
+
+            return resSource.Task;
         }
 
-        private void WriteSingleEventAtTimeSync(CountdownEvent written, string stream, int events)
+        private Task WriteBucketOfEventsAtTime(string stream, int eventCount)
         {
-            Log.Info("Starting to write {0} events to [{1}]", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
-            {
-                store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
+            const int bucketSize = 100;
+            Log.Info("Starting to write {0} events to [{1}] ({2} events at once)", eventCount, stream, bucketSize);
 
-                for (var i = 0; i < events; i++)
-                    store.AppendToStream(stream, i, new[] {new TestEvent(i + 1)});
-            }
-            Log.Info("Wrote {0} events to [{1}]", events, stream);
-            written.Signal();
+            var resSource = new TaskCompletionSource<object>();
+            var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger);
+            int writtenCount = 0;
+            var createTask = store.CreateStreamAsync(stream, Encoding.UTF8.GetBytes("metadata"));
+
+            Action<Task> fail = prevTask =>
+            {
+                Log.Info("WriteBucketOfEventsAtTime for stream {0} failed.", stream);
+                store.Close();
+                resSource.SetException(prevTask.Exception);
+            };
+
+            Action<Task> writeBatch = null;
+            writeBatch = prevTask =>
+            {
+                if (writtenCount == eventCount)
+                {
+                    Log.Info("Wrote {0} events to [{1}] ({2} events at once)", eventCount, stream, bucketSize);
+                    store.Close();
+                    resSource.SetResult(null);
+                }
+
+                var startIndex = writtenCount + 1;
+                var endIndex = Math.Min(eventCount, startIndex + bucketSize - 1);
+                var events = Enumerable.Range(startIndex, endIndex - startIndex + 1).Select(x => new TestEvent(x)).ToArray();
+
+                writtenCount = endIndex;
+
+                var writeTask = store.AppendToStreamAsync(stream, startIndex - 1, events);
+                writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
+                writeTask.ContinueWith(writeBatch, TaskContinuationOptions.OnlyOnRanToCompletion);
+            };
+
+            createTask.ContinueWith(writeBatch, TaskContinuationOptions.OnlyOnRanToCompletion);
+            createTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
+
+            return resSource.Task;
         }
 
-        private void WriteBucketOfEventsAtTime(CountdownEvent written, string stream, int events)
+        private Task WriteEventsInTransactionalWay(string stream, int eventCount)
         {
-            Log.Info("Starting to write {0} events to [{1}] (100 events at once)", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
+            Log.Info("Starting to write {0} events to [{1}] (in single transaction)", eventCount, stream);
+
+            var resSource = new TaskCompletionSource<object>();
+            var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger);
+
+            Action<Task> fail = prevTask =>
             {
-                store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
+                Log.Info("WriteBucketOfEventsAtTime for stream {0} failed.", stream);
+                store.Close();
+                resSource.SetException(prevTask.Exception);
+            };
 
-                var tasks = new List<Task>();
+            int writtenCount = 0;
+            long transactionId = -1;
+            var createTask = store.CreateStreamAsync(stream, Encoding.UTF8.GetBytes("metadata"));
+            createTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
 
-                var position = 0;
-                var bucketSize = 100;
-
-                while (position < events)
+            Action<Task> writeTransactionEvent = null;
+            writeTransactionEvent = prevTask =>
+            {
+                if (writtenCount == eventCount)
                 {
-                    var bucket = Enumerable.Range(position, bucketSize).Select(x => new TestEvent(x + 1));
-                    var task = store.AppendToStreamAsync(stream, position, bucket);
-                    tasks.Add(task);
-                    if (position % 100 == 0)
-                        tasks.RemoveAll(t => t.IsCompleted);
-
-                    position += bucketSize;
+                    var commitTask = store.CommitTransactionAsync(transactionId, stream);
+                    commitTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
+                    commitTask.ContinueWith(t =>
+                    {
+                        Log.Info("Wrote {0} events to [{1}] (in single transaction)", eventCount, stream);
+                        store.Close();
+                        resSource.SetResult(null);
+                    }, TaskContinuationOptions.OnlyOnRanToCompletion);
+                    return;
                 }
 
-                if(position != events)
+                writtenCount += 1;
+
+                var writeTask = store.TransactionalWriteAsync(transactionId, stream, new[] { new TestEvent(writtenCount) });
+                writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
+                writeTask.ContinueWith(writeTransactionEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
+            };
+
+            createTask.ContinueWith(_ =>
+            {
+                var startTask = store.StartTransactionAsync(stream, 0);
+                startTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
+                startTask.ContinueWith(t =>
                 {
-                    var start = position - bucketSize;
-                    var count = events - start;
+                    transactionId = t.Result.TransactionId;
+                    writeTransactionEvent(t);
+                }, TaskContinuationOptions.OnlyOnRanToCompletion);
 
-                    var bucket = Enumerable.Range(start, count).Select(x => new TestEvent(x + 1));
-                    tasks.Add(store.AppendToStreamAsync(stream, start, bucket));
-                }
+            }, TaskContinuationOptions.OnlyOnRanToCompletion);
 
-                Task.WaitAll(tasks.ToArray());
-            }
 
-            Log.Info("Wrote {0} events to [{1}] (100 events at once)", events, stream);
-            written.Signal();
+            return resSource.Task;
         }
 
-        private void WriteBucketOfEventsAtTimeSync(CountdownEvent written, string stream, int events)
+        private Task ReadStream(string stream, int from, int count)
         {
-            Log.Info("Starting to write {0} events to [{1}] (100 events at once)", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
+            Log.Info("Reading [{0}] from {1,-10} count {2,-10}", stream, from, count);
+            var resSource = new TaskCompletionSource<object>();
+            var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger);
+
+            Action<Task> fail = prevTask =>
             {
-                store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
+                Log.Info("ReadStream for stream {0} failed.", stream);
+                store.Close();
+                resSource.SetException(prevTask.Exception);
+            };
 
-                var position = 0;
-                var bucketSize = 100;
-
-                while (position < events)
-                {
-                    var bucket = Enumerable.Range(position, bucketSize).Select(x => new TestEvent(x + 1));
-                    store.AppendToStream(stream, position, bucket);
-                    position += bucketSize;
-                }
-
-                if (position != events)
-                {
-                    var start = position - bucketSize;
-                    var count = events - start;
-
-                    var bucket = Enumerable.Range(start, count).Select(x => new TestEvent(x + 1));
-                    store.AppendToStream(stream, start, bucket);
-                }
-            }
-
-            Log.Info("Wrote {0} events to [{1}] (100 events at once)", events, stream);
-            written.Signal();
-        }
-
-        private void WriteEventsInTransactionalWay(CountdownEvent written, string stream, int events)
-        {
-            Log.Info("Starting to write {0} events to [{1}] (in single transaction)", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
+            var readTask = store.ReadEventStreamForwardAsync(stream, from, count);
+            readTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
+            readTask.ContinueWith(t =>
             {
-                store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
-                var esTrans = store.StartTransaction(stream, 0);
-
-                var tasks = new List<Task>();
-                for (var i = 0; i < events; i++)
+                try
                 {
-                    var task = store.TransactionalWriteAsync(esTrans.TransactionId, stream, new[] {new TestEvent(i + 1)});
-                    tasks.Add(task);
-                    if (i % 100 == 0)
-                        tasks.RemoveAll(t => t.IsCompleted);
+                    var slice = t.Result;
+                    if (slice == null || slice.Events == null || slice.Events.Length != count)
+                    {
+                        throw new Exception(string.Format(
+                                "Tried to read {0} events from event number {1} from stream '{2}' but failed. Reason: {3}.",
+                                count,
+                                from,
+                                stream,
+                                slice == null ? "slice == null"
+                                    : slice.Events == null ? "slive.Events == null"
+                                    : slice.Events.Length != count ? string.Format("Expected count: {0}, actual count: {1}.", count, slice.Events.Length)
+                                    : "WAT?!?"));
+                    }
+
+                    for (int i = 0; i < count; ++i)
+                    {
+                        var evnt = slice.Events[i];
+                        if (evnt.EventNumber != i + from)
+                        {
+                            throw new Exception(string.Format(
+                                "Received event with wrong event number. Expected: {0}, actual: {1}.\nEvent: {2}.",
+                                from + i,
+                                evnt.EventNumber,
+                                evnt));
+                        }
+                    }
+                    Log.Info("Done reading [{0}] from {1,-10} count {2,-10}", stream, from, count);
+                    resSource.SetResult(null);
                 }
-                var commitTask = store.CommitTransactionAsync(esTrans.TransactionId, stream);
-                tasks.Add(commitTask);
-                Task.WaitAll(tasks.ToArray());
-            }
-
-            Log.Info("Wrote {0} events to [{1}] (in single transaction)", events, stream);
-            written.Signal();
-        }
-
-        private void WriteEventsInTransactionalWaySync(CountdownEvent written, string stream, int events)
-        {
-            Log.Info("Starting to write {0} events to [{1}] (in single transaction)", events, stream);
-            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
-            {
-                store.CreateStream(stream, Encoding.UTF8.GetBytes("metadata"));
-                var esTrans = store.StartTransaction(stream, 0);
-
-                for (var i = 0; i < events; i++)
-                    store.TransactionalWrite(esTrans.TransactionId, stream, new[] {new TestEvent(i + 1)});
-
-                store.CommitTransaction(esTrans.TransactionId, stream);
-            }
-
-            Log.Info("Wrote {0} events to [{1}] (in single transaction)", events, stream);
-            written.Signal();
-        }
-
-        private void ReadStream(CountdownEvent read, string stream, int @from, int count)
-        {
-            Log.Info("Reading [{0}] from {1,-10} count {2,-10}", stream, @from, count);
-            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
-            {
-                for (var i = @from; i < @from + count; i++)
+                catch (Exception exc)
                 {
-                    var slice = store.ReadEventStreamForward(stream, i, 1);
-                    if(slice == null || slice.Events == null || slice.Events.Count() != 1)
-                        throw new Exception(string.Format("Tried to read 1 event at position {0} from stream {1} but failed", i, stream));
+                    Log.Info("ReadStream for stream {0} failed.", stream);
+                    resSource.SetException(exc);
                 }
-            }
+                finally
+                {
+                    store.Close();
+                }
+            }, TaskContinuationOptions.OnlyOnRanToCompletion);
 
-            Log.Info("Done reading [{0}] from {1,-10} count {2,-10}", stream, @from, count);
-            read.Signal();
+            return resSource.Task;
         }
     }
 }

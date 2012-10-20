@@ -698,11 +698,12 @@ namespace EventStore.ClientAPI
                                                         lastUpdated,
                                                         _lastReconnectionTimestamp,
                                                         now);
-                                if (TryRemoveWorkItem(workerItem))
-                                {
-                                    _log.Error(err);
-                                    workerItem.Operation.Fail(new OperationTimedOutException(err));
-                                }
+//                                if (TryRemoveWorkItem(workerItem))
+//                                {
+//                                    _log.Error(err);
+//                                    workerItem.Operation.Fail(new OperationTimedOutException(err));
+//                                }
+                                _log.Error(err);
                             }
                             else
                             {
