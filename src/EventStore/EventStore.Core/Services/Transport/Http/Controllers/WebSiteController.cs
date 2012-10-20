@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             _miniWeb.RegisterControllerActions(service);
             RegisterRedirectAction(service, "", "/web/index.htm");
-            RegisterRedirectAction(service, "/web/projections", "/web/list-projections.htm");
+            RegisterRedirectAction(service, "/web/projections", "/web/projections.htm");
         }
 
         private static void RegisterRedirectAction(IHttpService service, string fromUrl, string toUrl)

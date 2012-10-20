@@ -148,7 +148,7 @@ namespace EventStore.Projections.Core.Services.Http
                 new[]
                     {
                         new KeyValuePair<string, string>(
-                    "Location",  new Uri(match.BaseUri, "/web/list-projections.htm").AbsoluteUri)
+                    "Location",  new Uri(match.BaseUri, "/web/projections.htm").AbsoluteUri)
                     }, Console.WriteLine);
         }
 
