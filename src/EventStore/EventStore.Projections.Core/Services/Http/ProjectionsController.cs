@@ -95,7 +95,7 @@ namespace EventStore.Projections.Core.Services.Http
                 OnProjectionsGetPersistent);
             service.RegisterControllerAction(
                 new ControllerAction(
-                    "/projections/onetime?type={type}", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},
+                    "/projections/onetime?name={name}&type={type}", HttpMethod.Post, new ICodec[] { Codec.ManualEncoding },
                     SupportedCodecs, DefaultResponseCodec), OnProjectionsPostAdOneTime);
             service.RegisterControllerAction(
                 new ControllerAction(
