@@ -101,8 +101,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var lastProcessedSequenceNumber = checkpointTag.Streams.Values.First();
             var fromSequenceNumber = lastProcessedSequenceNumber + 1;
             var distributionPoint = new StreamReaderEventDistributionPoint(
-                publisher, inputQueue, distributionPointId, streamName, fromSequenceNumber, resolveLinkTos,
-                category);
+                publisher, distributionPointId, streamName, fromSequenceNumber, resolveLinkTos);
             return distributionPoint;
         }
 

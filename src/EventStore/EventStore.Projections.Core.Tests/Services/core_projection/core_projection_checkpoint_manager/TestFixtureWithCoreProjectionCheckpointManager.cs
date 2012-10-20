@@ -47,6 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         protected bool _emitEventEnabled;
         protected bool _checkpointsEnabled;
         protected Guid _projectionCorrelationId;
+        private string _projectionCheckpointStreamId;
 
         [SetUp]
         public void setup()
@@ -62,12 +63,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         protected virtual void When()
         {
             _manager = new CoreProjectionCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, "$projections-projection-checkpoint", "projection",
+                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, _projectionCheckpointStreamId, "projection",
                 new StreamPositionTagger("stream"));
         }
 
         protected virtual void Given()
         {
+            _projectionCheckpointStreamId = "$projections-projection-checkpoint";
             _projectionCorrelationId = Guid.NewGuid();
             _projection = new FakeCoreProjection();
             _projectionMode = ProjectionMode.Persistent;
@@ -78,6 +80,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
             _publishStateUpdates = true;
             _emitEventEnabled = true;
             _checkpointsEnabled = true;
+            NoStream(_projectionCheckpointStreamId);
         }
     }
 }

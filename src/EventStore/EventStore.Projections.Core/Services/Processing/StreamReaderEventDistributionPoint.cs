@@ -41,11 +41,9 @@ namespace EventStore.Projections.Core.Services.Processing
     public class StreamReaderEventDistributionPoint : EventDistributionPoint
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<StreamReaderEventDistributionPoint>();
-        private readonly IPublisher _inputQueue;
         private readonly string _streamName;
         private int _fromSequenceNumber;
         private readonly bool _resolveLinkTos;
-        private readonly string _category;
 
         private bool _paused = true;
         private bool _pauseRequested = true;
@@ -54,19 +52,16 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _disposed;
 
         public StreamReaderEventDistributionPoint(
-            IPublisher publisher, IPublisher inputQueue, Guid distibutionPointCorrelationId, string streamName, int fromSequenceNumber,
-            bool resolveLinkTos, string category = null)
+            IPublisher publisher, Guid distibutionPointCorrelationId, string streamName, int fromSequenceNumber,
+            bool resolveLinkTos)
             : base(publisher, distibutionPointCorrelationId)
         {
-            if (inputQueue == null) throw new ArgumentNullException("inputQueue");
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
             if (streamName == null) throw new ArgumentNullException("streamName");
             if (string.IsNullOrEmpty(streamName)) throw new ArgumentException("streamName");
-            _inputQueue = inputQueue;
             _streamName = streamName;
             _fromSequenceNumber = fromSequenceNumber;
             _resolveLinkTos = resolveLinkTos;
-            _category = category;
         }
 
         public override void Resume()

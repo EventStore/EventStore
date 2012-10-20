@@ -71,6 +71,8 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<ProjectionMessage.Projections.Management.Stop>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionMessage.Projections.Management.GetState>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionMessage.Projections.Management.UpdateStatistics>(_projectionCoreService);
+            coreInputBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionCoreService);
+            coreInputBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionCoreService);
             //NOTE: message forwarding is set up outside (for Read/Write events)
         }
     }

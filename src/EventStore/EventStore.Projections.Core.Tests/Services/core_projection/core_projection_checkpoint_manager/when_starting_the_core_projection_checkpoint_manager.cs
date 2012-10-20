@@ -43,6 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
             _exception = null;
             try
             {
+                _manager.BeginLoadState();
                 _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000));
             }
             catch (Exception ex)

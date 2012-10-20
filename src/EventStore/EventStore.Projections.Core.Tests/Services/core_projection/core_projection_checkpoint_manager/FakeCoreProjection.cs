@@ -45,6 +45,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         public readonly List<ProjectionMessage.Projections.PauseRequested> _pauseRequestedMessages =
             new List<ProjectionMessage.Projections.PauseRequested>();
 
+        public readonly List<ProjectionMessage.Projections.CheckpointLoaded> _checkpointLoadedMessages =
+            new List<ProjectionMessage.Projections.CheckpointLoaded>();
+
         public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
         {
             _committedEventReceivedMessages.Add(message);
@@ -67,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
 
         public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
         {
-            throw new System.NotImplementedException();
+            _checkpointLoadedMessages.Add(message);
         }
     }
 }

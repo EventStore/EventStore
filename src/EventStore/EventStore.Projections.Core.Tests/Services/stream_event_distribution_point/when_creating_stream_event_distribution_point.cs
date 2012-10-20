@@ -39,43 +39,37 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
         [Test]
         public void it_can_be_created()
         {
-            var edp = new StreamReaderEventDistributionPoint(_bus, _bus, Guid.NewGuid(), "stream", 0, false);
+            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), "stream", 0, false);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            var edp = new StreamReaderEventDistributionPoint(null, _bus, Guid.NewGuid(), "stream", 0, false);
-        }
-
-        [Test, ExpectedException(typeof(ArgumentNullException))]
-        public void null_input_queue_throws_argument_null_exception()
-        {
-            var edp = new StreamReaderEventDistributionPoint(_bus, null, Guid.NewGuid(), "stream", 0, false);
+            var edp = new StreamReaderEventDistributionPoint(null, Guid.NewGuid(), "stream", 0, false);
         }
 
         [Test, ExpectedException(typeof(ArgumentException))]
         public void empty_distribution_point_id_throws_argument_exception()
         {
-            var edp = new StreamReaderEventDistributionPoint(_bus, _bus, Guid.Empty, "stream", 0, false);
+            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.Empty, "stream", 0, false);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_stream_name_throws_argument_null_exception()
         {
-            var edp = new StreamReaderEventDistributionPoint(_bus, _bus, Guid.NewGuid(), null, 0, false);
+            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), null, 0, false);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_stream_name_throws_argument_exception()
         {
-            var edp = new StreamReaderEventDistributionPoint(_bus, _bus, Guid.NewGuid(), "", 0, false);
+            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), "", 0, false);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void negative_event_sequence_number_throws_argument_exception()
         {
-            var edp = new StreamReaderEventDistributionPoint(_bus, _bus, Guid.NewGuid(), "", -1, false);
+            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), "", -1, false);
         }
     }
 }

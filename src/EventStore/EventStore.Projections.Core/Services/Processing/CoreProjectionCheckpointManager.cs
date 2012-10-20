@@ -72,10 +72,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PositionTracker _lastProcessedEventPosition;
 
         private int _eventsProcessedAfterRestart;
+        private bool _stateLoaded;
         private bool _started;
         private bool _stopping;
         private string _currentProjectionState;
         private int _nextStateIndexToRequest;
+        private bool _stateRequested;
 
         public CoreProjectionCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
@@ -108,6 +110,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Start(CheckpointTag checkpointTag)
         {
+            if (!_stateLoaded)
+                throw new InvalidOperationException("State is not loaded");
             if (_started)
                 throw new InvalidOperationException("Already started");
             _started = true;
@@ -174,13 +178,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void RequestCheckpointToStop()
         {
-            if (!_projectionConfig.CheckpointsEnabled)
-                throw new InvalidOperationException("Checkpoints are not enabled");
             EnsureStarted();
             if (!_stopping)
                 throw new InvalidOperationException("Not stopping");
             // do not request checkpoint if no events were processed since last checkpoint
-            if (_lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
+            if (_projectionConfig.CheckpointsEnabled && _lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
             {
                 RequestCheckpoint(_lastProcessedEventPosition);
                 return;
@@ -331,12 +333,15 @@ namespace EventStore.Projections.Core.Services.Processing
                     _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), new SendToThisEnvelope(_writeDispatcher), _projectionCheckpointStreamId,
+                    Guid.NewGuid(), _writeDispatcher.Envelope, _projectionCheckpointStreamId,
                     _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished), WriteCheckpointEventCompleted);
         }
 
         public void BeginLoadState()
         {
+            if (_stateRequested)
+                throw new InvalidOperationException("State has been already requested");
+            _stateRequested = true;
             _nextStateIndexToRequest = -1; // from the end
             if (_projectionConfig.CheckpointsEnabled)
             {
@@ -353,7 +358,7 @@ namespace EventStore.Projections.Core.Services.Processing
             const int recordsToRequest = 10;
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), new SendToThisEnvelope(_coreProjection), _projectionCheckpointStreamId,
+                    Guid.NewGuid(), _readDispatcher.Envelope, _projectionCheckpointStreamId,
                     _nextStateIndexToRequest, recordsToRequest, resolveLinks: false), OnLoadStateReadRequestCompleted);
         }
 
@@ -384,6 +389,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void CheckpointLoaded(int checkpointEventNumber, CheckpointTag checkpointTag, string checkpointData)
         {
+            _stateLoaded = true;
             _lastWrittenCheckpointEventNumber = checkpointEventNumber;
             _coreProjection.Handle(
                 new ProjectionMessage.Projections.CheckpointLoaded(_projectionCorrelationId, checkpointTag, checkpointData));

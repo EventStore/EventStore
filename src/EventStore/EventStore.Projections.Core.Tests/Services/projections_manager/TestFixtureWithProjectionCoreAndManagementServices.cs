@@ -54,6 +54,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionMessage.Projections.Management.StateReport>(_manager);
             _bus.Subscribe<ProjectionMessage.Projections.Management.StatisticsReport>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
+            _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
+            _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
 
             _bus.Subscribe<ProjectionMessage.CoreService.Management.Create>(_coreService);
             _bus.Subscribe<ProjectionMessage.CoreService.Management.Dispose>(_coreService);
@@ -61,6 +63,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionMessage.Projections.Management.Stop>(_coreService);
             _bus.Subscribe<ProjectionMessage.Projections.Management.GetState>(_coreService);
             _bus.Subscribe<ProjectionMessage.Projections.Management.UpdateStatistics>(_coreService);
+            _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_coreService);
+            _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_coreService);
 
 
             When();

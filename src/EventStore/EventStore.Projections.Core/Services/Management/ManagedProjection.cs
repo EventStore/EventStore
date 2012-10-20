@@ -260,7 +260,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), new PublishEnvelope(_inputQueue), "$projections-" + name, -1, 1, resolveLinks: false), LoadCompleted);
+                    Guid.NewGuid(), _readDispatcher.Envelope, "$projections-" + name, -1, 1, resolveLinks: false), LoadCompleted);
         }
 
         private void LoadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed)
@@ -307,7 +307,7 @@ namespace EventStore.Projections.Core.Services.Management
 			var managedProjectionSerializedState = _persistedState.ToJsonBytes ();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), new PublishEnvelope(_inputQueue), "$projections-" + _name, ExpectedVersion.Any,
+                    Guid.NewGuid(), _writeDispatcher.Envelope, "$projections-" + _name, ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "ProjectionUpdated", false,  managedProjectionSerializedState, new byte[0])),
                 m => WriteCompleted(m, completed));
         }

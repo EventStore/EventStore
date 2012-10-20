@@ -53,7 +53,10 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionMessage.Projections.Management.GetState>,
                                          IHandle<ProjectionMessage.Projections.Management.UpdateStatistics>,
                                          IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
-                                         IHandle<ClientMessage.ReadAllEventsForwardCompleted>
+                                         IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
+                                         IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
+                                         IHandle<ClientMessage.WriteEventsCompleted>
+        
 
 
     {
@@ -79,6 +82,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly HashSet<Guid> _pausedProjections = new HashSet<Guid>();
         private readonly HeadingEventDistributionPoint _headingEventDistributionPoint;
         private TransactionFileReaderEventDistributionPoint _headDistributionPoint;
+        private readonly RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
+        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
 
 
         public ProjectionCoreService(IPublisher publisher, IPublisher inputQueue, int eventCacheSize, ICheckpoint writerCheckpoint)
@@ -87,6 +92,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _inputQueue = inputQueue;
             _headingEventDistributionPoint = new HeadingEventDistributionPoint(eventCacheSize);
             _writerCheckpoint = writerCheckpoint;
+            _readDispatcher = new RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
+                _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+            _writeDispatcher = new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
+                _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
         }
 
         public void Handle(ProjectionMessage.CoreService.Start message)
@@ -259,7 +269,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 IProjectionStateHandler stateHandler = message.HandlerFactory();
                 // constructor can fail if wrong source defintion
                 //TODO: revise it
-                var projection = new CoreProjection(message.Name, message.CorrelationId, _publisher, stateHandler, message.Config, _logger);
+                var projection = new CoreProjection(message.Name, message.CorrelationId, _publisher, stateHandler, message.Config, _readDispatcher, _writeDispatcher, _logger);
                 _projections.Add(message.CorrelationId, projection);
             }
             catch (Exception ex)
@@ -306,5 +316,14 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
+        {
+            _readDispatcher.Handle(message);
+        }
+
+        public void Handle(ClientMessage.WriteEventsCompleted message)
+        {
+            _writeDispatcher.Handle(message);
+        }
     }
 }

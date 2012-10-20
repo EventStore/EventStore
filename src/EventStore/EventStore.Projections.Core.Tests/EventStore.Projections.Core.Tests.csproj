@@ -120,6 +120,7 @@
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\TestFixtureWithCoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_a_core_projection_checkpoint_manager_has_been_created.cs" />
+    <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_beginning_to_load_state_the_core_projection_checkpoint_manager.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_creating_a_core_projection_checkpoint_manager.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_multiple_event_processed_received_the_core_projection_checkpoint_manager.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_starting_the_core_projection_checkpoint_manager.cs" />
