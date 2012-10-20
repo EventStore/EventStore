@@ -30,7 +30,7 @@ using System.Net;
 
 namespace EventStore.ClientAPI.Tcp
 {
-    public interface IMonitoredTcpConnection
+    interface IMonitoredTcpConnection
     {
         IPEndPoint EndPoint { get; }
 

@@ -31,14 +31,15 @@ using System.Net.Sockets;
 using System.Threading;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.Services.Transport.Tcp;
 using EventStore.ClientAPI.Tcp;
+using EventStore.ClientAPI.Transport.Tcp;
 using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
 
 namespace EventStore.ClientAPI
 {
-    public class TcpConnector
+     class TcpConnector
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnector>();
 

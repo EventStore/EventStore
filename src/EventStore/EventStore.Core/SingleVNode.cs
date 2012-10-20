@@ -25,7 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
 using System.IO;
 using System.Net;
 using EventStore.Common.Settings;
@@ -96,10 +95,9 @@ namespace EventStore.Core
                                             maxTablesPerLevel: 2);
 
             var readIndex = new ReadIndex(_mainQueue,
-                                          db,
+                                          pos => new TFChunkChaser(db, db.Config.WriterCheckpoint, new InMemoryCheckpoint(pos)),
                                           () => new TFChunkReader(db, db.Config.WriterCheckpoint),
                                           TFConsts.ReadIndexReaderCount,
-                                          db.Config.WriterCheckpoint,
                                           tableIndex,
                                           new XXHashUnsafe());
             var writer = new TFChunkWriter(db);
@@ -125,7 +123,7 @@ namespace EventStore.Core
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             //HTTP
-            HttpService = new HttpService(MainQueue, _httpEndPoint.ToHttpUrl());
+            HttpService = new HttpService(MainQueue, vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);

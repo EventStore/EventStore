@@ -65,9 +65,6 @@
     <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="nunit.framework">
-      <HintPath>..\libs\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="protobuf-net">
       <HintPath>..\libs\protobuf-v2\protobuf-net.dll</HintPath>
     </Reference>
@@ -79,40 +76,39 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Commands\CreateStreamCompletionWrapper.cs" />
-    <Compile Include="Commands\ProcessResultStatus.cs" />
+    <Compile Include="Event.cs" />
+    <Compile Include="TaskWrappers\CreateStreamCompletionWrapper.cs" />
+    <Compile Include="TaskWrappers\ProcessResultStatus.cs" />
     <Compile Include="Common\Log\Logger.cs" />
     <Compile Include="Common\Log\LogManager.cs" />
     <Compile Include="Common\Utils\BytesFormatter.cs" />
     <Compile Include="Common\ConcurrentCollections\ConcurrentQueue.cs" />
     <Compile Include="Common\ConcurrentCollections\ConcurrentStack.cs" />
     <Compile Include="Configure.cs" />
-    <Compile Include="Exceptions\ConnectionClosingException.cs" />
-    <Compile Include="Commands\DeleteTaskCompletionWrapper.cs" />
-    <Compile Include="Commands\ITaskCompletionWrapper.cs" />
-    <Compile Include="Commands\ReadFromBeginningTaskCompletionWrapper.cs" />
+    <Compile Include="ConnectionClosingException.cs" />
+    <Compile Include="TaskWrappers\DeleteTaskCompletionWrapper.cs" />
+    <Compile Include="TaskWrappers\ITaskCompletionWrapper.cs" />
+    <Compile Include="TaskWrappers\ReadFromBeginningTaskCompletionWrapper.cs" />
     <Compile Include="Common\Utils\Ensure.cs" />
     <Compile Include="Data\Event.cs" />
     <Compile Include="Data\EventRecord.cs" />
-    <Compile Include="Data\ExpectedVersion.cs" />
-    <Compile Include="Exceptions\FailedConnectionException.cs" />
-    <Compile Include="Messages\OperationErrorCode.cs" />
-    <Compile Include="Services.Storage.ReadIndex\ReadResult.cs" />
-    <Compile Include="Services.Transport.Tcp\TcpCommand.cs" />
-    <Compile Include="Services.Transport.Tcp\TcpPackage.cs" />
+    <Compile Include="ExpectedVersion.cs" />
+    <Compile Include="FailedConnectionException.cs" />
+    <Compile Include="Defines\OperationErrorCode.cs" />
+    <Compile Include="Defines\ReadResult.cs" />
+    <Compile Include="Defines\TcpCommand.cs" />
+    <Compile Include="Defines\TcpPackage.cs" />
     <Compile Include="TcpConnector.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Defines\PrepareFlags.cs" />
     <Compile Include="Transport.Tcp\ProtobufExtensions.cs" />
-    <Compile Include="TransactionLog.LogRecords\CommitLogRecord.cs" />
-    <Compile Include="TransactionLog.LogRecords\LogRecord.cs" />
-    <Compile Include="TransactionLog.LogRecords\LogRecordType.cs" />
-    <Compile Include="TransactionLog.LogRecords\PrepareLogRecord.cs" />
-    <Compile Include="Messages\ClientMessageDto.cs" />
+    <Compile Include="ClientMessages.cs" />
     <Compile Include="Transport.Tcp\TcpConfiguratin.cs" />
     <Compile Include="Transport.Tcp\TcpConnection.cs" />
     <Compile Include="Transport.Tcp\LengthPrefixFramer.cs" />
     <Compile Include="Transport.Tcp\TcpConnectionMonitor.cs" />
+    <Compile Include="Transport.Tcp\TcpStats.cs" />
     <Compile Include="Transport.Tcp\TcpTypedConnection.cs" />
     <Compile Include="EventStoreConnection.cs" />
     <Compile Include="EventStore.cs" />
@@ -124,9 +120,9 @@
     <Compile Include="Transport.Tcp\ITcpConnection.cs" />
     <Compile Include="Transport.Tcp\SocketArgsPool.cs" />
     <Compile Include="Transport.Tcp\TcpConnectionBase.cs" />
-    <Compile Include="Exceptions\UnknownPackageReturned.cs" />
+    <Compile Include="UnknownPackageReturned.cs" />
     <Compile Include="Usage.cs" />
-    <Compile Include="Commands\WriteTaskCompletionWrapper.cs" />
+    <Compile Include="TaskWrappers\WriteTaskCompletionWrapper.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

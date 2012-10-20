@@ -103,11 +103,12 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 result = position == 0 ? chunk.TryReadFirst() : chunk.TryReadSameOrClosest(chunkPos);
             }
-            catch(FileBeingDeletedException ex)
+            catch(FileBeingDeletedException)
             {
                 if(retries > 100) throw new Exception("Got a file that was being deleted 100 times from chunkdb, likely a bug there.");
                 return TryReadNextInternal(position, trial, retries + 1);
             }
+
             if (result.Success)
             {
                 _curPos = chunkNum * (long)_db.Config.ChunkSize + result.NextPosition;
@@ -130,7 +131,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {
                     result = chunk.TryReadFirst();
                 }
-                catch(FileBeingDeletedException ex)
+                catch(FileBeingDeletedException)
                 {
                     TryReadNextInternal(position, trial, retries + 1);
                 }

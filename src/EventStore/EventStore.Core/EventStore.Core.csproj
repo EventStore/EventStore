@@ -89,6 +89,7 @@
     <Compile Include="Exceptions\InvalidFileException.cs" />
     <Compile Include="Exceptions\PTableNotFoundException.cs" />
     <Compile Include="Exceptions\ReaderCheckpointHigherThanWriterException.cs" />
+    <Compile Include="Exceptions\SystemStreamNotFoundException.cs" />
     <Compile Include="Exceptions\UnableToAcquireLockInReasonableTimeException.cs" />
     <Compile Include="Index\GuidFilenameProvider.cs" />
     <Compile Include="Index\Hashes\IHasher.cs" />
@@ -169,7 +170,6 @@
     <Compile Include="Services\Monitoring\Stats\DiskIo.cs" />
     <Compile Include="Services\Monitoring\Utils\ShellExecutor.cs" />
     <Compile Include="Services\Monitoring\Utils\StatsCsvEncoder.cs" />
-    <Compile Include="DataStructures\QueueWithIndexer.cs" />
     <Compile Include="Services\Storage\ReaderIndex\DictionaryBasedCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IReadCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\ReadIndexStats.cs" />

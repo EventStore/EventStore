@@ -32,7 +32,7 @@ using System.Globalization;
 
 namespace EventStore.ClientAPI.Common.Utils
 {
-    public static class BytesFormatter
+    static class BytesFormatter
     {
         private static readonly string[] sizeOrders = new[] { "B", "KiB", "MiB", "GiB", "TiB" };
         private static readonly string[] speedOrders = new[] { "B/s", "KiB/s", "MiB/s", "GiB/s", "TiB/s" };

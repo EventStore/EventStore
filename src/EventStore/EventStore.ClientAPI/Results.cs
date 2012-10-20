@@ -26,8 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using EventStore.ClientAPI.Data;
+using EventStore.ClientAPI.Defines;
 using EventStore.ClientAPI.Messages;
-using EventStore.ClientAPI.Services.Storage.ReadIndex;
 
 namespace EventStore.ClientAPI
 {

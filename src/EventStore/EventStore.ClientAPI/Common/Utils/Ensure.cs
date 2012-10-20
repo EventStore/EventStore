@@ -29,7 +29,7 @@ using System;
 
 namespace EventStore.ClientAPI.Common.Utils
 {
-    public static class Ensure
+    static class Ensure
     {
         public static void NotNull<T>(T argument, string argumentName) where T : class 
         {
