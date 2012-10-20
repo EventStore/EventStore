@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
             _exception = null;
             try
             {
-                _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000), 5);
+                _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000));
                 _manager.EventProcessed(
                     @"{""state"":""state1""}", null, CheckpointTag.FromStreamPosition("stream", 11, 1100));
                 _manager.EventProcessed(

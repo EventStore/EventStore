@@ -75,13 +75,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         [Test]
         public void can_be_started()
         {
-            _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000), 5);
+            _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000));
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void cannot_be_started_from_incompatible_checkpoint_tag()
         {
-            _manager.Start(CheckpointTag.FromStreamPosition("stream1", 10, 1000), 5);
+            _manager.Start(CheckpointTag.FromStreamPosition("stream1", 10, 1000));
         }
     }
 }

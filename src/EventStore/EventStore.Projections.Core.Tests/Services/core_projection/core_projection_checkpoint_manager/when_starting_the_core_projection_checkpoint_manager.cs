@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
             _exception = null;
             try
             {
-                _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000), 5);
+                _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000));
             }
             catch (Exception ex)
             {
@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void start_throws_invalid_operation_exception()
         {
-            _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000), 5);
+            _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000));
         }
 
         [Test]

@@ -26,7 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using EventStore.Projections.Core.Messages;
+using System;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -46,6 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         protected bool _publishStateUpdates;
         protected bool _emitEventEnabled;
         protected bool _checkpointsEnabled;
+        protected Guid _projectionCorrelationId;
 
         [SetUp]
         public void setup()
@@ -61,12 +62,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         protected virtual void When()
         {
             _manager = new CoreProjectionCheckpointManager(
-                _projection, _bus, _writeDispatcher, _config, null, "$projections-projection-checkpoint", "projection",
+                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, "$projections-projection-checkpoint", "projection",
                 new StreamPositionTagger("stream"));
         }
 
         protected virtual void Given()
         {
+            _projectionCorrelationId = Guid.NewGuid();
             _projection = new FakeCoreProjection();
             _projectionMode = ProjectionMode.Persistent;
             _checkpointHandledThreshold = 2;

@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
@@ -43,11 +44,17 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly IPublisher _publisher;
 
+        private readonly
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
+            _readDispatcher;
+
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
 
         private readonly ILogger _logger;
         private readonly ICoreProjection _coreProjection;
+        private readonly Guid _projectionCorrelationId;
         private readonly ProjectionConfig _projectionConfig;
         private readonly string _name;
         private readonly string _projectionCheckpointStreamId;
@@ -68,15 +75,18 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _started;
         private bool _stopping;
         private string _currentProjectionState;
+        private int _nextStateIndexToRequest;
 
         public CoreProjectionCheckpointManager(
-            ICoreProjection coreProjection, IPublisher publisher,
+            ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
+            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, ILogger logger, string projectionCheckpointStreamId, string name,
             PositionTagger positionTagger)
         {
             if (coreProjection == null) throw new ArgumentNullException("coreProjection");
             if (publisher == null) throw new ArgumentNullException("publisher");
+            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
             if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
             if (projectionConfig == null) throw new ArgumentNullException("projectionConfig");
             if (projectionCheckpointStreamId == null) throw new ArgumentNullException("projectionCheckpointStreamId");
@@ -87,6 +97,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastProcessedEventPosition = new PositionTracker(positionTagger);
             _coreProjection = coreProjection;
             _publisher = publisher;
+            _projectionCorrelationId = projectionCorrelationId;
+            _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
             _projectionConfig = projectionConfig;
             _logger = logger;
@@ -94,14 +106,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _name = name;
         }
 
-        public void Start(CheckpointTag checkpointTag, int lastWrittenCheckpointEventNumber)
+        public void Start(CheckpointTag checkpointTag)
         {
             if (_started)
                 throw new InvalidOperationException("Already started");
             _started = true;
             _lastProcessedEventPosition.UpdateByCheckpointTag(checkpointTag);
             _lastCompletedCheckpointPosition = checkpointTag;
-            _lastWrittenCheckpointEventNumber = lastWrittenCheckpointEventNumber;
             _requestedCheckpointPosition = null;
             _currentCheckpoint = new ProjectionCheckpoint(
                 _publisher, this, _lastProcessedEventPosition.LastTag, _projectionConfig.MaxWriteBatchLength, _logger);
@@ -322,6 +333,60 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), new SendToThisEnvelope(_writeDispatcher), _projectionCheckpointStreamId,
                     _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished), WriteCheckpointEventCompleted);
+        }
+
+        public void BeginLoadState()
+        {
+            _nextStateIndexToRequest = -1; // from the end
+            if (_projectionConfig.CheckpointsEnabled)
+            {
+                RequestLoadState();
+            }
+            else
+            {
+                CheckpointLoaded(ExpectedVersion.NoStream, null, null);
+            }
+        }
+
+        private void RequestLoadState()
+        {
+            const int recordsToRequest = 10;
+            _readDispatcher.Publish(
+                new ClientMessage.ReadStreamEventsBackward(
+                    Guid.NewGuid(), new SendToThisEnvelope(_coreProjection), _projectionCheckpointStreamId,
+                    _nextStateIndexToRequest, recordsToRequest, resolveLinks: false), OnLoadStateReadRequestCompleted);
+        }
+
+        private void OnLoadStateReadRequestCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message)
+        {
+            string checkpointData = null;
+            CheckpointTag checkpointTag = null;
+            int checkpointEventNumber = -1;
+            if (message.Events.Length > 0)
+            {
+                EventRecord checkpoint = message.Events.FirstOrDefault(v => v.EventType == "ProjectionCheckpoint");
+                if (checkpoint != null)
+                {
+                    checkpointData = Encoding.UTF8.GetString(checkpoint.Data);
+                    checkpointTag = checkpoint.Metadata.ParseJson<CheckpointTag>();
+                    checkpointEventNumber = checkpoint.EventNumber;
+                }
+            }
+
+            if (checkpointTag == null && message.NextEventNumber != -1)
+            {
+                _nextStateIndexToRequest = message.NextEventNumber;
+                RequestLoadState();
+                return;
+            }
+            CheckpointLoaded(checkpointEventNumber, checkpointTag, checkpointData);
+        }
+
+        private void CheckpointLoaded(int checkpointEventNumber, CheckpointTag checkpointTag, string checkpointData)
+        {
+            _lastWrittenCheckpointEventNumber = checkpointEventNumber;
+            _coreProjection.Handle(
+                new ProjectionMessage.Projections.CheckpointLoaded(_projectionCorrelationId, checkpointTag, checkpointData));
         }
     }
 }

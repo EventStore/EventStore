@@ -86,8 +86,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         //NOTE: this queue hides the real length of projection stage incoming queue, so the almost empty stage queue may still handle many long projection queues
 
-        private int _nextStateIndexToRequest;
-
         //NOTE: this may note work well on recovery when reading from any index instead of replying all the event stream (index will likely render less events than original event stream)
 
         //TODO: join incheckpoint fields into single checkpoint state field
@@ -138,7 +136,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
             _checkpointManager = new CoreProjectionCheckpointManager(
-                this, _publisher, _writeDispatcher, _projectionConfig, _logger, _projectionCheckpointStreamId, _name,
+                this, _publisher, projectionCorrelationId, _readDispatcher, _writeDispatcher, _projectionConfig, _logger, _projectionCheckpointStreamId, _name,
                 _checkpointStrategy.PositionTagger);
             GoToState(State.Initial);
         }
@@ -329,27 +327,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterLoadStateRequested()
         {
-            BeginLoadState();
-        }
-
-        private void BeginLoadState()
-        {
-            _nextStateIndexToRequest = -1; // from the end
-            if (_projectionConfig.CheckpointsEnabled)
-            {
-                RequestLoadState();
-            }
-            else
-                Handle(new ProjectionMessage.Projections.CheckpointLoaded(_projectionCorrelationId, null, null, ExpectedVersion.NoStream));
-        }
-
-        private void RequestLoadState()
-        {
-            const int recordsToRequest = 10;
-            _readDispatcher.Publish(
-                new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), new SendToThisEnvelope(this), _projectionCheckpointStreamId, _nextStateIndexToRequest,
-                    recordsToRequest, resolveLinks: false), OnLoadStateReadRequestCompleted);
+            _checkpointManager.BeginLoadState();
         }
 
         private void EnterStateLoadedSubscribed()
@@ -577,56 +555,31 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
         {
-            OnLoadStateCompleted(message.CheckpointTag, message.CheckpointData, message.CheckpointEventNumber);
-        }
-
-        private void OnLoadStateReadRequestCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message)
-        {
             EnsureState(State.LoadStateRequsted);
-            string checkpointData = null;
-            CheckpointTag checkpointTag = null;
-            int checkpointEventNumber = -1;
-            if (message.Events.Length > 0)
-            {
-                EventRecord checkpoint = message.Events.FirstOrDefault(v => v.EventType == "ProjectionCheckpoint");
-                if (checkpoint != null)
-                {
-                    checkpointData = Encoding.UTF8.GetString(checkpoint.Data);
-                    checkpointTag = checkpoint.Metadata.ParseJson<CheckpointTag>();
-                    checkpointEventNumber = checkpoint.EventNumber;
-                }
-            }
-
-            if (checkpointTag == null && message.NextEventNumber != -1)
-            {
-                _nextStateIndexToRequest = message.NextEventNumber;
-                RequestLoadState();
-                return;
-            }
-            Handle(new ProjectionMessage.Projections.CheckpointLoaded(_projectionCorrelationId, checkpointTag, checkpointData, checkpointEventNumber));
+            OnLoadStateCompleted(message.CheckpointTag, message.CheckpointData);
         }
 
-        private void OnLoadStateCompleted(CheckpointTag checkpointTag, string checkpointData, int checkpointEventNumber)
+        private void OnLoadStateCompleted(CheckpointTag checkpointTag, string checkpointData)
         {
             if (checkpointTag == null)
             {
                 var zeroTag = _checkpointStrategy.PositionTagger.MakeZeroCheckpointTag();
-                InitializeProjectionFromCheckpoint("", zeroTag, ExpectedVersion.NoStream);
+                InitializeProjectionFromCheckpoint("", zeroTag);
             }
             else
             {
-                InitializeProjectionFromCheckpoint(checkpointData, checkpointTag, checkpointEventNumber);
+                InitializeProjectionFromCheckpoint(checkpointData, checkpointTag);
             }
         }
 
         private void InitializeProjectionFromCheckpoint(
-            string state, CheckpointTag checkpointTag, int checkpointEventNumber)
+            string state, CheckpointTag checkpointTag)
         {
             EnsureState(State.Initial | State.LoadStateRequsted);
             //TODO: initialize projection state here (test it)
             //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
             _partitionStateCache.CacheAndLockPartitionState("", state, null);
-            _checkpointManager.Start(checkpointTag, checkpointEventNumber);
+            _checkpointManager.Start(checkpointTag);
             try
             {
                 SetHandlerState("");

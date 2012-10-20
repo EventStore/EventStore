@@ -236,14 +236,12 @@ namespace EventStore.Projections.Core.Messages
                 private readonly Guid _correlationId;
                 private readonly CheckpointTag _checkpointTag;
                 private readonly string _checkpointData;
-                private readonly int _checkpointEventNumber;
 
-                public CheckpointLoaded(Guid correlationId, CheckpointTag checkpointTag, string checkpointData, int checkpointEventNumber)
+                public CheckpointLoaded(Guid correlationId, CheckpointTag checkpointTag, string checkpointData)
                 {
                     _correlationId = correlationId;
                     _checkpointTag = checkpointTag;
                     _checkpointData = checkpointData;
-                    _checkpointEventNumber = checkpointEventNumber;
                 }
 
                 public Guid CorrelationId
@@ -259,11 +257,6 @@ namespace EventStore.Projections.Core.Messages
                 public string CheckpointData
                 {
                     get { return _checkpointData; }
-                }
-
-                public int CheckpointEventNumber
-                {
-                    get { return _checkpointEventNumber; }
                 }
             }
 
