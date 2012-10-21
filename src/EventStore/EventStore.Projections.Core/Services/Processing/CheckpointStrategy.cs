@@ -28,8 +28,11 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using System.Linq;
+using EventStore.Core.Messages;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -70,7 +73,8 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _statePartitionSelector; }
         }
 
-        public EventDistributionPoint CreatePausedEventDistributionPoint(Guid distributionPointId, IPublisher publisher, IPublisher inputQueue, CheckpointTag checkpointTag)
+        public EventDistributionPoint CreatePausedEventDistributionPoint(
+            Guid distributionPointId, IPublisher publisher, IPublisher inputQueue, CheckpointTag checkpointTag)
         {
             if (_allStreams)
             {
@@ -83,20 +87,24 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var streamName = checkpointTag.Streams.Keys.First();
                 //TODO: handle if not the same
-                return CreatePausedStreamReaderEventDistributionPoint(distributionPointId, publisher, inputQueue, checkpointTag, streamName,
-                    resolveLinkTos: true, category: null);
+                return CreatePausedStreamReaderEventDistributionPoint(
+                    distributionPointId, publisher, inputQueue, checkpointTag, streamName, resolveLinkTos: true,
+                    category: null);
             }
             else if (_categories != null && _categories.Count == 1)
             {
                 var streamName = checkpointTag.Streams.Keys.First();
-                return CreatePausedStreamReaderEventDistributionPoint(distributionPointId, publisher, inputQueue, checkpointTag, streamName,
-                    resolveLinkTos: true, category: _categories.First());
+                return CreatePausedStreamReaderEventDistributionPoint(
+                    distributionPointId, publisher, inputQueue, checkpointTag, streamName, resolveLinkTos: true,
+                    category: _categories.First());
             }
             else
                 throw new NotSupportedException();
         }
 
-        private static EventDistributionPoint CreatePausedStreamReaderEventDistributionPoint(Guid distributionPointId, IPublisher publisher, IPublisher inputQueue, CheckpointTag checkpointTag, string streamName, bool resolveLinkTos, string category)
+        private static EventDistributionPoint CreatePausedStreamReaderEventDistributionPoint(
+            Guid distributionPointId, IPublisher publisher, IPublisher inputQueue, CheckpointTag checkpointTag,
+            string streamName, bool resolveLinkTos, string category)
         {
             var lastProcessedSequenceNumber = checkpointTag.Streams.Values.First();
             var fromSequenceNumber = lastProcessedSequenceNumber + 1;
@@ -130,7 +138,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var checkpointTagMode = checkpointTag.GetMode();
             if (checkpointTagMode != mode)
-                throw new ArgumentException(string.Format("Inavlid checkpoint tag mode: '{0}'. Expected mode is: '{1}'", checkpointTagMode, mode));
+                throw new ArgumentException(
+                    String.Format(
+                        "Inavlid checkpoint tag mode: '{0}'. Expected mode is: '{1}'", checkpointTagMode, mode));
         }
 
         private CheckpointStrategy(
@@ -183,6 +193,22 @@ namespace EventStore.Projections.Core.Services.Processing
             return _byStream
                        ? (StatePartitionSelector) new ByStreamStatePartitionSelector()
                        : new NoopStatePartitionSelector();
+        }
+
+        public CoreProjectionDefaultCheckpointManager CreateCheckpointManager(
+            ICoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
+                requestResponseDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> responseDispatcher,
+            ProjectionConfig projectionConfig, string name)
+        {
+            string projectionCheckpointStreamId = CoreProjection.ProjectionsStreamPrefix + name
+                                                  + CoreProjection.ProjectionCheckpointStreamSuffix;
+
+            return new CoreProjectionDefaultCheckpointManager(
+                coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
+                projectionConfig, projectionCheckpointStreamId, name, PositionTagger);
         }
     }
 }

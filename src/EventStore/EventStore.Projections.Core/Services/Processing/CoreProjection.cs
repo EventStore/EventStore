@@ -47,9 +47,9 @@ namespace EventStore.Projections.Core.Services.Processing
                                   IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
                                   IHandle<ProjectionMessage.Projections.CheckpointSuggested>
     {
-        private const string ProjectionsStreamPrefix = "$projections-";
+        internal const string ProjectionsStreamPrefix = "$projections-";
         private const string ProjectionsStateStreamSuffix = "-state";
-        private const string ProjectionCheckpointStreamSuffix = "-checkpoint";
+        internal const string ProjectionCheckpointStreamSuffix = "-checkpoint";
 
         [Flags]
         private enum State : uint
@@ -102,7 +102,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _tickPending;
         private int _readRequestsInProgress;
 
-        public CoreProjection(string name, Guid projectionCorrelationId, IPublisher publisher, IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig, RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher, RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher, ILogger logger = null)
+        public CoreProjection(
+            string name, Guid projectionCorrelationId, IPublisher publisher,
+            IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig,
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+            ILogger logger = null)
         {
             if (name == null) throw new ArgumentNullException("name");
             if (name == "") throw new ArgumentException("name");
@@ -123,10 +129,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStateCache = new PartitionStateCache();
             _processingQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
-            string projectionCheckpointStreamId = ProjectionsStreamPrefix + _name + ProjectionCheckpointStreamSuffix;
-            _checkpointManager = new CoreProjectionCheckpointManager(
-                this, _publisher, projectionCorrelationId, _readDispatcher, _writeDispatcher, _projectionConfig, _logger,
-                projectionCheckpointStreamId, _name, _checkpointStrategy.PositionTagger);
+            _checkpointManager = this._checkpointStrategy.CreateCheckpointManager(
+                this, projectionCorrelationId, this._publisher, this._readDispatcher,
+                this._writeDispatcher, this._projectionConfig, this._name);
             GoToState(State.Initial);
         }
 
@@ -589,8 +594,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _readRequestsInProgress++;
                 _readDispatcher.Publish(
                     new ClientMessage.ReadStreamEventsBackward(
-                        Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, -1, 1,
-                        resolveLinks: false),
+                        Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, -1, 1, resolveLinks: false),
                     m => OnLoadStatePartitionCompleted(statePartition, @event, m, loadCompleted));
             }
         }
