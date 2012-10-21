@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
 
-        public virtual CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventDistributed comittedEvent)
+        public virtual CheckpointTag MakeCheckpointTag(CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent)
         {
             return new CheckpointTag(comittedEvent.Position);
         }

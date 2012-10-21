@@ -109,7 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_started)
                 throw new InvalidOperationException("Already started");
             _started = true;
-            _lastProcessedEventPosition.UpdateByCheckpointTag(checkpointTag);
+            _lastProcessedEventPosition.UpdateByCheckpointTagInitial(checkpointTag);
             _lastCompletedCheckpointPosition = checkpointTag;
             _requestedCheckpointPosition = null;
             _currentCheckpoint = new ProjectionCheckpoint(
