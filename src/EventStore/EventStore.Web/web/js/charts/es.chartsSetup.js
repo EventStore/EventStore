@@ -1,7 +1,5 @@
 $(function () {
 
-
-
     var newDataEvent = "es.newStats";
 
     es.TimeSeries.setUp({
@@ -25,6 +23,7 @@ $(function () {
 
         function onGotStats(stats) {
             bindCharts(stats);
+            window.es.graphControl.setup();
             poll();
         }
 
@@ -51,7 +50,7 @@ $(function () {
             if (window.queueStats)
                 return cat !== "Queue Stats";
             else
-                return cat === "Queue Stats"; 
+                return cat === "Queue Stats";
         }
     }
 
