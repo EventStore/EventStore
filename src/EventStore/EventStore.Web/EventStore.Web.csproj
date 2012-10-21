@@ -238,11 +238,15 @@
     <Content Include="web\queues.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\tmpl\_body.tmpl.html" />
+    <Content Include="web\tmpl\_body.tmpl.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="web\js\es.tmpl.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\tmpl\_head.tmpl.html" />
+    <Content Include="web\tmpl\_head.tmpl.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="web\view-projection.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

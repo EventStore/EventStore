@@ -1,5 +1,7 @@
-$(function ()
-{
+if (!window.es) { window.es = {}; };
+window.es.graphControl = {};
+window.es.graphControl.setup = function() {
+
     var conf = {
         graph: ".chart-cont",
         gcount : $(this.graph).size(),
@@ -51,4 +53,4 @@ $(function ()
     });
 
 
-});
+};
