@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _positionTracker.UpdateByCheckpointTag(from);
         }
 
-        public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
+        public void Handle(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             if (message.Data == null)
                 throw new NotSupportedException();
@@ -91,7 +91,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_eventFilter.Passes(message.ResolvedLinkTo, message.PositionStreamId, message.Data.EventType))
             {
                 _lastPassedOrCheckpointedEventPosition = message.Position;
-                _eventHandler.Handle(message);
+                var convertedMessage = ProjectionMessage.Projections.CommittedEventReceived.FromCommittedEventDistributed(message, newTag);
+                _eventHandler.Handle(convertedMessage);
             }
             else
             {
@@ -130,7 +131,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return result;
         }
 
-        public CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventReceived committedEvent)
+        public CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventDistributed committedEvent)
         {
             var tag = this._positionTagger.MakeCheckpointTag(committedEvent);
             return tag;

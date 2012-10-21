@@ -34,10 +34,10 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
 {
     class FakeProjectionSubscription : IProjectionSubscription
     {
-        private readonly List<ProjectionMessage.Projections.CommittedEventReceived> _receivedEvents =
-            new List<ProjectionMessage.Projections.CommittedEventReceived>();
+        private readonly List<ProjectionMessage.Projections.CommittedEventDistributed> _receivedEvents =
+            new List<ProjectionMessage.Projections.CommittedEventDistributed>();
 
-        public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
+        public void Handle(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             _receivedEvents.Add(message);
         }
@@ -47,14 +47,14 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
             return eventCheckpointTag.PreparePosition >= firstAvailableTransactionFileEvent.CommitPosition;
         }
 
-        public CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventReceived committedEvent)
+        public CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventDistributed committedEvent)
         {
             return CheckpointTag.FromStreamPosition(
                 committedEvent.PositionStreamId, committedEvent.EventSequenceNumber,
                 committedEvent.Position.PreparePosition);
         }
 
-        public List<ProjectionMessage.Projections.CommittedEventReceived> ReceivedEvents
+        public List<ProjectionMessage.Projections.CommittedEventDistributed> ReceivedEvents
         {
             get { return _receivedEvents; }
         }

@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
             // given
             _tagger = new StreamPositionTagger("stream1");
             _positionTracker = new PositionTracker(_tagger);
-            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
+            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventDistributed(
                                                                                 Guid.NewGuid(), new EventPosition(100, 50), "stream1", 1, false,
                                                                                 new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
             _positionTracker.UpdateByCheckpointTagForward(newTag);
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cannot_update_to_the_same_postion()
         {
-            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
+            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventDistributed(
                                                                                 Guid.NewGuid(), new EventPosition(100, 50), "stream", 1, false,
                                                                                 new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
             _positionTracker.UpdateByCheckpointTagForward(newTag);

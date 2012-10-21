@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionMessage.Projections.UnsubscribeProjection>,
                                          IHandle<ProjectionMessage.Projections.PauseProjectionSubscription>,
                                          IHandle<ProjectionMessage.Projections.ResumeProjectionSubscription>,
-                                         IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
+                                         IHandle<ProjectionMessage.Projections.CommittedEventDistributed>,
                                          IHandle<ProjectionMessage.CoreService.Management.Create>,
                                          IHandle<ProjectionMessage.CoreService.Management.Dispose>,
                                          IHandle<ProjectionMessage.Projections.Management.Start>,
@@ -221,7 +221,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 distributionPoint.Handle(message);
         }
 
-        public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
+        public void Handle(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             Guid projectionId;
             if (_stopped)
@@ -237,7 +237,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private bool TrySubscribeHeadingDistributionPoint(
-            ProjectionMessage.Projections.CommittedEventReceived message, Guid projectionId)
+            ProjectionMessage.Projections.CommittedEventDistributed message, Guid projectionId)
         {
             if (_pausedProjections.Contains(projectionId))
                 return false;

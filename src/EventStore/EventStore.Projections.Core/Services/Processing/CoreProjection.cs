@@ -190,7 +190,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (_state == State.Running || _state == State.Paused)
                 {
-                    CheckpointTag eventTag = _checkpointStrategy.PositionTagger.MakeCheckpointTag(message);
+                    CheckpointTag eventTag = message.CheckpointTag;
                     string partition = _checkpointStrategy.StatePartitionSelector.GetStatePartition(message);
                     var committedEventWorkItem = new CommittedEventWorkItem(this, message, partition);
                     _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
@@ -443,9 +443,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_partitionStateCache.GetLockedPartitionState(partition) != newState)
                     // ensure state actually changed
                 {
-                    var lockPartitionStateAt = partition != ""
-                                                   ? _checkpointStrategy.PositionTagger.MakeCheckpointTag(message)
-                                                   : null;
+                    var lockPartitionStateAt = partition != "" ? message.CheckpointTag : null;
                     _partitionStateCache.CacheAndLockPartitionState(partition, newState, lockPartitionStateAt);
                     if (_projectionConfig.PublishStateUpdates)
                         EmitStateUpdated(committedEventWorkItem, partition, newState);
@@ -584,8 +582,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 loadCompleted();
                 return;
             }
-            string state = _partitionStateCache.TryGetAndLockPartitionState(
-                statePartition, _checkpointStrategy.PositionTagger.MakeCheckpointTag(@event));
+            string state = _partitionStateCache.TryGetAndLockPartitionState(statePartition, @event.CheckpointTag);
             if (state != null)
                 loadCompleted();
             else
@@ -610,7 +607,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ClientMessage.ReadStreamEventsBackwardCompleted message, Action loadCompleted)
         {
             _readRequestsInProgress--;
-            var positionTag = _checkpointStrategy.PositionTagger.MakeCheckpointTag(committedEventReceived);
+            var positionTag = committedEventReceived.CheckpointTag;
             if (message.Events.Length == 1)
             {
                 EventRecord @event = message.Events[0];
@@ -705,7 +702,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 EnsureState(State.Running);
                 //TODO: move to separate projection method and cache result in work item
-                var checkpointTag = _checkpointStrategy.PositionTagger.MakeCheckpointTag(committedEventReceived);
+                var checkpointTag = committedEventReceived.CheckpointTag;
                 _checkpointManager.EventProcessed(GetProjectionState(), scheduledWrites, checkpointTag);
             }
         }

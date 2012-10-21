@@ -31,10 +31,10 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IProjectionSubscription : IHandle<ProjectionMessage.Projections.CommittedEventReceived>
+    public interface IProjectionSubscription : IHandle<ProjectionMessage.Projections.CommittedEventDistributed>
     {
         bool CanJoinAt(EventPosition firstAvailableTransactionFileEvent, CheckpointTag eventCheckpointTag);
 
-        CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventReceived committedEvent);
+        CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventDistributed committedEvent);
     }
 }

@@ -51,23 +51,20 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             //projection subscribes here
             _coreProjection.Handle(
-                new ProjectionMessage.Projections.CommittedEventReceived(
-                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                    new Event(
-                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
-                        Encoding.UTF8.GetBytes("metadata"))));
+                ProjectionMessage.Projections.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
+                       new Event(
+                           Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
+                           Encoding.UTF8.GetBytes("metadata"))));
             _coreProjection.Handle(
-                new ProjectionMessage.Projections.CommittedEventReceived(
-                    Guid.Empty, new EventPosition(140, 130), "/event_category/1", -1, false,
-                    new Event(
-                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
-                        Encoding.UTF8.GetBytes("metadata"))));
+                ProjectionMessage.Projections.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(140, 130), "/event_category/1", -1, false,
+                       new Event(
+                           Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
+                           Encoding.UTF8.GetBytes("metadata"))));
             _coreProjection.Handle(
-                new ProjectionMessage.Projections.CommittedEventReceived(
-                    Guid.Empty, new EventPosition(160, 150), "/event_category/1", -1, false,
-                    new Event(
-                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data3"),
-                        Encoding.UTF8.GetBytes("metadata"))));
+                ProjectionMessage.Projections.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(160, 150), "/event_category/1", -1, false,
+                       new Event(
+                           Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data3"),
+                           Encoding.UTF8.GetBytes("metadata"))));
         }
 
         [Test]

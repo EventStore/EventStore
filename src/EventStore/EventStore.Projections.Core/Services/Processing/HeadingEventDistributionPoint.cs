@@ -40,8 +40,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private EventDistributionPoint _headDistributionPoint;
         private EventPosition _subscribeFromPosition = new EventPosition(long.MaxValue, long.MaxValue);
 
-        private readonly Queue<ProjectionMessage.Projections.CommittedEventReceived> _lastMessages =
-            new Queue<ProjectionMessage.Projections.CommittedEventReceived>();
+        private readonly Queue<ProjectionMessage.Projections.CommittedEventDistributed> _lastMessages =
+            new Queue<ProjectionMessage.Projections.CommittedEventDistributed>();
 
         private readonly int _eventCacheSize;
 
@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventCacheSize = eventCacheSize;
         }
 
-        public bool Handle(ProjectionMessage.Projections.CommittedEventReceived message)
+        public bool Handle(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             EnsureStarted();
             if (message.CorrelationId != _distributionPointId)
@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        private void ValidateEventOrder(ProjectionMessage.Projections.CommittedEventReceived message)
+        private void ValidateEventOrder(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             if (_lastEventPosition >= message.Position)
                 throw new InvalidOperationException(
@@ -133,19 +133,19 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private void DispatchRecentMessagesTo(
-            IHandle<ProjectionMessage.Projections.CommittedEventReceived> subscription)
+            IHandle<ProjectionMessage.Projections.CommittedEventDistributed> subscription)
         {
             foreach (var m in _lastMessages)
                 subscription.Handle(m);
         }
 
-        private void DistributeMessage(ProjectionMessage.Projections.CommittedEventReceived message)
+        private void DistributeMessage(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             foreach (var subscriber in _headSubscribers.Values)
                 subscriber.Handle(message);
         }
 
-        private void CacheRecentMessage(ProjectionMessage.Projections.CommittedEventReceived message)
+        private void CacheRecentMessage(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             _lastMessages.Enqueue(message);
             if (_lastMessages.Count > _eventCacheSize)

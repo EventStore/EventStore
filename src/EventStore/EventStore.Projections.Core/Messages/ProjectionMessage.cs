@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Messages
 
                 public Connected(TcpConnectionManager connection)
                 {
-                    this._connection = connection;
+                    _connection = connection;
                 }
 
                 public TcpConnectionManager Connection
@@ -111,7 +111,9 @@ namespace EventStore.Projections.Core.Messages
                     private readonly Func<IProjectionStateHandler> _handlerFactory;
                     private readonly string _name;
 
-                    public Create(IEnvelope envelope, Guid correlationId, string name, ProjectionConfig config, Func<IProjectionStateHandler> handlerFactory)
+                    public Create(
+                        IEnvelope envelope, Guid correlationId, string name, ProjectionConfig config,
+                        Func<IProjectionStateHandler> handlerFactory)
                         : base(correlationId)
                     {
                         _envelope = envelope;
@@ -148,7 +150,6 @@ namespace EventStore.Projections.Core.Messages
                     {
                     }
                 }
-
             }
         }
 
@@ -194,7 +195,6 @@ namespace EventStore.Projections.Core.Messages
                         : base(correlationId)
                     {
                     }
-
                 }
 
                 public class StateReport : ManagementMessage
@@ -228,7 +228,6 @@ namespace EventStore.Projections.Core.Messages
                         get { return _statistics; }
                     }
                 }
-
             }
 
             public class CheckpointLoaded : Message
@@ -284,6 +283,103 @@ namespace EventStore.Projections.Core.Messages
 
             public class CommittedEventReceived : Message
             {
+                public static CommittedEventReceived Sample(Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data)
+                {
+                    return new CommittedEventReceived(correlationId, position, eventStreamId, eventSequenceNumber, resolvedLinkTo, data);
+                }
+
+                private readonly Guid _correlationId;
+                private readonly Event _data;
+                private readonly string _eventStreamId;
+                private readonly int _eventSequenceNumber;
+                private readonly bool _resolvedLinkTo;
+                private readonly string _positionStreamId;
+                private readonly int _positionSequenceNumber;
+                private readonly EventPosition _position;
+                private readonly CheckpointTag _checkpointTag;
+
+                private CommittedEventReceived(
+                    Guid correlationId, EventPosition position, CheckpointTag checkpointTag, string positionStreamId,
+                    int positionSequenceNumber, string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo,
+                    Event data)
+                {
+                    if (data == null) throw new ArgumentNullException("data");
+                    _correlationId = correlationId;
+                    _data = data;
+                    _position = position;
+                    _checkpointTag = checkpointTag;
+                    _positionStreamId = positionStreamId;
+                    _positionSequenceNumber = positionSequenceNumber;
+                    _eventStreamId = eventStreamId;
+                    _eventSequenceNumber = eventSequenceNumber;
+                    _resolvedLinkTo = resolvedLinkTo;
+                }
+
+                private CommittedEventReceived(
+                    Guid correlationId, EventPosition position, string eventStreamId,
+                    int eventSequenceNumber, bool resolvedLinkTo, Event data)
+                    : this(
+                        correlationId, position, CheckpointTag.FromPosition(position.CommitPosition, position.PreparePosition), eventStreamId, eventSequenceNumber, eventStreamId,
+                        eventSequenceNumber, resolvedLinkTo, data)
+                {
+                }
+                public Event Data
+                {
+                    get { return _data; }
+                }
+
+                public EventPosition Position
+                {
+                    get { return _position; }
+                }
+
+                public string EventStreamId
+                {
+                    get { return _eventStreamId; }
+                }
+
+                public Guid CorrelationId
+                {
+                    get { return _correlationId; }
+                }
+
+                public int EventSequenceNumber
+                {
+                    get { return _eventSequenceNumber; }
+                }
+
+                public string PositionStreamId
+                {
+                    get { return _positionStreamId; }
+                }
+
+                public int PositionSequenceNumber
+                {
+                    get { return _positionSequenceNumber; }
+                }
+
+                public bool ResolvedLinkTo
+                {
+                    get { return _resolvedLinkTo; }
+                }
+
+                public CheckpointTag CheckpointTag
+                {
+                    get { return _checkpointTag; }
+                }
+
+                public static CommittedEventReceived FromCommittedEventDistributed(
+                    CommittedEventDistributed message, CheckpointTag checkpointTag)
+                {
+                    return new CommittedEventReceived(
+                        message.CorrelationId, message.Position, checkpointTag, message.PositionStreamId,
+                        message.PositionSequenceNumber, message.EventStreamId, message.EventSequenceNumber,
+                        message.ResolvedLinkTo, message.Data);
+                }
+            }
+
+            public class CommittedEventDistributed : Message
+            {
                 private readonly Guid _correlationId;
                 private readonly Event _data;
                 private readonly string _eventStreamId;
@@ -293,11 +389,11 @@ namespace EventStore.Projections.Core.Messages
                 private readonly int _positionSequenceNumber;
                 private readonly EventPosition _position;
 
-                //NOTE: cimmitted event with null event _data means - end of the source reached.  
+                //NOTE: committed event with null event _data means - end of the source reached.  
                 // Current last available TF commit position is in _position.CommitPosition
                 // TODO: separate message?
 
-                public CommittedEventReceived(
+                public CommittedEventDistributed(
                     Guid correlationId, EventPosition position, string positionStreamId, int positionSequenceNumber,
                     string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data)
                 {
@@ -311,10 +407,12 @@ namespace EventStore.Projections.Core.Messages
                     _resolvedLinkTo = resolvedLinkTo;
                 }
 
-                public CommittedEventReceived(
-                    Guid correlationId, EventPosition position, 
-                    string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data)
-                    : this(correlationId, position, eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo, data)
+                public CommittedEventDistributed(
+                    Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
+                    bool resolvedLinkTo, Event data)
+                    : this(
+                        correlationId, position, eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber,
+                        resolvedLinkTo, data)
                 {
                 }
 

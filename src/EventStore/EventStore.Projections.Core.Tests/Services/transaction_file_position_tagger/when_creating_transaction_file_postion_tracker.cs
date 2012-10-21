@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
         public void it_can_be_updated()
         {
             // even not initialized (UpdateToZero can be removed)
-            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
+            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventDistributed(
                                                                                 Guid.NewGuid(), new EventPosition(100, 50), "stream", 1, false,
                                                                                 new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
             _positionTracker.UpdateByCheckpointTagForward(newTag);
