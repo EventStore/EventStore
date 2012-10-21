@@ -43,88 +43,88 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         [Test]
         public void it_can_be_created()
         {
-            _manager = new CoreProjectionCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, "$projections-projection-checkpoint", "projection",
+            _manager = new CoreProjectionDefaultCheckpointManager(
+                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "$projections-projection-checkpoint", "projection",
                 new StreamPositionTagger("stream"));
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_projection_throws_argument_null_exception()
         {
-            _manager = new CoreProjectionCheckpointManager(
-                null, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, "$projections-projection-checkpoint", "projection",
+            _manager = new CoreProjectionDefaultCheckpointManager(
+                null, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "$projections-projection-checkpoint", "projection",
                 new StreamPositionTagger("stream"));
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            _manager = new CoreProjectionCheckpointManager(
-                _projection, null, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, "$projections-projection-checkpoint", "projection",
+            _manager = new CoreProjectionDefaultCheckpointManager(
+                _projection, null, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "$projections-projection-checkpoint", "projection",
                 new StreamPositionTagger("stream"));
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
         public void null_read_dispatcher_throws_argument_null_exception()
         {
-            _manager = new CoreProjectionCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, null, _writeDispatcher, _config, null, "$projections-projection-checkpoint", "projection",
+            _manager = new CoreProjectionDefaultCheckpointManager(
+                _projection, _bus, _projectionCorrelationId, null, _writeDispatcher, _config, "$projections-projection-checkpoint", "projection",
                 new StreamPositionTagger("stream"));
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
         public void null_write_dispatcher_throws_argument_null_exception()
         {
-            _manager = new CoreProjectionCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, null, _config, null, "$projections-projection-checkpoint", "projection",
+            _manager = new CoreProjectionDefaultCheckpointManager(
+                _projection, _bus, _projectionCorrelationId, _readDispatcher, null, _config, "$projections-projection-checkpoint", "projection",
                 new StreamPositionTagger("stream"));
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_projection_config_throws_argument_null_exception()
         {
-            _manager = new CoreProjectionCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, null, null, "$projections-projection-checkpoint", "projection",
+            _manager = new CoreProjectionDefaultCheckpointManager(
+                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, null, "$projections-projection-checkpoint", "projection",
                 new StreamPositionTagger("stream"));
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_projection_checkpoint_stream_id_throws_argument_null_exception()
         {
-            _manager = new CoreProjectionCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, null, "projection",
+            _manager = new CoreProjectionDefaultCheckpointManager(
+                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, "projection",
                 new StreamPositionTagger("stream"));
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_projection_name_throws_argument_null_exception()
         {
-            _manager = new CoreProjectionCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, "$projections-projection-checkpoint", null,
+            _manager = new CoreProjectionDefaultCheckpointManager(
+                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "$projections-projection-checkpoint", null,
                 new StreamPositionTagger("stream"));
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_position_tagger_throws_argument_null_exception()
         {
-            _manager = new CoreProjectionCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, "$projections-projection-checkpoint", "projection",
+            _manager = new CoreProjectionDefaultCheckpointManager(
+                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "$projections-projection-checkpoint", "projection",
                 null);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_projection_checkpoint_stream_id_throws_argument_exception()
         {
-            _manager = new CoreProjectionCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, "$projections-projection-checkpoint", "",
+            _manager = new CoreProjectionDefaultCheckpointManager(
+                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "$projections-projection-checkpoint", "",
                 new StreamPositionTagger("stream"));
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_projection_name_throws_argument_exception()
         {
-            _manager = new CoreProjectionCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null, "$projections-projection-checkpoint", "",
+            _manager = new CoreProjectionDefaultCheckpointManager(
+                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "$projections-projection-checkpoint", "",
                 new StreamPositionTagger("stream"));
         }
     }
