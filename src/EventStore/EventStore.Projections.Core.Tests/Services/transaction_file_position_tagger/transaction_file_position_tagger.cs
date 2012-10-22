@@ -26,6 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using System.Text;
+using EventStore.Core.Data;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -34,6 +38,18 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
     [TestFixture]
     public class transaction_file_position_tagger
     {
+        private ProjectionMessage.Projections.CommittedEventDistributed _zeroEvent;
+        private ProjectionMessage.Projections.CommittedEventDistributed _firstEvent;
+        private ProjectionMessage.Projections.CommittedEventDistributed _secondEvent;
+
+        [SetUp]
+        public void setup()
+        {
+            _zeroEvent = new ProjectionMessage.Projections.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(10, 0), "stream", 0, false, new Event(Guid.NewGuid(), "StreamCreated", false, new byte[0], new byte[0]));
+            _firstEvent = new ProjectionMessage.Projections.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(30, 20), "stream", 1, false, new Event(Guid.NewGuid(), "Data", true, Encoding.UTF8.GetBytes("{}"), new byte[0]));
+            _secondEvent = new ProjectionMessage.Projections.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(50, 40), "stream", 2, false, new Event(Guid.NewGuid(), "Data", true, Encoding.UTF8.GetBytes("{}"), new byte[0]));
+        }
+
         [Test]
         public void can_be_created()
         {
@@ -52,6 +68,37 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
         {
             var t = new TransactionFilePositionTagger();
             Assert.IsFalse(t.IsCompatible(CheckpointTag.FromStreamPosition("stream2", 100, 500)));
+        }
+
+        [Test]
+        public void zero_position_tag_is_before_first_event_possible()
+        {
+            var t = new TransactionFilePositionTagger();
+            var zero = t.MakeZeroCheckpointTag();
+
+            var zeroFromEvent = t.MakeCheckpointTag(zero, _zeroEvent);
+
+            Assert.IsTrue(zeroFromEvent > zero);
+        }
+
+        [Test]
+        public void produced_checkpoint_tags_are_correctly_ordered()
+        {
+            var t = new TransactionFilePositionTagger();
+            var zero = t.MakeZeroCheckpointTag();
+
+            var zeroEvent = t.MakeCheckpointTag(zero, _zeroEvent);
+            var zeroEvent2 = t.MakeCheckpointTag(zeroEvent, _zeroEvent);
+            var first = t.MakeCheckpointTag(zeroEvent2, _firstEvent);
+            var second = t.MakeCheckpointTag(first, _secondEvent);
+            var second2 = t.MakeCheckpointTag(zero, _secondEvent);
+
+            Assert.IsTrue(zeroEvent > zero);
+            Assert.IsTrue(first > zero);
+            Assert.IsTrue(second > first);
+
+            Assert.AreEqual(zeroEvent2, zeroEvent);
+            Assert.AreEqual(second, second2);
         }
 
     }

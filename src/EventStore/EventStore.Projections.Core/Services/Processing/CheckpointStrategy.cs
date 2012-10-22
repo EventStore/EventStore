@@ -184,6 +184,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new NotSupportedException();
             else if (_streams != null && _streams.Count == 1)
                 return new StreamPositionTagger(_streams.First());
+            else if (_streams != null && _streams.Count > 1)
+                return new MultiStreamPositionTagger(_streams.ToArray());
             else
                 throw new NotSupportedException();
         }
