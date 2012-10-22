@@ -108,7 +108,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             _accessibility = accessibility;
             _inputBus = inputBus;
-            _publishEnvelope = new PublishEnvelope(inputBus, true/*NOT THREAD SAFE!!! TO REMOVE!*/);
+            _publishEnvelope = new PublishEnvelope(inputBus);
 
             _pending = new SortedSet<HttpEntity>(new HttpEntityReceivedComparer());
             _actions = new Dictionary<ControllerAction, Action<HttpEntity, UriTemplateMatch>>();
