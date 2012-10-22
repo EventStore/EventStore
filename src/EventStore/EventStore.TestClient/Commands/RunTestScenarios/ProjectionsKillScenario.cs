@@ -123,7 +123,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Log.Info("Raw {0} state: {1}", projectionName, rawState);
             var state = Codec.Json.From<Dictionary<string, string>>(rawState);
             string value;
-            return state.Count > 0 && state.TryGetValue(key, out value) && checkValue(value);
+            return state != null && state.Count > 0 && state.TryGetValue(key, out value) && checkValue(value);
         }
 
         private string CreateCountItem()
