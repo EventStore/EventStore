@@ -93,7 +93,7 @@ namespace EventStore.ClientAPI
         }
 
         public EventStoreConnection(IPEndPoint tcpEndPoint, 
-                                    int maxConcurrentRequests = 50,
+                                    int maxConcurrentRequests = 5000,
                                     int maxAttemptsForOperation = 10,
                                     int maxReconnections = 10,
                                     ILogger logger = null)
@@ -689,8 +689,6 @@ namespace EventStore.ClientAPI
                         var lastUpdated = new DateTime(Interlocked.Read(ref workerItem.LastUpdatedTicks));
                         if (now - lastUpdated > OperationTimeout)
                         {
-                            Console.WriteLine("Timed out, corrId: {0}.", workerItem.Operation.CorrelationId);
-                            //Debugger.Break();
                             if (lastUpdated >= _lastReconnectionTimestamp)
                             {
                                 var err = string.Format("{0} never got response from server" +

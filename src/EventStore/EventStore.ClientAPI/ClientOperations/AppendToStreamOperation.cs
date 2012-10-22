@@ -31,7 +31,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
@@ -90,7 +89,6 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        private int attempt = 1; 
         public InspectionResult InspectPackage(TcpPackage package)
         {
             try
@@ -113,10 +111,6 @@ namespace EventStore.ClientAPI.ClientOperations
                     case OperationErrorCode.PrepareTimeout:
                     case OperationErrorCode.CommitTimeout:
                     case OperationErrorCode.ForwardTimeout:
-                        Console.WriteLine("Retrying AppendToStreamOperation for stream: {0}, expected: {1}, attempt: {2}.",
-                                          _stream,
-                                          _expectedVersion,
-                                           attempt++);
                         return new InspectionResult(InspectionDecision.Retry);
                     case OperationErrorCode.WrongExpectedVersion:
                         var err = string.Format("Append failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}, CorrID : {2}",
