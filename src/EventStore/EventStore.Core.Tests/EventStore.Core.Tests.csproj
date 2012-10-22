@@ -76,11 +76,16 @@
     <Compile Include="Bus\when_publishing.cs" />
     <Compile Include="Bus\when_subscribing.cs" />
     <Compile Include="Bus\when_unsubscribing.cs" />
+    <Compile Include="ClientAPI\AllEvents\read_all_events_backward_should.cs" />
+    <Compile Include="ClientAPI\AllEvents\read_all_events_forward_should.cs" />
+    <Compile Include="ClientAPI\AllEvents\subscribe_to_all_should.cs" />
     <Compile Include="ClientAPI\api_tests_nunit_setup.cs" />
     <Compile Include="ClientAPI\append_to_stream.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
     <Compile Include="ClientAPI\creating_stream.cs" />
     <Compile Include="ClientAPI\MiniNode.cs" />
+    <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
+    <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
     <Compile Include="ClientAPI\TestEvent.cs" />
     <Compile Include="ClientAPI\transaction.cs" />
     <Compile Include="Common\CollectionsExtensions.cs" />
