@@ -102,7 +102,7 @@ namespace EventStore.Core.Data
             TimeStamp = timeStamp;
             Flags = flags;
             EventType = eventType ?? string.Empty;
-            Data = data;
+            Data = data ?? Empty;
             Metadata = metadata ?? Empty;
         }
 

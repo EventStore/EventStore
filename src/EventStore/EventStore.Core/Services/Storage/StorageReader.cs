@@ -165,13 +165,9 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward message)
         {
-            // TODO AN resolving should belong to ReadIndex, not to StorageReader
+            var lastCommitPosition = _readIndex.LastCommitPosition;
 
             EventRecord[] records;
-            EventRecord[] links = null;
-            
-            var lastCommitPosition = _readIndex.LastCommitPosition;
-            
             var result = _readIndex.ReadStreamEventsForward(message.EventStreamId, message.FromEventNumber, message.MaxCount, out records);
             var nextEventNumber = result == RangeReadResult.Success && records.Length > 0
                                           ? records[records.Length - 1].EventNumber + 1
@@ -193,14 +189,25 @@ namespace EventStore.Core.Services.Storage
                     }
                 }
             }
+
+            EventLinkPair[] resolvedPairs;
             if (result == RangeReadResult.Success && message.ResolveLinks)
-                links = ResolveLinkToEvents(records);
+            {
+                resolvedPairs = ResolveLinkToEvents(records);
+            }
+            else
+            {
+                resolvedPairs = new EventLinkPair[records.Length];
+                for (int i = 0; i < records.Length; ++i)
+                {
+                    resolvedPairs[i] = new EventLinkPair(records[i], null);
+                }
+            }
 
             message.Envelope.ReplyWith(
                     new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId,
                                                                        message.EventStreamId,
-                                                                       records,
-                                                                       links,
+                                                                       resolvedPairs,
                                                                        result,
                                                                        nextEventNumber,
                                                                        records.Length == 0 ? lastCommitPosition : (long?) null));
@@ -208,11 +215,9 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)
         {
-            EventRecord[] records;
-            EventRecord[] links = null;
-
             var lastCommitPosition = _readIndex.LastCommitPosition;
 
+            EventRecord[] records;
             var result = _readIndex.ReadStreamEventsBackward(message.EventStreamId, message.FromEventNumber, message.MaxCount, out records);
             var nextEventNumber = result == RangeReadResult.Success & records.Length > 0
                                       ? records[records.Length - 1].EventNumber - 1
@@ -234,33 +239,41 @@ namespace EventStore.Core.Services.Storage
                     }
                 }
             }
+            EventLinkPair[] resolvedPairs;
             if (result == RangeReadResult.Success && message.ResolveLinks)
-                links = ResolveLinkToEvents(records);
+            {
+                resolvedPairs = ResolveLinkToEvents(records);
+            }
+            else
+            {
+                resolvedPairs = new EventLinkPair[records.Length];
+                for (int i = 0; i < records.Length; ++i)
+                {
+                    resolvedPairs[i] = new EventLinkPair(records[i], null);
+                }
+            }
 
             message.Envelope.ReplyWith(
                 new ClientMessage.ReadStreamEventsBackwardCompleted(message.CorrelationId,
                                                                     message.EventStreamId,
-                                                                    records,
-                                                                    links,
+                                                                    resolvedPairs,
                                                                     result,
                                                                     nextEventNumber,
                                                                     records.Length == 0 ? lastCommitPosition : (long?) null));
         }
 
-        private EventRecord[] ResolveLinkToEvents(EventRecord[] records)
+        private EventLinkPair[] ResolveLinkToEvents(EventRecord[] records)
         {
-            var links = new EventRecord[records.Length];
+            var resolved = new EventLinkPair[records.Length];
             for (int i = 0; i < records.Length; i++)
             {
                 EventRecord eventRecord = records[i];
-                EventRecord record = _readIndex.ResolveLinkToEvent(eventRecord);
-                if (record != null)
-                {
-                    links[i] = eventRecord;
-                    records[i] = record;
-                }
+                EventRecord resolvedRecord = _readIndex.ResolveLinkToEvent(eventRecord);
+                resolved[i] = resolvedRecord != null
+                                      ? new EventLinkPair(resolvedRecord, eventRecord)
+                                      : new EventLinkPair(eventRecord, null);
             }
-            return links;
+            return resolved;
         }
 
         void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward message)

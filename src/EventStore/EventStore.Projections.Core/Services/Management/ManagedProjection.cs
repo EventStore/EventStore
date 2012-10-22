@@ -267,7 +267,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (completed.Result == RangeReadResult.Success && completed.Events.Length == 1)
             {
-                byte[] state = completed.Events[0].Data;
+                byte[] state = completed.Events[0].Event.Data;
 				LoadPersistedState(state.ParseJson<PersistedState>());
                 //TODO: encapsulate this into managed projection
                 _state = ManagedProjectionState.Stopped;

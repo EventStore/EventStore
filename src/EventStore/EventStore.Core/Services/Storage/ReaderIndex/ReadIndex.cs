@@ -259,6 +259,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             int eventNumber = -1;
             uint streamHash = 0;
             string eventStreamId = null;
+
             foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition))
             {
                 if (first)

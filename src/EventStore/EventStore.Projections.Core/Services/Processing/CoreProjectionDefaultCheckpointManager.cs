@@ -145,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Processing
             int checkpointEventNumber = -1;
             if (message.Events.Length > 0)
             {
-                EventRecord checkpoint = message.Events.FirstOrDefault(v => v.EventType == "ProjectionCheckpoint");
+                EventRecord checkpoint = message.Events.FirstOrDefault(v => v.Event.EventType == "ProjectionCheckpoint").Event;
                 if (checkpoint != null)
                 {
                     checkpointData = Encoding.UTF8.GetString(checkpoint.Data);

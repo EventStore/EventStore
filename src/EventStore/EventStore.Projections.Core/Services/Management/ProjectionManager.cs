@@ -316,9 +316,9 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 if (completed.NextEventNumber != -1)
                     BeginLoadProjectionList(@from: completed.NextEventNumber);
-                foreach (var @event in completed.Events.Where(v => v.EventType == "ProjectionCreated"))
+                foreach (var @event in completed.Events.Where(v => v.Event.EventType == "ProjectionCreated"))
                 {
-                    var projectionName = Encoding.UTF8.GetString(@event.Data);
+                    var projectionName = Encoding.UTF8.GetString(@event.Event.Data);
                     if (_projections.ContainsKey(projectionName))
                     {
                         //TODO: log this event as it should not happen
