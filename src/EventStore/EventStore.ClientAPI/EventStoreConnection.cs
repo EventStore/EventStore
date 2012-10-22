@@ -749,10 +749,7 @@ namespace EventStore.ClientAPI
                 WorkItem inProgressItem;
                 if (_inProgress.TryRemove(workItem.Operation.CorrelationId, out inProgressItem))
                 {
-                    inProgressItem.Operation.SetRetryId(Guid.NewGuid());
                     inProgressItem.Attempt += 1;
-                    Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
-
                     if (inProgressItem.Attempt > _maxAttempts)
                     {
                         _log.Error("Retries limit reached for : {0}", inProgressItem);
@@ -761,6 +758,8 @@ namespace EventStore.ClientAPI
                     }
                     else
                     {
+                        inProgressItem.Operation.SetRetryId(Guid.NewGuid());
+                        Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
                         Send(inProgressItem);
                     }
                 }
