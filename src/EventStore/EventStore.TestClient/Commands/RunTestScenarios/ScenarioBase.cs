@@ -282,7 +282,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var interIp = IPAddress.None;
 
             var host = Dns.GetHostEntry(Dns.GetHostName());
-            foreach (IPAddress ip in host.AddressList)
+            foreach (IPAddress ip in host.AddressList.Reverse())
             {
                 if (ip.AddressFamily == AddressFamily.InterNetwork)
                 {
