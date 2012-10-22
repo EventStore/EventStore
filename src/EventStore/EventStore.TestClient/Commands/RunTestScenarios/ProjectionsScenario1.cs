@@ -8,7 +8,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal class ProjectionsScenario1 : ScenarioBase
     {
-        public ProjectionsScenario1(Action<byte[]> directSendOverTcp, int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep)
+        public ProjectionsScenario1(Action<byte[]> directSendOverTcp, 
+                                    int maxConcurrentRequests, 
+                                    int threads, 
+                                    int streams, 
+                                    int eventsPerStream, 
+                                    int streamDeleteStep)
             : base(directSendOverTcp, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
         {
         }
@@ -48,7 +53,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
             {
                 var stopWatch = Stopwatch.StartNew();
-                while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(1000 + streams.Length * EventsPerStream))
+                while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(10000 + streams.Length * EventsPerStream))
                 {
                     state = store.Projections.GetState(countItemsProjectionName);
                     Log.Info("State: {0}", state);

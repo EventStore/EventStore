@@ -124,6 +124,7 @@ namespace EventStore.TestClient.Commands
                                     streamDeleteStep, 
                                     TimeSpan.FromMinutes(executionPeriodMinutes)), 
                    new ProjectionsScenario1(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
+                   new ProjectionsKillScenario(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
                 };
 
             Log.Info("Found scenarios ({0} total).", allScenarios.Length);
@@ -151,7 +152,9 @@ namespace EventStore.TestClient.Commands
             }
             Log.Info("Finished running test scenarios");
 
-            context.Success();
+            if (context.ExitCode == 0)
+                context.Success();
+
             return true;
         }
 

@@ -45,7 +45,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             get { return TimeSpan.FromSeconds(7); }
         }
 
-        private readonly Dictionary<WriteMode, Func<string, int, Task>> _writeHandlers;
+        private readonly Dictionary<WriteMode, Func<string, int, Func<int, IEvent>, Task>> _writeHandlers;
 
         protected ScenarioBase(Action<byte[]> directSendOverTcp,
                                int maxConcurrentRequests,
@@ -69,7 +69,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var ip = GetInterIpAddress();
             _tcpEndPoint = new IPEndPoint(ip, 1113);
 
-            _writeHandlers = new Dictionary<WriteMode, Func<string, int, Task>>
+            _writeHandlers = new Dictionary<WriteMode, Func<string, int, Func<int, IEvent>, Task>>
             {
                     {WriteMode.SingleEventAtTime, WriteSingleEventAtTime},
                     {WriteMode.Bucket, WriteBucketOfEventsAtTime},
@@ -94,14 +94,21 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                            .ToArray();
         }
 
+        
         protected Task Write(WriteMode mode, string[] streams, int eventsPerStream)
+        {
+            Func<int, IEvent> createEvent = v => new TestEvent(v);
+            return Write(mode, streams, eventsPerStream, createEvent);
+        }
+
+        protected Task Write(WriteMode mode, string[] streams, int eventsPerStream, Func<int, IEvent> createEvent)
         {
             Log.Info("Writing. Mode : {0,-15} Streams : {1,-10} Events per stream : {2,-10}",
                      mode,
                      streams.Length,
                      eventsPerStream);
 
-            Func<string, int, Task> handler;
+            Func<string, int, Func<int, IEvent>, Task> handler;
             if (!_writeHandlers.TryGetValue(mode, out handler))
                 throw new ArgumentOutOfRangeException("mode");
 
@@ -109,7 +116,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             for (var i = 0; i < streams.Length; i++)
             {
                 //Console.WriteLine("WRITING TO {0}", streams[i]);
-                tasks.Add(handler(streams[i], eventsPerStream));
+                tasks.Add(handler(streams[i], eventsPerStream, createEvent));
             }
 
             return Task.Factory.ContinueWhenAll(tasks.ToArray(), _ =>
@@ -319,7 +326,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             DirectSendOverTcp(package);
         }
 
-        private Task WriteSingleEventAtTime(string stream, int events)
+        private Task WriteSingleEventAtTime(string stream, int events, Func<int, IEvent> createEvent)
         {
             var resSource = new TaskCompletionSource<object>();
 
@@ -350,7 +357,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 eventVersion += 1;
                 var writeTask = store.AppendToStreamAsync(stream,
                                                             eventVersion - 1,
-                                                            new[] { new TestEvent(eventVersion) });
+                                                            new[] { createEvent(eventVersion) });
                 writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 writeTask.ContinueWith(writeSingleEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
@@ -361,7 +368,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return resSource.Task;
         }
 
-        private Task WriteBucketOfEventsAtTime(string stream, int eventCount)
+        private Task WriteBucketOfEventsAtTime(string stream, int eventCount, Func<int, IEvent> createEvent)
         {
             const int bucketSize = 100;
             Log.Info("Starting to write {0} events to [{1}] ({2} events at once)", eventCount, stream, bucketSize);
@@ -390,7 +397,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 var startIndex = writtenCount + 1;
                 var endIndex = Math.Min(eventCount, startIndex + bucketSize - 1);
-                var events = Enumerable.Range(startIndex, endIndex - startIndex + 1).Select(x => new TestEvent(x)).ToArray();
+                var events = Enumerable.Range(startIndex, endIndex - startIndex + 1).Select(createEvent).ToArray();
 
                 writtenCount = endIndex;
 
@@ -405,7 +412,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return resSource.Task;
         }
 
-        private Task WriteEventsInTransactionalWay(string stream, int eventCount)
+        private Task WriteEventsInTransactionalWay(string stream, int eventCount, Func<int, IEvent> createEvent)
         {
             Log.Info("Starting to write {0} events to [{1}] (in single transaction)", eventCount, stream);
 
@@ -442,7 +449,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 writtenCount += 1;
 
-                var writeTask = store.TransactionalWriteAsync(transactionId, stream, new[] { new TestEvent(writtenCount) });
+                var writeTask = store.TransactionalWriteAsync(transactionId, stream, new[] { createEvent(writtenCount) });
                 writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 writeTask.ContinueWith(writeTransactionEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
