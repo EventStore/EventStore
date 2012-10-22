@@ -689,7 +689,7 @@ namespace EventStore.ClientAPI
                         var lastUpdated = new DateTime(Interlocked.Read(ref workerItem.LastUpdatedTicks));
                         if (now - lastUpdated > OperationTimeout)
                         {
-                            Console.WriteLine(workerItem.Operation.CorrelationId);
+                            Console.WriteLine("Timed out, corrId: {0}.", workerItem.Operation.CorrelationId);
                             //Debugger.Break();
                             if (lastUpdated >= _lastReconnectionTimestamp)
                             {
@@ -699,11 +699,11 @@ namespace EventStore.ClientAPI
                                                         lastUpdated,
                                                         _lastReconnectionTimestamp,
                                                         now);
-//                                if (TryRemoveWorkItem(workerItem))
-//                                {
-//                                    _log.Error(err);
-//                                    workerItem.Operation.Fail(new OperationTimedOutException(err));
-//                                }
+                                if (TryRemoveWorkItem(workerItem))
+                                {
+                                    _log.Error(err);
+                                    workerItem.Operation.Fail(new OperationTimedOutException(err));
+                                }
                                 _log.Error(err);
                             }
                             else
