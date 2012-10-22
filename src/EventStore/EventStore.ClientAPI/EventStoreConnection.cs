@@ -55,7 +55,7 @@ namespace EventStore.ClientAPI
         private readonly int _maxAttempts;
         private readonly int _maxReconnections;
 
-        private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(0.5);
+        private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(3);
         private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(7);
         private static readonly TimeSpan OperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
@@ -66,7 +66,6 @@ namespace EventStore.ClientAPI
         private readonly object _connectionLock = new object();
 
         private readonly SubscriptionsChannel _subscriptionsChannel;
-
         private readonly ProjectionsManager _projectionsManager;
 
 #if __MonoCS__
@@ -94,7 +93,7 @@ namespace EventStore.ClientAPI
         }
 
         public EventStoreConnection(IPEndPoint tcpEndPoint, 
-                                    int maxConcurrentRequests = 5000,
+                                    int maxConcurrentRequests = 50,
                                     int maxAttemptsForOperation = 10,
                                     int maxReconnections = 10,
                                     ILogger logger = null)
@@ -690,6 +689,8 @@ namespace EventStore.ClientAPI
                         var lastUpdated = new DateTime(Interlocked.Read(ref workerItem.LastUpdatedTicks));
                         if (now - lastUpdated > OperationTimeout)
                         {
+                            Console.WriteLine(workerItem.Operation.CorrelationId);
+                            //Debugger.Break();
                             if (lastUpdated >= _lastReconnectionTimestamp)
                             {
                                 var err = string.Format("{0} never got response from server" +

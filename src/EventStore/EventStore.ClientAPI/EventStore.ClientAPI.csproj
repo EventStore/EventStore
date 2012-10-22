@@ -120,6 +120,7 @@
     <Compile Include="Position.cs" />
     <Compile Include="RecordedEvent.cs" />
     <Compile Include="StreamPosition.cs" />
+    <Compile Include="SystemData\EventLinkPair.cs" />
     <Compile Include="SystemData\EventRecord.cs" />
     <Compile Include="ExpectedVersion.cs" />
     <Compile Include="SystemData\InspectionResult.cs" />

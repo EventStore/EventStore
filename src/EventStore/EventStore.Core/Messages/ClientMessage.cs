@@ -418,16 +418,14 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
-            public readonly EventRecord[] Events;
-            public readonly EventRecord[] LinkToEvents;
+            public readonly EventLinkPair[] Events;
             public readonly RangeReadResult Result;
             public readonly int NextEventNumber;
             public readonly long? LastCommitPosition;
 
             public ReadStreamEventsForwardCompleted(Guid correlationId,
                                                     string eventStreamId,
-                                                    EventRecord[] events,
-                                                    EventRecord[] linkToEvents,
+                                                    EventLinkPair[] events,
                                                     RangeReadResult result,
                                                     int nextEventNumber,
                                                     long? lastCommitPosition)
@@ -437,7 +435,6 @@ namespace EventStore.Core.Messages
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
                 Events = events;
-                LinkToEvents = linkToEvents;
                 Result = result;
                 NextEventNumber = nextEventNumber;
                 LastCommitPosition = lastCommitPosition;
@@ -478,16 +475,14 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
-            public readonly EventRecord[] Events;
-            public readonly EventRecord[] LinkToEvents;
+            public readonly EventLinkPair[] Events;
             public readonly RangeReadResult Result;
             public readonly int NextEventNumber;
             public readonly long? LastCommitPosition;
 
             public ReadStreamEventsBackwardCompleted(Guid correlationId,
                                                      string eventStreamId,
-                                                     EventRecord[] events,
-                                                     EventRecord[] linkToEvents,
+                                                     EventLinkPair[] events,
                                                      RangeReadResult result,
                                                      int nextEventNumber,
                                                      long? lastCommitPosition)
@@ -497,7 +492,6 @@ namespace EventStore.Core.Messages
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
                 Events = events;
-                LinkToEvents = linkToEvents;
                 Result = result;
                 NextEventNumber = nextEventNumber;
                 LastCommitPosition = lastCommitPosition;

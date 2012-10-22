@@ -52,11 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     {
         protected TestMessageHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 
-        protected readonly Dictionary<string, List<EventRecord>> _lastMessageReplies =
-            new Dictionary<string, List<EventRecord>>();
-
-        private RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
-        private RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
+        protected readonly Dictionary<string, List<EventRecord>> _lastMessageReplies = new Dictionary<string, List<EventRecord>>();
 
         private int _fakePosition = 100;
         private bool _allWritesSucceed;
@@ -156,20 +152,20 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 if (list != null && list.Count > 0 && (list.Last().EventNumber <= message.FromEventNumber)
                     || (message.FromEventNumber == -1))
                 {
-                    EventRecord[] records =
+                    EventLinkPair[] records =
                         (list != null ? list.AsEnumerable() : Enumerable.Empty<EventRecord>()).Reverse().SkipWhile(
                             v => message.FromEventNumber != -1 && v.EventNumber > message.FromEventNumber).Take(
-                                message.MaxCount).ToArray();
+                                message.MaxCount).Select(x => new EventLinkPair(x, null)).ToArray();
                     message.Envelope.ReplyWith(
                         new ClientMessage.ReadStreamEventsBackwardCompleted(
-                            message.CorrelationId, message.EventStreamId, records, null, RangeReadResult.Success,
-                            (records.Length > 0) ? records[records.Length - 1].EventNumber - 1 : -1,
+                            message.CorrelationId, message.EventStreamId, records, RangeReadResult.Success,
+                            (records.Length > 0) ? records[records.Length - 1].Event.EventNumber - 1 : -1,
                             lastCommitPosition: _lastPosition));
                 }
                 else
                     message.Envelope.ReplyWith(
                         new ClientMessage.ReadStreamEventsBackwardCompleted(
-                            message.CorrelationId, message.EventStreamId, new EventRecord[0], null,
+                            message.CorrelationId, message.EventStreamId, new EventLinkPair[0],
                             RangeReadResult.Success, -1, lastCommitPosition: _lastPosition));
             }
         }

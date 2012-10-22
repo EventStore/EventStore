@@ -610,7 +610,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var positionTag = committedEventReceived.CheckpointTag;
             if (message.Events.Length == 1)
             {
-                EventRecord @event = message.Events[0];
+                EventRecord @event = message.Events[0].Event;
                 if (@event.EventType == "StateUpdated")
                 {
                     var checkpointTag = @event.Metadata.ParseJson<CheckpointTag>();

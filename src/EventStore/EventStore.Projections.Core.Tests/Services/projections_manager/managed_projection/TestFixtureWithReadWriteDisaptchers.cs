@@ -40,12 +40,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
     {
         protected InMemoryBus _bus;
 
-        protected RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
-
-        protected
-            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-            _readDispatcher;
+        protected RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
+        protected RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
 
         protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
         protected WatchingConsumer _consumer;
