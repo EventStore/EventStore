@@ -180,7 +180,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (lastCommitPosition == -1)
                 return; //TODO: this shouldnot happen, but StorageReader does not return it now
             _publisher.Publish(
-                new ProjectionMessage.Projections.CommittedEventReceived(
+                new ProjectionMessage.Projections.CommittedEventDistributed(
                     _distibutionPointCorrelationId, new EventPosition(long.MinValue, lastCommitPosition), _streamName,
                     _fromSequenceNumber, _streamName, _fromSequenceNumber, false, null));
         }
@@ -198,7 +198,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                  || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(
                 //TODO: publish bothlink and event data
-                new ProjectionMessage.Projections.CommittedEventReceived(
+                new ProjectionMessage.Projections.CommittedEventDistributed(
                     _distibutionPointCorrelationId, new EventPosition(long.MinValue, positionEvent.LogPosition),
                     positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
                     resolvedLinkTo, new Event(@event.EventId, @event.EventType, false, @event.Data, @event.Metadata)));

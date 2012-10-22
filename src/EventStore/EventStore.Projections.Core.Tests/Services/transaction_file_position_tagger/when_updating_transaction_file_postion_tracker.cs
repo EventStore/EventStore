@@ -46,10 +46,8 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
             // given
             _tagger = new TransactionFilePositionTagger();
             _positionTracker = new PositionTracker(_tagger);
-            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
-                                                                                Guid.NewGuid(), new EventPosition(100, 50), "stream", 1, false,
-                                                                                new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
-            _positionTracker.UpdateByCheckpointTagForward(newTag);
+            var newTag = CheckpointTag.FromPosition(100, 50);
+            _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
         [Test]
@@ -61,9 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cannot_update_to_the_same_postion()
         {
-            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
-                                                                                Guid.NewGuid(), new EventPosition(100, 50), "stream", 1, false,
-                                                                                new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
+            var newTag = CheckpointTag.FromPosition(100, 50);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
     }

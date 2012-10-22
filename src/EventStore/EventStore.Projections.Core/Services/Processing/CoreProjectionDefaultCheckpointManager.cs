@@ -44,13 +44,22 @@ namespace EventStore.Projections.Core.Services.Processing
         private Event _checkpointEventToBePublished;
         private CheckpointTag _requestedCheckpointPosition;
 
-        public CoreProjectionDefaultCheckpointManager(ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId, RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher, RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher, ProjectionConfig projectionConfig, string projectionCheckpointStreamId, string name, PositionTagger positionTagger)
-            : base(coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig, projectionCheckpointStreamId, name, positionTagger)
+        public CoreProjectionDefaultCheckpointManager(
+            ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+            ProjectionConfig projectionConfig, string projectionCheckpointStreamId, string name,
+            PositionTagger positionTagger)
+            : base(
+                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
+                projectionCheckpointStreamId, name, positionTagger)
         {
             _projectionCheckpointStreamId = projectionCheckpointStreamId;
         }
 
-        protected override void BeginWriteCheckpoint(CheckpointTag requestedCheckpointPosition, string requestedCheckpointState)
+        protected override void BeginWriteCheckpoint(
+            CheckpointTag requestedCheckpointPosition, string requestedCheckpointState)
         {
             _requestedCheckpointPosition = requestedCheckpointPosition;
             _inCheckpointWriteAttempt = 1;
@@ -125,8 +134,8 @@ namespace EventStore.Projections.Core.Services.Processing
             const int recordsToRequest = 10;
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), _readDispatcher.Envelope, _projectionCheckpointStreamId,
-                    _nextStateIndexToRequest, recordsToRequest, resolveLinks: false), OnLoadStateReadRequestCompleted);
+                    Guid.NewGuid(), _readDispatcher.Envelope, _projectionCheckpointStreamId, _nextStateIndexToRequest,
+                    recordsToRequest, resolveLinks: false), OnLoadStateReadRequestCompleted);
         }
 
         private void OnLoadStateReadRequestCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message)

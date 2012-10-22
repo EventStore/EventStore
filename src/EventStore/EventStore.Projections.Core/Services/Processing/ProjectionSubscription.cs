@@ -66,10 +66,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _positionTagger = checkpointStrategy.PositionTagger;
             _positionTracker = new PositionTracker(_positionTagger);
-            _positionTracker.UpdateByCheckpointTag(from);
+            _positionTracker.UpdateByCheckpointTagInitial(from);
         }
 
-        public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
+        public void Handle(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             if (message.Data == null)
                 throw new NotSupportedException();
@@ -78,7 +78,8 @@ namespace EventStore.Projections.Core.Services.Processing
             // and they may not pass out source filter.  Discard them first
             if (!_eventFilter.PassesSource(message.ResolvedLinkTo, message.PositionStreamId))
                 return;
-            var eventCheckpointTag = _positionTagger.MakeCheckpointTag(message);
+            var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
+            //TODO: when joining heading distribution point replayed events may cause invalid operation exception on comparison
             if (eventCheckpointTag <= _positionTracker.LastTag)
             {
                 _logger.Trace(
@@ -86,18 +87,18 @@ namespace EventStore.Projections.Core.Services.Processing
                     message.PositionSequenceNumber, message.PositionStreamId, message.Position, _positionTracker.LastTag);
                 return;
             }
-            var newTag = _positionTagger.MakeCheckpointTag(message);
-            _positionTracker.UpdateByCheckpointTagForward(newTag);
+            _positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
             if (_eventFilter.Passes(message.ResolvedLinkTo, message.PositionStreamId, message.Data.EventType))
             {
                 _lastPassedOrCheckpointedEventPosition = message.Position;
-                _eventHandler.Handle(message);
+                var convertedMessage =
+                    ProjectionMessage.Projections.CommittedEventReceived.FromCommittedEventDistributed(message, eventCheckpointTag);
+                _eventHandler.Handle(convertedMessage);
             }
             else
             {
                 if (_checkpointUnhandledBytesThreshold != null
-                    &&
-                    message.Position.CommitPosition - _lastPassedOrCheckpointedEventPosition.CommitPosition
+                    && message.Position.CommitPosition - _lastPassedOrCheckpointedEventPosition.CommitPosition
                     > _checkpointUnhandledBytesThreshold)
                 {
                     _lastPassedOrCheckpointedEventPosition = message.Position;
@@ -108,31 +109,35 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public EventDistributionPoint CreatePausedEventDistributionPoint(IPublisher publisher, IPublisher inputQueue, Guid distributionPointId)
+        public EventDistributionPoint CreatePausedEventDistributionPoint(
+            IPublisher publisher, IPublisher inputQueue, Guid distributionPointId)
         {
             _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
-            return _checkpointStrategy.CreatePausedEventDistributionPoint(distributionPointId, publisher, inputQueue, _positionTracker.LastTag);
+            return _checkpointStrategy.CreatePausedEventDistributionPoint(
+                distributionPointId, publisher, inputQueue, _positionTracker.LastTag);
         }
 
-        public bool CanJoinAt(
-            EventPosition firstAvailableTransactionFileEvent, CheckpointTag eventCheckpointTag)
+        public bool CanJoinAt(EventPosition firstAvailableTransactionFileEvent, CheckpointTag eventCheckpointTag)
         {
             //NOTE: here the committed event MUST pass the projection subscription source filter as it was sent to us by specialized event
             // distribution point.  MakeCheckpointTag fails otherwise.
 
-            var result = _checkpointStrategy.IsCheckpointTagAfterEventPosition(eventCheckpointTag, firstAvailableTransactionFileEvent);
+            var result = _checkpointStrategy.IsCheckpointTagAfterEventPosition(
+                eventCheckpointTag, firstAvailableTransactionFileEvent);
 
             if (result)
-                _logger.Trace("Projection subscription '{0}' can join distribution at '{1}' when the first available event is '{2}'",
+                _logger.Trace(
+                    "Projection subscription '{0}' can join distribution at '{1}' when the first available event is '{2}'",
                     _projectionCorrelationId, eventCheckpointTag, firstAvailableTransactionFileEvent);
 
 
             return result;
         }
 
-        public CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventReceived committedEvent)
+        public CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventDistributed committedEvent)
         {
-            var tag = this._positionTagger.MakeCheckpointTag(committedEvent);
+            // this is the same tag that will be generated by Handle(CommittedEventDistributed)
+            var tag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, committedEvent);
             return tag;
         }
     }

@@ -33,7 +33,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Transport.Http;
-using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http
@@ -48,13 +47,12 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.OK, "OK", entity.ResponseCodec.ContentType);
         }
 
-        public static ResponseConfiguration OkExpires(HttpEntity entity, Message message, int seconds)
+        public static ResponseConfiguration OkCache(HttpEntity entity, Message message, int seconds)
         {
             return new ResponseConfiguration(HttpStatusCode.OK,
                                              "OK",
                                              entity.ResponseCodec.ContentType,
-                                             new KeyValuePair<string, string>("Cache-Control",
-                                                                              string.Format("max-age={0}", seconds)));
+                                             new KeyValuePair<string, string>("Cache-Control", string.Format("max-age={0}", seconds)));
         }
 
         public static ResponseConfiguration OkNoCache(HttpEntity entity, Message message, params KeyValuePair<string, string>[] headers)
@@ -64,9 +62,6 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration OkNoCache(string contentType, params KeyValuePair<string, string>[] headers)
         {
-            // http://condor.depaul.edu/dmumaugh/readings/handouts/SE435/HTTP/node24.html
-            // http://stackoverflow.com/a/5084395
-
             return new ResponseConfiguration(HttpStatusCode.OK,
                                              "OK",
                                              contentType,
@@ -104,7 +99,7 @@ namespace EventStore.Core.Services.Transport.Http
             switch (completed.Result)
             {
                 case SingleReadResult.Success:
-                    return OkExpires(entity, message, MaxPossibleAge);
+                    return OkCache(entity, message, MaxPossibleAge);
                 case SingleReadResult.NotFound:
                 case SingleReadResult.NoStream:
                     return NotFound(entity, completed);
@@ -123,13 +118,10 @@ namespace EventStore.Core.Services.Transport.Http
             if (completed == null)
                 return InternalServerEror(entity, message);
 
-            var startIdx = (int)entity.Manager.AsyncState;
-            var age = MinPossibleAge;
-
             switch (completed.Result)
             {
                 case RangeReadResult.Success:
-                    return OkExpires(entity, message, age);
+                    return OkCache(entity, message, MinPossibleAge);
                 case RangeReadResult.NoStream:
                     return NotFound(entity, completed);
                 case RangeReadResult.StreamDeleted:
@@ -261,10 +253,8 @@ namespace EventStore.Core.Services.Transport.Http
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
 
             var completed = message as ClientMessage.ReadAllEventsBackwardCompleted;
-            var age = MinPossibleAge;
-
             return completed != null
-                       ? OkExpires(entity, message, age)
+                       ? OkCache(entity,message, MinPossibleAge)
                        : new ResponseConfiguration(HttpStatusCode.InternalServerError,
                                                    "Failed to read all events backward", null);
         }
@@ -274,10 +264,8 @@ namespace EventStore.Core.Services.Transport.Http
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
 
             var completed = message as ClientMessage.ReadAllEventsForwardCompleted;
-            var age = MinPossibleAge;
-
             return completed != null
-                       ? OkExpires(entity, message, age)
+                       ? OkCache(entity, message, MinPossibleAge)
                        : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Failed to read all events forward", null);
         }
     }

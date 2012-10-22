@@ -26,42 +26,63 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 #pragma warning disable 1718 // allow a == a comparison
 
-namespace EventStore.Projections.Core.Tests.Services
+namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
 {
     [TestFixture]
-    public class checkpoint_tag_by_stream_position_with_invalid_prepapre_position
+    public class checkpoint_tag_by_tf_position
     {
-        private readonly CheckpointTag _a = CheckpointTag.FromStreamPosition("stream", 9, 100);
-        private readonly CheckpointTag _b = CheckpointTag.FromStreamPosition("stream", 15, 90);
+        private readonly CheckpointTag _aa = CheckpointTag.FromPosition(10, 9);
+        private readonly CheckpointTag _b1 = CheckpointTag.FromPosition(20, 15);
+        private readonly CheckpointTag _b2 = CheckpointTag.FromPosition(20, 17);
+        private readonly CheckpointTag _cc = CheckpointTag.FromPosition(30, 29);
+        private readonly CheckpointTag _d1 = CheckpointTag.FromPosition(40, 35);
+        private readonly CheckpointTag _d2 = CheckpointTag.FromPosition(40, 36);
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void less_operator_throws()
+        [Test]
+        public void equal_equals()
         {
-            Assert.IsTrue(_a < _b);
+            Assert.IsTrue(_aa.Equals(_aa));
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void less_or_equal_operator_throws()
+        [Test]
+        public void equal_operator()
         {
-            Assert.IsTrue(_a <= _b);
+            Assert.IsTrue(_b1 == _b1);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void greater_operator_throws()
+        [Test]
+        public void less_operator()
         {
-            Assert.IsTrue(_b > _a);
+            Assert.IsTrue(_aa < _b1);
+            Assert.IsTrue(_b1 < _b2);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void greater_or_equal_operator_throws()
+        [Test]
+        public void less_or_equal_operator()
         {
-            Assert.IsTrue(_b >= _a);
+            Assert.IsTrue(_aa <= _b1);
+            Assert.IsTrue(_b1 <= _b2);
+            Assert.IsTrue(_b2 <= _b2);
+        }
+
+        [Test]
+        public void greater_operator()
+        {
+            Assert.IsTrue(_d1 > _cc);
+            Assert.IsTrue(_d2 > _d1);
+        }
+
+        [Test]
+        public void greater_or_equal_operator()
+        {
+            Assert.IsTrue(_d1 >= _cc);
+            Assert.IsTrue(_d2 >= _d1);
+            Assert.IsTrue(_b2 >= _b2);
         }
     }
 #pragma warning restore 1718

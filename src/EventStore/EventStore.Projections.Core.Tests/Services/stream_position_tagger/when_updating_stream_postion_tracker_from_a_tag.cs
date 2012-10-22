@@ -48,16 +48,14 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
             var tagger = new StreamPositionTagger("stream1");
             var tracker = new PositionTracker(tagger);
 
-            var newTag = tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
-                                                                       Guid.NewGuid(), new EventPosition(100, 50), "stream1", 1, false,
-                                                                       new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
-            tracker.UpdateByCheckpointTagForward(newTag);
+            var newTag = CheckpointTag.FromStreamPosition("stream1", 1, 50);
+            tracker.UpdateByCheckpointTagInitial(newTag);
             _tag = tracker.LastTag;
             _tagger = new StreamPositionTagger("stream1");
             _positionTracker = new PositionTracker(_tagger);
             // when 
 
-            _positionTracker.UpdateByCheckpointTag(_tag);
+            _positionTracker.UpdateByCheckpointTagInitial(_tag);
         }
 
         [Test]

@@ -26,56 +26,42 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 #pragma warning disable 1718 // allow a == a comparison
 
-namespace EventStore.Projections.Core.Tests.Services
+namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
 {
     [TestFixture]
-    public class checkpoint_tag_by_stream_position
+    public class checkpoint_tag_by_stream_position_with_invalid_prepapre_position
     {
         private readonly CheckpointTag _a = CheckpointTag.FromStreamPosition("stream", 9, 100);
-        private readonly CheckpointTag _b = CheckpointTag.FromStreamPosition("stream", 15, 110);
-        private readonly CheckpointTag _c = CheckpointTag.FromStreamPosition("stream", 29, 120);
+        private readonly CheckpointTag _b = CheckpointTag.FromStreamPosition("stream", 15, 90);
 
-        [Test]
-        public void equal_equals()
-        {
-            Assert.IsTrue(_a.Equals(_a));
-        }
-
-        [Test]
-        public void equal_operator()
-        {
-            Assert.IsTrue(_b == _b);
-        }
-
-        [Test]
-        public void less_operator()
+        [Test, ExpectedException(typeof (InvalidOperationException))]
+        public void less_operator_throws()
         {
             Assert.IsTrue(_a < _b);
         }
 
-        [Test]
-        public void less_or_equal_operator()
+        [Test, ExpectedException(typeof (InvalidOperationException))]
+        public void less_or_equal_operator_throws()
         {
             Assert.IsTrue(_a <= _b);
-            Assert.IsTrue(_c <= _c);
         }
 
-        [Test]
-        public void greater_operator()
+        [Test, ExpectedException(typeof (InvalidOperationException))]
+        public void greater_operator_throws()
         {
             Assert.IsTrue(_b > _a);
         }
 
-        [Test]
-        public void greater_or_equal_operator()
+        [Test, ExpectedException(typeof (InvalidOperationException))]
+        public void greater_or_equal_operator_throws()
         {
             Assert.IsTrue(_b >= _a);
-            Assert.IsTrue(_c >= _c);
         }
     }
 #pragma warning restore 1718

@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
             _positionTracker = new PositionTracker(_tagger);
             // when 
 
-            _positionTracker.UpdateByCheckpointTag(_tagger.MakeZeroCheckpointTag());
+            _positionTracker.UpdateByCheckpointTagInitial(_tagger.MakeZeroCheckpointTag());
         }
 
         [Test]
