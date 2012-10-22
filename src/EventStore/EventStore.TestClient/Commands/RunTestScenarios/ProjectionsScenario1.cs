@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
@@ -41,24 +42,26 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 ";
             store.Projections.CreateAdHoc(countItemsProjectionName, countItemsProjection);
 
-            Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream);
-            Write(WriteMode.Bucket, slices[1], EventsPerStream);
-            Write(WriteMode.Transactional, slices[2], EventsPerStream);
+            var w1 = Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream);
+            var w2 = Write(WriteMode.Bucket, slices[1], EventsPerStream);
+            var w3 = Write(WriteMode.Transactional, slices[2], EventsPerStream);
+
+            Task.WaitAll(new [] { w1, w2, w3 });
 
             string state = null;
             var success = false;
             var expectedAllEventsCount = (streams.Length * EventsPerStream + streams.Length).ToString();
 
             var stopWatch = Stopwatch.StartNew();
-            while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(1000 + streams.Length * EventsPerStream))
+            while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(1000 + 10 * streams.Length * EventsPerStream))
             {
-                var stopWatch = Stopwatch.StartNew();
-                while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(10000 + streams.Length * EventsPerStream))
+                state = store.Projections.GetState(countItemsProjectionName);
+                Log.Info("Raw state: {0}", state);
+                if (state.Contains(expectedAllEventsCount))
                 {
                     success = true;
                     break;
                 }
-
                 Thread.Sleep(200);
             }
             

@@ -34,12 +34,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
     internal class ProjectionsKillScenario : ScenarioBase
     {
         public ProjectionsKillScenario(Action<byte[]> directSendOverTcp,
-                                          int maxConcurrentRequests,
-                                          int threads,
-                                          int streams,
-                                          int eventsPerStream,
-                                          int streamDeleteStep)
-            : base(directSendOverTcp, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep)
+                                       int maxConcurrentRequests,
+                                       int connections,
+                                       int streams,
+                                       int eventsPerStream,
+                                       int streamDeleteStep)
+            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep)
         {
         }
 
@@ -50,7 +50,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return @event;
         }
 
-        public override void Run()
+        protected override void RunInternal()
         {
             var nodeProcessId = StartNode();
 
@@ -62,31 +62,37 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var success = false;
             var expectedAllEventsCount = (Streams * EventsPerStream + Streams).ToString();
             var expectedEventsPerStream = EventsPerStream.ToString();
-            var restartTimeMilliseconds = 0;
-            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
+
+            var isWatchStarted = false;
+            var store = GetConnection();
+            
+            var stopWatch = new Stopwatch();
+            while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(1000 + 5 * Streams * EventsPerStream))
             {
-                var stopWatch = new Stopwatch();
-                while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(1000 + 10 * Streams * EventsPerStream + restartTimeMilliseconds))
+                if (writeTask.IsFaulted)
+                    throw new ApplicationException("Failed to write data");
+
+                if (writeTask.IsCompleted && !stopWatch.IsRunning)
                 {
-                    if (writeTask.IsFaulted)
-                        throw new ApplicationException("Failed to write data");
-
-                    if (writeTask.IsCompleted && !stopWatch.IsRunning)
-                        stopWatch.Start();
-
-                    success = CheckProjectionState(store, countItem, "count", x => x == expectedAllEventsCount)
-                              && CheckProjectionState(store, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
-
-                    if (success)
-                        break;
-
-                    Thread.Sleep(4000);
-                    if (stopWatch.IsRunning)
-                        restartTimeMilliseconds += 6000;
-
-                    KillNode(nodeProcessId);
-                    nodeProcessId = StartNode();
+                    stopWatch.Start();
+                    isWatchStarted = true;
                 }
+
+                success = CheckProjectionState(store, countItem, "count", x => x == expectedAllEventsCount)
+                            && CheckProjectionState(store, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
+
+                if (success)
+                    break;
+
+                if (isWatchStarted)
+                    stopWatch.Stop();
+
+                Thread.Sleep(4000);
+                KillNode(nodeProcessId);
+                nodeProcessId = StartNode();
+
+                if (isWatchStarted)
+                    stopWatch.Start();
             }
 
             writeTask.Wait();
@@ -133,8 +139,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     });
 ";
 
-            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
-                store.Projections.CreatePersistent(countItemsProjectionName, countItemsProjection);
+            GetConnection().Projections.CreatePersistent(countItemsProjectionName, countItemsProjection);
 
             return countItemsProjectionName;
         }
@@ -175,8 +180,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     });
 ";
 
-            using (var store = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger))
-                store.Projections.CreatePersistent(countItemsProjectionName, countItemsProjection);
+            
+            GetConnection().Projections.CreatePersistent(countItemsProjectionName, countItemsProjection);
 
             return countItemsProjectionName;
         }
