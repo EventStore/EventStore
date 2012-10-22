@@ -44,9 +44,14 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
+        public static MiniNode Create(int externalTcpPort, int externalHttpPort)
+        {
+            return new MiniNode(externalTcpPort, externalHttpPort);
+        }
+
         private MiniNode(int externalTcpPort = 4222, int externalHttpPort = 5222)
         {
-            _oneTimeDbPath = Path.Combine(Path.GetTempPath(), "mini-node-one-time-db");
+            _oneTimeDbPath = Path.Combine(Path.GetTempPath(), string.Format("mini-node-one-time-db-{0}-{1}", externalTcpPort, externalHttpPort));
             TryDeleteDirectory(_oneTimeDbPath);
             Directory.CreateDirectory(_oneTimeDbPath);
             _tfChunkDb = new TFChunkDb(CreateOneTimeDbConfig(256*1024*1024, _oneTimeDbPath, 2));
@@ -64,13 +69,13 @@ namespace EventStore.Core.Tests.ClientAPI
         public void Start()
         {
             _node.Start();
-            Thread.Sleep(2000);
+            Thread.Sleep(750);
         }
 
         public void Shutdown()
         {
             _node.Stop();
-            Thread.Sleep(2000);
+            Thread.Sleep(750);
 
             _chaserChk.Dispose();
             _writerChk.Dispose();

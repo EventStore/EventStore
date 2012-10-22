@@ -52,19 +52,28 @@ namespace EventStore.TestClient.Commands
 
         private const string AllScenariosFlag = "ALL";
 
+        private const int MaxConcurrentRequests = 50;
+        private const int ConnectionCount = 5;
+        private const int StreamCount = 2000;
+        private const int EventsPerStreamCount = 200;
+
         public string Usage
         {
             get
             {
                 return string.Format("{0} " +
-                                     "<max concurrent requests, default = 100> " +
-                                     "<threads, default = 20> " +
-                                     "<streams, default = 2000> " +
-                                     "<eventsPerStream, default = 300> " +
+                                     "<max concurrent requests, default = {1}> " +
+                                     "<connections, default = {2}> " +
+                                     "<streams, default = {3}> " +
+                                     "<eventsPerStream, default = {4}> " +
                                      "<streams delete step, default = 7> " +
                                      "<scenario name, default = LoopingScenario, " + AllScenariosFlag + " for all scenarios>" +
                                      "<execution period minutes, default = 10>",
-                                     Keyword);
+                                     Keyword,
+                                     MaxConcurrentRequests,
+                                     ConnectionCount,
+                                     StreamCount,
+                                     EventsPerStreamCount);
             }
         }
 
@@ -72,11 +81,10 @@ namespace EventStore.TestClient.Commands
         {
             if (args.Length != 0 && args.Length != 7)
                 return false;
-
-            var maxConcurrentRequests = 100;
-            var threads = 20;
-            var streams = 2000;
-            var eventsPerStream = 300;
+            var maxConcurrentRequests = MaxConcurrentRequests;
+            var connections = ConnectionCount;
+            var streams = StreamCount;
+            var eventsPerStream = EventsPerStreamCount;
             var streamDeleteStep = 7;
             var scenarioName = "LoopingScenario";
             var executionPeriodMinutes = 10;
@@ -86,7 +94,7 @@ namespace EventStore.TestClient.Commands
                 try
                 {
                     maxConcurrentRequests = int.Parse(args[0]);
-                    threads = int.Parse(args[1]);
+                    connections = int.Parse(args[1]);
                     streams = int.Parse(args[2]);
                     eventsPerStream = int.Parse(args[3]);
                     streamDeleteStep = int.Parse(args[4]);
@@ -102,11 +110,11 @@ namespace EventStore.TestClient.Commands
 
             context.IsAsync();
 
-            Log.Info("Running scenario {0} using {1} threads, {2} streams {3} events each deleting every {4}th stream. " +
+            Log.Info("Running scenario {0} using {1} connections, {2} streams {3} events each deleting every {4}th stream. " +
                      "Period {5} minutes. " +
                      "Max concurrent ES requests {6}",
                      scenarioName,
-                     threads,
+                     connections,
                      streams,
                      eventsPerStream,
                      streamDeleteStep,
@@ -118,12 +126,13 @@ namespace EventStore.TestClient.Commands
             {
                 new LoopingScenario(directTcpSender, 
                                     maxConcurrentRequests, 
-                                    threads, 
+                                    connections, 
                                     streams, 
                                     eventsPerStream, 
                                     streamDeleteStep, 
                                     TimeSpan.FromMinutes(executionPeriodMinutes)), 
-                   new ProjectionsScenario1(directTcpSender, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep),
+                   new ProjectionsScenario1(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep),
+                   new ProjectionsKillScenario(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep)
                 };
 
             Log.Info("Found scenarios ({0} total).", allScenarios.Length);
@@ -151,7 +160,9 @@ namespace EventStore.TestClient.Commands
             }
             Log.Info("Finished running test scenarios");
 
-            context.Success();
+            if (context.ExitCode == 0)
+                context.Success();
+
             return true;
         }
 

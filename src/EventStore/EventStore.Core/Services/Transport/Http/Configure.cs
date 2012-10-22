@@ -55,18 +55,22 @@ namespace EventStore.Core.Services.Transport.Http
                                              new KeyValuePair<string, string>("Cache-Control", string.Format("max-age={0}", seconds)));
         }
 
-        public static ResponseConfiguration OkNoCache(HttpEntity entity, Message message)
+        public static ResponseConfiguration OkNoCache(HttpEntity entity, Message message, params KeyValuePair<string, string>[] headers)
         {
-            return OkNoCache(entity.ResponseCodec.ContentType);
+            return OkNoCache(entity.ResponseCodec.ContentType, headers);
         }
 
-        public static ResponseConfiguration OkNoCache(string contentType)
+        public static ResponseConfiguration OkNoCache(string contentType, params KeyValuePair<string, string>[] headers)
         {
             return new ResponseConfiguration(HttpStatusCode.OK,
                                              "OK",
                                              contentType,
-                                             new KeyValuePair<string, string>("Cache-Control", string.Format("no-cache, max-age={0}", 0)),
-                                             new KeyValuePair<string, string>("Expires", "-1"));
+                                             new List<KeyValuePair<string, string>>(headers)
+                                             {
+                                                 new KeyValuePair<string, string>("Cache-Control",
+                                                                                  string.Format("no-cache, max-age={0}", 0)),
+                                                 new KeyValuePair<string, string>("Expires", "-1")
+                                             }.ToArray());
         }
 
         public static ResponseConfiguration NotFound(HttpEntity entity, Message message)
@@ -169,7 +173,9 @@ namespace EventStore.Core.Services.Transport.Http
             if (completed == null)
                 return InternalServerEror(entity, message);
 
-            return completed.Success ? OkNoCache(entity, message) : NotFound(entity, message);
+            // TODO MM: use this only in cluster node
+            var allowManagerGetStatsHeader = new KeyValuePair<string, string>("Access-Control-Allow-Origin", "http://127.0.0.1:30777");
+            return completed.Success ? OkNoCache(entity, message, allowManagerGetStatsHeader) : NotFound(entity, message);
         }
 
         public static ResponseConfiguration CreateStreamCompleted(HttpEntity entity, Message message)
@@ -183,12 +189,12 @@ namespace EventStore.Core.Services.Transport.Http
             switch (completed.ErrorCode)
             {
                 case OperationErrorCode.Success:
-                    return new ResponseConfiguration(HttpStatusCode.Created, 
-                                                     "Stream created", 
+                    return new ResponseConfiguration(HttpStatusCode.Created,
+                                                     "Stream created",
                                                      null,
-                                                     new KeyValuePair<string, string>("Location", 
-                                                                                      HostName.Combine(entity.UserHostName, 
-                                                                                                  "/streams/{0}", 
+                                                     new KeyValuePair<string, string>("Location",
+                                                                                      HostName.Combine(entity.UserHostName,
+                                                                                                  "/streams/{0}",
                                                                                                   completed.EventStreamId)));
                 case OperationErrorCode.PrepareTimeout:
                 case OperationErrorCode.CommitTimeout:

@@ -76,11 +76,16 @@
     <Compile Include="Bus\when_publishing.cs" />
     <Compile Include="Bus\when_subscribing.cs" />
     <Compile Include="Bus\when_unsubscribing.cs" />
+    <Compile Include="ClientAPI\AllEvents\read_all_events_backward_should.cs" />
+    <Compile Include="ClientAPI\AllEvents\read_all_events_forward_should.cs" />
+    <Compile Include="ClientAPI\AllEvents\subscribe_to_all_should.cs" />
     <Compile Include="ClientAPI\api_tests_nunit_setup.cs" />
     <Compile Include="ClientAPI\append_to_stream.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
     <Compile Include="ClientAPI\creating_stream.cs" />
     <Compile Include="ClientAPI\MiniNode.cs" />
+    <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
+    <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
     <Compile Include="ClientAPI\TestEvent.cs" />
     <Compile Include="ClientAPI\transaction.cs" />
     <Compile Include="Common\CollectionsExtensions.cs" />
@@ -96,7 +101,6 @@
     <Compile Include="Helper\ReflectionDynamic.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
-    <Compile Include="Index\create_hashcode_from_byte_arrays.cs" />
     <Compile Include="Index\create_index_map_from_non_existing_file.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\adding_item_to_empty_index_map.cs" />

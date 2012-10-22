@@ -55,7 +55,7 @@ namespace EventStore.ClientAPI
         private readonly int _maxAttempts;
         private readonly int _maxReconnections;
 
-        private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(0.5);
+        private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(3);
         private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(7);
         private static readonly TimeSpan OperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
@@ -66,7 +66,6 @@ namespace EventStore.ClientAPI
         private readonly object _connectionLock = new object();
 
         private readonly SubscriptionsChannel _subscriptionsChannel;
-
         private readonly ProjectionsManager _projectionsManager;
 
 #if __MonoCS__
@@ -698,11 +697,11 @@ namespace EventStore.ClientAPI
                                                         lastUpdated,
                                                         _lastReconnectionTimestamp,
                                                         now);
-//                                if (TryRemoveWorkItem(workerItem))
-//                                {
-//                                    _log.Error(err);
-//                                    workerItem.Operation.Fail(new OperationTimedOutException(err));
-//                                }
+                                if (TryRemoveWorkItem(workerItem))
+                                {
+                                    _log.Error(err);
+                                    workerItem.Operation.Fail(new OperationTimedOutException(err));
+                                }
                                 _log.Error(err);
                             }
                             else
@@ -748,10 +747,7 @@ namespace EventStore.ClientAPI
                 WorkItem inProgressItem;
                 if (_inProgress.TryRemove(workItem.Operation.CorrelationId, out inProgressItem))
                 {
-                    inProgressItem.Operation.SetRetryId(Guid.NewGuid());
                     inProgressItem.Attempt += 1;
-                    Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
-
                     if (inProgressItem.Attempt > _maxAttempts)
                     {
                         _log.Error("Retries limit reached for : {0}", inProgressItem);
@@ -760,6 +756,8 @@ namespace EventStore.ClientAPI
                     }
                     else
                     {
+                        inProgressItem.Operation.SetRetryId(Guid.NewGuid());
+                        Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
                         Send(inProgressItem);
                     }
                 }

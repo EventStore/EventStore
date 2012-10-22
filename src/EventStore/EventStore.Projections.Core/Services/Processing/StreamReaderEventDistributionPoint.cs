@@ -120,8 +120,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         for (int index = 0; index < message.Events.Length; index++)
                         {
-                            var @event = message.Events[index];
-                            var @link = message.LinkToEvents != null ? message.LinkToEvents[index] : null;
+                            var @event = message.Events[index].Event;
+                            var @link = message.Events[index].Link;
                             DeliverEvent(@event, @link);
                         }
                     }

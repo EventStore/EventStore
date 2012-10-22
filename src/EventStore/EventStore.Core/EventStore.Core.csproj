@@ -77,6 +77,7 @@
     <Compile Include="Cluster\VNodeState.cs" />
     <Compile Include="DataStructures\ObjectPool.cs" />
     <Compile Include="DataStructures\PairingHeap.cs" />
+    <Compile Include="Data\EventLinkPair.cs" />
     <Compile Include="Data\EventNumber.cs" />
     <Compile Include="Data\EventRecord.cs" />
     <Compile Include="Data\ResolvedEventRecord.cs" />

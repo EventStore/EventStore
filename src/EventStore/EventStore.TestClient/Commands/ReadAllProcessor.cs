@@ -95,7 +95,7 @@ namespace EventStore.TestClient.Commands
                 },
                 handlePackage: (conn, pkg) =>
                 {
-                    EventRecord[] records;
+                    EventLinkPair[] records;
                     long nextCommitPos;
                     long nextPreparePos;
 
@@ -140,7 +140,7 @@ namespace EventStore.TestClient.Commands
                     var sb = new StringBuilder();
                     for (int i = 0; i < records.Length; ++i)
                     {
-                        var evnt = records[i];
+                        var evnt = records[i].Event;
                         sb.AppendFormat("\n{0}:\tLogPosition: {1},\n\tStreamId: {2},\n\tEventNumber: {3},\n\tData:\n{4},\n\tEventType: {5}\n",
                                         total,
                                         evnt.LogPosition,
