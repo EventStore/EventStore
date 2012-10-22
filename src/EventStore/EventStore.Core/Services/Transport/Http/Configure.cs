@@ -57,12 +57,12 @@ namespace EventStore.Core.Services.Transport.Http
                                                                               string.Format("max-age={0}", seconds)));
         }
 
-        public static ResponseConfiguration OkNoCache(HttpEntity entity, Message message)
+        public static ResponseConfiguration OkNoCache(HttpEntity entity, Message message, params KeyValuePair<string, string>[] headers)
         {
-            return OkNoCache(entity.ResponseCodec.ContentType);
+            return OkNoCache(entity.ResponseCodec.ContentType, headers);
         }
 
-        public static ResponseConfiguration OkNoCache(string contentType)
+        public static ResponseConfiguration OkNoCache(string contentType, params KeyValuePair<string, string>[] headers)
         {
             // http://condor.depaul.edu/dmumaugh/readings/handouts/SE435/HTTP/node24.html
             // http://stackoverflow.com/a/5084395
@@ -70,9 +70,12 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.OK,
                                              "OK",
                                              contentType,
-                                             new KeyValuePair<string, string>("Cache-Control",
-                                                                              string.Format("no-cache, max-age={0}", 0)),
-                                             new KeyValuePair<string, string>("Expires", "-1"));
+                                             new List<KeyValuePair<string, string>>(headers)
+                                             {
+                                                 new KeyValuePair<string, string>("Cache-Control",
+                                                                                  string.Format("no-cache, max-age={0}", 0)),
+                                                 new KeyValuePair<string, string>("Expires", "-1")
+                                             }.ToArray());
         }
 
         public static ResponseConfiguration NotFound(HttpEntity entity, Message message)
@@ -178,7 +181,9 @@ namespace EventStore.Core.Services.Transport.Http
             if (completed == null)
                 return InternalServerEror(entity, message);
 
-            return completed.Success ? OkNoCache(entity, message) : NotFound(entity, message);
+            // TODO MM: use this only in cluster node
+            var allowManagerGetStatsHeader = new KeyValuePair<string, string>("Access-Control-Allow-Origin", "127.0.0.1:30777");
+            return completed.Success ? OkNoCache(entity, message, allowManagerGetStatsHeader) : NotFound(entity, message);
         }
 
         public static ResponseConfiguration CreateStreamCompleted(HttpEntity entity, Message message)
@@ -192,12 +197,12 @@ namespace EventStore.Core.Services.Transport.Http
             switch (completed.ErrorCode)
             {
                 case OperationErrorCode.Success:
-                    return new ResponseConfiguration(HttpStatusCode.Created, 
-                                                     "Stream created", 
+                    return new ResponseConfiguration(HttpStatusCode.Created,
+                                                     "Stream created",
                                                      null,
-                                                     new KeyValuePair<string, string>("Location", 
-                                                                                      HostName.Combine(entity.UserHostName, 
-                                                                                                  "/streams/{0}", 
+                                                     new KeyValuePair<string, string>("Location",
+                                                                                      HostName.Combine(entity.UserHostName,
+                                                                                                  "/streams/{0}",
                                                                                                   completed.EventStreamId)));
                 case OperationErrorCode.PrepareTimeout:
                 case OperationErrorCode.CommitTimeout:
@@ -259,7 +264,7 @@ namespace EventStore.Core.Services.Transport.Http
             var age = MinPossibleAge;
 
             return completed != null
-                       ? OkExpires(entity,message, age)
+                       ? OkExpires(entity, message, age)
                        : new ResponseConfiguration(HttpStatusCode.InternalServerError,
                                                    "Failed to read all events backward", null);
         }
@@ -272,7 +277,7 @@ namespace EventStore.Core.Services.Transport.Http
             var age = MinPossibleAge;
 
             return completed != null
-                       ? OkExpires(entity,message,age)
+                       ? OkExpires(entity, message, age)
                        : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Failed to read all events forward", null);
         }
     }
