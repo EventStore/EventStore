@@ -26,17 +26,41 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using EventStore.Projections.Core.Messages;
+using System.Collections.Generic;
+using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
 {
-    public abstract class PositionTagger
+    [TestFixture]
+    public class when_updating_multistream_postion_tracker_from_a_tag
     {
+        private MultiStreamPositionTagger _tagger;
+        private CheckpointTag _tag;
+        private PositionTracker _positionTracker;
 
-        public abstract CheckpointTag MakeCheckpointTag(CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent);
+        [SetUp]
+        public void When()
+        {
+            // given
+            var tagger = new MultiStreamPositionTagger(new []{"stream1", "stream2"});
+            var tracker = new PositionTracker(tagger);
 
-        public abstract CheckpointTag MakeZeroCheckpointTag();
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"stream1", 1}, {"stream2", 2}}, 50);
+            tracker.UpdateByCheckpointTagInitial(newTag);
+            _tag = tracker.LastTag;
+            _tagger = new MultiStreamPositionTagger(new []{"stream1", "stream2"});
+            _positionTracker = new PositionTracker(_tagger);
+            // when 
 
-        public abstract bool IsCompatible(CheckpointTag checkpointTag);
+            _positionTracker.UpdateByCheckpointTagInitial(_tag);
+        }
+
+        [Test]
+        public void stream_position_is_updated()
+        {
+            Assert.AreEqual(1, _positionTracker.LastTag.Streams["stream1"]);
+            Assert.AreEqual(2, _positionTracker.LastTag.Streams["stream2"]);
+        }
     }
 }

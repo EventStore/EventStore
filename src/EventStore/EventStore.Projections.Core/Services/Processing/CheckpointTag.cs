@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Services.Processing
             foreach (var stream in streams)
             {
                 if (stream.Key == "") throw new ArgumentException("Empty stream name", "streams");
-                if (stream.Value < 0) throw new ArgumentException("Invalid sequence number", "streams");
+                if (stream.Value < 0 && stream.Value != ExpectedVersion.NoStream) throw new ArgumentException("Invalid sequence number", "streams");
             }
             Streams = new Dictionary<string, int>(streams); // clone
             Position = new EventPosition(long.MinValue, preparePosition);

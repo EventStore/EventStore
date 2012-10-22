@@ -27,27 +27,26 @@
 // 
 
 using System;
-using EventStore.Core.Data;
-using EventStore.Projections.Core.Messages;
+using System.Collections.Generic;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
+namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
 {
     [TestFixture]
-    public class when_updating_postion_stream_position_tracker
+    public class when_updating_postion_multistream_position_tracker
     {
-        private StreamPositionTagger _tagger;
+        private MultiStreamPositionTagger _tagger;
         private PositionTracker _positionTracker;
 
         [SetUp]
         public void When()
         {
             // given
-            _tagger = new StreamPositionTagger("stream1");
+            _tagger = new MultiStreamPositionTagger(new []{"stream1", "stream2"});
             _positionTracker = new PositionTracker(_tagger);
-            var newTag = CheckpointTag.FromStreamPosition("stream1", 1, 50);
-            var newTag2 = CheckpointTag.FromStreamPosition("stream1", 2, 150);
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"stream1", 1}, {"stream2", 2}}, 50);
+            var newTag2 = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 1 }, { "stream2", 3 } }, 150);
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
             _positionTracker.UpdateByCheckpointTagForward(newTag2);
         }
@@ -55,14 +54,15 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
         [Test]
         public void stream_position_is_updated()
         {
-            Assert.AreEqual(2, _positionTracker.LastTag.Streams["stream1"]);
+            Assert.AreEqual(1, _positionTracker.LastTag.Streams["stream1"]);
+            Assert.AreEqual(3, _positionTracker.LastTag.Streams["stream2"]);
         }
 
         
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cannot_update_to_the_same_postion()
         {
-            var newTag = CheckpointTag.FromStreamPosition("stream1", 2, 150);
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 1 }, { "stream2", 3 } }, 150);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
         public void it_cannot_be_updated_with_other_stream()
         {
             // even not initialized (UpdateToZero can be removed)
-            var newTag = CheckpointTag.FromStreamPosition("other_stream1", 2, 250);
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 3 }, { "stream3", 2 } }, 250);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 

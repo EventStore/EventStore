@@ -27,53 +27,59 @@
 // 
 
 using System;
-using EventStore.Core.Data;
-using EventStore.Projections.Core.Messages;
+using System.Collections.Generic;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
+namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
 {
     [TestFixture]
-    public class when_updating_postion_stream_position_tracker
+    public class multistream_position_tagger
     {
-        private StreamPositionTagger _tagger;
-        private PositionTracker _positionTracker;
-
-        [SetUp]
-        public void When()
+        [Test]
+        public void can_be_created()
         {
-            // given
-            _tagger = new StreamPositionTagger("stream1");
-            _positionTracker = new PositionTracker(_tagger);
-            var newTag = CheckpointTag.FromStreamPosition("stream1", 1, 50);
-            var newTag2 = CheckpointTag.FromStreamPosition("stream1", 2, 150);
-            _positionTracker.UpdateByCheckpointTagInitial(newTag);
-            _positionTracker.UpdateByCheckpointTagForward(newTag2);
+            var t = new MultiStreamPositionTagger(new[] {"stream1", "stream2"});
+            var tr = new PositionTracker(t);
+        }
+
+        [Test, ExpectedException(typeof (ArgumentNullException))]
+        public void null_streams_throws_argument_null_exception()
+        {
+            var t = new MultiStreamPositionTagger(null);
+        }
+
+        [Test, ExpectedException(typeof (ArgumentException))]
+        public void empty_streams_throws_argument_exception()
+        {
+            var t = new MultiStreamPositionTagger(new string[] {});
         }
 
         [Test]
-        public void stream_position_is_updated()
+        public void position_checkpoint_tag_is_incompatible()
         {
-            Assert.AreEqual(2, _positionTracker.LastTag.Streams["stream1"]);
+            var t = new MultiStreamPositionTagger(new[] {"stream1", "stream2"});
+            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromPosition(1000, 500)));
         }
 
-        
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void cannot_update_to_the_same_postion()
+        [Test]
+        public void another_streams_checkpoint_tag_is_incompatible()
         {
-            var newTag = CheckpointTag.FromStreamPosition("stream1", 2, 150);
-            _positionTracker.UpdateByCheckpointTagForward(newTag);
+            var t = new MultiStreamPositionTagger(new[] {"stream1", "stream2"});
+            Assert.IsFalse(
+                t.IsCompatible(
+                    CheckpointTag.FromStreamPositions(
+                        new Dictionary<string, int> {{"stream2", 100}, {"stream3", 150}}, 200)));
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
-        public void it_cannot_be_updated_with_other_stream()
+        [Test]
+        public void the_same_stream_checkpoint_tag_is_compatible()
         {
-            // even not initialized (UpdateToZero can be removed)
-            var newTag = CheckpointTag.FromStreamPosition("other_stream1", 2, 250);
-            _positionTracker.UpdateByCheckpointTagForward(newTag);
+            var t = new MultiStreamPositionTagger(new[] {"stream1", "stream2"});
+            Assert.IsTrue(
+                t.IsCompatible(
+                    CheckpointTag.FromStreamPositions(
+                        new Dictionary<string, int> {{"stream1", 100}, {"stream2", 150}}, 200)));
         }
-
-        //TODO: write tests on updating with incompatible snapshot loaded
     }
 }
