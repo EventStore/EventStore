@@ -316,15 +316,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public string EventStreamId { get; set; }
 
             [ProtoMember(2)]
-            public EventRecord[] Events { get; set; }
+            public EventLinkPair[] Events { get; set; }
 
             [ProtoMember(3)]
-            public EventRecord[] LinkToEvents { get; set; }
-
-            [ProtoMember(4)]
             public int Result { get; set; }
 
-            [ProtoMember(5)]
+            [ProtoMember(4)]
             public long? LastCommitPosition { get; set; }
 
             public ReadStreamEventsForwardCompleted()
@@ -332,8 +329,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
 
             public ReadStreamEventsForwardCompleted(string eventStreamId,
-                                                    EventRecord[] events,
-                                                    EventRecord[] linkToEvents,
+                                                    EventLinkPair[] events,
                                                     RangeReadResult result,
                                                     long? lastCommitPosition)
             {
@@ -341,7 +337,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
                 EventStreamId = eventStreamId;
                 Events = events;
-                LinkToEvents = linkToEvents;
                 Result = (int)result;
                 LastCommitPosition = lastCommitPosition;
             }
@@ -382,15 +377,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public string EventStreamId { get; set; }
 
             [ProtoMember(2)]
-            public EventRecord[] Events { get; set; }
+            public EventLinkPair[] Events { get; set; }
 
             [ProtoMember(3)]
-            public EventRecord[] LinkToEvents { get; set; }
-
-            [ProtoMember(4)]
             public int Result { get; set; }
 
-            [ProtoMember(5)]
+            [ProtoMember(4)]
             public long? LastCommitPosition { get; set; }
 
             public ReadStreamEventsBackwardCompleted()
@@ -398,8 +390,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
 
             public ReadStreamEventsBackwardCompleted(string eventStreamId,
-                                                     EventRecord[] events,
-                                                     EventRecord[] linkToEvents,
+                                                     EventLinkPair[] events,
                                                      RangeReadResult result,
                                                      long? lastCommitPosition)
             {
@@ -407,7 +398,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
                 EventStreamId = eventStreamId;
                 Events = events;
-                LinkToEvents = linkToEvents;
                 Result = (int)result;
                 LastCommitPosition = lastCommitPosition;
             }
@@ -451,15 +441,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public long PreparePosition { get; set; }
 
             [ProtoMember(3)]
-            public EventRecord[] Events { get; set; }
+            public EventLinkPair[] Events { get; set; }
 
             [ProtoMember(4)]
-            public EventRecord[] LinkToEvents { get; set; }
-
-            [ProtoMember(5)]
             public long NextCommitPosition { get; set; }
 
-            [ProtoMember(6)]
+            [ProtoMember(5)]
             public long NextPreparePosition { get; set; }
 
             public ReadAllEventsForwardCompleted()
@@ -468,19 +455,18 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             public ReadAllEventsForwardCompleted(long commitPosition,
                                                  long preparePosition,
-                                                 EventRecord[] events,
-                                                 EventRecord[] linkToEvents,
+                                                 EventLinkPair[] events,
                                                  long nextCommitPosition,
                                                  long nextPreparePosition)
             {
                 CommitPosition = commitPosition;
                 PreparePosition = preparePosition;
                 Events = events;
-                LinkToEvents = linkToEvents;
                 NextCommitPosition = nextCommitPosition;
                 NextPreparePosition = nextPreparePosition;
             }
         }
+
 
         [ProtoContract]
         internal class ReadAllEventsBackward
@@ -520,15 +506,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public long PreparePosition { get; set; }
 
             [ProtoMember(3)]
-            public EventRecord[] Events { get; set; }
+            public EventLinkPair[] Events { get; set; }
 
             [ProtoMember(4)]
-            public EventRecord[] LinkToEvents { get; set; }
-
-            [ProtoMember(5)]
             public long NextCommitPosition { get; set; }
 
-            [ProtoMember(6)]
+            [ProtoMember(5)]
             public long NextPreparePosition { get; set; }
 
             public ReadAllEventsBackwardCompleted()
@@ -537,15 +520,13 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             public ReadAllEventsBackwardCompleted(long commitPosition,
                                                   long preparePosition,
-                                                  EventRecord[] events,
-                                                  EventRecord[] linkToEvents,
+                                                  EventLinkPair[] events,
                                                   long nextCommitPosition,
                                                   long nextPreparePosition)
             {
                 CommitPosition = commitPosition;
                 PreparePosition = preparePosition;
                 Events = events;
-                LinkToEvents = linkToEvents;
                 NextCommitPosition = nextCommitPosition;
                 NextPreparePosition = nextPreparePosition;
             }

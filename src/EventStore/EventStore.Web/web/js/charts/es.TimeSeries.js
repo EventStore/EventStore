@@ -97,13 +97,13 @@
 
         function _handleZoom() {
             var dialog = $(".zoomed-chart").html("");
-            var graph = _createGraph(dialog, seriesData, 950, 600);
+            var graph = _createGraph(dialog, seriesData, 700, 400);
 
             dialog.dialog({
                 title: title,
                 resizable: false,
-                width: 1024,
-                height: 750,
+                width: 750,
+                height: 550,
                 modal: true,
                 closeOnEscape: true,
                 buttons: [

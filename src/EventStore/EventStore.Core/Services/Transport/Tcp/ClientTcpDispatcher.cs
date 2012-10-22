@@ -333,7 +333,6 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = new ClientMessageDto.ReadStreamEventsForwardCompleted(msg.EventStreamId,
                                                                             msg.Events,
-                                                                            msg.LinkToEvents,
                                                                             msg.Result,
                                                                             msg.LastCommitPosition);
             return new TcpPackage(TcpCommand.ReadStreamEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
@@ -357,7 +356,6 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = new ClientMessageDto.ReadStreamEventsBackwardCompleted(msg.EventStreamId,
                                                                              msg.Events,
-                                                                             msg.LinkToEvents,
                                                                              msg.Result,
                                                                              msg.LastCommitPosition);
             return new TcpPackage(TcpCommand.ReadStreamEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
@@ -379,8 +377,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = new ClientMessageDto.ReadAllEventsForwardCompleted(msg.Result.CurrentPos.CommitPosition,
                                                                          msg.Result.CurrentPos.PreparePosition,
-                                                                         msg.Result.Records.Select(x => x.Event).ToArray(),
-                                                                         msg.Result.Records.Select(x => x.Link).ToArray(),
+                                                                         msg.Result.Records.Select(x => new EventLinkPair(x.Event, x.Link)).ToArray(),
                                                                          msg.Result.NextPos.CommitPosition,
                                                                          msg.Result.NextPos.PreparePosition);
             return new TcpPackage(TcpCommand.ReadAllEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
@@ -402,8 +399,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = new ClientMessageDto.ReadAllEventsBackwardCompleted(msg.Result.CurrentPos.CommitPosition,
                                                                           msg.Result.CurrentPos.PreparePosition,
-                                                                          msg.Result.Records.Select(x => x.Event).ToArray(),
-                                                                          msg.Result.Records.Select(x => x.Link).ToArray(),
+                                                                          msg.Result.Records.Select(x => new EventLinkPair(x.Event, x.Link)).ToArray(),
                                                                           msg.Result.NextPos.CommitPosition,
                                                                           msg.Result.NextPos.PreparePosition);
             return new TcpPackage(TcpCommand.ReadAllEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
