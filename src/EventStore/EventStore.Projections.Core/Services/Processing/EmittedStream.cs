@@ -157,9 +157,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                var projectionStateMetadata = message.Events[0].Metadata.ParseJson<CheckpointTag>();
+                var projectionStateMetadata = message.Events[0].Event.Metadata.ParseJson<CheckpointTag>();
                 _lastCommittedMetadata = projectionStateMetadata;
-                _lastKnownEventNumber = message.Events[0].EventNumber;
+                _lastKnownEventNumber = message.Events[0].Event.EventNumber;
                 SubmitWriteEventsInRecovery();
             }
         }

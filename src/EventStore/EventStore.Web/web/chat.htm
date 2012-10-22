@@ -18,27 +18,25 @@
         </h3>
         <textarea readonly="readonly" cols="70" rows="30" class="chat-window"></textarea>
         <form class="input-window">
-            <span class="username"></span>
-            <input type="text" class="message-input" />
-            <input type="submit" class="send" value="Send" />
+        <span class="username"></span>
+        <input type="text" class="message-input" />
+        <input type="submit" class="send" value="Send" />
         </form>
         <form class="input-dialog" style="display: none">
-            <div>
-                Your name:
-                <input type="text" class="input-name" value="John Smith" /></div>
-            <div>
-                Chat room:
-                <input type="text" class="input-room" value="GeneralChat" /></div>
-            <input type="submit" class="submit" value="Enter" />
+        <div>
+            Your name:
+            <input type="text" class="input-name" value="John Smith" /></div>
+        <div>
+            Chat room:
+            <input type="text" class="input-room" value="GeneralChat" /></div>
+        <input type="submit" class="submit" value="Enter" />
         </form>
         <div class="error" style="display: none">
         </div>
     </div>
-
     <script id="r-body">
         es.tmpl.renderBody();
     </script>
-    
     <script src="/web/lib/jquery/jquery-ui-1.8.23.min.js" type="text/javascript"></script>
     <script src="/web/js/projections/v8/Prelude/Modules.js"> </script>
     <script src="/web/js/projections/v8/Prelude/Projections.js"> </script>
@@ -67,7 +65,7 @@
             $(".input-window").submit(onMessageInput);
 
             es.projection({
-                runProjection: function () {
+                body: function () {
                     fromStream('chat-' + chatRoomName).when({
                         'ChatMessage': function (state, event) {
                             var body = event.body;
@@ -84,7 +82,7 @@
                         runAction();
                     });
                 },
-                onState: function (stateStr) {
+                onStateChange: function (stateStr) {
                     var stateObj = JSON.parse(stateStr);
                     var currentText = $('.chat-window').val();
 
@@ -93,7 +91,10 @@
                 },
                 startFrom: 0,
                 showError: function (err) {
-                    $('#error').text(err);
+                    $('.error').text(err);
+                },
+                hideError: function () {
+                    $('.error').hide().text("");
                 }
             });
 

@@ -81,12 +81,12 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream",
                     new[]
-                        {
-                            new EventRecord(
-                        10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
-                        PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                        "event_type", new byte[0], new byte[0])
-                        }, null, RangeReadResult.Success, 11, 100));
+                    {
+                        new EventLinkPair(new EventRecord(
+                            10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
+                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                            "event_type", new byte[0], new byte[0]))
+                    }, RangeReadResult.Success, 11, 100));
         }
     }
 }

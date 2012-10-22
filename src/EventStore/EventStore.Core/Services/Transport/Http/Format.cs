@@ -85,13 +85,14 @@ namespace EventStore.Core.Services.Transport.Http
                     {
                         case RangeReadResult.Success:
                             var updateTime = completed.Events.Length != 0
-                                                 ? completed.Events[0].TimeStamp
+                                                 ? completed.Events[0].Event.TimeStamp
                                                  : DateTime.MinValue.ToUniversalTime();
+                            //TODO TR: avoid completed.Events copying ToArray
                             return entity.ResponseCodec.To(Convert.ToFeed(completed.EventStreamId,
                                                                           start,
                                                                           count,
                                                                           updateTime,
-                                                                          completed.Events,
+                                                                          completed.Events.Select(x => x.Event).ToArray(),
                                                                           Convert.ToEntry,
                                                                           entity.UserHostName));
                         case RangeReadResult.NoStream:

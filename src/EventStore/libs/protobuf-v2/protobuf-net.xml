@@ -542,11 +542,6 @@
             Adds a known sub-type to the inheritance model
             </summary>
         </member>
-        <member name="M:ProtoBuf.Meta.MetaType.GetSubtypes">
-            <summary>
-            Obtains the subtypes that are defined for the current type
-            </summary>
-        </member>
         <member name="M:ProtoBuf.Meta.MetaType.SetCallbacks(System.Reflection.MethodInfo,System.Reflection.MethodInfo,System.Reflection.MethodInfo,System.Reflection.MethodInfo)">
             <summary>
             Assigns the callbacks to use during serialiation/deserialization.
@@ -624,6 +619,16 @@
             <summary>
             Adds a member (by name) to the MetaType, including an itemType and defaultType for representing lists, returning the ValueMember rather than the fluent API.
             This is otherwise identical to Add.
+            </summary>
+        </member>
+        <member name="M:ProtoBuf.Meta.MetaType.GetFields">
+            <summary>
+            Returns the ValueMember instances associated with this type
+            </summary>
+        </member>
+        <member name="M:ProtoBuf.Meta.MetaType.GetSubtypes">
+            <summary>
+            Returns the SubType instances associated with this type
             </summary>
         </member>
         <member name="M:ProtoBuf.Meta.MetaType.CompileInPlace">
@@ -755,6 +760,13 @@
             <param name="value">The existing instance to be serialized (cannot be null).</param>
             <param name="dest">The destination stream to write to.</param>
             <param name="context">Additional information about this serialization operation.</param>
+        </member>
+        <member name="M:ProtoBuf.Meta.TypeModel.Serialize(ProtoBuf.ProtoWriter,System.Object)">
+            <summary>
+            Writes a protocol-buffer representation of the given instance to the supplied writer.
+            </summary>
+            <param name="value">The existing instance to be serialized (cannot be null).</param>
+            <param name="dest">The destination writer to write to.</param>
         </member>
         <member name="M:ProtoBuf.Meta.TypeModel.DeserializeWithLengthPrefix(System.IO.Stream,System.Object,System.Type,ProtoBuf.PrefixStyle,System.Int32)">
             <summary>
@@ -948,6 +960,17 @@
             original instance.</returns>
             <param name="context">Additional information about this serialization operation.</param>
         </member>
+        <member name="M:ProtoBuf.Meta.TypeModel.Deserialize(ProtoBuf.ProtoReader,System.Object,System.Type)">
+            <summary>
+            Applies a protocol-buffer reader to an existing instance (which may be null).
+            </summary>
+            <param name="type">The type (including inheritance) to consider.</param>
+            <param name="value">The existing instance to be modified (can be null).</param>
+            <param name="source">The reader to apply to the instance (cannot be null).</param>
+            <returns>The updated instance; this may be different to the instance argument if
+            either the original instance was null, or the stream defines a known sub-type of the
+            original instance.</returns>
+        </member>
         <member name="M:ProtoBuf.Meta.TypeModel.TryDeserializeAuxiliaryType(ProtoBuf.ProtoReader,ProtoBuf.DataFormat,System.Int32,System.Type,System.Object@,System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             This is the more "complete" version of Deserialize, which handles single instances of mapped types.
@@ -1037,6 +1060,18 @@
             <remarks>Note that primitives always return false, even though the engine
             will, if forced, try to serialize such</remarks>
             <returns>True if this type is recognised as a serializable entity, else false</returns>
+        </member>
+        <member name="M:ProtoBuf.Meta.TypeModel.CanSerialize(System.Type)">
+            <summary>
+            Returns true if the type supplied is a basic type with inbuilt handling,
+            a recognised contract type, or a *list* of a basic / contract type. 
+            </summary>
+        </member>
+        <member name="M:ProtoBuf.Meta.TypeModel.CanSerializeBasicType(System.Type)">
+            <summary>
+            Returns true if the type supplied is a basic type with inbuilt handling,
+            or a *list* of a basic type with inbuilt handling
+            </summary>
         </member>
         <member name="M:ProtoBuf.Meta.TypeModel.GetSchema(System.Type)">
             <summary>
@@ -2018,6 +2053,14 @@
             Indicates the underlying proto serialization format on the wire.
             </summary>
         </member>
+        <member name="P:ProtoBuf.ProtoReader.InternStrings">
+            <summary>
+            Gets / sets a flag indicating whether strings should be checked for repetition; if
+            true, any repeated UTF-8 byte sequence will result in the same String instance, rather
+            than a second instance of the same string. Enabled by default. Note that this uses
+            a <i>custom</i> interner - the system-wide string interner is not used.
+            </summary>
+        </member>
         <member name="P:ProtoBuf.ProtoReader.Context">
             <summary>
             Addition information about this deserialization operation.
@@ -2027,6 +2070,11 @@
             <summary>
             Returns the position of the current reader (note that this is not necessarily the same as the position
             in the underlying stream, if multiple readers are used on the same stream)
+            </summary>
+        </member>
+        <member name="P:ProtoBuf.ProtoReader.Model">
+            <summary>
+            Get the TypeModel associated with this reader
             </summary>
         </member>
         <member name="T:ProtoBuf.ProtoWriter">
@@ -2203,6 +2251,11 @@
         <member name="P:ProtoBuf.ProtoWriter.Context">
             <summary>
             Addition information about this serialization operation.
+            </summary>
+        </member>
+        <member name="P:ProtoBuf.ProtoWriter.Model">
+            <summary>
+            Get the TypeModel associated with this writer
             </summary>
         </member>
         <member name="T:ProtoBuf.SerializationContext">
