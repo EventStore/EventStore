@@ -282,14 +282,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 case Mode.Position:
                     return Position.ToString();
                 case Mode.Stream:
-                    return Streams.Keys.First() + ": " + Streams.Values.First() + "(" + Position.PreparePosition + ")";
+                    return Streams.Keys.First() + ": " + Streams.Values.First();
                 case Mode.MultiStream:
                     var sb = new StringBuilder();
                     foreach (var stream in Streams)
                     {
                         sb.AppendFormat("{0}: {1}; ", stream.Key, stream.Value);
                     }
-                    sb.AppendFormat("({0})", Position.PreparePosition);
                     return sb.ToString();
                 default:
                     return "Unsupported mode: " + base.ToString();
