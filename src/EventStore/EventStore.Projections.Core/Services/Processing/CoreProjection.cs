@@ -168,6 +168,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     Mode = _projectionConfig.Mode,
                     Name = _name,
                     Position = checkpointStatistics.Position,
+                    Progress = checkpointStatistics.Progress,
                     StateReason = "",
                     Status = _state.EnumVaueName() + checkpointStatistics.Status + _processingQueue.GetStatus(),
                     LastCheckpoint = checkpointStatistics.LastCheckpoint,
@@ -703,7 +704,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 EnsureState(State.Running);
                 //TODO: move to separate projection method and cache result in work item
                 var checkpointTag = committedEventReceived.CheckpointTag;
-                _checkpointManager.EventProcessed(GetProjectionState(), scheduledWrites, checkpointTag);
+                _checkpointManager.EventProcessed(
+                    GetProjectionState(), scheduledWrites, checkpointTag, committedEventReceived.Progress);
             }
         }
     }

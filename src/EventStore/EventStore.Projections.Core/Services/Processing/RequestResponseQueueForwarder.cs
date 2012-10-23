@@ -77,7 +77,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadStreamEventsForward(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.EventStreamId, message.FromEventNumber, message.MaxCount, message.ResolveLinks));
+                    message.EventStreamId, message.FromEventNumber, message.MaxCount, message.ResolveLinks,
+                    message.ReturnLastEventNumber));
         }
 
         public void Handle(ClientMessage.ReadAllEventsForward message)

@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void a_read_past_end_of_completed_chunk_includes_footer()
+        public void a_read_past_end_of_completed_chunk_does_not_include_footer_or_footer()
         {
             var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 300, 0, 0);
             chunk.Complete();
@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 var buffer = new byte[1024];
                 var result = reader.ReadNextBytes(1024, buffer);
                 Assert.IsTrue(result.IsEOF);
-                Assert.AreEqual(556, result.ReadData); //includes header of 128 header and footer
+                Assert.AreEqual(300, result.ReadData); 
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void a_read_past_eof_returns_eof_and_partial_read()
+        public void a_read_past_eof_returns_eof_and_no_footer()
         {
             var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 300, 0, 0);
             using (var reader = chunk.AcquireReader())
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 var buffer = new byte[1024];
                 var result = reader.ReadNextBytes(1024, buffer);
                 Assert.IsTrue(result.IsEOF);
-                Assert.AreEqual(556, result.ReadData); //includes header and footer space
+                Assert.AreEqual(300, result.ReadData); //includes header and footer space
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);

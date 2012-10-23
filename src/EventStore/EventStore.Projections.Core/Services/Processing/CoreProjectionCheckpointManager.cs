@@ -65,6 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private string _requestedCheckpointState;
         private CheckpointTag _lastCompletedCheckpointPosition;
         private readonly PositionTracker _lastProcessedEventPosition;
+        private float _lastProcessedEventProgress;
 
         private int _eventsProcessedAfterRestart;
         private bool _stateLoaded;
@@ -110,6 +111,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Already started");
             _started = true;
             _lastProcessedEventPosition.UpdateByCheckpointTagInitial(checkpointTag);
+            _lastProcessedEventProgress = -1;
             _lastCompletedCheckpointPosition = checkpointTag;
             _requestedCheckpointPosition = null;
             _currentCheckpoint = new ProjectionCheckpoint(
@@ -138,6 +140,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     Mode = _projectionConfig.Mode,
                     Name = null,
                     Position = _lastProcessedEventPosition.LastTag,
+                    Progress = _lastProcessedEventProgress,
                     StateReason = "",
                     Status = "",
                     LastCheckpoint =
@@ -186,13 +189,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ProjectionMessage.Projections.CheckpointCompleted(_lastCompletedCheckpointPosition));
         }
 
-        public void EventProcessed(string state, List<EmittedEvent[]> scheduledWrites, CheckpointTag checkpointTag)
+        public void EventProcessed(
+            string state, List<EmittedEvent[]> scheduledWrites, CheckpointTag checkpointTag, float progress)
         {
             EnsureStarted();
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
             _eventsProcessedAfterRestart++;
             _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointTag);
+            _lastProcessedEventProgress = progress;
             // running state only
             if (scheduledWrites != null)
                 foreach (var scheduledWrite in scheduledWrites)
@@ -202,7 +207,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ProcessCheckpoints();
         }
 
-        public void CheckpointSuggested(CheckpointTag checkpointTag)
+        public void CheckpointSuggested(CheckpointTag checkpointTag, float progress)
         {
             if (!_projectionConfig.CheckpointsEnabled)
                 throw new InvalidOperationException("Checkpoints are not enabled");
@@ -210,6 +215,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
             _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointTag);
+            _lastProcessedEventProgress = progress;
             RequestCheckpoint(_lastProcessedEventPosition);
         }
 

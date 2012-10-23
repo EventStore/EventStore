@@ -55,7 +55,7 @@
                 <table class="table 1table-bordered 1table-striped table-thin">
                   <tbody>
                     <tr>
-                        <td>Position: {{>position}}({{>~percentsDone(positionRaw)}}%)</td>
+                        <td>Position: {{>position}}({{>progress}}%)</td>
                         <td>Last Checkpoint: {{>lastCheckpoint}}</td>
                         <td>Checkpoint Status: {{>checkpointStatus}}</td>
                     </tr>
@@ -111,27 +111,15 @@
                 $("#raw_data").text(JSON.stringify(projection));
 
                 $("#projection-status").html(
-                    $.render.projectionTemplate(projection, {
-                        percentsDone: function(v) {
-                            return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
-                        }
-                    })
+                    $.render.projectionTemplate(projection, {})
                 );
 
                 $("#projection-status-button").html(
-                    $.render.projectionTemplateButton(projection, {
-                        percentsDone: function(v) {
-                            return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
-                        }
-                    })
+                    $.render.projectionTemplateButton(projection, {})
                 );
 
                 $("#projection-reason").html(
-                    $.render.projectionTemplateReason(projection, {
-                        percentsDone: function(v) {
-                            return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
-                        }
-                    })
+                    $.render.projectionTemplateReason(projection, {})
                 );
 
 

@@ -46,6 +46,8 @@ namespace EventStore.Projections.Core.Services
 
         public CheckpointTag Position { get; set; }
 
+        public float Progress { get; set; }
+
         public string LastCheckpoint { get; set; }
 
         public int EventsProcessedAfterRestart { get; set; }
