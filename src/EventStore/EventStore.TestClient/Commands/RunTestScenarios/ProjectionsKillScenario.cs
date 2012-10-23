@@ -129,11 +129,31 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected bool CheckProjectionState(EventStoreConnection store, string projectionName, string key, Func<string, bool> checkValue)
         {
-            var rawState = store.Projections.GetState(projectionName);
+            var rawState = GetProjectionStateSafe(store, projectionName);
+
             Log.Info("Raw {0} state: {1}", projectionName, rawState);
+
+            if (string.IsNullOrEmpty(rawState))
+                return false;
+            
             var state = Codec.Json.From<Dictionary<string, string>>(rawState);
             string value;
             return state != null && state.Count > 0 && state.TryGetValue(key, out value) && checkValue(value);
+        }
+
+        private static string GetProjectionStateSafe(EventStoreConnection store, string projectionName)
+        {
+            string rawState;
+            try
+            {
+                rawState = store.Projections.GetState(projectionName);
+            }
+            catch (Exception ex)
+            {
+                rawState = null;
+                Log.InfoException(ex, "Failed to get projection state");
+            }
+            return rawState;
         }
 
         protected string CreateCountItem()
@@ -148,9 +168,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         return state;
                     });
 ";
-
             GetConnection().Projections.CreatePersistent(countItemsProjectionName, countItemsProjection);
-
             return countItemsProjectionName;
         }
 
