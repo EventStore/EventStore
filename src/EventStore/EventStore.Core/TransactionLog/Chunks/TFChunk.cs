@@ -1189,7 +1189,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public ReadResult TryReadNextBulk(Stream stream, byte [] into, int count)
         {
             var sizeRead = 0;
-            var available = stream.Length - stream.Position;
+            if (count > into.Length) count = into.Length;
             sizeRead = stream.Read(into, 0, count);
             return new ReadResult {IsEOF = stream.Length == stream.Position, ReadData = sizeRead};
         }
