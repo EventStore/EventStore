@@ -54,11 +54,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
             try
             {
                 _manager.BeginLoadState();
-                _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000));
+                _manager.Start(CheckpointTag.FromStreamPosition("stream", 10));
                 _manager.EventProcessed(
-                    @"{""state"":""state1""}", null, CheckpointTag.FromStreamPosition("stream", 11, 1100));
+                    @"{""state"":""state1""}", null, CheckpointTag.FromStreamPosition("stream", 11));
                 _manager.EventProcessed(
-                    @"{""state"":""state2""}", null, CheckpointTag.FromStreamPosition("stream", 12, 1200));
+                    @"{""state"":""state2""}", null, CheckpointTag.FromStreamPosition("stream", 12));
                 _manager.Stopping();
                 _manager.RequestCheckpointToStop();
             }

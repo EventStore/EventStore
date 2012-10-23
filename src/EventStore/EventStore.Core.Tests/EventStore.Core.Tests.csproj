@@ -216,6 +216,7 @@
     <Compile Include="Infrastructure\Services\Transport\Http\http_service_should.cs" />
     <Compile Include="Infrastructure\Services\Transport\Http\PortableServer.cs" />
     <Compile Include="Infrastructure\Services\Transport\Http\ping_controller_should.cs" />
+    <Compile Include="MightyMooseIgnoreAttribute.cs" />
     <Compile Include="SpecificationWithDirectoryPerTestFixture.cs" />
     <Compile Include="SpecificationWithFilePerTestFixture.cs" />
     <Compile Include="Startup\ComparisonHelper.cs" />
@@ -224,6 +225,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Infrastructure\Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
+    <Compile Include="TransactionLog\Chunks\when_reading_bulk_a_chunk.cs" />
     <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_scavenged_odd_records.cs" />
     <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_scavenged_even_records.cs" />
     <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_few_chunks.cs" />

@@ -51,28 +51,28 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
         public void it_can_be_updated_with_correct_stream()
         {
             // even not initialized (UpdateToZero can be removed)
-            var newTag = CheckpointTag.FromStreamPosition("stream1", 1, 50);
+            var newTag = CheckpointTag.FromStreamPosition("stream1", 1);
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void it_cannot_be_updated_with_other_stream()
         {
-            var newTag = CheckpointTag.FromStreamPosition("other_stream1", 1, 50);
+            var newTag = CheckpointTag.FromStreamPosition("other_stream1", 1);
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void it_cannot_be_updated_forward()
         {
-            var newTag = CheckpointTag.FromStreamPosition("stream1", 1, 50);
+            var newTag = CheckpointTag.FromStreamPosition("stream1", 1);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void initial_position_cannot_be_set_twice()
         {
-            var newTag = CheckpointTag.FromStreamPosition("stream1", 1, 50);
+            var newTag = CheckpointTag.FromStreamPosition("stream1", 1);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }

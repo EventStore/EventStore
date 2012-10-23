@@ -106,15 +106,16 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public bool TrySubscribe(
-            Guid projectionId, IProjectionSubscription projectionSubscription, CheckpointTag fromCheckpointTag)
+            Guid projectionId, IProjectionSubscription projectionSubscription, long fromTransactionFilePosition)
         {
             EnsureStarted();
             if (_headSubscribers.ContainsKey(projectionId))
                 throw new InvalidOperationException(
                     string.Format("Projection '{0}' has been already subscribed", projectionId));
-            if (projectionSubscription.CanJoinAt(_subscribeFromPosition, fromCheckpointTag))
+            // if first available event commit position is before the safe TF (prepare) position - join
+            if (_subscribeFromPosition.CommitPosition <= fromTransactionFilePosition)
             {
-                _logger.Trace("The '{0}' subscription has joined the heading distribution point at '{1}'", projectionId, fromCheckpointTag);
+                _logger.Trace("The '{0}' subscription has joined the heading distribution point at '{1}'", projectionId, fromTransactionFilePosition);
                 DispatchRecentMessagesTo(projectionSubscription);
                 AddSubscriber(projectionId, projectionSubscription);
                 return true;

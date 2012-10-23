@@ -27,42 +27,10 @@
 // 
 
 using System;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
 
-#pragma warning disable 1718 // allow a == a comparison
-
-namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
+namespace EventStore.Core.Tests
 {
-    [TestFixture]
-    public class checkpoint_tag_by_stream_position_with_invalid_prepapre_position
+    public class MightyMooseIgnoreAttribute : Attribute
     {
-        private readonly CheckpointTag _a = CheckpointTag.FromStreamPosition("stream", 9, 100);
-        private readonly CheckpointTag _b = CheckpointTag.FromStreamPosition("stream", 15, 90);
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void less_operator_throws()
-        {
-            Assert.IsTrue(_a < _b);
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void less_or_equal_operator_throws()
-        {
-            Assert.IsTrue(_a <= _b);
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void greater_operator_throws()
-        {
-            Assert.IsTrue(_b > _a);
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void greater_or_equal_operator_throws()
-        {
-            Assert.IsTrue(_b >= _a);
-        }
     }
-#pragma warning restore 1718
 }

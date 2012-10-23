@@ -165,23 +165,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 message.CheckpointStrategy, message.CheckpointUnhandledBytesThreshold);
             _subscriptions.Add(message.CorrelationId, projectionSubscription);
 
-            bool subscribedHeading = _headingEventDistributionPoint.TrySubscribe(
-                message.CorrelationId, projectionSubscription, fromCheckpointTag);
-            if (subscribedHeading)
-            {
-                _projectionDistributionPoints.Add(message.CorrelationId, Guid.Empty);
-            }
-            else
-            {
-                var distibutionPointCorrelationId = Guid.NewGuid();
-                var eventDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
-                    _publisher, _inputQueue, distibutionPointCorrelationId);
-                _logger.Trace("The '{0}' projection subscribed to the '{1}' distribution point", message.CorrelationId, distibutionPointCorrelationId);
-                _distributionPoints.Add(distibutionPointCorrelationId, eventDistributionPoint);
-                _projectionDistributionPoints.Add(message.CorrelationId, distibutionPointCorrelationId);
-                _distributionPointSubscriptions.Add(distibutionPointCorrelationId, message.CorrelationId);
-                eventDistributionPoint.Resume();
-            }
+            var distibutionPointCorrelationId = Guid.NewGuid();
+            var eventDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
+                _publisher, _inputQueue, distibutionPointCorrelationId);
+            _logger.Trace("The '{0}' projection subscribed to the '{1}' distribution point", message.CorrelationId, distibutionPointCorrelationId);
+            _distributionPoints.Add(distibutionPointCorrelationId, eventDistributionPoint);
+            _projectionDistributionPoints.Add(message.CorrelationId, distibutionPointCorrelationId);
+            _distributionPointSubscriptions.Add(distibutionPointCorrelationId, message.CorrelationId);
+            eventDistributionPoint.Resume();
         }
 
         public void Handle(ProjectionMessage.Projections.UnsubscribeProjection message)
@@ -244,8 +235,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var projectionSubscription = _subscriptions[projectionId];
 
-            if (!_headingEventDistributionPoint.TrySubscribe(
-                    projectionId, projectionSubscription, projectionSubscription.MakeCheckpointTag(message)))
+            if (message.SafeTransactionFileReaderJoinPosition != null && !_headingEventDistributionPoint.TrySubscribe(
+                    projectionId, projectionSubscription, message.SafeTransactionFileReaderJoinPosition.Value))
                 return false;
 
             if (message.Data == null)

@@ -19,22 +19,5 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_strategy
             _strategy = builder.Build(ProjectionMode.Persistent);
         }
 
-        [Test]
-        public void can_compare_checkpoint_tag_with_event_position()
-        {
-            Assert.AreEqual(true, _strategy.IsCheckpointTagAfterEventPosition(CheckpointTag.FromPosition(100, 50), new EventPosition(100, 30)));
-        }
-
-        [Test]
-        public void can_compare_checkpoint_tag_with_event_position_negative()
-        {
-            Assert.AreEqual(false, _strategy.IsCheckpointTagAfterEventPosition(CheckpointTag.FromPosition(100, 50), new EventPosition(100, 60)));
-        }
-
-        [Test, ExpectedException(typeof(ArgumentException))]
-        public void refuses_to_compare_foreigh_checkpoint_tag_with_event_position()
-        {
-            Assert.AreEqual(true, _strategy.IsCheckpointTagAfterEventPosition(CheckpointTag.FromStreamPosition("stream1", 100, 50), new EventPosition(100, 30)));
-        }
     }
 }

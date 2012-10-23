@@ -36,6 +36,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Infrastructure.Services.Transport.Http
 {
+    [MightyMooseIgnore]
     [TestFixture]
     public class ping_controller_should
     {
