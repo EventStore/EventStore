@@ -335,7 +335,8 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = new ClientMessageDto.ReadStreamEventsForwardCompleted(msg.EventStreamId,
                                                                             msg.Events,
                                                                             msg.Result,
-                                                                            msg.LastCommitPosition);
+                                                                            msg.LastCommitPosition,
+                                                                            msg.LastEventNumber);
             return new TcpPackage(TcpCommand.ReadStreamEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 
