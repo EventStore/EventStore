@@ -86,6 +86,7 @@
     <Compile Include="ClientAPI\MiniNode.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
+    <Compile Include="ClientAPI\subscribe_should.cs" />
     <Compile Include="ClientAPI\TestEvent.cs" />
     <Compile Include="ClientAPI\transaction.cs" />
     <Compile Include="Common\CollectionsExtensions.cs" />

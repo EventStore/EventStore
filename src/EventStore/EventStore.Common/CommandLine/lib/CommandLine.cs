@@ -1934,7 +1934,7 @@ namespace EventStore.Common.CommandLine.lib
                 bool noErrors = true;
                 var environment = ParsingEnvironment.CommandLine;
 
-                var envVarKey = string.Format("{0}{1}", envVariablePrefix, option.LongName.ToUpperInvariant());
+                var envVarKey = string.Format("{0}{1}", envVariablePrefix, option.LongName.Replace('-','_').ToUpperInvariant());
                 var envVarValue = Environment.GetEnvironmentVariable(envVarKey);
                 if (!string.IsNullOrEmpty(envVarValue))
                 {
