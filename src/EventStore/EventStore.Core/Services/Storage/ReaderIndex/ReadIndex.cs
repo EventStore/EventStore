@@ -35,6 +35,7 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
@@ -155,6 +156,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly ITableIndex _tableIndex;
         private readonly IHasher _hasher;
         private readonly IPublisher _bus;
+        private readonly ILRUCache<string, StreamMetadata> _metadataCache;
 
         private long _persistedPrepareCheckpoint = -1;
         private long _persistedCommitCheckpoint = -1;
@@ -168,7 +170,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                          Func<ITransactionFileSequentialReader> seqReaderFactory,
                          Func<ITransactionFileReader> readerFactory,
                          ITableIndex tableIndex,
-                         IHasher hasher)
+                         IHasher hasher,
+                         ILRUCache<string, StreamMetadata> metadataCache)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.Positive(readerCount, "readerCount");
@@ -176,10 +179,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.NotNull(readerFactory, "readerFactory");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(hasher, "hasher");
+            Ensure.NotNull(metadataCache, "metadataCache");
 
             _bus = bus;
             _tableIndex = tableIndex;
             _hasher = hasher;
+            _metadataCache = metadataCache;
 
             for (int i = 0; i < readerCount; ++i)
             {
@@ -1041,7 +1046,27 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private bool GetStreamMetadataInternal(ITransactionFileReader reader, 
+        private bool GetStreamMetadataInternal(ITransactionFileReader reader,
+                                               string streamId,
+                                               out bool streamExists,
+                                               out StreamMetadata metadata)
+        {
+            if (_metadataCache.TryGet(streamId, out metadata))
+            {
+                streamExists = true;
+                return true;
+            }
+
+            if (GetStreamMetadataUncached(reader, streamId, out streamExists, out metadata))
+            {
+                _metadataCache.Put(streamId, metadata);
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool GetStreamMetadataUncached(ITransactionFileReader reader, 
                                                string streamId, 
                                                out bool streamExists, 
                                                out StreamMetadata metadata)

@@ -31,6 +31,7 @@ using System.IO;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
@@ -86,7 +87,13 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             TableIndex.Initialize();
 
             var reader = new TFChunkReader(Db, Db.Config.WriterCheckpoint);
-            ReadIndex = new ReadIndex(new NoopPublisher(), 2, () => new TFChunkSequentialReader(Db, Db.Config.WriterCheckpoint, 0), () => reader, TableIndex, new ByLengthHasher());
+            ReadIndex = new ReadIndex(new NoopPublisher(),
+                                      2,
+                                      () => new TFChunkSequentialReader(Db, Db.Config.WriterCheckpoint, 0),
+                                      () => reader,
+                                      TableIndex,
+                                      new ByLengthHasher(),
+                                      new NoLRUCache<string, StreamMetadata>());
             ReadIndex.Build();
         }
 

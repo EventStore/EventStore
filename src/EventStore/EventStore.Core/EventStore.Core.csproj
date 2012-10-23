@@ -75,6 +75,8 @@
     <Compile Include="Bus\IHandle.cs" />
     <Compile Include="Bus\QueueMonitor.cs" />
     <Compile Include="Cluster\VNodeState.cs" />
+    <Compile Include="DataStructures\ILRUCache.cs" />
+    <Compile Include="DataStructures\LRUCache.cs" />
     <Compile Include="DataStructures\ObjectPool.cs" />
     <Compile Include="DataStructures\PairingHeap.cs" />
     <Compile Include="Data\EventLinkPair.cs" />
