@@ -196,6 +196,7 @@ namespace EventStore.Core.Services.Transport.Http
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
         {
             var allMatches = AllMatches(context.Request.Url);
+
             var allowedMethods = allMatches.Select(m => m.ControllerAction.HttpMethod).ToArray();
 
             if (allMatches.Count == 0)
@@ -203,6 +204,16 @@ namespace EventStore.Core.Services.Transport.Http
                 NotFound(context);
                 return;
             }
+
+            //add options to the list of allowed request methods
+            allowedMethods = allowedMethods.Union(new[] { "OPTIONS" }).ToArray();
+            
+            if (context.Request.HttpMethod.Equals(HttpMethod.Options))
+            {
+                RespondWithOptions(context, allowedMethods);
+                return;
+            }
+
             var match = allMatches.LastOrDefault(m => m.ControllerAction.HttpMethod == context.Request.HttpMethod);
             if (match == null)
             {
@@ -269,6 +280,14 @@ namespace EventStore.Core.Services.Transport.Http
             var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
             entity.Manager.Reply(HttpStatusCode.MethodNotAllowed,
                                  "Requested method is not allowed for requested url",
+                                 e => _log.ErrorException(e, "Error while closing http connection (http service core)"));
+        }
+
+        private void RespondWithOptions(HttpListenerContext context, string[] allowed)
+        {
+            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
+
+            entity.Manager.Reply(HttpStatusCode.OK,"",
                                  e => _log.ErrorException(e, "Error while closing http connection (http service core)"));
         }
 
