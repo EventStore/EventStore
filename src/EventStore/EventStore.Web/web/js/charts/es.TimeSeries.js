@@ -8,19 +8,39 @@
         var getData = sets.getData || function (data) { return data; };
         var appendToElement = sets.appendTo || es.TimeSeries.appendTo || '.content';
         var maxLength = sets.maxLength || 100;
-        var className = sets.className || "";
-
-        var container = $('<div class="chart-cont ' + className + '" />')
-                            .append(["<div class='chart-title'>", title, "</div>"].join(""))
-                            .appendTo(appendToElement)
-                            .click(_handleZoom);
+        var className = sets.className || es.TimeSeries.className || "";
+        var zoomer = sets.zoomer || es.TimeSeries.zoomer;
 
         var seriesData = [];
-        _initData();
+        var container = null;
 
-        var graph = _createGraph(container, seriesData, 300, 100);
 
-        $(document).on(updateEventName, function (event, data) {
+        init();
+
+        function init() {
+
+            container = $('<div class="chart-cont ' + className + '" />')
+                            .append(["<div class='chart-title'>", title, "</div>"].join(""))
+                            .appendTo(appendToElement)
+                            .click(handleZoom);
+            container[0].asZoomable = asZoomable;
+            
+            initData();
+            var graph = createGraphInternal(container, seriesData, 300, 100);
+            $(document).on(updateEventName, function (event, data) {
+                onNewData(data);
+                graph.update();
+            });
+        }
+
+        function initData() {
+            // fills data with n initial values so that it looks like chart is floating to the left, not transforming
+            for (var i = maxLength - 1; i > 0; i--) {
+                seriesData.push({ x: (new Date()).getTime() / 1000 - i, y: 0 });
+            };
+        };
+
+        function onNewData(data) {
             try {
                 var ownData = getData(data);
             } catch (e) {
@@ -33,18 +53,9 @@
             if (seriesData.length > maxLength) {
                 seriesData.shift();
             }
+        }
 
-            graph.update();
-        });
-
-        function _initData() {
-            // fills data with n initial values so that it looks like chart is floating to the left, not transforming
-            for (var i = maxLength - 1; i > 0; i--) {
-                seriesData.push({ x: (new Date()).getTime() / 1000 - i, y: 0 });
-            };
-        };
-
-        function _createGraph(appendTo, data, width, height) {
+        function createGraphInternal(appendTo, data, width, height) {
 
             var graph = new Rickshaw.Graph({
                 element: $('<div class="chart" />').appendTo(appendTo)[0],
@@ -95,95 +106,32 @@
             return graph;
         };
 
-        function _handleZoom() {
-            var dialog = $(".zoomed-chart").html("");
-            var graph = _createGraph(dialog, seriesData, 700, 400);
+        function asZoomable() {
 
-            dialog.dialog({
-                title: title,
-                resizable: false,
-                width: 750,
-                height: 550,
-                modal: true,
-                closeOnEscape: true,
-                buttons: [
-                    {
-                        text: "prev",
-                        click: function () { _dialognav("p", title); }
-                    },
-                    {
-                        text: "next",
-                        click: function () { _dialognav("n", title); }
-                    },
-                    {
-                        text: "play/stop",
-                        click: function () { _playstop(); }
-                    }
-                ],
-                open: _initbutton,
-                beforeClose: function () { _playstop(1); },
-                position: "center"
-            });
+            var graph = null;
+            var onUpdate = function () { graph.update(); };
 
-            $(document).on(updateEventName, function (event, data) {
-                graph.update();
-            });
-
-            function _dialognav(action, title) {
-                var allgraph = $(".chart-cont"),
-                    allgraphtitle = [];
-
-                $(allgraph).find(".chart-title").each(function (index) {
-                    allgraphtitle[index] = $(this).text();
-                });
-
-                var selectgraph = jQuery.inArray(title, allgraphtitle);
-
-                if (action == "p") {
-                    title = $(allgraph).eq(selectgraph).prevAll(".chart-cont:visible").eq(0).find(".chart-title").text();
-                    selectgraph = jQuery.inArray(title, allgraphtitle);
-                    if (selectgraph == -1) {
-                        title = $(allgraph).nextAll(".chart-cont:visible").last().find(".chart-title").text();
-                        selectgraph = jQuery.inArray(title, allgraphtitle);
-                    }
-                    $(allgraph).eq(selectgraph).click();
-                }
-                else if (action == "n") {
-                    title = $(allgraph).eq(selectgraph).nextAll(".chart-cont:visible").eq(0).find(".chart-title").text();
-                    selectgraph = jQuery.inArray(title, allgraphtitle);
-                    if (selectgraph == -1) {
-                        title = $(allgraph).prevAll(".chart-cont:visible").last().find(".chart-title").text();
-                        selectgraph = jQuery.inArray(title, allgraphtitle);
-                    }
-
-                    $(allgraph).eq(selectgraph).click();
-
-                }
-                _initbutton();
-            }; /*_dialognav*/
-
-
-            function _playstop(ifclose) {
-                if (typeof (intervalID) != "undefined" && intervalID != 0) {
-                    clearInterval(intervalID);
-                    intervalID = 0;
-                } else {
-                    if (ifclose != 1) {
-                        intervalID = setInterval(function () {
-                            $(".ui-dialog-buttonpane button#next").click();
-                        }, 3000);
-                    }
-                }
-            }; /*_playstop*/
-
-            function _initbutton() {
-                $(".ui-dialog-buttonpane button").each(function () {
-                    $(this).attr("id", $(this).text());
-                });
+            var show = function (appendTo, width, height) {
+                graph = createGraphInternal(appendTo, seriesData, width, height);
+                $(document).on(updateEventName, onUpdate);
             };
 
-        }; /*_handleZoom*/
+            var cleanUp = function () {
+                $(document).off(updateEventName, onUpdate);
+                graph = null;
+            };
 
+            return {
+                show: show,
+                cleanUp: cleanUp,
+                title: title,
+                domElem: container
+            };
+        }
+
+        function handleZoom() {
+            zoomer.show(container[0]);
+        }
     };
 
     window.es.TimeSeries.setUp = function (sets) {

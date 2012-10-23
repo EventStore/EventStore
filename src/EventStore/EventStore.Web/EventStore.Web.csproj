@@ -43,6 +43,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="web\js\charts\es.Zoomer.js" />
     <Content Include="web\lib\bootstrap\css\bootstrap-responsive.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -254,6 +255,7 @@
   <ItemGroup>
     <Reference Include="System" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

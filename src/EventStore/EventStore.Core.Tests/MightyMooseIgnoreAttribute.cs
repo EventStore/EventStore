@@ -25,43 +25,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using System.IO;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.LogRecords;
-using NUnit.Framework;
 
-namespace EventStore.Core.Tests.TransactionLog.Chunks
+namespace EventStore.Core.Tests
 {
-    [TestFixture]
-    public class when_appending_past_end_of_a_TFChunk
+    public class MightyMooseIgnoreAttribute : Attribute
     {
-        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
-        private TFChunk _chunk;
-        private readonly Guid _corrId = Guid.NewGuid();
-        private readonly Guid _eventId = Guid.NewGuid();
-        private bool _written;
-
-        [SetUp] 
-        public void Setup()
-        {
-            var record = new PrepareLogRecord(15556, _corrId, _eventId, 15556, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
-                                              PrepareFlags.None, "Foo", new byte[12], new byte[15]);
-            _chunk = TFChunk.CreateNew(_filename, 20, 0, 0);
-            _written = _chunk.TryAppend(record).Success;
-        }
-
-        [Test]
-        public void the_record_is_not_appended()
-        {
-            Assert.IsFalse(_written);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _chunk.Dispose();
-            File.Delete(_filename);
-        }
     }
 }
