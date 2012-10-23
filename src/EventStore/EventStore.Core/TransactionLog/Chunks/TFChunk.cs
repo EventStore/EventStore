@@ -228,17 +228,18 @@ namespace EventStore.Core.TransactionLog.Chunks
         }
 
 
-        private Stream GetReaderFileStream()
+        private Stream GetSequentialReaderFileStream()
         {
             return new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-                                            ReadBufferSize, FileOptions.RandomAccess);
+                                            64000, FileOptions.SequentialScan);
         }
 
         private void CreateReaderStreams()
         {
             for (int i = 0; i < _maxReadThreads; i++)
             {
-                var stream = GetReaderFileStream();
+                var stream = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
+                                            ReadBufferSize, FileOptions.RandomAccess);
                 var reader = new BinaryReader(stream);
                 _streams.Enqueue(new ReaderWorkItem(stream, reader, false));
             }
@@ -1174,7 +1175,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (_selfdestructin54321)
                 throw new FileBeingDeletedException();
             Interlocked.Increment(ref _lockedCount);
-            return new TFChunkBulkReader(this, GetReaderFileStream());
+            return new TFChunkBulkReader(this, GetSequentialReaderFileStream());
         }
 
 
