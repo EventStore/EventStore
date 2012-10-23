@@ -119,7 +119,7 @@ namespace EventStore.BufferManagement.Tests
             stream.Seek(-100, SeekOrigin.End);
             Assert.AreEqual(400, stream.Position);
         }
-
+        
         [Test]
         public void from_current_sets_relative_to_current()
         {

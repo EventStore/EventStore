@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
         public void cannot_suibscribe_even_from_reader_zero_position()
         {
             var subscribed = _point.TrySubscribe(
-                Guid.NewGuid(), new FakeProjectionSubscription(), CheckpointTag.FromPosition(0, -1));
+                Guid.NewGuid(), new FakeProjectionSubscription(), -1);
             Assert.AreEqual(false, subscribed);
         }
     }

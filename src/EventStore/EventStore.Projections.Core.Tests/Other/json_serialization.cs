@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Other
         [Test]
         public void stream_based_checkpoint_tag()
         {
-            CheckpointTag tag = CheckpointTag.FromStreamPosition("$ce-account", 12345, 1234567);
+            CheckpointTag tag = CheckpointTag.FromStreamPosition("$ce-account", 12345);
             byte[] bytes = tag.ToJsonBytes();
             string instring = Encoding.UTF8.GetString(bytes);
             Console.WriteLine(instring);

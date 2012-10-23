@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
         public void tream_checkpoint_tag_is_incompatible()
         {
             var t = new TransactionFilePositionTagger();
-            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromStreamPosition("stream2", 100, 500)));
+            Assert.IsFalse(t.IsCompatible(CheckpointTag.FromStreamPosition("stream2", 100)));
         }
 
         [Test]

@@ -33,8 +33,5 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public interface IProjectionSubscription : IHandle<ProjectionMessage.Projections.CommittedEventDistributed>
     {
-        bool CanJoinAt(EventPosition firstAvailableTransactionFileEvent, CheckpointTag eventCheckpointTag);
-
-        CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventDistributed committedEvent);
     }
 }

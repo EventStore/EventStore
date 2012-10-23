@@ -36,7 +36,6 @@ namespace EventStore.Core.TransactionLog.Chunks
         public const int MaxChunksCount = 100000; // that's enough for about 25 Tb of data
 
         public int ChunksCount { get { return _chunksCount; } }
-
         private readonly TFChunkDbConfig _config;
         private readonly TFChunk[] _chunks = new TFChunk[MaxChunksCount]; 
         private volatile int _chunksCount;
@@ -128,6 +127,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public TFChunk AddNewChunk()
         {
+            
             var chunksCnt = _chunksCount;
             var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunksCnt);
             var chunk = TFChunk.CreateNew(chunkName, _config.ChunkSize, chunksCnt, 0);
@@ -138,7 +138,6 @@ namespace EventStore.Core.TransactionLog.Chunks
         public void AddChunk(TFChunk chunk)
         {
             Ensure.NotNull(chunk, "chunk");
-
             _chunks[_chunksCount] = chunk;
             _chunksCount += 1;
 
@@ -176,6 +175,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 throw new ArgumentOutOfRangeException("chunkNumber");
 
             var chunk = _chunks[chunkNumber];
+            
 //            if (chunk == null)
 //                throw new InvalidOperationException(
 //                        string.Format("Requested chunk #{0}, which is not present in TFChunkManager.", chunkNumber));

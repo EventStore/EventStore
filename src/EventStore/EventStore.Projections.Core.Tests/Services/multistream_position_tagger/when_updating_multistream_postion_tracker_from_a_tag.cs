@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
             var tagger = new MultiStreamPositionTagger(new []{"stream1", "stream2"});
             var tracker = new PositionTracker(tagger);
 
-            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"stream1", 1}, {"stream2", 2}}, 50);
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"stream1", 1}, {"stream2", 2}});
             tracker.UpdateByCheckpointTagInitial(newTag);
             _tag = tracker.LastTag;
             _tagger = new MultiStreamPositionTagger(new []{"stream1", "stream2"});

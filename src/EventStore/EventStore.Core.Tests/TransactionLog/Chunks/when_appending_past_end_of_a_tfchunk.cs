@@ -34,7 +34,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_appending_past_end_of_a_tfchunk
+    public class when_appending_past_end_of_a_TFChunk
     {
         private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
         private TFChunk _chunk;
@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         private readonly Guid _eventId = Guid.NewGuid();
         private bool _written;
 
-        [SetUp]
+        [SetUp] 
         public void Setup()
         {
             var record = new PrepareLogRecord(15556, _corrId, _eventId, 15556, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),

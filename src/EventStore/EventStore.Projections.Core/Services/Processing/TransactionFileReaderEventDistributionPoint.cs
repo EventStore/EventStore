@@ -149,8 +149,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _publisher.Publish(
                 new ProjectionMessage.Projections.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, lastPosition, null, int.MinValue,
-                    null, int.MinValue, false, null));
+                    _distibutionPointCorrelationId, default(EventPosition), null, int.MinValue,
+                    null, int.MinValue, false, null, lastPosition.PreparePosition)); //TODO: check was is passed here
         }
 
         private void DeliverEvent(ResolvedEventRecord @event)
@@ -169,7 +169,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     positionEvent.EventNumber, @event.Event.EventStreamId, @event.Event.EventNumber, @event.Link != null,
                     new Event(
                         @event.Event.EventId, @event.Event.EventType,
-                        (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata)));
+                        (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata), receivedPosition.PreparePosition));
         }
     }
 }

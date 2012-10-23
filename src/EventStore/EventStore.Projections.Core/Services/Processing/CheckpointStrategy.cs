@@ -113,36 +113,6 @@ namespace EventStore.Projections.Core.Services.Processing
             return distributionPoint;
         }
 
-        public bool IsCheckpointTagAfterEventPosition(CheckpointTag checkpointTag, EventPosition position)
-        {
-            if (_streams != null && _streams.Count == 1)
-            {
-                EnsureCheckpointTagModeIs(checkpointTag, CheckpointTag.Mode.Stream);
-                return checkpointTag.PreparePosition >= position.CommitPosition;
-            }
-            else if (_categories != null && _categories.Count == 1)
-            {
-                EnsureCheckpointTagModeIs(checkpointTag, CheckpointTag.Mode.Stream);
-                return checkpointTag.PreparePosition >= position.CommitPosition;
-            }
-            else if (_streams == null || _streams.Count == 0)
-            {
-                EnsureCheckpointTagModeIs(checkpointTag, CheckpointTag.Mode.Position);
-                return checkpointTag.Position >= position;
-            }
-            else
-                throw new NotSupportedException();
-        }
-
-        private void EnsureCheckpointTagModeIs(CheckpointTag checkpointTag, CheckpointTag.Mode mode)
-        {
-            var checkpointTagMode = checkpointTag.GetMode();
-            if (checkpointTagMode != mode)
-                throw new ArgumentException(
-                    String.Format(
-                        "Inavlid checkpoint tag mode: '{0}'. Expected mode is: '{1}'", checkpointTagMode, mode));
-        }
-
         private CheckpointStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, HashSet<string> events,
             bool byStream)
