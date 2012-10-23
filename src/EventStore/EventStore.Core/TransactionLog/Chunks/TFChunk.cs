@@ -231,7 +231,8 @@ namespace EventStore.Core.TransactionLog.Chunks
         private Stream GetSequentialReaderFileStream()
         {
             return new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-                                            64000, FileOptions.SequentialScan);
+                                   64000, FileOptions.SequentialScan) {Position = ChunkHeader.Size};
+            
         }
 
         private void CreateReaderStreams()
@@ -1190,8 +1191,10 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             var sizeRead = 0;
             if (count > into.Length) count = into.Length;
-            sizeRead = stream.Read(into, 0, count);
-            return new ReadResult {IsEOF = stream.Length == stream.Position, ReadData = sizeRead};
+            var available = stream.Length - ChunkFooter.Size - ChunkHeader.Size;
+            var toRead = available > count ? count : (int) available;
+            sizeRead = stream.Read(into, 0, toRead);
+            return new ReadResult { IsEOF = stream.Length - ChunkFooter.Size == stream.Position, ReadData = sizeRead };
         }
 
         private struct Midpoint
