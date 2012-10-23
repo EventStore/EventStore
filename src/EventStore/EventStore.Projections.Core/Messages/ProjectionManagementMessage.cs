@@ -274,12 +274,10 @@ namespace EventStore.Projections.Core.Messages
         public class Statistics : Message
         {
             private readonly ProjectionStatistics[] _projections;
-            private readonly long _transactionFileHeadPosition;
 
-            public Statistics(ProjectionStatistics[] projections, long transactionFileHeadPosition)
+            public Statistics(ProjectionStatistics[] projections)
             {
                 _projections = projections;
-                _transactionFileHeadPosition = transactionFileHeadPosition;
             }
 
             public ProjectionStatistics[] Projections
@@ -287,10 +285,6 @@ namespace EventStore.Projections.Core.Messages
                 get { return _projections; }
             }
 
-            public long TransactionFileHeadPosition
-            {
-                get { return _transactionFileHeadPosition; }
-            }
         }
 
         public class ProjectionState : Message

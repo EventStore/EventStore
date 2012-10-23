@@ -57,13 +57,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void event_processed_throws_invalid_operation_exception()
         {
-            _manager.EventProcessed(@"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 10));
+            _manager.EventProcessed(@"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void checkpoint_suggested_throws_invalid_operation_exception()
         {
-            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 10));
+            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]

@@ -126,7 +126,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         {
                             var @event = message.Events[index].Event;
                             var @link = message.Events[index].Link;
-                            DeliverEvent(@event, @link);
+                            DeliverEvent(@event, @link, 100.0f * (link ?? @event).EventNumber / message.LastEventNumber);
                         }
                     }
                     if (_pauseRequested)
@@ -164,7 +164,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                 _distibutionPointCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
-                _maxReadCount, _resolveLinkTos);
+                _maxReadCount, _resolveLinkTos, returnLastEventNumber: true);
             if (delay)
                 _publisher.Publish(
                     TimerMessage.Schedule.Create(
@@ -188,10 +188,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(
                 new ProjectionMessage.Projections.CommittedEventDistributed(
                     _distibutionPointCorrelationId, default(EventPosition), _streamName, _fromSequenceNumber,
-                    _streamName, _fromSequenceNumber, false, null, lastCommitPosition));
+                    _streamName, _fromSequenceNumber, false, null, lastCommitPosition, 100.0f));
         }
 
-        private void DeliverEvent(EventRecord @event, EventRecord link)
+        private void DeliverEvent(EventRecord @event, EventRecord link, float progress)
         {
             EventRecord positionEvent = (link ?? @event);
             if (positionEvent.EventNumber != _fromSequenceNumber)
@@ -208,7 +208,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _distibutionPointCorrelationId, default(EventPosition), positionEvent.EventStreamId,
                     positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
                     new Event(@event.EventId, @event.EventType, false, @event.Data, @event.Metadata),
-                    positionEvent.LogPosition));
+                    positionEvent.LogPosition, progress));
         }
     }
 }

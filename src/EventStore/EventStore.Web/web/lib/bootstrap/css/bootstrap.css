@@ -1732,7 +1732,8 @@ legend + .control-group {
 }
 
 table {
-  max-width: 100%;
+/*  max-width: 100%; */
+/* NOTE: Do not set such constraints directly ion HTML elements. Constraint only tables you need to constraint */
   background-color: transparent;
   border-collapse: collapse;
   border-spacing: 0;

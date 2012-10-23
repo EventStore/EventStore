@@ -8,55 +8,68 @@
     <script id="r-head">
         es.tmpl.renderHead();
     </script>
+    <style type="text/css">
+		.content table { table-layout: fixed; }
+        .content table .r { text-align: right; }
+        .content table .c { text-align: center; }
+        .content table thead th { vertical-align: middle; }
+		
+		.content table td { word-wrap: break-word; }
+		.content table .name { width: 150px; }
+		.content table .status { width: 125px; }
+		.content table .mode { width: 70px; }
+		.content table .progress { width: 50px; }
+		.content table .position { width: 175px; }
+		.content table .checkpoint { width: 175px; }
+		.content table .checkpoint-status { width: 75px; }
+		.content table .read-writes { width: 75px; }
+		.content table .writes { width: 50px; }
+		.content table .partitions { width: 50px; }
+		.content table .processed { width: 75px; }
+		.content table .buffered { width: 50px; }
+    </style>
 </head>
 <body>
     <div id="content">
         <h1>
             Projections</h1>
         <table class="table table-bordered table-striped">
-            <!--<colgroup>
-                    <col class="span1">
-                    <col class="span7">
-                </colgroup>-->
             <thead>
                 <tr>
-                    <th>
+                    <th class="c name">
                         Name
                     </th>
-                    <th>
+                    <th class="c status">
                         Status
                     </th>
-                    <th>
-                        Reason
-                    </th>
-                    <th>
+                    <th class="c mode">
                         Mode
                     </th>
-                    <th>
+                    <th class="c progress">
                         % Done
                     </th>
-                    <th>
+                    <th class="c position">
                         Position
                     </th>
-                    <th>
+                    <th class="c checkpoint">
                         Last Checkpoint
                     </th>
-                    <th>
+                    <th class="c checkpoint-status">
                         Checkpoint Status
                     </th>
-                    <th>
+                    <th class="c read-writes">
                         Reads/Writes In-Progress
                     </th>
-                    <th>
+                    <th class="c writes">
                         Writes Pending
                     </th>
-                    <th>
+                    <th class="c partitions">
                         Partitions Cached
                     </th>
-                    <th>
+                    <th class="c processed">
                         Processed (since restart)
                     </th>
-                    <th>
+                    <th class="c buffered">
                         Buffered Events
                     </th>
                 </tr>
@@ -66,19 +79,18 @@
         </table>
         <script id="projectionTemplate" type="text/x-jsrender">
         <tr>
-          <td><a href="view-projection.htm#{{>statusUrl}}">{{>name}}</a></td>
+          <td class="name"><a href="view-projection.htm#{{>statusUrl}}">{{>name}}</a></td>
           <td>{{>status}}</td>
-          <td>{{>stateReason}}</td>
           <td>{{>mode}}</td>
-          <td>{{>~percentsDone(positionRaw)}}%</td>
-          <td>{{>position}}</td>
-          <td>{{>lastCheckpoint}}</td>
+          <td class="r">{{>progress.toFixed(1)}}%</td>
+          <td class="r">{{>position}}</td>
+          <td class="r">{{>lastCheckpoint}}</td>
           <td>{{>checkpointStatus}}</td>
-          <td>{{>readsInProgress}}/{{>writesInProgress}}</td>
-          <td>{{>writePendingEventsBeforeCheckpoint}}/{{>writePendingEventsAfterCheckpoint}}</td>
-          <td>{{>partitionsCached}}</td>
-          <td>{{>eventsProcessedAfterRestart}}</td>
-          <td>{{>bufferedEvents}}</td>
+          <td class="r">{{>readsInProgress}}/{{>writesInProgress}}</td>
+          <td class="r">{{>writePendingEventsBeforeCheckpoint}}/{{>writePendingEventsAfterCheckpoint}}</td>
+          <td class="r">{{>partitionsCached}}</td>
+          <td class="r">{{>eventsProcessedAfterRestart}}</td>
+          <td class="r">{{>bufferedEvents}}</td>
         </tr>
         </script>
         <div>
@@ -106,11 +118,7 @@
                 $.templates("projectionTemplate", "#projectionTemplate");
 
                 $("#projections").html(
-                    $.render.projectionTemplate(data.projections, {
-                        percentsDone: function(v) {
-                            return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
-                        }
-                    })
+                    $.render.projectionTemplate(data.projections, {})
                 );
 
                 delayedRequestList();

@@ -259,15 +259,23 @@ namespace EventStore.Projections.Core.Messages
                 }
             }
 
+            /// <summary>
+            /// A ChechpointSuggested message is sent to core projection 
+            /// to allow bookmarking a position that can be used to 
+            /// restore the projection processing (typically
+            /// an event at this position does not satisfy projection filter)
+            /// </summary>
             public class CheckpointSuggested : Message
             {
                 private readonly Guid _correlationId;
                 private readonly CheckpointTag _checkpointTag;
+                private readonly float _progress;
 
-                public CheckpointSuggested(Guid correlationId, CheckpointTag checkpointTag)
+                public CheckpointSuggested(Guid correlationId, CheckpointTag checkpointTag, float progress)
                 {
                     _correlationId = correlationId;
                     _checkpointTag = checkpointTag;
+                    _progress = progress;
                 }
 
                 public Guid CorrelationId
@@ -279,13 +287,21 @@ namespace EventStore.Projections.Core.Messages
                 {
                     get { return _checkpointTag; }
                 }
+
+                public float Progress
+                {
+                    get { return _progress; }
+                }
             }
 
             public class CommittedEventReceived : Message
             {
-                public static CommittedEventReceived Sample(Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data)
+                public static CommittedEventReceived Sample(
+                    Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
+                    bool resolvedLinkTo, Event data)
                 {
-                    return new CommittedEventReceived(correlationId, position, eventStreamId, eventSequenceNumber, resolvedLinkTo, data);
+                    return new CommittedEventReceived(
+                        correlationId, position, eventStreamId, eventSequenceNumber, resolvedLinkTo, data, 77.7f);
                 }
 
                 private readonly Guid _correlationId;
@@ -297,15 +313,17 @@ namespace EventStore.Projections.Core.Messages
                 private readonly int _positionSequenceNumber;
                 private readonly EventPosition _position;
                 private readonly CheckpointTag _checkpointTag;
+                private readonly float _progress;
 
                 private CommittedEventReceived(
                     Guid correlationId, EventPosition position, CheckpointTag checkpointTag, string positionStreamId,
                     int positionSequenceNumber, string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo,
-                    Event data)
+                    Event data, float progress)
                 {
                     if (data == null) throw new ArgumentNullException("data");
                     _correlationId = correlationId;
                     _data = data;
+                    _progress = progress;
                     _position = position;
                     _checkpointTag = checkpointTag;
                     _positionStreamId = positionStreamId;
@@ -316,13 +334,15 @@ namespace EventStore.Projections.Core.Messages
                 }
 
                 private CommittedEventReceived(
-                    Guid correlationId, EventPosition position, string eventStreamId,
-                    int eventSequenceNumber, bool resolvedLinkTo, Event data)
+                    Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
+                    bool resolvedLinkTo, Event data, float progress)
                     : this(
-                        correlationId, position, CheckpointTag.FromPosition(position.CommitPosition, position.PreparePosition), eventStreamId, eventSequenceNumber, eventStreamId,
-                        eventSequenceNumber, resolvedLinkTo, data)
+                        correlationId, position,
+                        CheckpointTag.FromPosition(position.CommitPosition, position.PreparePosition), eventStreamId,
+                        eventSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo, data, progress)
                 {
                 }
+
                 public Event Data
                 {
                     get { return _data; }
@@ -368,13 +388,18 @@ namespace EventStore.Projections.Core.Messages
                     get { return _checkpointTag; }
                 }
 
+                public float Progress
+                {
+                    get { return _progress; }
+                }
+
                 public static CommittedEventReceived FromCommittedEventDistributed(
                     CommittedEventDistributed message, CheckpointTag checkpointTag)
                 {
                     return new CommittedEventReceived(
                         message.CorrelationId, message.Position, checkpointTag, message.PositionStreamId,
                         message.PositionSequenceNumber, message.EventStreamId, message.EventSequenceNumber,
-                        message.ResolvedLinkTo, message.Data);
+                        message.ResolvedLinkTo, message.Data, message.Progress);
                 }
             }
 
@@ -389,6 +414,7 @@ namespace EventStore.Projections.Core.Messages
                 private readonly int _positionSequenceNumber;
                 private readonly EventPosition _position;
                 private readonly long? _safeTransactionFileReaderJoinPosition;
+                private readonly float _progress;
 
                 //NOTE: committed event with null event _data means - end of the source reached.  
                 // Current last available TF commit position is in _position.CommitPosition
@@ -396,11 +422,13 @@ namespace EventStore.Projections.Core.Messages
 
                 public CommittedEventDistributed(
                     Guid correlationId, EventPosition position, string positionStreamId, int positionSequenceNumber,
-                    string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data, long? safeTransactionFileReaderJoinPosition)
+                    string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data,
+                    long? safeTransactionFileReaderJoinPosition, float progress)
                 {
                     _correlationId = correlationId;
                     _data = data;
                     _safeTransactionFileReaderJoinPosition = safeTransactionFileReaderJoinPosition;
+                    _progress = progress;
                     _position = position;
                     _positionStreamId = positionStreamId;
                     _positionSequenceNumber = positionSequenceNumber;
@@ -414,7 +442,7 @@ namespace EventStore.Projections.Core.Messages
                     bool resolvedLinkTo, Event data)
                     : this(
                         correlationId, position, eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber,
-                        resolvedLinkTo, data, position.PreparePosition)
+                        resolvedLinkTo, data, position.PreparePosition, 11.1f)
                 {
                 }
 
@@ -461,6 +489,11 @@ namespace EventStore.Projections.Core.Messages
                 public long? SafeTransactionFileReaderJoinPosition
                 {
                     get { return _safeTransactionFileReaderJoinPosition; }
+                }
+
+                public float Progress
+                {
+                    get { return _progress; }
                 }
             }
 

@@ -204,13 +204,20 @@ namespace EventStore.Core.Services.Storage
                 }
             }
 
+            int lastEventNumber = -1;
+            if (message.ReturnLastEventNumber)
+            {
+               lastEventNumber = _readIndex.GetLastStreamEventNumber(message.EventStreamId);
+            }
+
             message.Envelope.ReplyWith(
                     new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId,
                                                                        message.EventStreamId,
                                                                        resolvedPairs,
                                                                        result,
                                                                        nextEventNumber,
-                                                                       records.Length == 0 ? lastCommitPosition : (long?) null));
+                                                                       records.Length == 0 ? lastCommitPosition : (long?) null,
+                                                                       lastEventNumber));
         }
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)

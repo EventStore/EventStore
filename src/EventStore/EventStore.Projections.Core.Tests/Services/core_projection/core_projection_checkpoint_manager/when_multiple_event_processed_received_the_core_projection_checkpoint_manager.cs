@@ -54,9 +54,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
                 _manager.BeginLoadState();
                 _manager.Start(CheckpointTag.FromStreamPosition("stream", 10));
                 _manager.EventProcessed(
-                    @"{""state"":""state1""}", null, CheckpointTag.FromStreamPosition("stream", 11));
+                    @"{""state"":""state1""}", null, CheckpointTag.FromStreamPosition("stream", 11), 77.7f);
                 _manager.EventProcessed(
-                    @"{""state"":""state2""}", null, CheckpointTag.FromStreamPosition("stream", 12));
+                    @"{""state"":""state2""}", null, CheckpointTag.FromStreamPosition("stream", 12), 77.7f);
             }
             catch (Exception ex)
             {
@@ -92,26 +92,26 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         public void accepts_event_processed()
         {
             _manager.EventProcessed(
-                @"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 13));
+                @"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 13), 77.7f);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void event_processed_at_the_start_position_throws_invalid_operation_exception()
         {
             _manager.EventProcessed(
-                @"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 10));
+                @"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
         }
 
         [Test]
         public void accepts_checkpoint_suggested()
         {
-            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 13));
+            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 13), 77.7f);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void checkpoint_suggested_at_the_start_position_throws_invalid_operation_exception()
         {
-            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 10));
+            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
         }
     }
 }

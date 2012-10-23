@@ -34,14 +34,12 @@ namespace EventStore.Projections.Core.Services.Http
     public class ProjectionsStatisticsHttpFormatted
     {
         private readonly ProjectionStatisticsHttpFormatted[] _projections;
-        private readonly long _transactionFileHeadPosition;
 
         public ProjectionsStatisticsHttpFormatted(
             ProjectionManagementMessage.Statistics source, Func<string, string> makeAbsouteUrl)
         {
             _projections =
                 source.Projections.Select(v => new ProjectionStatisticsHttpFormatted(v, makeAbsouteUrl)).ToArray();
-            _transactionFileHeadPosition = source.TransactionFileHeadPosition;
         }
 
         public ProjectionStatisticsHttpFormatted[] Projections
@@ -49,9 +47,5 @@ namespace EventStore.Projections.Core.Services.Http
             get { return _projections; }
         }
 
-        public long TransactionFileHeadPosition
-        {
-            get { return _transactionFileHeadPosition; }
-        }
     }
 }

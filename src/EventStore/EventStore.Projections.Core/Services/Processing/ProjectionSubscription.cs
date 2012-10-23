@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _lastPassedOrCheckpointedEventPosition = message.Position;
                     _checkpointHandler.Handle(
                         new ProjectionMessage.Projections.CheckpointSuggested(
-                            _projectionCorrelationId, _positionTracker.LastTag));
+                            _projectionCorrelationId, _positionTracker.LastTag, message.Progress));
                 }
             }
         }

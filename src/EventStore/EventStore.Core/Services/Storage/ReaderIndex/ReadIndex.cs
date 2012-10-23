@@ -111,8 +111,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public readonly TFPos CurrentPos;
         public readonly TFPos NextPos;
         public readonly TFPos PrevPos;
+        public readonly long TfEofPosition;
 
-        public ReadAllResult(List<ResolvedEventRecord> records, int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos)
+        public ReadAllResult(List<ResolvedEventRecord> records, int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
         {
             Ensure.NotNull(records, "records");
 
@@ -121,6 +122,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             CurrentPos = currentPos;
             NextPos = nextPos;
             PrevPos = prevPos;
+            TfEofPosition = tfEofPosition;
         }
 
         public override string ToString()
@@ -733,7 +735,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 ReturnSeqReader(seqReader);
             }
-            return new ReadAllResult(records, maxCount, pos, nextPos, prevPos);
+            return new ReadAllResult(records, maxCount, pos, nextPos, prevPos, _lastCommitPosition);
         }
 
         /// <summary>
@@ -834,7 +836,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 ReturnSeqReader(seqReader);
             }
-            return new ReadAllResult(records, maxCount, pos, nextPos, prevPos);
+            return new ReadAllResult(records, maxCount, pos, nextPos, prevPos, _lastCommitPosition);
         }
 
         public EventRecord ResolveLinkToEvent(EventRecord eventRecord)
