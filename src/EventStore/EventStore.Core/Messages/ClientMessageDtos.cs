@@ -312,7 +312,7 @@ namespace EventStore.Core.Messages
             [ProtoMember(4)]
             public bool ResolveLinkTos { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(5)]
             public bool ReturnLastEventNumber { get; set; }
 
             public ReadStreamEventsForward()
