@@ -123,14 +123,14 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.That(write.Wait(Timeout));
 
+                Assert.That(appeared.Wait(Timeout));
                 store.UnsubscribeFromAllStreams();
+
                 Assert.That(dropped.Wait(Timeout));
                 Assert.That(subscribe.Wait(Timeout));
 
                 var write2 = store.AppendToStreamAsync(stream, 2, testEvents);
                 Assert.That(write2.Wait(Timeout));
-
-                Assert.That(appeared.Wait(Timeout));
             }
         }
     }
