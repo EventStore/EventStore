@@ -47,12 +47,12 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (comittedEvent.PositionStreamId != _stream)
                 throw new InvalidOperationException(string.Format("Invalid stream '{0}'.  Expected stream is '{1}'", comittedEvent.EventStreamId, _stream));
-            return CheckpointTag.FromStreamPosition(comittedEvent.PositionStreamId, comittedEvent.PositionSequenceNumber, comittedEvent.Position.PreparePosition);
+            return CheckpointTag.FromStreamPosition(comittedEvent.PositionStreamId, comittedEvent.PositionSequenceNumber);
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()
         {
-            return CheckpointTag.FromStreamPosition(_stream, -1, -1);
+            return CheckpointTag.FromStreamPosition(_stream, -1);
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)

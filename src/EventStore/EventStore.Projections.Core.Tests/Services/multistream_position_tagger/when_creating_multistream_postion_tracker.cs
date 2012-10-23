@@ -50,28 +50,28 @@ namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
         public void it_can_be_updated_with_correct_streams()
         {
             // even not initialized (UpdateToZero can be removed)
-            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"stream1", 10}, {"stream2", 20}}, 50);
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"stream1", 10}, {"stream2", 20}});
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void it_cannot_be_updated_with_other_streams()
         {
-            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 10 }, { "stream3", 20 } }, 50);
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 10 }, { "stream3", 20 } });
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void it_cannot_be_updated_forward()
         {
-            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 10 }, { "stream2", 20 } }, 50);
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 10 }, { "stream2", 20 } });
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void initial_position_cannot_be_set_twice()
         {
-            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 10 }, { "stream2", 20 } }, 50);
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 10 }, { "stream2", 20 } });
             _positionTracker.UpdateByCheckpointTagForward(newTag);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }

@@ -42,18 +42,6 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
             _receivedEvents.Add(message);
         }
 
-        public bool CanJoinAt(EventPosition firstAvailableTransactionFileEvent, CheckpointTag eventCheckpointTag)
-        {
-            return eventCheckpointTag.PreparePosition >= firstAvailableTransactionFileEvent.CommitPosition;
-        }
-
-        public CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventDistributed committedEvent)
-        {
-            return CheckpointTag.FromStreamPosition(
-                committedEvent.PositionStreamId, committedEvent.EventSequenceNumber,
-                committedEvent.Position.PreparePosition);
-        }
-
         public List<ProjectionMessage.Projections.CommittedEventDistributed> ReceivedEvents
         {
             get { return _receivedEvents; }

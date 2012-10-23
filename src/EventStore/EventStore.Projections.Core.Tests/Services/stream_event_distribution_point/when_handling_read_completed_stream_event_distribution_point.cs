@@ -111,10 +111,12 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
             Assert.AreEqual(4, second.Data.Metadata[0]);
             Assert.AreEqual("stream", first.EventStreamId);
             Assert.AreEqual("stream", second.EventStreamId);
-            Assert.AreEqual(50, first.Position.PreparePosition);
-            Assert.AreEqual(100, second.Position.PreparePosition);
-            Assert.AreEqual(long.MinValue, first.Position.CommitPosition);
-            Assert.AreEqual(long.MinValue, second.Position.CommitPosition);
+            Assert.AreEqual(0, first.Position.PreparePosition);
+            Assert.AreEqual(0, second.Position.PreparePosition);
+            Assert.AreEqual(0, first.Position.CommitPosition);
+            Assert.AreEqual(0, second.Position.CommitPosition);
+            Assert.AreEqual(50, first.SafeTransactionFileReaderJoinPosition);
+            Assert.AreEqual(100, second.SafeTransactionFileReaderJoinPosition);
         }
 
         [Test]

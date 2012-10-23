@@ -38,10 +38,6 @@ function scope($on, $notify) {
                 return eventProcessor.commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata, log_position);
             }, 
 
-            test_array: function(json, a, b, c) {
-                return (a + "__" + b + "__" + c).toString();
-            }, 
-
             get_state: function() {
                 var stateJson = JSON.stringify(eventProcessor.commandHandlers.get_state_raw());
                 return stateJson;

@@ -36,9 +36,9 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_tag
     [TestFixture]
     public class checkpoint_tag_by_stream_position
     {
-        private readonly CheckpointTag _a = CheckpointTag.FromStreamPosition("stream", 9, 100);
-        private readonly CheckpointTag _b = CheckpointTag.FromStreamPosition("stream", 15, 110);
-        private readonly CheckpointTag _c = CheckpointTag.FromStreamPosition("stream", 29, 120);
+        private readonly CheckpointTag _a = CheckpointTag.FromStreamPosition("stream", 9);
+        private readonly CheckpointTag _b = CheckpointTag.FromStreamPosition("stream", 15);
+        private readonly CheckpointTag _c = CheckpointTag.FromStreamPosition("stream", 29);
 
         [Test]
         public void equal_equals()

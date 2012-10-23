@@ -72,9 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
                     new Event(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
             _subscription = new FakeProjectionSubscription();
             _projectionSubscriptionId = Guid.NewGuid();
-            var subscribed = _point.TrySubscribe(
-                _projectionSubscriptionId, _subscription,
-                CheckpointTag.FromStreamPosition("stream", 100, prepaprePosition: 30));
+            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
             Assert.IsTrue(subscribed); // ensure we really unsubscribing.. even if it is tested elsewhere
             _point.Unsubscribe(_projectionSubscriptionId);
         }
@@ -100,9 +98,7 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
         [Test]
         public void projection_can_resubscribe_with()
         {
-            var subscribed = _point.TrySubscribe(
-                _projectionSubscriptionId, _subscription,
-                CheckpointTag.FromStreamPosition("stream", 100, prepaprePosition: 30));
+            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
             Assert.AreEqual(true, subscribed);
         }
     }

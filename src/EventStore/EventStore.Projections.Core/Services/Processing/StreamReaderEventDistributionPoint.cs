@@ -76,7 +76,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             _paused = false;
             _pauseRequested = false;
-            _logger.Trace("Resuming event distribution {0} at '{1}@{2}'", _distibutionPointCorrelationId, _fromSequenceNumber, _streamName);
+            _logger.Trace(
+                "Resuming event distribution {0} at '{1}@{2}'", _distibutionPointCorrelationId, _fromSequenceNumber,
+                _streamName);
             RequestEvents(delay: false);
         }
 
@@ -88,7 +90,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _pauseRequested = true;
             if (!_eventsRequested)
                 _paused = true;
-            _logger.Trace("Pausing event distribution {0} at '{1}@{2}'", _distibutionPointCorrelationId, _fromSequenceNumber, _streamName);
+            _logger.Trace(
+                "Pausing event distribution {0} at '{1}@{2}'", _distibutionPointCorrelationId, _fromSequenceNumber,
+                _streamName);
         }
 
         public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
@@ -127,11 +131,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     }
                     if (_pauseRequested)
                         _paused = true;
+                    else if (message.Events.Length == 0)
+                        RequestEvents(delay: true);
                     else
-                        if (message.Events.Length == 0)
-                            RequestEvents(delay: true);
-                        else
-                            _publisher.Publish(CreateTickMessage());
+                        _publisher.Publish(CreateTickMessage());
                     break;
                 default:
                     throw new NotSupportedException(
@@ -165,24 +168,27 @@ namespace EventStore.Projections.Core.Services.Processing
             if (delay)
                 _publisher.Publish(
                     TimerMessage.Schedule.Create(
-                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true), readEventsForward));
+                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
+                        readEventsForward));
             else
                 _publisher.Publish(readEventsForward);
         }
 
         private ProjectionMessage.CoreService.Tick CreateTickMessage()
         {
-            return new ProjectionMessage.CoreService.Tick(() => { if (!_paused && !_disposed) RequestEvents(delay: false); });
+            return
+                new ProjectionMessage.CoreService.Tick(
+                    () => { if (!_paused && !_disposed) RequestEvents(delay: false); });
         }
 
         private void DeliverLastCommitPosition(long lastCommitPosition)
         {
             if (lastCommitPosition == -1)
-                return; //TODO: this shouldnot happen, but StorageReader does not return it now
+                return; //TODO: this should not happen, but StorageReader does not return it now
             _publisher.Publish(
                 new ProjectionMessage.Projections.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, new EventPosition(long.MinValue, lastCommitPosition), _streamName,
-                    _fromSequenceNumber, _streamName, _fromSequenceNumber, false, null));
+                    _distibutionPointCorrelationId, default(EventPosition), _streamName, _fromSequenceNumber,
+                    _streamName, _fromSequenceNumber, false, null, lastCommitPosition));
         }
 
         private void DeliverEvent(EventRecord @event, EventRecord link)
@@ -197,11 +203,12 @@ namespace EventStore.Projections.Core.Services.Processing
             var resolvedLinkTo = positionEvent.EventStreamId != @event.EventStreamId
                                  || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(
-                //TODO: publish bothlink and event data
+                //TODO: publish both link and event data
                 new ProjectionMessage.Projections.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, new EventPosition(long.MinValue, positionEvent.LogPosition),
-                    positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
-                    resolvedLinkTo, new Event(@event.EventId, @event.EventType, false, @event.Data, @event.Metadata)));
+                    _distibutionPointCorrelationId, default(EventPosition), positionEvent.EventStreamId,
+                    positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
+                    new Event(@event.EventId, @event.EventType, false, @event.Data, @event.Metadata),
+                    positionEvent.LogPosition));
         }
     }
 }

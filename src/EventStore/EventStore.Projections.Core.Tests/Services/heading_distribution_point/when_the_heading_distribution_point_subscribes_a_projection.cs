@@ -73,8 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
                     new Event(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
             _subscription = new FakeProjectionSubscription();
             _projectionSubscriptionId = Guid.NewGuid();
-            var subscribed = _point.TrySubscribe(
-                _projectionSubscriptionId, _subscription, CheckpointTag.FromStreamPosition("stream", 100, prepaprePosition: 30));
+            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
         }
 
 
@@ -99,8 +98,7 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void no_other_projection_can_subscribe_with_the_same_projection_id()
         {
-            var subscribed = _point.TrySubscribe(
-                _projectionSubscriptionId, _subscription, CheckpointTag.FromStreamPosition("stream", 100, prepaprePosition: 30));
+            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
         }
     }
 }

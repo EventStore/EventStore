@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
             Assert.IsFalse(
                 t.IsCompatible(
                     CheckpointTag.FromStreamPositions(
-                        new Dictionary<string, int> {{"stream2", 100}, {"stream3", 150}}, 200)));
+                        new Dictionary<string, int> {{"stream2", 100}, {"stream3", 150}})));
         }
 
         [Test]
@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
             Assert.IsTrue(
                 t.IsCompatible(
                     CheckpointTag.FromStreamPositions(
-                        new Dictionary<string, int> {{"stream1", 100}, {"stream2", 150}}, 200)));
+                        new Dictionary<string, int> {{"stream1", 100}, {"stream2", 150}})));
         }
 
         [Test]
@@ -120,7 +120,7 @@ namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
             var zeroEvent2 = t.MakeCheckpointTag(zeroEvent, _zeroEvent);
             var first = t.MakeCheckpointTag(zeroEvent2, _firstEvent);
             var second = t.MakeCheckpointTag(first, _secondEvent);
-            var second2 = t.MakeCheckpointTag(zero, _secondEvent);
+            var second2 = t.MakeCheckpointTag(zeroEvent, _secondEvent);
             var third = t.MakeCheckpointTag(second, _thirdEvent);
 
             Assert.IsTrue(zeroEvent > zero);

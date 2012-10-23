@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void try_subscribe_throws_invalid_operation_exception()
         {
-            _point.TrySubscribe(Guid.NewGuid(), new FakeProjectionSubscription(), CheckpointTag.FromPosition(20, 10));
+            _point.TrySubscribe(Guid.NewGuid(), new FakeProjectionSubscription(), 10);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]

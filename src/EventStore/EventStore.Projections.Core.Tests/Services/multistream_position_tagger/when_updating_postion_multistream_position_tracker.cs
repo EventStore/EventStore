@@ -45,8 +45,8 @@ namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
             // given
             _tagger = new MultiStreamPositionTagger(new []{"stream1", "stream2"});
             _positionTracker = new PositionTracker(_tagger);
-            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"stream1", 1}, {"stream2", 2}}, 50);
-            var newTag2 = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 1 }, { "stream2", 3 } }, 150);
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"stream1", 1}, {"stream2", 2}});
+            var newTag2 = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 1 }, { "stream2", 3 } });
             _positionTracker.UpdateByCheckpointTagInitial(newTag);
             _positionTracker.UpdateByCheckpointTagForward(newTag2);
         }
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cannot_update_to_the_same_postion()
         {
-            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 1 }, { "stream2", 3 } }, 150);
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 1 }, { "stream2", 3 } });
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
         public void it_cannot_be_updated_with_other_stream()
         {
             // even not initialized (UpdateToZero can be removed)
-            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 3 }, { "stream3", 2 } }, 250);
+            var newTag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 3 }, { "stream3", 2 } });
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 
