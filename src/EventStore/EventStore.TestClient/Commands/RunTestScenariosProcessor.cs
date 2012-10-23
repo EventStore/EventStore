@@ -131,8 +131,16 @@ namespace EventStore.TestClient.Commands
                                     eventsPerStream, 
                                     streamDeleteStep, 
                                     TimeSpan.FromMinutes(executionPeriodMinutes)), 
-                   new ProjectionsScenario1(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep),
-                   new ProjectionsKillScenario(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep)
+                new ProjectionsScenario1(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep),
+                new ProjectionsKillScenario(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep),
+                new LoopingProjectionKillScenario(directTcpSender, 
+                                                  maxConcurrentRequests, 
+                                                  connections, 
+                                                  streams, 
+                                                  eventsPerStream, 
+                                                  streamDeleteStep, 
+                                                  TimeSpan.FromMinutes(executionPeriodMinutes)), 
+                new MassProjectionsScenario(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep)
                 };
 
             Log.Info("Found scenarios ({0} total).", allScenarios.Length);
