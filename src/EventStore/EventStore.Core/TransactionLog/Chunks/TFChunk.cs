@@ -227,12 +227,18 @@ namespace EventStore.Core.TransactionLog.Chunks
             return chunk;
         }
 
+
+        private Stream GetReaderFileStream()
+        {
+            return new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
+                                            ReadBufferSize, FileOptions.RandomAccess);
+        }
+
         private void CreateReaderStreams()
         {
             for (int i = 0; i < _maxReadThreads; i++)
             {
-                var stream = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-                                            ReadBufferSize, FileOptions.RandomAccess);
+                var stream = GetReaderFileStream();
                 var reader = new BinaryReader(stream);
                 _streams.Enqueue(new ReaderWorkItem(stream, reader, false));
             }
@@ -1124,6 +1130,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 throw new TimeoutException();
         }
 
+ 
         private ReaderWorkItem GetReaderWorkItem()
         { 
             for (int i = 0; i < 10; i++)
@@ -1167,8 +1174,9 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (_selfdestructin54321)
                 throw new FileBeingDeletedException();
             Interlocked.Increment(ref _lockedCount);
-            return new TFChunkBulkReader(this, null);
+            return new TFChunkBulkReader(this, GetReaderFileStream());
         }
+
 
         internal void ReleaseReader(TFChunkBulkReader reader)
         {
@@ -1209,8 +1217,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly TFChunk _chunk;
         private readonly Stream _stream;
         private bool _disposed;
-        private readonly byte [] _buffer = new byte[5000];
-
+     
         internal TFChunkBulkReader(TFChunk chunk, Stream streamToUse)
         {
             Ensure.NotNull(chunk, "chunk");
@@ -1226,18 +1233,16 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void Release()
         {
-            int x = 5;
-            //Kill bulk stream
             _stream.Close();
             _stream.Dispose();
             _disposed = true;
             _chunk.ReleaseReader(this);
         }
 
-        public ReadResult ReadNextBytes(int count)
+        public ReadResult ReadNextBytes(int count, byte [] buffer)
         {
             //GFY NOTE THIS DOES NOT USE WRITER CHECKSUM!
-            return _chunk.TryReadNextBulk(_stream, _buffer, count);
+            return _chunk.TryReadNextBulk(_stream, buffer, count);
         }
 
         public void Dispose()

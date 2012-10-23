@@ -215,6 +215,7 @@
     <Compile Include="Infrastructure\Services\Transport\Http\http_service_should.cs" />
     <Compile Include="Infrastructure\Services\Transport\Http\PortableServer.cs" />
     <Compile Include="Infrastructure\Services\Transport\Http\ping_controller_should.cs" />
+    <Compile Include="MightyMooseIgnoreAttribute.cs" />
     <Compile Include="SpecificationWithDirectoryPerTestFixture.cs" />
     <Compile Include="SpecificationWithFilePerTestFixture.cs" />
     <Compile Include="Startup\ComparisonHelper.cs" />
