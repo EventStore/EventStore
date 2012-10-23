@@ -388,6 +388,7 @@ namespace EventStore.Projections.Core.Messages
                 private readonly string _positionStreamId;
                 private readonly int _positionSequenceNumber;
                 private readonly EventPosition _position;
+                private readonly long? _safeTransactionFileReaderJoinPosition;
 
                 //NOTE: committed event with null event _data means - end of the source reached.  
                 // Current last available TF commit position is in _position.CommitPosition
@@ -395,10 +396,11 @@ namespace EventStore.Projections.Core.Messages
 
                 public CommittedEventDistributed(
                     Guid correlationId, EventPosition position, string positionStreamId, int positionSequenceNumber,
-                    string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data)
+                    string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data, long? safeTransactionFileReaderJoinPosition)
                 {
                     _correlationId = correlationId;
                     _data = data;
+                    _safeTransactionFileReaderJoinPosition = safeTransactionFileReaderJoinPosition;
                     _position = position;
                     _positionStreamId = positionStreamId;
                     _positionSequenceNumber = positionSequenceNumber;
@@ -412,7 +414,7 @@ namespace EventStore.Projections.Core.Messages
                     bool resolvedLinkTo, Event data)
                     : this(
                         correlationId, position, eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber,
-                        resolvedLinkTo, data)
+                        resolvedLinkTo, data, position.PreparePosition)
                 {
                 }
 
@@ -454,6 +456,11 @@ namespace EventStore.Projections.Core.Messages
                 public bool ResolvedLinkTo
                 {
                     get { return _resolvedLinkTo; }
+                }
+
+                public long? SafeTransactionFileReaderJoinPosition
+                {
+                    get { return _safeTransactionFileReaderJoinPosition; }
                 }
             }
 

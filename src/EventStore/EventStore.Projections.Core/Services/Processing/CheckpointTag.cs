@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Position = position;
         }
 
-        public CheckpointTag(Dictionary<string, int> streams, long preparePosition)
+        public CheckpointTag(Dictionary<string, int> streams)
         {
             foreach (var stream in streams)
             {
@@ -62,15 +62,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (stream.Value < 0 && stream.Value != ExpectedVersion.NoStream) throw new ArgumentException("Invalid sequence number", "streams");
             }
             Streams = new Dictionary<string, int>(streams); // clone
-            Position = new EventPosition(long.MinValue, preparePosition);
+            Position = new EventPosition(long.MinValue, long.MinValue);
         }
 
-        private CheckpointTag(string stream, int sequenceNumber, long preparePosition)
+        private CheckpointTag(string stream, int sequenceNumber)
         {
             if (stream == null) throw new ArgumentNullException("stream");
             if (stream == "") throw new ArgumentException("stream");
             if (sequenceNumber < 0 && sequenceNumber != ExpectedVersion.NoStream) throw new ArgumentException("sequenceNumber");
-            Position = new EventPosition(long.MinValue, preparePosition);
+            Position = new EventPosition(long.MinValue, long.MinValue);
             Streams = new Dictionary<string, int> {{stream, sequenceNumber}};
         }
 
@@ -104,8 +104,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (left.Streams.Keys.First() != right.Streams.Keys.First())
                         throw new InvalidOperationException("Cannot compare checkpoint tags across different streams");
                     var result = left.Streams.Values.First() > right.Streams.Values.First();
-                    if (result != (left.Position.PreparePosition > right.Position.PreparePosition))
-                        ThrowBadTags(left, right);
                     return result;
                 case Mode.MultiStream:
                     int rvalue;
@@ -126,14 +124,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             throw new InvalidOperationException(
                 string.Format("Incomparable multi-stream checkpoint tags. '{0}' and '{1}'", left, right));
-        }
-
-        private static void ThrowBadTags(CheckpointTag left, CheckpointTag right)
-        {
-            throw new InvalidOperationException(
-                string.Format(
-                    "Invalid checkpoint tags detected. Comparison of sequence numbers and prepapre positions gives different results. '{0}' and '{1}'",
-                    left, right));
         }
 
         public static bool operator >=(CheckpointTag left, CheckpointTag right)
@@ -157,8 +147,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (left.Streams.Keys.First() != right.Streams.Keys.First())
                         throw new InvalidOperationException("Cannot compare checkpoint tags across different streams");
                     var result = left.Streams.Values.First() >= right.Streams.Values.First();
-                    if (result != (left.Position.PreparePosition >= right.Position.PreparePosition))
-                        ThrowBadTags(left, right);
                     return result;
                 case Mode.MultiStream:
                     int rvalue;
@@ -215,8 +203,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (Streams.Keys.First() != other.Streams.Keys.First())
                         return false;
                     var result = Streams.Values.First() == other.Streams.Values.First();
-                    if (result != (Position.PreparePosition == other.Position.PreparePosition))
-                        ThrowBadTags(this, other);
                     return result;
                 case Mode.MultiStream:
                     int rvalue;
@@ -273,15 +259,15 @@ namespace EventStore.Projections.Core.Services.Processing
             return new CheckpointTag(new EventPosition(commitPosition, preparePosition));
         }
 
-        public static CheckpointTag FromStreamPosition(string stream, int sequenceNumber, long prepaprePosition)
+        public static CheckpointTag FromStreamPosition(string stream, int sequenceNumber)
         {
-            return new CheckpointTag(stream, sequenceNumber, prepaprePosition);
+            return new CheckpointTag(stream, sequenceNumber);
         }
 
-        public static CheckpointTag FromStreamPositions(IDictionary<string, int> streams, long prepaprePosition)
+        public static CheckpointTag FromStreamPositions(IDictionary<string, int> streams)
         {
             // clone to avoid changes to the dictionary passed as argument
-            return new CheckpointTag(streams.ToDictionary(v => v.Key, v => v.Value), prepaprePosition);
+            return new CheckpointTag(streams.ToDictionary(v => v.Key, v => v.Value));
         }
 
         public int CompareTo(CheckpointTag other)

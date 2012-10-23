@@ -57,13 +57,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void event_processed_throws_invalid_operation_exception()
         {
-            _manager.EventProcessed(@"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 10, 1000));
+            _manager.EventProcessed(@"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 10));
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void checkpoint_suggested_throws_invalid_operation_exception()
         {
-            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 10, 1000));
+            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 10));
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
@@ -75,14 +75,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         [Test]
         public void can_be_started()
         {
-            _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000));
+            _manager.Start(CheckpointTag.FromStreamPosition("stream", 10));
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void cannot_be_started_from_incompatible_checkpoint_tag()
         {
             //TODO: move to when loaded
-            _manager.Start(CheckpointTag.FromStreamPosition("stream1", 10, 1000));
+            _manager.Start(CheckpointTag.FromStreamPosition("stream1", 10));
         }
     }
 }

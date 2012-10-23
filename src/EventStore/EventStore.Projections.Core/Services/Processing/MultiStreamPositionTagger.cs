@@ -37,12 +37,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             if (resultDictionary.Count < previous.Streams.Count)
                 resultDictionary.Add(comittedEvent.PositionStreamId, comittedEvent.PositionSequenceNumber);
-            return CheckpointTag.FromStreamPositions(resultDictionary, -123);
+            return CheckpointTag.FromStreamPositions(resultDictionary);
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()
         {
-            return CheckpointTag.FromStreamPositions(_streams.ToDictionary(v => v, v => ExpectedVersion.NoStream), -1);
+            return CheckpointTag.FromStreamPositions(_streams.ToDictionary(v => v, v => ExpectedVersion.NoStream));
         }
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
