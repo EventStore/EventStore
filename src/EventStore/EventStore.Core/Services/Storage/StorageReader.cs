@@ -27,11 +27,14 @@
 // 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Exceptions;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -306,15 +309,34 @@ namespace EventStore.Core.Services.Storage
         {
             try
             {
-                var streams = _readIndex.GetStreamIds();
-                message.Envelope.ReplyWith(new ClientMessage.ListStreamsCompleted(streams != null,streams));    
+                EventRecord[] eventsBatch;
+
+                // from 1 to skip $stream-created event in $streams stream
+                var result = _readIndex.ReadStreamEventsForward(SystemStreams.StreamsStream, 1, int.MaxValue, out eventsBatch);
+                if (result != RangeReadResult.Success)
+                    throw new SystemStreamNotFoundException(
+                        string.Format("Couldn't find system stream {0}, which should've been created with projection 'Index By Streams'",
+                                        SystemStreams.StreamsStream));
+
+                var streamIds = eventsBatch
+                    .Select(e =>
+                    {
+                        var dataStr = Encoding.UTF8.GetString(e.Data);
+                        var parts = dataStr.Split('@');
+                        if (parts.Length < 2)
+                            throw new FormatException(string.Format("{0} stream event data is in bad format: {1}. Expected: eventNumber@streamid", SystemStreams.StreamsStream, dataStr));
+                        var streamid = parts[1];
+                        return streamid;
+                    })
+                    .ToArray();
+
+                message.Envelope.ReplyWith(new ClientMessage.ListStreamsCompleted(true, streamIds));
             }
             catch (Exception ex)
             {
                 Log.ErrorException(ex, "Error while reading stream ids");
                 message.Envelope.ReplyWith(new ClientMessage.ListStreamsCompleted(false, null));
             }
-            
         }
 
         public void Handle(MonitoringMessage.InternalStatsRequest message)

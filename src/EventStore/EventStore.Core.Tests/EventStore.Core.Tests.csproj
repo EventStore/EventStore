@@ -194,7 +194,6 @@
     <Compile Include="Infrastructure\Services\Monitoring\StatsParserTests.cs" />
     <Compile Include="Infrastructure\Services\Storage\ByLengthHasher.cs" />
     <Compile Include="Infrastructure\Services\Storage\FakeTableIndex.cs" />
-    <Compile Include="Infrastructure\Services\Storage\NullCache.cs" />
     <Compile Include="Infrastructure\Services\Storage\ReadIndexTestScenario.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_multiple_events_in_a_stream.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_prepares_and_commits.cs" />

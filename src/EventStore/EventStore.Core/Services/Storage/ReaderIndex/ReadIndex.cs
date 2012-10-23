@@ -36,7 +36,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
-using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
@@ -46,95 +45,6 @@ using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
-    public struct StreamMetadata
-    {
-        public readonly int? MaxCount;
-        public readonly TimeSpan? MaxAge;
-
-        public StreamMetadata(int? maxCount, TimeSpan? maxAge)
-        {
-            MaxCount = maxCount;
-            MaxAge = maxAge;
-        }
-    }
-
-    public enum SingleReadResult
-    {
-        Success,
-        NotFound,
-        NoStream,
-        StreamDeleted
-    }
-
-    public enum RangeReadResult
-    {
-        Success,
-        NoStream,
-        StreamDeleted
-    }
-
-    public enum CommitDecision
-    {
-        Ok,
-        WrongExpectedVersion,
-        Deleted,
-        Idempotent,
-        CorruptedIdempotency,
-        InvalidTransaction
-    }
-
-    public struct CommitCheckResult
-    {
-        public readonly CommitDecision Decision;
-        public readonly string EventStreamId;
-        public readonly int CurrentVersion;
-        public readonly int StartEventNumber;
-        public readonly int EndEventNumber;
-
-        public CommitCheckResult(CommitDecision decision, 
-                                 string eventStreamId, 
-                                 int currentVersion, 
-                                 int startEventNumber, 
-                                 int endEventNumber)
-        {
-            Decision = decision;
-            EventStreamId = eventStreamId;
-            CurrentVersion = currentVersion;
-            StartEventNumber = startEventNumber;
-            EndEventNumber = endEventNumber;
-        }
-    }
-
-    public struct ReadAllResult
-    {
-        public readonly List<ResolvedEventRecord> Records;
-        public readonly int MaxCount;
-        public readonly TFPos CurrentPos;
-        public readonly TFPos NextPos;
-        public readonly TFPos PrevPos;
-        public readonly long TfEofPosition;
-
-        public ReadAllResult(List<ResolvedEventRecord> records, int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
-        {
-            Ensure.NotNull(records, "records");
-
-            Records = records;
-            MaxCount = maxCount;
-            CurrentPos = currentPos;
-            NextPos = nextPos;
-            PrevPos = prevPos;
-            TfEofPosition = tfEofPosition;
-        }
-
-        public override string ToString()
-        {
-            return string.Format("NextPos: {0}, PrevPos: {1}, Records: {2}",
-                                 NextPos,
-                                 PrevPos,
-                                 string.Join("\n", Records.Select(x => x.ToString())));
-        }
-    }
-
     public class ReadIndex : IDisposable, IReadIndex
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ReadIndex>();
@@ -884,44 +794,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return record;
         }
 
-        public string[] GetStreamIds()
-        {
-            const int batchSize = 100;
-            var allEvents = new List<EventRecord>();
-            EventRecord[] eventsBatch;
-
-            int from = 0;
-            do
-            {
-                var result = ReadStreamEventsForward(SystemStreams.StreamsStream, from, batchSize, out eventsBatch);
-                if (result != RangeReadResult.Success)
-                {
-                    throw new SystemStreamNotFoundException(
-                        string.Format("Couldn't find system stream {0}, which should've been created with projection 'Index By Streams'",
-                                      SystemStreams.StreamsStream));
-                }
-
-                from += eventsBatch.Length;
-                allEvents.AddRange(eventsBatch);
-            }
-            while (eventsBatch.Length != 0);
-
-            var streamIds = allEvents
-                .Skip(1) // streamCreated
-                .Select(e =>
-                {
-                    var dataStr = Encoding.UTF8.GetString(e.Data);
-                    var parts = dataStr.Split('@');
-                    if (parts.Length < 2)
-                        throw new FormatException(string.Format("{0} stream event data is in bad format: {1}. Expected: eventNumber@streamid", SystemStreams.StreamsStream, dataStr));
-                    var streamid = parts[1];
-                    return streamid;
-                })
-                .ToArray();
-
-            return streamIds;
-        }
-
         public CommitCheckResult CheckCommitStartingAt(long prepareStartPosition)
         {
             var reader = GetReader();
@@ -1033,19 +905,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public ReadIndexStats GetStatistics()
         {
             return new ReadIndexStats(Interlocked.Read(ref _succReadCount), Interlocked.Read(ref _failedReadCount));
-        }
-
-        public bool GetStreamMetadata(string streamId, out bool streamExists, out StreamMetadata metadata)
-        {
-            var reader = GetReader();
-            try
-            {
-                return GetStreamMetadataInternal(reader, streamId, out streamExists, out metadata);
-            }
-            finally 
-            {
-                ReturnReader(reader);
-            }
         }
 
         private bool GetStreamMetadataInternal(ITransactionFileReader reader,
