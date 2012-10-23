@@ -68,6 +68,11 @@ namespace EventStore.Projections.Core.Tests.Services
             {
                 throw new NotImplementedException();
             }
+
+            public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         protected WatchingConsumer _consumer;
@@ -80,7 +85,7 @@ namespace EventStore.Projections.Core.Tests.Services
             _consumer = new WatchingConsumer();
             _bus = new InMemoryBus("temp");
             _bus.Subscribe(_consumer);
-            _service = new ProjectionCoreService(_bus, 10, new InMemoryCheckpoint(1000));
+            _service = new ProjectionCoreService(_bus, _bus, 10, new InMemoryCheckpoint(1000));
             _service.Handle(new ProjectionMessage.CoreService.Start());
         }
 

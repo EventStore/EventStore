@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -47,19 +46,26 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void UpdateByCheckpointTagForward(CheckpointTag newTag)
         {
+            if (_lastTag == null)
+                throw new InvalidOperationException("Initial position was not set");
             if (newTag <= _lastTag)
                 throw new InvalidOperationException(
                     string.Format("Event at checkpoint tag {0} has been already processed", newTag));
-            _lastTag = newTag;
+            InternalUpdate(newTag);
         }
 
-        public void UpdateByCheckpointTag(CheckpointTag checkpointTag)
+        public void UpdateByCheckpointTagInitial(CheckpointTag checkpointTag)
         {
             if (_lastTag != null)
-                throw new InvalidOperationException("Posistion tagger has be already updated");
-            if (!_positionTagger.IsCompatible(checkpointTag))
+                throw new InvalidOperationException("Position tagger has be already updated");
+            InternalUpdate(checkpointTag);
+        }
+
+        private void InternalUpdate(CheckpointTag newTag)
+        {
+            if (!_positionTagger.IsCompatible(newTag))
                 throw new InvalidOperationException("Cannot update by incompatible checkpoint tag");
-            _lastTag = checkpointTag;
+            _lastTag = newTag;
         }
     }
 }

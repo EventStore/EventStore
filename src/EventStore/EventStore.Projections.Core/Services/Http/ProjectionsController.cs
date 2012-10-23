@@ -35,6 +35,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Controllers;
+using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
@@ -49,12 +50,6 @@ namespace EventStore.Projections.Core.Services.Http
         private static readonly ICodec DefaultResponseCodec = Codec.Json;
 
         private readonly MiniWeb _miniWebPrelude;
-
-        private readonly ResponseConfiguration _jsonOkConfiguration = new ResponseConfiguration(
-            200, "OK", "application/json");
-
-        private readonly ResponseConfiguration _jsOkConfiguration = new ResponseConfiguration(
-            200, "OK", "application/javascript");
 
 
         public ProjectionsController(IPublisher publisher)
@@ -95,7 +90,7 @@ namespace EventStore.Projections.Core.Services.Http
                 OnProjectionsGetPersistent);
             service.RegisterControllerAction(
                 new ControllerAction(
-                    "/projections/onetime?type={type}", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},
+                    "/projections/onetime?name={name}&type={type}", HttpMethod.Post, new ICodec[] { Codec.ManualEncoding },
                     SupportedCodecs, DefaultResponseCodec), OnProjectionsPostAdOneTime);
             service.RegisterControllerAction(
                 new ControllerAction(
@@ -153,7 +148,7 @@ namespace EventStore.Projections.Core.Services.Http
                 new[]
                     {
                         new KeyValuePair<string, string>(
-                    "Location",  new Uri(match.BaseUri, "/web/list-projections.htm").AbsoluteUri)
+                    "Location",  new Uri(match.BaseUri, "/web/projections.htm").AbsoluteUri)
                     }, Console.WriteLine);
         }
 
@@ -253,7 +248,7 @@ namespace EventStore.Projections.Core.Services.Http
             var envelope =
                 new SendToHttpWithConversionEnvelope
                     <ProjectionManagementMessage.Statistics, ProjectionsStatisticsHttpFormatted>(
-                    http, DefaultFormatter, OkResponseConfigurator,
+                    http, DefaultFormatter, OkNoCacheResponseConfigurator,
                     status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(match, s)),
                     ErrorsEnvelope(http));
             this.Publish(
@@ -272,7 +267,7 @@ namespace EventStore.Projections.Core.Services.Http
             var envelope =
                 new SendToHttpWithConversionEnvelope
                     <ProjectionManagementMessage.Statistics, ProjectionsStatisticsHttpFormatted>(
-                    http, DefaultFormatter, OkResponseConfigurator,
+                    http, DefaultFormatter, OkNoCacheResponseConfigurator,
                     status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(match, s)),
                     ErrorsEnvelope(http));
             this.Publish(new ProjectionManagementMessage.GetStatistics(envelope, mode, null, true));
@@ -305,7 +300,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration StateConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionState state)
         {
-            return _jsonOkConfiguration;
+            return Configure.OkNoCache("application/json");
         }
 
         private string StateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionState state)
@@ -315,7 +310,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration QueryConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
         {
-            return _jsOkConfiguration;
+            return Configure.OkNoCache("application/javascript");
         }
 
         private string QueryFormatter(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
@@ -326,6 +321,11 @@ namespace EventStore.Projections.Core.Services.Http
         private ResponseConfiguration OkResponseConfigurator<T>(ICodec codec, T message)
         {
             return new ResponseConfiguration(200, "OK", codec.ContentType);
+        }
+
+        private ResponseConfiguration OkNoCacheResponseConfigurator<T>(ICodec codec, T message)
+        {
+            return Configure.OkNoCache(codec.ContentType);
         }
 
         private IEnvelope ErrorsEnvelope(HttpEntity http)

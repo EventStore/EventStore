@@ -34,7 +34,6 @@ using EventStore.BufferManagement;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -55,8 +54,7 @@ namespace EventStore.Core.Services.Storage
                                  IHandle<ReplicationMessage.WriteTransactionData>,
                                  IHandle<ReplicationMessage.WriteTransactionPrepare>,
                                  IHandle<ReplicationMessage.WriteCommit>,
-                                 IHandle<ReplicationMessage.LogBulk>,
-                                 IHandle<SystemMessage.StateChangeMessage>
+                                 IHandle<ReplicationMessage.LogBulk>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageWriter>();
         private static readonly decimal MsPerTick = 1000.0M / Stopwatch.Frequency;
@@ -74,7 +72,6 @@ namespace EventStore.Core.Services.Storage
         private long _lastWriteCheck = -1;
 
         private int _flushMessagesInQueue;
-        private VNodeState _state = VNodeState.Initializing;
 
         public StorageWriter(IPublisher bus, ISubscriber subscriber, ITransactionFileWriter writer, IReadIndex readIndex)
         {
@@ -99,7 +96,6 @@ namespace EventStore.Core.Services.Storage
         private void SetupMessaging(ISubscriber subscriber)
         {
             var storageWriterBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: true, slowMsgThresholdMs: 500);
-            storageWriterBus.Subscribe<SystemMessage.StateChangeMessage>(this);
             storageWriterBus.Subscribe<SystemMessage.SystemInit>(this);
             storageWriterBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
             storageWriterBus.Subscribe<ReplicationMessage.WritePrepares>(this);
@@ -113,7 +109,6 @@ namespace EventStore.Core.Services.Storage
             _storageWriterQueue = new QueuedHandler(storageWriterBus, "StorageWriterQueue", watchSlowMsg: false);
             _storageWriterQueue.Start();
 
-            subscriber.Subscribe(this.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             subscriber.Subscribe(this.WidenFrom<SystemMessage.SystemInit, Message>());
             subscriber.Subscribe(this.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
             subscriber.Subscribe(this.WidenFrom<ReplicationMessage.WritePrepares, Message>());
@@ -123,11 +118,6 @@ namespace EventStore.Core.Services.Storage
             subscriber.Subscribe(this.WidenFrom<ReplicationMessage.WriteTransactionPrepare, Message>());
             subscriber.Subscribe(this.WidenFrom<ReplicationMessage.WriteCommit, Message>());
             subscriber.Subscribe(this.WidenFrom<ReplicationMessage.LogBulk, Message>());
-        }
-
-        void IHandle<SystemMessage.StateChangeMessage>.Handle(SystemMessage.StateChangeMessage message)
-        {
-            _state = message.State;
         }
 
         void IHandle<Message>.Handle(Message message)
@@ -158,26 +148,27 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ReplicationMessage.WritePrepares>.Handle(ReplicationMessage.WritePrepares message)
         {
-            if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
-
             Interlocked.Decrement(ref _flushMessagesInQueue);
 
             try
             {
+                if (message.LiveUntil < DateTime.UtcNow)
+                    return;
+
                 Debug.Assert(message.Events.Length > 0);
 
                 var logPosition = _writer.Checkpoint.ReadNonFlushed();
                 var transactionPosition = logPosition;
 
                 var shouldCreateStream = ShouldCreateStreamFor(message);
-                if (ShouldCreateStreamFor(message))
+                if (shouldCreateStream)
                 {
                     var res = WritePrepareWithRetry(LogRecord.StreamCreated(logPosition,
                                                                             message.CorrelationId,
                                                                             transactionPosition,
                                                                             message.EventStreamId,
                                                                             LogRecord.NoData));
-                    transactionPosition = res.WrittenPos;
+                    transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
                     logPosition = res.NewPos;
                 }
 
@@ -199,6 +190,7 @@ namespace EventStore.Core.Services.Storage
                                                                       message.CorrelationId,
                                                                       evnt.EventId,
                                                                       transactionPosition,
+                                                                      shouldCreateStream ? i + 1 : i,
                                                                       message.EventStreamId,
                                                                       expectedVersion,
                                                                       flags,
@@ -206,6 +198,8 @@ namespace EventStore.Core.Services.Storage
                                                                       evnt.Data,
                                                                       evnt.Metadata));
                     logPosition = res.NewPos;
+                    if (i==0 && !shouldCreateStream)
+                        transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
                 }
             }
             finally
@@ -216,12 +210,12 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ReplicationMessage.WriteTransactionStart>.Handle(ReplicationMessage.WriteTransactionStart message)
         {
-            if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
-
             Interlocked.Decrement(ref _flushMessagesInQueue);
-
             try
             {
+                if (message.LiveUntil < DateTime.UtcNow)
+                    return;
+
                 var logPosition = _writer.Checkpoint.ReadNonFlushed();
                 var record = ShouldCreateStreamFor(message)
                     ? LogRecord.StreamCreated(logPosition, message.CorrelationId, logPosition, message.EventStreamId, LogRecord.NoData)
@@ -236,14 +230,20 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ReplicationMessage.WriteTransactionData>.Handle(ReplicationMessage.WriteTransactionData message)
         {
-            if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
-
             Interlocked.Decrement(ref _flushMessagesInQueue);
             try
             {
                 Debug.Assert(message.Events.Length > 0);
 
                 var logPosition = _writer.Checkpoint.ReadNonFlushed();
+                var transactionOffset = _readIndex.GetLastTransactionOffset(logPosition, message.TransactionId);
+                if (transactionOffset < -1)
+                {
+                    throw new Exception(
+                        string.Format("Invalid transaction offset {0} found for transaction ID {1}. Possibly wrong transactionId provided.",
+                                      transactionOffset,
+                                      message.TransactionId));
+                }
                 for (int i = 0; i < message.Events.Length; ++i)
                 {
                     var evnt = message.Events[i];
@@ -251,6 +251,7 @@ namespace EventStore.Core.Services.Storage
                                                             message.CorrelationId,
                                                             evnt.EventId,
                                                             message.TransactionId,
+                                                            transactionOffset + i + 1,
                                                             message.EventStreamId,
                                                             evnt.EventType,
                                                             evnt.Data,
@@ -267,11 +268,12 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ReplicationMessage.WriteTransactionPrepare>.Handle(ReplicationMessage.WriteTransactionPrepare message)
         {
-            if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
-
             Interlocked.Decrement(ref _flushMessagesInQueue);
             try
             {
+                if (message.LiveUntil < DateTime.UtcNow)
+                    return;
+
                 var record = LogRecord.TransactionEnd(_writer.Checkpoint.ReadNonFlushed(),
                                                       message.CorrelationId,
                                                       Guid.NewGuid(),
@@ -287,8 +289,6 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ReplicationMessage.WriteCommit>.Handle(ReplicationMessage.WriteCommit message)
         {
-            if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
-
             Interlocked.Decrement(ref _flushMessagesInQueue);
             try
             {
@@ -334,11 +334,12 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ReplicationMessage.WriteDelete>.Handle(ReplicationMessage.WriteDelete message)
         {
-            if (_state != VNodeState.Master) throw new InvalidOperationException("Write request not in working state.");
-
             Interlocked.Decrement(ref _flushMessagesInQueue);
             try
             {
+                if (message.LiveUntil < DateTime.UtcNow)
+                    return;
+
                 if (ShouldCreateStreamFor(message))
                 {
                     var transactionPos = _writer.Checkpoint.ReadNonFlushed();
@@ -353,6 +354,7 @@ namespace EventStore.Core.Services.Storage
                                                             message.CorrelationId,
                                                             Guid.NewGuid(),
                                                             transactionPos,
+                                                            0,
                                                             message.EventStreamId,
                                                             message.ExpectedVersion,
                                                             PrepareFlags.StreamDelete | PrepareFlags.TransactionEnd,
@@ -386,6 +388,7 @@ namespace EventStore.Core.Services.Storage
                                                   prepare.CorrelationId,
                                                   prepare.EventId,
                                                   transactionPos,
+                                                  prepare.TransactionOffset,
                                                   prepare.EventStreamId,
                                                   prepare.ExpectedVersion,
                                                   prepare.TimeStamp,

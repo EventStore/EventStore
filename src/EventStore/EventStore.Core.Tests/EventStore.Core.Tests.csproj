@@ -76,12 +76,28 @@
     <Compile Include="Bus\when_publishing.cs" />
     <Compile Include="Bus\when_subscribing.cs" />
     <Compile Include="Bus\when_unsubscribing.cs" />
+    <Compile Include="ClientAPI\AllEvents\read_all_events_backward_should.cs" />
+    <Compile Include="ClientAPI\AllEvents\read_all_events_forward_should.cs" />
+    <Compile Include="ClientAPI\AllEvents\subscribe_to_all_should.cs" />
+    <Compile Include="ClientAPI\api_tests_nunit_setup.cs" />
+    <Compile Include="ClientAPI\append_to_stream.cs" />
+    <Compile Include="ClientAPI\deleting_stream.cs" />
+    <Compile Include="ClientAPI\creating_stream.cs" />
+    <Compile Include="ClientAPI\MiniNode.cs" />
+    <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
+    <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
+    <Compile Include="ClientAPI\TestEvent.cs" />
+    <Compile Include="ClientAPI\transaction.cs" />
     <Compile Include="Common\CollectionsExtensions.cs" />
     <Compile Include="Common\HelperExtensions.cs" />
     <Compile Include="DataStructures\pairing_heap_should.cs" />
     <Compile Include="Fakes\FakeLogger.cs" />
     <Compile Include="Fakes\FakePublisher.cs" />
     <Compile Include="Fakes\NoopPublisher.cs" />
+    <Compile Include="Hashes\murmur2_hash_should.cs" />
+    <Compile Include="Hashes\murmur3a_hash_should.cs" />
+    <Compile Include="Hashes\SMHasher.cs" />
+    <Compile Include="Hashes\xxhash_hash_should.cs" />
     <Compile Include="Helper\ReflectionDynamic.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
@@ -161,17 +177,24 @@
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Infrastructure\Services\Replication\WriteEvents\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_two_intermingled_transactions_and_some_uncommited_prepares_spanning_few_chunks_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_two_intermingled_transactions_spanning_few_chunks_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_two_intermingled_transactions_and_some_uncommited_prepares_in_the_end_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_stream_both_maxage_and_maxcount_specified_with_maxage_more_strict.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_stream_both_maxage_and_maxcount_specified_with_maxcount_more_strict.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_stream_with_maxage_specified.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_having_stream_with_maxcount_specified.cs" />
+    <Compile Include="Infrastructure\Services\Storage\when_rebuilding_index_for_partially_persisted_transaction.cs" />
     <Compile Include="Integration\IntegrationTestBase.cs" />
     <Compile Include="Integration\EnvelopeCallback.cs" />
     <Compile Include="Integration\when_writing_single_event_and_then_reading_it.cs" />
-    <Compile Include="MD5HashTests.cs" />
+    <Compile Include="Hashes\MD5HashTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\FormatterTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\StatsParserTests.cs" />
     <Compile Include="Infrastructure\Services\Storage\ByLengthHasher.cs" />
     <Compile Include="Infrastructure\Services\Storage\FakeTableIndex.cs" />
     <Compile Include="Infrastructure\Services\Storage\NullCache.cs" />
     <Compile Include="Infrastructure\Services\Storage\ReadIndexTestScenario.cs" />
-    <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_nonempty_tfile_with_chaser_lagging_behind.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_multiple_events_in_a_stream.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_prepares_and_commits.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_building_an_index_off_tfile_with_prepares_but_no_commits.cs" />
@@ -200,18 +223,34 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Infrastructure\Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
+    <Compile Include="TransactionLog\Chunks\when_reading_bulk_a_chunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_scavenged_odd_records.cs" />
+    <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_scavenged_even_records.cs" />
+    <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_few_chunks.cs" />
+    <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_one_chunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_last_two_records_removed.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_first_two_records_removed.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_original_last_record_removed.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_middle_record_removed.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_all_records_removed.cs" />
+    <Compile Include="TransactionLog\Chunks\FakeReadIndex.cs" />
+    <Compile Include="TransactionLog\Chunks\when_destroying_a_tfchunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_destroying_a_tfchunk_that_is_locked.cs" />
+    <Compile Include="TransactionLog\Chunks\when_having_scavenged_tfchunk_with_original_first_record_removed.cs" />
+    <Compile Include="TransactionLog\Chunks\when_marking_for_deletion_a_tfchunk_that_has_been_locked_and_unlocked.cs" />
+    <Compile Include="TransactionLog\Chunks\when_unlocking_a_tfchunk_that_has_been_marked_for_deletion.cs" />
     <Compile Include="TransactionLog\commit_log_record_should.cs" />
     <Compile Include="TransactionLog\prefix_filenaming_strategy.cs" />
     <Compile Include="TransactionLog\prepare_log_record_should.cs" />
-    <Compile Include="TransactionLog\Chunks\when_creating_TFChunk_from_empty_file.cs" />
-    <Compile Include="TransactionLog\Chunks\when_appending_past_end_of_a_TFChunk.cs" />
-    <Compile Include="TransactionLog\Chunks\when_appending_to_a_TFChunk_and_flushing.cs" />
+    <Compile Include="TransactionLog\Chunks\when_creating_tfchunk_from_empty_file.cs" />
+    <Compile Include="TransactionLog\Chunks\when_appending_past_end_of_a_tfchunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_appending_to_a_tfchunk_and_flushing.cs" />
     <Compile Include="TransactionLog\Chunks\when_appending_to_a_tfchunk_without_flush.cs" />
-    <Compile Include="TransactionLog\Chunks\when_opening_existing_TFChunk.cs" />
-    <Compile Include="TransactionLog\Chunks\when_opening_tf_chunk_from_non_existing_file.cs" />
-    <Compile Include="TransactionLog\Chunks\when_reading_from_a_cached_chunk.cs" />
-    <Compile Include="TransactionLog\Chunks\when_uncaching_a_chunk.cs" />
-    <Compile Include="TransactionLog\Chunks\when_writing_multiple_records_to_a_chunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_opening_existing_tfchunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_opening_tfchunk_from_non_existing_file.cs" />
+    <Compile Include="TransactionLog\Chunks\when_reading_from_a_cached_tfchunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_uncaching_a_tfchunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_writing_multiple_records_to_a_tfchunk.cs" />
     <Compile Include="TransactionLog\versioned_pattern_filenaming_strategy.cs" />
     <Compile Include="TransactionLog\when_chasing_a_chunked_transaction_log.cs" />
     <Compile Include="TransactionLog\when_chasing_a_multifile_transaction_log.cs" />
@@ -248,6 +287,10 @@
     <Compile Include="TransactionLog\when_writing_prepare_record_to_file.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj">
+      <Project>{c7c0a3c2-a0eb-4ff4-a0cd-67eadf3f553f}</Project>
+      <Name>EventStore.ClientAPI</Name>
+    </ProjectReference>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
       <Name>EventStore.Common</Name>

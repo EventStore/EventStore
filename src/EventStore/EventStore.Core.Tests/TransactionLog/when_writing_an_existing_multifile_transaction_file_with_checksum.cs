@@ -56,6 +56,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                               eventId: _eventId,
                                               expectedVersion: 1234,
                                               transactionPosition: 0,
+                                              transactionOffset: 0,
                                               eventStreamId: "WorldEnding",
                                               timeStamp: new DateTime(2012, 12, 21),
                                               flags: PrepareFlags.None,
@@ -66,7 +67,7 @@ namespace EventStore.Core.Tests.TransactionLog
             tf.Write(record, out tmp);
             tf.Flush();
             tf.Close();
-            Assert.AreEqual(record.GetSizeWithLengthPrefix() + 137, _checkpoint.Read()); //137 is fluff assigned to beginning of checkpoint
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix() + 137, _checkpoint.Read()); //137 is fluff assigned to beginning of checkpoint
             //TODO actually read the event
             using (var filestream = File.Open(filename, FileMode.Open, FileAccess.Read))
             {

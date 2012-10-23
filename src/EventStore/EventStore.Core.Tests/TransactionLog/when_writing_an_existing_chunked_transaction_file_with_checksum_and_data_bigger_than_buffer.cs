@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void a_record_can_be_written()
         {
             var filename = Path.Combine(PathName, "prefix.tf0");
-            var chunkHeader = new ChunkHeader(1, 10000, 0, 0, 0);
+            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, 0);
             var chunkBytes = chunkHeader.AsByteArray();
             var buf = new byte[ChunkHeader.Size + ChunkFooter.Size + chunkHeader.ChunkSize];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
@@ -66,6 +66,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                               correlationId: _correlationId,
                                               eventId: _eventId,
                                               transactionPosition: 0,
+                                              transactionOffset: 0,
                                               eventStreamId: "WorldEnding",
                                               expectedVersion: 1234,
                                               timeStamp: new DateTime(2012, 12, 21),
@@ -74,15 +75,15 @@ namespace EventStore.Core.Tests.TransactionLog
                                               data: new byte[8000],
                                               metadata: new byte[] { 7, 17 });
 
-            Console.WriteLine(record.GetSizeWithLengthPrefix());
-            Console.WriteLine(record.GetSizeWithLengthPrefix() + 137);
+            Console.WriteLine(record.GetSizeWithLengthPrefixAndSuffix());
+            Console.WriteLine(record.GetSizeWithLengthPrefixAndSuffix() + 137);
 
             long pos;
             Assert.IsTrue(writer.Write(record, out pos));
             writer.Close();
             db.Dispose();
 
-            Assert.AreEqual(record.GetSizeWithLengthPrefix() + 137, _checkpoint.Read());
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix() + 137, _checkpoint.Read());
             using (var filestream = File.Open(filename, FileMode.Open, FileAccess.Read))
             {
                 filestream.Seek(ChunkHeader.Size + 137 + sizeof(int), SeekOrigin.Begin);

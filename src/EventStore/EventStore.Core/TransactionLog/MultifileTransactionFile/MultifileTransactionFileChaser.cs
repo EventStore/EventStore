@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
@@ -104,7 +105,7 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
             return res.Success;
         }
 
-        public RecordReadResult TryReadNext()
+        public SeqReadResult TryReadNext()
         {
             if (_lastWriterCheck - _curPos <= _bufferSize)
             {
@@ -116,7 +117,7 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
             _lastWriterCheck = _config.WriterCheckpoint.Read();
 
             if (!TryReadNextBytes(4))
-                return new RecordReadResult(false, null, _curPos);
+                return SeqReadResult.Failure;
 
             var length = _bufferReader.ReadInt32();
             if (length <= 0 || length > TFConsts.MaxLogRecordSize)
@@ -125,10 +126,13 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
                 throw new ArgumentOutOfRangeException("length", "Log record length is out of bounds.");
             }
             
-            if (!TryReadNextBytes(length))
-                return new RecordReadResult(false, null, _curPos);
+            if (!TryReadNextBytes(length + 4))
+                return SeqReadResult.Failure;
 
             var record = LogRecord.ReadFrom(_bufferReader);
+            var suffixLength = _bufferReader.ReadInt32();
+            Debug.Assert(suffixLength == length);
+
             var logPosition = _lastChaserCheck;
 
             _lastChaserCheck = _curPos;
@@ -136,7 +140,7 @@ namespace EventStore.Core.TransactionLog.MultifileTransactionFile
             _lastFileIndex = _curFileIndex;
             _chaserCheckpoint.Write(_lastChaserCheck);
 
-            return new RecordReadResult(true, record, logPosition);
+            return new SeqReadResult(true, record, length, logPosition, logPosition + length + 2*sizeof(int));
         }
 
         private bool TryReadNextBytes(int length)

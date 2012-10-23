@@ -32,7 +32,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
@@ -48,13 +47,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _maxReadCount = 100;
         private bool _disposed;
         private EventPosition _from;
+        private readonly bool _deliverEndOfTfPosition;
 
         public TransactionFileReaderEventDistributionPoint(
-            IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition from)
+            IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition from, bool deliverEndOfTFPosition = true)
             : base(publisher, distibutionPointCorrelationId)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             _from = @from;
+            _deliverEndOfTfPosition = deliverEndOfTFPosition;
         }
 
         public override void Resume()
@@ -70,6 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
             
             _paused = false;
             _pauseRequested = false;
+            _logger.Trace("Resuming event distribution {0} at '{1}'", _distibutionPointCorrelationId, _from);
             RequestEvents();
         }
 
@@ -81,10 +83,11 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_pauseRequested || _paused)
                 throw new InvalidOperationException("Paused or pause requested");
             _eventsRequested = true;
+
             _publisher.Publish(
-                new ClientMessage.ReadEventsFromTF(
+                new ClientMessage.ReadAllEventsForward(
                     _distibutionPointCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
-                    _from.PreparePosition, _maxReadCount, true));
+                    _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, true));
         }
 
         public override void Pause()
@@ -95,13 +98,14 @@ namespace EventStore.Projections.Core.Services.Processing
             _pauseRequested = true;
             if (!_eventsRequested)
                 _paused = true;
+            _logger.Trace("Pausing event distribution {0} at '{1}", _distibutionPointCorrelationId, _from);
         }
 
-        public override void Handle(ClientMessage.ReadEventsForwardCompleted message)
+        public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
         {
         }
 
-        public override void Handle(ClientMessage.ReadEventsFromTFCompleted message)
+        public override void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
         {
             if (_disposed)
                 return;
@@ -110,37 +114,30 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_paused)
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
-            switch (message.Result)
+
+            if (message.Result.Records.Count == 0)
             {
-                case RangeReadResult.NoStream:
-                    throw new NotSupportedException("ReadEventsFromTF should not return NoStream");
-                case RangeReadResult.Success:
-                    if (message.Events.Length == 0)
-                    {
-                        // the end
-                        DeliverLastCommitPosition(_from.CommitPosition);
-                        // allow joining heading distribution
-                    }
-                    else
-                    {
-                        for (int index = 0; index < message.Events.Length; index++)
-                        {
-                            var @event = message.Events[index];
-                            DeliverEvent(@event);
-                        }
-                    }
-                    if (_pauseRequested)
-                        _paused = true;
-                    else
-                        //TODO: we may publish this message somewhere 10 events before the end of the chunk
-                        _publisher.Publish(
-                            new ProjectionMessage.CoreService.Tick(
-                                () => { if (!_paused && !_disposed) RequestEvents(); }));
-                    break;
-                default:
-                    throw new NotSupportedException(
-                        string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
+                // the end
+                if (_deliverEndOfTfPosition)
+                    DeliverLastCommitPosition(_from);
+                // allow joining heading distribution
             }
+            else
+            {
+                for (int index = 0; index < message.Result.Records.Count; index++)
+                {
+                    var @event = message.Result.Records[index];
+                    DeliverEvent(@event);
+                }
+                _from = message.Result.NextPos;
+            }
+            if (_pauseRequested)
+                _paused = true;
+            else
+                //TODO: we may publish this message somewhere 10 events before the end of the chunk
+                _publisher.Publish(
+                    new ProjectionMessage.CoreService.Tick(
+                        () => { if (!_paused && !_disposed) RequestEvents(); }));
         }
 
         public override void Dispose()
@@ -148,11 +145,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _disposed = true;
         }
 
-        private void DeliverLastCommitPosition(long lastCommitPosition)
+        private void DeliverLastCommitPosition(EventPosition lastPosition)
         {
             _publisher.Publish(
-                new ProjectionMessage.Projections.CommittedEventReceived(
-                    _distibutionPointCorrelationId, new EventPosition(long.MinValue, lastCommitPosition), null, int.MinValue,
+                new ProjectionMessage.Projections.CommittedEventDistributed(
+                    _distibutionPointCorrelationId, lastPosition, null, int.MinValue,
                     null, int.MinValue, false, null));
         }
 
@@ -160,20 +157,19 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             EventRecord positionEvent = (@event.Link ?? @event.Event);
             var receivedPosition = new EventPosition(@event.CommitPosition, positionEvent.LogPosition);
-            if (_from >= receivedPosition)
+            if (_from > receivedPosition)
                 throw new Exception(
                     string.Format(
                         "ReadFromTF returned events in incorrect order.  Last known position is: {0}.  Received position is: {1}",
                         _from, receivedPosition));
 
             _publisher.Publish(
-                new ProjectionMessage.Projections.CommittedEventReceived(
+                new ProjectionMessage.Projections.CommittedEventDistributed(
                     _distibutionPointCorrelationId, receivedPosition, positionEvent.EventStreamId,
                     positionEvent.EventNumber, @event.Event.EventStreamId, @event.Event.EventNumber, @event.Link != null,
                     new Event(
                         @event.Event.EventId, @event.Event.EventType,
                         (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata)));
-            _from = receivedPosition;
         }
     }
 }

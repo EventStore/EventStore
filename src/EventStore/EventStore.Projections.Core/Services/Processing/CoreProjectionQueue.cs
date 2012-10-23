@@ -38,32 +38,30 @@ namespace EventStore.Projections.Core.Services.Processing
             new StagedProcessingQueue(
                 new[] {false /* load foreach state */, false /* process Js */, true /* write emits */});
 
-        private readonly CheckpointStrategy _checkpointStrategy;
         private readonly IPublisher _publisher;
         private readonly Guid _projectionCorrelationId;
-        private readonly Action _tick;
 
         private QueueState _queueState;
         private CheckpointTag _lastEnqueuedEventTag;
         private bool _subscriptionPaused;
-        private bool _tickPending;
         private readonly int _pendingEventsThreshold;
-        private readonly bool _checkpointsEnabled;
+        private readonly Action _updateStatistics;
 
-        public CoreProjectionQueue(Guid projectionCorrelationId, IPublisher publisher, CheckpointStrategy checkpointStrategy, Action tick, bool checkpointsEnabled, int pendingEventsThreshold)
+        public CoreProjectionQueue(
+            Guid projectionCorrelationId, IPublisher publisher, int pendingEventsThreshold,
+            Action updateStatistics = null)
         {
-            _checkpointStrategy = checkpointStrategy;
             _publisher = publisher;
             _projectionCorrelationId = projectionCorrelationId;
-            _tick = tick;
             _pendingEventsThreshold = pendingEventsThreshold;
-            _checkpointsEnabled = checkpointsEnabled;
+            _updateStatistics = updateStatistics;
         }
 
         public void ProcessEvent()
         {
-            if (_queuePendingEvents.Count > 0)
-                ProcessOneEvent();
+            if (_queueState == QueueState.Running)
+                if (_queuePendingEvents.Count > 0)
+                    ProcessOneEvent();
         }
 
         public int GetBufferedEventCount()
@@ -79,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void SetPaused()
         {
-            _queueState = QueueState.Stopped;
+            _queueState = QueueState.Paused;
             PauseSubscription();
         }
 
@@ -89,46 +87,17 @@ namespace EventStore.Projections.Core.Services.Processing
             // unsubscribe?
         }
 
-        public void QueueTick()
-        {
-            _tickPending = false;
-            if (_queueState == QueueState.Running)
-                ProcessEvent();
-        }
-
-        public void HandleCommittedEventReceived(
-            CoreProjection coreProjection, ProjectionMessage.Projections.CommittedEventReceived message)
+        public void EnqueueTask(StagedTask workItem, CheckpointTag workItemCheckpointTag)
         {
             if (_queueState == QueueState.Stopped)
-                return;
-            CheckpointTag eventTag = _checkpointStrategy.PositionTagger.MakeCheckpointTag(message);
-            ValidateQueueingOrder(eventTag);
-            string partition = _checkpointStrategy.StatePartitionSelector.GetStatePartition(message);
-            _queuePendingEvents.Enqueue(
-                new CoreProjection.CommittedEventWorkItem(coreProjection, message, partition, eventTag));
-            if (_queueState == QueueState.Running)
-                ProcessOneEvent();
+                throw new InvalidOperationException("Queue is Stopped");
+            ValidateQueueingOrder(workItemCheckpointTag);
+            _queuePendingEvents.Enqueue(workItem);
         }
 
-        public void HandleCheckpointSuggested(
-            CoreProjection coreProjection, ProjectionMessage.Projections.CheckpointSuggested message)
+        public void InitializeQueue(CheckpointTag zeroCheckpointTag)
         {
-            if (_queueState == QueueState.Stopped)
-                return;
-            if (_checkpointsEnabled)
-            {
-                CheckpointTag checkpointTag = message.CheckpointTag;
-                ValidateQueueingOrder(checkpointTag);
-                _queuePendingEvents.Enqueue(
-                    new CoreProjection.CheckpointSuggestedWorkItem(coreProjection, message, checkpointTag));
-            }
-            if (_queueState == QueueState.Running)
-                ProcessOneEvent();
-        }
-
-        public void InitializeQueue()
-        {
-            _lastEnqueuedEventTag = _checkpointStrategy.PositionTagger.MakeZeroCheckpointTag();
+            _lastEnqueuedEventTag = zeroCheckpointTag;
         }
 
         public string GetStatus()
@@ -163,15 +132,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        internal void EnsureTickPending()
-        {
-            if (_tickPending)
-                return;
-            if (_queueState == QueueState.Paused)
-                return;
-            _tickPending = true;
-            _publisher.Publish(new ProjectionMessage.CoreService.Tick(_tick));
-        }
+        private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
 
         private void ProcessOneEvent()
         {
@@ -180,9 +141,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 PauseSubscription();
             if (_subscriptionPaused && pendingEventsCount < _pendingEventsThreshold/2)
                 ResumeSubscription();
-            int processed = _queuePendingEvents.Process();
-            if (processed > 0)
-                EnsureTickPending();
+            _queuePendingEvents.Process();
+
+            if (_updateStatistics != null
+                &&
+                ((_queuePendingEvents.Count == 0)
+                 || (DateTime.UtcNow - _lastReportedStatisticsTimeStamp).TotalMilliseconds > 500)) _updateStatistics();
+            _lastReportedStatisticsTimeStamp = DateTime.UtcNow;
         }
 
         private enum QueueState

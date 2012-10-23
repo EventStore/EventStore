@@ -67,8 +67,8 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
         public void handle_read_events_completed_throws()
         {
             _edp.Handle(
-                new ClientMessage.ReadEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", new EventRecord[0], null, RangeReadResult.Success, -1, 100));
+                new ClientMessage.ReadStreamEventsForwardCompleted(
+                    _distibutionPointCorrelationId, "stream", new EventLinkPair[0], RangeReadResult.Success, -1, 100));
         }
     }
 }

@@ -322,15 +322,15 @@ namespace EventStore.TestClient.Commands.DvuBasic
             {
                 streamIdx = NextStreamForWriting(rnd, writerIdx);
                 lock (_heads)
+                {
                     head = _heads[streamIdx];
-                var corrid = Guid.NewGuid();
+                }
                 var evnt = CreateEvent(_streams[streamIdx], head + 2);
-                var write = new ClientMessageDto.WriteEvents(corrid,
-                                                             _streams[streamIdx],
+                var write = new ClientMessageDto.WriteEvents(_streams[streamIdx],
                                                              head == -1 ? head : head + 1,
                                                              new[] {new ClientMessageDto.Event(evnt)});
 
-                var package = new TcpPackage(TcpCommand.WriteEvents, corrid, write.Serialize());
+                var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                 connection.EnqueueSend(package.AsByteArray());
                 iteration.WaitOne();
             }
@@ -406,7 +406,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                     eventidx = NextRandomEventVersion(rnd, head);
                     var stream = _streams[streamIdx];
                     var corrid = Guid.NewGuid();
-                    var read = new ClientMessageDto.ReadEvent(corrid, stream, eventidx);
+                    var read = new ClientMessageDto.ReadEvent(stream, eventidx, resolveLinkTos: false);
                     var package = new TcpPackage(TcpCommand.ReadEvent, corrid, read.Serialize());
 
                     connection.EnqueueSend(package.AsByteArray());

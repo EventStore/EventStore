@@ -67,26 +67,26 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
         [Test]
         public void it_publishes_read_events_from_beginning()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.ReadEventsForward>().Count());
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
             Assert.AreEqual(
-                "stream", _consumer.HandledMessages.OfType<ClientMessage.ReadEventsForward>().Single().EventStreamId);
+                "stream", _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Single().EventStreamId);
             Assert.AreEqual(
-                10, _consumer.HandledMessages.OfType<ClientMessage.ReadEventsForward>().Single().FromEventNumber);
+                10, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Single().FromEventNumber);
         }
 
         [Test]
         public void can_handle_read_events_completed()
         {
             _edp.Handle(
-                new ClientMessage.ReadEventsForwardCompleted(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream",
                     new[]
-                        {
-                            new EventRecord(
-                        10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, "stream", ExpectedVersion.Any, DateTime.UtcNow,
-                        PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                        "event_type", new byte[0], new byte[0])
-                        }, null, RangeReadResult.Success, 11, 100));
+                    {
+                        new EventLinkPair(new EventRecord(
+                            10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
+                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                            "event_type", new byte[0], new byte[0]))
+                    }, RangeReadResult.Success, 11, 100));
         }
     }
 }

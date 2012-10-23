@@ -31,11 +31,13 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
     public interface ICoreProjection : IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
+                                       IHandle<ProjectionMessage.Projections.CheckpointLoaded>,
                                        IHandle<ProjectionMessage.Projections.CheckpointSuggested>,
                                        IHandle<ProjectionMessage.Projections.CheckpointCompleted>,
                                        IHandle<ProjectionMessage.Projections.PauseRequested>
@@ -44,6 +46,21 @@ namespace EventStore.Projections.Core.Messages
 
     public static class ProjectionMessage
     {
+        public abstract class ManagementMessage : Message
+        {
+            private readonly Guid _correlationId;
+
+            protected ManagementMessage(Guid correlationId)
+            {
+                _correlationId = correlationId;
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+        }
+
         public static class CoreService
         {
             public class Start : Message
@@ -60,7 +77,7 @@ namespace EventStore.Projections.Core.Messages
 
                 public Connected(TcpConnectionManager connection)
                 {
-                    this._connection = connection;
+                    _connection = connection;
                 }
 
                 public TcpConnectionManager Connection
@@ -83,10 +100,165 @@ namespace EventStore.Projections.Core.Messages
                     get { return _action; }
                 }
             }
+
+
+            public static class Management
+            {
+                public class Create : ManagementMessage
+                {
+                    private readonly IEnvelope _envelope;
+                    private readonly ProjectionConfig _config;
+                    private readonly Func<IProjectionStateHandler> _handlerFactory;
+                    private readonly string _name;
+
+                    public Create(
+                        IEnvelope envelope, Guid correlationId, string name, ProjectionConfig config,
+                        Func<IProjectionStateHandler> handlerFactory)
+                        : base(correlationId)
+                    {
+                        _envelope = envelope;
+                        _name = name;
+                        _config = config;
+                        _handlerFactory = handlerFactory;
+                    }
+
+                    public ProjectionConfig Config
+                    {
+                        get { return _config; }
+                    }
+
+                    public Func<IProjectionStateHandler> HandlerFactory
+                    {
+                        get { return _handlerFactory; }
+                    }
+
+                    public string Name
+                    {
+                        get { return _name; }
+                    }
+
+                    public IEnvelope Envelope
+                    {
+                        get { return _envelope; }
+                    }
+                }
+
+                public class Dispose : ManagementMessage
+                {
+                    public Dispose(Guid correlationId)
+                        : base(correlationId)
+                    {
+                    }
+                }
+            }
         }
 
         public static class Projections
         {
+            public static class Management
+            {
+                public class Start : ManagementMessage
+                {
+                    public Start(Guid correlationId)
+                        : base(correlationId)
+                    {
+                    }
+                }
+
+                public class Stop : ManagementMessage
+                {
+                    public Stop(Guid correlationId)
+                        : base(correlationId)
+                    {
+                    }
+                }
+
+                public class GetState : ManagementMessage
+                {
+                    private readonly IEnvelope _envelope;
+
+                    public GetState(IEnvelope envelope, Guid correlationId)
+                        : base(correlationId)
+                    {
+                        _envelope = envelope;
+                    }
+
+                    public IEnvelope Envelope
+                    {
+                        get { return _envelope; }
+                    }
+                }
+
+                public class UpdateStatistics : ManagementMessage
+                {
+                    public UpdateStatistics(Guid correlationId)
+                        : base(correlationId)
+                    {
+                    }
+                }
+
+                public class StateReport : ManagementMessage
+                {
+                    private readonly string _state;
+
+                    public StateReport(Guid correlationId, string state)
+                        : base(correlationId)
+                    {
+                        _state = state;
+                    }
+
+                    public string State
+                    {
+                        get { return _state; }
+                    }
+                }
+
+                public class StatisticsReport : ManagementMessage
+                {
+                    private readonly ProjectionStatistics _statistics;
+
+                    public StatisticsReport(Guid correlationId, ProjectionStatistics statistics)
+                        : base(correlationId)
+                    {
+                        _statistics = statistics;
+                    }
+
+                    public ProjectionStatistics Statistics
+                    {
+                        get { return _statistics; }
+                    }
+                }
+            }
+
+            public class CheckpointLoaded : Message
+            {
+                private readonly Guid _correlationId;
+                private readonly CheckpointTag _checkpointTag;
+                private readonly string _checkpointData;
+
+                public CheckpointLoaded(Guid correlationId, CheckpointTag checkpointTag, string checkpointData)
+                {
+                    _correlationId = correlationId;
+                    _checkpointTag = checkpointTag;
+                    _checkpointData = checkpointData;
+                }
+
+                public Guid CorrelationId
+                {
+                    get { return _correlationId; }
+                }
+
+                public CheckpointTag CheckpointTag
+                {
+                    get { return _checkpointTag; }
+                }
+
+                public string CheckpointData
+                {
+                    get { return _checkpointData; }
+                }
+            }
+
             public class CheckpointSuggested : Message
             {
                 private readonly Guid _correlationId;
@@ -111,6 +283,103 @@ namespace EventStore.Projections.Core.Messages
 
             public class CommittedEventReceived : Message
             {
+                public static CommittedEventReceived Sample(Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data)
+                {
+                    return new CommittedEventReceived(correlationId, position, eventStreamId, eventSequenceNumber, resolvedLinkTo, data);
+                }
+
+                private readonly Guid _correlationId;
+                private readonly Event _data;
+                private readonly string _eventStreamId;
+                private readonly int _eventSequenceNumber;
+                private readonly bool _resolvedLinkTo;
+                private readonly string _positionStreamId;
+                private readonly int _positionSequenceNumber;
+                private readonly EventPosition _position;
+                private readonly CheckpointTag _checkpointTag;
+
+                private CommittedEventReceived(
+                    Guid correlationId, EventPosition position, CheckpointTag checkpointTag, string positionStreamId,
+                    int positionSequenceNumber, string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo,
+                    Event data)
+                {
+                    if (data == null) throw new ArgumentNullException("data");
+                    _correlationId = correlationId;
+                    _data = data;
+                    _position = position;
+                    _checkpointTag = checkpointTag;
+                    _positionStreamId = positionStreamId;
+                    _positionSequenceNumber = positionSequenceNumber;
+                    _eventStreamId = eventStreamId;
+                    _eventSequenceNumber = eventSequenceNumber;
+                    _resolvedLinkTo = resolvedLinkTo;
+                }
+
+                private CommittedEventReceived(
+                    Guid correlationId, EventPosition position, string eventStreamId,
+                    int eventSequenceNumber, bool resolvedLinkTo, Event data)
+                    : this(
+                        correlationId, position, CheckpointTag.FromPosition(position.CommitPosition, position.PreparePosition), eventStreamId, eventSequenceNumber, eventStreamId,
+                        eventSequenceNumber, resolvedLinkTo, data)
+                {
+                }
+                public Event Data
+                {
+                    get { return _data; }
+                }
+
+                public EventPosition Position
+                {
+                    get { return _position; }
+                }
+
+                public string EventStreamId
+                {
+                    get { return _eventStreamId; }
+                }
+
+                public Guid CorrelationId
+                {
+                    get { return _correlationId; }
+                }
+
+                public int EventSequenceNumber
+                {
+                    get { return _eventSequenceNumber; }
+                }
+
+                public string PositionStreamId
+                {
+                    get { return _positionStreamId; }
+                }
+
+                public int PositionSequenceNumber
+                {
+                    get { return _positionSequenceNumber; }
+                }
+
+                public bool ResolvedLinkTo
+                {
+                    get { return _resolvedLinkTo; }
+                }
+
+                public CheckpointTag CheckpointTag
+                {
+                    get { return _checkpointTag; }
+                }
+
+                public static CommittedEventReceived FromCommittedEventDistributed(
+                    CommittedEventDistributed message, CheckpointTag checkpointTag)
+                {
+                    return new CommittedEventReceived(
+                        message.CorrelationId, message.Position, checkpointTag, message.PositionStreamId,
+                        message.PositionSequenceNumber, message.EventStreamId, message.EventSequenceNumber,
+                        message.ResolvedLinkTo, message.Data);
+                }
+            }
+
+            public class CommittedEventDistributed : Message
+            {
                 private readonly Guid _correlationId;
                 private readonly Event _data;
                 private readonly string _eventStreamId;
@@ -120,11 +389,11 @@ namespace EventStore.Projections.Core.Messages
                 private readonly int _positionSequenceNumber;
                 private readonly EventPosition _position;
 
-                //NOTE: cimmitted event with null event _data means - end of the source reached.  
+                //NOTE: committed event with null event _data means - end of the source reached.  
                 // Current last available TF commit position is in _position.CommitPosition
                 // TODO: separate message?
 
-                public CommittedEventReceived(
+                public CommittedEventDistributed(
                     Guid correlationId, EventPosition position, string positionStreamId, int positionSequenceNumber,
                     string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data)
                 {
@@ -138,10 +407,12 @@ namespace EventStore.Projections.Core.Messages
                     _resolvedLinkTo = resolvedLinkTo;
                 }
 
-                public CommittedEventReceived(
-                    Guid correlationId, EventPosition position, 
-                    string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data)
-                    : this(correlationId, position, eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo, data)
+                public CommittedEventDistributed(
+                    Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
+                    bool resolvedLinkTo, Event data)
+                    : this(
+                        correlationId, position, eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber,
+                        resolvedLinkTo, data)
                 {
                 }
 
@@ -299,55 +570,58 @@ namespace EventStore.Projections.Core.Messages
                 }
             }
 
-            public class Stopped : Message
+            public static class StatusReport
             {
-                private readonly Guid _correlationId;
-
-                public Stopped(Guid correlationId)
+                public class Stopped : Message
                 {
-                    _correlationId = correlationId;
+                    private readonly Guid _correlationId;
+
+                    public Stopped(Guid correlationId)
+                    {
+                        _correlationId = correlationId;
+                    }
+
+                    public Guid CorrelationId
+                    {
+                        get { return _correlationId; }
+                    }
                 }
 
-                public Guid CorrelationId
+                public class Started : Message
                 {
-                    get { return _correlationId; }
-                }
-            }
+                    private readonly Guid _correlationId;
 
-            public class Started : Message
-            {
-                private readonly Guid _correlationId;
+                    public Started(Guid correlationId)
+                    {
+                        _correlationId = correlationId;
+                    }
 
-                public Started(Guid correlationId)
-                {
-                    _correlationId = correlationId;
-                }
-
-                public Guid CorrelationId
-                {
-                    get { return _correlationId; }
-                }
-            }
-
-            public class Faulted : Message
-            {
-                private readonly Guid _correlationId;
-                private readonly string _faultedReason;
-
-                public Faulted(Guid correlationId, string faultedReason)
-                {
-                    _correlationId = correlationId;
-                    _faultedReason = faultedReason;
+                    public Guid CorrelationId
+                    {
+                        get { return _correlationId; }
+                    }
                 }
 
-                public Guid CorrelationId
+                public class Faulted : Message
                 {
-                    get { return _correlationId; }
-                }
+                    private readonly Guid _correlationId;
+                    private readonly string _faultedReason;
 
-                public string FaultedReason
-                {
-                    get { return _faultedReason; }
+                    public Faulted(Guid correlationId, string faultedReason)
+                    {
+                        _correlationId = correlationId;
+                        _faultedReason = faultedReason;
+                    }
+
+                    public Guid CorrelationId
+                    {
+                        get { return _correlationId; }
+                    }
+
+                    public string FaultedReason
+                    {
+                        get { return _faultedReason; }
+                    }
                 }
             }
         }

@@ -189,7 +189,7 @@ namespace EventStore.Transport.Tcp
                                      measurePeriod);
 
 
-            Log.Trace("# Total connections: {0,3}. Out: {1:8}  In: {2:8}  Pending Send: {3}  " +
+            Log.Trace("\n# Total connections: {0,3}. Out: {1:0.00}b/s  In: {2:0.00}b/s  Pending Send: {3}  " +
                       "In Send: {4}  Pending Received: {5} Measure Time: {6}",
                 stats.Connections,
                 stats.SendingSpeed,

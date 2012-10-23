@@ -42,6 +42,7 @@ namespace EventStore.Core.Data
         public readonly Guid CorrelationId;
         public readonly Guid EventId;
         public readonly long TransactionPosition;
+        public readonly int TransactionOffset;
         public readonly string EventStreamId;
         public readonly int ExpectedVersion;
         public readonly DateTime TimeStamp;
@@ -56,6 +57,7 @@ namespace EventStore.Core.Data
                    prepare.CorrelationId,
                    prepare.EventId,
                    prepare.TransactionPosition,
+                   prepare.TransactionOffset,
                    prepare.EventStreamId,
                    prepare.ExpectedVersion,
                    prepare.TimeStamp,
@@ -64,7 +66,6 @@ namespace EventStore.Core.Data
                    prepare.Data,
                    prepare.Metadata)
         {
-            
         }
 
         public EventRecord(int eventNumber, 
@@ -72,6 +73,7 @@ namespace EventStore.Core.Data
                            Guid correlationId, 
                            Guid eventId, 
                            long transactionPosition,
+                           int transactionOffset,
                            string eventStreamId, 
                            int expectedVersion, 
                            DateTime timeStamp, 
@@ -82,6 +84,8 @@ namespace EventStore.Core.Data
         {
             Ensure.Nonnegative(logPosition, "logPosition");
             Ensure.Nonnegative(transactionPosition, "transactionPosition");
+            if (transactionOffset < -1)
+                throw new ArgumentOutOfRangeException("transactionOffset");
             Ensure.NotNull(eventStreamId, "eventStreamId");
             Ensure.Nonnegative(eventNumber, "eventNumber");
             Ensure.NotEmptyGuid(eventId, "eventId");
@@ -92,12 +96,13 @@ namespace EventStore.Core.Data
             CorrelationId = correlationId;
             EventId = eventId;
             TransactionPosition = transactionPosition;
+            TransactionOffset = transactionOffset;
             EventStreamId = eventStreamId;
             ExpectedVersion = expectedVersion;
             TimeStamp = timeStamp;
             Flags = flags;
             EventType = eventType ?? string.Empty;
-            Data = data;
+            Data = data ?? Empty;
             Metadata = metadata ?? Empty;
         }
 
@@ -110,6 +115,7 @@ namespace EventStore.Core.Data
                    && CorrelationId.Equals(other.CorrelationId) 
                    && EventId.Equals(other.EventId) 
                    && TransactionPosition == other.TransactionPosition
+                   && TransactionOffset == other.TransactionOffset
                    && string.Equals(EventStreamId, other.EventStreamId) 
                    && ExpectedVersion == other.ExpectedVersion 
                    && TimeStamp.Equals(other.TimeStamp) 
@@ -136,6 +142,7 @@ namespace EventStore.Core.Data
                 hashCode = (hashCode*397) ^ CorrelationId.GetHashCode();
                 hashCode = (hashCode*397) ^ EventId.GetHashCode();
                 hashCode = (hashCode*397) ^ TransactionPosition.GetHashCode();
+                hashCode = (hashCode*397) ^ TransactionOffset;
                 hashCode = (hashCode*397) ^ EventStreamId.GetHashCode();
                 hashCode = (hashCode*397) ^ ExpectedVersion;
                 hashCode = (hashCode*397) ^ TimeStamp.GetHashCode();
@@ -164,16 +171,18 @@ namespace EventStore.Core.Data
                                  + "CorrelationId: {2}, "
                                  + "EventId: {3}, "
                                  + "TransactionPosition: {4}, "
-                                 + "EventStreamId: {5}, "
-                                 + "ExpectedVersion: {6}, "
-                                 + "TimeStamp: {7}, "
-                                 + "Flags: {8}, "
-                                 + "EventType: {9}",
+                                 + "TransactionOffset: {5}, "
+                                 + "EventStreamId: {6}, "
+                                 + "ExpectedVersion: {7}, "
+                                 + "TimeStamp: {8}, "
+                                 + "Flags: {9}, "
+                                 + "EventType: {10}",
                                  EventNumber,
                                  LogPosition,
                                  CorrelationId,
                                  EventId,
                                  TransactionPosition,
+                                 TransactionOffset,
                                  EventStreamId,
                                  ExpectedVersion,
                                  TimeStamp,

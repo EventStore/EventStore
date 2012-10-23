@@ -59,6 +59,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                               correlationId: _correlationId,
                                               eventId: _eventId,
                                               transactionPosition: 0,
+                                              transactionOffset: 0,
                                               eventStreamId: "WorldEnding",
                                               expectedVersion: 1234,
                                               timeStamp: new DateTime(2012, 12, 21),
@@ -71,7 +72,7 @@ namespace EventStore.Core.Tests.TransactionLog
             tf.Close();
             db.Dispose();
 
-            Assert.AreEqual(record.GetSizeWithLengthPrefix(), _checkpoint.Read());
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), _checkpoint.Read());
             using (var filestream = File.Open(Path.Combine(PathName, "prefix.tf0"), FileMode.Open, FileAccess.Read))
             {
                 filestream.Position = ChunkHeader.Size;

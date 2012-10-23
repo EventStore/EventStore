@@ -63,19 +63,21 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
             _edp.Handle(
-                new ClientMessage.ReadEventsForwardCompleted(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream",
                     new[]
-                        {
+                    {
+                        new EventLinkPair( 
                             new EventRecord(
-                        10, 50, Guid.NewGuid(), _firstEventId, 50, "stream", ExpectedVersion.Any, DateTime.UtcNow,
-                        PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                        "event_type1", new byte[] {1}, new byte[] {2}),
+                                10, 50, Guid.NewGuid(), _firstEventId, 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
+                                PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                                "event_type1", new byte[] {1}, new byte[] {2}), null),
+                        new EventLinkPair( 
                             new EventRecord(
-                        11, 100, Guid.NewGuid(), _secondEventId, 100, "stream", ExpectedVersion.Any, DateTime.UtcNow,
-                        PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                        "event_type2", new byte[] {3}, new byte[] {4})
-                        }, null, RangeReadResult.Success, 12, 200));
+                                11, 100, Guid.NewGuid(), _secondEventId, 100, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
+                                PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                                "event_type2", new byte[] {3}, new byte[] {4}), null)
+                    }, RangeReadResult.Success, 12, 200));
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
@@ -94,10 +96,10 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
         public void publishes_correct_committed_event_received_messages()
         {
             Assert.AreEqual(
-                2, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventReceived>().Count());
-            var first = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventReceived>().First();
+                2, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
+            var first = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().First();
             var second =
-                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventReceived>().Skip(1).First();
+                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(1).First();
 
             Assert.AreEqual("event_type1", first.Data.EventType);
             Assert.AreEqual("event_type2", second.Data.EventType);
@@ -118,41 +120,43 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
         [Test]
         public void publishes_read_events_from_beginning_with_correct_next_event_number()
         {
-            Assert.AreEqual(2, _consumer.HandledMessages.OfType<ClientMessage.ReadEventsForward>().Count());
+            Assert.AreEqual(2, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
             Assert.AreEqual(
-                "stream", _consumer.HandledMessages.OfType<ClientMessage.ReadEventsForward>().Last().EventStreamId);
+                "stream", _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().EventStreamId);
             Assert.AreEqual(
-                12, _consumer.HandledMessages.OfType<ClientMessage.ReadEventsForward>().Last().FromEventNumber);
+                12, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().FromEventNumber);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cannot_handle_repeated_read_events_completed()
         {
             _edp.Handle(
-                new ClientMessage.ReadEventsForwardCompleted(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream",
                     new[]
-                        {
+                    {
+                        new EventLinkPair( 
                             new EventRecord(
-                        10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, "stream", ExpectedVersion.Any, DateTime.UtcNow,
+                        10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
                         PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                        "event_type", new byte[0], new byte[0])
-                        }, null, RangeReadResult.Success, 11, 100));
+                        "event_type", new byte[0], new byte[0]), null)
+                    }, RangeReadResult.Success, 11, 100));
         }
 
         [Test]
         public void can_handle_following_read_events_completed()
         {
             _edp.Handle(
-                new ClientMessage.ReadEventsForwardCompleted(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream",
                     new[]
-                        {
+                    {
+                        new EventLinkPair( 
                             new EventRecord(
-                        12, 250, Guid.NewGuid(), Guid.NewGuid(), 250, "stream", ExpectedVersion.Any, DateTime.UtcNow,
-                        PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                        "event_type", new byte[0], new byte[0])
-                        }, null, RangeReadResult.Success, 11, 300));
+                                12, 250, Guid.NewGuid(), Guid.NewGuid(), 250, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
+                                PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                                "event_type", new byte[0], new byte[0]), null)
+                    }, RangeReadResult.Success, 11, 300));
         }
     }
 }

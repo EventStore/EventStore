@@ -28,6 +28,7 @@
 
 using System.Linq;
 using System.Text;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
@@ -47,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void Given()
         {
             _projectionName = "test-projection";
-            _manager = new ProjectionManager(_bus, checkpointForStatistics: null);
+            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] { _bus }, checkpointForStatistics: null);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             AllWritesQueueUp();
         }

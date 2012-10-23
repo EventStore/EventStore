@@ -42,14 +42,16 @@ namespace EventStore.Projections.Core.Services
         private readonly IPublisher _publisher;
         private readonly Func<TRequest, Guid> _getRequestCorrelationId;
         private readonly Func<TResponse, Guid> _getResponseCorrelationId;
+        private readonly IEnvelope _defaultReplyEnvelope;
 
         public RequestResponseDispatcher(
             IPublisher publisher, Func<TRequest, Guid> getRequestCorrelationId,
-            Func<TResponse, Guid> getResponseCorrelationId)
+            Func<TResponse, Guid> getResponseCorrelationId, IEnvelope defaultReplyEnvelope)
         {
             _publisher = publisher;
             _getRequestCorrelationId = getRequestCorrelationId;
             _getResponseCorrelationId = getResponseCorrelationId;
+            _defaultReplyEnvelope = defaultReplyEnvelope;
         }
 
         public void Publish(TRequest request, Action<TResponse> action)
@@ -79,13 +81,9 @@ namespace EventStore.Projections.Core.Services
             return false;
         }
 
-        public int ActiveRequestCount
+        public IEnvelope Envelope
         {
-            get
-            {
-                lock (_map)
-                    return _map.Count;
-            }
+            get { return _defaultReplyEnvelope; }
         }
     }
 }

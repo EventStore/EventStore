@@ -1,0 +1,144 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Projections</title>
+    <script src="/web/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/js/es.tmpl.js" type="text/javascript"></script>
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>
+</head>
+<body>
+    <div id="content">
+        <h1>
+            Projections</h1>
+        <table class="table table-bordered table-striped">
+            <!--<colgroup>
+                    <col class="span1">
+                    <col class="span7">
+                </colgroup>-->
+            <thead>
+                <tr>
+                    <th>
+                        Name
+                    </th>
+                    <th>
+                        Status
+                    </th>
+                    <th>
+                        Reason
+                    </th>
+                    <th>
+                        Mode
+                    </th>
+                    <th>
+                        % Done
+                    </th>
+                    <th>
+                        Position
+                    </th>
+                    <th>
+                        Last Checkpoint
+                    </th>
+                    <th>
+                        Checkpoint Status
+                    </th>
+                    <th>
+                        Reads/Writes In-Progress
+                    </th>
+                    <th>
+                        Writes Pending
+                    </th>
+                    <th>
+                        Partitions Cached
+                    </th>
+                    <th>
+                        Processed (since restart)
+                    </th>
+                    <th>
+                        Buffered Events
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="projections">
+            </tbody>
+        </table>
+        <script id="projectionTemplate" type="text/x-jsrender">
+        <tr>
+          <td><a href="view-projection.htm#{{>statusUrl}}">{{>name}}</a></td>
+          <td>{{>status}}</td>
+          <td>{{>stateReason}}</td>
+          <td>{{>mode}}</td>
+          <td>{{>~percentsDone(positionRaw)}}%</td>
+          <td>{{>position}}</td>
+          <td>{{>lastCheckpoint}}</td>
+          <td>{{>checkpointStatus}}</td>
+          <td>{{>readsInProgress}}/{{>writesInProgress}}</td>
+          <td>{{>writePendingEventsBeforeCheckpoint}}/{{>writePendingEventsAfterCheckpoint}}</td>
+          <td>{{>partitionsCached}}</td>
+          <td>{{>eventsProcessedAfterRestart}}</td>
+          <td>{{>bufferedEvents}}</td>
+        </tr>
+        </script>
+        <div>
+            <header>
+                <a href="new-projection.htm">New Projection</a>
+            </header>
+        </div>
+    </div>
+
+    <script id="r-body">
+        es.tmpl.renderBody();
+    </script>
+
+    <script type="text/javascript">
+
+        (function() {
+
+            function success(data, status, xhr) {
+
+                data.projections.sort(function(a, b) {
+                    return a.name.localeCompare(b.name);
+                });
+
+                /*$("#raw_data").text(JSON.stringify(data));*/
+                $.templates("projectionTemplate", "#projectionTemplate");
+
+                $("#projections").html(
+                    $.render.projectionTemplate(data.projections, {
+                        percentsDone: function(v) {
+                            return Math.round(v * 1000.0 / data.transactionFileHeadPosition) / 10.0;
+                        }
+                    })
+                );
+
+                delayedRequestList();
+            }
+
+            function error(xhr, status) {
+                delayedRequestList();
+            }
+
+            function delayedRequestList() {
+                setTimeout(requestList, 1000);
+            }
+
+            function requestList() {
+                $.ajax("/projections/any", {
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    success: success,
+                    error: error
+                });
+            }
+
+            $(function() {
+                requestList();
+            });
+
+        })();
+    </script>
+</body>
+</html>

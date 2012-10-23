@@ -86,8 +86,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
     internal class TcpConnectionMonitor
     {
+        private readonly ILogger _log;
+
         public static readonly TcpConnectionMonitor Default = new TcpConnectionMonitor();
-        private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnectionMonitor>();
 
         private readonly object _connectionsLock = new object();
         private readonly object _statsLock = new object();
@@ -130,6 +131,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private TcpConnectionMonitor()
         {
+            _log = LogManager.GetLogger();
         }
 
         public void Register(IMonitoredTcpConnection connection)
@@ -188,16 +190,15 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                      _pendingReceivedOnLastRun,
                                      measurePeriod);
 
-
-            Log.Debug("# Total connections: {0,3}. Out: {1:8}  In: {2:8}  Pending Send: {3}  " +
-                      "In Send: {4}  Pending Received: {5} Measure Time: {6}",
-                stats.Connections,
-                stats.SendingSpeed,
-                stats.ReceivingSpeed,
-                stats.PendingSend,
-                stats.InSend,
-                stats.PendingSend,
-                stats.MeasureTimeFriendly);
+            _log.Debug("# Total connections: {0,3}. Out: {1:0.00}b/s  In: {2:0.00}b/s  Pending Send: {3}  " +
+                       "In Send: {4}  Pending Received: {5} Measure Time: {6}",
+                       stats.Connections,
+                       stats.SendingSpeed,
+                       stats.ReceivingSpeed,
+                       stats.PendingSend,
+                       stats.InSend,
+                       stats.PendingSend,
+                       stats.MeasureTimeFriendly);
 
             return stats;
         }
@@ -210,7 +211,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             if (connection.IsFaulted)
             {
-                Log.Info("# {0} is faulted", connection);
+                _log.Debug("# {0} is faulted", connection);
                 return;
             }
 
@@ -245,7 +246,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             connectionData.LastTotalBytesReceived = totalBytesReceived;
         }
 
-        private static void CheckMissingReceiveCallback(ConnectionData connectionData, IMonitoredTcpConnection connection)
+        private void CheckMissingReceiveCallback(ConnectionData connectionData, IMonitoredTcpConnection connection)
         {
             bool inReceive = connection.InReceive;
             bool isReadyForReceive = connection.IsReadyForReceive;
@@ -256,9 +257,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             if (missingReceiveCallback && connectionData.LastMissingReceiveCallBack)
             {
-                Log.Error(
-                    "# {0} {1}ms since last Receive started. No completion callback received, but socket status is READY_FOR_RECEIVE",
-                    connection, sinceLastReceive);
+                _log.Debug("# {0} {1}ms since last Receive started. No completion callback received, but socket status is READY_FOR_RECEIVE",
+                           connection, 
+                           sinceLastReceive);
             }
             connectionData.LastMissingReceiveCallBack = missingReceiveCallback;
         }
@@ -277,30 +278,31 @@ namespace EventStore.ClientAPI.Transport.Tcp
             if (missingSendCallback && connectionData.LastMissingSendCallBack)
             {
                 // _anySendBlockedOnLastRun = true;
-                Log.Error(
-                    "# {0} {1}ms since last send started. No completion callback received, but socket status is READY_FOR_SEND. In send: {2}",
-                    connection, sinceLastSend, inSendBytes);
+                _log.Debug("# {0} {1}ms since last send started. No completion callback received, but socket status is READY_FOR_SEND. In send: {2}",
+                           connection, 
+                           sinceLastSend, 
+                           inSendBytes);
             }
             connectionData.LastMissingSendCallBack = missingSendCallback;
         }
 
-        private static void CheckPendingSend(IMonitoredTcpConnection connection)
+        private void CheckPendingSend(IMonitoredTcpConnection connection)
         {
             uint pendingSendBytes = connection.PendingSendBytes;
 
             if (pendingSendBytes > 128 * 1024)
             {
-                Log.Info("# {0} {1}kb pending send", connection, pendingSendBytes / 1024);
+                _log.Debug("# {0} {1}kb pending send", connection, pendingSendBytes / 1024);
             }
         }
 
-        private static void CheckPendingReceived(IMonitoredTcpConnection connection)
+        private void CheckPendingReceived(IMonitoredTcpConnection connection)
         {
             uint pendingReceivedBytes = connection.PendingReceivedBytes;
 
             if (pendingReceivedBytes > 128 * 1024)
             {
-                Log.Info("# {0} {1}kb are not dispatched", connection, pendingReceivedBytes / 1024);
+                _log.Debug("# {0} {1}kb are not dispatched", connection, pendingReceivedBytes / 1024);
             }
         }
 

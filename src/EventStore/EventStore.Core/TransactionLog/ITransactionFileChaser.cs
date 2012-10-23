@@ -35,7 +35,7 @@ namespace EventStore.Core.TransactionLog
     {
         void Open();
 
-        RecordReadResult TryReadNext();
+        SeqReadResult TryReadNext();
         bool TryReadNext(out LogRecord record);
 
         void Close();

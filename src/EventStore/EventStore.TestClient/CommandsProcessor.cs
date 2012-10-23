@@ -107,7 +107,7 @@ namespace EventStore.TestClient
             if (!string.IsNullOrWhiteSpace(context.Reason))
                 _log.Error("Error during execution of command: {0}.", context.Reason);
 
-            exitCode = exitC;
+            exitCode = exitC == 0 ? context.ExitCode : exitC;
             return true;
         }
     }

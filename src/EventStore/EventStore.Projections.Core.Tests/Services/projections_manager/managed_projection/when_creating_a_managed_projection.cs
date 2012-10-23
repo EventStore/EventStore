@@ -38,42 +38,42 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_guid_throws_invali_argument_exception()
         {
-            var mp = new ManagedProjection(
+            var mp = new ManagedProjection(_bus, 
                 Guid.Empty, "name", null, _writeDispatcher, _readDispatcher, _bus, _handlerFactory);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_guid_throws_invali_argument_exception2()
         {
-            var mp = new ManagedProjection(
+            var mp = new ManagedProjection(_bus, 
                 Guid.Empty, "name", null, _writeDispatcher, _readDispatcher, _bus, _handlerFactory);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_name_throws_argument_null_exception()
         {
-            var mp = new ManagedProjection(
+            var mp = new ManagedProjection(_bus, 
                 Guid.NewGuid(), null, null, _writeDispatcher, _readDispatcher, _bus, _handlerFactory);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_name_throws_argument_null_exception2()
         {
-            var mp = new ManagedProjection(
+            var mp = new ManagedProjection(_bus, 
                 Guid.NewGuid(), null, null, _writeDispatcher, _readDispatcher, _bus, _handlerFactory);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_name_throws_argument_exception()
         {
-            var mp = new ManagedProjection(
+            var mp = new ManagedProjection(_bus, 
                 Guid.NewGuid(), "", null, _writeDispatcher, _readDispatcher, _bus, _handlerFactory);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_name_throws_argument_exception2()
         {
-            var mp = new ManagedProjection(
+            var mp = new ManagedProjection(_bus, 
                 Guid.NewGuid(), "", null, _writeDispatcher, _readDispatcher, _bus, _handlerFactory);
         }
     }

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Bus;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
@@ -39,15 +40,39 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test]
         public void it_can_be_created()
         {
-            using (var m = new ProjectionManager(new FakePublisher(), checkpointForStatistics: null))
+            using (var m = new ProjectionManager(new FakePublisher(), new FakePublisher(), new IPublisher[]{new FakePublisher()}, checkpointForStatistics: null))
             {
             }
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
+        public void main_queue_throws_argument_null_exception()
+        {
+            using (var m = new ProjectionManager(null, new FakePublisher(), new IPublisher[]{new FakePublisher()}, checkpointForStatistics: null))
+            {
+            }
+        }
+
+        [Test, ExpectedException(typeof(ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            using (var m = new ProjectionManager(null, checkpointForStatistics: null))
+            using (var m = new ProjectionManager(new FakePublisher(), null, new IPublisher[] { new FakePublisher() }, checkpointForStatistics: null))
+            {
+            }
+        }
+
+        [Test, ExpectedException(typeof(ArgumentNullException))]
+        public void null_queues_throws_argument_null_exception()
+        {
+            using (var m = new ProjectionManager(new FakePublisher(), new FakePublisher(), null, checkpointForStatistics: null))
+            {
+            }
+        }
+
+        [Test, ExpectedException(typeof(ArgumentException))]
+        public void empty_queues_throws_argument_exception()
+        {
+            using (var m = new ProjectionManager(new FakePublisher(), new FakePublisher(), new IPublisher[0], checkpointForStatistics: null))
             {
             }
         }

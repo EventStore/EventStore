@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 
         protected override void Given()
         {
-            _mp = new ManagedProjection(
+            _mp = new ManagedProjection(_bus, 
                 Guid.NewGuid(), "name", null, _writeDispatcher, _readDispatcher, _bus, _handlerFactory);
         }
 

@@ -1,7 +1,5 @@
 $(function () {
 
-
-
     var newDataEvent = "es.newStats";
 
     es.TimeSeries.setUp({
@@ -16,7 +14,6 @@ $(function () {
     function buildCharts() {
 
         $.ajax("/stats?metadata=true&group=false", {
-            cache: false,
             headers: {
                 Accept: "application/json"
             },
@@ -26,6 +23,7 @@ $(function () {
 
         function onGotStats(stats) {
             bindCharts(stats);
+            window.es.graphControl.setup();
             poll();
         }
 
@@ -52,7 +50,7 @@ $(function () {
             if (window.queueStats)
                 return cat !== "Queue Stats";
             else
-                return cat === "Queue Stats"; 
+                return cat === "Queue Stats";
         }
     }
 
@@ -64,7 +62,6 @@ $(function () {
         }, 1000);
 
         $.ajax("/stats?group=false", {
-            cache: false,
             headers: {
                 Accept: "application/json"
             },

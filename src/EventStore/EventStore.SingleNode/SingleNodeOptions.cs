@@ -55,6 +55,9 @@ namespace EventStore.SingleNode
         [Option(null, "no-projections", DefaultValue = false)]
         public bool NoProjections { get; set; }
 
+        [Option(null, "projection-threads", DefaultValue = 3)]
+        public int ProjectionThreads { get; set; }
+
         [Option(null, "prefixes")]
         public string PrefixesString { get; set; }
 
@@ -69,6 +72,7 @@ namespace EventStore.SingleNode
             yield return new KeyValuePair<string, string>("CHUNK CACHE", ChunksToCache.ToString());
             yield return new KeyValuePair<string, string>("DB PATH", string.IsNullOrEmpty(DbPath) ? "<DEFAULT>" : DbPath);
             yield return new KeyValuePair<string, string>("NO PROJECTIONS", NoProjections.ToString());
+            yield return new KeyValuePair<string, string>("PROJECTION THREADS", ProjectionThreads.ToString());
         }
     }
 }

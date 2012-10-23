@@ -10,6 +10,12 @@ namespace EventStore.Core.Services
         public const string StreamsStream = "$streams";
     }
 
+    public static class SystemMetadata
+    {
+        public const string MaxAge = "$maxAge";
+        public const string MaxCount = "$maxCount";
+    }
+
     public static class SystemEventTypes
     {
         public const string StreamCreated = "$stream-created";

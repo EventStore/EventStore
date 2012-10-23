@@ -26,90 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.IO;
-using System.Text;
-using System.Threading;
 using EventStore.Core.Data;
-using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.TransactionLog.MultifileTransactionFile;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Infrastructure.Services.Storage
 {
-    [TestFixture]
-    public class when_rebuilding_index_for_partially_persisted_transaction : ReadIndexTestScenario
-    {
-
-        public when_rebuilding_index_for_partially_persisted_transaction()
-            : base(maxEntriesInMemTable: 10)
-        {
-
-        }
-
-        public override void TestFixtureSetUp()
-        {
-            base.TestFixtureSetUp();
-
-            ReadIndex.Close();
-            ReadIndex.Dispose();
-
-            Thread.Sleep(500);
-            TableIndex.ClearAll(removeFiles: false);
-
-            TableIndex = new TableIndex(Path.Combine(PathName, "index"), () => new HashListMemTable(), maxSizeForMemory: 5);
-            TableIndex.Initialize();
-
-            ReadIndex = new ReadIndex(new NoopPublisher(),
-                                      pos => new MultifileTransactionFileChaser(_dbConfig, new InMemoryCheckpoint(0)), 
-                                      () => new MultifileTransactionFileReader(_dbConfig, _writerCheckpoint),
-                                      1,
-                                      TableIndex,
-                                      new ByLengthHasher());
-            ReadIndex.Build();
-        }
-
-        public override void TestFixtureTearDown()
-        {
-            try
-            {
-                base.TestFixtureTearDown();
-            }
-            catch
-            {
-                // TODO AN this is VERY bad, but it fails only on CI on Windows, not priority to check who holds lock on file
-            }
-        }
-
-        protected override void WriteTestScenario()
-        {
-            var begin = WriteTransactionBegin("ES", ExpectedVersion.Any);
-            for (int i = 0; i < 15; ++i)
-            {
-                WriteTransactionEvent(Guid.NewGuid(), begin.LogPosition, "ES", i, "data" + i, PrepareFlags.Data);
-            }
-            WriteTransactionEnd(Guid.NewGuid(), begin.LogPosition, "ES");
-            WriteCommit(Guid.NewGuid(), begin.LogPosition, "ES", 0);
-        }
-
-        [Test]
-        public void sequence_numbers_are_not_broken()
-        {
-            for (int i = 0; i < 15; ++i)
-            {
-                EventRecord record;
-                Assert.AreEqual(SingleReadResult.Success, ReadIndex.TryReadRecord("ES", i, out record));
-                Assert.AreEqual(Encoding.UTF8.GetBytes("data" + i), record.Data);
-            }
-
-        }
-
-    }
-
     [TestFixture]
     public class when_having_multievent_sequential_write_request_read_index_should : ReadIndexTestScenario
     {
@@ -120,8 +43,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         protected override void WriteTestScenario()
         {
             _p1 = WriteTransactionBegin("ES", ExpectedVersion.NoStream, 0, "test1");
-            _p2 = WriteTransactionEvent(_p1.CorrelationId, _p1.LogPosition, _p1.EventStreamId, 1, "test2", PrepareFlags.Data);
-            _p3 = WriteTransactionEvent(_p1.CorrelationId, _p1.LogPosition, _p1.EventStreamId, 2, "test3", PrepareFlags.TransactionEnd | PrepareFlags.Data);
+            _p2 = WriteTransactionEvent(_p1.CorrelationId, _p1.LogPosition, 1, _p1.EventStreamId, 1, "test2", PrepareFlags.Data);
+            _p3 = WriteTransactionEvent(_p1.CorrelationId, _p1.LogPosition, 2, _p1.EventStreamId, 2, "test3", PrepareFlags.TransactionEnd | PrepareFlags.Data);
 
             WriteCommit(_p1.CorrelationId, _p1.LogPosition, _p1.EventStreamId, _p1.EventNumber);
         }
@@ -136,7 +59,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void return_correct_first_record_for_stream()
         {
             EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.TryReadRecord("ES", 0, out prepare));
+            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 0, out prepare));
             Assert.AreEqual(_p1, prepare);
         }
 
@@ -144,7 +67,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void return_correct_second_record_for_stream()
         {
             EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.TryReadRecord("ES", 1, out prepare));
+            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 1, out prepare));
             Assert.AreEqual(_p2, prepare);
         }
 
@@ -152,7 +75,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void return_correct_third_record_for_stream()
         {
             EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.TryReadRecord("ES", 2, out prepare));
+            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 2, out prepare));
             Assert.AreEqual(_p3, prepare);
         }
 
@@ -160,14 +83,14 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void not_find_record_with_nonexistent_version()
         {
             EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.TryReadRecord("ES", 3, out prepare));
+            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("ES", 3, out prepare));
         }
 
         [Test]
         public void return_correct_range_on_from_start_range_query_for_stream()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadEventsForward("ES", 0, 3, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsForward("ES", 0, 3, out records));
             Assert.AreEqual(3, records.Length);
             Assert.AreEqual(_p1, records[0]);
             Assert.AreEqual(_p2, records[1]);
@@ -178,7 +101,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void return_correct_range_on_from_end_range_query_for_stream_with_specific_event_version()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("ES", 2, 3, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("ES", 2, 3, out records));
             Assert.AreEqual(3, records.Length);
             Assert.AreEqual(_p3, records[0]);
             Assert.AreEqual(_p2, records[1]);
@@ -189,11 +112,34 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void return_correct_range_on_from_end_range_query_for_stream_with_from_end_version()
         {
             EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.TryReadRecordsBackwards("ES", -1, 3, out records));
+            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("ES", -1, 3, out records));
             Assert.AreEqual(3, records.Length);
             Assert.AreEqual(_p3, records[0]);
             Assert.AreEqual(_p2, records[1]);
             Assert.AreEqual(_p1, records[2]);
+        }
+
+        [Test]
+        public void read_all_events_forward_returns_all_events_in_correct_order()
+        {
+            var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10, false).Records;
+
+            Assert.AreEqual(3, records.Count);
+            Assert.AreEqual(_p1, records[0].Event);
+            Assert.AreEqual(_p2, records[1].Event);
+            Assert.AreEqual(_p3, records[2].Event);
+        }
+
+        [Test]
+        public void read_all_events_backward_returns_all_events_in_correct_order()
+        {
+            var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
+            var records = ReadIndex.ReadAllEventsBackward(pos, 10, false).Records;
+
+            Assert.AreEqual(3, records.Count);
+            Assert.AreEqual(_p1, records[2].Event);
+            Assert.AreEqual(_p2, records[1].Event);
+            Assert.AreEqual(_p3, records[0].Event);
         }
     }
 }

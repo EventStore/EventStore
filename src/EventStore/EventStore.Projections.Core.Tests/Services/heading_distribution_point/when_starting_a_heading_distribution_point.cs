@@ -68,14 +68,14 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
         [Test]
         public void transaction_file_reader_publishes_read_events_from_tf()
         {
-            Assert.IsTrue(_consumer.HandledMessages.OfType<ClientMessage.ReadEventsFromTF>().Any());
+            Assert.IsTrue(_consumer.HandledMessages.OfType<ClientMessage.ReadAllEventsForward>().Any());
         }
 
         [Test]
         public void can_handle_events()
         {
             _point.Handle(
-                new ProjectionMessage.Projections.CommittedEventReceived(
+                new ProjectionMessage.Projections.CommittedEventDistributed(
                     _distibutionPointCorrelationId, new EventPosition(20, 10), "stream", 10, false,
                     new Event(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
         }

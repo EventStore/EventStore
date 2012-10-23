@@ -72,16 +72,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
             _manager.Handle(new ProjectionMessage.Projections.ReadyForCheckpoint());
         }
 
-        [Test]
-        public void can_be_started()
+        [Test, ExpectedException(typeof(InvalidOperationException))]
+        public void starts_throws_invalid_operation_exception()
         {
-            _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000), 5);
+            _manager.Start(CheckpointTag.FromStreamPosition("stream", 10, 1000));
         }
 
-        [Test, ExpectedException(typeof(InvalidOperationException))]
-        public void cannot_be_started_from_incompatible_checkpoint_tag()
+        [Test]
+        public void can_begin_load_state()
         {
-            _manager.Start(CheckpointTag.FromStreamPosition("stream1", 10, 1000), 5);
+            _manager.BeginLoadState();
         }
+
     }
 }

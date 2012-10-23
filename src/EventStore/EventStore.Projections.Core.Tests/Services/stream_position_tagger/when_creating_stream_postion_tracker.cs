@@ -51,26 +51,36 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
         public void it_can_be_updated_with_correct_stream()
         {
             // even not initialized (UpdateToZero can be removed)
-            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
-                                                                                Guid.NewGuid(), new EventPosition(100, 50), "stream1", 1, false,
-                                                                                new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
-            _positionTracker.UpdateByCheckpointTagForward(newTag);
+            var newTag = CheckpointTag.FromStreamPosition("stream1", 1, 50);
+            _positionTracker.UpdateByCheckpointTagInitial(newTag);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void it_cannot_be_updated_with_other_stream()
         {
-            // even not initialized (UpdateToZero can be removed)
-            var newTag = _tagger.MakeCheckpointTag(new ProjectionMessage.Projections.CommittedEventReceived(
-                                                                                Guid.NewGuid(), new EventPosition(100, 50), "other_stream1", 1, false,
-                                                                                new Event(Guid.NewGuid(), "eventtype", false, new byte[0], new byte[0])));
+            var newTag = CheckpointTag.FromStreamPosition("other_stream1", 1, 50);
+            _positionTracker.UpdateByCheckpointTagInitial(newTag);
+        }
+
+        [Test, ExpectedException(typeof(InvalidOperationException))]
+        public void it_cannot_be_updated_forward()
+        {
+            var newTag = CheckpointTag.FromStreamPosition("stream1", 1, 50);
+            _positionTracker.UpdateByCheckpointTagForward(newTag);
+        }
+
+        [Test, ExpectedException(typeof(InvalidOperationException))]
+        public void initial_position_cannot_be_set_twice()
+        {
+            var newTag = CheckpointTag.FromStreamPosition("stream1", 1, 50);
+            _positionTracker.UpdateByCheckpointTagForward(newTag);
             _positionTracker.UpdateByCheckpointTagForward(newTag);
         }
 
         [Test]
         public void it_can_be_updated_to_zero()
         {
-            _positionTracker.UpdateByCheckpointTag(_tagger.MakeZeroCheckpointTag());
+            _positionTracker.UpdateByCheckpointTagInitial(_tagger.MakeZeroCheckpointTag());
         }
     }
 }

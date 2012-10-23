@@ -27,9 +27,10 @@
 // 
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.System;
+using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
@@ -38,6 +39,7 @@ namespace EventStore.ClientAPI.ClientOperations
     {
         private readonly TaskCompletionSource<object> _source;
         private ClientMessages.CreateStreamCompleted _result;
+        private int _completed;
 
         private Guid _correlationId;
         private readonly object _corrIdLock = new object();
@@ -76,7 +78,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.CreateStream(_correlationId, _stream, _metadata);
+                var dto = new ClientMessages.CreateStream(_stream, _metadata);
                 return new TcpPackage(TcpCommand.CreateStream, _correlationId, dto.Serialize());
             }
         }
@@ -104,9 +106,12 @@ namespace EventStore.ClientAPI.ClientOperations
                     case OperationErrorCode.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
                     case OperationErrorCode.WrongExpectedVersion:
-                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException());
+                        var err = string.Format("Create stream failed due to WrongExpectedVersion. Stream: {0}, CorrID: {1}.",
+                                                _stream,
+                                                CorrelationId);
+                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
                     case OperationErrorCode.StreamDeleted:
-                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException());
+                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
                     case OperationErrorCode.InvalidTransaction:
                         return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
                     default:
@@ -121,15 +126,26 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public void Complete()
         {
-            if (_result != null)
-                _source.SetResult(null);
-            else
-                _source.SetException(new NoResultException());
+            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
+            {
+                if (_result != null)
+                    _source.SetResult(null);
+                else
+                    _source.SetException(new NoResultException());
+            }
         }
 
         public void Fail(Exception exception)
         {
-            _source.SetException(exception);
+            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
+            {
+                _source.SetException(exception);
+            }
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Stream: {0}, CorrelationId: {1}", _stream, CorrelationId);
         }
     }
 }

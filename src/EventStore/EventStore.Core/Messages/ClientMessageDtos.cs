@@ -42,26 +42,21 @@ namespace EventStore.Core.Messages
         [ProtoContract]
         public class CreateStream
         {
-            [ProtoMember(1, IsRequired = false)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(3, IsRequired = false)]
+            [ProtoMember(2, IsRequired = false)]
             public byte[] Metadata { get; set; }
 
             public CreateStream()
             {
             }
 
-            public CreateStream(Guid correlationId,
-                                string eventStreamId,
+            public CreateStream(string eventStreamId,
                                 byte[] metadata)
             {
-                Ensure.NotNull(eventStreamId, "eventStreamId");
+                Ensure.NotNull(eventStreamId, "streamId");
 
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 Metadata = metadata;
             }
@@ -71,24 +66,20 @@ namespace EventStore.Core.Messages
         public class CreateStreamCompleted
         {
             [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public int ErrorCode { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public string Error { get; set; }
 
             public CreateStreamCompleted()
             {
             }
 
-            public CreateStreamCompleted(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
+            public CreateStreamCompleted(string eventStreamId, OperationErrorCode errorCode, string error)
             {
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 ErrorCode = (int)errorCode;
                 Error = error;
@@ -134,28 +125,24 @@ namespace EventStore.Core.Messages
         [ProtoContract]
         public class WriteEvents
         {
-            [ProtoMember(1, IsRequired = false)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public int ExpectedVersion { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public Event[] Events { get; set; }
 
             public WriteEvents()
             {
             }
 
-            public WriteEvents(Guid correlationId, string eventStreamId, int expectedVersion, Event[] events)
+            public WriteEvents(string eventStreamId, int expectedVersion, Event[] events)
             {
                 Ensure.NotNull(events, "events");
                 Ensure.Positive(events.Length, "events.Length");
 
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
                 Events = events;
@@ -166,27 +153,23 @@ namespace EventStore.Core.Messages
         public class WriteEventsCompleted
         {
             [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public int ErrorCode { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public string Error { get; set; }
 
-            [ProtoMember(5)]
+            [ProtoMember(4)]
             public int EventNumber { get; set; }
 
             public WriteEventsCompleted()
             {
             }
 
-            public WriteEventsCompleted(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error, int eventNumber)
+            public WriteEventsCompleted(string eventStreamId, OperationErrorCode errorCode, string error, int eventNumber)
             {
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 ErrorCode = (int) errorCode;
                 Error = error;
@@ -197,24 +180,20 @@ namespace EventStore.Core.Messages
         [ProtoContract]
         public class DeleteStream
         {
-            [ProtoMember(1, IsRequired = false)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public int ExpectedVersion { get; set; }
 
             public DeleteStream()
             {
             }
 
-            public DeleteStream(Guid correlationId, string eventStreamId, int expectedVersion)
+            public DeleteStream(string eventStreamId, int expectedVersion)
             {
-                Ensure.NotNull(eventStreamId, "eventStreamId");
+                Ensure.NotNull(eventStreamId, "streamId");
 
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
             }
@@ -224,24 +203,20 @@ namespace EventStore.Core.Messages
         public class DeleteStreamCompleted
         {
             [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public int ErrorCode { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public string Error { get; set; }
 
             public DeleteStreamCompleted()
             {
             }
 
-            public DeleteStreamCompleted(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
+            public DeleteStreamCompleted(string eventStreamId, OperationErrorCode errorCode, string error)
             {
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 ErrorCode = (int)errorCode;
                 Error = error;
@@ -251,27 +226,24 @@ namespace EventStore.Core.Messages
         [ProtoContract]
         public class ReadEvent
         {
-            [ProtoMember(1, IsRequired = false)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public int EventNumber { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public bool ResolveLinktos { get; set; }
 
             public ReadEvent()
             {
             }
 
-            public ReadEvent(Guid correlationId, string eventStreamId, int eventNumber)
+            public ReadEvent(string eventStreamId, int eventNumber, bool resolveLinkTos)
             {
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 EventNumber = eventNumber;
+                ResolveLinktos = resolveLinkTos;
             }
         }
 
@@ -279,145 +251,317 @@ namespace EventStore.Core.Messages
         public class ReadEventCompleted
         {
             [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public int EventNumber { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public int Result { get; set; }
 
-            [ProtoMember(5)]
+            [ProtoMember(4)]
             public string EventType { get; set; }
 
-            [ProtoMember(6)]
+            [ProtoMember(5)]
             public byte[] Data { get; set; }
 
-            [ProtoMember(7)]
+            [ProtoMember(6)]
             public byte[] Metadata { get; set; }
+
+            [ProtoMember(7)]
+            public long LogPosition { get; set; }
 
             public ReadEventCompleted()
             {
             }
 
-            public ReadEventCompleted(Guid correlationId, 
-                                      string eventStreamId, 
+            public ReadEventCompleted(string eventStreamId, 
                                       int eventNumber, 
                                       SingleReadResult result,
                                       string eventType, 
                                       byte[] data, 
-                                      byte[] metadata)
+                                      byte[] metadata, long logPosition)
             {
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                Ensure.NotNullOrEmpty(eventStreamId, "streamId");
                 Ensure.Nonnegative(eventNumber, "eventNumber");
                 if (result == SingleReadResult.Success)
                     Ensure.NotNull(data, "data");
 
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 EventNumber = eventNumber;
                 Result = (int)result;
                 EventType = eventType;
                 Data = data;
                 Metadata = metadata;
+                LogPosition = logPosition;
             }
         }
 
         [ProtoContract]
-        public class ReadEventsForward
+        public class ReadStreamEventsForward
         {
-            [ProtoMember(1, IsRequired = false)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public int StartIndex { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public int MaxCount { get; set; }
 
-            [ProtoMember(5)]
-            public bool ResolveLinktos { get; set; }
+            [ProtoMember(4)]
+            public bool ResolveLinkTos { get; set; }
 
-            public ReadEventsForward()
+            public ReadStreamEventsForward()
             {
             }
 
-            public ReadEventsForward(Guid correlationId, string eventStreamId, int startIndex, int maxCount)
+            public ReadStreamEventsForward(string eventStreamId, int startIndex, int maxCount, bool resolveLinkTos)
             {
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 StartIndex = startIndex;
                 MaxCount = maxCount;
+                ResolveLinkTos = resolveLinkTos;
             }
         }
 
         [ProtoContract]
-        public class ReadEventsForwardCompleted
+        public class ReadStreamEventsForwardCompleted
         {
             [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
+            [ProtoMember(2)]
+            public EventLinkPair[] Events { get; set; }
+
             [ProtoMember(3)]
-            public EventRecord[] Events { get; set; }
-
-            [ProtoMember(4)]
-            public EventRecord[] LinkToEvents { get; set; }
-
-            [ProtoMember(5)]
             public int Result { get; set; }
 
+            [ProtoMember(4)]
             public long? LastCommitPosition { get; set; }
 
-            public ReadEventsForwardCompleted()
+            public ReadStreamEventsForwardCompleted()
             {
             }
 
-            public ReadEventsForwardCompleted(Guid correlationId,
-                                              string eventStreamId,
-                                              EventRecord[] events,
-                                              EventRecord[] linkToEvents,
-                                              RangeReadResult result,
-                                              long? lastCommitPosition)
+            public ReadStreamEventsForwardCompleted(string eventStreamId,
+                                                    EventLinkPair[] events,
+                                                    RangeReadResult result,
+                                                    long? lastCommitPosition)
             {
-                Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                Ensure.NotNullOrEmpty(eventStreamId, "streamId");
 
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 Events = events;
-                LinkToEvents = linkToEvents;
                 Result = (int)result;
                 LastCommitPosition = lastCommitPosition;
             }
         }
 
         [ProtoContract]
-        public class TransactionStart
+        public class ReadStreamEventsBackward
         {
-            [ProtoMember(1, IsRequired = false)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public string EventStreamId { get; set; }
 
+            [ProtoMember(2)]
+            public int StartIndex { get; set; }
+
             [ProtoMember(3)]
+            public int MaxCount { get; set; }
+
+            [ProtoMember(4)]
+            public bool ResolveLinkTos { get; set; }
+
+            public ReadStreamEventsBackward()
+            {
+            }
+
+            public ReadStreamEventsBackward(string eventStreamId, int startIndex, int maxCount, bool resolveLinkTos)
+            {
+                EventStreamId = eventStreamId;
+                StartIndex = startIndex;
+                MaxCount = maxCount;
+                ResolveLinkTos = resolveLinkTos;
+            }
+        }
+
+        [ProtoContract]
+        public class ReadStreamEventsBackwardCompleted
+        {
+            [ProtoMember(1)]
+            public string EventStreamId { get; set; }
+
+            [ProtoMember(2)]
+            public EventLinkPair[] Events { get; set; }
+
+            [ProtoMember(3)]
+            public int Result { get; set; }
+
+            [ProtoMember(4)]
+            public long? LastCommitPosition { get; set; }
+
+            public ReadStreamEventsBackwardCompleted()
+            {
+            }
+
+            public ReadStreamEventsBackwardCompleted(string eventStreamId,
+                                                     EventLinkPair[] events,
+                                                     RangeReadResult result,
+                                                     long? lastCommitPosition)
+            {
+                Ensure.NotNullOrEmpty(eventStreamId, "streamId");
+
+                EventStreamId = eventStreamId;
+                Events = events;
+                Result = (int)result;
+                LastCommitPosition = lastCommitPosition;
+            }
+        }
+
+        [ProtoContract]
+        public class ReadAllEventsForward
+        {
+            [ProtoMember(1)]
+            public long CommitPosition { get; set; }
+
+            [ProtoMember(2)]
+            public long PreparePosition { get; set; }
+
+            [ProtoMember(3)]
+            public int MaxCount { get; set; }
+
+            [ProtoMember(4)]
+            public bool ResolveLinktos { get; set; }
+
+            public ReadAllEventsForward()
+            {
+            }
+
+            public ReadAllEventsForward(long commitPosition, long preparePosition, int maxCount, bool resolveLinktos)
+            {
+                CommitPosition = commitPosition;
+                PreparePosition = preparePosition;
+                MaxCount = maxCount;
+                ResolveLinktos = resolveLinktos;
+            }
+        }
+
+        [ProtoContract]
+        public class ReadAllEventsForwardCompleted
+        {
+            [ProtoMember(1)]
+            public long CommitPosition { get; set; }
+
+            [ProtoMember(2)]
+            public long PreparePosition { get; set; }
+
+            [ProtoMember(3)]
+            public EventLinkPair[] Events { get; set; }
+
+            [ProtoMember(4)]
+            public long NextCommitPosition { get; set; }
+
+            [ProtoMember(5)]
+            public long NextPreparePosition { get; set; }
+
+            public ReadAllEventsForwardCompleted()
+            {
+            }
+
+            public ReadAllEventsForwardCompleted(long commitPosition,
+                                                 long preparePosition,
+                                                 EventLinkPair[] events,
+                                                 long nextCommitPosition,
+                                                 long nextPreparePosition)
+            {
+                CommitPosition = commitPosition;
+                PreparePosition = preparePosition;
+                Events = events;
+                NextCommitPosition = nextCommitPosition;
+                NextPreparePosition = nextPreparePosition;
+            }
+        }
+
+        [ProtoContract]
+        public class ReadAllEventsBackward
+        {
+            [ProtoMember(1)]
+            public long CommitPosition { get; set; }
+
+            [ProtoMember(2)]
+            public long PreparePosition { get; set; }
+
+            [ProtoMember(3)]
+            public int MaxCount { get; set; }
+
+            [ProtoMember(4)]
+            public bool ResolveLinkTos { get; set; }
+
+            public ReadAllEventsBackward()
+            {
+            }
+
+            public ReadAllEventsBackward(long commitPosition, long preparePosition, int maxCount, bool resolveLinktos)
+            {
+                CommitPosition = commitPosition;
+                PreparePosition = preparePosition;
+                MaxCount = maxCount;
+                ResolveLinkTos = resolveLinktos;
+            }
+        }
+
+        [ProtoContract]
+        public class ReadAllEventsBackwardCompleted
+        {
+            [ProtoMember(1)]
+            public long CommitPosition { get; set; }
+
+            [ProtoMember(2)]
+            public long PreparePosition { get; set; }
+
+            [ProtoMember(3)]
+            public EventLinkPair[] Events { get; set; }
+
+            [ProtoMember(4)]
+            public long NextCommitPosition { get; set; }
+
+            [ProtoMember(5)]
+            public long NextPreparePosition { get; set; }
+
+            public ReadAllEventsBackwardCompleted()
+            {
+            }
+
+            public ReadAllEventsBackwardCompleted(long commitPosition,
+                                                  long preparePosition,
+                                                  EventLinkPair[] events,
+                                                  long nextCommitPosition,
+                                                  long nextPreparePosition)
+            {
+                CommitPosition = commitPosition;
+                PreparePosition = preparePosition;
+                Events = events;
+                NextCommitPosition = nextCommitPosition;
+                NextPreparePosition = nextPreparePosition;
+            }
+        }
+
+        [ProtoContract]
+        public class TransactionStart
+        {
+            [ProtoMember(1)]
+            public string EventStreamId { get; set; }
+
+            [ProtoMember(2)]
             public int ExpectedVersion { get; set; }
 
             public TransactionStart()
             {
             }
 
-            public TransactionStart(Guid correlationId, string eventStreamId, int expectedVersion)
+            public TransactionStart(string eventStreamId, int expectedVersion)
             {
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
             }
@@ -426,32 +570,27 @@ namespace EventStore.Core.Messages
         [ProtoContract]
         public class TransactionStartCompleted
         {
-            [ProtoMember(1, IsRequired = false)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public long TransactionId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public int ErrorCode { get; set; }
 
-            [ProtoMember(5)]
+            [ProtoMember(4)]
             public string Error { get; set; }
 
             public TransactionStartCompleted()
             {
             }
 
-            public TransactionStartCompleted(Guid correlationId,
-                                             long transactionId,
+            public TransactionStartCompleted(long transactionId,
                                              string eventStreamId,
                                              OperationErrorCode errorCode,
                                              string error)
             {
-                CorrelationId = correlationId.ToByteArray();
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
                 ErrorCode = (int) errorCode;
@@ -462,25 +601,21 @@ namespace EventStore.Core.Messages
         [ProtoContract]
         public class TransactionWrite
         {
-            [ProtoMember(1, IsRequired = false)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public long TransactionId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public Event[] Events { get; set; }
 
             public TransactionWrite()
             {
             }
 
-            public TransactionWrite(Guid correlationId, long transactionId, string eventStreamId, Event[] events)
+            public TransactionWrite(long transactionId, string eventStreamId, Event[] events)
             {
-                CorrelationId = correlationId.ToByteArray();
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
                 Events = events;
@@ -491,28 +626,24 @@ namespace EventStore.Core.Messages
         public class TransactionWriteCompleted
         {
             [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
             public long TransactionId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public int ErrorCode { get; set; }
 
-            [ProtoMember(5)]
+            [ProtoMember(4)]
             public string Error { get; set; }
 
             public TransactionWriteCompleted()
             {
             }
 
-            public TransactionWriteCompleted(Guid correlationId, long transactionId, string eventStreamId, OperationErrorCode errorCode, string error)
+            public TransactionWriteCompleted(long transactionId, string eventStreamId, OperationErrorCode errorCode, string error)
             {
                 TransactionId = transactionId;
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
                 ErrorCode = (int) errorCode;
                 Error = error;
@@ -522,22 +653,18 @@ namespace EventStore.Core.Messages
         [ProtoContract]
         public class TransactionCommit
         {
-            [ProtoMember(1, IsRequired = false)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public long TransactionId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
             public TransactionCommit()
             {
             }
 
-            public TransactionCommit(Guid correlationId, long transactionId, string eventStreamId)
+            public TransactionCommit(long transactionId, string eventStreamId)
             {
-                CorrelationId = correlationId.ToByteArray();
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
             }
@@ -547,24 +674,20 @@ namespace EventStore.Core.Messages
         public class TransactionCommitCompleted
         {
             [ProtoMember(1)]
-            public byte[] CorrelationId;
-
-            [ProtoMember(2)]
             public long TransactionId;
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public int ErrorCode;
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public string Error;
 
             public TransactionCommitCompleted()
             {
             }
 
-            public TransactionCommitCompleted(Guid correlationId, long transactionId, OperationErrorCode errorCode, string error)
+            public TransactionCommitCompleted(long transactionId, OperationErrorCode errorCode, string error)
             {
-                CorrelationId = correlationId.ToByteArray();
                 TransactionId = transactionId;
                 ErrorCode = (int) errorCode;
                 Error = error;
@@ -575,18 +698,14 @@ namespace EventStore.Core.Messages
         public class SubscribeToStream
         {
             [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-            
-            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
             public SubscribeToStream()
             {
             }
 
-            public SubscribeToStream(Guid correlationId, string eventStreamId)
+            public SubscribeToStream(string eventStreamId)
             {
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
             }
         }
@@ -595,18 +714,14 @@ namespace EventStore.Core.Messages
         public class UnsubscribeFromStream
         {
             [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
             public UnsubscribeFromStream()
             {
             }
 
-            public UnsubscribeFromStream(Guid correlationId, string eventStreamId)
+            public UnsubscribeFromStream(string eventStreamId)
             {
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
             }
         }
@@ -614,66 +729,40 @@ namespace EventStore.Core.Messages
         [ProtoContract]
         public class SubscribeToAllStreams
         {
-            [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
-            public SubscribeToAllStreams()
-            {
-            }
-
-            public SubscribeToAllStreams(Guid correlationId)
-            {
-                CorrelationId = correlationId.ToByteArray();
-            }
         }
 
         [ProtoContract]
         public class UnsubscribeFromAllStreams
         {
-            [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
-            public UnsubscribeFromAllStreams()
-            {
-            }
-
-            public UnsubscribeFromAllStreams(Guid correlationId)
-            {
-                CorrelationId = correlationId.ToByteArray();
-            }
         }
 
         [ProtoContract]
         public class StreamEventAppeared
         {
             [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
-            [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
-            [ProtoMember(3)]
+            [ProtoMember(2)]
             public int EventNumber { get; set; }
 
-            [ProtoMember(4)]
+            [ProtoMember(3)]
             public Guid EventId { get; set; }
 
-            [ProtoMember(5)]
+            [ProtoMember(4)]
             public string EventType { get; set; }
 
-            [ProtoMember(6)]
+            [ProtoMember(5)]
             public byte[] Data { get; set; }
 
-            [ProtoMember(7)]
+            [ProtoMember(6)]
             public byte[] Metadata { get; set; }
 
             public StreamEventAppeared()
             {
             }
 
-            public StreamEventAppeared(Guid correlationId, int eventNumber, PrepareLogRecord @event)
+            public StreamEventAppeared(int eventNumber, PrepareLogRecord @event)
             {
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = @event.EventStreamId;
                 EventNumber = eventNumber;
                 EventId = @event.EventId;
@@ -686,9 +775,6 @@ namespace EventStore.Core.Messages
         [ProtoContract]
         public class SubscriptionDropped
         {
-            [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
             [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
@@ -696,9 +782,8 @@ namespace EventStore.Core.Messages
             {
             }
 
-            public SubscriptionDropped(Guid correlationId, string eventStreamId)
+            public SubscriptionDropped(string eventStreamId)
             {
-                CorrelationId = correlationId.ToByteArray();
                 EventStreamId = eventStreamId;
             }
         }
@@ -706,17 +791,6 @@ namespace EventStore.Core.Messages
         [ProtoContract]
         public class SubscriptionToAllDropped
         {
-            [ProtoMember(1)]
-            public byte[] CorrelationId { get; set; }
-
-            public SubscriptionToAllDropped()
-            {
-            }
-
-            public SubscriptionToAllDropped(Guid correlationId)
-            {
-                CorrelationId = correlationId.ToByteArray();
-            }
         }
         #endregion
 

@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [SetUp]
         public void Setup()
         {
-            _record = new PrepareLogRecord(0, _corrId, _eventId, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
+            _record = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                            PrepareFlags.None, "Foo", new byte[12], new byte[15]);
             _chunk = Core.TransactionLog.Chunks.TFChunk.CreateNew(_filename, 4096, 0, 0);
             _result = _chunk.TryAppend(_record);
@@ -69,14 +69,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public void the_updated_position_is_returned()
         {
             //position without header.
-            Assert.AreEqual(_record.GetSizeWithLengthPrefix(), _result.NewPosition);
-        }
-
-        [Test]
-        public void the_record_cannot_be_read()
-        {
-            Assert.Inconclusive("External user of TFChunk should care about checkpointing and not reading non-flushed data.");
-            Assert.IsFalse(_chunk.TryReadRecordAt((int)_result.OldPosition).Success);
+            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _result.NewPosition);
         }
 
         [TearDown]

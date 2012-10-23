@@ -33,25 +33,26 @@ using System.Text;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     public abstract class TestFixtureWithExistingEvents : TestFixtureWithReadWriteDisaptchers,
-                                                          IHandle<ClientMessage.ReadEventsBackwards>,
+                                                          IHandle<ClientMessage.ReadStreamEventsBackward>,
                                                           IHandle<ClientMessage.WriteEvents>,
                                                           IHandle<ProjectionMessage.CoreService.Tick>
     {
-        protected TestMessageHandler<ClientMessage.ReadEventsBackwards> _listEventsHandler;
+        protected TestMessageHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 
-        protected readonly Dictionary<string, List<EventRecord>> _lastMessageReplies =
-            new Dictionary<string, List<EventRecord>>();
+        protected readonly Dictionary<string, List<EventRecord>> _lastMessageReplies = new Dictionary<string, List<EventRecord>>();
 
         private int _fakePosition = 100;
         private bool _allWritesSucceed;
@@ -73,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 new EventRecord(
                     list.Count,
                     new PrepareLogRecord(
-                        _fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, streamId, list.Count - 1,
+                        _fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
                         DateTime.UtcNow, PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd, eventType,
                         Encoding.UTF8.GetBytes(eventData),
                         eventMetadata == null ? new byte[0] : Encoding.UTF8.GetBytes(eventMetadata))));
@@ -118,11 +119,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             _ticksAreHandledImmediately = false;
             _writesQueue = new Queue<ClientMessage.WriteEvents>();
-            _listEventsHandler = new TestMessageHandler<ClientMessage.ReadEventsBackwards>();
+            _listEventsHandler = new TestMessageHandler<ClientMessage.ReadStreamEventsBackward>();
+            _readDispatcher = new RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
+                _bus, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_bus));
+            _writeDispatcher = new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
+                _bus, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_bus));
             _bus.Subscribe(_listEventsHandler);
             _bus.Subscribe<ClientMessage.WriteEvents>(this);
-            _bus.Subscribe<ClientMessage.ReadEventsBackwards>(this);
+            _bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
             _bus.Subscribe<ProjectionMessage.CoreService.Tick>(this);
+            _bus.Subscribe(_readDispatcher);
+            _bus.Subscribe(_writeDispatcher);
             _lastMessageReplies.Clear();
             Given();
             _lastPosition =
@@ -134,7 +142,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
         }
 
-        void IHandle<ClientMessage.ReadEventsBackwards>.Handle(ClientMessage.ReadEventsBackwards message)
+        void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)
         {
             //throw new NotImplementedException();
 
@@ -144,20 +152,20 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 if (list != null && list.Count > 0 && (list.Last().EventNumber <= message.FromEventNumber)
                     || (message.FromEventNumber == -1))
                 {
-                    EventRecord[] records =
+                    EventLinkPair[] records =
                         (list != null ? list.AsEnumerable() : Enumerable.Empty<EventRecord>()).Reverse().SkipWhile(
                             v => message.FromEventNumber != -1 && v.EventNumber > message.FromEventNumber).Take(
-                                message.MaxCount).ToArray();
+                                message.MaxCount).Select(x => new EventLinkPair(x, null)).ToArray();
                     message.Envelope.ReplyWith(
-                        new ClientMessage.ReadEventsBackwardsCompleted(
-                            message.CorrelationId, message.EventStreamId, records, null, RangeReadResult.Success,
-                            (records.Length > 0) ? records[records.Length - 1].EventNumber - 1 : -1,
+                        new ClientMessage.ReadStreamEventsBackwardCompleted(
+                            message.CorrelationId, message.EventStreamId, records, RangeReadResult.Success,
+                            (records.Length > 0) ? records[records.Length - 1].Event.EventNumber - 1 : -1,
                             lastCommitPosition: _lastPosition));
                 }
                 else
                     message.Envelope.ReplyWith(
-                        new ClientMessage.ReadEventsBackwardsCompleted(
-                            message.CorrelationId, message.EventStreamId, new EventRecord[0], null,
+                        new ClientMessage.ReadStreamEventsBackwardCompleted(
+                            message.CorrelationId, message.EventStreamId, new EventLinkPair[0],
                             RangeReadResult.Success, -1, lastCommitPosition: _lastPosition));
             }
         }
@@ -176,7 +184,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                                             select
                                                 new EventRecord(
                                                 list.Count, list.Count*1000, message.CorrelationId, e.EventId,
-                                                list.Count*1000, message.EventStreamId, ExpectedVersion.Any,
+                                                list.Count*1000, 0, message.EventStreamId, ExpectedVersion.Any,
                                                 DateTime.UtcNow, PrepareFlags.SingleWrite, e.EventType, e.Data,
                                                 e.Metadata))
                 {

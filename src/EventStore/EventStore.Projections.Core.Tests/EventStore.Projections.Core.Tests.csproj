@@ -109,13 +109,19 @@
     <Compile Include="Playground\Launchpad3.cs" />
     <Compile Include="Playground\LaunchpadBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Services\checkpoint_tag_by_stream_position.cs" />
-    <Compile Include="Services\checkpoint_tag_by_stream_position_with_invalid_prepapre_position.cs" />
-    <Compile Include="Services\checkpoint_tag_by_tf_position.cs" />
+    <Compile Include="Services\checkpoint_strategy\the_from_all_checkpoint_strategy.cs" />
+    <Compile Include="Services\checkpoint_strategy\the_from_category_checkpoint_strategy.cs" />
+    <Compile Include="Services\checkpoint_strategy\the_from_stream_checkpoint_strategy.cs" />
+    <Compile Include="Services\checkpoint_strategy\when_creating_a_checkpoint_strategy.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_position.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_position_with_invalid_prepapre_position.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_tf_position.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\FakeCoreProjection.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\TestFixtureWithCoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_a_core_projection_checkpoint_manager_has_been_created.cs" />
+    <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_beginning_to_load_state_the_core_projection_checkpoint_manager.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_creating_a_core_projection_checkpoint_manager.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_multiple_event_processed_received_the_core_projection_checkpoint_manager.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_starting_the_core_projection_checkpoint_manager.cs" />
@@ -136,6 +142,7 @@
     <Compile Include="Services\partition_state_cache\when_the_partition_state_cache_has_been_created.cs" />
     <Compile Include="Services\partition_state_cache\when_unlocking_an_overflowed_cache.cs" />
     <Compile Include="Services\partition_state_cache\when_unlocking_part_of_cached_states.cs" />
+    <Compile Include="Services\projections_manager\TestFixtureWithProjectionCoreAndManagementServices.cs" />
     <Compile Include="Services\projections_manager\v8\when_compiling_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_defining_a_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_emitting_v8_projection.cs" />
@@ -144,16 +151,21 @@
     <Compile Include="Services\stream_event_distribution_point\when_handling_read_completed_stream_event_distribution_point.cs" />
     <Compile Include="Services\stream_event_distribution_point\when_resuming_stream_event_distribution_point.cs" />
     <Compile Include="Services\stream_event_distribution_point\when_stream_event_distribution_point_has_been_created.cs" />
-    <Compile Include="Services\stream_position_tagger\stream_position_tagger.cs" />
-    <Compile Include="Services\stream_position_tagger\when_creating_stream_postion_tracker.cs" />
-    <Compile Include="Services\stream_position_tagger\when_updating_stream_postion_tracker_to_zero.cs" />
-    <Compile Include="Services\stream_position_tagger\when_updating_postion_stream_position_tracker.cs" />
-    <Compile Include="Services\stream_position_tagger\when_updating_stream_postion_tracker_from_a_tag.cs" />
+    <Compile Include="Services\multistream_position_tagger\multistream_position_tagger.cs" />
+    <Compile Include="Services\multistream_position_tagger\when_creating_multistream_postion_tracker.cs" />
+    <Compile Include="Services\multistream_position_tagger\when_updating_multistream_postion_tracker_to_zero.cs" />
+    <Compile Include="Services\multistream_position_tagger\when_updating_postion_multistream_position_tracker.cs" />
+    <Compile Include="Services\multistream_position_tagger\when_updating_multistream_postion_tracker_from_a_tag.cs" />
     <Compile Include="Services\projection_subscription\TestFixtureWithProjectionSubscription.cs" />
     <Compile Include="Services\projection_subscription\when_creating_projection_subscription.cs" />
     <Compile Include="Services\projection_subscription\when_handling_committed_event_passing_the_filter.cs" />
     <Compile Include="Services\projection_subscription\when_handling_duplicate_events.cs" />
     <Compile Include="Services\projection_subscription\when_receiving_multiple_events_not_passing_event_filter.cs" />
+    <Compile Include="Services\stream_position_tagger\stream_position_tagger.cs" />
+    <Compile Include="Services\stream_position_tagger\when_creating_stream_postion_tracker.cs" />
+    <Compile Include="Services\stream_position_tagger\when_updating_postion_stream_position_tracker.cs" />
+    <Compile Include="Services\stream_position_tagger\when_updating_stream_postion_tracker_from_a_tag.cs" />
+    <Compile Include="Services\stream_position_tagger\when_updating_stream_postion_tracker_to_zero.cs" />
     <Compile Include="Services\TestTask.cs" />
     <Compile Include="Services\transaction_file_position_tagger\transaction_file_position_tagger.cs" />
     <Compile Include="Services\transaction_file_position_tagger\when_creating_transaction_file_postion_tracker.cs" />
@@ -257,7 +269,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Services\position_tracker\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="BeforeBuild">
     <Copy SourceFiles="..\libs\libjs1.so" DestinationFolder="$(OutDir)" Condition=" '$(OS)' != 'Windows_NT' " />

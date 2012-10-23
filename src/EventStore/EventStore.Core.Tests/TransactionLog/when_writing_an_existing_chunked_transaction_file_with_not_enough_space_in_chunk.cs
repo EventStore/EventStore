@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             var filename1 = Path.Combine(PathName, "prefix.tf0");
             var filename2 = Path.Combine(PathName, "prefix.tf1");
-            var chunkHeader = new ChunkHeader(1, 10000, 0, 0, 0);
+            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, 0);
             var chunkBytes = chunkHeader.AsByteArray();
             var bytes = new byte[ChunkHeader.Size + 10000 + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, bytes, 0, chunkBytes.Length);
@@ -69,6 +69,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                eventId: _eventId,
                                                expectedVersion: 1234,
                                                transactionPosition: 0,
+                                               transactionOffset: 0,
                                                eventStreamId: "WorldEnding",
                                                timeStamp: new DateTime(2012, 12, 21),
                                                flags: PrepareFlags.None,
@@ -82,6 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                eventId: _eventId,
                                                expectedVersion: 1234,
                                                transactionPosition: pos,
+                                               transactionOffset: 0,
                                                eventStreamId: "WorldEnding",
                                                timeStamp: new DateTime(2012, 12, 21),
                                                flags: PrepareFlags.None,
@@ -95,6 +97,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                eventId: _eventId,
                                                expectedVersion: 1234,
                                                transactionPosition: pos,
+                                               transactionOffset: 0,
                                                eventStreamId: "WorldEnding",
                                                timeStamp: new DateTime(2012, 12, 21),
                                                flags: PrepareFlags.None,
@@ -105,7 +108,7 @@ namespace EventStore.Core.Tests.TransactionLog
             tf.Close();
             db.Dispose();
 
-            Assert.AreEqual(record3.GetSizeWithLengthPrefix() + 10000, _checkpoint.Read());
+            Assert.AreEqual(record3.GetSizeWithLengthPrefixAndSuffix() + 10000, _checkpoint.Read());
             using (var filestream = File.Open(filename2, FileMode.Open, FileAccess.Read))
             {
                 filestream.Seek(ChunkHeader.Size + sizeof(int), SeekOrigin.Begin);

@@ -25,17 +25,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using System.Linq;
-using System.ServiceModel;
+using System.Runtime.Serialization;
+using System.Text;
+using EventStore.Core.Data;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-
     [DataContract]
-    public class CheckpointTag: IComparable<CheckpointTag>
+    public class CheckpointTag : IComparable<CheckpointTag>
     {
         internal enum Mode
         {
@@ -44,24 +45,32 @@ namespace EventStore.Projections.Core.Services.Processing
             MultiStream
         }
 
-		internal CheckpointTag ()
-		{
-		}
+        internal CheckpointTag()
+        {
+        }
 
         public CheckpointTag(EventPosition position)
         {
             Position = position;
         }
 
-        public CheckpointTag(CheckpointTag simpleTag, Dictionary<string, int> streams)
+        public CheckpointTag(Dictionary<string, int> streams, long preparePosition)
         {
-            Position = simpleTag.Position;
+            foreach (var stream in streams)
+            {
+                if (stream.Key == "") throw new ArgumentException("Empty stream name", "streams");
+                if (stream.Value < 0 && stream.Value != ExpectedVersion.NoStream) throw new ArgumentException("Invalid sequence number", "streams");
+            }
             Streams = new Dictionary<string, int>(streams); // clone
+            Position = new EventPosition(long.MinValue, preparePosition);
         }
 
-        private CheckpointTag(string stream, int sequenceNumber, long prepaprePosition)
+        private CheckpointTag(string stream, int sequenceNumber, long preparePosition)
         {
-            Position = new EventPosition(long.MinValue, prepaprePosition);
+            if (stream == null) throw new ArgumentNullException("stream");
+            if (stream == "") throw new ArgumentException("stream");
+            if (sequenceNumber < 0 && sequenceNumber != ExpectedVersion.NoStream) throw new ArgumentException("sequenceNumber");
+            Position = new EventPosition(long.MinValue, preparePosition);
             Streams = new Dictionary<string, int> {{stream, sequenceNumber}};
         }
 
@@ -84,6 +93,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return false;
             var leftMode = left.GetMode();
             var rightMode = right.GetMode();
+            UpgradeModes(ref leftMode, ref rightMode);
             if (leftMode != rightMode)
                 throw new NotSupportedException("Cannot compare checkpoint tags in different modes");
             switch (leftMode)
@@ -92,21 +102,37 @@ namespace EventStore.Projections.Core.Services.Processing
                     return left.Position > right.Position;
                 case Mode.Stream:
                     if (left.Streams.Keys.First() != right.Streams.Keys.First())
-                        throw new NotSupportedException("Cannot compare checkpoint tags across different streams");
+                        throw new InvalidOperationException("Cannot compare checkpoint tags across different streams");
                     var result = left.Streams.Values.First() > right.Streams.Values.First();
                     if (result != (left.Position.PreparePosition > right.Position.PreparePosition))
                         ThrowBadTags(left, right);
                     return result;
+                case Mode.MultiStream:
+                    int rvalue;
+                    bool anyLeftGreater = left.Streams.Any(l => !right.Streams.TryGetValue(l.Key, out rvalue) || l.Value > rvalue);
+
+                    int lvalue;
+                    bool anyRightGreater = right.Streams.Any(r => !left.Streams.TryGetValue(r.Key, out lvalue) || r.Value > lvalue);
+
+                    if (anyLeftGreater && anyRightGreater)
+                        ThrowIncomparable(left, right);
+                    return anyLeftGreater;
                 default:
                     throw new NotSupportedException("Checkpoint tag mode is not supported in comparison");
             }
+        }
+
+        private static void ThrowIncomparable(CheckpointTag left, CheckpointTag right)
+        {
+            throw new InvalidOperationException(
+                string.Format("Incomparable multi-stream checkpoint tags. '{0}' and '{1}'", left, right));
         }
 
         private static void ThrowBadTags(CheckpointTag left, CheckpointTag right)
         {
             throw new InvalidOperationException(
                 string.Format(
-                    "Invalid checkpoint tags detected. Comparison of sequence numbers and prepapre positions gives different results",
+                    "Invalid checkpoint tags detected. Comparison of sequence numbers and prepapre positions gives different results. '{0}' and '{1}'",
                     left, right));
         }
 
@@ -120,6 +146,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return false;
             var leftMode = left.GetMode();
             var rightMode = right.GetMode();
+            UpgradeModes(ref leftMode, ref rightMode);
             if (leftMode != rightMode)
                 throw new NotSupportedException("Cannot compare checkpoint tags in different modes");
             switch (leftMode)
@@ -128,11 +155,21 @@ namespace EventStore.Projections.Core.Services.Processing
                     return left.Position >= right.Position;
                 case Mode.Stream:
                     if (left.Streams.Keys.First() != right.Streams.Keys.First())
-                        throw new NotSupportedException("Cannot compare checkpoint tags across different streams");
+                        throw new InvalidOperationException("Cannot compare checkpoint tags across different streams");
                     var result = left.Streams.Values.First() >= right.Streams.Values.First();
                     if (result != (left.Position.PreparePosition >= right.Position.PreparePosition))
                         ThrowBadTags(left, right);
                     return result;
+                case Mode.MultiStream:
+                    int rvalue;
+                    bool anyLeftGreater = left.Streams.Any(l => !right.Streams.TryGetValue(l.Key, out rvalue) || l.Value > rvalue);
+
+                    int lvalue;
+                    bool anyRightGreater = right.Streams.Any(r => !left.Streams.TryGetValue(r.Key, out lvalue) || r.Value > lvalue);
+
+                    if (anyLeftGreater && anyRightGreater)
+                        ThrowIncomparable(left, right);
+                    return !anyRightGreater;
                 default:
                     throw new NotSupportedException("Checkpoint tag mode is not supported in comparison");
             }
@@ -169,6 +206,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var rightMode = other.GetMode();
             if (leftMode != rightMode)
                 return false;
+            UpgradeModes(ref leftMode, ref rightMode);
             switch (leftMode)
             {
                 case Mode.Position:
@@ -180,6 +218,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (result != (Position.PreparePosition == other.Position.PreparePosition))
                         ThrowBadTags(this, other);
                     return result;
+                case Mode.MultiStream:
+                    int rvalue;
+                    return Streams.Count == other.Streams.Count
+                           && Streams.All(l => other.Streams.TryGetValue(l.Key, out rvalue) && l.Value == rvalue);
                 default:
                     throw new NotSupportedException("Checkpoint tag mode is not supported in comparison");
             }
@@ -189,7 +231,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
+            if (obj.GetType() != GetType()) return false;
             return Equals((CheckpointTag) obj);
         }
 
@@ -205,14 +247,22 @@ namespace EventStore.Projections.Core.Services.Processing
         public long? CommitPosition
         {
             get { return Streams != null ? (long?) null : Position.CommitPosition; }
-            set { Position = new EventPosition(value == null ? long.MinValue : value.GetValueOrDefault(), Position.PreparePosition); }
+            set
+            {
+                Position = new EventPosition(
+                    value == null ? long.MinValue : value.GetValueOrDefault(), Position.PreparePosition);
+            }
         }
 
         [DataMember]
         public long? PreparePosition
         {
-            get { return Position.PreparePosition != long.MinValue ? Position.PreparePosition: (long?)null; }
-            set { Position = new EventPosition(Position.CommitPosition, value == null ? long.MinValue : value.GetValueOrDefault()); }
+            get { return Position.PreparePosition != long.MinValue ? Position.PreparePosition : (long?) null; }
+            set
+            {
+                Position = new EventPosition(
+                    Position.CommitPosition, value == null ? long.MinValue : value.GetValueOrDefault());
+            }
         }
 
         [DataMember]
@@ -228,6 +278,12 @@ namespace EventStore.Projections.Core.Services.Processing
             return new CheckpointTag(stream, sequenceNumber, prepaprePosition);
         }
 
+        public static CheckpointTag FromStreamPositions(IDictionary<string, int> streams, long prepaprePosition)
+        {
+            // clone to avoid changes to the dictionary passed as argument
+            return new CheckpointTag(streams.ToDictionary(v => v.Key, v => v.Value), prepaprePosition);
+        }
+
         public int CompareTo(CheckpointTag other)
         {
             return this < other ? -1 : (this > other ? 1 : 0);
@@ -241,8 +297,30 @@ namespace EventStore.Projections.Core.Services.Processing
                     return Position.ToString();
                 case Mode.Stream:
                     return Streams.Keys.First() + ": " + Streams.Values.First() + "(" + Position.PreparePosition + ")";
+                case Mode.MultiStream:
+                    var sb = new StringBuilder();
+                    foreach (var stream in Streams)
+                    {
+                        sb.AppendFormat("{0}: {1}; ", stream.Key, stream.Value);
+                    }
+                    sb.AppendFormat("({0})", Position.PreparePosition);
+                    return sb.ToString();
                 default:
                     return "Unsupported mode: " + base.ToString();
+            }
+        }
+
+        private static void UpgradeModes(ref Mode leftMode, ref Mode rightMode)
+        {
+            if (leftMode == Mode.Stream && rightMode == Mode.MultiStream)
+            {
+                leftMode = Mode.MultiStream;
+                return;
+            }
+            if (leftMode == Mode.MultiStream && rightMode == Mode.Stream)
+            {
+                rightMode = Mode.MultiStream;
+                return;
             }
         }
     }

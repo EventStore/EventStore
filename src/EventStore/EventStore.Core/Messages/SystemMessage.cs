@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Net;
+using EventStore.Common.Utils;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messaging;
 
@@ -87,7 +88,7 @@ namespace EventStore.Core.Messages
 
             public ServiceShutdown(string serviceName)
             {
-                if (string.IsNullOrEmpty(serviceName)) 
+                if (String.IsNullOrEmpty(serviceName)) 
                     throw new ArgumentNullException("serviceName");
                 ServiceName = serviceName;
             }

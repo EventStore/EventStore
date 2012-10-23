@@ -108,9 +108,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     }
                     else
                     {
-                        var chunk = LoadChunk(chunkFileName);
-                        if (verifyHash && chunk.IsReadOnly)
-                            chunk.VerifyFileHash();
+                        var chunk = LoadChunk(chunkFileName, verifyHash);
                         Manager.AddChunk(chunk);
                     }
                 }
@@ -150,15 +148,11 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (i == expectedFiles - 1)
                     {
                         var chunk = LoadLastChunk(chunkFileName);
-                        if (chunk.IsReadOnly)
-                            chunk.VerifyFileHash();
                         Manager.AddChunk(chunk);
                     }
                     else
                     {
-                        var chunk = LoadChunk(chunkFileName);
-                        if (chunk.IsReadOnly)
-                            chunk.VerifyFileHash();
+                        var chunk = LoadChunk(chunkFileName, verifyHash: true);
                         Manager.AddChunk(chunk);
                     }
                 }
@@ -177,9 +171,9 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private TFChunk LoadChunk(string chunkFileName)
+        private TFChunk LoadChunk(string chunkFileName, bool verifyHash)
         {
-            var chunk = TFChunk.FromCompletedFile(chunkFileName);
+            var chunk = TFChunk.FromCompletedFile(chunkFileName, verifyHash);
             return chunk;
         }
 

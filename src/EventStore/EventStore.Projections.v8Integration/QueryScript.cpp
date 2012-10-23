@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "PreludeScope.h"
 #include "CompiledScript.h"
 #include "PreludeScript.h"
 #include "QueryScript.h"
@@ -11,23 +12,6 @@ using namespace v8;
 
 namespace js1 
 {
-
-	QueryScriptScope::QueryScriptScope(QueryScript *query_script) 
-	{
-		current = query_script;
-	};
-
-	QueryScriptScope::~QueryScriptScope() 
-	{
-		current = NULL;
-	};
-
-	QueryScript &QueryScriptScope::Current() 
-	{
-		return *QueryScriptScope::current;
-	};
-
-	THREADSTATIC QueryScript * QueryScriptScope::current;
 
 	QueryScript::~QueryScript()
 	{
@@ -47,7 +31,6 @@ namespace js1
 
 	v8::Handle<v8::Value> QueryScript::run() 
 	{
-		QueryScriptScope scope(this);
 		return run_script(get_context());
 	}
 
@@ -57,7 +40,6 @@ namespace js1
 
 		v8::HandleScope handle_scope;
 		v8::Context::Scope local(get_context());
-		QueryScriptScope queryScope(this);
 
 		v8::Handle<v8::String> data_json_handle = v8::String::New(data_json);
 		v8::Handle<v8::Value> argv[10];
@@ -83,6 +65,11 @@ namespace js1
 			return v8::Persistent<v8::String>::New(empty);
 		}
 		return v8::Persistent<v8::String>::New(result.As<v8::String>());
+	}
+
+	v8::Isolate *QueryScript::get_isolate()
+	{
+		return isolate;
 	}
 
 	v8::Persistent<v8::ObjectTemplate> QueryScript::create_global_template()

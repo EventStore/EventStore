@@ -63,5 +63,10 @@ namespace EventStore.Projections.Core.Services
         public int ReadsInProgress { get; set; }
 
         public int WritesInProgress { get; set; }
+
+        public ProjectionStatistics Clone()
+        {
+            return (ProjectionStatistics) MemberwiseClone();
+        }
     }
 }

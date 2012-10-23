@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "PreludeScope.h"
 #include "CompiledScript.h"
 #include "ModuleScript.h"
 #include "QueryScript.h"
@@ -40,6 +41,11 @@ namespace js1
 	v8::Handle<v8::Object> ModuleScript::get_module_object()
 	{
 		return module_object;
+	}
+
+	v8::Isolate *ModuleScript::get_isolate()
+	{
+		return isolate;
 	}
 
 	v8::Persistent<v8::ObjectTemplate> ModuleScript::create_global_template() 

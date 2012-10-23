@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 
@@ -35,11 +36,12 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class HeadingEventDistributionPoint
     {
+        private readonly ILogger _logger = LogManager.GetLoggerFor<HeadingEventDistributionPoint>();
         private EventDistributionPoint _headDistributionPoint;
         private EventPosition _subscribeFromPosition = new EventPosition(long.MaxValue, long.MaxValue);
 
-        private readonly Queue<ProjectionMessage.Projections.CommittedEventReceived> _lastMessages =
-            new Queue<ProjectionMessage.Projections.CommittedEventReceived>();
+        private readonly Queue<ProjectionMessage.Projections.CommittedEventDistributed> _lastMessages =
+            new Queue<ProjectionMessage.Projections.CommittedEventDistributed>();
 
         private readonly int _eventCacheSize;
 
@@ -56,7 +58,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventCacheSize = eventCacheSize;
         }
 
-        public bool Handle(ProjectionMessage.Projections.CommittedEventReceived message)
+        public bool Handle(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             EnsureStarted();
             if (message.CorrelationId != _distributionPointId)
@@ -75,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        private void ValidateEventOrder(ProjectionMessage.Projections.CommittedEventReceived message)
+        private void ValidateEventOrder(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             if (_lastEventPosition >= message.Position)
                 throw new InvalidOperationException(
@@ -112,6 +114,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     string.Format("Projection '{0}' has been already subscribed", projectionId));
             if (projectionSubscription.CanJoinAt(_subscribeFromPosition, fromCheckpointTag))
             {
+                _logger.Trace("The '{0}' subscription has joined the heading distribution point at '{1}'", projectionId, fromCheckpointTag);
                 DispatchRecentMessagesTo(projectionSubscription);
                 AddSubscriber(projectionId, projectionSubscription);
                 return true;
@@ -125,23 +128,24 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_headSubscribers.ContainsKey(projectionId))
                 throw new InvalidOperationException(
                     string.Format("Projection '{0}' has not been subscribed", projectionId));
+            _logger.Trace("The '{0}' subscription has unsubscribed from the '{1}' heading distribution point", projectionId, _distributionPointId);
             _headSubscribers.Remove(projectionId);
         }
 
         private void DispatchRecentMessagesTo(
-            IHandle<ProjectionMessage.Projections.CommittedEventReceived> subscription)
+            IHandle<ProjectionMessage.Projections.CommittedEventDistributed> subscription)
         {
             foreach (var m in _lastMessages)
                 subscription.Handle(m);
         }
 
-        private void DistributeMessage(ProjectionMessage.Projections.CommittedEventReceived message)
+        private void DistributeMessage(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             foreach (var subscriber in _headSubscribers.Values)
                 subscriber.Handle(message);
         }
 
-        private void CacheRecentMessage(ProjectionMessage.Projections.CommittedEventReceived message)
+        private void CacheRecentMessage(ProjectionMessage.Projections.CommittedEventDistributed message)
         {
             _lastMessages.Enqueue(message);
             if (_lastMessages.Count > _eventCacheSize)
@@ -154,6 +158,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void AddSubscriber(Guid publishWithCorrelationId, IProjectionSubscription subscription)
         {
+            _logger.Trace("The '{0}' projection subscribed to the '{1}' heading distribution point", publishWithCorrelationId, _distributionPointId);
             _headSubscribers.Add(publishWithCorrelationId, subscription);
             if (_headDistributionPointPaused)
             {

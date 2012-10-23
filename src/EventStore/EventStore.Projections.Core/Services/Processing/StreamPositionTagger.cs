@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _stream = stream;
         }
 
-        public override CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventReceived comittedEvent)
+        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent)
         {
             if (comittedEvent.PositionStreamId != _stream)
                 throw new InvalidOperationException(string.Format("Invalid stream '{0}'.  Expected stream is '{1}'", comittedEvent.EventStreamId, _stream));

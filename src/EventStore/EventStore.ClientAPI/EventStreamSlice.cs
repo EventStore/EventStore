@@ -26,30 +26,30 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
+using System.Collections.Generic;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.System;
 using System.Linq;
+using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
     public class EventStreamSlice
     {
+        internal static readonly RecordedEvent[] EmptyEvents = new RecordedEvent[0];
+
         public readonly string Stream;
         public readonly int StartIndex;
         public readonly int Count;
         public readonly RecordedEvent[] Events;
 
-        internal EventStreamSlice(string stream,
-                                  int startIndex,
-                                  int count,
-                                  EventRecord[] events)
+        internal EventStreamSlice(string stream, int startIndex, int count, IEnumerable<EventLinkPair> events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
             Stream = stream;
             StartIndex = startIndex;
             Count = count;
-            Events = (events ?? new EventRecord[0]).Select(e => new RecordedEvent(e)).ToArray();
+            Events = events == null ? EmptyEvents : events.Select(e => new RecordedEvent(e.Event)).ToArray();
         }
     }
 }

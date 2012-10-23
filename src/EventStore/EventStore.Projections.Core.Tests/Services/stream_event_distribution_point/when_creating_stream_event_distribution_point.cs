@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
             var edp = new StreamReaderEventDistributionPoint(null, Guid.NewGuid(), "stream", 0, false);
         }
 
-        [Test, ExpectedException(typeof (ArgumentException))]
+        [Test, ExpectedException(typeof(ArgumentException))]
         public void empty_distribution_point_id_throws_argument_exception()
         {
             var edp = new StreamReaderEventDistributionPoint(_bus, Guid.Empty, "stream", 0, false);

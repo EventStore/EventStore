@@ -1,0 +1,150 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Queues</title>
+    <script src="/web/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/js/es.tmpl.js" type="text/javascript"></script>
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>
+</head>
+<body>
+    <div id="content">
+        <h1>
+            Queues</h1>
+        <div class="row">
+            <div class="span6 offset3">
+                <div class="error label label-important" style="display: none">
+                </div>
+            </div>
+        </div>
+        <div class="queue-stats-container">
+            <table class="table table-bordered table-striped queue-stats">
+                <thead>
+                    <tr>
+                        <th>
+                            Name
+                        </th>
+                        <th>
+                            Length
+                        </th>
+                        <th>
+                            Avg (items/s)
+                        </th>
+                        <th>
+                            Avg Proccessing Time (ms/item)
+                        </th>
+                        <th>
+                            Idle Time %
+                        </th>
+                        <th>
+                            Peak
+                        </th>
+                        <th>
+                            Max Peak
+                        </th>
+                        <th>
+                            Total Processed
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="stats-body">
+                </tbody>
+            </table>
+        </div>
+        <!--                
+            <div class="queue-stats-container"></div>-->
+        <script id="statsTemplate" type="text/x-jsrender">
+        <tr data-queuename="{{>queueName}}">
+          <td class='queuename'>{{>queueName}}</td>
+          <td>{{>length}}</td>
+          <td>{{>avgItemsPerSecond}}</td>
+          <td>{{>~format(avgProcessingTime, 3)}}</td>
+          <td>{{>~format(idleTimePercent, 1)}}</td>
+          <td>{{>lengthCurrentTryPeak}}</td>
+          <td>{{>lengthLifetimePeak}}</td>
+          <td>{{>totalItemsProcessed}}</td>
+        </tr>
+        </script>
+    </div>
+    <script id="r-body">
+        es.tmpl.renderBody();
+    </script>
+    <script type="text/javascript">
+        (function () {
+            $(function () {
+                requestStats();
+            });
+
+            function requestStats() {
+                $.ajax("/stats/", {
+                    headers: {
+                        Accept: "application/json"
+                    },
+                    success: success,
+                    error: error
+                });
+            }
+
+            function success(data, status, xhr) {
+                hideErrorMessage();
+
+                var queues = [];
+                for (var queue in data.es.queue) {
+                    queues.push(data.es.queue[queue]);
+                }
+
+                buildTable(queues);
+                delayedRequestList();
+            }
+
+            function buildTable(queues) {
+                $.templates("statsTemplate", "#statsTemplate");
+                $(".stats-body").html(
+                          $.render.statsTemplate(queues, {
+                              format: function (v, eps) {
+                                  return format(v, eps);
+                              }
+                          })
+                      );
+            }
+
+            function error(xhr, status) {
+                showErrorMessage(xhr);
+                delayedRequestList();
+            }
+
+            function delayedRequestList() {
+                setTimeout(requestStats, 1000);
+            }
+
+            function showErrorMessage(xhr) {
+                var msg = (xhr.status === 0)
+                          ? "cannot connect to server"
+                          : "error: " + error;
+                $(".error").text(msg).show();
+            }
+
+            function hideErrorMessage() {
+                $(".error").hide();
+            }
+
+            function format(number, precision) {
+                if (precision < 1) {
+                    throw "precision must be positive number";
+                }
+
+                var divide = Math.pow(10, precision);
+
+                var temp = Math.floor(number * divide);
+                if (temp == Infinity) {
+                    return number;
+                }
+
+                return temp / divide;
+            };
+        })();
+    </script>
+</body>
+</html>

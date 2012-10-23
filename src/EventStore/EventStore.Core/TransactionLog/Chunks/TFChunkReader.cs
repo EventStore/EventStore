@@ -70,8 +70,8 @@ namespace EventStore.Core.TransactionLog.Chunks
         private RecordReadResult TryReadAtInternal(long position, int retries)
         {
             var writerChk = _checkpoint.Read();
-            if (position + 4 > writerChk)
-                return new RecordReadResult(false, null, -1);
+            if (position + 2*sizeof(int) > writerChk)
+                return RecordReadResult.Failure;
 
             var chunkNum = (int)(position / _db.Config.ChunkSize);
             var chunkPos = (int)(position % _db.Config.ChunkSize);
@@ -89,11 +89,12 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             try
             {
-                return chunk.TryReadRecordAt(chunkPos);
+                return chunk.TryReadAt(chunkPos);
             }
             catch (FileBeingDeletedException)
             {
-                if(retries > 100) throw new InvalidOperationException("Been told the file was deleted > 100 times. Probably a problem in db");
+                if (retries > 100) 
+                    throw new InvalidOperationException("Been told the file was deleted > 100 times. Probably a problem in db");
                 return TryReadAtInternal(position, retries + 1);
             }
         }

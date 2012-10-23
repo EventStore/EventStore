@@ -77,11 +77,14 @@
     <Compile Include="Cluster\VNodeState.cs" />
     <Compile Include="DataStructures\ObjectPool.cs" />
     <Compile Include="DataStructures\PairingHeap.cs" />
+    <Compile Include="Data\EventLinkPair.cs" />
     <Compile Include="Data\EventNumber.cs" />
     <Compile Include="Data\EventRecord.cs" />
     <Compile Include="Data\ResolvedEventRecord.cs" />
+    <Compile Include="Data\TFPos.cs" />
     <Compile Include="Exceptions\BadChunkInDatabaseException.cs" />
     <Compile Include="Exceptions\ChunkNotFoundException.cs" />
+    <Compile Include="Exceptions\WrongTFChunkVersionException.cs" />
     <Compile Include="Exceptions\CorruptIndexException.cs" />
     <Compile Include="Exceptions\ExtraneousFileFoundException.cs" />
     <Compile Include="Exceptions\FileBeingDeletedException.cs" />
@@ -139,6 +142,7 @@
     <Compile Include="TransactionLog\Chunks\TFChunkDbConfig.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkDb.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkReader.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkSequentialReader.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkWriter.cs" />
     <Compile Include="TransactionLog\Chunks\TFConsts.cs" />
     <Compile Include="Exceptions\UnableToReadPastEndOfStreamException.cs" />
@@ -146,7 +150,8 @@
     <Compile Include="Exceptions\CorruptDatabaseException.cs" />
     <Compile Include="TransactionLog\ITransactionFileChaser.cs" />
     <Compile Include="TransactionLog\ITransactionFileReader.cs" />
-    <Compile Include="TransactionLog\RecordReadResult.cs" />
+    <Compile Include="TransactionLog\ITransactionFileSequentialReader.cs" />
+    <Compile Include="TransactionLog\ReadResults.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkManager.cs" />
     <Compile Include="TransactionLog\RecordWriteResult.cs" />

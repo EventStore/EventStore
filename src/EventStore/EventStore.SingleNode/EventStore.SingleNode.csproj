@@ -88,6 +88,11 @@
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="TextFile.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
@@ -103,6 +108,9 @@
     <Copy SourceFiles="..\libs\win32\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
     <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
     <Copy SourceFiles="..\libs\x64\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
+    <Copy SourceFiles="..\libs\win32\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x86' " />
+    <Copy SourceFiles="..\libs\x64\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|AnyCPU' " />
+    <Copy SourceFiles="..\libs\x64\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)|$(Platform)' == 'Windows_NT|x64' " />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -37,6 +37,10 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.VNode
 {
+    /// <summary>
+    /// Implements finite state machine transitions for the Single VNode configuration.
+    /// Also maps certain client messages to request messages. 
+    /// </summary>
     public class SingleVNodeController : IHandle<Message>
     {
         public static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(5);
@@ -84,8 +88,8 @@ namespace EventStore.Core.Services.VNode
                 .InState(VNodeState.Initializing)
                     .When<SystemMessage.StorageReaderInitializationDone>().Do(Handle)
                     .When<SystemMessage.StorageWriterInitializationDone>().Do(Handle)
-                    .When<ClientMessage.WriteMessage>().Ignore()
-                    .When<ClientMessage.ReadMessage>().Ignore()
+                    .When<ClientMessage.ReadRequestMessage>().Ignore()
+                    .When<ClientMessage.WriteRequestMessage>().Ignore()
                     .WhenOther().Do(m => _outputBus.Publish(m))
                 .InState(VNodeState.Master)
                     .When<ClientMessage.CreateStream>().Do(Handle)
@@ -100,16 +104,8 @@ namespace EventStore.Core.Services.VNode
                 .InStates(VNodeState.ShuttingDown, VNodeState.Shutdown)
                     .When<SystemMessage.ServiceShutdown>().Do(Handle)
                 // TODO AN reply with correct status code, that system is shutting down (or already shut down)
-                    .When<ClientMessage.WriteEvents>().Ignore()
-                    .When<ClientMessage.TransactionStart>().Ignore()
-                    .When<ClientMessage.TransactionWrite>().Ignore()
-                    .When<ClientMessage.TransactionCommit>().Ignore()
-                    .When<ClientMessage.DeleteStream>().Ignore()
-                    .When<ClientMessage.ReadEvent>().Ignore()
-                    .When<ClientMessage.ReadEventsBackwards>().Ignore()
-                    .When<ClientMessage.ReadEventsForward>().Ignore()
-                    .When<ClientMessage.ReadEventsFromTF>().Ignore()
-                    .When<ClientMessage.ListStreams>().Ignore()
+                    .When<ClientMessage.ReadRequestMessage>().Ignore()
+                    .When<ClientMessage.WriteRequestMessage>().Ignore()
                     .WhenOther().Do(m => _outputBus.Publish(m))
                 .InState(VNodeState.ShuttingDown)
                     .When<SystemMessage.ShutdownTimeout>().Do(Handle)

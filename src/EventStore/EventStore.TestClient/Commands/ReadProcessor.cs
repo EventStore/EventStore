@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
@@ -59,9 +58,8 @@ namespace EventStore.TestClient.Commands
 
             context.IsAsync();
 
-            var corrid = Guid.NewGuid();
-            var readDto = new ClientMessageDto.ReadEvent(corrid, eventStreamId, fromNumber);
-            var package = new TcpPackage(TcpCommand.ReadEvent, corrid, readDto.Serialize());
+            var readDto = new ClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos: false);
+            var package = new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), readDto.Serialize());
 
             var sw = new Stopwatch();
 
@@ -92,15 +90,17 @@ namespace EventStore.TestClient.Commands
                                      + "\tReadResult:    {4}\n"
                                      + "\tEventType:     {5}\n"
                                      + "\tData:          {6}\n"
-                                     + "\tMetadata:      {7}\n",
+                                     + "\tMetadata:      {7}\n"
+                                     + "\tPosition:      {8}\n",
                                      eventStreamId,
-                                     dto.CorrelationId,
+                                     package.CorrelationId,
                                      dto.EventStreamId,
                                      dto.EventNumber,
-                                     (SingleReadResult) dto.Result,
+                                     (SingleReadResult)dto.Result,
                                      dto.EventType,
                                      Encoding.UTF8.GetString(dto.Data ?? new byte[0]),
-                                     Encoding.UTF8.GetString(dto.Metadata ?? new byte[0]));
+                                     Encoding.UTF8.GetString(dto.Metadata ?? new byte[0]),
+                                     dto.LogPosition);
 
                     context.Log.Info("Read request took: {0}.", sw.Elapsed);
 

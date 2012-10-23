@@ -56,6 +56,14 @@ namespace EventStore.Core.Index.Hashes
             }
         }
 
+        public unsafe uint Hash(byte[] data, int offset, uint len, uint seed)
+        {
+            fixed (byte* input = &data[offset])
+            {
+                return Hash(input, len, seed);
+            }
+        }
+
         private unsafe static uint Hash(byte* data, uint len, uint seed)
         {
             if (len < 16)

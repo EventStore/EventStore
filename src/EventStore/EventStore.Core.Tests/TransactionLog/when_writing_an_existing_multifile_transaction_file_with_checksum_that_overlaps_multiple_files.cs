@@ -57,6 +57,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                               correlationId: _correlationId,
                                               eventId: _eventId,
                                               transactionPosition: 0,
+                                              transactionOffset: 0,
                                               eventStreamId: "WorldEnding",
                                               expectedVersion: 1234,
                                               timeStamp: new DateTime(2012, 12, 21),
@@ -67,7 +68,7 @@ namespace EventStore.Core.Tests.TransactionLog
             long tmp;
             tf.Write(record, out tmp);
             tf.Close();
-            Assert.AreEqual(record.GetSizeWithLengthPrefix() + 40, _checkpoint.Read()); //+orginal checkpoint position
+            Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix() + 40, _checkpoint.Read()); //+orginal checkpoint position
             Assert.IsTrue(File.Exists(secondfilename));
             var stream = new MemoryStream();
             var buffer = new byte[256];

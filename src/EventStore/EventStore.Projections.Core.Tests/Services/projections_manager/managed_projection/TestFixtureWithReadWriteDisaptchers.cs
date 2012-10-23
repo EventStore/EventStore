@@ -28,6 +28,7 @@
 
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -39,12 +40,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
     {
         protected InMemoryBus _bus;
 
-        protected RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
-
-        protected
-            RequestResponseDispatcher<ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>
-            _readDispatcher;
+        protected RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
+        protected RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
 
         protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
         protected WatchingConsumer _consumer;
@@ -55,11 +52,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             _bus = new InMemoryBus("bus");
             _readDispatcher =
                 new RequestResponseDispatcher
-                    <ClientMessage.ReadEventsBackwards, ClientMessage.ReadEventsBackwardsCompleted>(
-                    _bus, e => e.CorrelationId, e => e.CorrelationId);
+                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
+                    _bus, e => e.CorrelationId, e => e.CorrelationId, new PublishEnvelope(_bus));
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
-                    _bus, e => e.CorrelationId, e => e.CorrelationId);
+                    _bus, e => e.CorrelationId, e => e.CorrelationId, new PublishEnvelope(_bus));
+            _bus.Subscribe(_readDispatcher);
+            _bus.Subscribe(_writeDispatcher);
             _consumer = new WatchingConsumer();
             _bus.Subscribe(_consumer);
         }

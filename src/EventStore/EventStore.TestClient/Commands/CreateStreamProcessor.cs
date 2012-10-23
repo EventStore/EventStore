@@ -55,12 +55,10 @@ namespace EventStore.TestClient.Commands
             }
 
             context.IsAsync();
-            var corrid = Guid.NewGuid();
             var createStreamDto = new ClientMessageDto.CreateStream(
-                    corrid,
                     eventStreamId,
                     Encoding.UTF8.GetBytes(metadata ?? string.Format("{{\"StreamName\": \"{0}\"}}", eventStreamId)));
-            var package = new TcpPackage(TcpCommand.CreateStream, corrid, createStreamDto.Serialize());
+            var package = new TcpPackage(TcpCommand.CreateStream, Guid.NewGuid(), createStreamDto.Serialize());
 
             var sw = new Stopwatch();
 

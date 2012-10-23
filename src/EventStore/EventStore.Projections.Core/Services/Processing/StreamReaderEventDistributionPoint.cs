@@ -44,7 +44,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _streamName;
         private int _fromSequenceNumber;
         private readonly bool _resolveLinkTos;
-        private readonly string _category;
 
         private bool _paused = true;
         private bool _pauseRequested = true;
@@ -54,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public StreamReaderEventDistributionPoint(
             IPublisher publisher, Guid distibutionPointCorrelationId, string streamName, int fromSequenceNumber,
-            bool resolveLinkTos, string category = null)
+            bool resolveLinkTos)
             : base(publisher, distibutionPointCorrelationId)
         {
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
@@ -63,7 +62,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _streamName = streamName;
             _fromSequenceNumber = fromSequenceNumber;
             _resolveLinkTos = resolveLinkTos;
-            _category = category;
         }
 
         public override void Resume()
@@ -78,6 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             _paused = false;
             _pauseRequested = false;
+            _logger.Trace("Resuming event distribution {0} at '{1}@{2}'", _distibutionPointCorrelationId, _fromSequenceNumber, _streamName);
             RequestEvents(delay: false);
         }
 
@@ -89,9 +88,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _pauseRequested = true;
             if (!_eventsRequested)
                 _paused = true;
+            _logger.Trace("Pausing event distribution {0} at '{1}@{2}'", _distibutionPointCorrelationId, _fromSequenceNumber, _streamName);
         }
 
-        public override void Handle(ClientMessage.ReadEventsForwardCompleted message)
+        public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
         {
             if (_disposed)
                 return;
@@ -120,8 +120,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     {
                         for (int index = 0; index < message.Events.Length; index++)
                         {
-                            var @event = message.Events[index];
-                            var @link = message.LinkToEvents != null ? message.LinkToEvents[index] : null;
+                            var @event = message.Events[index].Event;
+                            var @link = message.Events[index].Link;
                             DeliverEvent(@event, @link);
                         }
                     }
@@ -139,7 +139,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public override void Handle(ClientMessage.ReadEventsFromTFCompleted message)
+        public override void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
         {
             throw new NotImplementedException();
         }
@@ -159,13 +159,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested = true;
 
 
-            var readEventsForward = new ClientMessage.ReadEventsForward(
+            var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                 _distibutionPointCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
                 _maxReadCount, _resolveLinkTos);
             if (delay)
                 _publisher.Publish(
                     TimerMessage.Schedule.Create(
-                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher), readEventsForward));
+                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true), readEventsForward));
             else
                 _publisher.Publish(readEventsForward);
         }
@@ -177,8 +177,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverLastCommitPosition(long lastCommitPosition)
         {
+            if (lastCommitPosition == -1)
+                return; //TODO: this shouldnot happen, but StorageReader does not return it now
             _publisher.Publish(
-                new ProjectionMessage.Projections.CommittedEventReceived(
+                new ProjectionMessage.Projections.CommittedEventDistributed(
                     _distibutionPointCorrelationId, new EventPosition(long.MinValue, lastCommitPosition), _streamName,
                     _fromSequenceNumber, _streamName, _fromSequenceNumber, false, null));
         }
@@ -196,7 +198,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                  || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(
                 //TODO: publish bothlink and event data
-                new ProjectionMessage.Projections.CommittedEventReceived(
+                new ProjectionMessage.Projections.CommittedEventDistributed(
                     _distibutionPointCorrelationId, new EventPosition(long.MinValue, positionEvent.LogPosition),
                     positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
                     resolvedLinkTo, new Event(@event.EventId, @event.EventType, false, @event.Data, @event.Metadata)));

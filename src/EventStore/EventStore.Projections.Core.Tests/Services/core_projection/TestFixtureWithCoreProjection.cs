@@ -28,6 +28,7 @@
 
 using System;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -70,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 "projection", _projectionCorrelationId, _bus, _stateHandler,
                 new ProjectionConfig(
                     _projectionMode, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
-                    true));
+                    true), _readDispatcher, _writeDispatcher);
             _coreProjection.Start();
 
             When();

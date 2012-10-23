@@ -1,3 +1,30 @@
+// Copyright (c) 2012, Event Store LLP
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+// Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+// Neither the name of the Event Store LLP nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,13 +45,14 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public TFChunkScavenger(TFChunkDb db, IReadIndex readIndex)
         {
-            _db = db;
-            _readIndex = readIndex;
             Ensure.NotNull(db, "db");
             Ensure.NotNull(readIndex, "readIndex");
+ 
+            _db = db;
+            _readIndex = readIndex;
         }
 
-        public void Scavenge()
+        public void Scavenge(bool alwaysKeepScavenged)
         {
             var sw = Stopwatch.StartNew();
 
@@ -40,13 +68,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                     Log.Trace("Stopping scavenging due to non-completed TFChunk #{0}.", i);
                     break;
                 }
-                ScavengeChunk(chunk);
+                ScavengeChunk(chunk, alwaysKeepScavenged);
             }
 
             Log.Trace("Scavenging pass COMPLETED in {0}.", sw.Elapsed);
         }
 
-        private void ScavengeChunk(TFChunk oldChunk)
+        private void ScavengeChunk(TFChunk oldChunk, bool alwaysKeepScavenged)
         {
             var sw = Stopwatch.StartNew();
 
@@ -98,6 +126,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     }
                     case LogRecordType.Commit:
                     {
+                        //TODO AN scavenge commits that belong to deleted stream, except if this is commit of delete tombstone
                         var posMap = WriteRecord(newChunk, record);
                         positionMapping.Add(posMap);
                         positioningNeeded = posMap.LogPos != posMap.ActualPos;
@@ -106,9 +135,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-                if (result.NextPosition == -1)
-                    break;
-                result = oldChunk.TryReadSameOrClosest((int)result.NextPosition);
+                result = oldChunk.TryReadClosestForward((int)result.NextPosition);
             }
 
             var oldSize = oldChunk.ChunkFooter.ActualChunkSize + oldChunk.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
@@ -117,7 +144,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                           + ChunkHeader.Size 
                           + ChunkFooter.Size;
 
-            if (false && oldSize <= newSize)
+            if (!alwaysKeepScavenged && oldSize <= newSize)
             {
                 Log.Trace("Scavenging of chunk #{0} ({1}) completed in {2}.\n"
                           + "Old version is kept as it is smaller.\n"
@@ -139,7 +166,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                 File.Move(tmpChunkPath, newChunkPath);
 
-                newChunk = TFChunk.FromCompletedFile(newChunkPath);
+                newChunk = TFChunk.FromCompletedFile(newChunkPath, verifyHash: true);
                 var removedChunk = _db.Manager.SwapChunk(chunkNumber, newChunk);
                 Debug.Assert(ReferenceEquals(removedChunk, oldChunk)); // only scavenging could switch, so old should be always same
                 oldChunk.MarkForDeletion();

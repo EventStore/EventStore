@@ -30,7 +30,6 @@ using System;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.v8;
 using NUnit.Framework;
-using js1test;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
 {

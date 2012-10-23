@@ -58,7 +58,7 @@ namespace EventStore.TestClient.Commands
             context.IsAsync();
 
             var corrid = Guid.NewGuid();
-            var deleteDto = new ClientMessageDto.DeleteStream(corrid, eventStreamId, expectedVersion);
+            var deleteDto = new ClientMessageDto.DeleteStream(eventStreamId, expectedVersion);
             var package = new TcpPackage(TcpCommand.DeleteStream, corrid, deleteDto.Serialize());
 
             var sw = new Stopwatch();

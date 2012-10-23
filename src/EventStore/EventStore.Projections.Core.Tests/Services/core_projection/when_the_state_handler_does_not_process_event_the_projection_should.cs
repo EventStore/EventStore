@@ -52,9 +52,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             //projection subscribes here
             _coreProjection.Handle(
-                new ProjectionMessage.Projections.CommittedEventReceived(
-                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                    new Event(Guid.NewGuid(), "skip_this_type", false, new byte[0], new byte[0])));
+                ProjectionMessage.Projections.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
+                       new Event(Guid.NewGuid(), "skip_this_type", false, new byte[0], new byte[0])));
         }
 
         [Test]

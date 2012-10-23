@@ -32,20 +32,10 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class PositionTagger
     {
-        public PositionTagger()
-        {
-        }
 
+        public abstract CheckpointTag MakeCheckpointTag(CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent);
 
-        public virtual CheckpointTag MakeCheckpointTag(ProjectionMessage.Projections.CommittedEventReceived comittedEvent)
-        {
-            return new CheckpointTag(comittedEvent.Position);
-        }
-
-        public virtual CheckpointTag MakeZeroCheckpointTag()
-        {
-            return new CheckpointTag(new EventPosition(0, -1));
-        }
+        public abstract CheckpointTag MakeZeroCheckpointTag();
 
         public abstract bool IsCompatible(CheckpointTag checkpointTag);
     }

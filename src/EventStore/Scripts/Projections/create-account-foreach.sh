@@ -6,7 +6,7 @@ fromCategory("account").foreachStream().whenAny(
   function (state, ev) {
     if (state.c === undefined) state.c = 0;
     if (state.c != ev.sequenceNumber)
-      throw "stream: " + ev.streamId + " state.c: " + state.c + " seq: " + ev.sequenceNumber;
+      throw "stream: " + ev.streamId + " state.c: " + state.c + " seq: " + ev.sequenceNumber + " pos: " + ev.logPosition;
     state.c++;
     return state;
   }

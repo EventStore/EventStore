@@ -10,11 +10,11 @@ namespace EventStore.Common.CommandLine
     {
         public virtual IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
         {
-            yield return new KeyValuePair<string, string>("LOGSPATH", LogsPath);
+            yield return new KeyValuePair<string, string>("LOGSDIR", LogsDir);
         }
 
-        [Option(null, "logspath", HelpText = "Path where to keep log files")]
-        public string LogsPath { get; set; }
+        [Option(null, "logsdir", HelpText = "Path where to keep log files")]
+        public string LogsDir { get; set; }
 
         [HelpOption]
         public virtual string GetUsage()

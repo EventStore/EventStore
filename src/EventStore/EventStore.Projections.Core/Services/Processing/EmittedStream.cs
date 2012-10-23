@@ -39,7 +39,7 @@ using EventStore.Projections.Core.Messages;
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class EmittedStream : IHandle<ClientMessage.WriteEventsCompleted>,
-                                 IHandle<ClientMessage.ReadEventsBackwardsCompleted>
+                                 IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>
     {
         private readonly ILogger _logger;
         private readonly string _streamId;
@@ -144,10 +144,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new NotSupportedException("Unsupported error code received");
         }
 
-        public void Handle(ClientMessage.ReadEventsBackwardsCompleted message)
+        public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
         {
             if (!_awaitingListEventsCompleted)
-                throw new InvalidOperationException("ReadEventsBackwards has not been requested");
+                throw new InvalidOperationException("ReadStreamEventsBackward has not been requested");
             _awaitingListEventsCompleted = false;
             if (message.Events.Length == 0)
             {
@@ -157,9 +157,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                var projectionStateMetadata = message.Events[0].Metadata.ParseJson<CheckpointTag>();
+                var projectionStateMetadata = message.Events[0].Event.Metadata.ParseJson<CheckpointTag>();
                 _lastCommittedMetadata = projectionStateMetadata;
-                _lastKnownEventNumber = message.Events[0].EventNumber;
+                _lastKnownEventNumber = message.Events[0].Event.EventNumber;
                 SubmitWriteEventsInRecovery();
             }
         }
@@ -189,7 +189,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _awaitingListEventsCompleted = true;
             _publisher.Publish(
-                new ClientMessage.ReadEventsBackwards(
+                new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), new SendToThisEnvelope(this), _streamId, -1, 1, resolveLinks: false));
         }
 

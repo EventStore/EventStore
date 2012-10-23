@@ -35,7 +35,6 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.TestClient.Commands;
-using EventStore.TestClient.Commands.DvuAdvanced;
 using EventStore.TestClient.Commands.DvuBasic;
 using EventStore.Transport.Tcp;
 using EventStore.Transport.Tcp.Formatting;
@@ -100,6 +99,7 @@ namespace EventStore.TestClient
             
             _commands.Register(new DeleteProcessor());
 
+            _commands.Register(new ReadAllProcessor());
             _commands.Register(new ReadProcessor());
             _commands.Register(new ReadFloodProcessor());
 
@@ -111,7 +111,6 @@ namespace EventStore.TestClient
             _commands.Register(new PingHttpLongTermProcessor());
 
             _commands.Register(new DvuBasicProcessor());
-            _commands.Register(new DvuAdvancedProcessor());
             _commands.Register(new RunTestScenariosProcessor());
 
             _commands.Register(new SubscribeToStreamProcessor());

@@ -35,68 +35,44 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
+using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Connection;
 using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.System;
-using EventStore.ClientAPI.Transport.Http;
+using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
-using Connection = EventStore.ClientAPI.Transport.Tcp.TcpTypedConnection;
 using Ensure = EventStore.ClientAPI.Common.Utils.Ensure;
 using System.Linq;
-using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
 namespace EventStore.ClientAPI
 {
-    internal class WorkItem
+    public class EventStoreConnection : IProjectionsManagement, IDisposable
     {
-        private static long _seqNumber = -1;
+        private readonly ILogger _log;
 
-        public readonly long SeqNo;
-        public IClientOperation Operation;
-
-        public int Attempt;
-        public long LastUpdatedTicks;
-
-        public WorkItem(IClientOperation operation)
-        {
-            Ensure.NotNull(operation, "operation");
-            SeqNo = NextSeqNo();
-            Operation = operation;
-
-            Attempt = 0;
-            LastUpdatedTicks = DateTime.UtcNow.Ticks;
-        }
-
-        private static long NextSeqNo()
-        {
-            return Interlocked.Increment(ref _seqNumber);
-        }
-    }
-
-    public class EventStoreConnection : IProjectionsManagement,
-                                        IDisposable
-    {
         private const int MaxQueueSize = 5000;
 
         private readonly int _maxConcurrentItems;
         private readonly int _maxAttempts;
         private readonly int _maxReconnections;
 
-        private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(0.5);
-        private static readonly TimeSpan EventTimeoutDelay = TimeSpan.FromSeconds(7);
-        private static readonly TimeSpan EventTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(7);
+        private static readonly TimeSpan OperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
         private readonly IPEndPoint _tcpEndPoint;
 
         private readonly TcpConnector _connector;
-        private Connection _connection;
+        private TcpTypedConnection _connection;
         private readonly object _connectionLock = new object();
 
         private readonly SubscriptionsChannel _subscriptionsChannel;
-        private readonly object _subscriptionChannelLock = new object();
-
         private readonly ProjectionsManager _projectionsManager;
 
+#if __MonoCS__
+        private readonly Common.ConcurrentCollections.ConcurrentQueue<IClientOperation> _queue = new Common.ConcurrentCollections.ConcurrentQueue<IClientOperation>();
+#else
         private readonly ConcurrentQueue<IClientOperation> _queue = new ConcurrentQueue<IClientOperation>();
+#endif
         private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
         private int _inProgressCount;
 
@@ -119,7 +95,8 @@ namespace EventStore.ClientAPI
         public EventStoreConnection(IPEndPoint tcpEndPoint, 
                                     int maxConcurrentRequests = 5000,
                                     int maxAttemptsForOperation = 10,
-                                    int maxReconnections = 10)
+                                    int maxReconnections = 10,
+                                    ILogger logger = null)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
             Ensure.Positive(maxConcurrentRequests, "maxConcurrentRequests");
@@ -131,8 +108,12 @@ namespace EventStore.ClientAPI
             _maxAttempts = maxAttemptsForOperation;
             _maxReconnections = maxReconnections;
 
+            LogManager.RegisterLogger(logger);
+            _log = LogManager.GetLogger();
+
             _connector = new TcpConnector(_tcpEndPoint);
-            _subscriptionsChannel = new SubscriptionsChannel(_tcpEndPoint);
+            _subscriptionsChannel = new SubscriptionsChannel(_connector);
+            //TODO TD: WAT?
             _projectionsManager = new ProjectionsManager(new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000));
 
             _lastReconnectionTimestamp = DateTime.UtcNow;
@@ -142,7 +123,7 @@ namespace EventStore.ClientAPI
             _worker = new Thread(MainLoop)
             {
                 IsBackground = true,
-                Name = string.Format("Worker thread")
+                Name = "Worker thread"
             };
             _worker.Start();
         }
@@ -151,14 +132,21 @@ namespace EventStore.ClientAPI
         {
             _stopping = true;
 
-            _connection.Close();
+            lock (_connectionLock)
+            {
+                _connection.Close();
+            }
             _subscriptionsChannel.Close();
 
-            const string err = "Work item was still in progress at the moment of manual connection closing";
             var items = _inProgress.Values;
             _inProgress.Clear();
-            foreach(var workItem in items)
-                workItem.Operation.Fail(new ConnectionClosingException(err));
+            foreach (var workItem in items)
+            {
+                workItem.Operation.Fail(new ConnectionClosingException(
+                    "Work item was still in progress at the moment of manual connection closing"));
+            }
+
+            _log.Info("EventStoreConnection closed.");
         }
 
         void IDisposable.Dispose()
@@ -285,22 +273,93 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        public EventStreamSlice ReadEventStream(string stream, int start, int count)
+        public EventStreamSlice ReadEventStreamForward(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.Nonnegative(start, "start");
+            Ensure.Positive(count, "count");
 
-            var task = ReadEventStreamAsync(stream, start, count);
+            var task = ReadEventStreamForwardAsync(stream, start, count);
             task.Wait();
 
             return task.Result;
         }
 
-        public Task<EventStreamSlice> ReadEventStreamAsync(string stream, int start, int count)
+        public Task<EventStreamSlice> ReadEventStreamForwardAsync(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.Nonnegative(start, "start");
+            Ensure.Positive(count, "count");
 
             var source = new TaskCompletionSource<EventStreamSlice>();
-            var operation = new ReadFromBeginningOperation(source, Guid.NewGuid(), stream, start, count, true);
+            var operation = new ReadStreamEventsForwardOperation(source, Guid.NewGuid(), stream, start, count, true);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public EventStreamSlice ReadEventStreamBackward(string stream, int start, int count)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.Positive(count, "count");
+
+            var task = ReadEventStreamBackwardAsync(stream, start, count);
+            task.Wait();
+
+            return task.Result;
+        }
+
+        public Task<EventStreamSlice> ReadEventStreamBackwardAsync(string stream, int start, int count)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.Positive(count, "count");
+
+            var source = new TaskCompletionSource<EventStreamSlice>();
+            var operation = new ReadStreamEventsBackwardOperation(source, Guid.NewGuid(), stream, start, count, true);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public AllEventsSlice ReadAllEventsForward(Position position, int maxCount)
+        {
+            Ensure.NotNull(position, "position");
+            Ensure.Positive(maxCount, "maxCount");
+
+            var task = ReadAllEventsForwardAsync(position, maxCount);
+            task.Wait();
+            return task.Result;
+        }
+
+        public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount)
+        {
+            Ensure.NotNull(position, "position");
+            Ensure.Positive(maxCount, "maxCount");
+
+            var source = new TaskCompletionSource<AllEventsSlice>();
+            var operation = new ReadAllEventsForwardOperation(source, Guid.NewGuid(), position, maxCount, true);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
+        public AllEventsSlice ReadAllEventsBackward(Position position, int maxCount)
+        {
+            Ensure.NotNull(position, "position");
+            Ensure.Positive(maxCount, "maxCount");
+
+            var task = ReadAllEventsBackwardAsync(position, maxCount);
+            task.Wait();
+            return task.Result;
+        }
+
+        public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount)
+        {
+            Ensure.NotNull(position, "position");
+            Ensure.Positive(maxCount, "maxCount");
+
+            var source = new TaskCompletionSource<AllEventsSlice>();
+            var operation = new ReadAllEventsBackwardOperation(source, Guid.NewGuid(), position, maxCount, true);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -312,7 +371,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
 
-            EnsureSubscriptionChannelConnected();
+            _subscriptionsChannel.EnsureConnected();
             return _subscriptionsChannel.Subscribe(stream, eventAppeared, subscriptionDropped);
         }
 
@@ -320,7 +379,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
-            EnsureSubscriptionChannelConnected();
+            _subscriptionsChannel.EnsureConnected();
             _subscriptionsChannel.Unsubscribe(stream);
         }
 
@@ -329,13 +388,13 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
 
-            EnsureSubscriptionChannelConnected();
+            _subscriptionsChannel.EnsureConnected();
             return _subscriptionsChannel.SubscribeToAllStreams(eventAppeared, subscriptionDropped);
         }
 
         public void UnsubscribeFromAllStreams()
         {
-            EnsureSubscriptionChannelConnected();
+            _subscriptionsChannel.EnsureConnected();
             _subscriptionsChannel.UnsubscribeFromAllStreams();
         }
 
@@ -586,25 +645,10 @@ namespace EventStore.ClientAPI
         private void EnqueueOperation(IClientOperation operation)
         {
             while (_queue.Count >= MaxQueueSize)
-                Thread.Sleep(1);
-            
-            _queue.Enqueue(operation);
-        }
-
-        private void EnsureSubscriptionChannelConnected()
-        {
-            if (!_subscriptionsChannel.ConnectedEvent.WaitOne(0))
             {
-                lock (_subscriptionChannelLock)
-                {
-                    if (!_subscriptionsChannel.ConnectedEvent.WaitOne(0))
-                    {
-                        _subscriptionsChannel.Connect();
-                        if (!_subscriptionsChannel.ConnectedEvent.WaitOne(500))
-                            throw new CannotEstablishConnectionException(string.Format("Cannot connect to {0}", _tcpEndPoint));
-                    }
-                }
+                Thread.Sleep(1);
             }
+            _queue.Enqueue(operation);
         }
 
         private void MainLoop()
@@ -618,14 +662,16 @@ namespace EventStore.ClientAPI
                     Send(new WorkItem(operation));
                 }
                 else
+                {
                     Thread.Sleep(1);
+                }
 
                 lock (_connectionLock)
                 {
                     if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= ReconnectionDelay)
                     {
                         _reconnectionsCount += 1;
-                        if(_reconnectionsCount > _maxReconnections)
+                        if (_reconnectionsCount > _maxReconnections)
                             throw new CannotEstablishConnectionException();
 
                         _lastReconnectionTimestamp = DateTime.UtcNow;
@@ -634,32 +680,41 @@ namespace EventStore.ClientAPI
                     }
                 }
 
-                if (_timeoutCheckStopwatch.Elapsed > EventTimeoutCheckPeriod)
+                if (_timeoutCheckStopwatch.Elapsed > OperationTimeoutCheckPeriod)
                 {
                     var now = DateTime.UtcNow;
                     var retriable = new List<WorkItem>();
                     foreach (var workerItem in _inProgress.Values)
                     {
                         var lastUpdated = new DateTime(Interlocked.Read(ref workerItem.LastUpdatedTicks));
-                        if (now - lastUpdated > EventTimeoutDelay)
+                        if (now - lastUpdated > OperationTimeout)
                         {
-                            if (lastUpdated > _lastReconnectionTimestamp)
+                            if (lastUpdated >= _lastReconnectionTimestamp)
                             {
-                                var err = string.Format("Timed out event which never got response from server was discovered. "+ 
-                                                        "Last state update : {0}, last reconnect : {1}, now(utc) : {2}.",
+                                var err = string.Format("{0} never got response from server" +
+                                                        "Last state update : {1}, last reconnect : {2}, now(utc) : {3}.",
+                                                        workerItem,
                                                         lastUpdated,
                                                         _lastReconnectionTimestamp,
                                                         now);
-                                if(TryRemoveWorkItem(workerItem))
+                                if (TryRemoveWorkItem(workerItem))
+                                {
+                                    _log.Error(err);
                                     workerItem.Operation.Fail(new OperationTimedOutException(err));
+                                }
+                                _log.Error(err);
                             }
                             else
+                            {
                                 retriable.Add(workerItem);
+                            }
                         }
                     }
 
                     foreach (var workItem in retriable.OrderBy(wi => wi.SeqNo))
+                    {
                         Retry(workItem);
+                    }
 
                     _timeoutCheckStopwatch.Restart();
                 }
@@ -692,29 +747,35 @@ namespace EventStore.ClientAPI
                 WorkItem inProgressItem;
                 if (_inProgress.TryRemove(workItem.Operation.CorrelationId, out inProgressItem))
                 {
-                    inProgressItem.Operation.SetRetryId(Guid.NewGuid());
                     inProgressItem.Attempt += 1;
-                    Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
-
                     if (inProgressItem.Attempt > _maxAttempts)
-                        inProgressItem.Operation.Fail(new RetriesLimitReachedException(inProgressItem.Operation.ToString(),
+                    {
+                        _log.Error("Retries limit reached for : {0}", inProgressItem);
+                        inProgressItem.Operation.Fail(new RetriesLimitReachedException(inProgressItem.ToString(),
                                                                                        inProgressItem.Attempt));
+                    }
                     else
+                    {
+                        inProgressItem.Operation.SetRetryId(Guid.NewGuid());
+                        Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
                         Send(inProgressItem);
+                    }
                 }
                 else
-                    Debug.WriteLine("Concurrency failure. Unable to remove in progress item on retry");
+                {
+                    _log.Error("Concurrency failure. Unable to remove in progress item on retry");
+                }
             }
         }
 
-        private void OnPackageReceived(Connection connection, TcpPackage package)
+        private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
         {
             var corrId = package.CorrelationId;
             WorkItem workItem;
 
             if (!_inProgress.TryGetValue(corrId, out workItem))
             {
-                Debug.WriteLine("Unexpected corrid received {0}", corrId);
+                _log.Error("Unexpected corrid received {0}", corrId);
                 return;
             }
 
@@ -729,7 +790,7 @@ namespace EventStore.ClientAPI
                     Retry(workItem);
                     break;
                 case InspectionDecision.NotifyError:
-                    if(TryRemoveWorkItem(workItem))
+                    if (TryRemoveWorkItem(workItem))
                         workItem.Operation.Fail(result.Error);
                     break;
                 default:
@@ -737,432 +798,16 @@ namespace EventStore.ClientAPI
             }
         }
 
-        private void OnConnectionEstablished(Connection tcpTypedConnection)
+        private void OnConnectionEstablished(TcpTypedConnection tcpTypedConnection)
         {
             lock(_connectionLock)
                 _reconnectionsCount = 0;
         }
 
-        private void OnConnectionClosed(Connection connection, IPEndPoint endPoint, SocketError error)
+        private void OnConnectionClosed(TcpTypedConnection connection, IPEndPoint endPoint, SocketError error)
         {
             lock (_connectionLock)
                 _reconnectionStopwatch.Restart();
-        }
-    }
-
-    internal class Subscription
-    {
-        public readonly TaskCompletionSource<object> Source;
-
-        public readonly Guid Id;
-        public readonly string Stream;
-
-        public readonly Action<RecordedEvent> EventAppeared;
-        public readonly Action SubscriptionDropped;
-
-        public Subscription(TaskCompletionSource<object> source,
-                            Guid id,
-                            string stream,
-                            Action<RecordedEvent> eventAppeared,
-                            Action subscriptionDropped)
-        {
-            Source = source;
-
-            Id = id;
-            Stream = stream;
-
-            EventAppeared = eventAppeared;
-            SubscriptionDropped = subscriptionDropped;
-        }
-
-        public Subscription(TaskCompletionSource<object> source,
-                            Guid id,
-                            Action<RecordedEvent> eventAppeared,
-                            Action subscriptionDropped)
-        {
-            Source = source;
-
-            Id = id;
-            Stream = null;
-
-            EventAppeared = eventAppeared;
-            SubscriptionDropped = subscriptionDropped;
-        }
-    }
-
-    internal class SubscriptionsChannel
-    {
-        private readonly IPEndPoint _tcpEndPoint;
-
-        private readonly TcpConnector _connector;
-        private Connection _connection;
-
-        internal ManualResetEvent ConnectedEvent = new ManualResetEvent(false);
-
-        private Thread _executionThread;
-        private volatile bool _stopExecutionThread;
-        private readonly ConcurrentQueue<Action> _executionQueue = new ConcurrentQueue<Action>(); 
-
-        private readonly ConcurrentDictionary<Guid, Subscription> _subscriptions = new ConcurrentDictionary<Guid, Subscription>();
-
-        public SubscriptionsChannel(IPEndPoint tcpEndPoint)
-        {
-            _tcpEndPoint = tcpEndPoint;
-            _connector = new TcpConnector(_tcpEndPoint);
-        }
-
-        public void Connect()
-        {
-            _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
-
-            if(_executionThread == null)
-            {
-                _executionThread = new Thread(ExecuteUserCallbacks)
-                                       {
-                                           IsBackground = true,
-                                           Name = "User callbacks execution thread in sub channel"
-                                       };
-                _executionThread.Start();
-            }
-        }
-
-        public void Close()
-        {
-            if(_connection != null)
-                _connection.Close();
-
-            if(_executionThread != null)
-                _stopExecutionThread = true;
-        }
-
-        public Task Subscribe(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
-        {
-            var id = Guid.NewGuid();
-            var source = new TaskCompletionSource<object>();
-
-            if (_subscriptions.TryAdd(id, new Subscription(source, id, stream, eventAppeared, subscriptionDropped)))
-            {
-                var subscribe = new ClientMessages.SubscribeToStream(id, stream);
-                _connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, id, subscribe.Serialize()).AsByteArray());
-                return source.Task;
-            }
-
-            source.SetException(new Exception("Failed to add subscription. Concurrency failure"));
-            return source.Task;
-        }
-
-        public void Unsubscribe(string stream)
-        {
-            var all = _subscriptions.Values;
-            var ids = all.Where(s => s.Stream == stream).Select(s => s.Id);
-
-            foreach (var id in ids)
-            {
-                Subscription removed;
-                if(_subscriptions.TryRemove(id, out removed))
-                {
-                    removed.Source.SetResult(null);
-                    ExecuteUserCallbackAsync(removed.SubscriptionDropped);
-
-                    _connection.EnqueueSend(new TcpPackage(TcpCommand.UnsubscribeFromStream,
-                                                           id,
-                                                           new ClientMessages.UnsubscribeFromStream(id, stream).Serialize())
-                                                .AsByteArray());
-                }
-            }
-        }
-
-        public Task SubscribeToAllStreams(Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
-        {
-            var id = Guid.NewGuid();
-            var source = new TaskCompletionSource<object>();
-
-            if (_subscriptions.TryAdd(id, new Subscription(source, id, eventAppeared, subscriptionDropped)))
-            {
-                var subscribe = new ClientMessages.SubscribeToAllStreams(id);
-                _connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToAllStreams, id, subscribe.Serialize()).AsByteArray());
-                return source.Task;
-            }
-
-            source.SetException(new Exception("Failed to add subscription to all streams. Concurrency failure"));
-            return source.Task;
-        }
-
-        public void UnsubscribeFromAllStreams()
-        {
-            var all = _subscriptions.Values;
-            var ids = all.Where(s => s.Stream == null).Select(s => s.Id);
-
-            foreach (var id in ids)
-            {
-                Subscription removed;
-                if (_subscriptions.TryRemove(id, out removed))
-                {
-                    removed.Source.SetResult(null);
-                    ExecuteUserCallbackAsync(removed.SubscriptionDropped);
-
-                    _connection.EnqueueSend(new TcpPackage(TcpCommand.UnsubscribeFromAllStreams,
-                                                           id,
-                                                           new ClientMessages.UnsubscribeFromAllStreams(id).Serialize())
-                                                .AsByteArray());
-                }
-            }
-        }
-
-        private void ExecuteUserCallbackAsync(Action callback)
-        {
-            _executionQueue.Enqueue(callback);
-        }
-
-        private void ExecuteUserCallbacks()
-        {
-            while (!_stopExecutionThread)
-            {
-                Action callback;
-                if (_executionQueue.TryDequeue(out callback))
-                {
-                    try
-                    {
-                        callback();
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.WriteLine("User callback thrown : {0}", e);
-                    }
-                }
-                else
-                    Thread.Sleep(1);
-            }
-        }
-
-        private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
-        {
-            Subscription subscription;
-            if(!_subscriptions.TryGetValue(package.CorrelationId, out subscription))
-            {
-                Debug.WriteLine("Unexpected package received : {0} ({1})", package.CorrelationId, package.Command);
-                return;
-            }
-
-            try
-            {
-                switch (package.Command)
-                {
-                    case TcpCommand.StreamEventAppeared:
-                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(new RecordedEvent(package.Data.Deserialize<ClientMessages.StreamEventAppeared>())));
-                        break;
-                    case TcpCommand.SubscriptionDropped:
-                    case TcpCommand.SubscriptionToAllDropped:
-                        Subscription removed;
-                        if(_subscriptions.TryRemove(subscription.Id, out removed))
-                        {
-                            removed.Source.SetResult(null);
-                            ExecuteUserCallbackAsync(removed.SubscriptionDropped);
-                        }
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(string.Format("Unexpected command : {0}", package.Command));
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("Error on package received : {0}. Stacktrace : {1}", e.Message, e.StackTrace);
-            }
-        }
-
-        private void OnConnectionEstablished(TcpTypedConnection tcpTypedConnection)
-        {
-            ConnectedEvent.Set();
-        }
-
-        private void OnConnectionClosed(TcpTypedConnection connection, IPEndPoint endPoint, SocketError error)
-        {
-            ConnectedEvent.Reset();
-
-            var subscriptions = _subscriptions.Values;
-            _subscriptions.Clear();
-
-            foreach (var subscription in subscriptions)
-            {
-                subscription.Source.SetResult(null);
-                ExecuteUserCallbackAsync(subscription.SubscriptionDropped);
-            }
-        }
-    }
-
-    internal class ProjectionsManager
-    {
-        private readonly IPEndPoint _httpEndPoint;
-        private readonly HttpAsyncClient _client = new HttpAsyncClient();
-
-        public ProjectionsManager(IPEndPoint httpEndPoint)
-        {
-            _httpEndPoint = httpEndPoint;
-        }
-
-        public Task Enable(string name)
-        {
-            return SendPost(_httpEndPoint.ToHttpUrl("/projection/{0}/command/enable", name), string.Empty, HttpStatusCode.OK);
-        }
-
-        public Task Disable(string name)
-        {
-            return SendPost(_httpEndPoint.ToHttpUrl("/projection/{0}/command/disable", name), string.Empty, HttpStatusCode.OK);
-        }
-
-        public Task CreateOneTime(string query)
-        {
-            return SendPost(_httpEndPoint.ToHttpUrl("/projections/onetime?type=JS"), query, HttpStatusCode.Created);
-        }
-
-        public Task CreateAdHoc(string name, string query)
-        {
-            return SendPost(_httpEndPoint.ToHttpUrl("/projections/adhoc?name={0}&type=JS", name), query, HttpStatusCode.Created);
-        }
-
-        public Task CreateContinious(string name, string query)
-        {
-            return SendPost(_httpEndPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS", name), query, HttpStatusCode.Created);
-        }
-
-        public Task CreatePersistent(string name, string query)
-        {
-            return SendPost(_httpEndPoint.ToHttpUrl("/projections/persistent?name={0}&type=JS", name), query, HttpStatusCode.Created);
-        }
-
-        public Task<string> ListAll()
-        {
-            return SendGet(_httpEndPoint.ToHttpUrl("/projections/any"), HttpStatusCode.OK);
-        }
-
-        public Task<string> ListOneTime()
-        {
-            return SendGet(_httpEndPoint.ToHttpUrl("/projections/onetime"), HttpStatusCode.OK);
-        }
-
-        public Task<string> ListAdHoc()
-        {
-            return SendGet(_httpEndPoint.ToHttpUrl("/projections/adhoc"), HttpStatusCode.OK);
-        }
-
-        public Task<string> ListContinuous()
-        {
-            return SendGet(_httpEndPoint.ToHttpUrl("/projections/continuous"), HttpStatusCode.OK);
-        }
-
-        public Task<string> ListPersistent()
-        {
-            return SendGet(_httpEndPoint.ToHttpUrl("/projections/persistent"), HttpStatusCode.OK);
-        }
-
-        public Task<string> GetStatus(string name)
-        {
-            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}", name), HttpStatusCode.OK);
-        }
-
-        public Task<string> GetState(string name)
-        {
-            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}/state", name), HttpStatusCode.OK);
-        }
-
-        public Task<string> GetStatistics(string name)
-        {
-            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}/statistics", name), HttpStatusCode.OK);
-        }
-
-        public Task<string> GetQuery(string name)
-        {
-            return SendGet(_httpEndPoint.ToHttpUrl("/projection/{0}/query", name), HttpStatusCode.OK);
-        }
-
-        public Task UpdateQuery(string name, string query)
-        {
-            return SendPut(_httpEndPoint.ToHttpUrl("/projection/{0}/query?type=JS", name), query, HttpStatusCode.OK);
-        }
-
-        public Task Delete(string name)
-        {
-            return SendDelete(_httpEndPoint.ToHttpUrl("/projection/{0}", name), HttpStatusCode.OK);
-        }
-
-        private Task<string> SendGet(string url, int expectedCode)
-        {
-            var source = new TaskCompletionSource<string>();
-            _client.Get(url,
-                        response =>
-                            {
-                                if (response.HttpStatusCode == expectedCode)
-                                    source.SetResult(response.Body);
-                                else
-                                    source.SetException(new ProjectionCommandFailedException(
-                                                            string.Format("Server returned : {0} ({1})",
-                                                                          response.HttpStatusCode,
-                                                                          response.StatusDescription)));
-                            },
-                        source.SetException);
-
-            return source.Task;
-        }
-
-        private Task<string> SendDelete(string url, int expectedCode)
-        {
-            var source = new TaskCompletionSource<string>();
-            _client.Delete(url,
-                           response =>
-                               {
-                                   if (response.HttpStatusCode == expectedCode)
-                                       source.SetResult(response.Body);
-                                   else
-                                       source.SetException(new ProjectionCommandFailedException(
-                                                               string.Format("Server returned : {0} ({1})",
-                                                                             response.HttpStatusCode,
-                                                                             response.StatusDescription)));
-                               },
-                           source.SetException);
-
-            return source.Task;
-        }
-
-        private Task SendPut(string url, string content, int expectedCode)
-        {
-            var source = new TaskCompletionSource<object>();
-            _client.Put(url,
-                        content,
-                        ContentType.Json,
-                        response =>
-                            {
-                                if (response.HttpStatusCode == expectedCode)
-                                    source.SetResult(null);
-                                else
-                                    source.SetException(new ProjectionCommandFailedException(
-                                                            string.Format("Server returned : {0} ({1})",
-                                                                          response.HttpStatusCode,
-                                                                          response.StatusDescription)));
-                            },
-                        source.SetException);
-
-            return source.Task;
-        }
-
-        private Task SendPost(string url, string content, int expectedCode)
-        {
-            var source = new TaskCompletionSource<object>();
-            _client.Post(url,
-                         content,
-                         ContentType.Json,
-                         response =>
-                             {
-                                 if (response.HttpStatusCode == expectedCode)
-                                     source.SetResult(null);
-                                 else
-                                     source.SetException(new ProjectionCommandFailedException(
-                                                             string.Format("Server returned : {0} ({1})",
-                                                                           response.HttpStatusCode,
-                                                                           response.StatusDescription)));
-                             },
-                         source.SetException);
-
-            return source.Task;
         }
     }
 }

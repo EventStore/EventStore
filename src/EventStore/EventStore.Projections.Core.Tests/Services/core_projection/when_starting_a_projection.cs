@@ -30,6 +30,7 @@ using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Services;
@@ -45,17 +46,26 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private const string _projectionCheckpointStream = "$projections-projection-checkpoint";
         private CoreProjection _coreProjection;
         private InMemoryBus _bus;
-        private TestMessageHandler<ClientMessage.ReadEventsBackwards> _listEventsHandler;
+        private TestMessageHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
+        private RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
+        private RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
 
         [SetUp]
         public void setup()
         {
             _bus = new InMemoryBus("bus");
-            _listEventsHandler = new TestMessageHandler<ClientMessage.ReadEventsBackwards>();
+            _listEventsHandler = new TestMessageHandler<ClientMessage.ReadStreamEventsBackward>();
             _bus.Subscribe(_listEventsHandler);
+            _readDispatcher = new RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
+                _bus, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_bus));
+            _writeDispatcher = new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
+                _bus, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_bus));
+            _bus.Subscribe(_readDispatcher);
+            _bus.Subscribe(_writeDispatcher);
             _coreProjection = new CoreProjection(
                 "projection", Guid.NewGuid(), _bus, new FakeProjectionStateHandler(),
-                new ProjectionConfig(ProjectionMode.AdHoc, 5, 10, 1000, 250, true, true, true));
+                new ProjectionConfig(ProjectionMode.AdHoc, 5, 10, 1000, 250, true, true, true), _readDispatcher, _writeDispatcher);
             _coreProjection.Start();
         }
 
@@ -74,20 +84,20 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void should_accept_no_event_stream_response()
         {
-            _coreProjection.Handle(
-                new ClientMessage.ReadEventsBackwardsCompleted(
+            _bus.Handle(
+                new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
-                    _listEventsHandler.HandledMessages[0].EventStreamId, new EventRecord[0], null,
+                    _listEventsHandler.HandledMessages[0].EventStreamId, new EventLinkPair[0], 
                     RangeReadResult.NoStream, -1, 1000));
         }
 
         [Test]
         public void should_accept_events_not_found_response()
         {
-            _coreProjection.Handle(
-                new ClientMessage.ReadEventsBackwardsCompleted(
+            _bus.Handle(
+                new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
-                    _listEventsHandler.HandledMessages[0].EventStreamId, new EventRecord[0], null,
+                    _listEventsHandler.HandledMessages[0].EventStreamId, new EventLinkPair[0],
                     RangeReadResult.Success, -1, 1000));
         }
     }
