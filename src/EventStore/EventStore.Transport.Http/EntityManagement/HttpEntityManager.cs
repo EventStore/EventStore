@@ -144,7 +144,7 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Methods", string.Join(", ", _allowedMethods));
                 HttpEntity.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-PINGOTHER");
-                HttpEntity.Response.AddHeader("Access-Control-Allow-Origin","*");
+                HttpEntity.Response.AddHeader("Access-Control-Allow-Origin", "*");
             }
             catch (Exception e)
             {
