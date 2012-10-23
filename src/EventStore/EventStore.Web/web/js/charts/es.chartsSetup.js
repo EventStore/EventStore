@@ -2,6 +2,7 @@ $(function () {
 
     var newDataEvent = "es.newStats";
     var timeSeriesClass = "es-time-series";
+    var chartTitleClass = "chart-title";
     var appendToSelector = ".wrap";
 
     buildCharts();
@@ -20,7 +21,7 @@ $(function () {
             var zoomer = prepareZoomer();
             setUpTimeSeries({ zoomer: zoomer });
             bindCharts(stats);
-            window.es.graphControl.setup();
+            prepareSelector();
             poll();
         }
 
@@ -48,18 +49,42 @@ $(function () {
             return zoomer;
 
             function getRelativeEl(el, offset) {
-                // get all elements with timeseries class inside element to which they were appended
-                var allElems = $(appendToSelector + " ." + timeSeriesClass);
+                var allElems = getAllElems();
                 var index = allElems.index(el);
                 var relative = allElems[index + offset] || null;
                 return relative;
             }
         }
 
+        function prepareSelector() {
+            var selector = new es.Selector({
+                appendToSelector: ".graphcontrol",
+                doAllSelector: ".graphcontrol_nav",
+                getTargetElems: getAllElems,
+                amendElem: function (sel) {
+                    var targetElem = this;
+                    $(targetElem).find("." + chartTitleClass)
+                                 .append('<a href="" class="hidegraph"><i class="icon-remove"></i></a>')
+                                 .click(function (ev) {
+                                     ev.preventDefault();
+                                     ev.stopPropagation();
+                                     sel.updateValue(targetElem, false);
+                                 });
+                },
+                onCheck: function (domElem) {
+                    $(domElem).show();
+                },
+                onUncheck: function (domElem) {
+                    $(domElem).hide();
+                }
+            });
+        }
+
         function setUpTimeSeries(sets) {
             es.TimeSeries.setUp({
                 updateEvent: newDataEvent,
                 className: timeSeriesClass,
+                titleClassName: chartTitleClass,
                 appendTo: appendToSelector,
                 maxLength: 20,
                 zoomer: sets.zoomer
@@ -108,6 +133,12 @@ $(function () {
                 $(document).trigger(newDataEvent, [stat]);
             };
         };
+
+        function getAllElems() {
+            // get all elements with timeseries class inside element to which they were appended
+            var allElems = $(appendToSelector + " ." + timeSeriesClass);
+            return allElems;
+        }
 
         function skipStatCategory(cat) {
             // todo remove after categories are implemented and queues moved to same page

@@ -9,6 +9,7 @@
         var appendToElement = sets.appendTo || es.TimeSeries.appendTo || '.content';
         var maxLength = sets.maxLength || 100;
         var className = sets.className || es.TimeSeries.className || "";
+        var titleClassName = sets.titleClassName || es.TimeSeries.titleClassName;
         var zoomer = sets.zoomer || es.TimeSeries.zoomer;
 
         var seriesData = [];
@@ -20,11 +21,11 @@
         function init() {
 
             container = $('<div class="chart-cont ' + className + '" />')
-                            .append(["<div class='chart-title'>", title, "</div>"].join(""))
+                            .append(["<div class='", titleClassName, "'>", title, "</div>"].join(""))
                             .appendTo(appendToElement)
                             .click(handleZoom);
             container[0].asZoomable = asZoomable;
-            
+
             initData();
             var graph = createGraphInternal(container, seriesData, 300, 100);
             $(document).on(updateEventName, function (event, data) {
