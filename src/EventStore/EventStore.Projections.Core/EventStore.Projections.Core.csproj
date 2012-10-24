@@ -105,6 +105,7 @@
     <Compile Include="Services\Processing\CommittedEventWorkItem.cs" />
     <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\CoreProjectionDefaultCheckpointManager.cs" />
+    <Compile Include="Services\Processing\CoreProjectionMultiStreamCheckpointManager.cs" />
     <Compile Include="Services\Processing\CoreProjectionQueue.cs" />
     <Compile Include="Services\Processing\EventDistributionPoint.cs" />
     <Compile Include="Services\Processing\IProjectionSubscription.cs" />

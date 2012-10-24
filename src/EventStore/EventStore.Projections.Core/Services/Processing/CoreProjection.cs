@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                   IHandle<ProjectionMessage.Projections.CheckpointSuggested>
     {
         internal const string ProjectionsStreamPrefix = "$projections-";
-        private const string ProjectionsStateStreamSuffix = "-state";
+        internal const string ProjectionsStateStreamSuffix = "-state";
         internal const string ProjectionCheckpointStreamSuffix = "-checkpoint";
 
         [Flags]
