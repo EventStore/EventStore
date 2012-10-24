@@ -56,7 +56,7 @@ es.tmpl = (function () {
     }
 
     function formatTemplatePath(name) {
-        return "/web/tmpl/_" + name + ".tmpl.html";
+        return "/web/es/tmpl/_" + name + ".tmpl.html";
     }
 
     function registerOnLoad() {

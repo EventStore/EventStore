@@ -39,19 +39,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public class WebSiteController : CommunicationController
     {
-        private readonly MiniWeb _miniWeb;
+        private readonly MiniWeb _commonWeb;
+        private readonly MiniWeb _singleNodeWeb;
 
         public WebSiteController(IPublisher publisher)
             : base(publisher)
         {
-            string fileSystemWebRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Web");
-            _miniWeb = new MiniWeb("/web", Path.Combine(fileSystemWebRoot, @"web"));
+            string commonFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Web");
+            string singleNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.SingleNode.Web");
+
+            _singleNodeWeb = new MiniWeb("/web", Path.Combine(singleNodeFSRoot, @"singlenode-web"));
+            _commonWeb = new MiniWeb("/web/es", Path.Combine(commonFSRoot, @"es-common-web"));
         }
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
-            _miniWeb.RegisterControllerActions(service);
+            _singleNodeWeb.RegisterControllerActions(service);
+            _commonWeb.RegisterControllerActions(service);
             RegisterRedirectAction(service, "", "/web/index.htm");
+            RegisterRedirectAction(service, "/web", "/web/index.htm");
             RegisterRedirectAction(service, "/web/projections", "/web/projections.htm");
         }
 
