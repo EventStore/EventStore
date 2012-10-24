@@ -109,6 +109,7 @@
     <Compile Include="Services\Processing\EventDistributionPoint.cs" />
     <Compile Include="Services\Processing\IProjectionSubscription.cs" />
     <Compile Include="Services\Processing\MultiStreamPositionTagger.cs" />
+    <Compile Include="Services\Processing\MultiStreamReaderEventDistributionPoint.cs" />
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\PartitionStateCache.cs" />
     <Compile Include="Services\Processing\PositionTracker.cs" />
