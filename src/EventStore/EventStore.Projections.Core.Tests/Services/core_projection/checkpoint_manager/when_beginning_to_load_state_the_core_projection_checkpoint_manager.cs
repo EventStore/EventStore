@@ -3,7 +3,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
+namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager
 {
     [TestFixture]
     public class when_beginning_to_load_state_the_core_projection_checkpoint_manager : TestFixtureWithCoreProjectionCheckpointManager

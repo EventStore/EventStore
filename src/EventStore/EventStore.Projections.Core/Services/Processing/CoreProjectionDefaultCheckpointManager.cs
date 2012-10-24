@@ -54,6 +54,8 @@ namespace EventStore.Projections.Core.Services.Processing
             : base(
                 coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig, name, positionTagger)
         {
+            if (projectionCheckpointStreamId == null) throw new ArgumentNullException("projectionCheckpointStreamId");
+            if (projectionCheckpointStreamId == "") throw new ArgumentException("projectionCheckpointStreamId");
             _projectionCheckpointStreamId = projectionCheckpointStreamId;
         }
 

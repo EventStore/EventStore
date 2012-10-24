@@ -27,25 +27,15 @@
 // 
 
 using System;
-using System.Linq;
-using EventStore.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
+namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager
 {
     [TestFixture]
-    public class when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop :
-        TestFixtureWithCoreProjectionCheckpointManager
+    public class when_starting_the_core_projection_checkpoint_manager : TestFixtureWithCoreProjectionCheckpointManager
     {
         private Exception _exception;
-
-        protected override void Given()
-        {
-            AllWritesSucceed();
-            base.Given();
-            this._checkpointHandledThreshold = 2;
-        }
 
         protected override void When()
         {
@@ -55,12 +45,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
             {
                 _manager.BeginLoadState();
                 _manager.Start(CheckpointTag.FromStreamPosition("stream", 10));
-                _manager.EventProcessed(
-                    @"{""state"":""state1""}", null, CheckpointTag.FromStreamPosition("stream", 11), 77.7f);
-                _manager.EventProcessed(
-                    @"{""state"":""state2""}", null, CheckpointTag.FromStreamPosition("stream", 12), 77.8f);
-                _manager.Stopping();
-                _manager.RequestCheckpointToStop();
             }
             catch (Exception ex)
             {
@@ -69,16 +53,59 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         }
 
         [Test]
-        public void two_checkpoints_are_completed()
+        public void it_can_be_started()
         {
-            Assert.AreEqual(2, _projection._checkpointCompletedMessages.Count);
+            Assert.IsNull(_exception);
         }
 
+        [Test, ExpectedException(typeof(InvalidOperationException))]
+        public void start_throws_invalid_operation_exception()
+        {
+            _manager.Start(CheckpointTag.FromStreamPosition("stream", 10));
+        }
 
         [Test]
-        public void only_one_checkpoint_has_been_written()
+        public void accepts_stopping()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+            _manager.Stopping();
         }
+
+        [Test]
+        public void accepts_stopped()
+        {
+            _manager.Stopped();
+        }
+
+        [Test, ExpectedException(typeof(InvalidOperationException))]
+        public void request_checkpoint_to_stop_throws_invalid_operation_exception()
+        {
+            _manager.RequestCheckpointToStop();
+        }
+
+        [Test]
+        public void accepts_event_processed()
+        {
+            _manager.EventProcessed(@"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 11), 77.7f);
+        }
+
+        [Test, ExpectedException(typeof(InvalidOperationException))]
+        public void event_processed_at_the_start_position_throws_invalid_operation_exception()
+        {
+            _manager.EventProcessed(@"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
+        }
+
+        [Test]
+        public void accepts_checkpoint_suggested()
+        {
+            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 11), 77.7f);
+        }
+
+        [Test, ExpectedException(typeof(InvalidOperationException))]
+        public void checkpoint_suggested_at_the_start_position_throws_invalid_operation_exception()
+        {
+            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
+        }
+
+
     }
 }
