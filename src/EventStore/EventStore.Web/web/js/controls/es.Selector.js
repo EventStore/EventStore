@@ -6,10 +6,10 @@ es.Selector = function (opts) {
     var amendElem = opts.amendElem || function () { };
     var onCheck = opts.onCheck;
     var onUncheck = opts.onUncheck;
-    
+
     this.addNewElem = addNewElem;
     this.updateValue = updateValue;
-    
+
     var self = this;
     var checkBoxes = $();
     var className = 'selector-item';
@@ -20,7 +20,7 @@ es.Selector = function (opts) {
 
     function init() {
 
-        getTargetElems().each(createCheckboxForElem);
+        $.each(getTargetElems(), createCheckboxForElem);
 
         $(appendToSelector + " .es-selector-all a").click(function (ev) {
             ev.preventDefault();
@@ -30,15 +30,14 @@ es.Selector = function (opts) {
                 return;
 
             var checked = checkedAttr === 'true';
-            getTargetElems().each(function () {
+            $.each(getTargetElems(), function () {
                 updateValue(this, checked);
             });
-
         });
     }
-    
-    function addNewElem(domElem) {
-        createCheckboxForElem.apply(domElem);
+
+    function addNewElem(elem) {
+        createCheckboxForElem.apply(elem);
     }
 
     function createCheckboxForElem() {
@@ -57,27 +56,29 @@ es.Selector = function (opts) {
     }
 
 
-    function updateValue(domElem, checked) {
-        var checkbox = getCheckbox(domElem);
+    function updateValue(elem, checked) {
+        var checkbox = getCheckbox(elem);
         checkbox.attr('checked', checked);
-        onCheckedChanged(domElem, checked);
+        onCheckedChanged(elem, checked);
     }
 
-    function onCheckedChanged(domElem, checked) {
+    function onCheckedChanged(elem, checked) {
         if (checked) {
-            onCheck(domElem);
+            onCheck(elem);
         } else {
-            onUncheck(domElem);
+            onUncheck(elem);
         }
     }
 
-    function getCheckbox(domElem) {
-        var index = getTargetElems().index(domElem);
+    function getCheckbox(elem) {
+
+        var index = $.inArray(elem, getTargetElems());
+        //var index = getTargetElems().index(elem);
         if (index == -1)
             return null; // ?
         var checkbox = checkBoxes.eq(index);
         return checkbox;
     }
 
-    
+
 };
