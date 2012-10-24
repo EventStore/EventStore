@@ -116,6 +116,12 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_position.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_tf_position.cs" />
+    <Compile Include="Services\multi_stream_event_distribution_point\when_handling_read_completed_for_all_streams.cs" />
+    <Compile Include="Services\multi_stream_event_distribution_point\when_creating.cs" />
+    <Compile Include="Services\multi_stream_event_distribution_point\when_handling_read_completed.cs" />
+    <Compile Include="Services\multi_stream_event_distribution_point\when_handling_read_completed_for_all_streams_and_eof.cs" />
+    <Compile Include="Services\multi_stream_event_distribution_point\when_resuming.cs" />
+    <Compile Include="Services\multi_stream_event_distribution_point\when_has_been_created.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\FakeCoreProjection.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\TestFixtureWithCoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\core_projection\core_projection_checkpoint_manager\when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop.cs" />

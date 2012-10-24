@@ -21,23 +21,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_streams.Contains(comittedEvent.PositionStreamId))
                 throw new InvalidOperationException(string.Format("Invalid stream '{0}'", comittedEvent.EventStreamId));
-            var resultDictionary = new Dictionary<string, int>();
-            foreach (var stream in previous.Streams)
-            {
-                if (stream.Key == comittedEvent.PositionStreamId)
-                {
-                    if (comittedEvent.PositionSequenceNumber < stream.Value)
-                        throw new InvalidOperationException(string.Format("Cannot make a checkpoint tag before the current position. Stream: '{0}'  Current: {1} Message Position Event SequenceNo: {2}", stream.Key, stream.Value, comittedEvent.PositionSequenceNumber));
-                    resultDictionary.Add(stream.Key, comittedEvent.PositionSequenceNumber);
-                }
-                else
-                {
-                    resultDictionary.Add(stream.Key, stream.Value);
-                }
-            }
-            if (resultDictionary.Count < previous.Streams.Count)
-                resultDictionary.Add(comittedEvent.PositionStreamId, comittedEvent.PositionSequenceNumber);
-            return CheckpointTag.FromStreamPositions(resultDictionary);
+            return previous.UpdateStreamPosition(comittedEvent.PositionStreamId, comittedEvent.PositionSequenceNumber);
         }
 
         public override CheckpointTag MakeZeroCheckpointTag()
