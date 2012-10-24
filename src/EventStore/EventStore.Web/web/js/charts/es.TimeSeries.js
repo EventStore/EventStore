@@ -7,10 +7,12 @@
         var updateEventName = sets.updateEvent || es.TimeSeries.updateEvent;
         var getData = sets.getData || function (data) { return data; };
         var appendToElement = sets.appendTo || es.TimeSeries.appendTo;
-        var maxLength = sets.maxLength || 100;
+        var maxLength = sets.maxLength || es.TimeSeries.maxLength || 100;
         var className = sets.className || es.TimeSeries.className || "";
         var titleClassName = sets.titleClassName || es.TimeSeries.titleClassName;
         var zoomer = sets.zoomer || es.TimeSeries.zoomer;
+        var width = sets.width || es.TimeSeries.width || 300;
+        var height = sets.height || es.TimeSeries.height || 100;
 
         var seriesData = [];
         var container = null;
@@ -29,7 +31,7 @@
             
 
             initData();
-            var graph = createGraphInternal(container, seriesData, 300, 100);
+            var graph = createGraphInternal(container, seriesData, width, height);
             $(document).on(updateEventName, function (event, data) {
                 onNewData(data);
                 graph.update();

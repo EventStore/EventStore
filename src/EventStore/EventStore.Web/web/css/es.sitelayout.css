@@ -81,7 +81,7 @@ h6 { font-size: 1em; font-weight: bold; }
     height: 3px;
     margin-top: 8px;
 }
-.es-chart-cont {
+.es-chart-cont, .es-chart-header {
     display: inline-block;
     margin: 10px;
     border: 1px solid gray;
@@ -270,5 +270,11 @@ a.button-link:hover {
 /*===================================== manager =================================*/
 .es-dropdown-wrap {
     display: inline-block;
-    width: 400px;
+    width: 250px;
+}
+.es-chart-header {
+    text-align: center;
+    font-weight: bold;
+    padding-bottom: 10px;
+    padding-top: 10px;
 }
