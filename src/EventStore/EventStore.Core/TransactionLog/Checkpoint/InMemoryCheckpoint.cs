@@ -32,7 +32,10 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 {
     public class InMemoryCheckpoint : ICheckpoint
     {
-        private long _checksum;
+        public string Name { get { return _name; } }
+
+        private long _last;
+        private long _lastFlushed;
         private readonly string _name;
 
         public InMemoryCheckpoint(long initialValue) : this(Guid.NewGuid().ToString(), initialValue) {}
@@ -41,33 +44,30 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 
         public InMemoryCheckpoint(string name, long initialValue)
         {
-            _checksum = initialValue;
+            _last = initialValue;
+            _lastFlushed = initialValue;
             _name = name;
-        }
-
-        public string Name
-        {
-            get { return _name; }
         }
 
         public void Write(long checksum)
         {
-            Interlocked.Exchange(ref _checksum, checksum);
+            Interlocked.Exchange(ref _last, checksum);
         }
 
         public long Read()
         {
-            return Interlocked.Read(ref _checksum);
+            return Interlocked.Read(ref _lastFlushed);
         }
 
         public long ReadNonFlushed()
         {
-            return Interlocked.Read(ref _checksum);
+            return Interlocked.Read(ref _last);
         }
 
         public void Flush()
         {
-            //NOOP
+            var last = Interlocked.Read(ref _last);
+            Interlocked.Exchange(ref _lastFlushed, last);
         }
 
         public void Close()

@@ -87,11 +87,16 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 
         public void Flush()
         {
-            _accessor.Write(0, Interlocked.Read(ref _last));
+            var last = Interlocked.Read(ref _last);
+            if (last == _lastFlushed)
+                return;
+
+            _accessor.Write(0, last);
             _accessor.Flush();
 
-            Interlocked.Exchange(ref _lastFlushed, _last);
             FlushFileBuffers(_file.SafeMemoryMappedFileHandle.DangerousGetHandle());
+
+            Interlocked.Exchange(ref _lastFlushed, last);
         }
 
         public long Read()

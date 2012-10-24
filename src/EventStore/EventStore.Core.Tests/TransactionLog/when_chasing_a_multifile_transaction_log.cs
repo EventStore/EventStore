@@ -171,6 +171,7 @@ namespace EventStore.Core.Tests.TransactionLog
                 fs.Close();
             }
             writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
+            writerchk.Flush();
             
             var reader = new MultifileTransactionFileChaser(config, readerchk);
             reader.Open();
@@ -383,6 +384,7 @@ namespace EventStore.Core.Tests.TransactionLog
                 fs.Flush(flushToDisk: true);
             }
             writerchk.Write(memstream.Length);
+            writerchk.Flush();
 
             Assert.IsTrue(reader.TryReadNext(out record));
             Assert.AreEqual(record, recordToWrite);
@@ -408,6 +410,7 @@ namespace EventStore.Core.Tests.TransactionLog
                 fs.Flush(flushToDisk: true);
             }
             writerchk.Write(writerchk.Read() + memstream.Length);
+            writerchk.Flush();
 
             Assert.IsTrue(reader.TryReadNext(out record));
             Assert.AreEqual(record, recordToWrite2);
