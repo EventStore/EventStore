@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -155,8 +156,11 @@ namespace EventStore.Core.Services.Storage
             EventRecord record;
             var result = _readIndex.ReadEvent(message.EventStreamId, message.EventNumber, out record);
 
-            if (result == SingleReadResult.Success && message.ResolveLinkTos && record != null)
-                record = _readIndex.ResolveLinkToEvent(record) ?? record;
+            if (result == SingleReadResult.Success && message.ResolveLinkTos)
+            {
+                Debug.Assert(record != null);
+                record = ResolveLinkToEvent(record) ?? record;
+            }
 
             //TODO: consider returning redirected stream and ChunkNumber number
             message.Envelope.ReplyWith(new ClientMessage.ReadEventCompleted(message.CorrelationId,
@@ -193,26 +197,8 @@ namespace EventStore.Core.Services.Storage
                 }
             }
 
-            EventLinkPair[] resolvedPairs;
-            if (result == RangeReadResult.Success && message.ResolveLinks)
-            {
-                resolvedPairs = ResolveLinkToEvents(records);
-            }
-            else
-            {
-                resolvedPairs = new EventLinkPair[records.Length];
-                for (int i = 0; i < records.Length; ++i)
-                {
-                    resolvedPairs[i] = new EventLinkPair(records[i], null);
-                }
-            }
-
-            int lastEventNumber = -1;
-            if (message.ReturnLastEventNumber)
-            {
-               lastEventNumber = _readIndex.GetLastStreamEventNumber(message.EventStreamId);
-            }
-
+            var resolvedPairs = ResolveLinkToEvents(records, message.ResolveLinks);
+            int lastEventNumber = message.ReturnLastEventNumber ? _readIndex.GetLastStreamEventNumber(message.EventStreamId) : -1;
             message.Envelope.ReplyWith(
                     new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId,
                                                                        message.EventStreamId,
@@ -249,20 +235,7 @@ namespace EventStore.Core.Services.Storage
                     }
                 }
             }
-            EventLinkPair[] resolvedPairs;
-            if (result == RangeReadResult.Success && message.ResolveLinks)
-            {
-                resolvedPairs = ResolveLinkToEvents(records);
-            }
-            else
-            {
-                resolvedPairs = new EventLinkPair[records.Length];
-                for (int i = 0; i < records.Length; ++i)
-                {
-                    resolvedPairs[i] = new EventLinkPair(records[i], null);
-                }
-            }
-
+            var resolvedPairs = ResolveLinkToEvents(records, message.ResolveLinks);
             message.Envelope.ReplyWith(
                 new ClientMessage.ReadStreamEventsBackwardCompleted(message.CorrelationId,
                                                                     message.EventStreamId,
@@ -272,24 +245,62 @@ namespace EventStore.Core.Services.Storage
                                                                     records.Length == 0 ? lastCommitPosition : (long?) null));
         }
 
-        private EventLinkPair[] ResolveLinkToEvents(EventRecord[] records)
+        private EventLinkPair[] ResolveLinkToEvents(EventRecord[] records, bool resolveLinks)
         {
             var resolved = new EventLinkPair[records.Length];
-            for (int i = 0; i < records.Length; i++)
+            if (resolveLinks)
             {
-                EventRecord eventRecord = records[i];
-                EventRecord resolvedRecord = _readIndex.ResolveLinkToEvent(eventRecord);
-                resolved[i] = resolvedRecord != null
-                                      ? new EventLinkPair(resolvedRecord, eventRecord)
-                                      : new EventLinkPair(eventRecord, null);
+                for (int i = 0; i < records.Length; i++)
+                {
+                    EventRecord eventRecord = records[i];
+                    EventRecord resolvedRecord = ResolveLinkToEvent(eventRecord);
+                    resolved[i] = resolvedRecord != null
+                                          ? new EventLinkPair(resolvedRecord, eventRecord)
+                                          : new EventLinkPair(eventRecord, null);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < records.Length; ++i)
+                {
+                    resolved[i] = new EventLinkPair(records[i], null);
+                }
             }
             return resolved;
+        }
+
+        private EventRecord ResolveLinkToEvent(EventRecord eventRecord)
+        {
+            EventRecord record = null;
+            if (eventRecord.EventType == SystemEventTypes.LinkTo)
+            {
+                bool faulted = false;
+                int eventNumber = -1;
+                string streamId = null;
+                try
+                {
+                    string[] parts = Encoding.UTF8.GetString(eventRecord.Data).Split('@');
+                    eventNumber = int.Parse(parts[0]);
+                    streamId = parts[1];
+                }
+                catch (Exception exc)
+                {
+                    faulted = true;
+                    Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
+                }
+                if (faulted)
+                    return null;
+
+                _readIndex.ReadEvent(streamId, eventNumber, out record);
+            }
+            return record;
         }
 
         void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward message)
         {
             var pos = new TFPos(message.CommitPosition, message.PreparePosition);
-            var result = _readIndex.ReadAllEventsForward(pos, message.MaxCount, message.ResolveLinks);
+            var res = _readIndex.ReadAllEventsForward(pos, message.MaxCount);
+            var result = ResolveReadAllResult(res, message.ResolveLinks);
             message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, result));
         }
 
@@ -301,8 +312,33 @@ namespace EventStore.Core.Services.Storage
                 var checkpoint = _writerCheckpoint.Read();
                 pos = new TFPos(checkpoint, checkpoint);
             }
-            var result = _readIndex.ReadAllEventsBackward(pos, message.MaxCount, message.ResolveLinks);
+            var res = _readIndex.ReadAllEventsBackward(pos, message.MaxCount);
+            var result = ResolveReadAllResult(res, message.ResolveLinks);
             message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsBackwardCompleted(message.CorrelationId, result));
+        }
+
+        private ReadAllResult ResolveReadAllResult(IndexReadAllResult res, bool resolveLinks)
+        {
+            var resolved = new ResolvedEventRecord[res.Records.Count];
+            if (resolveLinks)
+            {
+                for (int i = 0; i < resolved.Length; ++i)
+                {
+                    var record = res.Records[i];
+                    var resolvedRecord = ResolveLinkToEvent(record.Event);
+                    resolved[i] = new ResolvedEventRecord(resolvedRecord == null ? record.Event : resolvedRecord,
+                                                          resolvedRecord == null ? null : record.Event,
+                                                          record.CommitPosition);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < resolved.Length; ++i)
+                {
+                    resolved[i] = new ResolvedEventRecord(res.Records[i].Event, null, res.Records[i].CommitPosition);
+                }
+            }
+            return new ReadAllResult(resolved, res.MaxCount, res.CurrentPos, res.NextPos, res.PrevPos, res.TfEofPosition);
         }
 
         void IHandle<ClientMessage.ListStreams>.Handle(ClientMessage.ListStreams message)

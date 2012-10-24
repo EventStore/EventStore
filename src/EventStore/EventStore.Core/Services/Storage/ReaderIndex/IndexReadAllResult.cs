@@ -1,19 +1,25 @@
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
-    public struct ReadAllResult
+    public struct IndexReadAllResult
     {
-        public readonly ResolvedEventRecord[] Records;
+        public readonly List<CommitEventRecord> Records;
         public readonly int MaxCount;
         public readonly TFPos CurrentPos;
         public readonly TFPos NextPos;
         public readonly TFPos PrevPos;
         public readonly long TfEofPosition;
 
-        public ReadAllResult(ResolvedEventRecord[] records, int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
+        public IndexReadAllResult(List<CommitEventRecord> records, 
+                                  int maxCount, 
+                                  TFPos currentPos, 
+                                  TFPos nextPos, 
+                                  TFPos prevPos, 
+                                  long tfEofPosition)
         {
             Ensure.NotNull(records, "records");
 

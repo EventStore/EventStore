@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
+    [TestFixture, Category("LongRunning"), Explicit]
     internal class subscribe_should
     {
         public int Timeout = 1000;

@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             return _isStreamDeleted(streamId);
         }
 
-        public ReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount, bool resolveLinks)
+        public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount)
         {
             throw new NotImplementedException();
         }
@@ -68,12 +68,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             throw new NotImplementedException();
         }
 
-        public string[] GetStreamIds()
-        {
-            throw new NotImplementedException();
-        }
-
-        public ReadAllResult ReadAllEventsForward(TFPos pos, int maxCount, bool resolveLinks)
+        public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount)
         {
             throw new NotImplementedException();
         }

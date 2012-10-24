@@ -79,6 +79,7 @@
     <Compile Include="DataStructures\LRUCache.cs" />
     <Compile Include="DataStructures\ObjectPool.cs" />
     <Compile Include="DataStructures\PairingHeap.cs" />
+    <Compile Include="Data\CommitEventRecord.cs" />
     <Compile Include="Data\EventLinkPair.cs" />
     <Compile Include="Data\EventNumber.cs" />
     <Compile Include="Data\EventRecord.cs" />
@@ -125,6 +126,7 @@
     <Compile Include="Services\RequestManager\Managers\Timeouts.cs" />
     <Compile Include="Services\Storage\ReaderIndex\CommitCheckResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\CommitDecision.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexReadAllResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IReadIndex.cs" />
     <Compile Include="Services\Storage\ReaderIndex\RangeReadResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\ReadAllResult.cs" />

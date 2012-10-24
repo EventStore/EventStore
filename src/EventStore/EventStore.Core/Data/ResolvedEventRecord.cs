@@ -29,8 +29,8 @@ namespace EventStore.Core.Data
 {
     public struct ResolvedEventRecord
     {
-        public readonly EventRecord Link;
         public readonly EventRecord Event;
+        public readonly EventRecord Link;
         public readonly long CommitPosition;
 
         public ResolvedEventRecord(EventRecord @event, EventRecord link, long commitPosition)
@@ -38,6 +38,11 @@ namespace EventStore.Core.Data
             Event = @event;
             CommitPosition = commitPosition;
             Link = link;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("CommitPosition: {0}, Event: {1}, Link: {2}", CommitPosition, Event, Link);
         }
     }
 }
