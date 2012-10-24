@@ -6,10 +6,13 @@
         var title = sets.title;
         var updateEventName = sets.updateEvent || es.TimeSeries.updateEvent;
         var getData = sets.getData || function (data) { return data; };
-        var appendToElement = sets.appendTo || es.TimeSeries.appendTo || '.content';
-        var maxLength = sets.maxLength || 100;
+        var appendToElement = sets.appendTo || es.TimeSeries.appendTo;
+        var maxLength = sets.maxLength || es.TimeSeries.maxLength || 100;
         var className = sets.className || es.TimeSeries.className || "";
+        var titleClassName = sets.titleClassName || es.TimeSeries.titleClassName;
         var zoomer = sets.zoomer || es.TimeSeries.zoomer;
+        var width = sets.width || es.TimeSeries.width || 300;
+        var height = sets.height || es.TimeSeries.height || 100;
 
         var seriesData = [];
         var container = null;
@@ -19,14 +22,16 @@
 
         function init() {
 
-            container = $('<div class="chart-cont ' + className + '" />')
-                            .append(["<div class='chart-title'>", title, "</div>"].join(""))
+            container = $('<div class="es-chart-cont ' + className + '" />')
+                            .append(["<div class='es-chart-title ", titleClassName, "'>", title, "</div>"].join(""))
                             .appendTo(appendToElement)
                             .click(handleZoom);
             container[0].asZoomable = asZoomable;
+            container[0].asSelectable = asSelectable;
             
+
             initData();
-            var graph = createGraphInternal(container, seriesData, 300, 100);
+            var graph = createGraphInternal(container, seriesData, width, height);
             $(document).on(updateEventName, function (event, data) {
                 onNewData(data);
                 graph.update();
@@ -125,8 +130,14 @@
                 show: show,
                 cleanUp: cleanUp,
                 title: title,
-                domElem: container
+                domElem: container[0]
             };
+        }
+
+        function asSelectable() {
+            return {
+                title: title,
+            }; 
         }
 
         function handleZoom() {

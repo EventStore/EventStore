@@ -1,13 +1,16 @@
 ﻿if (!window.es) { window.es = {}; };
 es.tmpl = (function () {
 
+    var templatesRequests = [];
+
     return {
         renderHead: renderHead,
-        renderBody: renderBody
+        renderBody: renderBody,
+        render: render
     };
 
     function renderHead() {
-        renderTemplate("head", "#r-head", null);
+        renderInternal("head", "#r-head", null);
     }
 
     function renderBody(opts) {
@@ -19,12 +22,29 @@ es.tmpl = (function () {
         var data = $.extend({}, opts, {
             content: content
         });
-        renderTemplate("body", "#r-body", data);
+        renderInternal("body", "#r-body", data);
     }
 
-    function renderTemplate(tmplName, targetSelector, data) {
+    function render(tmplName, targetSelector, data, templatesToWait) {
+
+        $(targetSelector).html('');
+
+        templatesToWait = templatesToWait || [];
+        tryAddToArray('body', templatesToWait);
+        tryAddToArray('head', templatesToWait);
+
+        var grepped = $.grep(templatesRequests, function (el) { return $.inArray(el.name, templatesToWait) > -1; });
+        var toWait = $.map(grepped, function (el) { return el.req; });
+
+        $.when.apply($, toWait)
+         .then(function () {
+             renderInternal(tmplName, targetSelector, data);
+         });
+    }
+
+    function renderInternal(tmplName, targetSelector, data) {
         var file = formatTemplatePath(tmplName);
-        $.get(file, null, function (template) {
+        var ajax = $.get(file, null, function (template) {
             var tmpl = $.templates(template);
             var htmlString = tmpl.render(data);
             if (targetSelector) {
@@ -32,6 +52,7 @@ es.tmpl = (function () {
             }
             return htmlString;
         });
+        templatesRequests.push({ name: tmplName, req: ajax });
     }
 
     function formatTemplatePath(name) {
@@ -65,6 +86,13 @@ es.tmpl = (function () {
             isLoaded = true;
             for (var i in toLoad)
                 toLoad[i]();
+        }
+    }
+
+    function tryAddToArray(item, array) {
+        var index = jQuery.inArray(item, array);
+        if (index < 0) {
+            array.push(item);
         }
     }
 })();

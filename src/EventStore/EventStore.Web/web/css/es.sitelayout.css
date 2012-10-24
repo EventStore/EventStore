@@ -50,7 +50,7 @@ h6 { font-size: 1em; font-weight: bold; }
 .dropdown {
     margin-left: 10px;
 }
-.graphcontrol li{
+.es-selector li{
     margin: 0 20px;
 }
 
@@ -58,10 +58,10 @@ h6 { font-size: 1em; font-weight: bold; }
     float: right;
 }
 
-.graphcontrol_nav{
+.es-selector-all{
     text-align: center;
 }
-.graphcontrol_nav a{
+.es-selector-all a{
     display: inline-block;
 }
 
@@ -81,8 +81,7 @@ h6 { font-size: 1em; font-weight: bold; }
     height: 3px;
     margin-top: 8px;
 }
-
-.chart-cont {
+.es-chart-cont, .es-chart-header {
     display: inline-block;
     margin: 10px;
     border: 1px solid gray;
@@ -93,7 +92,11 @@ h6 { font-size: 1em; font-weight: bold; }
     -moz-border-radius: 5px;
     border-radius: 5px;
 }
-
+.es-chart-cont .es-chart-title {
+	text-align: center;
+	font-size: 14px;
+	margin: 10px auto;
+}
 .rickshaw_graph {
     position: relative;
     background-color: white;
@@ -104,14 +107,11 @@ h6 { font-size: 1em; font-weight: bold; }
     -moz-border-radius: 5px;
     border-radius: 5px;
 }
-
-.zoomed-chart {
+.es-zoomer {
     overflow-x: hidden!important;
 }
 
-/*.rickshaw_graph > .detail {
-    padding: 0px;
-}*/
+
 /* ==========================================================================
    Author's custom styles
    ========================================================================== */

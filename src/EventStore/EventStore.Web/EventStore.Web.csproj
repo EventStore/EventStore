@@ -43,7 +43,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="web\js\charts\es.Zoomer.js" />
+    <Content Include="web\js\controls\es.Zoomer.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="web\lib\bootstrap\css\bootstrap-responsive.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -98,12 +100,6 @@
     <Content Include="web\chat.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\css\es.dashboard.css">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\css\es.style.css">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="web\health-charts.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -123,9 +119,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="web\js\charts\es.chartsSetup.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\js\charts\es.graphcontrol.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="web\js\charts\es.TimeSeries.js">
@@ -245,6 +238,9 @@
     <Content Include="web\js\es.tmpl.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="web\tmpl\_charts.tmpl.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="web\tmpl\_head.tmpl.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -255,7 +251,11 @@
   <ItemGroup>
     <Reference Include="System" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="web\js\controls\es.Selector.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
