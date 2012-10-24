@@ -6,11 +6,26 @@ es.Zoomer = function (sets) {
 
     this.show = show;
 
-    var dialog = $(".es-zoomer");
     var current = null;
+    var playButton = { text: "play", click: function () { play(); } };
+    var stopButton = { text: "stop", click: function () { stop(); } };
+    var buttons = [{ text: "prev", click: tryMovePrev },
+                   { text: "next", click: tryMoveNext },
+                   playButton ];
+    var dialog = $(".es-zoomer").dialog({
+        autoOpen: false,
+        resizable: false,
+        width: 750,
+        height: 550,
+        modal: false,
+        closeOnEscape: true,
+        buttons: buttons,
+        beforeClose: stop,
+        position: "center"
+    });
 
     function show(iZoomable) {
-        
+
         var zoomable = iZoomable.asZoomable();
 
         var zshow = zoomable.show;
@@ -24,58 +39,40 @@ es.Zoomer = function (sets) {
         current = zoomable;
         zshow(dialog, 700, 400);
 
-        dialog.dialog({
-            title: title,
-            resizable: false,
-            width: 750,
-            height: 550,
-            modal: true,
-            closeOnEscape: true,
-            buttons: [
-                    {
-                        text: "prev",
-                        click: tryMovePrev
-                    },
-                    {
-                        text: "next",
-                        click: tryMoveNext
-                    },
-                    {
-                        text: "play/stop",
-                        click: function () {
-                            playstop();
-                        }
-                    }
-                ],
-            beforeClose: function () { playstop(true); },
-            position: "center"
-        });
+        dialog.dialog("option", "title", title);
 
-        function tryMovePrev() {
-            var prev = getPrev(current.domElem);
-            if (prev)
-                show(prev);
-        }
-
-        function tryMoveNext() {
-            var next = getNext(current.domElem);
-            if (next)
-                show(next);
-        }
-
-        var intervalID;
-        function playstop(close) {
-            if (typeof (intervalID) != "undefined" && intervalID != 0) {
-                clearInterval(intervalID);
-                intervalID = 0;
-            } else {
-                if (!close) {
-                    intervalID = setInterval(function () {
-                        tryMoveNext()
-                    }, 3000);
-                }
-            }
-        };
+        if (!dialog.dialog("isOpen"))
+            dialog.dialog("open");
 
     };
+
+    function tryMovePrev() {
+        var prev = getPrev(current.domElem);
+        if (prev)
+            show(prev);
+    }
+
+    function tryMoveNext() {
+        var next = getNext(current.domElem);
+        if (next)
+            show(next);
+    }
+
+    var intervalID = null;
+    function play() {
+        intervalID = setInterval(function () {
+            tryMoveNext();
+        }, 3000);
+
+        buttons[2] = stopButton;
+        dialog.dialog("option", "buttons", buttons);
+    }
+
+    function stop() {
+        if (intervalID)
+            clearInterval(intervalID);
+
+        buttons[2] = playButton;
+        dialog.dialog("option", "buttons", buttons);
+    }
 }
