@@ -214,10 +214,15 @@ namespace EventStore.Core.TransactionLog.Chunks
         public static TFChunk CreateNew(string filename, int chunkSize, int chunkNumber, int chunkScavengeVersion)
         {
             var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkNumber, chunkNumber, chunkScavengeVersion);
+            return CreateWithHeader(filename, chunkHeader);
+        }
+
+        public static TFChunk CreateWithHeader(string filename, ChunkHeader header)
+        {
             var chunk = new TFChunk(filename, TFConsts.TFChunkReaderCount, TFConsts.MidpointsDepth);
             try
             {
-                chunk.InitNew(chunkHeader);
+                chunk.InitNew(header);
             }
             catch
             {
@@ -226,7 +231,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             return chunk;
         }
-
 
         private Stream GetSequentialReaderFileStream()
         {
