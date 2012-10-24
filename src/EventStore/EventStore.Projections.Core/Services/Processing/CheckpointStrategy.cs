@@ -139,6 +139,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new NotSupportedException();
             else if (_streams != null && _streams.Count == 1)
                 return new StreamEventFilter(_streams.First(), _allEvents, _events);
+            else if (_streams != null && _streams.Count > 1)
+                return new MultiStreamEventFilter(_streams, _allEvents, _events);
             else
                 throw new NotSupportedException();
         }

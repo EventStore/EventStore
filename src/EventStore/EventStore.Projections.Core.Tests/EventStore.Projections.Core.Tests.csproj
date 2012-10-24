@@ -116,6 +116,7 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_position.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_tf_position.cs" />
+    <Compile Include="Services\event_filter\specific_stream_event_filter.cs" />
     <Compile Include="Services\multi_stream_event_distribution_point\when_handling_read_completed_for_all_streams.cs" />
     <Compile Include="Services\multi_stream_event_distribution_point\when_creating.cs" />
     <Compile Include="Services\multi_stream_event_distribution_point\when_handling_read_completed.cs" />
@@ -188,7 +189,7 @@
     <Compile Include="Services\event_filter\specific_category_event_filter.cs" />
     <Compile Include="Services\event_filter\specific_event_event_filter.cs" />
     <Compile Include="Services\event_filter\specific_stream_and_category_event_filter.cs" />
-    <Compile Include="Services\event_filter\specific_stream_event_filter.cs" />
+    <Compile Include="Services\event_filter\specific_streams_event_filter.cs" />
     <Compile Include="Services\event_filter\TestFixtureWithEventFilter.cs" />
     <Compile Include="Services\event_position.cs" />
     <Compile Include="Services\paused_at_event_distribution_point.cs" />
