@@ -28,51 +28,53 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
+using EventStore.Core.Data;
+using EventStore.Core.Messages;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Other
+namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribution_point
 {
     [TestFixture]
-    class can_serialize_and_deserialize
+    public class when_has_been_created : TestFixtureWithExistingEvents
     {
-        [Test]
-        public void position_based_checkpoint_tag()
-        {
-            CheckpointTag tag = CheckpointTag.FromPosition(-1, 0);
-            byte[] bytes = tag.ToJsonBytes();
-            string instring = Encoding.UTF8.GetString(bytes);
-            Console.WriteLine(instring);
+        private MultiStreamReaderEventDistributionPoint _edp;
+        private Guid _publishWithCorrelationId;
+        private Guid _distibutionPointCorrelationId;
+        private string[] _abStreams;
+        private CheckpointTag _ab12Tag;
 
-            var back = instring.ParseJson<CheckpointTag>();
-            Assert.AreEqual(tag, back);
+        [SetUp]
+        public void When()
+        {
+            _ab12Tag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "a", 1 }, { "b", 2 } });
+            _abStreams = new[] { "a", "b" };
+
+            _publishWithCorrelationId = Guid.NewGuid();
+            _distibutionPointCorrelationId = Guid.NewGuid();
+            _edp = new MultiStreamReaderEventDistributionPoint(_bus, _distibutionPointCorrelationId, _abStreams, _ab12Tag, false);
         }
 
         [Test]
-        public void stream_based_checkpoint_tag()
+        public void it_can_be_resumed()
         {
-            CheckpointTag tag = CheckpointTag.FromStreamPosition("$ce-account", 12345);
-            byte[] bytes = tag.ToJsonBytes();
-            string instring = Encoding.UTF8.GetString(bytes);
-            Console.WriteLine(instring);
-
-            var back = instring.ParseJson<CheckpointTag>();
-            Assert.AreEqual(tag, back);
-            Assert.IsNull(back.CommitPosition);
+            _edp.Resume();
         }
 
-        [Test]
-        public void streams_based_checkpoint_tag()
+        [Test, ExpectedException(typeof (InvalidOperationException))]
+        public void it_cannot_be_paused()
         {
-            CheckpointTag tag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"a", 1}, {"b", 2}});
-            byte[] bytes = tag.ToJsonBytes();
-            string instring = Encoding.UTF8.GetString(bytes);
-            Console.WriteLine(instring);
+            _edp.Pause();
+        }
 
-            var back = instring.ParseJson<CheckpointTag>();
-            Assert.AreEqual(tag, back);
-            Assert.IsNull(back.CommitPosition);
+        [Test, ExpectedException(typeof (InvalidOperationException))]
+        public void handle_read_events_completed_throws()
+        {
+            _edp.Handle(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
+                    _distibutionPointCorrelationId, "a", new EventLinkPair[0], RangeReadResult.Success, -1, 100, 4));
         }
     }
 }
