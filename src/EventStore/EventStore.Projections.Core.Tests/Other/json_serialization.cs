@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Text;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -52,6 +53,19 @@ namespace EventStore.Projections.Core.Tests.Other
         public void stream_based_checkpoint_tag()
         {
             CheckpointTag tag = CheckpointTag.FromStreamPosition("$ce-account", 12345);
+            byte[] bytes = tag.ToJsonBytes();
+            string instring = Encoding.UTF8.GetString(bytes);
+            Console.WriteLine(instring);
+
+            var back = instring.ParseJson<CheckpointTag>();
+            Assert.AreEqual(tag, back);
+            Assert.IsNull(back.CommitPosition);
+        }
+
+        [Test]
+        public void streams_based_checkpoint_tag()
+        {
+            CheckpointTag tag = CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"a", 1}, {"b", 2}});
             byte[] bytes = tag.ToJsonBytes();
             string instring = Encoding.UTF8.GetString(bytes);
             Console.WriteLine(instring);
