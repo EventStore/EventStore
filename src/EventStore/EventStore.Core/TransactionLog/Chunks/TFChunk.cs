@@ -942,10 +942,25 @@ namespace EventStore.Core.TransactionLog.Chunks
             return RecordWriteResult.Successful(oldPosition, _actualDataSize);
         }
 
+        public RecordWriteResult TryAppendRawData(byte [] buffer, int length)
+        {
+            var workItem = _writerWorkItem;
+            var stream = workItem.Stream;
+            if (stream.Position + length + 8 > ChunkHeader.Size + _chunkHeader.ChunkSize)
+                return RecordWriteResult.Failed(GetLogicalPosition(workItem));
+            var oldPosition = WriteRawData(buffer, length);
+            return RecordWriteResult.Successful(oldPosition, length);
+        }
+
         private long WriteRawData(MemoryStream buffer)
         {
             var len = (int) buffer.Length;
             var buf = buffer.GetBuffer();
+            return WriteRawData(buf, len);
+        }
+
+        private long WriteRawData(byte [] buf, int len)
+        {
             var curPos = GetLogicalPosition(_writerWorkItem);
 
             //MD5
@@ -961,7 +976,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             return curPos;
         }
-
+        
         public void Flush()
         {
             if (_isReadonly) 
