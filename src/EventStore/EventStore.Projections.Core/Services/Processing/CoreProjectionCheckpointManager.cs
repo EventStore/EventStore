@@ -65,6 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private string _requestedCheckpointState;
         private CheckpointTag _lastCompletedCheckpointPosition;
         private readonly PositionTracker _lastProcessedEventPosition;
+        private float _lastProcessedEventProgress;
 
         private int _eventsProcessedAfterRestart;
         private bool _stateLoaded;
@@ -78,7 +79,7 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ProjectionConfig projectionConfig, string projectionCheckpointStreamId, string name,
+            ProjectionConfig projectionConfig, string name,
             PositionTagger positionTagger)
         {
             if (coreProjection == null) throw new ArgumentNullException("coreProjection");
@@ -86,8 +87,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
             if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
             if (projectionConfig == null) throw new ArgumentNullException("projectionConfig");
-            if (projectionCheckpointStreamId == null) throw new ArgumentNullException("projectionCheckpointStreamId");
-            if (projectionCheckpointStreamId == "") throw new ArgumentException("projectionCheckpointStreamId");
             if (name == null) throw new ArgumentNullException("name");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (name == "") throw new ArgumentException("name");
@@ -110,6 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Already started");
             _started = true;
             _lastProcessedEventPosition.UpdateByCheckpointTagInitial(checkpointTag);
+            _lastProcessedEventProgress = -1;
             _lastCompletedCheckpointPosition = checkpointTag;
             _requestedCheckpointPosition = null;
             _currentCheckpoint = new ProjectionCheckpoint(
@@ -138,6 +138,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     Mode = _projectionConfig.Mode,
                     Name = null,
                     Position = _lastProcessedEventPosition.LastTag,
+                    Progress = _lastProcessedEventProgress,
                     StateReason = "",
                     Status = "",
                     LastCheckpoint =
@@ -186,13 +187,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ProjectionMessage.Projections.CheckpointCompleted(_lastCompletedCheckpointPosition));
         }
 
-        public void EventProcessed(string state, List<EmittedEvent[]> scheduledWrites, CheckpointTag checkpointTag)
+        public void EventProcessed(
+            string state, List<EmittedEvent[]> scheduledWrites, CheckpointTag checkpointTag, float progress)
         {
             EnsureStarted();
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
             _eventsProcessedAfterRestart++;
             _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointTag);
+            _lastProcessedEventProgress = progress;
             // running state only
             if (scheduledWrites != null)
                 foreach (var scheduledWrite in scheduledWrites)
@@ -202,7 +205,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ProcessCheckpoints();
         }
 
-        public void CheckpointSuggested(CheckpointTag checkpointTag)
+        public void CheckpointSuggested(CheckpointTag checkpointTag, float progress)
         {
             if (!_projectionConfig.CheckpointsEnabled)
                 throw new InvalidOperationException("Checkpoints are not enabled");
@@ -210,6 +213,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
             _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointTag);
+            _lastProcessedEventProgress = progress;
             RequestCheckpoint(_lastProcessedEventPosition);
         }
 
@@ -246,7 +250,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _closingCheckpoint.Prepare(requestedCheckpointPosition);
         }
 
-        protected void ProcessCheckpoints()
+        private void ProcessCheckpoints()
         {
             if (_projectionConfig.CheckpointsEnabled)
                 if (_handledEventsAfterCheckpoint >= _projectionConfig.CheckpointHandledThreshold)

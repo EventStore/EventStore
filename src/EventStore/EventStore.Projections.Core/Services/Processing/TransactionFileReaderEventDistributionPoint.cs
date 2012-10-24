@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
 
-            if (message.Result.Records.Count == 0)
+            if (message.Result.Records.Length == 0)
             {
                 // the end
                 if (_deliverEndOfTfPosition)
@@ -124,10 +124,10 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                for (int index = 0; index < message.Result.Records.Count; index++)
+                for (int index = 0; index < message.Result.Records.Length; index++)
                 {
                     var @event = message.Result.Records[index];
-                    DeliverEvent(@event);
+                    DeliverEvent(@event, message.Result.TfEofPosition);
                 }
                 _from = message.Result.NextPos;
             }
@@ -150,10 +150,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(
                 new ProjectionMessage.Projections.CommittedEventDistributed(
                     _distibutionPointCorrelationId, default(EventPosition), null, int.MinValue,
-                    null, int.MinValue, false, null, lastPosition.PreparePosition)); //TODO: check was is passed here
+                    null, int.MinValue, false, null, lastPosition.PreparePosition, 100.0f)); //TODO: check was is passed here
         }
 
-        private void DeliverEvent(ResolvedEventRecord @event)
+        private void DeliverEvent(ResolvedEventRecord @event, long lastCommitPosition)
         {
             EventRecord positionEvent = (@event.Link ?? @event.Event);
             var receivedPosition = new EventPosition(@event.CommitPosition, positionEvent.LogPosition);
@@ -168,8 +168,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     _distibutionPointCorrelationId, receivedPosition, positionEvent.EventStreamId,
                     positionEvent.EventNumber, @event.Event.EventStreamId, @event.Event.EventNumber, @event.Link != null,
                     new Event(
-                        @event.Event.EventId, @event.Event.EventType,
-                        (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data, @event.Event.Metadata), receivedPosition.PreparePosition));
+                        @event.Event.EventId, @event.Event.EventType, (@event.Event.Flags & PrepareFlags.IsJson) != 0,
+                        @event.Event.Data, @event.Event.Metadata), receivedPosition.PreparePosition, 100.0f * positionEvent.LogPosition / lastCommitPosition));
         }
     }
 }

@@ -27,58 +27,54 @@
 // 
 
 using System;
-using System.Linq;
+using System.Collections.Generic;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
+namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribution_point
 {
     [TestFixture]
-    public class when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop :
-        TestFixtureWithCoreProjectionCheckpointManager
+    public class when_has_been_created : TestFixtureWithExistingEvents
     {
-        private Exception _exception;
+        private MultiStreamReaderEventDistributionPoint _edp;
+        private Guid _publishWithCorrelationId;
+        private Guid _distibutionPointCorrelationId;
+        private string[] _abStreams;
+        private CheckpointTag _ab12Tag;
 
-        protected override void Given()
+        [SetUp]
+        public void When()
         {
-            AllWritesSucceed();
-            base.Given();
-            this._checkpointHandledThreshold = 2;
-        }
+            _ab12Tag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "a", 1 }, { "b", 2 } });
+            _abStreams = new[] { "a", "b" };
 
-        protected override void When()
-        {
-            base.When();
-            _exception = null;
-            try
-            {
-                _manager.BeginLoadState();
-                _manager.Start(CheckpointTag.FromStreamPosition("stream", 10));
-                _manager.EventProcessed(
-                    @"{""state"":""state1""}", null, CheckpointTag.FromStreamPosition("stream", 11));
-                _manager.EventProcessed(
-                    @"{""state"":""state2""}", null, CheckpointTag.FromStreamPosition("stream", 12));
-                _manager.Stopping();
-                _manager.RequestCheckpointToStop();
-            }
-            catch (Exception ex)
-            {
-                _exception = ex;
-            }
+            _publishWithCorrelationId = Guid.NewGuid();
+            _distibutionPointCorrelationId = Guid.NewGuid();
+            _edp = new MultiStreamReaderEventDistributionPoint(_bus, _distibutionPointCorrelationId, _abStreams, _ab12Tag, false);
         }
 
         [Test]
-        public void two_checkpoints_are_completed()
+        public void it_can_be_resumed()
         {
-            Assert.AreEqual(2, _projection._checkpointCompletedMessages.Count);
+            _edp.Resume();
         }
 
-
-        [Test]
-        public void only_one_checkpoint_has_been_written()
+        [Test, ExpectedException(typeof (InvalidOperationException))]
+        public void it_cannot_be_paused()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+            _edp.Pause();
+        }
+
+        [Test, ExpectedException(typeof (InvalidOperationException))]
+        public void handle_read_events_completed_throws()
+        {
+            _edp.Handle(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
+                    _distibutionPointCorrelationId, "a", new EventLinkPair[0], RangeReadResult.Success, -1, 100, 4));
         }
     }
 }

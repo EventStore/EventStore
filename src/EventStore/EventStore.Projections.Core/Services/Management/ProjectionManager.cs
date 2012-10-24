@@ -191,7 +191,6 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.GetStatistics message)
         {
-            var transactionFileHeadPosition = _checkpointForStatistics != null ? _checkpointForStatistics.Read() : -1;
             if (!String.IsNullOrEmpty(message.Name))
             {
                 var projection = GetProjection(message.Name);
@@ -200,7 +199,7 @@ namespace EventStore.Projections.Core.Services.Management
                 else
                     message.Envelope.ReplyWith(
                         new ProjectionManagementMessage.Statistics(
-                            new[] {projection.GetStatistics()}, transactionFileHeadPosition));
+                            new[] {projection.GetStatistics()}));
             }
             else
             {
@@ -210,7 +209,7 @@ namespace EventStore.Projections.Core.Services.Management
                                 let status = projection.GetStatistics()
                                 select status).ToArray();
                 message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.Statistics(statuses, transactionFileHeadPosition));
+                    new ProjectionManagementMessage.Statistics(statuses));
             }
         }
 

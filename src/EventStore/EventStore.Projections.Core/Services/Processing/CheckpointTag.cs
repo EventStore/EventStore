@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (stream.Value < 0 && stream.Value != ExpectedVersion.NoStream) throw new ArgumentException("Invalid sequence number", "streams");
             }
             Streams = new Dictionary<string, int>(streams); // clone
-            Position = new EventPosition(long.MinValue, long.MinValue);
+            Position = new EventPosition(Int64.MinValue, Int64.MinValue);
         }
 
         private CheckpointTag(string stream, int sequenceNumber)
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (stream == null) throw new ArgumentNullException("stream");
             if (stream == "") throw new ArgumentException("stream");
             if (sequenceNumber < 0 && sequenceNumber != ExpectedVersion.NoStream) throw new ArgumentException("sequenceNumber");
-            Position = new EventPosition(long.MinValue, long.MinValue);
+            Position = new EventPosition(Int64.MinValue, Int64.MinValue);
             Streams = new Dictionary<string, int> {{stream, sequenceNumber}};
         }
 
@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private static void ThrowIncomparable(CheckpointTag left, CheckpointTag right)
         {
             throw new InvalidOperationException(
-                string.Format("Incomparable multi-stream checkpoint tags. '{0}' and '{1}'", left, right));
+                String.Format("Incomparable multi-stream checkpoint tags. '{0}' and '{1}'", left, right));
         }
 
         public static bool operator >=(CheckpointTag left, CheckpointTag right)
@@ -236,18 +236,18 @@ namespace EventStore.Projections.Core.Services.Processing
             set
             {
                 Position = new EventPosition(
-                    value == null ? long.MinValue : value.GetValueOrDefault(), Position.PreparePosition);
+                    value == null ? Int64.MinValue : value.GetValueOrDefault(), Position.PreparePosition);
             }
         }
 
         [DataMember]
         public long? PreparePosition
         {
-            get { return Position.PreparePosition != long.MinValue ? Position.PreparePosition : (long?) null; }
+            get { return Position.PreparePosition != Int64.MinValue ? Position.PreparePosition : (long?) null; }
             set
             {
                 Position = new EventPosition(
-                    Position.CommitPosition, value == null ? long.MinValue : value.GetValueOrDefault());
+                    Position.CommitPosition, value == null ? Int64.MinValue : value.GetValueOrDefault());
             }
         }
 
@@ -307,6 +307,32 @@ namespace EventStore.Projections.Core.Services.Processing
                 rightMode = Mode.MultiStream;
                 return;
             }
+        }
+
+        public CheckpointTag UpdateStreamPosition(string streamId, int eventSequenceNumber)
+        {
+            if (GetMode() != Mode.MultiStream)
+                throw new ArgumentException("Invalid tag mode", "tag");
+            var resultDictionary = new Dictionary<string, int>();
+            foreach (var stream in Streams)
+            {
+                if (stream.Key == streamId)
+                {
+                    if (eventSequenceNumber < stream.Value)
+                        throw new InvalidOperationException(
+                            String.Format(
+                                "Cannot make a checkpoint tag before the current position. Stream: '{0}'  Current: {1} Message Position Event SequenceNo: {2}",
+                                stream.Key, stream.Value, eventSequenceNumber));
+                    resultDictionary.Add(stream.Key, eventSequenceNumber);
+                }
+                else
+                {
+                    resultDictionary.Add(stream.Key, stream.Value);
+                }
+            }
+            if (resultDictionary.Count < Streams.Count)
+                resultDictionary.Add(streamId, eventSequenceNumber);
+            return FromStreamPositions(resultDictionary);
         }
     }
 }

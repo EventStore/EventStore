@@ -75,8 +75,11 @@
     <Compile Include="Bus\IHandle.cs" />
     <Compile Include="Bus\QueueMonitor.cs" />
     <Compile Include="Cluster\VNodeState.cs" />
+    <Compile Include="DataStructures\ILRUCache.cs" />
+    <Compile Include="DataStructures\LRUCache.cs" />
     <Compile Include="DataStructures\ObjectPool.cs" />
     <Compile Include="DataStructures\PairingHeap.cs" />
+    <Compile Include="Data\CommitEventRecord.cs" />
     <Compile Include="Data\EventLinkPair.cs" />
     <Compile Include="Data\EventNumber.cs" />
     <Compile Include="Data\EventRecord.cs" />
@@ -121,9 +124,16 @@
     <Compile Include="Services\Monitoring\Stats\StatMetadata.cs" />
     <Compile Include="Services\RequestManager\Managers\SingleAckRequestManager.cs" />
     <Compile Include="Services\RequestManager\Managers\Timeouts.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\CommitCheckResult.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\CommitDecision.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\IndexReadAllResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IReadIndex.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\RangeReadResult.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\ReadAllResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\ReadIndex.cs" />
     <Compile Include="Index\TableIndex.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\SingleReadResult.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\StreamMetadata.cs" />
     <Compile Include="Services\Storage\StorageScavenger.cs" />
     <Compile Include="Services\SystemNames.cs" />
     <Compile Include="Services\RequestManager\Managers\TransactionCommitTwoPhaseRequestManager.cs" />
@@ -185,7 +195,6 @@
     <Compile Include="Services\Monitoring\Utils\ShellExecutor.cs" />
     <Compile Include="Services\Monitoring\Utils\StatsCsvEncoder.cs" />
     <Compile Include="Services\Storage\ReaderIndex\DictionaryBasedCache.cs" />
-    <Compile Include="Services\Storage\ReaderIndex\IReadCache.cs" />
     <Compile Include="Services\Storage\ReaderIndex\ReadIndexStats.cs" />
     <Compile Include="Services\Storage\StorageChaser.cs" />
     <Compile Include="Services\Storage\StorageReader.cs" />

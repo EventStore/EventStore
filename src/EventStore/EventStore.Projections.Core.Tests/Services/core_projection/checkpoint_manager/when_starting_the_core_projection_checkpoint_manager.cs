@@ -30,7 +30,7 @@ using System;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
+namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager
 {
     [TestFixture]
     public class when_starting_the_core_projection_checkpoint_manager : TestFixtureWithCoreProjectionCheckpointManager
@@ -85,25 +85,25 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projec
         [Test]
         public void accepts_event_processed()
         {
-            _manager.EventProcessed(@"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 11));
+            _manager.EventProcessed(@"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 11), 77.7f);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void event_processed_at_the_start_position_throws_invalid_operation_exception()
         {
-            _manager.EventProcessed(@"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 10));
+            _manager.EventProcessed(@"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
         }
 
         [Test]
         public void accepts_checkpoint_suggested()
         {
-            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 11));
+            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 11), 77.7f);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void checkpoint_suggested_at_the_start_position_throws_invalid_operation_exception()
         {
-            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 10));
+            _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
         }
 
 

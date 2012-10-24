@@ -25,15 +25,52 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using EventStore.Core.TransactionLog.LogRecords;
 
-namespace EventStore.Core.Services.Storage.ReaderIndex
+using NUnit.Framework;
+
+namespace EventStore.Projections.Core.Tests.Services.event_filter
 {
-    public interface IReadCache
+    [TestFixture]
+    public class specific_streams_event_filter : TestFixtureWithEventFilter
     {
-        bool TryGetRecord(long pos, out PrepareLogRecord record);
-        void PutRecord(long pos, PrepareLogRecord record);
+        protected override void Given()
+        {
+            _builder.FromStream("a");
+            _builder.FromStream("b");
+            _builder.AllEvents();
+        }
 
-        ReadCacheStats GetStatistics();
+        [Test]
+        public void can_be_built()
+        {
+            Assert.IsNotNull(_ef);
+        }
+
+        [Test]
+        public void passes_categorized_event_with_correct_stream_id()
+        {
+            //NOTE: this is possible if you read from $ce-account stream
+            // this is not the same as reading an account category as you can see at 
+            // least StreamCreate even there
+            Assert.IsTrue(_ef.Passes(true, "a", "event"));
+        }
+
+        [Test]
+        public void does_not_pass_categorized_event_with_incorrect_stream_id()
+        {
+            Assert.IsFalse(_ef.Passes(true, "incorrect_stream", "event"));
+        }
+
+        [Test]
+        public void passes_uncategorized_event_with_correct_stream_id()
+        {
+            Assert.IsTrue(_ef.Passes(false, "b", "event"));
+        }
+
+        [Test]
+        public void does_not_pass_uncategorized_event_with_incorrect_stream_id()
+        {
+            Assert.IsFalse(_ef.Passes(true, "incorrect_stream", "event"));
+        }
     }
 }

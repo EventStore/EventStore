@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void WriteOutput()
         {
-            _checkpointManager.CheckpointSuggested(_message.CheckpointTag);
+            _checkpointManager.CheckpointSuggested(_message.CheckpointTag, _message.Progress);
             NextStage();
         }
     }

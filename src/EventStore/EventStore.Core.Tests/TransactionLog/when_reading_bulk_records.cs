@@ -62,6 +62,7 @@ namespace EventStore.Core.Tests.TransactionLog
                 f.Flush(flushToDisk: true);
             }
             writerchk.Write(bytes.Length);
+            writerchk.Flush();
 
             var readBytes = reader.ReadNextBulk();
             Assert.AreEqual(bytes, readBytes);
@@ -75,6 +76,7 @@ namespace EventStore.Core.Tests.TransactionLog
                 f.Flush(flushToDisk: true);
             }
             writerchk.Write(writerchk.Read() + bytes.Length);
+            writerchk.Flush();
 
             readBytes = reader.ReadNextBulk();
             Assert.AreEqual(bytes, readBytes);

@@ -44,5 +44,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public const int TFChunkReaderCount = ReadIndexReaderCount + 2 /* for caching/uncaching, populating midpoints */;
         
         public const int CachedChunkCount = 2;
+
+        public const int MetadataCacheCapacity = 100000;
     }
 }

@@ -30,6 +30,7 @@ using System.IO;
 using System.Net;
 using EventStore.Common.Settings;
 using EventStore.Core.Bus;
+using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
@@ -94,7 +95,13 @@ namespace EventStore.Core
                                             maxSizeForMemory: 1000000,
                                             maxTablesPerLevel: 2);
 
-            var readIndex = new ReadIndex(_mainQueue, TFConsts.ReadIndexReaderCount, () => new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0), () => new TFChunkReader(db, db.Config.WriterCheckpoint), tableIndex, new XXHashUnsafe());
+            var readIndex = new ReadIndex(_mainQueue, 
+                                          TFConsts.ReadIndexReaderCount, 
+                                          () => new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0), 
+                                          () => new TFChunkReader(db, db.Config.WriterCheckpoint), 
+                                          tableIndex, 
+                                          new XXHashUnsafe(),
+                                          new LRUCache<string, StreamMetadata>(TFConsts.MetadataCacheCapacity));
             var writer = new TFChunkWriter(db);
             var storageWriter = new StorageWriter(_mainQueue, _outputBus, writer, readIndex);
             var storageReader = new StorageReader(_mainQueue, _outputBus, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);

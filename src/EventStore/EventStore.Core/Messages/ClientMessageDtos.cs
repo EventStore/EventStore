@@ -312,6 +312,9 @@ namespace EventStore.Core.Messages
             [ProtoMember(4)]
             public bool ResolveLinkTos { get; set; }
 
+            [ProtoMember(5)]
+            public bool ReturnLastEventNumber { get; set; }
+
             public ReadStreamEventsForward()
             {
             }
@@ -340,6 +343,9 @@ namespace EventStore.Core.Messages
             [ProtoMember(4)]
             public long? LastCommitPosition { get; set; }
 
+            [ProtoMember(5)]
+            public int LastEventNumber { get; set; }
+
             public ReadStreamEventsForwardCompleted()
             {
             }
@@ -347,7 +353,8 @@ namespace EventStore.Core.Messages
             public ReadStreamEventsForwardCompleted(string eventStreamId,
                                                     EventLinkPair[] events,
                                                     RangeReadResult result,
-                                                    long? lastCommitPosition)
+                                                    long? lastCommitPosition,
+                                                    int lastEventNumber)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "streamId");
 
@@ -355,6 +362,7 @@ namespace EventStore.Core.Messages
                 Events = events;
                 Result = (int)result;
                 LastCommitPosition = lastCommitPosition;
+                LastEventNumber = lastEventNumber;
             }
         }
 

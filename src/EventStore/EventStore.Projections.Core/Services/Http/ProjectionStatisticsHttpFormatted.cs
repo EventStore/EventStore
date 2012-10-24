@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Services.Http
             this.Name = source.Name;
             this.Mode = source.Mode;
             this.Position = (source.Position ?? (object)"").ToString();
-            this.PositionRaw = (long) (source.Position != null ? source.Position.PreparePosition.GetValueOrDefault() : -1);
+            this.Progress = source.Progress;
             this.LastCheckpoint = source.LastCheckpoint;
             this.EventsProcessedAfterRestart = source.EventsProcessedAfterRestart;
             this.BufferedEvents = source.BufferedEvents;
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         public string Position { get; set; }
 
-        public long PositionRaw { get; set; }
+        public float Progress { get; set; }
 
         public string LastCheckpoint { get; set; }
 

@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
+    [TestFixture, Category("LongRunning"), Explicit]
     internal class subscribe_should
     {
         public int Timeout = 1000;
@@ -169,25 +169,25 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(11);
                 var dropped = new CountdownEvent(1);
 
-                Action<RecordedEvent> eventAppeared = (x) => appeared.Signal();
+                Action<RecordedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
                 var subscribe = store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
 
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.That(create.Wait(Timeout));
-                var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString()));
+                var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())).ToArray();
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.That(write.Wait(Timeout));
 
+                Assert.That(appeared.Wait(Timeout));
                 store.Unsubscribe(stream);
+
                 Assert.That(dropped.Wait(Timeout));
                 Assert.That(subscribe.Wait(Timeout));
 
                 var write2 = store.AppendToStreamAsync(stream, 10, testEvents);
                 Assert.That(write2.Wait(Timeout));
-
-                Assert.That(appeared.Wait(Timeout));
             }
         }
     }

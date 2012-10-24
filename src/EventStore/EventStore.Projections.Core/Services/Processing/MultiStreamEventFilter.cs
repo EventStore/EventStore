@@ -26,26 +26,28 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.LogRecords;
+using System.Collections.Generic;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Storage
+namespace EventStore.Projections.Core.Services.Processing
 {
-    public class NullCache : IReadCache
+    public class MultiStreamEventFilter : EventFilter
     {
-        public bool TryGetRecord(long pos, out PrepareLogRecord record)
+        private readonly HashSet<string> _streams;
+
+        public MultiStreamEventFilter(HashSet<string> streams, bool allEvents, HashSet<string> events)
+            : base(allEvents, events)
         {
-            record = null;
-            return false;
+            _streams = streams;
         }
 
-        public void PutRecord(long pos, PrepareLogRecord record)
+        public override bool PassesSource(bool resolvedFromLinkTo, string positionStreamId)
         {
+            return _streams.Contains(positionStreamId);
         }
 
-        public ReadCacheStats GetStatistics()
+        public override string GetCategory(string positionStreamId)
         {
-            throw new System.NotImplementedException();
+            return null;
         }
     }
 }

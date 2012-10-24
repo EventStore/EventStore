@@ -31,7 +31,7 @@ using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
+namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager
 {
     public class TestFixtureWithCoreProjectionCheckpointManager : TestFixtureWithExistingEvents
     {

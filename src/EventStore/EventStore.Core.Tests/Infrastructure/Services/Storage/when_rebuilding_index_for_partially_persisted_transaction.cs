@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -35,7 +36,13 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             TableIndex = new TableIndex(Path.Combine(PathName, "index"), () => new HashListMemTable(), maxSizeForMemory: 5);
             TableIndex.Initialize();
 
-            ReadIndex = new ReadIndex(new NoopPublisher(), 2, () => new TFChunkSequentialReader(Db, WriterCheckpoint, 0), () => new TFChunkReader(Db, WriterCheckpoint), TableIndex, new ByLengthHasher());
+            ReadIndex = new ReadIndex(new NoopPublisher(),
+                                      2,
+                                      () => new TFChunkSequentialReader(Db, WriterCheckpoint, 0),
+                                      () => new TFChunkReader(Db, WriterCheckpoint),
+                                      TableIndex,
+                                      new ByLengthHasher(),
+                                      new NoLRUCache<string, StreamMetadata>());
             ReadIndex.Build();
         }
 

@@ -30,10 +30,10 @@ using System;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
+namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager
 {
     [TestFixture]
-    public class when_creating_a_core_projection_checkpoint_manager : TestFixtureWithCoreProjectionCheckpointManager
+    public class when_creating_a_default_checkpoint_manager : TestFixtureWithCoreProjectionCheckpointManager
     {
         protected override void When()
         {

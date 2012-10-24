@@ -52,9 +52,10 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionConfig projectionConfig, string projectionCheckpointStreamId, string name,
             PositionTagger positionTagger)
             : base(
-                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
-                projectionCheckpointStreamId, name, positionTagger)
+                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig, name, positionTagger)
         {
+            if (projectionCheckpointStreamId == null) throw new ArgumentNullException("projectionCheckpointStreamId");
+            if (projectionCheckpointStreamId == "") throw new ArgumentException("projectionCheckpointStreamId");
             _projectionCheckpointStreamId = projectionCheckpointStreamId;
         }
 

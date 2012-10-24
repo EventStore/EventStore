@@ -29,7 +29,7 @@
 using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.core_projection_checkpoint_manager
+namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager
 {
     public class FakeCoreProjection : ICoreProjection
     {

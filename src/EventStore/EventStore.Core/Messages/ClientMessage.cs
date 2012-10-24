@@ -392,13 +392,16 @@ namespace EventStore.Core.Messages
             public readonly int FromEventNumber;
             public readonly int MaxCount;
             public readonly bool ResolveLinks;
+            // return number of events is an optimization for projections 
+            public readonly bool ReturnLastEventNumber;
 
             public ReadStreamEventsForward(Guid correlationId,
                                            IEnvelope envelope,
                                            string eventStreamId,
                                            int fromEventNumber,
                                            int maxCount,
-                                           bool resolveLinks)
+                                           bool resolveLinks,
+                                           bool returnLastEventNumber)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
@@ -406,6 +409,7 @@ namespace EventStore.Core.Messages
                 FromEventNumber = fromEventNumber;
                 MaxCount = maxCount;
                 ResolveLinks = resolveLinks;
+                ReturnLastEventNumber = returnLastEventNumber;
             }
 
             public override string ToString()
@@ -422,13 +426,15 @@ namespace EventStore.Core.Messages
             public readonly RangeReadResult Result;
             public readonly int NextEventNumber;
             public readonly long? LastCommitPosition;
+            public readonly int LastEventNumber;
 
             public ReadStreamEventsForwardCompleted(Guid correlationId,
                                                     string eventStreamId,
                                                     EventLinkPair[] events,
                                                     RangeReadResult result,
                                                     int nextEventNumber,
-                                                    long? lastCommitPosition)
+                                                    long? lastCommitPosition,
+                                                    int lastEventNumber)
             {
                 Ensure.NotNull(events, "events");
 
@@ -438,6 +444,7 @@ namespace EventStore.Core.Messages
                 Result = result;
                 NextEventNumber = nextEventNumber;
                 LastCommitPosition = lastCommitPosition;
+                LastEventNumber = lastEventNumber;
             }
         }
 

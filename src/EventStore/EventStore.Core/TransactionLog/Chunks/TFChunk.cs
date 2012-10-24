@@ -140,15 +140,16 @@ namespace EventStore.Core.TransactionLog.Chunks
                 VerifyFileHash();
         }
 
-        private void InitNew(ChunkHeader chunkHeader)
+        private void InitNew(ChunkHeader chunkHeader, int fileSize)
         {
             Ensure.NotNull(chunkHeader, "chunkHeader");
+            Ensure.Positive(fileSize, "fileSize");
 
             _isReadonly = false;
             _chunkHeader = chunkHeader;
             _actualDataSize = 0;
 
-            CreateWriterWorkItemForNewChunk(chunkHeader);
+            CreateWriterWorkItemForNewChunk(chunkHeader, fileSize);
             CreateReaderStreams();
 
             SetAttributes();
@@ -214,10 +215,15 @@ namespace EventStore.Core.TransactionLog.Chunks
         public static TFChunk CreateNew(string filename, int chunkSize, int chunkNumber, int chunkScavengeVersion)
         {
             var chunkHeader = new ChunkHeader(CurrentChunkVersion, chunkSize, chunkNumber, chunkNumber, chunkScavengeVersion);
+            return CreateWithHeader(filename, chunkHeader, chunkSize + ChunkHeader.Size + ChunkFooter.Size);
+        }
+
+        public static TFChunk CreateWithHeader(string filename, ChunkHeader header, int fileSize)
+        {
             var chunk = new TFChunk(filename, TFConsts.TFChunkReaderCount, TFConsts.MidpointsDepth);
             try
             {
-                chunk.InitNew(chunkHeader);
+                chunk.InitNew(header, fileSize);
             }
             catch
             {
@@ -227,11 +233,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             return chunk;
         }
 
-
         private Stream GetSequentialReaderFileStream()
         {
             return new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-                                            64000, FileOptions.SequentialScan);
+                                   64000, FileOptions.SequentialScan);
+            
         }
 
         private void CreateReaderStreams()
@@ -245,13 +251,13 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private void CreateWriterWorkItemForNewChunk(ChunkHeader chunkHeader)
+        private void CreateWriterWorkItemForNewChunk(ChunkHeader chunkHeader, int fileSize)
         {
             var md5 = MD5.Create();
             var stream = new FileStream(_filename, FileMode.Create, FileAccess.ReadWrite, FileShare.Read,
                                         WriteBufferSize, FileOptions.SequentialScan);
             var writer = new BinaryWriter(stream);
-            stream.SetLength(chunkHeader.ChunkSize + ChunkHeader.Size + ChunkFooter.Size);
+            stream.SetLength(fileSize);
             WriteHeader(md5, stream, chunkHeader);
             _writerWorkItem = new WriterWorkItem(stream, writer, md5);
             Flush();
@@ -446,7 +452,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 throw new InvalidOperationException("When trying to build cache, reader worker is already in-memory reader.");
             try
             {
-                _cachedDataLength = _isReadonly ? _chunkFooter.ActualChunkSize + _chunkFooter.MapSize : _chunkHeader.ChunkSize;
+                _cachedDataLength = (int) workItem.Stream.Length - ChunkHeader.Size; // all except header
                 var cachedData = (byte*) Marshal.AllocHGlobal(_cachedDataLength);
                 try
                 {
@@ -937,10 +943,25 @@ namespace EventStore.Core.TransactionLog.Chunks
             return RecordWriteResult.Successful(oldPosition, _actualDataSize);
         }
 
+        public bool TryAppendRawData(byte[] buffer, int length)
+        {
+            var workItem = _writerWorkItem;
+            var stream = workItem.Stream;
+            if (stream.Position + length > stream.Length)
+                return false;
+            WriteRawData(buffer, length);
+            return true;
+        }
+
         private long WriteRawData(MemoryStream buffer)
         {
             var len = (int) buffer.Length;
             var buf = buffer.GetBuffer();
+            return WriteRawData(buf, len);
+        }
+
+        private long WriteRawData(byte[] buf, int len)
+        {
             var curPos = GetLogicalPosition(_writerWorkItem);
 
             //MD5
@@ -948,15 +969,16 @@ namespace EventStore.Core.TransactionLog.Chunks
             //FILE
             _writerWorkItem.Stream.Write(buf, 0, len); // as we are always append-only, stream's position should be right here
             //MEMORY
-            if (_writerWorkItem.UnmanagedMemoryStream != null)
+            var memStream = _writerWorkItem.UnmanagedMemoryStream;
+            if (memStream != null)
             {
                 var realMemPos = GetRealPosition(curPos, inMemory: true);
-                _writerWorkItem.UnmanagedMemoryStream.Seek(realMemPos, SeekOrigin.Begin);
-                _writerWorkItem.UnmanagedMemoryStream.Write(buf, 0, len);
+                memStream.Seek(realMemPos, SeekOrigin.Begin);
+                memStream.Write(buf, 0, len);
             }
             return curPos;
         }
-
+        
         public void Flush()
         {
             if (_isReadonly) 
@@ -973,7 +995,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (_isReadonly)
                 throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
 
-            _chunkFooter = WriteFooter(_chunkHeader.ChunkSize, null);
+            _chunkFooter = WriteFooter(null);
             Flush();
             _isReadonly = true;
             CloseWriterStream();
@@ -984,13 +1006,25 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (_isReadonly)
                 throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
 
-            _chunkFooter = WriteFooter(_actualDataSize, mapping);
+            _chunkFooter = WriteFooter(mapping);
             Flush();
             _isReadonly = true;
             CloseWriterStream();
         }
 
-        private ChunkFooter WriteFooter(int actualChunkSize, ICollection<PosMap> mapping)
+        public void CompleteRaw()
+        {
+            if (_isReadonly)
+                throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
+            if (_writerWorkItem.Stream.Position != _writerWorkItem.Stream.Length)
+                throw new InvalidOperationException("The raw chunk is not completely written.");
+            Flush();
+            _chunkFooter = ReadFooter(_writerWorkItem.Stream);
+            _isReadonly = true;
+            CloseWriterStream();
+        }
+
+        private ChunkFooter WriteFooter(ICollection<PosMap> mapping)
         {
             int mapSize = 0;
             if (mapping != null)
@@ -1012,7 +1046,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
 
             var footer = new ChunkFooter(true,
-                                         actualChunkSize,
+                                         _actualDataSize,
                                          _actualDataSize,
                                          mapSize,
                                          new byte[ChunkFooter.ChecksumSize]);
@@ -1023,11 +1057,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             //FILE
             footer.MD5Hash = _writerWorkItem.MD5.Hash;
             var footerBytes = footer.AsByteArray();
-            var footerPos = ChunkHeader.Size + actualChunkSize + mapSize;
-            _writerWorkItem.Stream.Position = footerPos;
+            //var footerPos = ChunkHeader.Size + _actualDataSize + mapSize;
+            //_writerWorkItem.Stream.Position = footerPos;
             _writerWorkItem.Stream.Write(footerBytes, 0, ChunkFooter.Size);
 
-            var fileSize = ChunkHeader.Size + actualChunkSize + mapSize + ChunkFooter.Size;
+            var fileSize = ChunkHeader.Size + _actualDataSize + mapSize + ChunkFooter.Size;
             if (_writerWorkItem.Stream.Length != fileSize)
                 _writerWorkItem.Stream.SetLength(fileSize);
 
@@ -1186,13 +1220,26 @@ namespace EventStore.Core.TransactionLog.Chunks
                 TryDestruct();
         }
 
-        public ReadResult TryReadNextBulk(Stream stream, byte [] into, int count)
+        public ReadResult TryReadNextBulkLogical(Stream stream, byte [] into, int count)
+        {
+            if (stream.Position == 0) stream.Position = ChunkHeader.Size;
+            var sizeRead = 0;
+            if (count > into.Length) count = into.Length;
+            var mapsize = ChunkFooter == null ? 0 : ChunkFooter.MapSize;
+            var available = stream.Length - ChunkFooter.Size - ChunkHeader.Size - mapsize;
+            var toRead = available > count ? count : (int) available;
+            sizeRead = stream.Read(into, 0, toRead);
+            return new ReadResult { IsEOF = stream.Length - ChunkFooter.Size - mapsize == stream.Position, ReadData = sizeRead };
+        }
+
+        public ReadResult TryReadNextBulkPhysical(Stream stream, byte[] into, int count)
         {
             var sizeRead = 0;
             if (count > into.Length) count = into.Length;
             sizeRead = stream.Read(into, 0, count);
-            return new ReadResult {IsEOF = stream.Length == stream.Position, ReadData = sizeRead};
+            return new ReadResult { IsEOF = stream.Length == stream.Position, ReadData = sizeRead };
         }
+
 
         private struct Midpoint
         {
@@ -1240,10 +1287,14 @@ namespace EventStore.Core.TransactionLog.Chunks
             _chunk.ReleaseReader(this);
         }
 
-        public ReadResult ReadNextBytes(int count, byte [] buffer)
+        public ReadResult ReadNextPhysicalBytes(int count, byte[] buffer)
         {
-            //GFY NOTE THIS DOES NOT USE WRITER CHECKSUM!
-            return _chunk.TryReadNextBulk(_stream, buffer, count);
+            return _chunk.TryReadNextBulkPhysical(_stream, buffer, count);
+        }
+
+        public ReadResult ReadNextLogicalBytes(int count, byte [] buffer)
+        {
+            return _chunk.TryReadNextBulkLogical(_stream, buffer, count);
         }
 
         public void Dispose()
@@ -1252,6 +1303,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             Release();
             GC.SuppressFinalize(this);
         }
+
     }
 
     public struct ReadResult
