@@ -231,7 +231,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private Stream GetSequentialReaderFileStream()
         {
             return new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-                                   64000, FileOptions.SequentialScan) {Position = ChunkHeader.Size};
+                                   64000, FileOptions.SequentialScan);
             
         }
 
@@ -1187,15 +1187,26 @@ namespace EventStore.Core.TransactionLog.Chunks
                 TryDestruct();
         }
 
-        public ReadResult TryReadNextBulk(Stream stream, byte [] into, int count)
+        public ReadResult TryReadNextBulkLogical(Stream stream, byte [] into, int count)
+        {
+            if (stream.Position == 0) stream.Position = ChunkHeader.Size;
+            var sizeRead = 0;
+            if (count > into.Length) count = into.Length;
+            var mapsize = ChunkFooter == null ? 0 : ChunkFooter.MapSize;
+            var available = stream.Length - ChunkFooter.Size - ChunkHeader.Size - mapsize;
+            var toRead = available > count ? count : (int) available;
+            sizeRead = stream.Read(into, 0, toRead);
+            return new ReadResult { IsEOF = stream.Length - ChunkFooter.Size - mapsize == stream.Position, ReadData = sizeRead };
+        }
+
+        public ReadResult TryReadNextBulkPhysical(Stream stream, byte[] into, int count)
         {
             var sizeRead = 0;
             if (count > into.Length) count = into.Length;
-            var available = stream.Length - ChunkFooter.Size - ChunkHeader.Size;
-            var toRead = available > count ? count : (int) available;
-            sizeRead = stream.Read(into, 0, toRead);
-            return new ReadResult { IsEOF = stream.Length - ChunkFooter.Size == stream.Position, ReadData = sizeRead };
+            sizeRead = stream.Read(into, 0, count);
+            return new ReadResult { IsEOF = stream.Length == stream.Position, ReadData = sizeRead };
         }
+
 
         private struct Midpoint
         {
@@ -1243,10 +1254,14 @@ namespace EventStore.Core.TransactionLog.Chunks
             _chunk.ReleaseReader(this);
         }
 
-        public ReadResult ReadNextBytes(int count, byte [] buffer)
+        public ReadResult ReadNextPhysicalBytes(int count, byte[] buffer)
         {
-            //GFY NOTE THIS DOES NOT USE WRITER CHECKSUM!
-            return _chunk.TryReadNextBulk(_stream, buffer, count);
+            return _chunk.TryReadNextBulkPhysical(_stream, buffer, count);
+        }
+
+        public ReadResult ReadNextLogicalBytes(int count, byte [] buffer)
+        {
+            return _chunk.TryReadNextBulkLogical(_stream, buffer, count);
         }
 
         public void Dispose()
@@ -1255,6 +1270,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             Release();
             GC.SuppressFinalize(this);
         }
+
     }
 
     public struct ReadResult
