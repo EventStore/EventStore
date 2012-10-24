@@ -36,16 +36,16 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void a_read_past_end_of_completed_chunk_does_not_include_footer_or_footer()
+        public void a_read_past_end_of_completed_chunk_does_not_include_footer()
         {
             var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 300, 0, 0);
-            chunk.Complete();
+            chunk.Complete(); // chunk has 0 bytes of actual data
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
                 var result = reader.ReadNextLogicalBytes(1024, buffer);
                 Assert.IsTrue(result.IsEOF);
-                Assert.AreEqual(300, result.ReadData); 
+                Assert.AreEqual(0, result.ReadData); 
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
