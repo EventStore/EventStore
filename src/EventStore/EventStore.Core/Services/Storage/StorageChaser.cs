@@ -82,14 +82,6 @@ namespace EventStore.Core.Services.Storage
                 var result = _chaser.TryReadNext();
                 if (result.Success)
                 {
-                    if (_watch.ElapsedTicks - _lastFlush >= _flushDelay + 2 * MsPerTick)
-                    {
-                        var start = _watch.ElapsedTicks;
-                        _chaser.Flush();
-                        _flushDelay = _watch.ElapsedTicks - start;
-                        _lastFlush = _watch.ElapsedTicks;
-                    }
-
                     switch (result.LogRecord.RecordType)
                     {
                         case LogRecordType.Prepare:
@@ -118,7 +110,16 @@ namespace EventStore.Core.Services.Storage
                             throw new ArgumentOutOfRangeException();
                     }
                 }
-                else
+
+                if (_watch.ElapsedTicks - _lastFlush >= _flushDelay + 2 * MsPerTick)
+                {
+                    var start = _watch.ElapsedTicks;
+                    _chaser.Flush();
+                    _flushDelay = _watch.ElapsedTicks - start;
+                    _lastFlush = _watch.ElapsedTicks;
+                }
+
+                if (!result.Success)
                 {
                     Thread.Sleep(1);
                 }
