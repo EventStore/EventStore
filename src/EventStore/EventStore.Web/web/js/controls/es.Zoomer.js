@@ -10,7 +10,7 @@ es.Zoomer = function (sets) {
     var current = null;
 
     function show(iZoomable) {
-
+        
         var zoomable = iZoomable.asZoomable();
 
         var zshow = zoomable.show;

@@ -25,6 +25,8 @@
                             .appendTo(appendToElement)
                             .click(handleZoom);
             container[0].asZoomable = asZoomable;
+            container[0].asSelectable = asSelectable;
+            
 
             initData();
             var graph = createGraphInternal(container, seriesData, 300, 100);
@@ -126,8 +128,14 @@
                 show: show,
                 cleanUp: cleanUp,
                 title: title,
-                domElem: container
+                domElem: container[0]
             };
+        }
+
+        function asSelectable() {
+            return {
+                title: title,
+            }; 
         }
 
         function handleZoom() {

@@ -22,7 +22,7 @@ es.Selector = function (opts) {
         getTargetElems().each(function () {
             var targetElem = this;
             var li = $("<li class='" + className + "'></li>")
-                .append('<label class="checkbox"><input type="checkbox" checked/>' + this.asZoomable().title + '</label>')
+                .append('<label class="checkbox"><input type="checkbox" checked/>' + this.asSelectable().title + '</label>')
                 .appendTo(appendToSelector);
             $("input[type='checkbox']", li)
                 .change(function () {

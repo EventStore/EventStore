@@ -51,6 +51,8 @@ $(function () {
             function getRelativeEl(el, offset) {
                 var allElems = getAllElems();
                 var index = allElems.index(el);
+                if (index < 0)
+                    return null;
                 var relative = allElems[index + offset] || null;
                 return relative;
             }
@@ -63,12 +65,13 @@ $(function () {
                 amendElem: function (sel) {
                     var targetElem = this;
                     $(targetElem).find("." + chartTitleClass)
-                                 .append('<a href="" class="hidegraph"><i class="icon-remove"></i></a>')
-                                 .click(function (ev) {
-                                     ev.preventDefault();
-                                     ev.stopPropagation();
-                                     sel.updateValue(targetElem, false);
-                                 });
+                                 .append(
+                                     $('<a href="" class="hidegraph"><i class="icon-remove"></i></a>').click(function (ev) {
+                                         ev.preventDefault();
+                                         ev.stopPropagation();
+                                         sel.updateValue(targetElem, false);
+                                     })
+                                 );
                 },
                 onCheck: function (domElem) {
                     $(domElem).show();
