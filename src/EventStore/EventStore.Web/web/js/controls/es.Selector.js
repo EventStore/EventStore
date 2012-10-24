@@ -6,31 +6,21 @@ es.Selector = function (opts) {
     var amendElem = opts.amendElem || function () { };
     var onCheck = opts.onCheck;
     var onUncheck = opts.onUncheck;
-
+    
+    this.addNewElem = addNewElem;
     this.updateValue = updateValue;
-
+    
     var self = this;
-    var checkBoxes = null;
+    var checkBoxes = $();
     var className = 'selector-item';
 
-    //todo: handle new elements in getTargetElems
+    //note: if new element appears you should add it manually from outside by using 'addNewElem'
 
     init();
 
     function init() {
 
-        getTargetElems().each(function () {
-            var targetElem = this;
-            var li = $("<li class='" + className + "'></li>")
-                .append('<label class="checkbox"><input type="checkbox" checked/>' + this.asSelectable().title + '</label>')
-                .appendTo(appendToSelector);
-            $("input[type='checkbox']", li)
-                .change(function () {
-                    onCheckedChanged(targetElem, this.checked);
-                });
-
-            amendElem.apply(this, [self]);
-        });
+        getTargetElems().each(createCheckboxForElem);
 
         $(appendToSelector + " .es-selector-all a").click(function (ev) {
             ev.preventDefault();
@@ -45,9 +35,25 @@ es.Selector = function (opts) {
             });
 
         });
+    }
+    
+    function addNewElem(domElem) {
+        createCheckboxForElem.apply(domElem);
+    }
 
-        var checkboxSelector = [appendToSelector, " .", className, " input[type='checkbox']"].join('');
-        checkBoxes = $(checkboxSelector);
+    function createCheckboxForElem() {
+        var targetElem = this;
+        var li = $("<li class='" + className + "'></li>")
+                .append('<label class="checkbox"><input type="checkbox" checked/>' + targetElem.asSelectable().title + '</label>')
+                .appendTo(appendToSelector);
+        var checkBox = $("input[type='checkbox']", li)
+                .change(function () {
+                    onCheckedChanged(targetElem, this.checked);
+                });
+
+        amendElem.apply(this, [self]);
+
+        checkBoxes = checkBoxes.add(checkBox);
     }
 
 
@@ -66,10 +72,12 @@ es.Selector = function (opts) {
     }
 
     function getCheckbox(domElem) {
-        var index = getTargetElems().index(domElem); //wont work with new elems in gettargetElems
+        var index = getTargetElems().index(domElem);
         if (index == -1)
             return null; // ?
         var checkbox = checkBoxes.eq(index);
         return checkbox;
     }
+
+    
 };

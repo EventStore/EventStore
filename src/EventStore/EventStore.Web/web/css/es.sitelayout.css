@@ -266,3 +266,9 @@ a.button-link:hover {
 #content {
     display: none;
 }
+
+/*===================================== manager =================================*/
+.es-dropdown-wrap {
+    display: inline-block;
+    width: 400px;
+}
