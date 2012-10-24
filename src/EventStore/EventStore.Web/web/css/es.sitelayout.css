@@ -81,7 +81,7 @@ h6 { font-size: 1em; font-weight: bold; }
     height: 3px;
     margin-top: 8px;
 }
-.chart-cont {
+.es-chart-cont {
     display: inline-block;
     margin: 10px;
     border: 1px solid gray;
@@ -92,7 +92,7 @@ h6 { font-size: 1em; font-weight: bold; }
     -moz-border-radius: 5px;
     border-radius: 5px;
 }
-.chart-cont .chart-title {
+.es-chart-cont .es-chart-title {
 	text-align: center;
 	font-size: 14px;
 	margin: 10px auto;

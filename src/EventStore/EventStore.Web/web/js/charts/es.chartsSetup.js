@@ -2,7 +2,7 @@ $(function () {
 
     var newDataEvent = "es.newStats";
     var timeSeriesClass = "es-time-series";
-    var chartTitleClass = "chart-title";
+    var chartTitleClass = "es-chart-title-js";
     var appendToSelector = ".wrap";
 
     buildCharts();

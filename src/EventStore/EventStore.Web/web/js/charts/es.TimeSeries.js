@@ -6,7 +6,7 @@
         var title = sets.title;
         var updateEventName = sets.updateEvent || es.TimeSeries.updateEvent;
         var getData = sets.getData || function (data) { return data; };
-        var appendToElement = sets.appendTo || es.TimeSeries.appendTo || '.content';
+        var appendToElement = sets.appendTo || es.TimeSeries.appendTo;
         var maxLength = sets.maxLength || 100;
         var className = sets.className || es.TimeSeries.className || "";
         var titleClassName = sets.titleClassName || es.TimeSeries.titleClassName;
@@ -20,8 +20,8 @@
 
         function init() {
 
-            container = $('<div class="chart-cont ' + className + '" />')
-                            .append(["<div class='bla-bla ", titleClassName, "'>", title, "</div>"].join(""))
+            container = $('<div class="es-chart-cont ' + className + '" />')
+                            .append(["<div class='es-chart-title ", titleClassName, "'>", title, "</div>"].join(""))
                             .appendTo(appendToElement)
                             .click(handleZoom);
             container[0].asZoomable = asZoomable;
