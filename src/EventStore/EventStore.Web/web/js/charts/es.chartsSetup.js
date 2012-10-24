@@ -58,8 +58,7 @@ $(function () {
 
         function prepareSelector() {
             var selector = new es.Selector({
-                appendToSelector: ".graphcontrol",
-                doAllSelector: ".graphcontrol_nav",
+                appendToSelector: ".es-selector-charts",
                 getTargetElems: getAllElems,
                 amendElem: function (sel) {
                     var targetElem = this;

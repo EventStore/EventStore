@@ -6,7 +6,7 @@ es.Zoomer = function (sets) {
 
     this.show = show;
 
-    var dialog = $(".zoomed-chart");
+    var dialog = $(".es-zoomer");
     var current = null;
 
     function show(iZoomable) {

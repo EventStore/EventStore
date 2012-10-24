@@ -2,7 +2,6 @@
 es.Selector = function (opts) {
 
     var appendToSelector = opts.appendToSelector;
-    var doAllSelector = opts.doAllSelector;
     var getTargetElems = opts.getTargetElems;
     var amendElem = opts.amendElem || function () { };
     var onCheck = opts.onCheck;
@@ -33,7 +32,7 @@ es.Selector = function (opts) {
             amendElem.apply(this, [self]);
         });
 
-        $(appendToSelector + " " + doAllSelector + " a").click(function (ev) {
+        $(appendToSelector + " .es-selector-all a").click(function (ev) {
             ev.preventDefault();
 
             var checkedAttr = $(this).attr("data-show");

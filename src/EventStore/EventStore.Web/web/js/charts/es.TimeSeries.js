@@ -21,7 +21,7 @@
         function init() {
 
             container = $('<div class="chart-cont ' + className + '" />')
-                            .append(["<div class='", titleClassName, "'>", title, "</div>"].join(""))
+                            .append(["<div class='bla-bla ", titleClassName, "'>", title, "</div>"].join(""))
                             .appendTo(appendToElement)
                             .click(handleZoom);
             container[0].asZoomable = asZoomable;
