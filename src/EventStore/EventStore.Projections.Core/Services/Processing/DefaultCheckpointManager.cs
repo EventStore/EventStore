@@ -36,7 +36,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class CoreProjectionDefaultCheckpointManager : CoreProjectionCheckpointManager
+    public class DefaultCheckpointManager : CoreProjectionCheckpointManager
     {
         private int _lastWrittenCheckpointEventNumber;
         private readonly string _projectionCheckpointStreamId;
@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private Event _checkpointEventToBePublished;
         private CheckpointTag _requestedCheckpointPosition;
 
-        public CoreProjectionDefaultCheckpointManager(
+        public DefaultCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,

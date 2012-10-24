@@ -36,12 +36,12 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class CoreProjectionMultiStreamCheckpointManager : CoreProjectionCheckpointManager
+    public class MultiStreamCheckpointManager : CoreProjectionCheckpointManager
     {
         private int _nextStateIndexToRequest;
         private readonly string _projectionStateUpdatesStreamId;
 
-        public CoreProjectionMultiStreamCheckpointManager(
+        public MultiStreamCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,

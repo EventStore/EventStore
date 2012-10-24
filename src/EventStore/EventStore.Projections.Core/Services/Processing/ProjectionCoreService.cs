@@ -235,7 +235,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var projectionSubscription = _subscriptions[projectionId];
 
-            if (message.SafeTransactionFileReaderJoinPosition != null && !_headingEventDistributionPoint.TrySubscribe(
+            if (message.SafeTransactionFileReaderJoinPosition == null || !_headingEventDistributionPoint.TrySubscribe(
                     projectionId, projectionSubscription, message.SafeTransactionFileReaderJoinPosition.Value))
                 return false;
 

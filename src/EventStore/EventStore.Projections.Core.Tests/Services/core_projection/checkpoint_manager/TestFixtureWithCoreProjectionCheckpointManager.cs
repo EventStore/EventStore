@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 {
     public class TestFixtureWithCoreProjectionCheckpointManager : TestFixtureWithExistingEvents
     {
-        protected CoreProjectionDefaultCheckpointManager _manager;
+        protected DefaultCheckpointManager _manager;
         protected FakeCoreProjection _projection;
         protected ProjectionConfig _config;
         protected ProjectionMode _projectionMode;
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 
         protected virtual void When()
         {
-            _manager = new CoreProjectionDefaultCheckpointManager(
+            _manager = new DefaultCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, _projectionCheckpointStreamId, "projection",
                 new StreamPositionTagger("stream"));
         }

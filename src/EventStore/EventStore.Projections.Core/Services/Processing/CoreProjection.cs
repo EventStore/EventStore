@@ -532,8 +532,15 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
         {
             EnsureState(State.LoadStateRequsted);
-            OnLoadStateCompleted(message.CheckpointTag, message.CheckpointData);
-            GoToState(State.StateLoadedSubscribed);
+            try
+            {
+                OnLoadStateCompleted(message.CheckpointTag, message.CheckpointData);
+                GoToState(State.StateLoadedSubscribed);
+            }
+            catch (Exception ex)
+            {
+                SetFaulted(ex);
+            }
         }
 
         private void OnLoadStateCompleted(CheckpointTag checkpointTag, string checkpointData)
