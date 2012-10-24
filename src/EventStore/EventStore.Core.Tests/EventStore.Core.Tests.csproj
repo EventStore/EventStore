@@ -224,7 +224,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Infrastructure\Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
-    <Compile Include="TransactionLog\Chunks\when_reading_bulk_a_chunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_reading_logical_bytes_bulk_from_a_chunk.cs" />
+    <Compile Include="TransactionLog\Chunks\when_reading_physical_bytes_bulk_from_a_chunk.cs" />
     <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_scavenged_odd_records.cs" />
     <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_scavenged_even_records.cs" />
     <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_few_chunks.cs" />
