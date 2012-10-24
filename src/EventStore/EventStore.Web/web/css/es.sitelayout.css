@@ -266,15 +266,3 @@ a.button-link:hover {
 #content {
     display: none;
 }
-
-/*===================================== manager =================================*/
-.es-dropdown-wrap {
-    display: inline-block;
-    width: 250px;
-}
-.es-chart-header {
-    text-align: center;
-    font-weight: bold;
-    padding-bottom: 10px;
-    padding-top: 10px;
-}
