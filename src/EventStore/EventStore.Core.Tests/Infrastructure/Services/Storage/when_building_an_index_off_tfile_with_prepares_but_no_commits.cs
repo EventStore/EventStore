@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         [Test]
         public void read_all_events_forward_returns_no_events()
         {
-            var result = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10, false);
+            var result = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10);
             Assert.AreEqual(0, result.Records.Count);
         }
 
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         public void read_all_events_backward_returns_no_events_()
         {
             var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
-            var result = ReadIndex.ReadAllEventsBackward(pos, 10, false);
+            var result = ReadIndex.ReadAllEventsBackward(pos, 10);
             Assert.AreEqual(0, result.Records.Count);
         }
     }

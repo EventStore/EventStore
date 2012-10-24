@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
 
-            if (message.Result.Records.Count == 0)
+            if (message.Result.Records.Length == 0)
             {
                 // the end
                 if (_deliverEndOfTfPosition)
@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                for (int index = 0; index < message.Result.Records.Count; index++)
+                for (int index = 0; index < message.Result.Records.Length; index++)
                 {
                     var @event = message.Result.Records[index];
                     DeliverEvent(@event, message.Result.TfEofPosition);

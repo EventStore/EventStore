@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
     {
         private readonly int _maxEntriesInMemTable;
         protected TableIndex TableIndex;
-        protected ReadIndex ReadIndex;
+        protected IReadIndex ReadIndex;
 
         protected TFChunkDb Db;
         protected TFChunkWriter Writer;
