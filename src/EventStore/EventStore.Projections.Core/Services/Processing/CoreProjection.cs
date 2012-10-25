@@ -474,11 +474,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool ProcessEmittedEvents(CommittedEventWorkItem committedEventWorkItem, EmittedEvent[] emittedEvents)
         {
-            if (_projectionConfig.EmitEventEnabled)
+            if (_projectionConfig.EmitEventEnabled && _checkpointStrategy.IsEmiEnabled())
                 EmitEmittedEvents(committedEventWorkItem, emittedEvents);
             else if (emittedEvents != null && emittedEvents.Length > 0)
             {
-                ProcessEventFaulted("emit_event is not enabled by the projection configuration/mode");
+                ProcessEventFaulted("'emit' is not allowed by the projection/configuration/mode");
                 return false;
             }
             return true;
