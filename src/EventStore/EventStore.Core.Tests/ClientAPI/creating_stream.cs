@@ -9,6 +9,7 @@ namespace EventStore.Core.Tests.ClientAPI
     internal class creating_stream
     {
         [Test]
+        [Category("Network")]
         public void which_does_not_exist_should_be_successfull()
         {
             const string stream = "which_does_not_exist_should_be_successfull";
@@ -20,6 +21,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void which_supposed_to_be_system_should_succees__but_on_your_own_risk()
         {
             const string stream = "$which_supposed_to_be_system_should_succees__but_on_your_own_risk";
@@ -31,6 +33,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void which_already_exists_should_fail()
         {
             const string stream = "which_already_exists_should_fail";
@@ -46,6 +49,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void which_was_deleted_should_fail()
         {
             const string stream = "which_was_deleted_should_fail";

@@ -9,6 +9,7 @@ namespace EventStore.Core.Tests.ClientAPI
     internal class deleting_stream
     {
         [Test]
+        [Category("Network")]
         public void which_already_exists_should_success_when_passed_empty_stream_expected_version()
         {
             const string stream = "which_already_exists_should_success_when_passed_empty_stream_expected_version";
@@ -23,6 +24,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void which_already_exists_should_success_when_passed_any_for_expected_version()
         {
             const string stream = "which_already_exists_should_success_when_passed_any_for_expected_version";
@@ -37,6 +39,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void with_invalid_expected_version_should_fail()
         {
             const string stream = "with_invalid_expected_version_should_fail";
@@ -51,6 +54,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void which_does_not_exist_should_fail()
         {
             const string stream = "which_does_not_exist_should_fail";
@@ -63,6 +67,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void which_was_allready_deleted_should_fail()
         {
             const string stream = "which_was_allready_deleted_should_fail";
