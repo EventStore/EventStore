@@ -100,10 +100,7 @@
     <Content Include="es-common-web\img\control.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="es-common-web\js\charts\es.chartsSetup.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="es-common-web\js\charts\es.TimeSeries.js">
+    <Content Include="es-common-web\js\controls\es.TimeSeries.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="es-common-web\js\es.menu.js">
@@ -219,6 +216,9 @@
     <Content Include="es-common-web\js\controls\es.Selector.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="es-common-web\js\charts\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
