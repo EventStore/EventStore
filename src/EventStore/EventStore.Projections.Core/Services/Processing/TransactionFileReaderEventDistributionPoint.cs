@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _paused = true;
         private bool _pauseRequested = true;
         private bool _eventsRequested = false;
-        private int _maxReadCount = 100;
+        private int _maxReadCount = 50;
         private bool _disposed;
         private EventPosition _from;
         private readonly bool _deliverEndOfTfPosition;

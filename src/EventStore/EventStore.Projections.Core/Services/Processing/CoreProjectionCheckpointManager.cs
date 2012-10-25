@@ -217,6 +217,14 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestCheckpoint(_lastProcessedEventPosition);
         }
 
+        public void Progress(float progress)
+        {
+            EnsureStarted();
+            if (_stopping)
+                throw new InvalidOperationException("Stopping");
+            _lastProcessedEventProgress = progress;
+        }
+
         protected void EnsureStarted()
         {
             if (!_started)
