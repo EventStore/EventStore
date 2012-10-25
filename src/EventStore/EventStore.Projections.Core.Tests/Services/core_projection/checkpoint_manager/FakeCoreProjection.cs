@@ -48,6 +48,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public readonly List<ProjectionMessage.Projections.CheckpointLoaded> _checkpointLoadedMessages =
             new List<ProjectionMessage.Projections.CheckpointLoaded>();
 
+        public readonly List<ProjectionMessage.Projections.ProgressChanged> _progresschangedMessages =
+            new List<ProjectionMessage.Projections.ProgressChanged>();
+
         public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
         {
             _committedEventReceivedMessages.Add(message);
@@ -71,6 +74,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
         {
             _checkpointLoadedMessages.Add(message);
+        }
+
+        public void Handle(ProjectionMessage.Projections.ProgressChanged message)
+        {
+            _progresschangedMessages.Add(message);
         }
     }
 }

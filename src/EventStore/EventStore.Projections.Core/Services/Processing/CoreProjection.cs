@@ -45,7 +45,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                   IHandle<ProjectionMessage.Projections.CheckpointCompleted>,
                                   IHandle<ProjectionMessage.Projections.PauseRequested>,
                                   IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
-                                  IHandle<ProjectionMessage.Projections.CheckpointSuggested>
+                                  IHandle<ProjectionMessage.Projections.CheckpointSuggested>,
+                                  IHandle<ProjectionMessage.Projections.ProgressChanged>
     {
         internal const string ProjectionsStreamPrefix = "$projections-";
         internal const string ProjectionsStateStreamSuffix = "-state";
@@ -195,6 +196,25 @@ namespace EventStore.Projections.Core.Services.Processing
                     string partition = _checkpointStrategy.StatePartitionSelector.GetStatePartition(message);
                     var committedEventWorkItem = new CommittedEventWorkItem(this, message, partition);
                     _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
+                }
+                _processingQueue.ProcessEvent();
+            }
+            catch (Exception ex)
+            {
+                SetFaulted(ex);
+            }
+        }
+
+        public void Handle(ProjectionMessage.Projections.ProgressChanged message)
+        {
+            EnsureState(
+                State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            try
+            {
+                if ((_state == State.Running || _state == State.Paused) && _projectionConfig.CheckpointsEnabled)
+                {
+                    var progressWorkItem = new ProgressWorkItem(this, _checkpointManager, message.Progress);
+                    _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 }
                 _processingQueue.ProcessEvent();
             }
@@ -532,8 +552,15 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
         {
             EnsureState(State.LoadStateRequsted);
-            OnLoadStateCompleted(message.CheckpointTag, message.CheckpointData);
-            GoToState(State.StateLoadedSubscribed);
+            try
+            {
+                OnLoadStateCompleted(message.CheckpointTag, message.CheckpointData);
+                GoToState(State.StateLoadedSubscribed);
+            }
+            catch (Exception ex)
+            {
+                SetFaulted(ex);
+            }
         }
 
         private void OnLoadStateCompleted(CheckpointTag checkpointTag, string checkpointData)

@@ -55,12 +55,12 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
         }
 
         private string[] _abStreams;
-        private CheckpointTag _ab12Tag;
+        private Dictionary<string, int> _ab12Tag;
 
         [SetUp]
         public void When()
         {
-            _ab12Tag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "a", 1 }, { "b", 2 } });
+            _ab12Tag = new Dictionary<string, int> { { "a", 1 }, { "b", 2 } };
             _abStreams = new[] { "a", "b" };
 
             _publishWithCorrelationId = Guid.NewGuid();
