@@ -42,7 +42,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected virtual TimeSpan StartupWaitInterval
         {
-            get { return TimeSpan.FromSeconds(7); }
+            get { return TimeSpan.FromSeconds(12); }
         }
 
         private readonly Dictionary<WriteMode, Func<string, int, Func<int, IEvent>, Task>> _writeHandlers;
@@ -97,6 +97,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         public void Clean()
         {
+            CloseConnections();
+            KillStartedNodes();
+
             Log.Info("Deleting {0}...", _dbPath);
             Directory.Delete(_dbPath, true);
             Log.Info("Deleted {0}", _dbPath);
@@ -325,7 +328,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 while (!process.HasExited)
                     Thread.Sleep(200);
 
-                Thread.Sleep(2000);
+                Thread.Sleep(6000);
                 Log.Info("Killed process {0}", processId);
             }
             else
@@ -334,11 +337,21 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         public void Dispose()
         {
+            CloseConnections();
+            KillStartedNodes();
+        }
+
+        private void CloseConnections()
+        {
             for (int i = 0; i < _connections.Length; ++i)
             {
                 _connections[i].Close();
             }
+        }
 
+        private void KillStartedNodes()
+        {
+            Log.Info("Killing remaining nodes...");
             try
             {
                 _startedNodesProcIds.ToList().ForEach(KillNode);

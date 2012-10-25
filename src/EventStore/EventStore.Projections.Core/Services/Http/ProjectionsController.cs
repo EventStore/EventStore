@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Http
             : base(publisher)
         {
             var fileSystemWebRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Projections.Core");
-            _miniWebPrelude = new MiniWeb("/web/js/projections/v8/Prelude", Path.Combine(fileSystemWebRoot, @"Prelude"));
+            _miniWebPrelude = new MiniWeb("/web/es/js/projections/v8/Prelude", Path.Combine(fileSystemWebRoot, @"Prelude"));
         }
 
 

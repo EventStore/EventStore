@@ -4,12 +4,13 @@
     window.es.TimeSeries = function (sets) {
 
         var title = sets.title;
+        var titleSuffix = sets.titleSuffix || "";
+        var titleClassName = sets.titleClassName || es.TimeSeries.titleClassName;
         var updateEventName = sets.updateEvent || es.TimeSeries.updateEvent;
-        var getData = sets.getData || function (data) { return data; };
         var appendToElement = sets.appendTo || es.TimeSeries.appendTo;
+        var getData = sets.getData || function (data) { return data; };
         var maxLength = sets.maxLength || es.TimeSeries.maxLength || 100;
         var className = sets.className || es.TimeSeries.className || "";
-        var titleClassName = sets.titleClassName || es.TimeSeries.titleClassName;
         var zoomer = sets.zoomer || es.TimeSeries.zoomer;
         var width = sets.width || es.TimeSeries.width || 300;
         var height = sets.height || es.TimeSeries.height || 100;
@@ -129,7 +130,7 @@
             return {
                 show: show,
                 cleanUp: cleanUp,
-                title: title,
+                title: title + titleSuffix,
                 domElem: container[0]
             };
         }

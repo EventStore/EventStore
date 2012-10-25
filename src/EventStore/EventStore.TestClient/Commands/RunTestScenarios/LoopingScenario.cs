@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
@@ -29,7 +29,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep)
         {
             _executionPeriod = executionPeriod;
-            SetStartupWaitInterval(TimeSpan.FromSeconds(7));
+            SetStartupWaitInterval(TimeSpan.FromSeconds(10));
         }
 
         private void SetStartupWaitInterval(TimeSpan interval)
@@ -49,7 +49,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                          (int)stopWatch.Elapsed.TotalMinutes,
                          _executionPeriod.TotalMinutes);
 
-                SetStartupWaitInterval(TimeSpan.FromSeconds(7 + (2 * runIndex) % 200));
+                SetStartupWaitInterval(TimeSpan.FromSeconds(20 + (2 * runIndex) % 100));
                 InnerRun(runIndex);
                 runIndex += 1;
             }
@@ -79,7 +79,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             DeleteStreams(deleted);
 
             _stopParalleWrites = true;
-            if (!parallelWriteTask.Wait(TimeSpan.FromSeconds(60)))
+            if (!parallelWriteTask.Wait(TimeSpan.FromSeconds(120)))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
             KillNode(nodeProcessId);
@@ -110,13 +110,26 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                           where _rnd.NextDouble() < 0.1
                                           select FormatStreamName(run, streamNum)).ToArray();
 
-            var rd4 = Read(allExistingStreamsSlice, 0, Math.Max(1, EventsPerStream / 5));
-            var rd5 = Read(allExistingStreamsSlice, EventsPerStream / 2, Math.Max(1, EventsPerStream / 5));
-            var dl2 = CheckStreamsDeleted(allDeletedStreamsSlice);
-            Task.WaitAll(dl1, dl2, rd1, rd2, rd3, rd4, rd5);
+            var prevCheckTasks = new List<Task>();
+            if (allExistingStreamsSlice.Length > 0)
+            {
+                var rd4 = Read(allExistingStreamsSlice, 0, Math.Max(1, EventsPerStream / 5));
+                var rd5 = Read(allExistingStreamsSlice, EventsPerStream / 2, Math.Max(1, EventsPerStream / 5));
+
+                prevCheckTasks.Add(rd4);
+                prevCheckTasks.Add(rd5);
+            }
+
+            if (allDeletedStreamsSlice.Length > 0)
+            {
+                var dl2 = CheckStreamsDeleted(allDeletedStreamsSlice);
+                prevCheckTasks.Add(dl2);
+            }
+
+            Task.WaitAll(new [] {dl1, rd1, rd2, rd3}.Union(prevCheckTasks).ToArray());
 
             _stopParalleWrites = true;
-            if (!parallelWriteTask.Wait(TimeSpan.FromSeconds(60)))
+            if (!parallelWriteTask.Wait(TimeSpan.FromSeconds(120)))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
             KillNode(nodeProcessId);

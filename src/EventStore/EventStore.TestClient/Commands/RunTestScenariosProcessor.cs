@@ -156,6 +156,7 @@ namespace EventStore.TestClient.Commands
                 {
                     try
                     {
+                        Log.Info("Run scenario {0}", scenario.GetType().Name);
                         scenario.Run();
                         scenario.Clean();
                         Log.Info("Scenario run successfully");
