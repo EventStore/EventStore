@@ -186,7 +186,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(ClientMessage.CreateStream message)
         {
-            _outputBus.Publish(new ReplicationMessage.CreateStreamRequestCreated(message.CorrelationId,
+            _outputBus.Publish(new StorageMessage.CreateStreamRequestCreated(message.CorrelationId,
                                                                                  message.Envelope,
                                                                                  message.EventStreamId,
                                                                                  message.Metadata));
@@ -194,7 +194,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(ClientMessage.WriteEvents message)
         {
-            _outputBus.Publish(new ReplicationMessage.WriteRequestCreated(message.CorrelationId,
+            _outputBus.Publish(new StorageMessage.WriteRequestCreated(message.CorrelationId,
                                                                           message.Envelope,
                                                                           message.EventStreamId,
                                                                           message.ExpectedVersion,
@@ -203,7 +203,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(ClientMessage.TransactionStart message)
         {
-            _outputBus.Publish(new ReplicationMessage.TransactionStartRequestCreated(message.CorrelationId,
+            _outputBus.Publish(new StorageMessage.TransactionStartRequestCreated(message.CorrelationId,
                                                                                      message.Envelope,
                                                                                      message.EventStreamId,
                                                                                      message.ExpectedVersion));
@@ -211,7 +211,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(ClientMessage.TransactionWrite message)
         {
-            _outputBus.Publish(new ReplicationMessage.TransactionWriteRequestCreated(message.CorrelationId,
+            _outputBus.Publish(new StorageMessage.TransactionWriteRequestCreated(message.CorrelationId,
                                                                                      message.Envelope,
                                                                                      message.TransactionId,
                                                                                      message.EventStreamId,
@@ -220,7 +220,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(ClientMessage.TransactionCommit message)
         {
-            _outputBus.Publish(new ReplicationMessage.TransactionCommitRequestCreated(message.CorrelationId,
+            _outputBus.Publish(new StorageMessage.TransactionCommitRequestCreated(message.CorrelationId,
                                                                                       message.Envelope,
                                                                                       message.TransactionId,
                                                                                       message.EventStreamId));
@@ -228,7 +228,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(ClientMessage.DeleteStream message)
         {
-            _outputBus.Publish(new ReplicationMessage.DeleteStreamRequestCreated(message.CorrelationId,
+            _outputBus.Publish(new StorageMessage.DeleteStreamRequestCreated(message.CorrelationId,
                                                                                  message.Envelope,
                                                                                  message.EventStreamId,
                                                                                  message.ExpectedVersion));

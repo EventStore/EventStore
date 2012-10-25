@@ -38,7 +38,7 @@ namespace EventStore.Core.Services
                                  IHandle<ClientMessage.UnsubscribeFromStream>,
                                  IHandle<ClientMessage.SubscribeToAllStreams>,
                                  IHandle<ClientMessage.UnsubscribeFromAllStreams>,
-                                 IHandle<ReplicationMessage.EventCommited>
+                                 IHandle<StorageMessage.EventCommited>
     {
         public const int ConnectionQueueSizeThreshold = 10000;
 
@@ -83,7 +83,7 @@ namespace EventStore.Core.Services
             UnsubscribeFromAllStreams(message.CorrelationId, message.Connection);
         }
 
-        public void Handle(ReplicationMessage.EventCommited message)
+        public void Handle(StorageMessage.EventCommited message)
         {
             foreach (var tuple in _subscribedToAll)
             {

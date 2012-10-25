@@ -46,14 +46,14 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.WriteEvents
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ReplicationMessage.WriteRequestCreated(CorrelationId, Envelope, "test123", ExpectedVersion.Any, new [] {DummyEvent()});
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.WriteRequestCreated(CorrelationId, Envelope, "test123", ExpectedVersion.Any, new [] {DummyEvent()});
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
         }
 
         protected override Message When()
         {
-            return new ReplicationMessage.CommitPhaseTimeout(CorrelationId);
+            return new StorageMessage.CommitPhaseTimeout(CorrelationId);
         }
 
         [Test]

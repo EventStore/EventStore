@@ -64,5 +64,15 @@ namespace EventStore.Core.TransactionLog
         {
             return Directory.GetFiles(_path, string.Format("{0}*.*", _prefix));
         }
+
+        public string GetTempFilename()
+        {
+            return Path.Combine(_path, string.Format("{0}.tmp", Guid.NewGuid()));
+        }
+
+        public string[] GetAllTempFiles()
+        {
+            return Directory.GetFiles(_path, "*.tmp");
+        }
     }
 }

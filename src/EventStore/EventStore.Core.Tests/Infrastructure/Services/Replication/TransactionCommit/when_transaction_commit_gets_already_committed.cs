@@ -45,18 +45,18 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TransactionC
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ReplicationMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4, "test123");
+            yield return new StorageMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4, "test123");
         }
 
         protected override Message When()
         {
-            return new ReplicationMessage.AlreadyCommitted(CorrelationId, "test123", 0, 1);
+            return new StorageMessage.AlreadyCommitted(CorrelationId, "test123", 0, 1);
         }
 
         [Test]
         public void successful_request_message_is_publised()
         {
-            Assert.That(produced.ContainsSingle<ReplicationMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId &&
+            Assert.That(produced.ContainsSingle<StorageMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId &&
                                                                                           x.Success));
         }
 

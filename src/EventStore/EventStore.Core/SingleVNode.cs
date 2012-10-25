@@ -107,9 +107,7 @@ namespace EventStore.Core
             var storageReader = new StorageReader(_mainQueue, _outputBus, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
-            var chaser = new TFChunkChaser(db,
-                                           db.Config.WriterCheckpoint,
-                                           db.Config.GetNamedCheckpoint(Checkpoint.Chaser));
+            var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.GetNamedCheckpoint(Checkpoint.Chaser));
             var storageChaser = new StorageChaser(_mainQueue, chaser);
             _outputBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
             _outputBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
@@ -139,21 +137,21 @@ namespace EventStore.Core
 
             //REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(MainQueue, 1, 1);
-            Bus.Subscribe<ReplicationMessage.CreateStreamRequestCreated>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.WriteRequestCreated>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.TransactionStartRequestCreated>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.TransactionWriteRequestCreated>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.TransactionCommitRequestCreated>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.DeleteStreamRequestCreated>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.RequestCompleted>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.AlreadyCommitted>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.CommitAck>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.PrepareAck>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.WrongExpectedVersion>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.InvalidTransaction>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.StreamDeleted>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.PreparePhaseTimeout>(requestManagement);
-            Bus.Subscribe<ReplicationMessage.CommitPhaseTimeout>(requestManagement);
+            Bus.Subscribe<StorageMessage.CreateStreamRequestCreated>(requestManagement);
+            Bus.Subscribe<StorageMessage.WriteRequestCreated>(requestManagement);
+            Bus.Subscribe<StorageMessage.TransactionStartRequestCreated>(requestManagement);
+            Bus.Subscribe<StorageMessage.TransactionWriteRequestCreated>(requestManagement);
+            Bus.Subscribe<StorageMessage.TransactionCommitRequestCreated>(requestManagement);
+            Bus.Subscribe<StorageMessage.DeleteStreamRequestCreated>(requestManagement);
+            Bus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
+            Bus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
+            Bus.Subscribe<StorageMessage.CommitAck>(requestManagement);
+            Bus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
+            Bus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
+            Bus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
+            Bus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
+            Bus.Subscribe<StorageMessage.PreparePhaseTimeout>(requestManagement);
+            Bus.Subscribe<StorageMessage.CommitPhaseTimeout>(requestManagement);
 
             var clientService = new ClientService();
             Bus.Subscribe<TcpMessage.ConnectionClosed>(clientService);
@@ -161,7 +159,7 @@ namespace EventStore.Core
             Bus.Subscribe<ClientMessage.UnsubscribeFromStream>(clientService);
             Bus.Subscribe<ClientMessage.SubscribeToAllStreams>(clientService);
             Bus.Subscribe<ClientMessage.UnsubscribeFromAllStreams>(clientService);
-            Bus.Subscribe<ReplicationMessage.EventCommited>(clientService);
+            Bus.Subscribe<StorageMessage.EventCommited>(clientService);
 
             //TIMER
             //var timer = new TimerService(new TimerBasedScheduler(new RealTimer(), new RealTimeProvider()));

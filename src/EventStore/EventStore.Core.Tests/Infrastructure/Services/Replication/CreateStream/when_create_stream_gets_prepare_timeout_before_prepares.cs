@@ -46,18 +46,18 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.CreateStream
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ReplicationMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Metadata);
+            yield return new StorageMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Metadata);
         }
 
         protected override Message When()
         {
-            return new ReplicationMessage.PreparePhaseTimeout(CorrelationId);
+            return new StorageMessage.PreparePhaseTimeout(CorrelationId);
         }
 
         [Test]
         public void failed_request_message_is_published()
         {
-            Assert.That(produced.ContainsSingle<ReplicationMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId && x.Success == false));
+            Assert.That(produced.ContainsSingle<StorageMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId && x.Success == false));
         }
 
         [Test]

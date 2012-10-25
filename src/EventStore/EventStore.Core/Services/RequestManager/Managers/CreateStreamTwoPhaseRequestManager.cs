@@ -35,13 +35,13 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class CreateStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<ReplicationMessage.CreateStreamRequestCreated>
+    class CreateStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.CreateStreamRequestCreated>
     {
         public CreateStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
             base(publisher, prepareCount, commitCount)
         {}
 
-        public void Handle(ReplicationMessage.CreateStreamRequestCreated request)
+        public void Handle(StorageMessage.CreateStreamRequestCreated request)
         {
             if (_initialized)
                 throw new InvalidOperationException();
@@ -51,7 +51,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _correlationId = request.CorrelationId;
             _eventStreamId = request.EventStreamId;
 
-            Publisher.Publish(new ReplicationMessage.WritePrepares(
+            Publisher.Publish(new StorageMessage.WritePrepares(
                              request.CorrelationId,
                              _publishEnvelope,
                              request.EventStreamId,
@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                              liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                       _publishEnvelope,
-                                                      new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
+                                                      new StorageMessage.PreparePhaseTimeout(_correlationId)));
         }
 
 

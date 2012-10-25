@@ -140,6 +140,7 @@
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunkBulkReader.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkScavenger.cs" />
     <Compile Include="Services\Transport\Http\Configure.cs" />
     <Compile Include="Services\Transport\Http\EventConvertion.cs" />
@@ -170,7 +171,7 @@
     <Compile Include="Messages\ClientMessageDtos.cs" />
     <Compile Include="Messages\MonitoringMessage.cs" />
     <Compile Include="Messages\ReplicationMessageDtos.cs" />
-    <Compile Include="Messages\ReplicationMessage.cs" />
+    <Compile Include="Messages\StorageMessage.cs" />
     <Compile Include="Messaging\Forwarder.cs" />
     <Compile Include="Messaging\SendToThisEnvelope.cs" />
     <Compile Include="Messaging\NoopEnvelope.cs" />
