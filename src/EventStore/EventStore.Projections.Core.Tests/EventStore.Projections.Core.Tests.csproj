@@ -115,6 +115,7 @@
     <Compile Include="Services\checkpoint_strategy\when_creating_a_checkpoint_strategy.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_position.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions_when_updating.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_tf_position.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\TestFixtureWithCoreProjectionMultiStreamCheckpointManager.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_multiple_event_processed_received.cs" />

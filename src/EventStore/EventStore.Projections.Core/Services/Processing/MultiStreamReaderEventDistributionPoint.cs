@@ -156,12 +156,10 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_pauseRequested || _paused)
                 throw new InvalidOperationException("Paused or pause requested");
 
-            var requested = false;
             foreach (var stream in _streams)
             {
                 if (_eventsRequested.Contains(stream))
                     continue;
-                requested = true;
                 _eventsRequested.Add(stream);
 
                 var readEventsForward = new ClientMessage.ReadStreamEventsForward(
