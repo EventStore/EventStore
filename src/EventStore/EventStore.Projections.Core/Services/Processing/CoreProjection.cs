@@ -138,8 +138,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         internal void UpdateStatistics()
         {
+            var info = new ProjectionStatistics();
+            GetStatistics(info);
             _publisher.Publish(
-                new ProjectionMessage.Projections.Management.StatisticsReport(_projectionCorrelationId, GetStatistics()));
+                new ProjectionMessage.Projections.Management.StatisticsReport(_projectionCorrelationId, info));
         }
 
         public void Start()
@@ -161,27 +163,14 @@ namespace EventStore.Projections.Core.Services.Processing
             return _partitionStateCache.GetLockedPartitionState("");
         }
 
-        private ProjectionStatistics GetStatistics()
+        private void GetStatistics(ProjectionStatistics info)
         {
-            var checkpointStatistics = _checkpointManager.GetStatistics();
-            return new ProjectionStatistics
-                {
-                    Mode = _projectionConfig.Mode,
-                    Name = _name,
-                    Position = checkpointStatistics.Position,
-                    Progress = checkpointStatistics.Progress,
-                    StateReason = "",
-                    Status = _state.EnumVaueName() + checkpointStatistics.Status + _processingQueue.GetStatus(),
-                    LastCheckpoint = checkpointStatistics.LastCheckpoint,
-                    EventsProcessedAfterRestart = checkpointStatistics.EventsProcessedAfterRestart,
-                    BufferedEvents = _processingQueue.GetBufferedEventCount(),
-                    WritePendingEventsBeforeCheckpoint = checkpointStatistics.WritePendingEventsBeforeCheckpoint,
-                    WritePendingEventsAfterCheckpoint = checkpointStatistics.WritePendingEventsAfterCheckpoint,
-                    ReadsInProgress = _readRequestsInProgress + checkpointStatistics.ReadsInProgress,
-                    WritesInProgress = checkpointStatistics.WritesInProgress,
-                    PartitionsCached = _partitionStateCache.CachedItemCount,
-                    CheckpointStatus = checkpointStatistics.CheckpointStatus,
-                };
+            _checkpointManager.GetStatistics(info);
+            info.Mode = _projectionConfig.Mode;
+            info.Name = _name;
+            info.StateReason = "";
+            info.BufferedEvents = _processingQueue.GetBufferedEventCount();
+            info.PartitionsCached = _partitionStateCache.CachedItemCount;
         }
 
         public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
