@@ -141,7 +141,7 @@ namespace EventStore.Core.Tests.TransactionLog
 
             Assert.AreEqual(2, tempFiles.Length);
             Assert.AreEqual(Path.Combine(PathName, "bla.tmp"), tempFiles[0]);
-            Assert.AreEqual(Path.Combine(PathName, "foo.TMP"), tempFiles[1]);
+            Assert.AreEqual(Path.Combine(PathName, "foo.tmp"), tempFiles[1]);
         }
 
         [Test]
