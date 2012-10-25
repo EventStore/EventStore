@@ -158,7 +158,11 @@
     <Compile Include="Services\projections_manager\v8\when_running_emitting_v8_projection.cs" />
     <Compile Include="Services\staged_processing_queue.cs" />
     <Compile Include="Services\stream_event_distribution_point\when_creating_stream_event_distribution_point.cs" />
+    <Compile Include="Services\stream_event_distribution_point\when_handling_no_stream.cs" />
+    <Compile Include="Services\stream_event_distribution_point\when_handling_read_completed_and_eof.cs" />
     <Compile Include="Services\stream_event_distribution_point\when_handling_read_completed_stream_event_distribution_point.cs" />
+    <Compile Include="Services\stream_event_distribution_point\when_handling_read_completed_then_pause_then_eof.cs" />
+    <Compile Include="Services\stream_event_distribution_point\when_paused_then_handling_no_stream.cs" />
     <Compile Include="Services\stream_event_distribution_point\when_resuming_stream_event_distribution_point.cs" />
     <Compile Include="Services\stream_event_distribution_point\when_stream_event_distribution_point_has_been_created.cs" />
     <Compile Include="Services\multistream_position_tagger\multistream_position_tagger.cs" />
