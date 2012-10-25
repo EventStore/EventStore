@@ -134,7 +134,7 @@ namespace EventStore.Core.Tests.TransactionLog
             File.Create(Path.Combine(PathName, "bla.tmp")).Close();
             File.Create(Path.Combine(PathName, "bla.temp")).Close();
 
-            File.Create(Path.Combine(PathName, "foo.TMP")).Close();
+            File.Create(Path.Combine(PathName, "foo.tmp")).Close();
 
             var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
             var tempFiles = strategy.GetAllTempFiles();
