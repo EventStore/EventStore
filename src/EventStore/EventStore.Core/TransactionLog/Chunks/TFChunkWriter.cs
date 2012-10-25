@@ -36,7 +36,8 @@ namespace EventStore.Core.TransactionLog.Chunks
     public class TFChunkWriter: ITransactionFileWriter
     {
         public ICheckpoint Checkpoint { get { return _writerCheckpoint; } }
-        
+        public TFChunk CurrentChunk { get { return _writerChunk; } }
+
         private readonly TFChunkDb _db;
         private readonly ICheckpoint _writerCheckpoint;
 
@@ -70,19 +71,28 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 Debug.Assert(result.OldPosition == chunkPos);
                 _writerPos = chunkNum * (long)_db.Config.ChunkSize + result.NewPosition;
+                _writerCheckpoint.Write(_writerPos);
             }
             else
             {
-                _writerChunk.Flush();
-                _writerChunk.Complete();
-                _writerChunk = _db.Manager.AddNewChunk();
-                //_writerCheckpoint.Flush(); //flush our checkpoint
-                _writerPos = _writerChunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize; // we just moved to a new chunk at pos 0
-                //GFY CANT USE chunkNum here (it could be exact at end)
+                CompleteChunk(); // complete updates checkpoint internally
             }
-            _writerCheckpoint.Write(_writerPos);
             newPos = _writerPos;
             return result.Success;
+        }
+
+        public void CompleteChunk()
+        {
+            _writerChunk.Flush();
+            _writerChunk.Complete();
+            _writerCheckpoint.Flush(); //flush our checkpoint
+
+            _writerChunk = _db.Manager.AddNewChunk();
+
+            //GFY CANT USE chunkNum here (it could be exact at end)
+            _writerPos = _writerChunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize; // we just moved to a new chunk at pos 0
+            
+            _writerCheckpoint.Write(_writerPos);
         }
 
         public void Dispose()

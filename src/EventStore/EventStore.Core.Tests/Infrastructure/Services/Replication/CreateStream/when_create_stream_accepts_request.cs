@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.CreateStream
 
         protected override Message When()
         {
-            return new ReplicationMessage.CreateStreamRequestCreated(CorrelationId, new NoopEnvelope(), "test123", Metadata);
+            return new StorageMessage.CreateStreamRequestCreated(CorrelationId, new NoopEnvelope(), "test123", Metadata);
         }
 
         [Test]
@@ -63,8 +63,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.CreateStream
         [Test]
         public void the_first_message_is_write_prepare_with_correct_info()
         {
-            Assert.IsInstanceOf<ReplicationMessage.WritePrepares>(produced[0]);
-            var msg = (ReplicationMessage.WritePrepares) produced[0];
+            Assert.IsInstanceOf<StorageMessage.WritePrepares>(produced[0]);
+            var msg = (StorageMessage.WritePrepares) produced[0];
             Assert.AreEqual(CorrelationId, msg.CorrelationId);
             Assert.AreEqual("test123", msg.EventStreamId);
         }
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.CreateStream
         {
             Assert.IsInstanceOf<TimerMessage.Schedule>(produced[1]);
             var msg = (TimerMessage.Schedule) produced[1];
-            var reply = (ReplicationMessage.PreparePhaseTimeout) msg.ReplyMessage;
+            var reply = (StorageMessage.PreparePhaseTimeout) msg.ReplyMessage;
             Assert.AreEqual(Timeouts.PrepareTimeout, msg.TriggerAfter);
             Assert.AreEqual(CorrelationId, reply.CorrelationId);
         }

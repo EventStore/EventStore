@@ -25,7 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.Collections.Generic;
 
 namespace EventStore.Core.TransactionLog
 {
@@ -34,5 +33,8 @@ namespace EventStore.Core.TransactionLog
         string GetFilenameFor(int index, int version = 0);
         string[] GetAllVersionsFor(int index);
         string[] GetAllPresentFiles();
+
+        string GetTempFilename();
+        string[] GetAllTempFiles();
     }
 }

@@ -53,10 +53,17 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void OpenVerifyAndClean(bool verifyHash = true)
         {
-            var tempFiles = Directory.GetFiles(Config.Path, "*.tmp");
+            var tempFiles = Config.FileNamingStrategy.GetAllTempFiles();
             for (int i = 0; i < tempFiles.Length; i++)
             {
-                File.Delete(tempFiles[i]);
+                try
+                {
+                    File.Delete(tempFiles[i]);
+                }
+                catch(Exception exc)
+                {
+                    Log.ErrorException(exc, "Error while trying to delete remaining temp file: '{0}'.", tempFiles[i]);
+                }
             }
 
             ValidateReaderChecksumsMustBeLess(Config.WriterCheckpoint, Config.Checkpoints);

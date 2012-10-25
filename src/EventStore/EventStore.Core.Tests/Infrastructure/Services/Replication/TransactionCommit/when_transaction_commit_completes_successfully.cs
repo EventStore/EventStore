@@ -46,24 +46,24 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TransactionC
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ReplicationMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4, "test123");
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.StreamDelete);
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.StreamDelete);
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.StreamDelete);
-            yield return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
-            yield return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
+            yield return new StorageMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4, "test123");
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.StreamDelete);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.StreamDelete);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.StreamDelete);
+            yield return new StorageMessage.CommitAck(CorrelationId, 2, 3);
+            yield return new StorageMessage.CommitAck(CorrelationId, 2, 3);
 
         }
 
         protected override Message When()
         {
-            return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
+            return new StorageMessage.CommitAck(CorrelationId, 2, 3);
         }
 
         [Test]
         public void successful_request_message_is_publised()
         {
-            Assert.That(produced.ContainsSingle<ReplicationMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId &&
+            Assert.That(produced.ContainsSingle<StorageMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId &&
                                                                                           x.Success));
         }
 

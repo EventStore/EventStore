@@ -35,21 +35,21 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services
 {
-    public class RequestManagementService : IHandle<ReplicationMessage.CreateStreamRequestCreated>, 
-                                            IHandle<ReplicationMessage.WriteRequestCreated>, 
-                                            IHandle<ReplicationMessage.DeleteStreamRequestCreated>,
-                                            IHandle<ReplicationMessage.TransactionStartRequestCreated>,
-                                            IHandle<ReplicationMessage.TransactionWriteRequestCreated>,
-                                            IHandle<ReplicationMessage.TransactionCommitRequestCreated>,
-                                            IHandle<ReplicationMessage.RequestCompleted>,
-                                            IHandle<ReplicationMessage.AlreadyCommitted>,
-                                            IHandle<ReplicationMessage.PrepareAck>,
-                                            IHandle<ReplicationMessage.CommitAck>,
-                                            IHandle<ReplicationMessage.WrongExpectedVersion>,
-                                            IHandle<ReplicationMessage.InvalidTransaction>,
-                                            IHandle<ReplicationMessage.StreamDeleted>,
-                                            IHandle<ReplicationMessage.PreparePhaseTimeout>,
-                                            IHandle<ReplicationMessage.CommitPhaseTimeout>
+    public class RequestManagementService : IHandle<StorageMessage.CreateStreamRequestCreated>, 
+                                            IHandle<StorageMessage.WriteRequestCreated>, 
+                                            IHandle<StorageMessage.DeleteStreamRequestCreated>,
+                                            IHandle<StorageMessage.TransactionStartRequestCreated>,
+                                            IHandle<StorageMessage.TransactionWriteRequestCreated>,
+                                            IHandle<StorageMessage.TransactionCommitRequestCreated>,
+                                            IHandle<StorageMessage.RequestCompleted>,
+                                            IHandle<StorageMessage.AlreadyCommitted>,
+                                            IHandle<StorageMessage.PrepareAck>,
+                                            IHandle<StorageMessage.CommitAck>,
+                                            IHandle<StorageMessage.WrongExpectedVersion>,
+                                            IHandle<StorageMessage.InvalidTransaction>,
+                                            IHandle<StorageMessage.StreamDeleted>,
+                                            IHandle<StorageMessage.PreparePhaseTimeout>,
+                                            IHandle<StorageMessage.CommitPhaseTimeout>
     {
         private readonly IPublisher _bus;
         private readonly Dictionary<Guid, object> _currentRequests = new Dictionary<Guid, object>();
@@ -64,90 +64,90 @@ namespace EventStore.Core.Services
             _commitCount = commitCount;
         }
 
-        public void Handle(ReplicationMessage.CreateStreamRequestCreated message)
+        public void Handle(StorageMessage.CreateStreamRequestCreated message)
         {
             var manager = new CreateStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
-        public void Handle(ReplicationMessage.WriteRequestCreated message)
+        public void Handle(StorageMessage.WriteRequestCreated message)
         {
             var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
-        public void Handle(ReplicationMessage.DeleteStreamRequestCreated message)
+        public void Handle(StorageMessage.DeleteStreamRequestCreated message)
         {
             var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
-        public void Handle(ReplicationMessage.TransactionStartRequestCreated message)
+        public void Handle(StorageMessage.TransactionStartRequestCreated message)
         {
             var manager = new SingleAckRequestManager(_bus);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
         
-        public void Handle(ReplicationMessage.TransactionWriteRequestCreated message)
+        public void Handle(StorageMessage.TransactionWriteRequestCreated message)
         {
             var manager = new SingleAckRequestManager(_bus);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
-        public void Handle(ReplicationMessage.TransactionCommitRequestCreated message)
+        public void Handle(StorageMessage.TransactionCommitRequestCreated message)
         {
             var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
-        public void Handle(ReplicationMessage.RequestCompleted message)
+        public void Handle(StorageMessage.RequestCompleted message)
         {
             if (!_currentRequests.Remove(message.CorrelationId))
                 throw new InvalidOperationException("Should never complete request twice.");
         }
 
-        public void Handle(ReplicationMessage.AlreadyCommitted message)
+        public void Handle(StorageMessage.AlreadyCommitted message)
         {
             DispatchInternal(message.CorrelationId, message);
         }
 
-        public void Handle(ReplicationMessage.PrepareAck message)
+        public void Handle(StorageMessage.PrepareAck message)
         {
             DispatchInternal(message.CorrelationId, message);
         }
 
-        public void Handle(ReplicationMessage.CommitAck message)
+        public void Handle(StorageMessage.CommitAck message)
         {
             DispatchInternal(message.CorrelationId, message);
         }
 
-        public void Handle(ReplicationMessage.WrongExpectedVersion message)
+        public void Handle(StorageMessage.WrongExpectedVersion message)
         {
             DispatchInternal(message.CorrelationId, message);
         }
 
-        public void Handle(ReplicationMessage.InvalidTransaction message)
+        public void Handle(StorageMessage.InvalidTransaction message)
         {
             DispatchInternal(message.CorrelationId, message);
         }
 
-        public void Handle(ReplicationMessage.StreamDeleted message)
+        public void Handle(StorageMessage.StreamDeleted message)
         {
             DispatchInternal(message.CorrelationId, message);
         }
 
-        public void Handle(ReplicationMessage.PreparePhaseTimeout message)
+        public void Handle(StorageMessage.PreparePhaseTimeout message)
         {
             DispatchInternal(message.CorrelationId, message);
         }
 
-        public void Handle(ReplicationMessage.CommitPhaseTimeout message)
+        public void Handle(StorageMessage.CommitPhaseTimeout message)
         {
             DispatchInternal(message.CorrelationId, message);
         }

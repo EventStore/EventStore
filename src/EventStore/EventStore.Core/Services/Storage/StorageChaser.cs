@@ -91,7 +91,7 @@ namespace EventStore.Core.Services.Storage
                             if ((record.Flags & PrepareFlags.TransactionBegin) != 0 
                                 || (record.Flags & PrepareFlags.TransactionEnd) != 0)
                             {
-                                _masterBus.Publish(new ReplicationMessage.PrepareAck(record.CorrelationId,
+                                _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId,
                                                                                      record.LogPosition,
                                                                                      record.Flags));
                             }
@@ -101,7 +101,7 @@ namespace EventStore.Core.Services.Storage
                         case LogRecordType.Commit:
                         {
                             var record = (CommitLogRecord) result.LogRecord;
-                            _masterBus.Publish(new ReplicationMessage.CommitAck(record.CorrelationId, 
+                            _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, 
                                                                                 record.TransactionPosition,
                                                                                 record.EventNumber));
                             break;

@@ -33,13 +33,13 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<ReplicationMessage.TransactionCommitRequestCreated>
+    class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.TransactionCommitRequestCreated>
     {
         public TransactionCommitTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
             base(publisher, prepareCount, commitCount)
         {}
 
-        public void Handle(ReplicationMessage.TransactionCommitRequestCreated request)
+        public void Handle(StorageMessage.TransactionCommitRequestCreated request)
         {
             if (_initialized)
                 throw new InvalidOperationException();
@@ -50,14 +50,14 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _preparePos = request.TransactionId;
             _eventStreamId = request.EventStreamId;
 
-            Publisher.Publish(new ReplicationMessage.WriteTransactionPrepare(request.CorrelationId,
+            Publisher.Publish(new StorageMessage.WriteTransactionPrepare(request.CorrelationId,
                                                                              _publishEnvelope,
                                                                              request.TransactionId,
                                                                              request.EventStreamId,
                                                                              liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                            _publishEnvelope,
-                                                           new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
+                                                           new StorageMessage.PreparePhaseTimeout(_correlationId)));
         }
 
         protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)

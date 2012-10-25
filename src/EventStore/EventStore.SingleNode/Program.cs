@@ -38,7 +38,7 @@ namespace EventStore.SingleNode
     public class Program : ProgramBase<SingleNodeOptions>
     {
         protected SingleVNode Node;
-        protected TFChunkDb TfDb;
+        protected TFChunkDb Db;
         
         private SingleVNodeAppSettings _appSets;
         private SingleVNodeSettings _vNodeSets;
@@ -56,7 +56,7 @@ namespace EventStore.SingleNode
         protected override void OnArgsParsed(SingleNodeOptions options)
         {
             var now = DateTime.UtcNow;
-            TfDb = GetTfDb(options, now);
+            Db = GetDb(options, now);
             _appSets = GetAppSettings(options);
             _vNodeSets = GetVNodeSettings(options);
             _noProjections = options.NoProjections;
@@ -65,10 +65,10 @@ namespace EventStore.SingleNode
 
         protected override void Create()
         {
-            Node = new SingleVNode(TfDb, _vNodeSets, _appSets);
+            Node = new SingleVNode(Db, _vNodeSets, _appSets);
 
             if (!_noProjections)
-                _projections = new Projections(TfDb, Node.MainQueue, Node.Bus, Node.TimerService, Node.HttpService, _projectionThreads);
+                _projections = new Projections(Db, Node.MainQueue, Node.Bus, Node.TimerService, Node.HttpService, _projectionThreads);
         }
 
         protected override void Start()
@@ -86,7 +86,7 @@ namespace EventStore.SingleNode
 
         protected override string GetLogsDirectory()
         {
-            return TfDb.Config.Path + "-logs" ;
+            return Db.Config.Path + "-logs" ;
         }
 
         protected override string GetComponentName(SingleNodeOptions options)
@@ -94,10 +94,10 @@ namespace EventStore.SingleNode
             return string.Format("{0}-{1}", options.Ip, options.HttpPort);
         }
 
-        private static TFChunkDb GetTfDb(SingleNodeOptions options, DateTime timeStamp)
+        private static TFChunkDb GetDb(SingleNodeOptions options, DateTime timeStamp)
         {
-            var db = CreateTfDbConfig(options.DbPath, options.HttpPort, timeStamp, options.ChunksToCache);
-            return new TFChunkDb(db);
+            var config = CreateDbConfig(options.DbPath, options.HttpPort, timeStamp, options.ChunksToCache);
+            return new TFChunkDb(config);
         }
 
         private static SingleVNodeAppSettings GetAppSettings(SingleNodeOptions options)

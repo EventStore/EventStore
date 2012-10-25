@@ -72,6 +72,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _statePartitionSelector; }
         }
 
+        public bool IsEmiEnabled()
+        {
+            return _streams == null || _streams.Count <= 1;
+        }
+
         public EventDistributionPoint CreatePausedEventDistributionPoint(
             Guid distributionPointId, IPublisher publisher, CheckpointTag checkpointTag)
         {

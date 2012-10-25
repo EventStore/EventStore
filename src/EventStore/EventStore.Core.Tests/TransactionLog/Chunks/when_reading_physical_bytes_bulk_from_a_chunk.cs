@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 var buffer = new byte[1024];
                 var result = reader.ReadNextPhysicalBytes(1024, buffer);
                 Assert.IsFalse(result.IsEOF);
-                Assert.AreEqual(1024, result.ReadData);
+                Assert.AreEqual(1024, result.BytesRead);
             }
             chunk.WaitForDestroy(5000);
         }
@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 var buffer = new byte[1024];
                 var result = reader.ReadNextPhysicalBytes(1024, buffer);
                 Assert.IsFalse(result.IsEOF);
-                Assert.AreEqual(1024, result.ReadData);
+                Assert.AreEqual(1024, result.BytesRead);
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 var buffer = new byte[1024];
                 var result = reader.ReadNextPhysicalBytes(1024, buffer);
                 Assert.IsTrue(result.IsEOF);
-                Assert.AreEqual(272, result.ReadData); //header 128 + footer 128 + map 16
+                Assert.AreEqual(272, result.BytesRead); //header 128 + footer 128 + map 16
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 var buffer = new byte[1024];
                 var result = reader.ReadNextPhysicalBytes(1024, buffer);
                 Assert.IsTrue(result.IsEOF);
-                Assert.AreEqual(ChunkHeader.Size + ChunkFooter.Size, result.ReadData); //just header + footer = 256
+                Assert.AreEqual(ChunkHeader.Size + ChunkFooter.Size, result.BytesRead); //just header + footer = 256
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 var buffer = new byte[1024];
                 var result = reader.ReadNextPhysicalBytes(3000, buffer);
                 Assert.IsFalse(result.IsEOF);
-                Assert.AreEqual(1024, result.ReadData);
+                Assert.AreEqual(1024, result.BytesRead);
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
@@ -94,7 +94,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 var buffer = new byte[1024];
                 var result = reader.ReadNextPhysicalBytes(1024, buffer);
                 Assert.IsTrue(result.IsEOF);
-                Assert.AreEqual(556, result.ReadData); //does not includes header and footer space
+                Assert.AreEqual(556, result.BytesRead); //does not includes header and footer space
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);

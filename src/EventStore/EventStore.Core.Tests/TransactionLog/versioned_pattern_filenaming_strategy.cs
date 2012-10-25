@@ -114,7 +114,7 @@ namespace EventStore.Core.Tests.TransactionLog
             File.Create(Path.Combine(PathName, "chunk-000005.000002")).Close();
             File.Create(Path.Combine(PathName, "chunk-000005.000005")).Close();
 
-            var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk");
+            var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
             var versions = strategy.GetAllPresentFiles();
             Array.Sort(versions, StringComparer.CurrentCultureIgnoreCase);
             Assert.AreEqual(7, versions.Length);
@@ -125,6 +125,43 @@ namespace EventStore.Core.Tests.TransactionLog
             Assert.AreEqual(Path.Combine(PathName, "chunk-000005.000002"), versions[4]);
             Assert.AreEqual(Path.Combine(PathName, "chunk-000005.000005"), versions[5]);
             Assert.AreEqual(Path.Combine(PathName, "chunk-000005.000007"), versions[6]);
+        }
+
+        [Test]
+        public void returns_all_temp_files_in_directory()
+        {
+            File.Create(Path.Combine(PathName, "bla")).Close();
+            File.Create(Path.Combine(PathName, "bla.tmp")).Close();
+            File.Create(Path.Combine(PathName, "bla.temp")).Close();
+
+            File.Create(Path.Combine(PathName, "foo.tmp")).Close();
+
+            var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
+            var tempFiles = strategy.GetAllTempFiles();
+
+            Assert.AreEqual(2, tempFiles.Length);
+            Assert.AreEqual(Path.Combine(PathName, "bla.tmp"), tempFiles[0]);
+            Assert.AreEqual(Path.Combine(PathName, "foo.tmp"), tempFiles[1]);
+        }
+
+        [Test]
+        public void returns_temp_filenames_detectable_by_getalltempfiles_method()
+        {
+            var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
+            Assert.AreEqual(0, strategy.GetAllTempFiles().Length);
+
+            var tmp1 = strategy.GetTempFilename();
+            var tmp2 = strategy.GetTempFilename();
+            File.Create(tmp1).Close();
+            File.Create(tmp2).Close();
+            var tmp = new[] { tmp1, tmp2 };
+            Array.Sort(tmp);
+
+            var tempFiles = strategy.GetAllTempFiles();
+            Array.Sort(tempFiles);
+            Assert.AreEqual(2, tempFiles.Length);
+            Assert.AreEqual(tmp[0], tempFiles[0]);
+            Assert.AreEqual(tmp[1], tempFiles[1]);
         }
     }
 }
