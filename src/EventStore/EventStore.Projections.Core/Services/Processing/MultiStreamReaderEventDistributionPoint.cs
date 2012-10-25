@@ -103,7 +103,10 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 case RangeReadResult.NoStream:
                     UpdateAndDeliverSafePositionToJoin(message.EventStreamId, message.LastCommitPosition.Value); // allow joining heading distribution
-                    RequestEvents(delay: true);
+                    if (_pauseRequested)
+                        _paused = true;
+                    else 
+                        RequestEvents(delay: true);
 
                     break;
                 case RangeReadResult.Success:

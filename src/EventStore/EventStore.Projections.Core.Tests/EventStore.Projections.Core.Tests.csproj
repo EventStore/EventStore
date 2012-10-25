@@ -119,10 +119,12 @@
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\TestFixtureWithCoreProjectionMultiStreamCheckpointManager.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_multiple_event_processed_received.cs" />
     <Compile Include="Services\event_filter\specific_stream_event_filter.cs" />
+    <Compile Include="Services\multi_stream_event_distribution_point\when_handling_read_completed_and_no_stream.cs" />
     <Compile Include="Services\multi_stream_event_distribution_point\when_handling_read_completed_for_all_streams.cs" />
     <Compile Include="Services\multi_stream_event_distribution_point\when_creating.cs" />
     <Compile Include="Services\multi_stream_event_distribution_point\when_handling_read_completed.cs" />
     <Compile Include="Services\multi_stream_event_distribution_point\when_handling_read_completed_for_all_streams_and_eof.cs" />
+    <Compile Include="Services\multi_stream_event_distribution_point\when_handling_read_completed_for_all_streams_then_pause_requested_then_eof.cs" />
     <Compile Include="Services\multi_stream_event_distribution_point\when_resuming.cs" />
     <Compile Include="Services\multi_stream_event_distribution_point\when_has_been_created.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\FakeCoreProjection.cs" />
