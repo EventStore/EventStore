@@ -61,7 +61,30 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public ChunkHeader ChunkHeader { get { return _chunkHeader; } }
         public ChunkFooter ChunkFooter { get { return _chunkFooter; } }
-        
+
+        public int LogicalWriterPosition
+        {
+            get
+            {
+                var writerWorkItem = _writerWorkItem;
+                if (writerWorkItem == null)
+                    throw new InvalidOperationException(string.Format("TFChunk {0} is not in write mode.", _filename));
+                //TODO AN: consider checking here whether we are out of data region
+                return (int)writerWorkItem.Stream.Position - ChunkHeader.Size;
+            }
+        }
+
+        public int PhysicalWriterPosition 
+        {
+            get
+            {
+                var writerWorkItem = _writerWorkItem;
+                if (writerWorkItem == null)
+                    throw new InvalidOperationException(string.Format("TFChunk {0} is not in write mode.", _filename));
+                return (int) writerWorkItem.Stream.Position;
+            }
+        }
+
         private readonly string _filename;
         private volatile bool _isReadonly;
         private ChunkHeader _chunkHeader;
@@ -943,13 +966,13 @@ namespace EventStore.Core.TransactionLog.Chunks
             return RecordWriteResult.Successful(oldPosition, _actualDataSize);
         }
 
-        public bool TryAppendRawData(byte[] buffer, int length)
+        public bool TryAppendRawData(byte[] buffer)
         {
             var workItem = _writerWorkItem;
             var stream = workItem.Stream;
-            if (stream.Position + length > stream.Length)
+            if (stream.Position + buffer.Length > stream.Length)
                 return false;
-            WriteRawData(buffer, length);
+            WriteRawData(buffer, buffer.Length);
             return true;
         }
 
@@ -1165,7 +1188,6 @@ namespace EventStore.Core.TransactionLog.Chunks
                 throw new TimeoutException();
         }
 
- 
         private ReaderWorkItem GetReaderWorkItem()
         { 
             for (int i = 0; i < 10; i++)
@@ -1212,7 +1234,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             return new TFChunkBulkReader(this, GetSequentialReaderFileStream());
         }
 
-
         internal void ReleaseReader(TFChunkBulkReader reader)
         {
             Interlocked.Decrement(ref _lockedCount);
@@ -1220,26 +1241,28 @@ namespace EventStore.Core.TransactionLog.Chunks
                 TryDestruct();
         }
 
-        public ReadResult TryReadNextBulkLogical(Stream stream, byte [] into, int count)
+        internal BulkReadResult TryReadNextBulkLogical(Stream stream, byte[] into, int count)
         {
-            if (stream.Position == 0) stream.Position = ChunkHeader.Size;
-            var sizeRead = 0;
-            if (count > into.Length) count = into.Length;
-            var mapsize = ChunkFooter == null ? 0 : ChunkFooter.MapSize;
-            var available = stream.Length - ChunkFooter.Size - ChunkHeader.Size - mapsize;
-            var toRead = available > count ? count : (int) available;
-            sizeRead = stream.Read(into, 0, toRead);
-            return new ReadResult { IsEOF = stream.Length - ChunkFooter.Size - mapsize == stream.Position, ReadData = sizeRead };
+            if (stream.Position == 0) 
+                stream.Position = ChunkHeader.Size;
+            var oldPos = (int)stream.Position;
+            if (count > into.Length)
+                count = into.Length;
+            var mapSize = _chunkFooter == null ? 0 : ChunkFooter.MapSize;
+            var available = (int)(stream.Length - ChunkFooter.Size - ChunkHeader.Size - mapSize);
+            var toRead = available > count ? count : available;
+            var bytesRead = stream.Read(into, 0, toRead);
+            return new BulkReadResult(oldPos, bytesRead, isEof: available == bytesRead);
         }
 
-        public ReadResult TryReadNextBulkPhysical(Stream stream, byte[] into, int count)
+        internal BulkReadResult TryReadNextBulkPhysical(Stream stream, byte[] into, int count)
         {
-            var sizeRead = 0;
-            if (count > into.Length) count = into.Length;
-            sizeRead = stream.Read(into, 0, count);
-            return new ReadResult { IsEOF = stream.Length == stream.Position, ReadData = sizeRead };
+            if (count > into.Length) 
+                count = into.Length;
+            var oldPos = (int) stream.Position;
+            int bytesRead = stream.Read(into, 0, count);
+            return new BulkReadResult(oldPos, bytesRead, isEof: stream.Length == stream.Position);
         }
-
 
         private struct Midpoint
         {
@@ -1256,60 +1279,21 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 return string.Format("ItemIndex: {0}, LogPos: {1}", ItemIndex, LogPos);
             }
-
         }
     }
 
-    public class TFChunkBulkReader : IDisposable
+    public struct BulkReadResult
     {
-        private readonly TFChunk _chunk;
-        private readonly Stream _stream;
-        private bool _disposed;
-     
-        internal TFChunkBulkReader(TFChunk chunk, Stream streamToUse)
+        public readonly int OldPosition;
+        public readonly int BytesRead;
+        public readonly bool IsEOF;
+
+        public BulkReadResult(int oldPosition, int bytesRead, bool isEof)
         {
-            Ensure.NotNull(chunk, "chunk");
-            Ensure.NotNull(streamToUse, "stream");
-            _chunk = chunk;
-            _stream = streamToUse;
+            OldPosition = oldPosition;
+            BytesRead = bytesRead;
+            IsEOF = isEof;
         }
-
-        ~TFChunkBulkReader()
-        {
-            Dispose();
-        }
-
-        public void Release()
-        {
-            _stream.Close();
-            _stream.Dispose();
-            _disposed = true;
-            _chunk.ReleaseReader(this);
-        }
-
-        public ReadResult ReadNextPhysicalBytes(int count, byte[] buffer)
-        {
-            return _chunk.TryReadNextBulkPhysical(_stream, buffer, count);
-        }
-
-        public ReadResult ReadNextLogicalBytes(int count, byte [] buffer)
-        {
-            return _chunk.TryReadNextBulkLogical(_stream, buffer, count);
-        }
-
-        public void Dispose()
-        {
-            if(_disposed) return;
-            Release();
-            GC.SuppressFinalize(this);
-        }
-
-    }
-
-    public struct ReadResult
-    {
-        public int ReadData;
-        public bool IsEOF;
     }
 
     public struct PosMap

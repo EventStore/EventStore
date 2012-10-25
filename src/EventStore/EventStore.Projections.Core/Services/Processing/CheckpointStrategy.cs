@@ -72,6 +72,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _statePartitionSelector; }
         }
 
+        public bool IsEmiEnabled()
+        {
+            return _streams == null || _streams.Count <= 1;
+        }
+
         public EventDistributionPoint CreatePausedEventDistributionPoint(
             Guid distributionPointId, IPublisher publisher, CheckpointTag checkpointTag)
         {
@@ -95,6 +100,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 return CreatePausedStreamReaderEventDistributionPoint(
                     distributionPointId, publisher, checkpointTag, streamName, resolveLinkTos: true);
             }
+            else if (_streams != null && _streams.Count > 1)
+            {
+                var streamName = checkpointTag.Streams.Keys.First();
+                return CreatePausedMultiStreamReaderEventDistributionPoint(
+                    distributionPointId, publisher, checkpointTag, resolveLinkTos: true);
+            }
             else
                 throw new NotSupportedException();
         }
@@ -107,6 +118,16 @@ namespace EventStore.Projections.Core.Services.Processing
             var fromSequenceNumber = lastProcessedSequenceNumber + 1;
             var distributionPoint = new StreamReaderEventDistributionPoint(
                 publisher, distributionPointId, streamName, fromSequenceNumber, resolveLinkTos);
+            return distributionPoint;
+        }
+
+        private EventDistributionPoint CreatePausedMultiStreamReaderEventDistributionPoint(
+            Guid distributionPointId, IPublisher publisher, CheckpointTag checkpointTag, bool resolveLinkTos)
+        {
+            var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
+
+            var distributionPoint = new MultiStreamReaderEventDistributionPoint(
+                publisher, distributionPointId, _streams.ToArray(), nextPositions, resolveLinkTos);
             return distributionPoint;
         }
 
@@ -179,7 +200,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 string projectionStateUpdatesStreamId = CoreProjection.ProjectionsStreamPrefix + name
                                                       + CoreProjection.ProjectionsStateStreamSuffix;
 
-                return new CoreProjectionMultiStreamCheckpointManager(
+                return new MultiStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
                     projectionConfig, name, PositionTagger, projectionStateUpdatesStreamId);
             }
@@ -188,7 +209,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 string projectionCheckpointStreamId = CoreProjection.ProjectionsStreamPrefix + name
                                                       + CoreProjection.ProjectionCheckpointStreamSuffix;
 
-                return new CoreProjectionDefaultCheckpointManager(
+                return new DefaultCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
                     projectionConfig, projectionCheckpointStreamId, name, PositionTagger);
             }

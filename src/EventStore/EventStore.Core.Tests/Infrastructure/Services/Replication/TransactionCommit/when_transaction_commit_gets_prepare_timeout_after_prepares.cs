@@ -46,15 +46,15 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TransactionC
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ReplicationMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4, "test123");
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4, "test123");
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
         }
 
         protected override Message When()
         {
-            return new ReplicationMessage.PreparePhaseTimeout(CorrelationId);
+            return new StorageMessage.PreparePhaseTimeout(CorrelationId);
         }
 
         [Test]

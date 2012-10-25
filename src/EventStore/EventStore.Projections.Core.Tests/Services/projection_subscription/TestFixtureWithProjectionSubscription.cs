@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         private Guid _projectionCorrelationId;
         protected TestMessageHandler<ProjectionMessage.Projections.CommittedEventReceived> _eventHandler;
         protected TestMessageHandler<ProjectionMessage.Projections.CheckpointSuggested> _checkpointHandler;
+        protected TestMessageHandler<ProjectionMessage.Projections.ProgressChanged> _progressHandler;
         protected IHandle<ProjectionMessage.Projections.CommittedEventDistributed> _subscription;
         protected EventDistributionPoint _forkedDistributionPoint;
         protected FakePublisher _bus;
@@ -57,8 +58,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             _projectionCorrelationId = Guid.NewGuid();
             _eventHandler = new TestMessageHandler<ProjectionMessage.Projections.CommittedEventReceived>();
             _checkpointHandler = new TestMessageHandler<ProjectionMessage.Projections.CheckpointSuggested>();
+            _progressHandler = new TestMessageHandler<ProjectionMessage.Projections.ProgressChanged>();
             _subscription = new ProjectionSubscription(
-                _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler,
+                _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler, _progressHandler,
                 CreateCheckpointStrategy(), _checkpointUnhandledBytesThreshold);
 
 

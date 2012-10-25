@@ -44,7 +44,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var ps = new ProjectionSubscription(
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestMessageHandler<ProjectionMessage.Projections.CommittedEventReceived>(),
-                new TestMessageHandler<ProjectionMessage.Projections.CheckpointSuggested>(), CreateCheckpointStrategy(),
+                new TestMessageHandler<ProjectionMessage.Projections.CheckpointSuggested>(),
+                new TestMessageHandler<ProjectionMessage.Projections.ProgressChanged>(), CreateCheckpointStrategy(),
                 1000);
         }
 
@@ -53,7 +54,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         {
             var ps = new ProjectionSubscription(
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), null,
-                new TestMessageHandler<ProjectionMessage.Projections.CheckpointSuggested>(), CreateCheckpointStrategy(),
+                new TestMessageHandler<ProjectionMessage.Projections.CheckpointSuggested>(),
+                new TestMessageHandler<ProjectionMessage.Projections.ProgressChanged>(), CreateCheckpointStrategy(),
                 1000);
         }
 
@@ -63,6 +65,17 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var ps = new ProjectionSubscription(
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestMessageHandler<ProjectionMessage.Projections.CommittedEventReceived>(), null,
+                new TestMessageHandler<ProjectionMessage.Projections.ProgressChanged>(), CreateCheckpointStrategy(),
+                1000);
+        }
+
+        [Test, ExpectedException(typeof (ArgumentNullException))]
+        public void null_progress_handler_throws_argument_null_exception()
+        {
+            var ps = new ProjectionSubscription(
+                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
+                new TestMessageHandler<ProjectionMessage.Projections.CommittedEventReceived>(),
+                new TestMessageHandler<ProjectionMessage.Projections.CheckpointSuggested>(), null,
                 CreateCheckpointStrategy(), 1000);
         }
 
@@ -72,7 +85,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var ps = new ProjectionSubscription(
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestMessageHandler<ProjectionMessage.Projections.CommittedEventReceived>(),
-                new TestMessageHandler<ProjectionMessage.Projections.CheckpointSuggested>(), null, 1000);
+                new TestMessageHandler<ProjectionMessage.Projections.CheckpointSuggested>(),
+                new TestMessageHandler<ProjectionMessage.Projections.ProgressChanged>(), null, 1000);
         }
 
         private CheckpointStrategy CreateCheckpointStrategy()

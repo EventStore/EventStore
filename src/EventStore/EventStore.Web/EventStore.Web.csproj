@@ -100,13 +100,10 @@
     <Content Include="es-common-web\img\control.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="es-common-web\js\charts\es.chartsSetup.js">
+    <Content Include="es-common-web\js\controls\es.TimeSeries.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="es-common-web\js\charts\es.TimeSeries.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="es-common-web\js\es.menu.js">
+    <Content Include="es-common-web\js\es.loadmenu.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="es-common-web\js\projections\es.api.js">
@@ -202,6 +199,9 @@
     <Content Include="es-common-web\lib\jsrender\readme.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="es-common-web\tmpl\_selector.tmpl.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="es-common-web\tmpl\_body.tmpl.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -220,6 +220,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

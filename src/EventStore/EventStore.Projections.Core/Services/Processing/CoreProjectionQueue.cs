@@ -87,11 +87,11 @@ namespace EventStore.Projections.Core.Services.Processing
             // unsubscribe?
         }
 
-        public void EnqueueTask(StagedTask workItem, CheckpointTag workItemCheckpointTag)
+        public void EnqueueTask(StagedTask workItem, CheckpointTag workItemCheckpointTag, bool allowCurrentPosition = false)
         {
             if (_queueState == QueueState.Stopped)
                 throw new InvalidOperationException("Queue is Stopped");
-            ValidateQueueingOrder(workItemCheckpointTag);
+            ValidateQueueingOrder(workItemCheckpointTag, allowCurrentPosition);
             _queuePendingEvents.Enqueue(workItem);
         }
 
@@ -105,10 +105,13 @@ namespace EventStore.Projections.Core.Services.Processing
             return (_subscriptionPaused && _queueState != QueueState.Paused ? "/Subscription Paused" : "");
         }
 
-        private void ValidateQueueingOrder(CheckpointTag eventTag)
+        private void ValidateQueueingOrder(CheckpointTag eventTag, bool allowCurrentPosition = false)
         {
-            if (eventTag <= _lastEnqueuedEventTag)
-                throw new InvalidOperationException("Invalid order.  Last known tag is: '{0}'.  Current tag is: '{1}'");
+            if (eventTag < _lastEnqueuedEventTag || (!allowCurrentPosition && eventTag <= _lastEnqueuedEventTag))
+                throw new InvalidOperationException(
+                    string.Format(
+                        "Invalid order.  Last known tag is: '{0}'.  Current tag is: '{1}'", _lastEnqueuedEventTag,
+                        eventTag));
             _lastEnqueuedEventTag = eventTag;
         }
 
@@ -144,9 +147,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _queuePendingEvents.Process();
 
             if (_updateStatistics != null
-                &&
-                ((_queuePendingEvents.Count == 0)
-                 || (DateTime.UtcNow - _lastReportedStatisticsTimeStamp).TotalMilliseconds > 500)) _updateStatistics();
+                && ((_queuePendingEvents.Count == 0)
+                    || (DateTime.UtcNow - _lastReportedStatisticsTimeStamp).TotalMilliseconds > 500))
+                _updateStatistics();
             _lastReportedStatisticsTimeStamp = DateTime.UtcNow;
         }
 

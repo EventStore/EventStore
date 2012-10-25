@@ -34,7 +34,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages
 {
-    public static class ReplicationMessage
+    public static class StorageMessage
     {
         public interface IPreconditionedWriteMessage
         {
@@ -497,80 +497,6 @@ namespace EventStore.Core.Messages
                 ForwardingId = forwardingId;
                 CorrelationId = correlationId;
                 TimeoutMessage = timeoutMessage;
-            }
-        }
-
-        public class SubscribeReplica: Message
-        {
-            public readonly IPEndPoint ReplicaEndPoint;
-            public readonly long LogPosition;
-            public readonly IPEndPoint VNodeEndPoint;
-            public readonly bool IsPromotable;
-
-            public SubscribeReplica(long logPosition, IPEndPoint vnodeEndPoint, bool isPromotable)
-            {
-                if (vnodeEndPoint == null) throw new ArgumentNullException("vnodeEndPoint");
-
-                LogPosition = logPosition;
-                VNodeEndPoint = vnodeEndPoint;
-                IsPromotable = isPromotable;
-            }
-
-            public SubscribeReplica(IPEndPoint replicaEndPoint, long logPosition, IPEndPoint vnodeEndPoint, bool isPromotable)
-            {
-                if (replicaEndPoint == null) throw new ArgumentNullException("replicaEndPoint");
-                if (vnodeEndPoint == null) throw new ArgumentNullException("vnodeEndPoint");
-
-                ReplicaEndPoint = replicaEndPoint;
-                LogPosition = logPosition;
-                VNodeEndPoint = vnodeEndPoint;
-                IsPromotable = isPromotable;
-            }
-        }
-
-        public class LogBulk : Message, IFlushableWriterMessage
-        {
-            public readonly long LogPosition;
-            public readonly byte[] LogData;
-            public readonly long MasterWriterChecksum;
-
-            public LogBulk(long logPosition, byte[] logData, long masterWriterChecksum)
-            {
-                LogPosition = logPosition;
-                LogData = logData;
-                MasterWriterChecksum = masterWriterChecksum;
-            }
-        }
-
-        public class SubscribeToLog : Message
-        {
-            public readonly IPEndPoint MasterEndpoint;
-
-            public SubscribeToLog(IPEndPoint masterEndpoint)
-            {
-                MasterEndpoint = masterEndpoint;
-            }
-        }
-
-        public class SlaveAssignment: Message
-        {
-            public readonly IPEndPoint MasterEndpoint;
-
-            public SlaveAssignment(IPEndPoint masterEndpoint)
-            {
-                Ensure.NotNull(masterEndpoint, "masterEndPoint");
-                MasterEndpoint = masterEndpoint;
-            }
-        }
-
-        public class CloneAssignment : Message
-        {
-            public readonly IPEndPoint MasterEndpoint;
-
-            public CloneAssignment(IPEndPoint masterEndpoint)
-            {
-                Ensure.NotNull(masterEndpoint, "masterEndPoint");
-                MasterEndpoint = masterEndpoint;
             }
         }
     }

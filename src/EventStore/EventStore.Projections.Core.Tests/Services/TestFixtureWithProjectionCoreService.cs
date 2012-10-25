@@ -49,6 +49,9 @@ namespace EventStore.Projections.Core.Tests.Services
             public List<ProjectionMessage.Projections.CheckpointSuggested> HandledCheckpoints =
                 new List<ProjectionMessage.Projections.CheckpointSuggested>();
 
+            public List<ProjectionMessage.Projections.ProgressChanged> HandledProgress =
+                new List<ProjectionMessage.Projections.ProgressChanged>();
+
             public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
             {
                 HandledMessages.Add(message);
@@ -72,6 +75,11 @@ namespace EventStore.Projections.Core.Tests.Services
             public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
             {
                 throw new NotImplementedException();
+            }
+
+            public void Handle(ProjectionMessage.Projections.ProgressChanged message)
+            {
+                HandledProgress.Add(message);
             }
         }
 

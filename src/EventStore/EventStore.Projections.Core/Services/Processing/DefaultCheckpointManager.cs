@@ -36,15 +36,16 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class CoreProjectionDefaultCheckpointManager : CoreProjectionCheckpointManager
+    public class DefaultCheckpointManager : CoreProjectionCheckpointManager
     {
+        private int _inCheckpointWriteAttempt;
         private int _lastWrittenCheckpointEventNumber;
         private readonly string _projectionCheckpointStreamId;
         private int _nextStateIndexToRequest;
         private Event _checkpointEventToBePublished;
         private CheckpointTag _requestedCheckpointPosition;
 
-        public CoreProjectionDefaultCheckpointManager(
+        public DefaultCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
@@ -122,6 +123,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, _projectionCheckpointStreamId,
                     _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished), WriteCheckpointEventCompleted);
+        }
+
+        public override void GetStatistics(ProjectionStatistics info)
+        {
+            base.GetStatistics(info);
+            info.WritesInProgress = ((_inCheckpointWriteAttempt != 0) ? 1 : 0) + info.WritesInProgress;
+            info.CheckpointStatus = _inCheckpointWriteAttempt > 0
+                                        ? "Writing (" + _inCheckpointWriteAttempt + ")"
+                                        : info.CheckpointStatus;
         }
 
         protected override void BeforeBeginLoadState()

@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.IO;
 using System.Threading;
 using EventStore.Common.Utils;
 
@@ -127,10 +128,29 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public TFChunk AddNewChunk()
         {
-            
-            var chunksCnt = _chunksCount;
-            var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunksCnt);
-            var chunk = TFChunk.CreateNew(chunkName, _config.ChunkSize, chunksCnt, 0);
+            var chunkNumber = _chunksCount;
+            var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber);
+            var chunk = TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, 0);
+            AddChunk(chunk);
+            return chunk;
+        }
+
+        public TFChunk AddNewChunk(ChunkHeader chunkHeader, int fileSize)
+        {
+            Ensure.NotNull(chunkHeader, "chunkHeader");
+            Ensure.Positive(fileSize, "fileSize");
+
+            if (chunkHeader.ChunkStartNumber != _chunksCount)
+            {
+                throw new Exception(string.Format("Received request to create a new ongoing chunk {0}-{1}, but current chunks count is {2}.",
+                                                  chunkHeader.ChunkStartNumber,
+                                                  chunkHeader.ChunkEndNumber,
+                                                  _chunksCount));
+            }
+
+            var chunkNumber = _chunksCount;
+            var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber);
+            var chunk = TFChunk.CreateWithHeader(chunkName, chunkHeader, fileSize);
             AddChunk(chunk);
             return chunk;
         }
@@ -138,6 +158,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public void AddChunk(TFChunk chunk)
         {
             Ensure.NotNull(chunk, "chunk");
+
             _chunks[_chunksCount] = chunk;
             _chunksCount += 1;
 
@@ -209,6 +230,23 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (_chunks[i] != null)
                     _chunks[i].Dispose();
             }
+        }
+
+        public void AddReplicatedChunk(TFChunk replicatedChunk)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void DeleteChunk(TFChunk chunk)
+        {
+            throw new NotImplementedException();
+        }
+
+        public TFChunk CreateTempChunk(ChunkHeader chunkHeader, int fileSize)
+        {
+            var chunkFileName = _config.FileNamingStrategy.GetTempFilename();
+
+            throw new NotImplementedException();
         }
     }
 }

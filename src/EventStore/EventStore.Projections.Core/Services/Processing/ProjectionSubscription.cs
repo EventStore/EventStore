@@ -39,24 +39,29 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Guid _projectionCorrelationId;
         private readonly IHandle<ProjectionMessage.Projections.CommittedEventReceived> _eventHandler;
         private readonly IHandle<ProjectionMessage.Projections.CheckpointSuggested> _checkpointHandler;
+        private readonly IHandle<ProjectionMessage.Projections.ProgressChanged> _progressHandler;
         private readonly CheckpointStrategy _checkpointStrategy;
         private readonly long? _checkpointUnhandledBytesThreshold;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
         private readonly PositionTracker _positionTracker;
         private EventPosition _lastPassedOrCheckpointedEventPosition;
+        private float _progress = -1;
 
         public ProjectionSubscription(
             Guid projectionCorrelationId, CheckpointTag from,
             IHandle<ProjectionMessage.Projections.CommittedEventReceived> eventHandler,
             IHandle<ProjectionMessage.Projections.CheckpointSuggested> checkpointHandler,
+            IHandle<ProjectionMessage.Projections.ProgressChanged> progressHandler,
             CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold)
         {
             if (eventHandler == null) throw new ArgumentNullException("eventHandler");
             if (checkpointHandler == null) throw new ArgumentNullException("checkpointHandler");
+            if (progressHandler == null) throw new ArgumentNullException("progressHandler");
             if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
             _eventHandler = eventHandler;
             _checkpointHandler = checkpointHandler;
+            _progressHandler = progressHandler;
             _checkpointStrategy = checkpointStrategy;
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _projectionCorrelationId = projectionCorrelationId;
@@ -76,8 +81,17 @@ namespace EventStore.Projections.Core.Services.Processing
 
             // NOTE: we may receive here messages from heading event distribution point 
             // and they may not pass out source filter.  Discard them first
+            var roundedProgress = (float)Math.Round(message.Progress, 2);
+            bool progressChanged = _progress != roundedProgress;
+            _progress = roundedProgress;
             if (!_eventFilter.PassesSource(message.ResolvedLinkTo, message.PositionStreamId))
+            {
+                if (progressChanged)
+                    _progressHandler.Handle(
+                        new ProjectionMessage.Projections.ProgressChanged(
+                            _projectionCorrelationId, _positionTracker.LastTag, _progress));
                 return;
+            }
             var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
             //TODO: when joining heading distribution point replayed events may cause invalid operation exception on comparison
             if (eventCheckpointTag <= _positionTracker.LastTag)
@@ -92,7 +106,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _lastPassedOrCheckpointedEventPosition = message.Position;
                 var convertedMessage =
-                    ProjectionMessage.Projections.CommittedEventReceived.FromCommittedEventDistributed(message, eventCheckpointTag);
+                    ProjectionMessage.Projections.CommittedEventReceived.FromCommittedEventDistributed(
+                        message, eventCheckpointTag);
                 _eventHandler.Handle(convertedMessage);
             }
             else
@@ -106,6 +121,13 @@ namespace EventStore.Projections.Core.Services.Processing
                         new ProjectionMessage.Projections.CheckpointSuggested(
                             _projectionCorrelationId, _positionTracker.LastTag, message.Progress));
                 }
+                else
+                {
+                    if (progressChanged)
+                        _progressHandler.Handle(
+                            new ProjectionMessage.Projections.ProgressChanged(
+                                _projectionCorrelationId, _positionTracker.LastTag, _progress));
+                }
             }
         }
 
@@ -116,6 +138,5 @@ namespace EventStore.Projections.Core.Services.Processing
             return _checkpointStrategy.CreatePausedEventDistributionPoint(
                 distributionPointId, publisher, _positionTracker.LastTag);
         }
-
     }
 }
