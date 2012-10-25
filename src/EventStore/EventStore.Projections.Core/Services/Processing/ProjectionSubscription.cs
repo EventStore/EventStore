@@ -57,6 +57,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (eventHandler == null) throw new ArgumentNullException("eventHandler");
             if (checkpointHandler == null) throw new ArgumentNullException("checkpointHandler");
+            if (progressHandler == null) throw new ArgumentNullException("progressHandler");
             if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
             _eventHandler = eventHandler;
             _checkpointHandler = checkpointHandler;
