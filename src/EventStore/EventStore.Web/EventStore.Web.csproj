@@ -199,6 +199,9 @@
     <Content Include="es-common-web\lib\jsrender\readme.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="es-common-web\tmpl\_selector.tmpl.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="es-common-web\tmpl\_body.tmpl.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
