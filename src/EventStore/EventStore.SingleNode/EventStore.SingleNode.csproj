@@ -53,6 +53,9 @@
   <PropertyGroup>
     <StartupObject>EventStore.SingleNode.Program</StartupObject>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>app2.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -89,6 +92,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="app.ico" />
+    <Content Include="app2.ico" />
     <Content Include="TextFile.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
