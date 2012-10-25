@@ -367,6 +367,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Log.Info("Send scavenge command...");
             var package = new TcpPackage(TcpCommand.ScavengeDatabase, Guid.NewGuid(), null).AsByteArray();
             DirectSendOverTcp(package);
+            Log.Info("Scavenge command was sent.");
         }
 
         private Task WriteSingleEventAtTime(string stream, int events, Func<int, IEvent> createEvent)
