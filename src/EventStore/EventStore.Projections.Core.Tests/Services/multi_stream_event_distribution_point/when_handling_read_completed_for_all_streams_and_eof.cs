@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -29,12 +30,12 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
         }
 
         private string[] _abStreams;
-        private CheckpointTag _ab12Tag;
+        private Dictionary<string, int> _ab12Tag;
 
         [SetUp]
         public void When()
         {
-            _ab12Tag = CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 2}});
+            _ab12Tag = new Dictionary<string, int> {{"a", 1}, {"b", 2}};
             _abStreams = new[] {"a", "b"};
 
             _publishWithCorrelationId = Guid.NewGuid();
@@ -131,6 +132,21 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                 _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
                          .Last(m => m.EventStreamId == "b")
                          .FromEventNumber);
+        }
+
+        [Test]
+        public void publishes_schedule()
+        {
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
+        }
+
+        [Test]
+        public void publishes_read_events_on_schedule_reply()
+        {
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
+            var schedule = _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Single();
+            schedule.Reply();
+            Assert.AreEqual(5, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
         }
 
     }

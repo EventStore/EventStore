@@ -104,7 +104,8 @@
     <Compile Include="Services\Processing\CheckpointSuggestedWorkItem.cs" />
     <Compile Include="Services\Processing\CommittedEventWorkItem.cs" />
     <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
-    <Compile Include="Services\Processing\CoreProjectionDefaultCheckpointManager.cs" />
+    <Compile Include="Services\Processing\DefaultCheckpointManager.cs" />
+    <Compile Include="Services\Processing\MultiStreamCheckpointManager.cs" />
     <Compile Include="Services\Processing\CoreProjectionQueue.cs" />
     <Compile Include="Services\Processing\EventDistributionPoint.cs" />
     <Compile Include="Services\Processing\IProjectionSubscription.cs" />
@@ -114,6 +115,7 @@
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\PartitionStateCache.cs" />
     <Compile Include="Services\Processing\PositionTracker.cs" />
+    <Compile Include="Services\Processing\ProgressWorkItem.cs" />
     <Compile Include="Services\Processing\QuerySourceProcessingStrategyBuilder.cs" />
     <Compile Include="Services\Processing\CheckpointTag.cs" />
     <Compile Include="Services\Processing\EmittedEvent.cs" />

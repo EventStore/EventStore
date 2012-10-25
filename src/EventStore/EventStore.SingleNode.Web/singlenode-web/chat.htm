@@ -1,0 +1,187 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Chat</title>
+    <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>
+</head>
+<body>
+    <div id="content">
+        <h2>
+            EventStore based Chat</h2>
+        <h3 class="chartroom">
+            Room
+        </h3>
+        <textarea readonly="readonly" cols="70" rows="30" class="chat-window"></textarea>
+        <form class="input-window">
+        <span class="username"></span>
+        <input type="text" class="message-input" />
+        <input type="submit" class="send" value="Send" />
+        </form>
+        <form class="input-dialog" style="display: none">
+        <div>
+            Your name:
+            <input type="text" class="input-name" value="John Smith" /></div>
+        <div>
+            Chat room:
+            <input type="text" class="input-room" value="GeneralChat" /></div>
+        <input type="submit" class="submit" value="Enter" />
+        </form>
+        <div class="error" style="display: none">
+        </div>
+    </div>
+    <script id="r-body">
+        es.tmpl.renderBody();
+    </script>
+    <script src="/web/es/lib/jquery/jquery-ui-1.8.23.min.js" type="text/javascript"></script>
+    <script src="/web/es/js/projections/v8/Prelude/Modules.js"> </script>
+    <script src="/web/es/js/projections/v8/Prelude/Projections.js"> </script>
+    <script src="/web/es/js/projections/es.projections.environment.js"> </script>
+    <script src="/web/es/js/projections/v8/Prelude/1Prelude.js"> </script>
+    <script src="/web/es/js/projections/es.projection.js"> </script>
+    <script src="/web/es/js/projections/es.api.js"> </script>
+    <script>
+        $(function () {
+
+            var userName = null;
+            var chatRoomName = null;
+
+            tryLoadUserData();
+
+            $(".input-dialog").dialog({
+                modal: true,
+                closeOnEscape: false,
+                open: function (event, ui) {
+                    $(this).closest('.ui-dialog').find('.ui-dialog-titlebar-close').hide();
+                }
+            })
+                    .submit(onUserDataInput)
+                    .show();
+
+            $(".input-window").submit(onMessageInput);
+
+            es.projection({
+                body: function () {
+                    fromStream('chat-' + chatRoomName).when({
+                        'ChatMessage': function (state, event) {
+                            var body = event.body;
+                            return { "text": (body.time + "> " + body.sender + ": " + body.message) };
+                        },
+                        'UserJoinedChat': function (state, event) {
+                            var body = event.body;
+                            return { "text": (body.time + "> user " + body.user + " has joined the chat!") };
+                        }
+                    });
+                },
+                runTrigger: function (runAction) {
+                    $(".input-dialog").bind("dialogclose", function (event, ui) {
+                        runAction();
+                    });
+                },
+                onStateChange: function (stateStr) {
+                    var stateObj = JSON.parse(stateStr);
+                    var currentText = $('.chat-window').val();
+
+                    var chatWindow = $('.chat-window').val(currentText + (stateObj.text || "") + "\r\n")[0];
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                },
+                startFrom: 0,
+                showError: function (err) {
+                    $('.error').text(err);
+                },
+                hideError: function () {
+                    $('.error').hide().text("");
+                }
+            });
+
+            function onUserDataInput(event) {
+                event.preventDefault();
+
+                userName = $(".input-dialog .input-name").val();
+                chatRoomName = $(".input-dialog .input-room").val();
+
+                if (!userName || !chatRoomName)
+                    return;
+
+                $(".input-window .username").append(userName + ": ");
+                $(".chartroom").append(chatRoomName);
+                $(".input-window .message-input")[0].focus();
+
+                trySaveUserData(userName, chatRoomName);
+
+                $(this).dialog("close");
+
+                (function postUserEnteredChatEvent() {
+                    var data = {
+                        time: getFormattedTime(),
+                        user: userName
+                    };
+                    es.postEvent({
+                        data: data,
+                        stream: 'chat-' + chatRoomName,
+                        eventType: 'UserJoinedChat'
+                    });
+                })();
+            }
+
+            function onMessageInput(event) {
+                event.preventDefault();
+
+                var input = $(".message-input").val();
+                if (!input)
+                    return;
+
+                var data = {
+                    sender: userName,
+                    message: input,
+                    time: getFormattedTime()
+                };
+                es.postEvent({
+                    data: data,
+                    stream: "chat-" + chatRoomName,
+                    eventType: 'ChatMessage',
+                    success: function () {
+                        $(".input-window .message-input").val("");
+                    }
+                });
+            }
+
+            function trySaveUserData(es_username, es_chatroom) {
+                if (window.localStorage) {
+                    localStorage.setItem('$es_username', es_username);
+                    localStorage.setItem('$es_chatroom', es_chatroom);
+                }
+            };
+
+            function tryLoadUserData() {
+                if (window.localStorage) {
+                    var es_username = localStorage.getItem('$es_username');
+                    var es_chatroom = localStorage.getItem('$es_chatroom');
+
+                    if (es_username)
+                        $(".input-dialog .input-name").val(es_username);
+                    if (es_chatroom)
+                        $(".input-dialog .input-room").val(es_chatroom);
+                }
+            };
+
+            function getFormattedTime() {
+                var now = new Date();
+                return _format(now.getHours()) + ":" + _format(now.getMinutes()) + ":" + _format(now.getSeconds());
+
+                function _format(timeUnit) {
+                    if (timeUnit < 10)
+                        return "0" + timeUnit;
+                    else
+                        return "" + timeUnit;
+                }
+            }
+
+        });
+    </script>
+</body>
+</html>

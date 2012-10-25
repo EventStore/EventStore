@@ -28,15 +28,16 @@ namespace EventStore.Projections.Core.Services.Processing
         private long? _safePositionToJoin;
 
         public MultiStreamReaderEventDistributionPoint(
-            IPublisher publisher, Guid distibutionPointCorrelationId, string[] streams, CheckpointTag fromPositions,
+            IPublisher publisher, Guid distibutionPointCorrelationId, string[] streams, Dictionary<string, int> fromPositions,
             bool resolveLinkTos)
             : base(publisher, distibutionPointCorrelationId)
         {
             if (streams == null) throw new ArgumentNullException("streams");
             if (streams.Length == 0) throw new ArgumentException("streams");
             _streams = new HashSet<string>(streams);
-            ValidateTag(fromPositions);
-            _fromPositions = fromPositions;
+            var positions = CheckpointTag.FromStreamPositions(fromPositions);
+            ValidateTag(positions);
+            _fromPositions = positions;
             _resolveLinkTos = resolveLinkTos;
             foreach (var stream in streams)
             {
@@ -102,7 +103,10 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 case RangeReadResult.NoStream:
                     UpdateAndDeliverSafePositionToJoin(message.EventStreamId, message.LastCommitPosition.Value); // allow joining heading distribution
-                    RequestEvents(delay: true);
+                    if (_pauseRequested)
+                        _paused = true;
+                    else 
+                        RequestEvents(delay: true);
 
                     break;
                 case RangeReadResult.Success:
@@ -152,12 +156,10 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_pauseRequested || _paused)
                 throw new InvalidOperationException("Paused or pause requested");
 
-            var requested = false;
             foreach (var stream in _streams)
             {
                 if (_eventsRequested.Contains(stream))
                     continue;
-                requested = true;
                 _eventsRequested.Add(stream);
 
                 var readEventsForward = new ClientMessage.ReadStreamEventsForward(
@@ -172,9 +174,9 @@ namespace EventStore.Projections.Core.Services.Processing
                     _publisher.Publish(readEventsForward);
             }
 
+            // we ignore request events calls that do not lead to any request.  Pending request events call
+            // may become obsolete when handling completed read from another stream
 
-            if (!requested)
-                throw new InvalidOperationException("All read operations are already in progress");
         }
 
         private ProjectionMessage.CoreService.Tick CreateTickMessage()

@@ -43,219 +43,183 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="web\js\charts\es.Zoomer.js" />
-    <Content Include="web\lib\bootstrap\css\bootstrap-responsive.css">
+    <Content Include="es-common-web\js\controls\es.Zoomer.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\bootstrap\css\bootstrap-responsive.min.css">
+    <Content Include="es-common-web\lib\bootstrap\css\bootstrap-responsive.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\css\es.sitelayout.css">
+    <Content Include="es-common-web\lib\bootstrap\css\bootstrap-responsive.min.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\bootstrap\css\bootstrap.css">
+    <Content Include="es-common-web\css\es.sitelayout.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\bootstrap\css\bootstrap.min.css">
+    <Content Include="es-common-web\lib\bootstrap\css\bootstrap.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\img\favicon.ico">
+    <Content Include="es-common-web\lib\bootstrap\css\bootstrap.min.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\img\cancel_btn.png">
+    <Content Include="es-common-web\img\favicon.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\img\es-avatar.png">
+    <Content Include="es-common-web\img\cancel_btn.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\img\es-logo-thumbnail.png">
+    <Content Include="es-common-web\img\es-avatar.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\img\es-logo.png">
+    <Content Include="es-common-web\img\es-logo-thumbnail.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\img\eventstore_logo.png">
+    <Content Include="es-common-web\img\es-logo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\bootstrap\img\glyphicons-halflings-white.png">
+    <Content Include="es-common-web\img\eventstore_logo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\bootstrap\img\glyphicons-halflings.png">
+    <Content Include="es-common-web\lib\bootstrap\img\glyphicons-halflings-white.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\img\start_btn.png">
+    <Content Include="es-common-web\lib\bootstrap\img\glyphicons-halflings.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\img\stop_btn.png">
+    <Content Include="es-common-web\img\start_btn.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\bootstrap\js\bootstrap.js">
+    <Content Include="es-common-web\img\stop_btn.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\bootstrap\js\bootstrap.min.js">
+    <Content Include="es-common-web\lib\bootstrap\js\bootstrap.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\chat.htm">
+    <Content Include="es-common-web\lib\bootstrap\js\bootstrap.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\css\es.dashboard.css">
+    <Content Include="es-common-web\img\control.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\css\es.style.css">
+    <Content Include="es-common-web\js\controls\es.TimeSeries.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\health-charts.htm">
+    <Content Include="es-common-web\js\es.menu.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\charts.htm">
+    <Content Include="es-common-web\js\projections\es.api.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\edit-projection-source.htm">
+    <Content Include="es-common-web\js\projections\es.projection.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\external-host.htm">
+    <Content Include="es-common-web\js\projections\es.projections.environment.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\img\control.png">
+    <Content Include="es-common-web\lib\charts\d3.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\index.htm">
+    <Content Include="es-common-web\lib\charts\d3.layout.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\js\charts\es.chartsSetup.js">
+    <Content Include="es-common-web\lib\charts\d3.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\js\charts\es.graphcontrol.js">
+    <Content Include="es-common-web\lib\charts\rickshaw.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\js\charts\es.TimeSeries.js">
+    <Content Include="es-common-web\lib\charts\rickshaw.min.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\js\es.menu.js">
+    <Content Include="es-common-web\lib\charts\rickshaw.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\js\projections\es.api.js">
+    <Content Include="es-common-web\lib\html5shim\html5.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\js\projections\es.projection.js">
+    <Content Include="es-common-web\lib\jquery\images\ui-bg_flat_0_aaaaaa_40x100.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\js\projections\es.projections.environment.js">
+    <Content Include="es-common-web\lib\jquery\images\ui-bg_flat_75_ffffff_40x100.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\charts\d3.css">
+    <Content Include="es-common-web\lib\jquery\images\ui-bg_glass_55_fbf9ee_1x400.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\charts\d3.layout.min.js">
+    <Content Include="es-common-web\lib\jquery\images\ui-bg_glass_65_ffffff_1x400.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\charts\d3.min.js">
+    <Content Include="es-common-web\lib\jquery\images\ui-bg_glass_75_dadada_1x400.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\charts\rickshaw.js">
+    <Content Include="es-common-web\lib\jquery\images\ui-bg_glass_75_e6e6e6_1x400.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\charts\rickshaw.min.css">
+    <Content Include="es-common-web\lib\jquery\images\ui-bg_glass_95_fef1ec_1x400.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\charts\rickshaw.min.js">
+    <Content Include="es-common-web\lib\jquery\images\ui-bg_highlight-soft_75_cccccc_1x100.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\html5shim\html5.js">
+    <Content Include="es-common-web\lib\jquery\images\ui-icons_222222_256x240.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-bg_flat_0_aaaaaa_40x100.png">
+    <Content Include="es-common-web\lib\jquery\images\ui-icons_2e83ff_256x240.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-bg_flat_75_ffffff_40x100.png">
+    <Content Include="es-common-web\lib\jquery\images\ui-icons_454545_256x240.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-bg_glass_55_fbf9ee_1x400.png">
+    <Content Include="es-common-web\lib\jquery\images\ui-icons_888888_256x240.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-bg_glass_65_ffffff_1x400.png">
+    <Content Include="es-common-web\lib\jquery\images\ui-icons_cd0a0a_256x240.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-bg_glass_75_dadada_1x400.png">
+    <Content Include="es-common-web\lib\jquery\jquery-1.8.0.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-bg_glass_75_e6e6e6_1x400.png">
+    <Content Include="es-common-web\lib\jquery\jquery-1.8.0.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-bg_glass_95_fef1ec_1x400.png">
+    <Content Include="es-common-web\lib\jquery\jquery-ui-1.8.23.custom.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-bg_highlight-soft_75_cccccc_1x100.png">
+    <Content Include="es-common-web\lib\jquery\jquery-ui-1.8.23.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-icons_222222_256x240.png">
+    <Content Include="es-common-web\lib\jsrender\jquery.observable.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-icons_2e83ff_256x240.png">
+    <Content Include="es-common-web\lib\jsrender\jquery.views.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-icons_454545_256x240.png">
+    <Content Include="es-common-web\lib\jsrender\jsrender.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-icons_888888_256x240.png">
+    <Content Include="es-common-web\lib\jsrender\readme.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\images\ui-icons_cd0a0a_256x240.png">
+    <Content Include="es-common-web\tmpl\_body.tmpl.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\jquery-1.8.0.js">
+    <Content Include="es-common-web\js\es.tmpl.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\jquery-1.8.0.min.js">
+    <Content Include="es-common-web\tmpl\_charts.tmpl.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web\lib\jquery\jquery-ui-1.8.23.custom.css">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\lib\jquery\jquery-ui-1.8.23.min.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\lib\jsrender\jquery.observable.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\lib\jsrender\jquery.views.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\lib\jsrender\jsrender.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\lib\jsrender\readme.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\projections.htm">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\new-projection.htm">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\post-standard-projection.htm">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\queues.htm">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\tmpl\_body.tmpl.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\js\es.tmpl.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\tmpl\_head.tmpl.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web\view-projection.htm">
+    <Content Include="es-common-web\tmpl\_head.tmpl.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System" />
+    <Content Include="es-common-web\js\controls\es.Selector.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="es-common-web\js\charts\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

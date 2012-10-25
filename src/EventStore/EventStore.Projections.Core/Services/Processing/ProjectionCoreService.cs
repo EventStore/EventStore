@@ -56,7 +56,6 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
                                          IHandle<ClientMessage.WriteEventsCompleted>
-        
 
 
     {
@@ -71,8 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<Guid, ProjectionSubscription> _subscriptions =
             new Dictionary<Guid, ProjectionSubscription>();
 
-        private readonly Dictionary<Guid, CoreProjection> _projections =
-            new Dictionary<Guid, CoreProjection>();
+        private readonly Dictionary<Guid, CoreProjection> _projections = new Dictionary<Guid, CoreProjection>();
 
         private readonly Dictionary<Guid, EventDistributionPoint> _distributionPoints =
             new Dictionary<Guid, EventDistributionPoint>();
@@ -82,21 +80,30 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly HashSet<Guid> _pausedProjections = new HashSet<Guid>();
         private readonly HeadingEventDistributionPoint _headingEventDistributionPoint;
         private TransactionFileReaderEventDistributionPoint _headDistributionPoint;
-        private readonly RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
-        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
+
+        private readonly
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
+            _readDispatcher;
+
+        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
+            _writeDispatcher;
 
 
-        public ProjectionCoreService(IPublisher publisher, IPublisher inputQueue, int eventCacheSize, ICheckpoint writerCheckpoint)
+        public ProjectionCoreService(
+            IPublisher publisher, IPublisher inputQueue, int eventCacheSize, ICheckpoint writerCheckpoint)
         {
             _publisher = publisher;
             _inputQueue = inputQueue;
             _headingEventDistributionPoint = new HeadingEventDistributionPoint(eventCacheSize);
             _writerCheckpoint = writerCheckpoint;
-            _readDispatcher = new RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
-                _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
-            _writeDispatcher = new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
-                _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+            _readDispatcher =
+                new RequestResponseDispatcher
+                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
+                    _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+            _writeDispatcher =
+                new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
+                    _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
         }
 
         public void Handle(ProjectionMessage.CoreService.Start message)
@@ -106,7 +113,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopped = false;
             var distibutionPointCorrelationId = Guid.NewGuid();
             _headDistributionPoint = new TransactionFileReaderEventDistributionPoint(
-                _publisher, distibutionPointCorrelationId, new EventPosition(_writerCheckpoint.Read(), -1), deliverEndOfTFPosition: false);
+                _publisher, distibutionPointCorrelationId, new EventPosition(_writerCheckpoint.Read(), -1),
+                deliverEndOfTFPosition: false);
             _distributionPoints.Add(distibutionPointCorrelationId, _headDistributionPoint);
             _headingEventDistributionPoint.Start(distibutionPointCorrelationId, _headDistributionPoint);
             //NOTE: writing any event to avoid empty database which we don not handle properly
@@ -161,14 +169,16 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var fromCheckpointTag = message.FromPosition;
             var projectionSubscription = new ProjectionSubscription(
-                message.CorrelationId, fromCheckpointTag, message.Subscriber, message.Subscriber,
+                message.CorrelationId, fromCheckpointTag, message.Subscriber, message.Subscriber, message.Subscriber,
                 message.CheckpointStrategy, message.CheckpointUnhandledBytesThreshold);
             _subscriptions.Add(message.CorrelationId, projectionSubscription);
 
             var distibutionPointCorrelationId = Guid.NewGuid();
             var eventDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
                 _publisher, _inputQueue, distibutionPointCorrelationId);
-            _logger.Trace("The '{0}' projection subscribed to the '{1}' distribution point", message.CorrelationId, distibutionPointCorrelationId);
+            _logger.Trace(
+                "The '{0}' projection subscribed to the '{1}' distribution point", message.CorrelationId,
+                distibutionPointCorrelationId);
             _distributionPoints.Add(distibutionPointCorrelationId, eventDistributionPoint);
             _projectionDistributionPoints.Add(message.CorrelationId, distibutionPointCorrelationId);
             _distributionPointSubscriptions.Add(distibutionPointCorrelationId, message.CorrelationId);
@@ -185,7 +195,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: test it
                 _distributionPoints.Remove(distributionPointId);
                 _distributionPointSubscriptions.Remove(distributionPointId);
-                _logger.Trace("The '{0}' projection has unsubscribed from the '{1}' distribution point", message.CorrelationId, distributionPointId);
+                _logger.Trace(
+                    "The '{0}' projection has unsubscribed from the '{1}' distribution point", message.CorrelationId,
+                    distributionPointId);
             }
 
             _pausedProjections.Remove(message.CorrelationId);
@@ -217,11 +229,11 @@ namespace EventStore.Projections.Core.Services.Processing
             Guid projectionId;
             if (_stopped)
                 return;
-            if (_headingEventDistributionPoint.Handle(message)) 
+            if (_headingEventDistributionPoint.Handle(message))
                 return;
             if (!_distributionPointSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed
-            if (TrySubscribeHeadingDistributionPoint(message, projectionId)) 
+            if (TrySubscribeHeadingDistributionPoint(message, projectionId))
                 return;
             if (message.Data != null) // means notification about the end of the stream/source
                 _subscriptions[projectionId].Handle(message);
@@ -235,13 +247,16 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var projectionSubscription = _subscriptions[projectionId];
 
-            if (message.SafeTransactionFileReaderJoinPosition != null && !_headingEventDistributionPoint.TrySubscribe(
+            if (message.SafeTransactionFileReaderJoinPosition == null
+                || !_headingEventDistributionPoint.TrySubscribe(
                     projectionId, projectionSubscription, message.SafeTransactionFileReaderJoinPosition.Value))
                 return false;
 
             if (message.Data == null)
             {
-                _logger.Trace("The '{0}' is subscribing to the heading distribution point with TF-EOF marker event at '{1}'", projectionId, message.Position);
+                _logger.Trace(
+                    "The '{0}' is subscribing to the heading distribution point with TF-EOF marker event at '{1}'",
+                    projectionId, message.Position);
             }
 
             Guid distributionPointId = message.CorrelationId;
@@ -260,12 +275,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 IProjectionStateHandler stateHandler = message.HandlerFactory();
                 // constructor can fail if wrong source defintion
                 //TODO: revise it
-                var projection = new CoreProjection(message.Name, message.CorrelationId, _publisher, stateHandler, message.Config, _readDispatcher, _writeDispatcher, _logger);
+                var projection = new CoreProjection(
+                    message.Name, message.CorrelationId, _publisher, stateHandler, message.Config, _readDispatcher,
+                    _writeDispatcher, _logger);
                 _projections.Add(message.CorrelationId, projection);
             }
             catch (Exception ex)
             {
-                message.Envelope.ReplyWith(new ProjectionMessage.Projections.StatusReport.Faulted(message.CorrelationId, ex.Message));
+                message.Envelope.ReplyWith(
+                    new ProjectionMessage.Projections.StatusReport.Faulted(message.CorrelationId, ex.Message));
             }
         }
 
@@ -295,7 +313,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var projection = _projections[message.CorrelationId];
             var projectionState = projection.GetProjectionState();
-            message.Envelope.ReplyWith(new ProjectionMessage.Projections.Management.StateReport(message.CorrelationId, projectionState));
+            message.Envelope.ReplyWith(
+                new ProjectionMessage.Projections.Management.StateReport(message.CorrelationId, projectionState));
         }
 
         public void Handle(ProjectionMessage.Projections.Management.UpdateStatistics message)

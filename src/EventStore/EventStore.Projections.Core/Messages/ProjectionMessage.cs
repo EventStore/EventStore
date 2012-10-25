@@ -39,6 +39,7 @@ namespace EventStore.Projections.Core.Messages
     public interface ICoreProjection : IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
                                        IHandle<ProjectionMessage.Projections.CheckpointLoaded>,
                                        IHandle<ProjectionMessage.Projections.CheckpointSuggested>,
+                                       IHandle<ProjectionMessage.Projections.ProgressChanged>,
                                        IHandle<ProjectionMessage.Projections.CheckpointCompleted>,
                                        IHandle<ProjectionMessage.Projections.PauseRequested>
     {
@@ -292,6 +293,35 @@ namespace EventStore.Projections.Core.Messages
                 {
                     get { return _progress; }
                 }
+            }
+
+            public class ProgressChanged : Message
+            {
+                private readonly Guid _correlationId;
+                private readonly CheckpointTag _checkpointTag;
+                private readonly float _progress;
+
+                public ProgressChanged(Guid correlationId, CheckpointTag checkpointTag, float progress)
+                {
+                    _correlationId = correlationId;
+                    _checkpointTag = checkpointTag;
+                    _progress = progress;
+                }
+
+                public Guid CorrelationId
+                {
+                    get { return _correlationId; }
+                }
+
+                public CheckpointTag CheckpointTag
+                {
+                    get { return _checkpointTag; }
+                }
+
+                public float Progress
+                {
+                    get { return _progress; }
+                }            
             }
 
             public class CommittedEventReceived : Message

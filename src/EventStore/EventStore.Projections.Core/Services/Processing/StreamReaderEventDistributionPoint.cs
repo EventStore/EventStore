@@ -110,15 +110,18 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (message.Result)
             {
                 case RangeReadResult.NoStream:
-                    DeliverLastCommitPosition(message.LastCommitPosition.Value); // allow joining heading distribution
-                    RequestEvents(delay: true);
+                    DeliverSafeJoinPosition(message.LastCommitPosition.Value); // allow joining heading distribution
+                    if (_pauseRequested)
+                        _paused = true;
+                    else 
+                        RequestEvents(delay: true);
 
                     break;
                 case RangeReadResult.Success:
                     if (message.Events.Length == 0)
                     {
                         // the end
-                        DeliverLastCommitPosition(message.LastCommitPosition.Value);
+                        DeliverSafeJoinPosition(message.LastCommitPosition.Value);
                     }
                     else
                     {
@@ -181,14 +184,14 @@ namespace EventStore.Projections.Core.Services.Processing
                     () => { if (!_paused && !_disposed) RequestEvents(delay: false); });
         }
 
-        private void DeliverLastCommitPosition(long lastCommitPosition)
+        private void DeliverSafeJoinPosition(long safeJoinPosition)
         {
-            if (lastCommitPosition == -1)
+            if (safeJoinPosition == -1)
                 return; //TODO: this should not happen, but StorageReader does not return it now
             _publisher.Publish(
                 new ProjectionMessage.Projections.CommittedEventDistributed(
                     _distibutionPointCorrelationId, default(EventPosition), _streamName, _fromSequenceNumber,
-                    _streamName, _fromSequenceNumber, false, null, lastCommitPosition, 100.0f));
+                    _streamName, _fromSequenceNumber, false, null, safeJoinPosition, 100.0f));
         }
 
         private void DeliverEvent(EventRecord @event, EventRecord link, float progress)
