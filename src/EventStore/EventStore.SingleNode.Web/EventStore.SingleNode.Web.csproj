@@ -66,6 +66,9 @@
     <Content Include="singlenode-web\index.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="singlenode-web\js\es.menu.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="singlenode-web\js\es.chartsSetup.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
