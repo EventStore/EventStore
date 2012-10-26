@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
@@ -9,7 +10,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal class ProjectionsScenario1 : ScenarioBase
     {
-        public ProjectionsScenario1(Action<byte[]> directSendOverTcp, 
+        public ProjectionsScenario1(Action<IPEndPoint, byte[]> directSendOverTcp, 
                                     int maxConcurrentRequests, 
                                     int threads, 
                                     int streams, 

@@ -1,18 +1,12 @@
-(function () {
-    var pages =
-        [
-            { "name": "Home", "link": "index.htm", "class": "" },
-            { "name": "Projections", "link": "projections.htm", "class": "" },
-            { "name": "New Projection", "link": "new-projection.htm", "class": "" },
-            { "name": "Charts", "link": "charts.htm", "class": "" },
-            { "name": "Health Charts", "link": "health-charts.htm", "class": "" },
-            { "name": "Queues", "link": "queues.htm", "class": "" }
-        ];
+if (!window.es) { window.es = {}; };
+if (!es.utils) { es.utils = {}; };
 
+es.utils.loadMenu = function(pages) {
+  
     var tmplStr = '<li class="{{>class}}"> <a href="{{>link}}"> {{>name}} </a> </li>';
     var tmpl = $.templates(tmplStr);
     var htmlString = tmpl.render(pages);
-    
+
     $("#navmenu").html(htmlString);
 
     tryHighlightActivePageLink();
@@ -24,4 +18,4 @@
         if (active.length == 1)
             active.parent().addClass("active");
     }
-})();
+};

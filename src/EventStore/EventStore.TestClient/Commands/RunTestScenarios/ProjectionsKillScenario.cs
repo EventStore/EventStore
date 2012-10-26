@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,7 +34,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
     internal class ProjectionsKillScenario : ScenarioBase
     {
-        public ProjectionsKillScenario(Action<byte[]> directSendOverTcp,
+        public ProjectionsKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp,
                                        int maxConcurrentRequests,
                                        int connections,
                                        int streams,
@@ -219,7 +220,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         private static readonly TimeSpan _iterationSleepInterval = TimeSpan.FromMinutes(10);
         private TimeSpan _executionPeriod;
 
-        public LoopingProjectionKillScenario(Action<byte[]> directSendOverTcp, 
+        public LoopingProjectionKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp, 
             int maxConcurrentRequests, 
             int connections, 
             int streams, 

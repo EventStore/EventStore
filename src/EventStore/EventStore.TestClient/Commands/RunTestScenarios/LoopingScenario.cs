@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
@@ -19,7 +20,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             get { return _startupWaitInterval; }
         }
 
-        public LoopingScenario(Action<byte[]> directSendOverTcp, 
+        public LoopingScenario(Action<IPEndPoint, byte[]> directSendOverTcp, 
                                int maxConcurrentRequests, 
                                int connections, 
                                int streams, 
@@ -49,7 +50,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                          (int)stopWatch.Elapsed.TotalMinutes,
                          _executionPeriod.TotalMinutes);
 
-                SetStartupWaitInterval(TimeSpan.FromSeconds(20 + (2 * runIndex) % 100));
+                SetStartupWaitInterval(TimeSpan.FromSeconds(10 + (2 * (runIndex % 200))));
                 InnerRun(runIndex);
                 runIndex += 1;
             }
@@ -58,8 +59,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         protected virtual void InnerRun(int runIndex)
         {
             var nodeProcessId = StartNode();
-            if (runIndex % 2 == 0)
-                Scavenge();
+
+            var parallelWritesTimeout = TimeSpan.FromSeconds(240);
 
             var parallelWriteTask = RunParallelWrites(runIndex);
 
@@ -73,13 +74,17 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var wr1 = Write(WriteMode.SingleEventAtTime, singleEventSlice, EventsPerStream);
             var wr2 = Write(WriteMode.Bucket, batchSlice, EventsPerStream);
             //var wr3 = Write(WriteMode.Transactional, transSlice, EventsPerStream);
+
+            if (runIndex % 4 == 0)
+                Scavenge();
+
             Task.WaitAll(wr1, wr2/*, wr3*/);
 
             var deleted = streams.Where((s, i) => i % StreamDeleteStep == 0).ToArray();
             DeleteStreams(deleted);
 
             _stopParalleWrites = true;
-            if (!parallelWriteTask.Wait(TimeSpan.FromSeconds(120)))
+            if (!parallelWriteTask.Wait(parallelWritesTimeout))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
             KillNode(nodeProcessId);
@@ -129,7 +134,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Task.WaitAll(new [] {dl1, rd1, rd2, rd3}.Union(prevCheckTasks).ToArray());
 
             _stopParalleWrites = true;
-            if (!parallelWriteTask.Wait(TimeSpan.FromSeconds(120)))
+            if (!parallelWriteTask.Wait(parallelWritesTimeout))
                 throw new ApplicationException("Parallel writes stop timed out.");
 
             KillNode(nodeProcessId);

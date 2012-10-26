@@ -28,6 +28,7 @@
 
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using EventStore.Common.Log;
@@ -175,9 +176,11 @@ namespace EventStore.TestClient.Commands
             return true;
         }
 
-        private Action<byte[]> CreateDirectTcpSender(CommandProcessorContext context)
+        private Action<IPEndPoint, byte[]> CreateDirectTcpSender(CommandProcessorContext context)
         {
-            Action<byte[]> sender = bytes =>
+            const int timeoutMilliseconds = 4000;
+
+            Action<IPEndPoint, byte[]> sender = (tcpEndPoint, bytes) =>
             {
                 var sent = new AutoResetEvent(false);
 
@@ -190,8 +193,9 @@ namespace EventStore.TestClient.Commands
                 };
                 Action<TcpTypedConnection<byte[]>, SocketError> closed = (_, __) => sent.Set();
 
-                context.Client.CreateTcpConnection(context, handlePackage, established, closed, false);
-                sent.WaitOne();
+                context.Client.CreateTcpConnection(context, handlePackage, established, closed, false, tcpEndPoint);
+                if (!sent.WaitOne(timeoutMilliseconds))
+                    throw new ApplicationException("Connection to server was not closed in time.");
             };   
 
             return sender;

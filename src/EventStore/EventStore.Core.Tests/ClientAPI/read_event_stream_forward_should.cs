@@ -126,6 +126,25 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        public void return_partial_slice_when_got_int_max_value_as_maxcount()
+        {
+            const string stream = "read_event_stream_forward_should_return_partial_slice_when_got_int_max_value_as_maxcount";
+            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            {
+                var create = store.CreateStreamAsync(stream, new byte[0]);
+                Assert.DoesNotThrow(create.Wait);
+
+                var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())));
+                Assert.DoesNotThrow(write10.Wait);
+
+                var read = store.ReadEventStreamForwardAsync(stream, StreamPosition.FirstClientEvent, int.MaxValue);
+                Assert.DoesNotThrow(read.Wait);
+
+                Assert.That(read.Result.Events.Length, Is.EqualTo(10));
+            }
+        }
+
+        [Test]
         public void return_events_in_same_order_as_written()
         {
             const string stream = "read_event_stream_forward_should_return_events_in_same_order_as_written";

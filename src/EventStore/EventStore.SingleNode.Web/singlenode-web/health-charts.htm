@@ -12,7 +12,6 @@
     </script>
 </head>
 <body>
-    <div>
         <div id="content">
             <h1>
                 Health Charts</h1>
@@ -20,11 +19,10 @@
             <div id="r-charts">
             </div>
         </div>
-    </div>
-
-    <script id="r-body">
-        es.tmpl.renderBody();
-        es.tmpl.render('charts', "#r-charts");
+        
+        <script id="r-body">
+            es.tmpl.render('charts', "#r-charts");
+            es.tmpl.renderBody();
     </script>
 
     <script src="/web/es/lib/jquery/jquery-ui-1.8.23.min.js" type="text/javascript"></script>

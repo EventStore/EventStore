@@ -338,7 +338,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     return RangeReadResult.NoStream;
 
                 int startEventNumber = fromEventNumber;
-                int endEventNumber = fromEventNumber + maxCount - 1;
+                int endEventNumber = (int) Math.Min(int.MaxValue, (long) fromEventNumber + maxCount - 1);
 
                 if (useMetadata && metadata.MaxCount.HasValue)
                 {
