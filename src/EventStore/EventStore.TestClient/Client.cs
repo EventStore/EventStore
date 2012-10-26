@@ -181,13 +181,14 @@ namespace EventStore.TestClient
                                               Action<Connection, TcpPackage> handlePackage,
                                               Action<Connection> connectionEstablished = null,
                                               Action<Connection, SocketError> connectionClosed = null,
-                                              bool failContextOnError = true)
+                                              bool failContextOnError = true,
+                                              IPEndPoint tcpEndPoint = null)
         {
             var connectionCreatedEvent = new AutoResetEvent(false);
             Connection typedConnection = null;
 
             var connection = _connector.ConnectTo(
-                TcpEndpoint,
+                tcpEndPoint ?? TcpEndpoint,
                 conn =>
                 {
                     Log.Info("Connected to [{0}].", conn.EffectiveEndPoint);
