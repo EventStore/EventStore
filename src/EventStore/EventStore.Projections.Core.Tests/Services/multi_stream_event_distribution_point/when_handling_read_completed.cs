@@ -100,40 +100,18 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
         }
 
         [Test]
-        public void publishes_correct_committed_event_received_messages()
+        public void does_not_publish_committed_event_received_messages()
         {
             Assert.AreEqual(
-                2, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
-            var first = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().First();
-            var second =
-                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(1).First();
-
-            Assert.AreEqual("event_type1", first.Data.EventType);
-            Assert.AreEqual("event_type2", second.Data.EventType);
-            Assert.AreEqual(_firstEventId, first.Data.EventId);
-            Assert.AreEqual(_secondEventId, second.Data.EventId);
-            Assert.AreEqual(1, first.Data.Data[0]);
-            Assert.AreEqual(2, first.Data.Metadata[0]);
-            Assert.AreEqual(3, second.Data.Data[0]);
-            Assert.AreEqual(4, second.Data.Metadata[0]);
-            Assert.AreEqual("a", first.EventStreamId);
-            Assert.AreEqual("a", second.EventStreamId);
-            Assert.AreEqual(0, first.Position.PreparePosition);
-            Assert.AreEqual(0, second.Position.PreparePosition);
-            Assert.AreEqual(0, first.Position.CommitPosition);
-            Assert.AreEqual(0, second.Position.CommitPosition);
-            Assert.AreEqual(null, first.SafeTransactionFileReaderJoinPosition);
-            Assert.AreEqual(null, second.SafeTransactionFileReaderJoinPosition);
+                0, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
         }
 
         [Test]
         public void publishes_read_events_from_beginning_with_correct_next_event_number()
         {
-            Assert.AreEqual(3, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
+            Assert.AreEqual(2, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
             Assert.AreEqual(
-                "a", _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Last().EventStreamId);
-            Assert.AreEqual(
-                3,
+                1,
                 _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
                          .Last(v => v.EventStreamId == "a")
                          .FromEventNumber);
@@ -155,20 +133,5 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                     }, RangeReadResult.Success, 11, 100, 4));
         }
 
-        [Test]
-        public void can_handle_following_read_events_completed()
-        {
-            _edp.Handle(
-                new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a",
-                    new[]
-                    {
-                        new EventLinkPair( 
-                            new EventRecord(
-                                3, 250, Guid.NewGuid(), Guid.NewGuid(), 250, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
-                                PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                "event_type", new byte[0], new byte[0]), null)
-                    }, RangeReadResult.Success, 11, 300, 4));
-        }
     }
 }

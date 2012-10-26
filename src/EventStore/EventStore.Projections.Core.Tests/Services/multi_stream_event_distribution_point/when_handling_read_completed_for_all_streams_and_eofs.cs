@@ -14,7 +14,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribution_point
 {
     [TestFixture]
-    public class when_handling_read_completed_for_all_streams_and_eof : TestFixtureWithExistingEvents
+    public class when_handling_read_completed_for_all_streams_and_eofs : TestFixtureWithExistingEvents
     {
         private MultiStreamReaderEventDistributionPoint _edp;
         private Guid _publishWithCorrelationId;
@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                             "event_type1", new byte[] {1}, new byte[] {2}), null),
                             new EventLinkPair(
                         new EventRecord(
-                            2, 100, Guid.NewGuid(), _secondEventId, 100, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
+                            2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
                         }, RangeReadResult.Success, 3, 200, 2));
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                         {
                             new EventLinkPair(
                         new EventRecord(
-                            2, 150, Guid.NewGuid(), _thirdEventId, 150, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
+                            2, 100, Guid.NewGuid(), _thirdEventId, 100, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type1", new byte[] {1}, new byte[] {2}), null),
                             new EventLinkPair(
@@ -83,22 +83,31 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "a",
                     new EventLinkPair[]{}, RangeReadResult.Success, 3, 400, 2));
+            _edp.Handle(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
+                    _distibutionPointCorrelationId, "b",
+                    new EventLinkPair[] { }, RangeReadResult.Success, 4, 400, 3));
         }
 
         [Test]
         public void publishes_correct_committed_event_received_messages()
         {
             Assert.AreEqual(
-                5, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
+                6, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
             var first =
                 _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().First();
             var fifth =
                 _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>()
                          .Skip(4)
                          .First();
+            var sixth =
+                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>()
+                         .Skip(5)
+                         .First();
 
             Assert.AreEqual("event_type1", first.Data.EventType);
             Assert.IsNull(fifth.Data);
+            Assert.IsNull(sixth.Data);
             Assert.AreEqual(_firstEventId, first.Data.EventId);
             Assert.AreEqual(1, first.Data.Data[0]);
             Assert.AreEqual(2, first.Data.Metadata[0]);
@@ -108,8 +117,9 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
             Assert.AreEqual(0, fifth.Position.PreparePosition);
             Assert.AreEqual(0, first.Position.CommitPosition);
             Assert.AreEqual(0, fifth.Position.CommitPosition);
-            Assert.AreEqual(null, first.SafeTransactionFileReaderJoinPosition);
+            Assert.AreEqual(50, first.SafeTransactionFileReaderJoinPosition);
             Assert.AreEqual(200, fifth.SafeTransactionFileReaderJoinPosition);
+            Assert.AreEqual(400, sixth.SafeTransactionFileReaderJoinPosition);
         }
 
         [Test]
@@ -137,17 +147,40 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
         [Test]
         public void publishes_schedule()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
+            Assert.AreEqual(2, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
         }
 
         [Test]
         public void publishes_read_events_on_schedule_reply()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
-            var schedule = _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Single();
+            Assert.AreEqual(2, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
+            var schedule = _consumer.HandledMessages.OfType<TimerMessage.Schedule>().First();
             schedule.Reply();
             Assert.AreEqual(5, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
         }
+
+
+        [Test]
+        public void publishes_committed_event_received_messages_in_correct_order()
+        {
+            Assert.AreEqual(
+                6, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
+            var first = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(0).First();
+            var second = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(1).First();
+            var third = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(2).First();
+            var fourth = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(3).First();
+            var fifth = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(4).First();
+            var sixth = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(5).First();
+
+            Assert.AreEqual(first.Data.EventId, _firstEventId);
+            Assert.AreEqual(second.Data.EventId, _thirdEventId);
+            Assert.AreEqual(third.Data.EventId, _secondEventId);
+            Assert.AreEqual(fourth.Data.EventId, _fourthEventId);
+            Assert.IsNull(fifth.Data);
+            Assert.IsNull(sixth.Data);
+        }
+
+
 
     }
 }
