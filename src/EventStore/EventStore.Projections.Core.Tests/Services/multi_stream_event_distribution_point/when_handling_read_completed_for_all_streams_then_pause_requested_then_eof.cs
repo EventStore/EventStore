@@ -117,7 +117,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
         [Test]
         public void publishes_read_events_from_beginning_with_correct_next_event_number()
         {
-            Assert.AreEqual(4, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
+            Assert.AreEqual(3, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
             Assert.IsTrue(
                 _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
                          .Any(m => m.EventStreamId == "a"));
@@ -130,7 +130,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                          .Last(m => m.EventStreamId == "a")
                          .FromEventNumber);
             Assert.AreEqual(
-                4,
+                2,
                 _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
                          .Last(m => m.EventStreamId == "b")
                          .FromEventNumber);

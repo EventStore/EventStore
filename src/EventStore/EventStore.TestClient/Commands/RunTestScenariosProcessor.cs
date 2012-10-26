@@ -177,6 +177,8 @@ namespace EventStore.TestClient.Commands
 
         private Action<byte[]> CreateDirectTcpSender(CommandProcessorContext context)
         {
+            const int timeoutMilliseconds = 4000;
+
             Action<byte[]> sender = bytes =>
             {
                 var sent = new AutoResetEvent(false);
@@ -191,7 +193,8 @@ namespace EventStore.TestClient.Commands
                 Action<TcpTypedConnection<byte[]>, SocketError> closed = (_, __) => sent.Set();
 
                 context.Client.CreateTcpConnection(context, handlePackage, established, closed, false);
-                sent.WaitOne();
+                if (!sent.WaitOne(timeoutMilliseconds))
+                    throw new ApplicationException("Connection to server was not closed in time.");
             };   
 
             return sender;
