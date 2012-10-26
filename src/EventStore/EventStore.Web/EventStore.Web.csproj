@@ -187,6 +187,9 @@
     <Content Include="es-common-web\lib\jquery\jquery-ui-1.8.23.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="es-common-web\lib\jquery\jquery.dateFormat-1.0.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="es-common-web\lib\jsrender\jquery.observable.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
