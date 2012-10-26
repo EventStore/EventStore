@@ -126,7 +126,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             Manager.EnableCaching();
         }
 
-        public void OpenForRead()
+        public void OpenForRead(bool verifyHashes = true)
         {
             ValidateReaderChecksumsMustBeLess(Config.WriterCheckpoint, Config.Checkpoints);
 
@@ -159,7 +159,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     }
                     else
                     {
-                        var chunk = LoadChunk(chunkFileName, verifyHash: true);
+                        var chunk = LoadChunk(chunkFileName, verifyHash: verifyHashes);
                         Manager.AddChunk(chunk);
                     }
                 }
