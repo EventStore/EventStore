@@ -61,7 +61,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _handledEventsAfterCheckpoint;
         private CheckpointTag _requestedCheckpointPosition;
         private bool _inCheckpoint;
-        protected int _inCheckpointWriteAttempt;
         private string _requestedCheckpointState;
         private CheckpointTag _lastCompletedCheckpointPosition;
         private readonly PositionTracker _lastProcessedEventPosition;
@@ -131,44 +130,32 @@ namespace EventStore.Projections.Core.Services.Processing
             _started = false;
         }
 
-        public ProjectionStatistics GetStatistics()
+        public virtual void GetStatistics(ProjectionStatistics info)
         {
-            return new ProjectionStatistics
-                {
-                    Mode = _projectionConfig.Mode,
-                    Name = null,
-                    Position = _lastProcessedEventPosition.LastTag,
-                    Progress = _lastProcessedEventProgress,
-                    StateReason = "",
-                    Status = "",
-                    LastCheckpoint =
-                        String.Format(CultureInfo.InvariantCulture, "{0}", _lastCompletedCheckpointPosition),
-                    EventsProcessedAfterRestart = _eventsProcessedAfterRestart,
-                    BufferedEvents = -1,
-                    WritePendingEventsBeforeCheckpoint =
-                        _closingCheckpoint != null ? _closingCheckpoint.GetWritePendingEvents() : 0,
-                    WritePendingEventsAfterCheckpoint =
-                        _currentCheckpoint != null ? _currentCheckpoint.GetWritePendingEvents() : 0,
-                    ReadsInProgress = /*_readDispatcher.ActiveRequestCount*/ +
-                                                                             + (_closingCheckpoint != null
-                                                                                    ? _closingCheckpoint.
-                                                                                          GetReadsInProgress()
-                                                                                    : 0)
-                                                                             +
-                                                                             (_currentCheckpoint != null
-                                                                                  ? _currentCheckpoint.
-                                                                                        GetReadsInProgress()
-                                                                                  : 0),
-                    WritesInProgress =
-                        ((_inCheckpointWriteAttempt != 0) ? 1 : 0)
-                        + (_closingCheckpoint != null ? _closingCheckpoint.GetWritesInProgress() : 0)
-                        + (_currentCheckpoint != null ? _currentCheckpoint.GetWritesInProgress() : 0),
-                    PartitionsCached = -1,
-                    CheckpointStatus =
-                        _inCheckpointWriteAttempt > 0
-                            ? "Writing (" + _inCheckpointWriteAttempt + ")"
-                            : (_inCheckpoint ? "Requested" : ""),
-                };
+            info.Mode = _projectionConfig.Mode;
+            info.Position = _lastProcessedEventPosition.LastTag;
+            info.Progress = _lastProcessedEventProgress;
+            info.LastCheckpoint = String.Format(CultureInfo.InvariantCulture, "{0}", _lastCompletedCheckpointPosition);
+            info.EventsProcessedAfterRestart = _eventsProcessedAfterRestart;
+            info.WritePendingEventsBeforeCheckpoint = _closingCheckpoint != null
+                                                          ? _closingCheckpoint.GetWritePendingEvents()
+                                                          : 0;
+            info.WritePendingEventsAfterCheckpoint = _currentCheckpoint != null
+                                                         ? _currentCheckpoint.GetWritePendingEvents()
+                                                         : 0;
+            info.ReadsInProgress = /*_readDispatcher.ActiveRequestCount*/ +
+                                                                          + (_closingCheckpoint != null
+                                                                                 ? _closingCheckpoint.GetReadsInProgress
+                                                                                       ()
+                                                                                 : 0)
+                                                                          + (_currentCheckpoint != null
+                                                                                 ? _currentCheckpoint.GetReadsInProgress
+                                                                                       ()
+                                                                                 : 0);
+            info.WritesInProgress = 
+                                    (_closingCheckpoint != null ? _closingCheckpoint.GetWritesInProgress() : 0)
+                                    + (_currentCheckpoint != null ? _currentCheckpoint.GetWritesInProgress() : 0);
+            info.CheckpointStatus = _inCheckpoint ? "Requested" : "";
         }
 
         public void RequestCheckpointToStop()

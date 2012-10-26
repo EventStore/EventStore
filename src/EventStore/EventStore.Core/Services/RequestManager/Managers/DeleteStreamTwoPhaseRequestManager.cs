@@ -33,12 +33,12 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<ReplicationMessage.DeleteStreamRequestCreated>
+    class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.DeleteStreamRequestCreated>
     {
         public DeleteStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
             base(publisher, prepareCount, commitCount)
         {}
-        public void Handle(ReplicationMessage.DeleteStreamRequestCreated request)
+        public void Handle(StorageMessage.DeleteStreamRequestCreated request)
         {
             if (_initialized)
                 throw new InvalidOperationException();
@@ -48,7 +48,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _correlationId = request.CorrelationId;
             _eventStreamId = request.EventStreamId;
 
-            Publisher.Publish(new ReplicationMessage.WriteDelete(request.CorrelationId,
+            Publisher.Publish(new StorageMessage.WriteDelete(request.CorrelationId,
                                                                  _publishEnvelope,
                                                                  request.EventStreamId,
                                                                  request.ExpectedVersion,
@@ -56,7 +56,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                                  liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                       _publishEnvelope,
-                                                      new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
+                                                      new StorageMessage.PreparePhaseTimeout(_correlationId)));
         }
         protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
         {

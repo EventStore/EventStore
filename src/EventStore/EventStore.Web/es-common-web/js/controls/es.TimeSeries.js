@@ -24,7 +24,7 @@
         function init() {
 
             container = $('<div class="es-chart-cont ' + className + '" />')
-                            .append(["<div class='es-chart-title ", titleClassName, "'>", title, "</div>"].join(""))
+                            .append(["<div class='es-chart-title ", titleClassName, "' style='max-width:", width, "px'>", title, titleSuffix, "</div>"].join(""))
                             .appendTo(appendToElement)
                             .click(handleZoom);
             container[0].asZoomable = asZoomable;

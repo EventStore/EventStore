@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using EventStore.Common.Utils;
 
@@ -62,6 +61,16 @@ namespace EventStore.Core.TransactionLog
         public string[] GetAllPresentFiles()
         {
             return Directory.GetFiles(_path, _prefix + "*");
+        }
+
+        public string GetTempFilename()
+        {
+            return Path.Combine(_path, string.Format("{0}.tmp", Guid.NewGuid()));
+        }
+
+        public string[] GetAllTempFiles()
+        {
+            return Directory.GetFiles(_path, "*.tmp");
         }
     }
 }

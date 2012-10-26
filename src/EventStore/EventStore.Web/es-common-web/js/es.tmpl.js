@@ -2,6 +2,9 @@
 es.tmpl = (function () {
 
     var templatesRequests = [];
+    var templatesToLoad = 0;
+    var _doLoad = null;
+    var isLoaded = false;
 
     return {
         renderHead: renderHead,
@@ -43,16 +46,38 @@ es.tmpl = (function () {
     }
 
     function renderInternal(tmplName, targetSelector, data) {
+
+        templatesToLoad++;
+
         var file = formatTemplatePath(tmplName);
         var ajax = $.get(file, null, function (template) {
+
+
             var tmpl = $.templates(template);
             var htmlString = tmpl.render(data);
             if (targetSelector) {
                 $(targetSelector).replaceWith(htmlString);
             }
-            return htmlString;
+
+            templatesToLoad--;
+            tryTriggerOnLoad();
         });
         templatesRequests.push({ name: tmplName, req: ajax });
+    }
+
+
+    function tryTriggerOnLoad() {
+        var toWait = $.map(templatesRequests, function (el) { return el.req; });
+
+        $.when.apply($, toWait)
+         .then(function () {
+             if (templatesToLoad == 0 && !isLoaded) {
+                 isLoaded = true;
+                 $(document).ready(function () {
+                     _doLoad();
+                 });
+             }
+         });
     }
 
     function formatTemplatePath(name) {
@@ -62,12 +87,12 @@ es.tmpl = (function () {
     function registerOnLoad() {
         var jqueryBackup = window.$;
         if (typeof jqueryBackup == "undefined")
-            throw "jQuery msut be defined before register es-specific onload";
+            throw "jQuery must be defined before register es-specific onload";
 
         jqueryBackup.extend($esload, jqueryBackup);
 
         window.$ = $esload;
-        window.__$esdoload = load;
+        _doLoad = load;
         var isLoaded = false;
         var toLoad = [];
 

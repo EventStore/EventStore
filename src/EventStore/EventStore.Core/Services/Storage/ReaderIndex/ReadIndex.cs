@@ -228,7 +228,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     }
 #endif
                     _tableIndex.Add(commit.LogPosition, streamHash, eventNumber, prepare.LogPosition);
-                    _bus.Publish(new ReplicationMessage.EventCommited(commit.LogPosition, eventNumber, prepare));
+                    _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, eventNumber, prepare));
                 }
                 _lastCommitPosition = Math.Max(_lastCommitPosition, commit.LogPosition);
             }

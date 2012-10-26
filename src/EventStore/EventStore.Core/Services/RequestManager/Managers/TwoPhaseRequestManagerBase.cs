@@ -10,13 +10,13 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public class TwoPhaseRequestManagerBase :           IHandle<ReplicationMessage.AlreadyCommitted>,
-                                                        IHandle<ReplicationMessage.PrepareAck>,
-                                                        IHandle<ReplicationMessage.CommitAck>,
-                                                        IHandle<ReplicationMessage.WrongExpectedVersion>,
-                                                        IHandle<ReplicationMessage.StreamDeleted>,
-                                                        IHandle<ReplicationMessage.PreparePhaseTimeout>,
-                                                        IHandle<ReplicationMessage.CommitPhaseTimeout>
+    public class TwoPhaseRequestManagerBase :           IHandle<StorageMessage.AlreadyCommitted>,
+                                                        IHandle<StorageMessage.PrepareAck>,
+                                                        IHandle<StorageMessage.CommitAck>,
+                                                        IHandle<StorageMessage.WrongExpectedVersion>,
+                                                        IHandle<StorageMessage.StreamDeleted>,
+                                                        IHandle<StorageMessage.PreparePhaseTimeout>,
+                                                        IHandle<StorageMessage.CommitPhaseTimeout>
     {
          
         protected readonly IPublisher Publisher;
@@ -46,7 +46,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
         }
 
 
-        public void Handle(ReplicationMessage.WrongExpectedVersion message)
+        public void Handle(StorageMessage.WrongExpectedVersion message)
         {
             if (_completed)
                 return;
@@ -54,7 +54,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.WrongExpectedVersion, "Wrong expected version.");
         }
 
-        public void Handle(ReplicationMessage.StreamDeleted message)
+        public void Handle(StorageMessage.StreamDeleted message)
         {
             if (_completed)
                 return;
@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.StreamDeleted, "Stream is deleted.");
         }
 
-        public void Handle(ReplicationMessage.PreparePhaseTimeout message)
+        public void Handle(StorageMessage.PreparePhaseTimeout message)
         {
             if (_completed || _awaitingPrepare == 0)
                 return;
@@ -70,7 +70,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.PrepareTimeout, "Prepare phase timeout.");
         }
 
-        public void Handle(ReplicationMessage.CommitPhaseTimeout message)
+        public void Handle(StorageMessage.CommitPhaseTimeout message)
         {
             if (_completed || _awaitingCommit == 0 || _awaitingPrepare != 0)
                 return;
@@ -79,13 +79,13 @@ namespace EventStore.Core.Services.RequestManager.Managers
         }
 
 
-        public void Handle(ReplicationMessage.AlreadyCommitted message)
+        public void Handle(StorageMessage.AlreadyCommitted message)
         {
             Debug.Assert(message.EventStreamId == _eventStreamId && message.CorrelationId == _correlationId);
             CompleteSuccessRequest(_correlationId, _eventStreamId, message.StartEventNumber);
         }
 
-        public void Handle(ReplicationMessage.PrepareAck message)
+        public void Handle(StorageMessage.PrepareAck message)
         {
             if (_completed)
                 return;
@@ -98,15 +98,15 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 _awaitingPrepare -= 1;
                 if (_awaitingPrepare == 0)
                 {
-                    Publisher.Publish(new ReplicationMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _preparePos));
+                    Publisher.Publish(new StorageMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _preparePos));
                     Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.CommitTimeout,
                                                                    _publishEnvelope,
-                                                                   new ReplicationMessage.CommitPhaseTimeout(_correlationId)));
+                                                                   new StorageMessage.CommitPhaseTimeout(_correlationId)));
                 }
             }
         }
 
-        public void Handle(ReplicationMessage.CommitAck message)
+        public void Handle(StorageMessage.CommitAck message)
         {
             if (_completed)
                 return;
@@ -119,14 +119,14 @@ namespace EventStore.Core.Services.RequestManager.Managers
         protected virtual void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
         {
             _completed = true;
-            Publisher.Publish(new ReplicationMessage.RequestCompleted(correlationId, true));
+            Publisher.Publish(new StorageMessage.RequestCompleted(correlationId, true));
         }
 
         protected virtual void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
         {
             Debug.Assert(errorCode != OperationErrorCode.Success);
             _completed = true;
-            Publisher.Publish(new ReplicationMessage.RequestCompleted(correlationId, false));
+            Publisher.Publish(new StorageMessage.RequestCompleted(correlationId, false));
         }
     }
 }

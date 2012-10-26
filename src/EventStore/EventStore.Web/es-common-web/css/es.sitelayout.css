@@ -96,6 +96,8 @@ h6 { font-size: 1em; font-weight: bold; }
 	text-align: center;
 	font-size: 14px;
 	margin: 10px auto;
+    white-space: nowrap;
+    overflow: hidden;
 }
 .rickshaw_graph {
     position: relative;

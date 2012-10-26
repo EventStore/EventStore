@@ -47,24 +47,24 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Replication.CreateStream
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new ReplicationMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Metadata);
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new ReplicationMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
-            yield return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
+            yield return new StorageMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Metadata);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.CommitAck(CorrelationId, 2, 3);
+            yield return new StorageMessage.CommitAck(CorrelationId, 2, 3);
             
         }
 
         protected override Message When()
         {
-            return new ReplicationMessage.CommitAck(CorrelationId, 2, 3);
+            return new StorageMessage.CommitAck(CorrelationId, 2, 3);
         }
 
         [Test]
         public void successful_request_message_is_publised()
         {
-            Assert.That(produced.ContainsSingle<ReplicationMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId &&
+            Assert.That(produced.ContainsSingle<StorageMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId &&
                                                                                           x.Success));
         }
 

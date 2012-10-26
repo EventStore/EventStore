@@ -36,13 +36,13 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class SingleAckRequestManager : IHandle<ReplicationMessage.TransactionStartRequestCreated>,
-                                           IHandle<ReplicationMessage.TransactionWriteRequestCreated>,
-                                           IHandle<ReplicationMessage.PrepareAck>,
-                                           IHandle<ReplicationMessage.WrongExpectedVersion>,
-                                           IHandle<ReplicationMessage.InvalidTransaction>,
-                                           IHandle<ReplicationMessage.StreamDeleted>,
-                                           IHandle<ReplicationMessage.PreparePhaseTimeout>
+    class SingleAckRequestManager : IHandle<StorageMessage.TransactionStartRequestCreated>,
+                                           IHandle<StorageMessage.TransactionWriteRequestCreated>,
+                                           IHandle<StorageMessage.PrepareAck>,
+                                           IHandle<StorageMessage.WrongExpectedVersion>,
+                                           IHandle<StorageMessage.InvalidTransaction>,
+                                           IHandle<StorageMessage.StreamDeleted>,
+                                           IHandle<StorageMessage.PreparePhaseTimeout>
     {
         private readonly IPublisher _bus;
         private readonly IEnvelope _publishEnvelope;
@@ -66,7 +66,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _publishEnvelope = new PublishEnvelope(_bus);
         }
 
-        public void Handle(ReplicationMessage.TransactionStartRequestCreated message)
+        public void Handle(StorageMessage.TransactionStartRequestCreated message)
         {
             if (_initialized)
                 throw new InvalidOperationException();
@@ -79,7 +79,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _transactionId = -1; // not known yet
             _eventStreamId = message.EventStreamId;
 
-            _bus.Publish(new ReplicationMessage.WriteTransactionStart(_correlationId,
+            _bus.Publish(new StorageMessage.WriteTransactionStart(_correlationId,
                                                                       _publishEnvelope,
                                                                       message.EventStreamId,
                                                                       message.ExpectedVersion,
@@ -87,10 +87,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                                       liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             _bus.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                       _publishEnvelope,
-                                                      new ReplicationMessage.PreparePhaseTimeout(_correlationId)));
+                                                      new StorageMessage.PreparePhaseTimeout(_correlationId)));
         }
 
-        public void Handle(ReplicationMessage.TransactionWriteRequestCreated request)
+        public void Handle(StorageMessage.TransactionWriteRequestCreated request)
         {
             if (_initialized)
                 throw new InvalidOperationException();
@@ -102,7 +102,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _transactionId = request.TransactionId;
 
-            _bus.Publish(new ReplicationMessage.WriteTransactionData(request.CorrelationId,
+            _bus.Publish(new StorageMessage.WriteTransactionData(request.CorrelationId,
                                                                      _publishEnvelope,
                                                                      _transactionId,
                                                                      request.EventStreamId,
@@ -110,7 +110,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             CompleteSuccessRequest(request.CorrelationId, request.TransactionId, request.EventStreamId);
         }
 
-        public void Handle(ReplicationMessage.PrepareAck message)
+        public void Handle(StorageMessage.PrepareAck message)
         {
             if (_completed)
                 return;
@@ -118,22 +118,22 @@ namespace EventStore.Core.Services.RequestManager.Managers
             CompleteSuccessRequest(_correlationId, _transactionId, _eventStreamId);
         }
 
-        public void Handle(ReplicationMessage.WrongExpectedVersion message)
+        public void Handle(StorageMessage.WrongExpectedVersion message)
         {
             CompleteFailedRequest(message.CorrelationId, _transactionId, _eventStreamId, OperationErrorCode.WrongExpectedVersion, "Wrong expected version.");
         }
 
-        public void Handle(ReplicationMessage.InvalidTransaction message)
+        public void Handle(StorageMessage.InvalidTransaction message)
         {
             CompleteFailedRequest(message.CorrelationId, _transactionId, _eventStreamId, OperationErrorCode.WrongExpectedVersion, "Wrong expected version.");
         }
 
-        public void Handle(ReplicationMessage.StreamDeleted message)
+        public void Handle(StorageMessage.StreamDeleted message)
         {
             CompleteFailedRequest(message.CorrelationId, _transactionId, _eventStreamId, OperationErrorCode.StreamDeleted, "Stream is deleted.");
         }
 
-        public void Handle(ReplicationMessage.PreparePhaseTimeout message)
+        public void Handle(StorageMessage.PreparePhaseTimeout message)
         {
             if (_completed)
                 return;
@@ -157,7 +157,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     throw new ArgumentOutOfRangeException();
             }
             _responseEnvelope.ReplyWith(responseMsg);
-            _bus.Publish(new ReplicationMessage.RequestCompleted(correlationId, true));
+            _bus.Publish(new StorageMessage.RequestCompleted(correlationId, true));
         }
 
         private void CompleteFailedRequest(Guid correlationId, long transactionId, string eventStreamId, OperationErrorCode errorCode, string error)
@@ -179,7 +179,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     throw new ArgumentOutOfRangeException();
             }
             _responseEnvelope.ReplyWith(responseMsg);
-            _bus.Publish(new ReplicationMessage.RequestCompleted(correlationId, false));
+            _bus.Publish(new StorageMessage.RequestCompleted(correlationId, false));
         }
 
         private enum RequestType
