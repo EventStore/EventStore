@@ -119,5 +119,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _manager.CheckpointSuggested(
                 CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 2}, {"b", 2}}), 77.7f);
         }
+        //TODO: load state tests (Default checkpoint manager as well)
     }
 }

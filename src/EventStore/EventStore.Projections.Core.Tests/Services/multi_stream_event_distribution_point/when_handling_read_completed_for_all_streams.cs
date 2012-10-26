@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                             "event_type1", new byte[] {1}, new byte[] {2}), null),
                             new EventLinkPair(
                         new EventRecord(
-                            2, 100, Guid.NewGuid(), _secondEventId, 100, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
+                            2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
                         }, RangeReadResult.Success, 12, 200, 2));
@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                         {
                             new EventLinkPair(
                         new EventRecord(
-                            2, 150, Guid.NewGuid(), _thirdEventId, 150, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
+                            2, 100, Guid.NewGuid(), _thirdEventId, 100, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type1", new byte[] {1}, new byte[] {2}), null),
                             new EventLinkPair(
@@ -147,10 +147,10 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
             Assert.AreEqual(0, first.Position.CommitPosition);
             Assert.AreEqual(0, fourth.Position.CommitPosition);
             Assert.AreEqual(null, first.SafeTransactionFileReaderJoinPosition);
-            // 100 is min between last position from "a" and "b"
+            // 150 is min between last position from "a" and "b"
             // 200 is ignored until clear indication of an end of the stream
             //TODO: write a test to check how last available commit position is handled when reaching end of the stream
-            Assert.AreEqual(100, fourth.SafeTransactionFileReaderJoinPosition);
+            Assert.AreEqual(150, fourth.SafeTransactionFileReaderJoinPosition);
         }
 
         [Test]
