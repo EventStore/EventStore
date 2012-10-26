@@ -31,7 +31,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected readonly IPEndPoint _tcpEndPoint;
 
-        protected readonly Action<byte[]> DirectSendOverTcp;
+        protected readonly Action<IPEndPoint, byte[]> DirectSendOverTcp;
         protected readonly int MaxConcurrentRequests;
         protected readonly int Connections;
         protected readonly int Streams;
@@ -50,7 +50,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         private readonly EventStoreConnection[] _connections;
         private int _nextConnectionNum = -1;
 
-        protected ScenarioBase(Action<byte[]> directSendOverTcp,
+        protected ScenarioBase(Action<IPEndPoint, byte[]> directSendOverTcp,
                                int maxConcurrentRequests,
                                int connections,
                                int streams,
@@ -66,7 +66,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             _startedNodesProcIds = new HashSet<int>();
             CreateNewDbPath();
-            _tcpEndPoint = new IPEndPoint(GetInterIpAddress(), 1113);
+            _tcpEndPoint = GetTcpEndPoint();
 
             _connections = new EventStoreConnection[connections];
 
@@ -296,6 +296,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return interIp;
         }
 
+        private IPEndPoint GetTcpEndPoint()
+        {
+            return new IPEndPoint(GetInterIpAddress(), 1113);
+        }
+
         private bool TryGetProcessById(int processId, out Process process)
         {
             process = null;
@@ -325,14 +330,29 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 _startedNodesProcIds.Remove(processId);
 
                 process.Kill();
-                while (!process.HasExited)
-                    Thread.Sleep(200);
 
-                Thread.Sleep(6000);
-                Log.Info("Killed process {0}", processId);
+                var waitCount = 100;
+                while (!process.HasExited && waitCount > 0)
+                {
+                    Thread.Sleep(250);
+                    waitCount -= 1;
+                }
+
+                if (process.HasExited)
+                    Log.Info("Killed process {0}", processId);
+                else
+                {
+                    Process temp;
+                    if (TryGetProcessById(processId, out temp))
+                        Log.Error(
+                            "Process {0} did not report about exit in time and is still present in processes list.",
+                            processId);
+                    else
+                        Log.Info("Process {0} did not report about exit in time but is not found again.", processId);
+                }
             }
             else
-                Log.Error("Process with ID {0} was not found to be killed.", processId);
+                Log.Error("Process {0} was not found to be killed.", processId);
         }
 
         public void Dispose()
@@ -366,7 +386,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             Log.Info("Send scavenge command...");
             var package = new TcpPackage(TcpCommand.ScavengeDatabase, Guid.NewGuid(), null).AsByteArray();
-            DirectSendOverTcp(package);
+            DirectSendOverTcp(GetTcpEndPoint(), package);
             Log.Info("Scavenge command was sent.");
         }
 
