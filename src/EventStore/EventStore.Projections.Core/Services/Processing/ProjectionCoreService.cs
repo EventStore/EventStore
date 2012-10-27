@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _headingEventDistributionPoint.Unsubscribe(message.CorrelationId);
                 var forkedDistributionPointId = Guid.NewGuid();
                 var forkedDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
-                    _publisher, _inputQueue, forkedDistributionPointId);
+                    _publisher, forkedDistributionPointId);
                 _projectionDistributionPoints.Add(message.CorrelationId, forkedDistributionPointId);
                 _distributionPointSubscriptions.Add(forkedDistributionPointId, message.CorrelationId);
                 _distributionPoints.Add(forkedDistributionPointId, forkedDistributionPoint);
@@ -175,7 +175,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var distibutionPointCorrelationId = Guid.NewGuid();
             var eventDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
-                _publisher, _inputQueue, distibutionPointCorrelationId);
+                _publisher, distibutionPointCorrelationId);
             _logger.Trace(
                 "The '{0}' projection subscribed to the '{1}' distribution point", message.CorrelationId,
                 distibutionPointCorrelationId);
