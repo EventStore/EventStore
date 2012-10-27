@@ -9,6 +9,7 @@ namespace EventStore.Core.Tests.ClientAPI
     internal class read_event_stream_forward_should
     {
         [Test]
+        [Category("Network")]
         public void throw_if_count_le_zero()
         {
             const string stream = "read_event_stream_forward_should_throw_if_count_le_zero";
@@ -19,6 +20,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void throw_if_start_lt_zero()
         {
             const string stream = "read_event_stream_forward_should_throw_if_start_lt_zero";
@@ -29,6 +31,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void throw_if_no_stream()
         {
             const string stream = "read_event_stream_forward_should_throw_if_no_stream";
@@ -40,6 +43,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void throw_if_stream_deleted()
         {
             const string stream = "read_event_stream_forward_should_throw_if_stream_deleted";
@@ -56,6 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void return_single_event_when_called_on_empty_stream()
         {
             const string stream = "read_event_stream_forward_should_return_single_event_when_called_on_empty_stream";
@@ -72,6 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void return_empty_slice_when_called_on_empty_stream_starting_at_position_1()
         {
             const string stream = "read_event_stream_forward_should_return_empty_slice_when_called_on_empty_stream_starting_at_position_1";
@@ -88,6 +94,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void return_empty_slice_when_called_on_non_existing_range()
         {
             const string stream = "read_event_stream_forward_should_return_empty_slice_when_called_on_non_existing_range";
@@ -107,6 +114,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void return_partial_slice_if_no_enough_events_in_stream()
         {
             const string stream = "read_event_stream_forward_should_return_partial_slice_if_no_enough_events_in_stream";
@@ -126,6 +134,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void return_partial_slice_when_got_int_max_value_as_maxcount()
         {
             const string stream = "read_event_stream_forward_should_return_partial_slice_when_got_int_max_value_as_maxcount";
@@ -145,6 +154,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void return_events_in_same_order_as_written()
         {
             const string stream = "read_event_stream_forward_should_return_events_in_same_order_as_written";
@@ -165,6 +175,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void be_able_to_read_single_event_from_arbitrary_position()
         {
             const string stream = "read_event_stream_forward_should_be_able_to_read_from_arbitrary_position";
@@ -185,6 +196,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void be_able_to_read_slice_from_arbitrary_position()
         {
             const string stream = "read_event_stream_forward_should_be_able_to_read_slice_from_arbitrary_position";
