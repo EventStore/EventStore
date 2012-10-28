@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Integration
             var appsets = new SingleVNodeAppSettings(TimeSpan.FromDays(1));
             _db = new TFChunkDb(nodeConfig);
 
-            _vNode = new SingleVNode(_db, settings, appsets);
+            _vNode = new SingleVNode(_db, settings, appsets, dbVerifyHashes: true);
             
 
             var startCallback = new EnvelopeCallback<SystemMessage.SystemStart>();

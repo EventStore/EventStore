@@ -26,52 +26,46 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Collections.Generic;
+using System;
+using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class CommittedEventWorkItem : WorkItem
+    class GetStateWorkItem : WorkItem
     {
-        private readonly ProjectionMessage.Projections.CommittedEventReceived _message;
         private readonly string _partition;
-        private List<EmittedEvent[]> _scheduledWrites;
+        private readonly IEnvelope _envelope;
+        private readonly Guid _projectionId;
+        private readonly CoreProjection _projection;
+        private readonly PartitionStateCache _partitionStateCache;
 
-        public CommittedEventWorkItem(
-            CoreProjection projection, ProjectionMessage.Projections.CommittedEventReceived message, string partition)
-            : base(projection, message.EventStreamId)
+        public GetStateWorkItem(
+            IEnvelope envelope, Guid projectionId, CoreProjection projection, PartitionStateCache partitionStateCache,
+            string partition)
+            : base(projection, "")
         {
-            _message = message;
+            if (envelope == null) throw new ArgumentNullException("envelope");
+            if (partitionStateCache == null) throw new ArgumentNullException("partitionStateCache");
+            if (partition == null) throw new ArgumentNullException("partition");
             _partition = partition;
+            _envelope = envelope;
+            _projectionId = projectionId;
+            _projection = projection;
+            _partitionStateCache = partitionStateCache;
         }
 
         protected override void Load(CheckpointTag checkpointTag)
         {
-            _projection.BeginStatePartitionLoad(_partition, _message.CheckpointTag, LoadCompleted);
+            _projection.BeginStatePartitionLoad(_partition, checkpointTag, LoadCompleted);
         }
 
         private void LoadCompleted()
         {
+            var projectionState = _partitionStateCache.GetLockedPartitionState(_partition);
+            _envelope.ReplyWith(
+                new ProjectionMessage.Projections.Management.StateReport(_projectionId, _partition, projectionState));
             NextStage();
-        }
-
-        protected override void ProcessEvent()
-        {
-            _projection.ProcessCommittedEvent(this, _message, _partition);
-            NextStage();
-        }
-
-        protected override void WriteOutput()
-        {
-            _projection.FinalizeEventProcessing(_scheduledWrites, _message.CheckpointTag, _message.Progress);
-            NextStage();
-        }
-
-        public void ScheduleEmitEvents(EmittedEvent[] emittedEvents)
-        {
-            if (_scheduledWrites == null)
-                _scheduledWrites = new List<EmittedEvent[]>();
-            _scheduledWrites.Add(emittedEvents);
         }
     }
 }

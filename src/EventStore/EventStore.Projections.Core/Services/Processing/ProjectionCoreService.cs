@@ -312,9 +312,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ProjectionMessage.Projections.Management.GetState message)
         {
             var projection = _projections[message.CorrelationId];
-            var projectionState = projection.GetProjectionState();
-            message.Envelope.ReplyWith(
-                new ProjectionMessage.Projections.Management.StateReport(message.CorrelationId, projectionState));
+            projection.Handle(message);
         }
 
         public void Handle(ProjectionMessage.Projections.Management.UpdateStatistics message)

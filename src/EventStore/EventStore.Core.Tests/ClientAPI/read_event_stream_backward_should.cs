@@ -10,6 +10,7 @@ namespace EventStore.Core.Tests.ClientAPI
     internal class read_event_stream_backward_should
     {
         [Test]
+        [Category("Network")]
         public void throw_if_count_le_zero()
         {
             const string stream = "read_event_stream_backward_should_throw_if_count_le_zero";
@@ -20,6 +21,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void throw_if_no_stream()
         {
             const string stream = "read_event_stream_backward_should_throw_if_no_stream";
@@ -31,6 +33,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void throw_if_stream_deleted()
         {
             const string stream = "read_event_stream_backward_should_throw_if_stream_deleted";
@@ -47,6 +50,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void return_single_event_when_called_on_empty_stream()
         {
             const string stream = "read_event_stream_backward_should_return_single_event_when_called_on_empty_stream";
@@ -63,6 +67,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void return_partial_slice_if_no_enough_events_in_stream()
         {
             const string stream = "read_event_stream_backward_should_return_partial_slice_if_no_enough_events_in_stream";
@@ -83,6 +88,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void return_events_reversed_compared_to_written()
         {
             const string stream = "read_event_stream_backward_should_return_events_reversed_compared_to_written";
@@ -103,6 +109,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void be_able_to_read_single_event_from_arbitrary_position()
         {
             const string stream = "read_event_stream_backward_should_be_able_to_read_single_event_from_arbitrary_position";
@@ -123,6 +130,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void be_able_to_read_first_event()
         {
             const string stream = "read_event_stream_backward_should_be_able_to_read_first_event";
@@ -143,6 +151,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void be_able_to_read_last_event()
         {
             const string stream = "read_event_stream_backward_should_be_able_to_read_last_event";
@@ -163,6 +172,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void be_able_to_read_slice_from_arbitrary_position()
         {
             const string stream = "read_event_stream_backward_should_be_able_to_read_slice_from_arbitrary_position";

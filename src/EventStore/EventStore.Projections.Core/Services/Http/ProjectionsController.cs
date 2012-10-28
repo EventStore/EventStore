@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
@@ -56,18 +55,18 @@ namespace EventStore.Projections.Core.Services.Http
             : base(publisher)
         {
             var fileSystemWebRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Projections.Core");
-            _miniWebPrelude = new MiniWeb("/web/es/js/projections/v8/Prelude", Path.Combine(fileSystemWebRoot, @"Prelude"));
+            _miniWebPrelude = new MiniWeb(
+                "/web/es/js/projections/v8/Prelude", Path.Combine(fileSystemWebRoot, @"Prelude"));
         }
-
 
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
-            _miniWebPrelude.RegisterControllerActions(service);    
+            _miniWebPrelude.RegisterControllerActions(service);
             service.RegisterControllerAction(
                 new ControllerAction(
-                    "/projections", HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding}, Codec.ManualEncoding),
-                OnProjections);
+                    "/projections", HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding},
+                    Codec.ManualEncoding), OnProjections);
             service.RegisterControllerAction(
                 new ControllerAction(
                     "/projections/any", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
@@ -90,7 +89,7 @@ namespace EventStore.Projections.Core.Services.Http
                 OnProjectionsGetPersistent);
             service.RegisterControllerAction(
                 new ControllerAction(
-                    "/projections/onetime?name={name}&type={type}", HttpMethod.Post, new ICodec[] { Codec.ManualEncoding },
+                    "/projections/onetime?name={name}&type={type}", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},
                     SupportedCodecs, DefaultResponseCodec), OnProjectionsPostAdOneTime);
             service.RegisterControllerAction(
                 new ControllerAction(
@@ -130,7 +129,11 @@ namespace EventStore.Projections.Core.Services.Http
             service.RegisterControllerAction(
                 new ControllerAction(
                     "/projection/{name}/state", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionStateGet);
+                (entity, match) => OnProjectionStateGet(entity, match));
+            service.RegisterControllerAction(
+                new ControllerAction(
+                    "/projection/{name}/state?partition={partition}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs,
+                    DefaultResponseCodec), (entity, match) => OnProjectionStateGet(entity, match));
             service.RegisterControllerAction(
                 new ControllerAction(
                     "/projection/{name}/command/disable", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},
@@ -148,7 +151,7 @@ namespace EventStore.Projections.Core.Services.Http
                 new[]
                     {
                         new KeyValuePair<string, string>(
-                    "Location",  new Uri(match.BaseUri, "/web/projections.htm").AbsoluteUri)
+                    "Location", new Uri(match.BaseUri, "/web/projections.htm").AbsoluteUri)
                     }, Console.WriteLine);
         }
 
@@ -201,7 +204,7 @@ namespace EventStore.Projections.Core.Services.Http
         {
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionQuery>(
                 http, QueryFormatter, QueryConfigurator, ErrorsEnvelope(http));
-            this.Publish(new ProjectionManagementMessage.GetQuery(envelope, match.BoundVariables["name"]));
+            Publish(new ProjectionManagementMessage.GetQuery(envelope, match.BoundVariables["name"]));
         }
 
         private void OnProjectionQueryPut(HttpEntity http, UriTemplateMatch match)
@@ -210,7 +213,7 @@ namespace EventStore.Projections.Core.Services.Http
                 http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
             http.Manager.ReadRequestAsync(
                 (o, s) =>
-                this.Publish(
+                Publish(
                     new ProjectionManagementMessage.UpdateQuery(
                         envelope, match.BoundVariables["name"], match.BoundVariables["type"], s)), Console.WriteLine);
         }
@@ -219,28 +222,28 @@ namespace EventStore.Projections.Core.Services.Http
         {
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
-            this.Publish(new ProjectionManagementMessage.Disable(envelope, match.BoundVariables["name"]));
+            Publish(new ProjectionManagementMessage.Disable(envelope, match.BoundVariables["name"]));
         }
 
         private void OnProjectionCommandEnable(HttpEntity http, UriTemplateMatch match)
         {
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
-            this.Publish(new ProjectionManagementMessage.Enable(envelope, match.BoundVariables["name"]));
+            Publish(new ProjectionManagementMessage.Enable(envelope, match.BoundVariables["name"]));
         }
 
         private void OnProjectionStatusGet(HttpEntity http, UriTemplateMatch match)
         {
-            http.Manager.Reply(HttpStatusCode.NotImplemented,
-                               "Not Implemented",
-                               e => Log.ErrorException(e, "Error while closing http connection (http service core)"));
+            http.Manager.Reply(
+                HttpStatusCode.NotImplemented, "Not Implemented",
+                e => Log.ErrorException(e, "Error while closing http connection (http service core)"));
         }
 
         private void OnProjectionDelete(HttpEntity http, UriTemplateMatch match)
         {
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
-            this.Publish(new ProjectionManagementMessage.Delete(envelope, match.BoundVariables["name"]));
+            Publish(new ProjectionManagementMessage.Delete(envelope, match.BoundVariables["name"]));
         }
 
         private void OnProjectionStatisticsGet(HttpEntity http, UriTemplateMatch match)
@@ -251,15 +254,16 @@ namespace EventStore.Projections.Core.Services.Http
                     http, DefaultFormatter, OkNoCacheResponseConfigurator,
                     status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(match, s)),
                     ErrorsEnvelope(http));
-            this.Publish(
-                new ProjectionManagementMessage.GetStatistics(envelope, null, match.BoundVariables["name"], true));
+            Publish(new ProjectionManagementMessage.GetStatistics(envelope, null, match.BoundVariables["name"], true));
         }
 
         private void OnProjectionStateGet(HttpEntity http, UriTemplateMatch match)
         {
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionState>(
                 http, StateFormatter, StateConfigurator, ErrorsEnvelope(http));
-            this.Publish(new ProjectionManagementMessage.GetState(envelope, match.BoundVariables["name"]));
+            Publish(
+                new ProjectionManagementMessage.GetState(
+                    envelope, match.BoundVariables["name"], match.BoundVariables["partition"] ?? ""));
         }
 
         private void ProjectionsGet(HttpEntity http, UriTemplateMatch match, ProjectionMode? mode)
@@ -270,7 +274,7 @@ namespace EventStore.Projections.Core.Services.Http
                     http, DefaultFormatter, OkNoCacheResponseConfigurator,
                     status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(match, s)),
                     ErrorsEnvelope(http));
-            this.Publish(new ProjectionManagementMessage.GetStatistics(envelope, mode, null, true));
+            Publish(new ProjectionManagementMessage.GetStatistics(envelope, mode, null, true));
         }
 
         private void ProjectionsPost(HttpEntity http, UriTemplateMatch match, ProjectionMode mode, string name)
@@ -293,8 +297,9 @@ namespace EventStore.Projections.Core.Services.Http
                             postMessage = new ProjectionManagementMessage.Post(
                                 envelope, mode, Guid.NewGuid().ToString("D"), handlerType, s, enabled: true);
                         else
-                            postMessage = new ProjectionManagementMessage.Post(envelope, mode, name, handlerType, s, enabled: true);
-                        this.Publish(postMessage);
+                            postMessage = new ProjectionManagementMessage.Post(
+                                envelope, mode, name, handlerType, s, enabled: true);
+                        Publish(postMessage);
                     }, Console.WriteLine);
         }
 
@@ -331,9 +336,9 @@ namespace EventStore.Projections.Core.Services.Http
         private IEnvelope ErrorsEnvelope(HttpEntity http)
         {
             return new SendToHttpEnvelope<ProjectionManagementMessage.NotFound>(
-                http, NotFoundFormatter, NotFoundConfigurator, 
+                http, NotFoundFormatter, NotFoundConfigurator,
                 new SendToHttpEnvelope<ProjectionManagementMessage.OperationFailed>(
-                http, OperationFailedFormatter, OperationFailedConfigurator, null));
+                    http, OperationFailedFormatter, OperationFailedConfigurator, null));
         }
 
         private ResponseConfiguration NotFoundConfigurator(ICodec codec, ProjectionManagementMessage.NotFound message)
@@ -346,7 +351,8 @@ namespace EventStore.Projections.Core.Services.Http
             return message.Reason;
         }
 
-        private ResponseConfiguration OperationFailedConfigurator(ICodec codec, ProjectionManagementMessage.OperationFailed message)
+        private ResponseConfiguration OperationFailedConfigurator(
+            ICodec codec, ProjectionManagementMessage.OperationFailed message)
         {
             return new ResponseConfiguration(500, "Failed", "text/plain");
         }

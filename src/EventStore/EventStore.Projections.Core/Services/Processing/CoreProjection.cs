@@ -201,7 +201,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                if ((_state == State.Running || _state == State.Paused) && _projectionConfig.CheckpointsEnabled)
+                if (_state == State.Running || _state == State.Paused)
                 {
                     var progressWorkItem = new ProgressWorkItem(this, _checkpointManager, message.Progress);
                     _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
@@ -225,6 +225,25 @@ namespace EventStore.Projections.Core.Services.Processing
                     CheckpointTag checkpointTag = message.CheckpointTag;
                     var checkpointSuggestedWorkItem = new CheckpointSuggestedWorkItem(this, message, _checkpointManager);
                     _processingQueue.EnqueueTask(checkpointSuggestedWorkItem, checkpointTag);
+                }
+                _processingQueue.ProcessEvent();
+            }
+            catch (Exception ex)
+            {
+                SetFaulted(ex);
+            }
+        }
+
+        public void Handle(ProjectionMessage.Projections.Management.GetState message)
+        {
+            EnsureState(
+                State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            try
+            {
+                if (_state == State.Running || _state == State.Paused)
+                {
+                    var getStateWorkItem = new GetStateWorkItem(message.Envelope, message.CorrelationId, this, _partitionStateCache, message.Partition);
+                    _processingQueue.EnqueueOutOfOrderTask(getStateWorkItem);
                 }
                 _processingQueue.ProcessEvent();
             }

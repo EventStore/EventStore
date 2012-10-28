@@ -177,16 +177,25 @@ namespace EventStore.Projections.Core.Messages
                 public class GetState : ManagementMessage
                 {
                     private readonly IEnvelope _envelope;
+                    private readonly string _partition;
 
-                    public GetState(IEnvelope envelope, Guid correlationId)
+                    public GetState(IEnvelope envelope, Guid correlationId, string partition)
                         : base(correlationId)
                     {
+                        if (envelope == null) throw new ArgumentNullException("envelope");
+                        if (partition == null) throw new ArgumentNullException("partition");
                         _envelope = envelope;
+                        _partition = partition;
                     }
 
                     public IEnvelope Envelope
                     {
                         get { return _envelope; }
+                    }
+
+                    public string Partition
+                    {
+                        get { return _partition; }
                     }
                 }
 
@@ -201,16 +210,23 @@ namespace EventStore.Projections.Core.Messages
                 public class StateReport : ManagementMessage
                 {
                     private readonly string _state;
+                    private readonly string _partition;
 
-                    public StateReport(Guid correlationId, string state)
+                    public StateReport(Guid correlationId, string partition, string state)
                         : base(correlationId)
                     {
                         _state = state;
+                        _partition = partition;
                     }
 
                     public string State
                     {
                         get { return _state; }
+                    }
+
+                    public string Partition
+                    {
+                        get { return _partition; }
                     }
                 }
 
