@@ -102,6 +102,7 @@ es.tmpl = (function () {
              if (templatesToLoadCount == 0 && !isLoaded) {
                  isLoaded = true;
                  $(document).ready(function () {
+                     jQuery.extend($, jQuery);
                      _doLoad();
                  });
              }

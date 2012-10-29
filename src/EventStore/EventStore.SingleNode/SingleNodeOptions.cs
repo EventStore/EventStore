@@ -55,6 +55,9 @@ namespace EventStore.SingleNode
         [Option(null, "no-projections", DefaultValue = false)]
         public bool NoProjections { get; set; }
 
+        [Option(null, "do-not-verify-db-hashes-on-startup", DefaultValue = false)]
+        public bool DoNotVerifyDbHashesOnStartup { get; set; }
+
         [Option(null, "projection-threads", DefaultValue = 3)]
         public int ProjectionThreads { get; set; }
 

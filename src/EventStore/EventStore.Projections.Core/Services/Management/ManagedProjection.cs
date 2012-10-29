@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private string _faultedReason;
         private Action _stopCompleted;
-        private List<IEnvelope> _stateRequests;
+        private Dictionary<string, List<IEnvelope>> _stateRequests;
         private ProjectionStatistics _lastReceivedStatistics;
 
         public ManagedProjection(
@@ -175,11 +175,17 @@ namespace EventStore.Projections.Core.Services.Management
                 var needRequest = _stateRequests == null;
                 if (_stateRequests == null)
                 {
-                    _stateRequests = new List<IEnvelope>();
+                    _stateRequests = new Dictionary<string, List<IEnvelope>>();
                 }
-                _stateRequests.Add(message.Envelope);
+                List<IEnvelope> partitionRequests;
+                if (!_stateRequests.TryGetValue(message.Partition, out partitionRequests))
+                {
+                    partitionRequests = new List<IEnvelope>();
+                    _stateRequests.Add(message.Partition, partitionRequests);
+                }
+                partitionRequests.Add(message.Envelope);
                 if (needRequest)
-                    _coreQueue.Publish(new ProjectionMessage.Projections.Management.GetState(new PublishEnvelope(_inputQueue), _id));
+                    _coreQueue.Publish(new ProjectionMessage.Projections.Management.GetState(new PublishEnvelope(_inputQueue), _id, message.Partition));
             }
             else
             {
@@ -230,10 +236,10 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionMessage.Projections.Management.StateReport message)
         {
-            var stateRequests = _stateRequests;
-            _stateRequests = null;
+            var partitionRequests = _stateRequests[message.Partition];
+            _stateRequests.Remove(message.Partition);
 
-            foreach (var request in stateRequests)
+            foreach (var request in partitionRequests)
                 request.ReplyWith(new ProjectionManagementMessage.ProjectionState(_name, message.State));
         }
 

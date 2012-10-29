@@ -36,7 +36,7 @@ h6 { font-size: 1em; font-weight: bold; }
     overflow-y: scroll;
 }
 .error {
-	width: 40%;
+	min-width: 40%;
 	margin: 10px auto;
 	padding: 8px;
 	text-align: center;
@@ -45,6 +45,7 @@ h6 { font-size: 1em; font-weight: bold; }
 	border-radius: 5px;
 	font-size: 13px;
     color: #EE5678;
+    white-space: normal;
 }
 /*===================================== charts =================================*/
 .dropdown {
@@ -96,7 +97,6 @@ h6 { font-size: 1em; font-weight: bold; }
 	text-align: center;
 	font-size: 14px;
 	margin: 10px auto;
-    white-space: nowrap;
     overflow: hidden;
 }
 .rickshaw_graph {

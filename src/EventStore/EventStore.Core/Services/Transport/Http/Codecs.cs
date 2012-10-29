@@ -38,7 +38,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Formatting = Newtonsoft.Json.Formatting;
-using System.Linq;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -188,11 +187,8 @@ namespace EventStore.Core.Services.Transport.Http
 
         public bool SuitableFor(string type)
         {
-            if (string.Equals("json", type, StringComparison.InvariantCultureIgnoreCase))
-                return true;
-
-            type = (type ?? string.Empty).Split(';').FirstOrDefault();
-            return string.Equals(ContentType, type, StringComparison.InvariantCultureIgnoreCase);
+            return string.Equals("json", type, StringComparison.InvariantCultureIgnoreCase)
+                   || string.Equals(ContentType, type, StringComparison.InvariantCultureIgnoreCase);
         }
 
         public T From<T>(string text)
@@ -263,13 +259,9 @@ namespace EventStore.Core.Services.Transport.Http
         {
             if (string.Equals("xml", type, StringComparison.InvariantCultureIgnoreCase))
                 return true;
-
-            type = (type ?? string.Empty).Split(';').FirstOrDefault();
-
-            if (string.Equals(ContentType, type, StringComparison.InvariantCultureIgnoreCase))
-                return true;
-
             if (string.Equals("application/xml", type, StringComparison.InvariantCultureIgnoreCase))
+                return true;
+            if (string.Equals(ContentType, type, StringComparison.InvariantCultureIgnoreCase))
                 return true;
 
             return false;
@@ -363,8 +355,8 @@ namespace EventStore.Core.Services.Transport.Http
 
         public bool SuitableFor(string type)
         {
-            return string.Equals(ContentType, type, StringComparison.InvariantCultureIgnoreCase) ||
-                   string.Equals("text", type, StringComparison.InvariantCultureIgnoreCase);
+            return string.Equals("text", type, StringComparison.InvariantCultureIgnoreCase) ||
+                   string.Equals(ContentType, type, StringComparison.InvariantCultureIgnoreCase);
         }
 
         public T From<T>(string text)

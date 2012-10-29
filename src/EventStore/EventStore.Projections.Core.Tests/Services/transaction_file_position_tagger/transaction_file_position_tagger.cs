@@ -57,6 +57,30 @@ namespace EventStore.Projections.Core.Tests.Services.transaction_file_position_t
         }
 
         [Test]
+        public void is_message_after_checkpoint_tag_after_case()
+        {
+            var t = new TransactionFilePositionTagger();
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPosition(20, 10), _firstEvent);
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void is_message_after_checkpoint_tag_before_case()
+        {
+            var t = new TransactionFilePositionTagger();
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPosition(50, 40), _firstEvent);
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void is_message_after_checkpoint_tag_equal_case()
+        {
+            var t = new TransactionFilePositionTagger();
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromPosition(30, 20), _firstEvent);
+            Assert.IsFalse(result);
+        }
+
+        [Test]
         public void position_checkpoint_tag_is_compatible()
         {
             var t = new TransactionFilePositionTagger();

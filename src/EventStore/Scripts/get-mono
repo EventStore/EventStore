@@ -1,0 +1,56 @@
+#!/bin/bash
+
+function err() {
+  echo FAIL!
+  exit 1
+}
+
+cd ~ || err
+
+MONO_PREFIX=/opt/mono || err
+export DYLD_LIBRARY_FALLBACK_PATH=$MONO_PREFIX/lib:$DYLD_LIBRARY_FALLBACK_PATH || err
+export LD_LIBRARY_PATH=$MONO_PREFIX/lib:$LD_LIBRARY_PATH || err
+export C_INCLUDE_PATH=$MONO_PREFIX/include || err
+export ACLOCAL_PATH=$MONO_PREFIX/share/aclocal || err
+export PKG_CONFIG_PATH=$MONO_PREFIX/lib/pkgconfig || err
+export PATH=$MONO_PREFIX/bin:$PATH || err
+PS1="[mono] \w @ "r || err
+
+
+
+if [[ ! -d $MONO_PREFIX ]] ; then
+  mkdir $MONO_PREFIX || err
+fi
+
+
+apt-get install -y git-core || err
+apt-get install -y libtool || err
+apt-get install -y autoconf || err
+apt-get install -y automake || err
+apt-get install -y gcc || err
+apt-get install -y build-essential || err
+apt-get install -y gettext || err
+apt-get install -y mono-runtime || err
+apt-get install -y mono-gmcs || err
+
+
+
+if [[ -d mono ]] ; then
+  pushd mono || err
+  git pull || err
+  popd || err
+else
+  git clone git://github.com/mono/mono.git || err
+fi
+
+
+
+pushd mono || err
+
+git clean -dfx || err
+./autogen.sh --prefix=$MONO_PREFIX || err
+make || err
+make install || err
+popd || err
+
+

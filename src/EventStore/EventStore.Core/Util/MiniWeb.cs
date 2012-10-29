@@ -62,20 +62,20 @@ namespace EventStore.Core.Util
                                              OnStaticContent);
         }
 
-        public void OnStaticContent(HttpEntity http, UriTemplateMatch match)
+        private void OnStaticContent(HttpEntity http, UriTemplateMatch match)
         {
             var contentLocalPath = match.BoundVariables["remaining_path"];
             ReplyWithContent(http, contentLocalPath);
         }
 
-        public void ReplyWithContent(HttpEntity http, string contentLocalPath)
+        private void ReplyWithContent(HttpEntity http, string contentLocalPath)
         {
             //NOTE: this is fix for Mono incompatibility in UriTemplate behavior for /a/b{*C}
             if (("/" + contentLocalPath).StartsWith(_localWebRootPath))
             {
                 contentLocalPath = contentLocalPath.Substring(_localWebRootPath.Length);
             }
-            _logger.Trace("{0} requested from mini web", contentLocalPath);
+            //_logger.Trace("{0} requested from mini web", contentLocalPath);
             try
             {
                 var extensionToContentType = new Dictionary<string, string>

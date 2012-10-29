@@ -60,6 +60,40 @@ namespace EventStore.Projections.Core.Tests.Services.multistream_position_tagger
             var tr = new PositionTracker(t);
         }
 
+        [Test]
+        public void is_message_after_checkpoint_tag_after_case()
+        {
+            var t = new MultiStreamPositionTagger(new[] { "stream1", "stream2" });
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromStreamPositions(new Dictionary<string, int>{{"stream1", 0}, {"stream2", 0}}), _firstEvent);
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void is_message_after_checkpoint_tag_before_case()
+        {
+            var t = new MultiStreamPositionTagger(new[] { "stream1", "stream2" });
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 2 }, { "stream2", 2 } }), _firstEvent);
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void is_message_after_checkpoint_tag_equal_case()
+        {
+            var t = new MultiStreamPositionTagger(new[] { "stream1", "stream2" });
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream1", 1 }, { "stream2", 1 } }), _firstEvent);
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void is_message_after_checkpoint_tag_incompatible_streams_case()
+        {
+            var t = new MultiStreamPositionTagger(new[] { "stream-other", "stream2" });
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromStreamPositions(new Dictionary<string, int> { { "stream-other", 0 }, { "stream2", 0 } }), _firstEvent);
+            Assert.IsFalse(result);
+        }
+
+
+
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_streams_throws_argument_null_exception()
         {
