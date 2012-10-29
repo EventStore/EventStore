@@ -62,7 +62,7 @@ namespace EventStore.TestClient.Commands
             var package = new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), readDto.Serialize());
 
             var sw = new Stopwatch();
-
+            bool dataReceived = false;
             context.Client.CreateTcpConnection(
                 context,
                 connectionEstablished: conn =>
@@ -78,7 +78,7 @@ namespace EventStore.TestClient.Commands
                         context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
                         return;
                     }
-
+                    dataReceived = true;
                     sw.Stop();
 
                     var dto = pkg.Data.Deserialize<ClientMessageDto.ReadEventCompleted>();
@@ -111,7 +111,7 @@ namespace EventStore.TestClient.Commands
                 },
                 connectionClosed: (connection, error) =>
                 {
-                    if (error == SocketError.Success)
+                    if (dataReceived || error == SocketError.Success)
                         context.Success();
                     else
                         context.Fail();

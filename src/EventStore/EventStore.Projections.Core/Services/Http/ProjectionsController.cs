@@ -129,11 +129,11 @@ namespace EventStore.Projections.Core.Services.Http
             service.RegisterControllerAction(
                 new ControllerAction(
                     "/projection/{name}/state", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
-                (entity, match) => OnProjectionStateGet(entity, match));
+                OnProjectionStateGet);
             service.RegisterControllerAction(
                 new ControllerAction(
                     "/projection/{name}/state?partition={partition}", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs,
-                    DefaultResponseCodec), (entity, match) => OnProjectionStateGet(entity, match));
+                    DefaultResponseCodec), OnProjectionStateGet);
             service.RegisterControllerAction(
                 new ControllerAction(
                     "/projection/{name}/command/disable", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},

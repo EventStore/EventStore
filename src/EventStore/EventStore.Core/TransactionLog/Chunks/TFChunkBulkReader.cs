@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Utils;
 
@@ -23,6 +24,13 @@ namespace EventStore.Core.TransactionLog.Chunks
         ~TFChunkBulkReader()
         {
             Dispose();
+        }
+
+        public void SetPhysicalPosition(int physicalPosition)
+        {
+            if (physicalPosition > _stream.Length)
+                throw new ArgumentOutOfRangeException("physicalPosition", string.Format("Physical position {0} is out of bounds.", physicalPosition));
+            _stream.Position = physicalPosition;
         }
 
         public void SetLogicalPosition(int logicalPosition)
@@ -66,11 +74,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                 count = buffer.Length;
 
             var oldPos = (int)_stream.Position - ChunkHeader.Size;
-            var mapSize = _chunk.IsReadOnly ? _chunk.ChunkFooter.MapSize : 0;
-            var available = (int)(_stream.Length - ChunkFooter.Size - ChunkHeader.Size - mapSize);
-            var toRead = available > count ? count : available;
+            var toRead = Math.Min(_chunk.ActualDataSize - oldPos, count);
+            Debug.Assert(toRead >= 0);
+            _stream.Position = _stream.Position; // flush read buffer
             var bytesRead = _stream.Read(buffer, 0, toRead);
-            return new BulkReadResult(oldPos, bytesRead, isEof: available == bytesRead);
+            return new BulkReadResult(oldPos,
+                                      bytesRead,
+                                      isEof: _chunk.IsReadOnly && oldPos + bytesRead == _chunk.ActualDataSize);
         }
 
         public void Dispose()

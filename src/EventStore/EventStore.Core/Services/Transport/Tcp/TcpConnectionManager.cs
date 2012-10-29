@@ -56,6 +56,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         public event Action<TcpConnectionManager, SocketError> ConnectionClosed;
         public event Action<TcpConnectionManager> ConnectionEstablished;
 
+        public Guid ConnectionId { get { return _connectionId; } }
         public string ConnectionName { get { return _connectionName; } }
         public readonly IPEndPoint EndPoint;
         public bool IsClosed { get { return _isClosed; } }
@@ -70,17 +71,21 @@ namespace EventStore.Core.Services.Transport.Tcp
         private int _messageNumber;
         private bool _isClosed;
         private readonly string _connectionName;
+        private readonly Guid _connectionId;
 
         public TcpConnectionManager(string connectionName, 
+                                    Guid connectionId,
                                     ITcpDispatcher dispatcher, 
                                     IPublisher publisher, 
                                     TcpConnection openedConnection)
         {
+            Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(dispatcher, "dispatcher");
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(openedConnection, "openedConnnection");
            
             _connectionName = connectionName;
+            _connectionId = connectionId;
             
             _tcpEnvelope = new SendOverTcpEnvelope(this);
             _publisher = publisher;
@@ -97,17 +102,20 @@ namespace EventStore.Core.Services.Transport.Tcp
         }
 
         public TcpConnectionManager(string connectionName, 
+                                    Guid connectionId,
                                     ITcpDispatcher dispatcher,
                                     IPublisher publisher, 
                                     IPEndPoint remoteEndPoint, 
                                     TcpClientConnector connector)
         {
+            Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(dispatcher, "dispatcher");
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
             Ensure.NotNull(connector, "connector");
 
             _connectionName = connectionName;
+            _connectionId = connectionId;
 
             _tcpEnvelope = new SendOverTcpEnvelope(this);
             _publisher = publisher;

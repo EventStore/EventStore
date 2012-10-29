@@ -63,17 +63,17 @@ namespace EventStore.Core.TransactionLog.Chunks
         public ChunkHeader ChunkHeader { get { return _chunkHeader; } }
         public ChunkFooter ChunkFooter { get { return _chunkFooter; } }
 
-        public int LogicalWriterPosition
-        {
-            get
-            {
-                var writerWorkItem = _writerWorkItem;
-                if (writerWorkItem == null)
-                    throw new InvalidOperationException(string.Format("TFChunk {0} is not in write mode.", _filename));
-                //TODO AN: consider checking here whether we are out of data region
-                return (int)writerWorkItem.Stream.Position - ChunkHeader.Size;
-            }
-        }
+//        public int LogicalWriterPosition
+//        {
+//            get
+//            {
+//                var writerWorkItem = _writerWorkItem;
+//                if (writerWorkItem == null)
+//                    throw new InvalidOperationException(string.Format("TFChunk {0} is not in write mode.", _filename));
+//                //TODO AN: consider checking here whether we are out of data region
+//                return (int)writerWorkItem.Stream.Position - ChunkHeader.Size;
+//            }
+//        }
 
         public int PhysicalWriterPosition 
         {
