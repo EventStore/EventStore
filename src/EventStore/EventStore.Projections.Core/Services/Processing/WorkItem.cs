@@ -30,12 +30,13 @@ using System;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    abstract class WorkItem : StagedTask
+    public abstract class WorkItem : StagedTask
     {
         protected readonly CoreProjection _projection;
         private readonly int _lastStage;
         private Action<int> _complete;
         private int _onStage;
+        private CheckpointTag _checkpointTag;
 
         protected WorkItem(CoreProjection projection, string stream)
             : base(stream)
@@ -46,12 +47,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override void Process(int onStage, Action<int> readyForStage)
         {
+            if (_checkpointTag == null)
+                throw new InvalidOperationException("CheckpointTag has not been initialized");
             _complete = readyForStage;
             _onStage = onStage;
             switch (onStage)
             {
                 case 0:
-                    Load();
+                    Load(_checkpointTag);
                     break;
                 case 1:
                     ProcessEvent();
@@ -70,7 +73,7 @@ namespace EventStore.Projections.Core.Services.Processing
             NextStage();
         }
 
-        protected virtual void Load()
+        protected virtual void Load(CheckpointTag checkpointTag)
         {
             NextStage();
         }
@@ -83,6 +86,11 @@ namespace EventStore.Projections.Core.Services.Processing
         protected void NextStage()
         {
             _complete(_onStage == _lastStage ? -1 : _onStage + 1);
+        }
+
+        public void SetCheckpointTag(CheckpointTag checkpointTag)
+        {
+            _checkpointTag = checkpointTag;
         }
     }
 }

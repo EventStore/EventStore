@@ -161,5 +161,6 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public abstract void Process(int onStage, Action<int> readyForStage);
+
     }
 }

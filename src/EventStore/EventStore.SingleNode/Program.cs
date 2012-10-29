@@ -46,6 +46,7 @@ namespace EventStore.SingleNode
         private Projections _projections;
         private bool _noProjections;
         private int _projectionThreads;
+        private bool _dbVerifyHashes;
 
         public static int Main(string[] args)
         {
@@ -59,13 +60,14 @@ namespace EventStore.SingleNode
             Db = GetDb(options, now);
             _appSets = GetAppSettings(options);
             _vNodeSets = GetVNodeSettings(options);
+            _dbVerifyHashes = ! options.DoNotVerifyDbHashesOnStartup;
             _noProjections = options.NoProjections;
             _projectionThreads = options.ProjectionThreads;
         }
 
         protected override void Create()
         {
-            Node = new SingleVNode(Db, _vNodeSets, _appSets);
+            Node = new SingleVNode(Db, _vNodeSets, _appSets, _dbVerifyHashes);
 
             if (!_noProjections)
                 _projections = new Projections(Db, Node.MainQueue, Node.Bus, Node.TimerService, Node.HttpService, _projectionThreads);

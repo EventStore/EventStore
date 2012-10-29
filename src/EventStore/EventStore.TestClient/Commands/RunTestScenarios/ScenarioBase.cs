@@ -26,7 +26,15 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected void CreateNewDbPath()
         {
-            _dbPath = Path.Combine(Path.GetTempPath(), "ES_" + Guid.NewGuid());
+            var dataFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data");
+            var idx = 0;
+            _dbPath = Path.Combine(dataFolder, string.Format("es_{0}", idx));
+
+            while (Directory.Exists(_dbPath))
+            {
+                idx += 1;
+                _dbPath = Path.Combine(dataFolder, string.Format("es_{0}", idx));
+            }
         }
 
         protected readonly IPEndPoint _tcpEndPoint;
@@ -255,7 +263,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var startInfo = new ProcessStartInfo(fileName, arguments);
 
-            if (Common.Utils.OS.IsLinux)
+            if (OS.IsLinux)
             {
                 startInfo.UseShellExecute = false;
                 startInfo.RedirectStandardOutput = true;

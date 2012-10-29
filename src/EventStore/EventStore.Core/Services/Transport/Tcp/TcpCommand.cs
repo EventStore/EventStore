@@ -38,11 +38,13 @@ namespace EventStore.Core.Services.Transport.Tcp
         PrepareAck = 0x05,
         CommitAck = 0x06,
 
-        SubscribeReplica = 0x07,
-        LogBulk = 0x08,
+        SlaveAssignment = 0x07,
+        CloneAssignment = 0x08,
 
-        SlaveAssignment = 0x09,
-        CloneAssignment = 0x0A,
+        SubscribeReplica = 0x10,
+        CreateChunk = 0x11,
+        PhysicalChunkBulk = 0x12,
+        LogicalChunkBulk = 0x13,
 
         // CLIENT COMMANDS
         CreateStream = 0x80,

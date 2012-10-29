@@ -26,6 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Net;
+using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog.Chunks;
 using ProtoBuf;
 
 namespace EventStore.Core.Messages
@@ -109,26 +112,135 @@ namespace EventStore.Core.Messages
         }
 
         [ProtoContract]
-        public class LogBulk
+        public class CreateChunk
         {
             [ProtoMember(1)]
-            public long LogPosition { get; set; }
+            public byte[] MasterIp { get; set; }
 
             [ProtoMember(2)]
-            public byte[] LogData { get; set; }
+            public int MasterPort { get; set; }
 
             [ProtoMember(3)]
-            public long MasterWriterChecksum { get; set; }
+            public byte[] ChunkHeaderBytes { get; set; }
 
-            public LogBulk()
+            [ProtoMember(4)]
+            public int FileSize { get; set; }
+
+            [ProtoMember(5)]
+            public bool IsCompletedChunk { get; set; }
+
+            public CreateChunk()
             {
             }
 
-            public LogBulk(long logPosition, byte[] logData, long masterWriterChecksum)
+            public CreateChunk(IPEndPoint masterEndPoint, byte[] chunkHeaderBytes, int fileSize, bool isCompletedChunk)
             {
-                LogPosition = logPosition;
-                LogData = logData;
-                MasterWriterChecksum = masterWriterChecksum;
+                Ensure.NotNull(masterEndPoint, "masterEndPoint");
+                Ensure.NotNull(chunkHeaderBytes, "chunkHeaderBytes");
+
+                MasterIp = masterEndPoint.Address.GetAddressBytes();
+                MasterPort = masterEndPoint.Port;
+
+                ChunkHeaderBytes = chunkHeaderBytes;
+
+                FileSize = fileSize;
+                IsCompletedChunk = isCompletedChunk;
+            }
+        }
+
+        [ProtoContract]
+        public class PhysicalChunkBulk
+        {
+            [ProtoMember(1)]
+            public byte[] MasterIp { get; set; }
+
+            [ProtoMember(2)]
+            public int MasterPort { get; set; }
+
+            [ProtoMember(3)]
+            public int ChunkStartNumber { get; set; }
+
+            [ProtoMember(4)]
+            public int ChunkEndNumber { get; set; }
+
+            [ProtoMember(5)]
+            public int PhysicalPosition { get; set; }
+
+            [ProtoMember(6)]
+            public byte[] RawBytes { get; set; }
+
+            [ProtoMember(7)]
+            public bool CompleteChunk { get; set; }
+
+            public PhysicalChunkBulk()
+            {
+            }
+
+            public PhysicalChunkBulk(IPEndPoint masterEndPoint,
+                                     int chunkStartNumber,
+                                     int chunkEndNumber,
+                                     int physicalPosition,
+                                     byte[] rawBytes,
+                                     bool completeChunk)
+            {
+                Ensure.NotNull(masterEndPoint, "masterEndPoint");
+                Ensure.NotNull(rawBytes, "rawBytes");
+                Ensure.Positive(rawBytes.Length, "rawBytes.Length"); // we should never send empty array, NEVER
+
+                MasterIp = masterEndPoint.Address.GetAddressBytes();
+                MasterPort = masterEndPoint.Port;
+
+                ChunkStartNumber = chunkStartNumber;
+                ChunkEndNumber = chunkEndNumber;
+                PhysicalPosition = physicalPosition;
+                RawBytes = rawBytes;
+                CompleteChunk = completeChunk;
+            }
+        }
+
+        [ProtoContract]
+        public class LogicalChunkBulk
+        {
+            [ProtoMember(1)]
+            public byte[] MasterIp { get; set; }
+
+            [ProtoMember(2)]
+            public int MasterPort { get; set; }
+
+            [ProtoMember(3)]
+            public int ChunkStartNumber { get; set; }
+
+            [ProtoMember(4)]
+            public int ChunkEndNumber { get; set; }
+
+            [ProtoMember(5)]
+            public int LogicalPosition { get; set; }
+
+            [ProtoMember(6)]
+            public byte[] DataBytes { get; set; }
+
+            [ProtoMember(7)]
+            public bool CompleteChunk { get; set; }
+
+            public LogicalChunkBulk(IPEndPoint masterEndPoint,
+                                    int chunkStartNumber,
+                                    int chunkEndNumber,
+                                    int logicalPosition,
+                                    byte[] dataBytes,
+                                    bool completeChunk)
+            {
+                Ensure.NotNull(masterEndPoint, "masterEndPoint");
+                Ensure.NotNull(dataBytes, "rawBytes");
+                Ensure.Nonnegative(dataBytes.Length, "dataBytes.Length"); // we CAN send empty dataBytes array here, unlike as with completed chunks
+
+                MasterIp = masterEndPoint.Address.GetAddressBytes();
+                MasterPort = masterEndPoint.Port;
+
+                ChunkStartNumber = chunkStartNumber;
+                ChunkEndNumber = chunkEndNumber;
+                LogicalPosition = logicalPosition;
+                DataBytes = dataBytes;
+                CompleteChunk = completeChunk;
             }
         }
 
