@@ -66,6 +66,7 @@ namespace EventStore.Projections.Core.Services
             var clientConnector = new TcpClientConnector();
             _connectionManager = new TcpConnectionManager(
                 "projection",
+                Guid.NewGuid(),
                 new ClientTcpDispatcher(),
                 _bus,
                 endPoint,

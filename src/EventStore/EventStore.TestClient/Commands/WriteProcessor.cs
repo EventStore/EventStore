@@ -73,6 +73,7 @@ namespace EventStore.TestClient.Commands
             var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
 
             var sw = new Stopwatch();
+            bool dataReceived = false;
 
             context.Client.CreateTcpConnection(
                 context,
@@ -90,6 +91,7 @@ namespace EventStore.TestClient.Commands
                         return;
                     }
 
+                    dataReceived = true;
                     sw.Stop();
 
                     var dto = pkg.Data.Deserialize<ClientMessageDto.WriteEventsCompleted>();
@@ -109,7 +111,7 @@ namespace EventStore.TestClient.Commands
                 },
                 connectionClosed: (connection, error) =>
                 {
-                    if (error == SocketError.Success)
+                    if (dataReceived && error == SocketError.Success)
                         context.Success();
                     else
                         context.Fail();

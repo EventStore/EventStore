@@ -88,11 +88,22 @@ namespace EventStore.Core.TransactionLog.Chunks
             _writerCheckpoint.Flush(); //flush our checkpoint
 
             _writerChunk = _db.Manager.AddNewChunk();
-
-            //GFY CANT USE chunkNum here (it could be exact at end)
-            _writerPos = _writerChunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize; // we just moved to a new chunk at pos 0
+            _writerPos = _writerChunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize;
             
             _writerCheckpoint.Write(_writerPos);
+        }
+
+        public void CompleteRawChunk(TFChunk rawChunk)
+        {
+            rawChunk.Flush();
+            rawChunk.CompleteRaw();
+            _db.Manager.AddReplicatedChunk(rawChunk, verifyHash: true);
+
+            _writerChunk = _db.Manager.AddNewChunk();
+            _writerPos = _writerChunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize;
+
+            _writerCheckpoint.Write(_writerPos);
+            _writerCheckpoint.Flush();
         }
 
         public void Dispose()
