@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
+
 namespace EventStore.Transport.Http
 {
     public static class ContentType
@@ -44,5 +47,22 @@ namespace EventStore.Transport.Http
 
         public const string AtomCategories = "application/atomcat+xml";
         public const string AtomCategoriesJson = "application/atomcat+x.json";
+
+        public static bool TryParse(string value, out System.Net.Mime.ContentType type)
+        {
+            type = null;
+            if(string.IsNullOrEmpty(value))
+                return false;
+
+            try
+            {
+                type = new System.Net.Mime.ContentType(value);
+                return true;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+        }
     }
 }
