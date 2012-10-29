@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             // NOTE: we may receive here messages from heading event distribution point 
             // and they may not pass out source filter.  Discard them first
-            var roundedProgress = (float)Math.Round(message.Progress, 2);
+            var roundedProgress = (float) Math.Round(message.Progress, 2);
             bool progressChanged = _progress != roundedProgress;
             _progress = roundedProgress;
             if (!_eventFilter.PassesSource(message.ResolvedLinkTo, message.PositionStreamId))
@@ -92,15 +92,23 @@ namespace EventStore.Projections.Core.Services.Processing
                             _projectionCorrelationId, _positionTracker.LastTag, _progress));
                 return;
             }
-            var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
-            //TODO: when joining heading distribution point replayed events may cause invalid operation exception on comparison
-            if (eventCheckpointTag <= _positionTracker.LastTag)
+            // NOTE: after joining heading distribution point it delivers all cached events to the subscription
+            // some of this events we may have already received. The delivered events may have different order 
+            // (in case of partially ordered cases multi-stream reader etc). We discard all the messages that are not 
+            // after the last available checkpoint tag
+            if (!_positionTagger.IsMessageAfterCheckpointTag(_positionTracker.LastTag, message))
             {
                 _logger.Trace(
                     "Skipping replayed event {0}@{1} at position {2}. the last processed event checkpoint tag is: {3}",
                     message.PositionSequenceNumber, message.PositionStreamId, message.Position, _positionTracker.LastTag);
                 return;
             }
+            var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
+            if (eventCheckpointTag <= _positionTracker.LastTag)
+                throw new Exception(
+                    string.Format(
+                        "Invalid checkpoint tag was built.  Tag '{0}' must be greater than '{1}'", eventCheckpointTag,
+                        _positionTracker.LastTag));
             _positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
             if (_eventFilter.Passes(message.ResolvedLinkTo, message.PositionStreamId, message.Data.EventType))
             {
@@ -131,8 +139,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public EventDistributionPoint CreatePausedEventDistributionPoint(
-            IPublisher publisher, IPublisher inputQueue, Guid distributionPointId)
+        public EventDistributionPoint CreatePausedEventDistributionPoint(IPublisher publisher, Guid distributionPointId)
         {
             _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
             return _checkpointStrategy.CreatePausedEventDistributionPoint(

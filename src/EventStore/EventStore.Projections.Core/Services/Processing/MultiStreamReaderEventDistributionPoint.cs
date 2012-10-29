@@ -160,6 +160,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                 queue = new Queue<Tuple<EventRecord, EventRecord, float>>();
                                 _buffers.Add(positionEvent.EventStreamId, queue);
                             }
+                            //TODO: progress calculation below is incorrect.  sum(current)/sum(last_event) where sum by all streams
                             queue.Enqueue(Tuple.Create(@event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber));
                         }
                     }

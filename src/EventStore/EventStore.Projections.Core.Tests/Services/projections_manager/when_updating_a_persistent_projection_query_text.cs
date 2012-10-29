@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [Test]
         public void the_projection_state_can_be_retrieved()
         {
-            _manager.Handle(new ProjectionManagementMessage.GetState(new PublishEnvelope(_bus), _projectionName));
+            _manager.Handle(new ProjectionManagementMessage.GetState(new PublishEnvelope(_bus), _projectionName, ""));
 
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Count());
             Assert.AreEqual(

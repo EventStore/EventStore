@@ -62,12 +62,12 @@ namespace EventStore.Core
         private HttpService _httpService;
         private TimerService _timerService;
 
-        public SingleVNode(TFChunkDb db, SingleVNodeSettings vNodeSettings, SingleVNodeAppSettings appSettings)
+        public SingleVNode(TFChunkDb db, SingleVNodeSettings vNodeSettings, SingleVNodeAppSettings appSettings, bool dbVerifyHashes = true)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(vNodeSettings, "vNodeSettings");
 
-            db.OpenVerifyAndClean();
+            db.OpenVerifyAndClean(dbVerifyHashes);
 
             _tcpEndPoint = vNodeSettings.ExternalTcpEndPoint;
             _httpEndPoint = vNodeSettings.ExternalHttpEndPoint;

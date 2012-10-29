@@ -87,11 +87,18 @@ namespace EventStore.Projections.Core.Services.Processing
             // unsubscribe?
         }
 
-        public void EnqueueTask(StagedTask workItem, CheckpointTag workItemCheckpointTag, bool allowCurrentPosition = false)
+        public void EnqueueTask(WorkItem workItem, CheckpointTag workItemCheckpointTag, bool allowCurrentPosition = false)
         {
             if (_queueState == QueueState.Stopped)
                 throw new InvalidOperationException("Queue is Stopped");
             ValidateQueueingOrder(workItemCheckpointTag, allowCurrentPosition);
+            workItem.SetCheckpointTag(workItemCheckpointTag);
+            _queuePendingEvents.Enqueue(workItem);
+        }
+
+        public void EnqueueOutOfOrderTask(WorkItem workItem)
+        {
+            workItem.SetCheckpointTag(_lastEnqueuedEventTag);
             _queuePendingEvents.Enqueue(workItem);
         }
 

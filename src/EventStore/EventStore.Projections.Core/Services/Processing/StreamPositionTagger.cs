@@ -43,6 +43,14 @@ namespace EventStore.Projections.Core.Services.Processing
             _stream = stream;
         }
 
+        public override bool IsMessageAfterCheckpointTag(CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent)
+        {
+            if (previous.GetMode() != CheckpointTag.Mode.Stream)
+                throw new ArgumentException("Mode.Stream expected", "previous");
+            return comittedEvent.PositionStreamId == _stream
+                   && comittedEvent.PositionSequenceNumber > previous.Streams[_stream];
+        }
+
         public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent)
         {
             if (comittedEvent.PositionStreamId != _stream)

@@ -207,19 +207,24 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             var oldChunk = Interlocked.Exchange(ref _chunks[chunkNumber], newChunk);
             oldChunk.UnCacheFromMemory();
+            TryCacheChunk(newChunk);
+            return oldChunk;
+        }
 
+        private void TryCacheChunk(TFChunk chunk)
+        {
             if (_cachingEnabled)
             {
-                if (!newChunk.IsReadOnly)
-                    CacheUncacheIfNecessary(newChunk);
+                if (!chunk.IsReadOnly)
+                {
+                    CacheUncacheIfNecessary(chunk);
+                }
                 else
                 {
-                    _chunksQueue.Enqueue(newChunk);
+                    _chunksQueue.Enqueue(chunk);
                     EnsureBackgroundWorkerRunning();
                 }
             }
-
-            return oldChunk;
         }
 
         public void Dispose()
@@ -232,21 +237,45 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public void AddReplicatedChunk(TFChunk replicatedChunk)
+        public void AddReplicatedChunk(TFChunk replicatedChunk, bool verifyHash)
         {
-            throw new NotImplementedException();
-        }
+            Ensure.NotNull(replicatedChunk, "replicatedChunk");
+            if (!replicatedChunk.IsReadOnly)
+                throw new ArgumentException(string.Format("Passed TFChunk is not completed: {0}.", replicatedChunk.FileName));
 
-        public void DeleteChunk(TFChunk chunk)
-        {
-            throw new NotImplementedException();
+            var oldFileName = replicatedChunk.FileName;
+            var newFileName = _config.FileNamingStrategy.GetFilenameFor(replicatedChunk.ChunkHeader.ChunkStartNumber,
+                                                                        replicatedChunk.ChunkHeader.ChunkScavengeVersion);
+            replicatedChunk.Dispose();
+            try
+            {
+                replicatedChunk.WaitForDestroy(0); // should happen immediately
+            }
+            catch (TimeoutException exc)
+            {
+                throw new Exception(string.Format("Replicated chunk '{0}' ({1}-{2}) is used by someone else.",
+                                                  replicatedChunk.FileName,
+                                                  replicatedChunk.ChunkHeader.ChunkStartNumber,
+                                                  replicatedChunk.ChunkHeader.ChunkEndNumber), exc);
+            }
+
+            File.Move(oldFileName, newFileName);
+            var newChunk = TFChunk.FromCompletedFile(newFileName, verifyHash);
+
+            for (int i = newChunk.ChunkHeader.ChunkStartNumber; i < newChunk.ChunkHeader.ChunkEndNumber; ++i)
+            {
+                var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
+                if (oldChunk != null)
+                    oldChunk.MarkForDeletion();
+            }
+
+            TryCacheChunk(newChunk);
         }
 
         public TFChunk CreateTempChunk(ChunkHeader chunkHeader, int fileSize)
         {
             var chunkFileName = _config.FileNamingStrategy.GetTempFilename();
-
-            throw new NotImplementedException();
+            return TFChunk.CreateWithHeader(chunkFileName, chunkHeader, fileSize);
         }
     }
 }

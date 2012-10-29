@@ -57,6 +57,41 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
             var tr = new PositionTracker(t);
         }
 
+        [Test]
+        public void is_message_after_checkpoint_tag_after_case()
+        {
+            var t = new StreamPositionTagger("stream1");
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromStreamPosition("stream1", 0), _firstEvent);
+            Assert.IsTrue(result);
+        }
+
+        [Test]
+        public void is_message_after_checkpoint_tag_before_case()
+        {
+            var t = new StreamPositionTagger("stream1");
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromStreamPosition("stream1", 2), _firstEvent);
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void is_message_after_checkpoint_tag_equal_case()
+        {
+            var t = new StreamPositionTagger("stream1");
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromStreamPosition("stream1", 1), _firstEvent);
+            Assert.IsFalse(result);
+        }
+
+        [Test]
+        public void is_message_after_checkpoint_tag_incompatible_case()
+        {
+            // events from other streams are not after any tag
+            var t = new StreamPositionTagger("stream-other");
+            var result = t.IsMessageAfterCheckpointTag(CheckpointTag.FromStreamPosition("stream1", 1), _firstEvent);
+            Assert.IsFalse(result);
+        }
+
+
+
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_stream_throws_argument_null_exception()
         {

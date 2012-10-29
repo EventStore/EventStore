@@ -58,6 +58,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public bool IsCached { get { return _cached; } }
         public int ActualDataSize { get { return _actualDataSize; } }
         public string FileName { get { return _filename; } }
+        public int FileSize { get { return (int) new FileInfo(_filename).Length; } }
 
         public ChunkHeader ChunkHeader { get { return _chunkHeader; } }
         public ChunkFooter ChunkFooter { get { return _chunkFooter; } }
@@ -330,6 +331,8 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             if (!IsReadOnly)
                 throw new InvalidOperationException("You can't verify hash of not-completed TFChunk.");
+
+            Log.Trace("Verifying hash for TFChunk '{0}'...", _filename);
 
             var workItem = GetReaderWorkItem();
             try
@@ -1226,7 +1229,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        internal TFChunkBulkReader AcquireReader()
+        public TFChunkBulkReader AcquireReader()
         {
             if (_selfdestructin54321)
                 throw new FileBeingDeletedException();
@@ -1234,34 +1237,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             return new TFChunkBulkReader(this, GetSequentialReaderFileStream());
         }
 
-        internal void ReleaseReader(TFChunkBulkReader reader)
+        public void ReleaseReader(TFChunkBulkReader reader)
         {
             Interlocked.Decrement(ref _lockedCount);
             if (_selfdestructin54321)
                 TryDestruct();
-        }
-
-        internal BulkReadResult TryReadNextBulkLogical(Stream stream, byte[] into, int count)
-        {
-            if (stream.Position == 0) 
-                stream.Position = ChunkHeader.Size;
-            var oldPos = (int)stream.Position;
-            if (count > into.Length)
-                count = into.Length;
-            var mapSize = _chunkFooter == null ? 0 : ChunkFooter.MapSize;
-            var available = (int)(stream.Length - ChunkFooter.Size - ChunkHeader.Size - mapSize);
-            var toRead = available > count ? count : available;
-            var bytesRead = stream.Read(into, 0, toRead);
-            return new BulkReadResult(oldPos, bytesRead, isEof: available == bytesRead);
-        }
-
-        internal BulkReadResult TryReadNextBulkPhysical(Stream stream, byte[] into, int count)
-        {
-            if (count > into.Length) 
-                count = into.Length;
-            var oldPos = (int) stream.Position;
-            int bytesRead = stream.Read(into, 0, count);
-            return new BulkReadResult(oldPos, bytesRead, isEof: stream.Length == stream.Position);
         }
 
         private struct Midpoint

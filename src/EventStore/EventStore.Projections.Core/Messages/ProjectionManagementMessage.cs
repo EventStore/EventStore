@@ -253,11 +253,16 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly IEnvelope _envelope;
             private readonly string _name;
+            private readonly string _partition;
 
-            public GetState(IEnvelope envelope, string name)
+            public GetState(IEnvelope envelope, string name, string partition)
             {
+                if (envelope == null) throw new ArgumentNullException("envelope");
+                if (name == null) throw new ArgumentNullException("name");
+                if (partition == null) throw new ArgumentNullException("partition");
                 _envelope = envelope;
                 _name = name;
+                _partition = partition;
             }
 
             public string Name
@@ -268,6 +273,11 @@ namespace EventStore.Projections.Core.Messages
             public IEnvelope Envelope
             {
                 get { return _envelope; }
+            }
+
+            public string Partition
+            {
+                get { return _partition; }
             }
         }
 

@@ -109,6 +109,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
         [Test]
         public void publishes_read_events_from_beginning_with_correct_next_event_number()
         {
+            // do not publish new read requests until we consume already available events
             Assert.AreEqual(2, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
             Assert.AreEqual(
                 1,

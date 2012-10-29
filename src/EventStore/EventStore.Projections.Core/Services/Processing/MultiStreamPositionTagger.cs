@@ -17,6 +17,14 @@ namespace EventStore.Projections.Core.Services.Processing
             _streams = new HashSet<string>(streams);
         }
 
+        public override bool IsMessageAfterCheckpointTag(CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent)
+        {
+            if (previous.GetMode() != CheckpointTag.Mode.MultiStream)
+                throw new ArgumentException("Mode.MultiStream expected", "previous");
+            return _streams.Contains(comittedEvent.PositionStreamId)
+                   && comittedEvent.PositionSequenceNumber > previous.Streams[comittedEvent.PositionStreamId];
+        }
+
         public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent)
         {
             if (!_streams.Contains(comittedEvent.PositionStreamId))

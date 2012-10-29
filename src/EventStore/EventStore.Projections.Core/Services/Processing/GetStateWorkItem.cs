@@ -26,19 +26,46 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class PositionTagger
+    class GetStateWorkItem : WorkItem
     {
-        public abstract bool IsMessageAfterCheckpointTag(
-            CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent);
+        private readonly string _partition;
+        private readonly IEnvelope _envelope;
+        private readonly Guid _projectionId;
+        private readonly CoreProjection _projection;
+        private readonly PartitionStateCache _partitionStateCache;
 
-        public abstract CheckpointTag MakeCheckpointTag(CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent);
+        public GetStateWorkItem(
+            IEnvelope envelope, Guid projectionId, CoreProjection projection, PartitionStateCache partitionStateCache,
+            string partition)
+            : base(projection, "")
+        {
+            if (envelope == null) throw new ArgumentNullException("envelope");
+            if (partitionStateCache == null) throw new ArgumentNullException("partitionStateCache");
+            if (partition == null) throw new ArgumentNullException("partition");
+            _partition = partition;
+            _envelope = envelope;
+            _projectionId = projectionId;
+            _projection = projection;
+            _partitionStateCache = partitionStateCache;
+        }
 
-        public abstract CheckpointTag MakeZeroCheckpointTag();
+        protected override void Load(CheckpointTag checkpointTag)
+        {
+            _projection.BeginStatePartitionLoad(_partition, checkpointTag, LoadCompleted);
+        }
 
-        public abstract bool IsCompatible(CheckpointTag checkpointTag);
+        private void LoadCompleted()
+        {
+            var projectionState = _partitionStateCache.GetLockedPartitionState(_partition);
+            _envelope.ReplyWith(
+                new ProjectionMessage.Projections.Management.StateReport(_projectionId, _partition, projectionState));
+            NextStage();
+        }
     }
 }

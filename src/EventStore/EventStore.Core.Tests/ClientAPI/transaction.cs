@@ -14,6 +14,7 @@ namespace EventStore.Core.Tests.ClientAPI
     internal class transaction
     {
         [Test]
+        [Category("Network")]
         public void should_start_on_non_existing_stream_with_correct_exp_ver_and_create_stream_on_commit()
         {
             const string stream = "should_start_on_non_existing_stream_with_correct_exp_ver_and_create_stream_on_commit";
@@ -29,6 +30,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void should_start_on_non_existing_stream_with_exp_ver_any_and_create_stream_on_commit()
         {
             const string stream = "should_start_on_non_existing_stream_with_exp_ver_any_and_create_stream_on_commit";
@@ -44,6 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void should_fail_to_commit_non_existing_stream_with_wrong_exp_ver()
         {
             const string stream = "should_fail_to_commit_non_existing_stream_with_wrong_exp_ver";
@@ -59,6 +62,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void should_create_stream_if_commits_no_events_to_empty_stream()
         {
             const string stream = "should_create_stream_if_commits_no_events_to_empty_stream";
@@ -77,6 +81,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void should_validate_expectations_on_commit()
         {
             const string stream = "should_validate_expectations_on_commit";
@@ -92,6 +97,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void should_commit_when_writing_with_exp_ver_any_even_while_somene_is_writing_in_parallel()
         {
             const string stream = "should_commit_when_writing_with_exp_ver_any_even_while_somene_is_writing_in_parallel";
@@ -167,6 +173,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void should_fail_to_commit_if_started_with_correct_ver_but_committing_with_bad()
         {
             const string stream = "should_fail_to_commit_if_started_with_correct_ver_but_committing_with_bad";
@@ -190,6 +197,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void should_not_fail_to_commit_if_started_with_wrong_ver_but_committing_with_correct_ver()
         {
             const string stream = "should_not_fail_to_commit_if_started_with_wrong_ver_but_committing_with_correct_ver";
@@ -213,6 +221,7 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test]
+        [Category("Network")]
         public void should_fail_to_commit_if_started_with_correct_ver_but_on_commit_stream_was_deleted()
         {
             const string stream = "should_fail_to_commit_if_started_with_correct_ver_but_on_commit_stream_was_deleted";
