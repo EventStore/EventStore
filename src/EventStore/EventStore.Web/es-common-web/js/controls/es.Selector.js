@@ -9,6 +9,7 @@ es.Selector = function (opts) {
 
     this.addNewElem = addNewElem;
     this.updateValue = updateValue;
+    this.isChecked = isChecked;
 
     var self = this;
     var checkBoxes = $();
@@ -55,7 +56,6 @@ es.Selector = function (opts) {
         checkBoxes = checkBoxes.add(checkBox);
     }
 
-
     function updateValue(elem, checked) {
         var checkbox = getCheckbox(elem);
         checkbox.attr('checked', checked);
@@ -78,6 +78,11 @@ es.Selector = function (opts) {
             return null; // ?
         var checkbox = checkBoxes.eq(index);
         return checkbox;
+    }
+
+    function isChecked(elem) {
+        var checkbox = getCheckbox(elem);
+        return checkbox.is(":checked");
     }
 
 
