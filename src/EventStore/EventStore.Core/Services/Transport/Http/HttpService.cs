@@ -334,8 +334,15 @@ namespace EventStore.Core.Services.Transport.Http
                 return true;
             }
 
-            requestCodec = supportedCodecs.SingleOrDefault(c => c.SuitableFor(contentType));
-            return requestCodec != null;
+            var mediaTypes = ExtractMediaTypes(contentType);
+            if (mediaTypes.Any())
+            {
+                requestCodec = supportedCodecs.SingleOrDefault(c => c.SuitableFor(mediaTypes.Single()));
+                return requestCodec != null;
+            }
+
+            requestCodec = null;
+            return false;
         }
 
         private bool TrySelectResponseCodec(NameValueCollection query,
@@ -358,20 +365,33 @@ namespace EventStore.Core.Services.Transport.Http
                 return selected != null;
             }
 
-            selected = acceptTypes.Select(type => supported.FirstOrDefault(c => c.SuitableFor(type)))
-                                  .FirstOrDefault(corresponding => corresponding != null);
+            var mediaTypes = ExtractMediaTypes(acceptTypes.ToArray());
+            selected = mediaTypes.Select(mediaType => supported.FirstOrDefault(c => c.SuitableFor(mediaType)))
+                                 .FirstOrDefault(corresponding => corresponding != null);
             if (selected != null)
             {
                 return true;
             }
 
-            if (acceptTypes.Contains(s => string.Equals(s, ContentType.Any, StringComparison.InvariantCultureIgnoreCase)))
+            if (mediaTypes.Contains(s => string.Equals(s, ContentType.Any, StringComparison.InvariantCultureIgnoreCase)))
             {
                 selected = @default;
                 return true;
             }
 
             return false;
+        }
+
+        private List<string> ExtractMediaTypes(params string[] mimeTypes)
+        {
+            var result = new List<string>();
+            foreach (var mimeType in mimeTypes)
+            {
+                System.Net.Mime.ContentType parsed;
+                if (ContentType.TryParse(mimeType, out parsed))
+                    result.Add(parsed.MediaType);
+            }
+            return result;
         }
 
         private string GetFormatOrDefault(NameValueCollection query)
