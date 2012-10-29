@@ -29,6 +29,7 @@ using System;
 using System.IO;
 using System.Threading;
 using EventStore.Common.Utils;
+using System.Linq;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
@@ -187,6 +188,11 @@ namespace EventStore.Core.TransactionLog.Chunks
         public TFChunk GetChunkFor(long logPosition)
         {
             return GetChunk((int)(logPosition / _config.ChunkSize));
+        }
+
+        public TFChunk GetChunkForOrDefault(string path)
+        {
+            return _chunks.FirstOrDefault(c => c.FileName == path);
         }
 
         public TFChunk GetChunk(int chunkNumber)
