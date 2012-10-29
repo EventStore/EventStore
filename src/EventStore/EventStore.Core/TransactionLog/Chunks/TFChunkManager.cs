@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -153,7 +154,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var chunk = TFChunk.CreateWithHeader(chunkName, chunkHeader, fileSize);
             AddChunk(chunk);
             return chunk;
-        }
+        }   
 
         public void AddChunk(TFChunk chunk)
         {
@@ -243,9 +244,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (!replicatedChunk.IsReadOnly)
                 throw new ArgumentException(string.Format("Passed TFChunk is not completed: {0}.", replicatedChunk.FileName));
 
+            var chunkHeader = replicatedChunk.ChunkHeader;
             var oldFileName = replicatedChunk.FileName;
-            var newFileName = _config.FileNamingStrategy.GetFilenameFor(replicatedChunk.ChunkHeader.ChunkStartNumber,
-                                                                        replicatedChunk.ChunkHeader.ChunkScavengeVersion);
+            var newFileName = _config.FileNamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, chunkHeader.ChunkScavengeVersion);
+            
             replicatedChunk.Dispose();
             try
             {
@@ -259,15 +261,30 @@ namespace EventStore.Core.TransactionLog.Chunks
                                                   replicatedChunk.ChunkHeader.ChunkEndNumber), exc);
             }
 
+            //TODO AN: temporary workaround
+            for (int i = chunkHeader.ChunkStartNumber; i <= chunkHeader.ChunkEndNumber; ++i)
+            {
+                var oldChunk = _chunks[i];
+                if (oldChunk != null)
+                {
+                    oldChunk.MarkForDeletion();
+                    oldChunk.WaitForDestroy(500);
+                }
+            }
+
+            // TODO AN it is possible that chunk with the newFileName already exists, need to work around that
+            // TODO AN this could be caused by scavenging... no scavenge -- no cry :(
             File.Move(oldFileName, newFileName);
             var newChunk = TFChunk.FromCompletedFile(newFileName, verifyHash);
 
-            for (int i = newChunk.ChunkHeader.ChunkStartNumber; i < newChunk.ChunkHeader.ChunkEndNumber; ++i)
+            for (int i = chunkHeader.ChunkStartNumber; i <= chunkHeader.ChunkEndNumber; ++i)
             {
                 var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
                 if (oldChunk != null)
                     oldChunk.MarkForDeletion();
             }
+            _chunksCount = newChunk.ChunkHeader.ChunkEndNumber + 1;
+            Debug.Assert(_chunks[_chunksCount] == null);
 
             TryCacheChunk(newChunk);
         }

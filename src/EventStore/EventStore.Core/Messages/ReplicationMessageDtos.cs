@@ -222,6 +222,10 @@ namespace EventStore.Core.Messages
             [ProtoMember(7)]
             public bool CompleteChunk { get; set; }
 
+            public LogicalChunkBulk()
+            {
+            }
+
             public LogicalChunkBulk(IPEndPoint masterEndPoint,
                                     int chunkStartNumber,
                                     int chunkEndNumber,

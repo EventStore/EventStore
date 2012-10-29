@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private void OnConnectionAccepted(TcpConnection connection)
         {
             Log.Info("Client TCP connection accepted: [{0}]", connection.EffectiveEndPoint);
-            var manager = new TcpConnectionManager("REPLICA", _tcpDispatcher, _publisher, connection);
+            var manager = new TcpConnectionManager("REPLICA", Guid.NewGuid(), _tcpDispatcher, _publisher, connection);
             manager.ConnectionClosed += OnConnectionClosed;
 
             _publisher.Publish(new TcpMessage.ConnectionEstablished(manager));
