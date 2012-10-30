@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,11 +25,24 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-namespace EventStore.ClientAPI.SystemData
+
+using System;
+using System.Net;
+
+namespace EventStore.ClientAPI.Exceptions
 {
-    internal enum RoutingStrategy
+    public class OperationCannotBeHandledByInstanceException : Exception
     {
-        AllowForwarding,
-        DenyForwarding,
+        public readonly IPEndPoint RecommendedTcpEndpoint;
+        public readonly IPEndPoint RecommendedHttpEndpoint;
+
+        public OperationCannotBeHandledByInstanceException(string message,
+                                                           IPEndPoint recommendedTcpEndpoint,
+                                                           IPEndPoint recommendedHttpEndpoint)
+            : base(message)
+        {
+            RecommendedTcpEndpoint = recommendedTcpEndpoint;
+            RecommendedHttpEndpoint = recommendedHttpEndpoint;
+        }
     }
 }

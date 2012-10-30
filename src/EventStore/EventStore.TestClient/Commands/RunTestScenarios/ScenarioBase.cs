@@ -96,7 +96,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             for (int i = 0; i < Connections; ++i)
             {
-                _connections[i] = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger);
+                _connections[i] = new EventStoreConnection(_tcpEndPoint, maxConcurrentRequests:MaxConcurrentRequests, logger: ApiLogger);
             }
             RunInternal();   
         }

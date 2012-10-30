@@ -60,6 +60,7 @@ namespace EventStore.ClientAPI
         private static readonly TimeSpan OperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
         private readonly IPEndPoint _tcpEndPoint;
+        private readonly RoutingStrategy _routing;
 
         private readonly TcpConnector _connector;
         private TcpTypedConnection _connection;
@@ -92,7 +93,9 @@ namespace EventStore.ClientAPI
             }
         }
 
-        public EventStoreConnection(IPEndPoint tcpEndPoint, 
+        public EventStoreConnection(IPEndPoint tcpEndPoint,
+                                    IPEndPoint httpEndpoint = null,
+                                    RoutingStrategy routing = RoutingStrategy.AllowForwarding,
                                     int maxConcurrentRequests = 5000,
                                     int maxAttemptsForOperation = 10,
                                     int maxReconnections = 10,
@@ -104,6 +107,7 @@ namespace EventStore.ClientAPI
             Ensure.Nonnegative(maxReconnections, "maxReconnections");
 
             _tcpEndPoint = tcpEndPoint;
+            _routing = routing;
             _maxConcurrentItems = maxConcurrentRequests;
             _maxAttempts = maxAttemptsForOperation;
             _maxReconnections = maxReconnections;
@@ -113,8 +117,7 @@ namespace EventStore.ClientAPI
 
             _connector = new TcpConnector(_tcpEndPoint);
             _subscriptionsChannel = new SubscriptionsChannel(_connector);
-            //TODO TD: WAT?
-            _projectionsManager = new ProjectionsManager(new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000));
+            _projectionsManager = new ProjectionsManager(httpEndpoint ?? new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000));
 
             _lastReconnectionTimestamp = DateTime.UtcNow;
             _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
@@ -167,7 +170,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<object>();
-            var operation = new CreateStreamOperation(source, Guid.NewGuid(), stream, metadata);
+            var operation = new CreateStreamOperation(source, Guid.NewGuid(), _routing, stream, metadata);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -186,7 +189,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<object>();
-            var operation = new DeleteStreamOperation(source, Guid.NewGuid(), stream, expectedVersion);
+            var operation = new DeleteStreamOperation(source, Guid.NewGuid(), _routing, stream, expectedVersion);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -207,7 +210,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<object>();
-            var operation = new AppendToStreamOperation(source, Guid.NewGuid(), stream, expectedVersion, events);
+            var operation = new AppendToStreamOperation(source, Guid.NewGuid(), _routing, stream, expectedVersion, events);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -227,7 +230,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<EventStoreTransaction>();
-            var operation = new StartTransactionOperation(source, Guid.NewGuid(), stream, expectedVersion);
+            var operation = new StartTransactionOperation(source, Guid.NewGuid(), _routing, stream, expectedVersion);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -248,7 +251,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<object>();
-            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), transactionId, stream, events);
+            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), _routing, transactionId, stream, events);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -267,7 +270,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<object>();
-            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), transactionId, stream);
+            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), _routing, transactionId, stream);
 
             EnqueueOperation(operation);
             return source.Task;
