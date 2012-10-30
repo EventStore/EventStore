@@ -317,9 +317,10 @@ namespace EventStore.Core.Services.Transport.Http
                 return true;
             }
 
-            requestCodec = supportedCodecs.SingleOrDefault(c => c.SuitableFor(contentType));
+            requestCodec = supportedCodecs.SingleOrDefault(c => c.CanParse(contentType));
             return requestCodec != null;
         }
+
 
         private bool TrySelectResponseCodec(NameValueCollection query,
                                             ICollection<string> acceptTypes,
@@ -337,11 +338,16 @@ namespace EventStore.Core.Services.Transport.Http
 
             if (requestedFormat != null)
             {
-                selected = supported.FirstOrDefault(c => c.SuitableFor(requestedFormat));
+                selected = supported.FirstOrDefault(c => c.SuitableForReponse(new AcceptComponent(requestedFormat)));
                 return selected != null;
             }
+            var parsedAcceptTypes =
+                acceptTypes.Select(ParseAcceptHeaderComponent)
+                           .Where(v => v != null)
+                           .OrderByDescending(v => v.Priority)
+                           .ToArray();
 
-            selected = acceptTypes.Select(type => supported.FirstOrDefault(c => c.SuitableFor(type)))
+            selected = parsedAcceptTypes.Select(type => supported.FirstOrDefault(c => c.SuitableForReponse(type)))
                                   .FirstOrDefault(corresponding => corresponding != null);
             if (selected != null)
             {
@@ -357,9 +363,35 @@ namespace EventStore.Core.Services.Transport.Http
             return false;
         }
 
+        private AcceptComponent ParseAcceptHeaderComponent(string v)
+        {
+            try
+            {
+                return new AcceptComponent(v);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+        }
+
         private string GetFormatOrDefault(NameValueCollection query)
         {
-            return query != null && query.Count > 0 ? query.Get("format") : null;
+            var format = query != null && query.Count > 0 ? query.Get("format") : null;
+            if (format == null)
+                return null;
+            switch (format)
+            {
+                case "json":
+                    return "application/json";
+                case "text":
+                    return "text/plain";
+                case "xml":
+                    return "application/xml";
+                default:
+                    throw new NotSupportedException("Unknown format requested");
+            }
+            return format;
         }
     }
 }

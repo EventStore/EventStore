@@ -62,13 +62,13 @@ namespace EventStore.Core.Util
                                              OnStaticContent);
         }
 
-        public void OnStaticContent(HttpEntity http, UriTemplateMatch match)
+        private void OnStaticContent(HttpEntity http, UriTemplateMatch match)
         {
             var contentLocalPath = match.BoundVariables["remaining_path"];
             ReplyWithContent(http, contentLocalPath);
         }
 
-        public void ReplyWithContent(HttpEntity http, string contentLocalPath)
+        private void ReplyWithContent(HttpEntity http, string contentLocalPath)
         {
             //NOTE: this is fix for Mono incompatibility in UriTemplate behavior for /a/b{*C}
             if (("/" + contentLocalPath).StartsWith(_localWebRootPath))
