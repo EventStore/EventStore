@@ -46,6 +46,7 @@ h6 { font-size: 1em; font-weight: bold; }
 	font-size: 13px;
     color: #EE5678;
     white-space: normal;
+    text-shadow: none;
 }
 /*===================================== charts =================================*/
 .dropdown {
