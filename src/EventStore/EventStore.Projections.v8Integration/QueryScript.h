@@ -22,7 +22,9 @@ namespace js1 {
 			register_command_handler_callback(register_command_handler_callback_),
 			reverse_command_callback(reverse_command_callback_)
 
-			{};
+		{
+			isolate_add_ref(isolate);
+		};
 
 		virtual ~QueryScript();
 

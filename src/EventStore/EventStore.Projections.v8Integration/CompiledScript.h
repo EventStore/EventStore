@@ -9,7 +9,6 @@ namespace js1 {
 		CompiledScript();
 		virtual ~CompiledScript();
 		void report_errors(REPORT_ERROR_CALLBACK report_error_callback);
-		virtual bool owns_isolate() { return false; }
 	protected:
 		virtual v8::Isolate *get_isolate() = 0;
 		virtual v8::Persistent<v8::ObjectTemplate> create_global_template() = 0;
@@ -19,6 +18,8 @@ namespace js1 {
 		v8::Handle<v8::Value> run_script(v8::Persistent<v8::Context> context);
 		void set_last_error(bool is_error, v8::TryCatch &try_catch);
 		void set_last_error(v8::Handle<v8::String> message);
+		static void isolate_add_ref(v8::Isolate * isolate);
+		static size_t isolate_release(v8::Isolate * isolate);
 	private:
 		v8::Persistent<v8::ObjectTemplate> global;
 		v8::Persistent<v8::Context> context;

@@ -14,6 +14,7 @@ namespace js1
 	ModuleScript::~ModuleScript()
 	{
 		module_object.Dispose();
+		isolate_release(isolate);
 	}
 
 	bool ModuleScript::compile_script(const uint16_t *source, const uint16_t *file_name)
