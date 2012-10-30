@@ -102,6 +102,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool _tickPending;
         private int _readRequestsInProgress;
+        private readonly string _stateStreamNamePattern;
+        private readonly string _stateStreamName;
 
         public CoreProjection(
             string name, Guid projectionCorrelationId, IPublisher publisher,
@@ -115,12 +117,18 @@ namespace EventStore.Projections.Core.Services.Processing
             if (name == "") throw new ArgumentException("name");
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (projectionStateHandler == null) throw new ArgumentNullException("projectionStateHandler");
+            _projectionStateHandler = projectionStateHandler;
             _projectionCorrelationId = projectionCorrelationId;
-            _name = name;
+
+            var namingBuilder = new ProjectionNamesBuilder();
+            _projectionStateHandler.ConfigureSourceProcessingStrategy(namingBuilder);
+
+            _name = namingBuilder.ForceProjectionName ?? name;
+            _stateStreamNamePattern = namingBuilder.StateStreamName ?? ProjectionsStreamPrefix + name + "-{0}" + ProjectionsStateStreamSuffix;
+            _stateStreamName = namingBuilder.StateStreamName ?? ProjectionsStreamPrefix + name + ProjectionsStateStreamSuffix; 
             _projectionConfig = projectionConfig;
             _logger = logger;
             _publisher = publisher;
-            _projectionStateHandler = projectionStateHandler;
             _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
             var builder = new CheckpointStrategy.Builder();
@@ -132,7 +140,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
             _checkpointManager = this._checkpointStrategy.CreateCheckpointManager(
                 this, projectionCorrelationId, this._publisher, this._readDispatcher,
-                this._writeDispatcher, this._projectionConfig, this._name);
+                this._writeDispatcher, this._projectionConfig, this._name, _stateStreamName);
             GoToState(State.Initial);
         }
 
@@ -631,8 +639,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private string MakePartitionStateStreamName(string statePartition)
         {
-            return ProjectionsStreamPrefix + _name + (string.IsNullOrEmpty(statePartition) ? "" : "-") + statePartition
-                   + ProjectionsStateStreamSuffix;
+            return string.IsNullOrEmpty(statePartition)
+                       ? _stateStreamName
+                       : string.Format(_stateStreamNamePattern, statePartition);
         }
 
         private void OnLoadStatePartitionCompleted(

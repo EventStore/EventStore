@@ -117,6 +117,7 @@
     <Compile Include="Services\Processing\PartitionStateCache.cs" />
     <Compile Include="Services\Processing\PositionTracker.cs" />
     <Compile Include="Services\Processing\ProgressWorkItem.cs" />
+    <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
     <Compile Include="Services\Processing\QuerySourceProcessingStrategyBuilder.cs" />
     <Compile Include="Services\Processing\CheckpointTag.cs" />
     <Compile Include="Services\Processing\EmittedEvent.cs" />

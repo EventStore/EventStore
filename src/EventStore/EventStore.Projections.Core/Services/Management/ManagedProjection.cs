@@ -150,6 +150,7 @@ namespace EventStore.Projections.Core.Services.Management
             else
             {
                 status = _lastReceivedStatistics.Clone();
+                status.Name = _name;
                 status.Status = _state.EnumVaueName() + "/" + status.Status;
                 status.MasterStatus = _state;
             }

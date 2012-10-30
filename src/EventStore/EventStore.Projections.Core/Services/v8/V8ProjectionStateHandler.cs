@@ -98,7 +98,7 @@ namespace EventStore.Projections.Core.Services.v8
         {
             var sourcesDefintion = _query.GetSourcesDefintion();
             if (sourcesDefintion == null)
-                throw new InvalidOperationException("Invalid query.  No source defintion.");
+                throw new InvalidOperationException("Invalid query.  No source definition.");
             if (sourcesDefintion.AllStreams)
                 builder.FromAll();
             else
@@ -118,7 +118,10 @@ namespace EventStore.Projections.Core.Services.v8
                         builder.IncludeEvent(@event);
             if (sourcesDefintion.ByStreams)
                 builder.SetByStream();
-
+            if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.StateStreamName))
+                builder.SetStateStreamNameOption(sourcesDefintion.Options.StateStreamName);
+            if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.ForceProjectionName))
+                builder.SetForceProjectionName(sourcesDefintion.Options.ForceProjectionName);
         }
 
         public void Load(string state)
