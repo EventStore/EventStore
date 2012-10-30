@@ -56,8 +56,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             _singleNodeWeb.RegisterControllerActions(service);
             _commonWeb.RegisterControllerActions(service);
-            RegisterRedirectAction(service, "", "/web/index.htm");
-            RegisterRedirectAction(service, "/web", "/web/index.htm");
+            RegisterRedirectAction(service, "", "/web/home.htm");
+            RegisterRedirectAction(service, "/web", "/web/home.htm");
             RegisterRedirectAction(service, "/web/projections", "/web/projections.htm");
         }
 
