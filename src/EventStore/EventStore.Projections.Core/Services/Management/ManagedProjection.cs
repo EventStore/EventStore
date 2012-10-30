@@ -172,7 +172,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (_state == ManagedProjectionState.Running)
             {
-                var needRequest = _stateRequests == null;
+                var needRequest = false;
                 if (_stateRequests == null)
                 {
                     _stateRequests = new Dictionary<string, List<IEnvelope>>();
@@ -182,6 +182,7 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     partitionRequests = new List<IEnvelope>();
                     _stateRequests.Add(message.Partition, partitionRequests);
+                    needRequest = true;
                 }
                 partitionRequests.Add(message.Envelope);
                 if (needRequest)
@@ -313,7 +314,7 @@ namespace EventStore.Projections.Core.Services.Management
 			var managedProjectionSerializedState = _persistedState.ToJsonBytes ();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, "$projections-" + _name, ExpectedVersion.Any,
+                    Guid.NewGuid(), _writeDispatcher.Envelope, RoutingStrategy.AllowForwarding, "$projections-" + _name, ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "ProjectionUpdated", false,  managedProjectionSerializedState, new byte[0])),
                 m => WriteCompleted(m, completed));
         }

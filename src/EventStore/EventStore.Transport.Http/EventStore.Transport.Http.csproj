@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AcceptComponent.cs" />
     <Compile Include="Client\ClientOperationState.cs" />
     <Compile Include="Client\HttpAsyncClient.cs" />
     <Compile Include="Client\IHttpClient.cs" />

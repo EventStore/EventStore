@@ -195,64 +195,68 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
         {
-            var allMatches = AllMatches(context.Request.Url);
-            var allowedMethods = allMatches.Select(m => m.ControllerAction.HttpMethod).ToArray();
-
-            if (allMatches.Count == 0)
+            try
             {
-                NotFound(context);
-                return;
-            }
+                var allMatches = AllMatches(context.Request.Url);
+                var allowedMethods = allMatches.Select(m => m.ControllerAction.HttpMethod).ToArray();
 
-            //add options to the list of allowed request methods
-            allowedMethods = allowedMethods.Union(new[] {HttpMethod.Options}).ToArray();
-            if (context.Request.HttpMethod.Equals(HttpMethod.Options))
+                if (allMatches.Count == 0)
+                {
+                    NotFound(context);
+                    return;
+                }
+
+                //add options to the list of allowed request methods
+                allowedMethods = allowedMethods.Union(new[] {HttpMethod.Options}).ToArray();
+                if (context.Request.HttpMethod.Equals(HttpMethod.Options))
+                {
+                    RespondWithOptions(context, allowedMethods);
+                    return;
+                }
+
+                var match = allMatches.LastOrDefault(m => m.ControllerAction.HttpMethod == context.Request.HttpMethod);
+                if (match == null)
+                {
+                    MethodNotAllowed(context, allowedMethods);
+                    return;
+                }
+
+                ICodec requestCodec;
+                if (
+                    !TrySelectRequestCodec(
+                        context.Request.HttpMethod, context.Request.ContentType,
+                        match.ControllerAction.SupportedRequestCodecs, out requestCodec))
+                {
+                    BadCodec(context, "Content-Type MUST be set for POST PUT and DELETE");
+                    return;
+                }
+                ICodec responseCodec;
+                if (
+                    !TrySelectResponseCodec(
+                        context.Request.QueryString, context.Request.AcceptTypes,
+                        match.ControllerAction.SupportedResponseCodecs, match.ControllerAction.DefaultResponseCodec,
+                        out responseCodec))
+                {
+                    BadCodec(context, "Requested uri is not available in requested format");
+                    return;
+                }
+
+                var entity = CreateEntity(
+                    DateTime.UtcNow, context, requestCodec, responseCodec, allowedMethods, satisfied =>
+                        {
+                            lock (_pendingLock)
+                                _pending.Remove(satisfied);
+                        });
+                lock (_pendingLock)
+                    _pending.Add(entity);
+
+                match.RequestHandler(entity, match.TemplateMatch);
+            }
+            catch (Exception exception)
             {
-                RespondWithOptions(context, allowedMethods);
-                return;
+                _log.ErrorException(exception, "Unhandled exception while processing http request");
+                InternalServerError(context);
             }
-
-            var match = allMatches.LastOrDefault(m => m.ControllerAction.HttpMethod == context.Request.HttpMethod);
-            if (match == null)
-            {
-                MethodNotAllowed(context, allowedMethods);
-                return;
-            }
-
-            ICodec requestCodec;
-            if (!TrySelectRequestCodec(context.Request.HttpMethod,
-                                       context.Request.ContentType,
-                                       match.ControllerAction.SupportedRequestCodecs,
-                                       out requestCodec))
-            {
-                  BadCodec(context, "Content-Type MUST be set for POST PUT and DELETE");
-                  return;
-            }
-            ICodec responseCodec;
-            if (!TrySelectResponseCodec(context.Request.QueryString,
-                                       context.Request.AcceptTypes,
-                                       match.ControllerAction.SupportedResponseCodecs,
-                                       match.ControllerAction.DefaultResponseCodec, 
-                                       out responseCodec))
-            {
-                BadCodec(context, "Requested uri is not available in requested format");
-                return;
-            }
-
-            var entity = CreateEntity(DateTime.UtcNow,
-                                      context,
-                                      requestCodec,
-                                      responseCodec,
-                                      allowedMethods,
-                                      satisfied =>
-                                          {
-                                              lock (_pendingLock)
-                                                  _pending.Remove(satisfied);
-                                          });
-            lock (_pendingLock)
-                _pending.Add(entity);
-
-            match.RequestHandler(entity, match.TemplateMatch);
         }
 
         private List<UriToActionMatch> AllMatches(Uri requestUri)
@@ -297,6 +301,14 @@ namespace EventStore.Core.Services.Transport.Http
                                  e => _log.ErrorException(e, "Error while closing http connection (http service core)"));
         }
 
+        private void InternalServerError(HttpListenerContext context)
+        {
+            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, new string[0], _ => { });
+            entity.Manager.Reply(HttpStatusCode.InternalServerError,
+                                 "Internal Server Error",
+                                 e => _log.ErrorException(e, "Error while closing http connection (http service core)"));
+        }
+
         private void BadCodec(HttpListenerContext context, string reason)
         {
             var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, new string[0], _ => { });
@@ -334,16 +346,10 @@ namespace EventStore.Core.Services.Transport.Http
                 return true;
             }
 
-            var mediaTypes = ExtractMediaTypes(contentType);
-            if (mediaTypes.Any())
-            {
-                requestCodec = supportedCodecs.SingleOrDefault(c => c.SuitableFor(mediaTypes.Single()));
+            requestCodec = supportedCodecs.SingleOrDefault(c => c.CanParse(contentType));
                 return requestCodec != null;
             }
 
-            requestCodec = null;
-            return false;
-        }
 
         private bool TrySelectResponseCodec(NameValueCollection query,
                                             ICollection<string> acceptTypes,
@@ -352,7 +358,6 @@ namespace EventStore.Core.Services.Transport.Http
                                             out ICodec selected)
         {
             var requestedFormat = GetFormatOrDefault(query);
-
             if (requestedFormat == null && (acceptTypes == null || acceptTypes.Count == 0))
             {
                 selected = @default;
@@ -361,42 +366,54 @@ namespace EventStore.Core.Services.Transport.Http
 
             if (requestedFormat != null)
             {
-                selected = supported.FirstOrDefault(c => c.SuitableFor(requestedFormat));
+                selected = supported.FirstOrDefault(c => c.SuitableForReponse(new AcceptComponent(requestedFormat)));
                 return selected != null;
             }
+            var parsedAcceptTypes =
+                acceptTypes.Select(ParseAcceptHeaderComponent)
+                           .Where(v => v != null)
+                           .OrderByDescending(v => v.Priority)
+                           .ToArray();
 
-            var mediaTypes = ExtractMediaTypes(acceptTypes.ToArray());
-            selected = mediaTypes.Select(mediaType => supported.FirstOrDefault(c => c.SuitableFor(mediaType)))
+            selected = parsedAcceptTypes.Select(type => supported.FirstOrDefault(c => c.SuitableForReponse(type)))
                                  .FirstOrDefault(corresponding => corresponding != null);
             if (selected != null)
             {
                 return true;
             }
 
-            if (mediaTypes.Contains(s => string.Equals(s, ContentType.Any, StringComparison.InvariantCultureIgnoreCase)))
-            {
-                selected = @default;
-                return true;
-            }
-
             return false;
         }
 
-        private List<string> ExtractMediaTypes(params string[] mimeTypes)
+        private AcceptComponent ParseAcceptHeaderComponent(string v)
         {
-            var result = new List<string>();
-            foreach (var mimeType in mimeTypes)
+            try
             {
-                System.Net.Mime.ContentType parsed;
-                if (ContentType.TryParse(mimeType, out parsed))
-                    result.Add(parsed.MediaType);
+                return new AcceptComponent(v);
             }
-            return result;
+            catch (ArgumentException)
+            {
+                return null;
+            }
         }
 
         private string GetFormatOrDefault(NameValueCollection query)
         {
-            return query != null && query.Count > 0 ? query.Get("format") : null;
+            var format = query != null && query.Count > 0 ? query.Get("format") : null;
+            if (format == null)
+                return null;
+            switch (format)
+            {
+                case "json":
+                    return "application/json";
+                case "text":
+                    return "text/plain";
+                case "xml":
+                    return "text/xml";
+                default:
+                    throw new NotSupportedException("Unknown format requested");
         }
+            return format;
+    }
     }
 }

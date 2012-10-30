@@ -11,6 +11,7 @@ namespace js1
 	PreludeScript::~PreludeScript()
 	{
 		global_template_factory.Dispose();
+		isolate_release(isolate);
 	}
 
 

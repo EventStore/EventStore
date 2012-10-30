@@ -38,7 +38,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<AdminController>();
 
-        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml };
+        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml };
         private static readonly ICodec DefaultResponseCodec = Codec.Json;
 
         public AdminController(IPublisher publisher) : base(publisher)

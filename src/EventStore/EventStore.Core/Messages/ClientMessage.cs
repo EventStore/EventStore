@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
@@ -44,6 +45,12 @@ namespace EventStore.Core.Messages
         WrongExpectedVersion = 4,
         StreamDeleted = 5,
         InvalidTransaction = 6
+    }
+
+    public enum RoutingStrategy
+    {
+        AllowForwarding,
+        DenyForwarding,
     }
 
     public static class ClientMessage
@@ -78,21 +85,49 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class DeniedToRoute : Message
+        {
+            public readonly Guid CorrelationId;
+            public readonly DateTime TimeStamp;
+
+            public readonly IPEndPoint InternalTcpEndPoint;
+            public readonly IPEndPoint ExternalTcpEndPoint;
+            public readonly IPEndPoint InternalHttpEndPoint;
+            public readonly IPEndPoint ExternalHttpEndPoint;
+
+            public DeniedToRoute(Guid correlationId,
+                                 DateTime timeStamp,
+                                 IPEndPoint internalTcpEndPoint,
+                                 IPEndPoint externalTcpEndPoint,
+                                 IPEndPoint internalHttpEndPoint,
+                                 IPEndPoint externalHttpEndPoint)
+            {
+                CorrelationId = correlationId;
+                TimeStamp = timeStamp;
+                InternalTcpEndPoint = internalTcpEndPoint;
+                ExternalTcpEndPoint = externalTcpEndPoint;
+                InternalHttpEndPoint = internalHttpEndPoint;
+                ExternalHttpEndPoint = externalHttpEndPoint;
+            }
+        }
+
         public class CreateStream: WriteRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly RoutingStrategy RoutingStrategy;
 
             public readonly string EventStreamId;
             public readonly byte[] Metadata;
 
-            public CreateStream(Guid correlationId, IEnvelope envelope, string eventStreamId, byte[] metadata)
+            public CreateStream(Guid correlationId, IEnvelope envelope, RoutingStrategy routingStrategy, string eventStreamId, byte[] metadata)
             {
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNull(eventStreamId, "eventStreamId");
                 
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                RoutingStrategy = routingStrategy;
                 EventStreamId = eventStreamId;
                 Metadata = metadata;
             }
@@ -120,12 +155,13 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly RoutingStrategy RoutingStrategy;
 
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
             public readonly Event[] Events;
 
-            public WriteEvents(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, Event[] events)
+            public WriteEvents(Guid correlationId, IEnvelope envelope, RoutingStrategy routingStrategy, string eventStreamId, int expectedVersion, Event[] events)
             {
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNull(eventStreamId, "eventStreamId");
@@ -134,14 +170,15 @@ namespace EventStore.Core.Messages
 
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                RoutingStrategy = routingStrategy;
 
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
                 Events = events;
             }
 
-            public WriteEvents(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, Event @event)
-                : this(correlationId, envelope, eventStreamId, expectedVersion, new[]{@event})
+            public WriteEvents(Guid correlationId, IEnvelope envelope, RoutingStrategy routingStrategy, string eventStreamId, int expectedVersion, Event @event)
+                : this(correlationId, envelope, routingStrategy, eventStreamId, expectedVersion, new[]{@event})
             {
             }
 
@@ -189,13 +226,16 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly RoutingStrategy RoutingStrategy;
+
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
 
-            public TransactionStart(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion)
+            public TransactionStart(Guid correlationId, IEnvelope envelope, RoutingStrategy routingStrategy, string eventStreamId, int expectedVersion)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                RoutingStrategy = routingStrategy;
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
             }
@@ -227,14 +267,17 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly RoutingStrategy RoutingStrategy;
+
             public readonly long TransactionId;
             public readonly string EventStreamId;
             public readonly Event[] Events;
 
-            public TransactionWrite(Guid correlationId, IEnvelope envelope, long transactionId, string eventStreamId, Event[] events)
+            public TransactionWrite(Guid correlationId, IEnvelope envelope, RoutingStrategy routingStrategy, long transactionId, string eventStreamId, Event[] events)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                RoutingStrategy = routingStrategy;
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
                 Events = events;
@@ -267,13 +310,16 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly RoutingStrategy RoutingStrategy;
+
             public readonly long TransactionId;
             public readonly string EventStreamId;
 
-            public TransactionCommit(Guid correlationId, IEnvelope envelope, long transactionId, string eventStreamId)
+            public TransactionCommit(Guid correlationId, IEnvelope envelope, RoutingStrategy routingStrategy, long transactionId, string eventStreamId)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                RoutingStrategy = routingStrategy;
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
             }
@@ -302,11 +348,14 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly RoutingStrategy RoutingStrategy;
+
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
 
             public DeleteStream(Guid correlationId,
                                 IEnvelope envelope,
+                                RoutingStrategy routingStrategy,
                                 string eventStreamId,
                                 int expectedVersion)
             {
@@ -315,6 +364,7 @@ namespace EventStore.Core.Messages
 
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                RoutingStrategy = routingStrategy;
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
             }

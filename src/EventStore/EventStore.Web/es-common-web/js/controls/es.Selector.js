@@ -25,15 +25,18 @@ es.Selector = function (opts) {
 
         $(appendToSelector + " .es-selector-all a").click(function (ev) {
             ev.preventDefault();
+            ev.stopPropagation();
 
             var checkedAttr = $(this).attr("data-show");
             if (typeof checkedAttr == "undefined")
-                return;
+                return false;
 
             var checked = checkedAttr === 'true';
             $.each(getTargetElems(), function () {
                 updateValue(this, checked);
             });
+
+            return false;
         });
     }
 
@@ -73,7 +76,6 @@ es.Selector = function (opts) {
     function getCheckbox(elem) {
 
         var index = $.inArray(elem, getTargetElems());
-        //var index = getTargetElems().index(elem);
         if (index == -1)
             return null; // ?
         var checkbox = checkBoxes.eq(index);
@@ -84,6 +86,4 @@ es.Selector = function (opts) {
         var checkbox = getCheckbox(elem);
         return checkbox.is(":checked");
     }
-
-
 };

@@ -6,6 +6,7 @@ es.tmpl = (function () {
 
     var _doLoad = null;
     var isLoaded = false;
+    var lastTemplateTriggered = false;
 
     registerOnLoad();
 
@@ -22,7 +23,9 @@ es.tmpl = (function () {
         });
     }
 
+    // body must be the last template to load
     function renderBody(opts) {
+        lastTemplateTriggered = true;
         renderInternal({
             tmplName: "body",
             scriptContSelector: "#r-body",
@@ -59,11 +62,8 @@ es.tmpl = (function () {
         var waitHandleCont = {};
         var wait = createWaitHandle(waitHandleCont);
 
-        // wait for all previous templates to render
-        $.when.apply($, templatesToWait)
-         .then(function () {
-             doRender();
-         });
+        var templateToWaitCopy = templatesToWait.slice();
+        doRender(templateToWaitCopy, waitHandleCont); // we copy to avoid waiting for itself
 
         templatesToWait.push(wait);
 
@@ -73,21 +73,26 @@ es.tmpl = (function () {
             }).promise();
         }
 
-        function doRender() {
+        function doRender(waitFor, waitHandleContainer) {
             var file = formatTemplatePath(tmplName);
             $.get(file, null, function (template) {
 
-                beforeLoad(data);
+                // wait for all previous templates to render
+                $.when.apply($, waitFor)
+                 .then(function () {
 
-                var tmpl = $.templates(template);
-                var htmlString = tmpl.render(data);
-                if (targetSelector) {
-                    $(targetSelector).replaceWith(htmlString);
-                }
+                     beforeLoad(data);
 
-                templatesToLoadCount--;
-                waitHandleCont.waitHandle.resolve();
-                tryTriggerOnLoad();
+                     var tmpl = $.templates(template);
+                     var htmlString = tmpl.render(data);
+                     if (targetSelector) {
+                         $(targetSelector).replaceWith(htmlString);
+                     }
+
+                     templatesToLoadCount--;
+                     waitHandleContainer.waitHandle.resolve();
+                     tryTriggerOnLoad();
+                 });
             });
         }
     }
@@ -98,8 +103,7 @@ es.tmpl = (function () {
 
         $.when.apply($, toWait)
          .then(function () {
-             // templatesToLoadCount is needed because we never know which template was the last. so we try to trigger on load on every loaded template.
-             if (templatesToLoadCount == 0 && !isLoaded) {
+             if (templatesToLoadCount === 0 && lastTemplateTriggered && !isLoaded) {
                  isLoaded = true;
                  $(document).ready(function () {
                      jQuery.extend($, jQuery);

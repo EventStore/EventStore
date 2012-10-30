@@ -184,7 +184,7 @@ namespace EventStore.Projections.Core.v8
             if (_reverseCommandHandlerException != null)
             {
                 throw new ApplicationException(
-                    "An exception occured while executing a reverse command handler. " + _reverseCommandHandlerException.Message,
+                    "An exception occurred while executing a reverse command handler. " + _reverseCommandHandlerException.Message,
                     _reverseCommandHandlerException);
             }
             return resultJson;
