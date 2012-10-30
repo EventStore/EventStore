@@ -30,7 +30,8 @@ namespace EventStore.Transport.Http
     public interface ICodec
     {
         string ContentType { get; }
-        bool SuitableFor(string type);
+        bool CanParse(string format);
+        bool SuitableForReponse(AcceptComponent component);
 
         T From<T>(string text);
         string To<T>(T value);

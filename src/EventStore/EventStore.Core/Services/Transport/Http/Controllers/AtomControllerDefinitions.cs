@@ -47,16 +47,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private static readonly ICodec[] ServiceDocCodecs = new[]
                                                             {
                                                                 Codec.Xml,
-                                                                Codec.CreateCustom(Codec.Xml, ContentType.AtomServiceDoc, "atomsvc"),
+                                                                Codec.CreateCustom(Codec.Xml, ContentType.AtomServiceDoc),
                                                                 Codec.Json,
-                                                                Codec.CreateCustom(Codec.Json, ContentType.AtomServiceDocJson, "atomsvcxj")
+                                                                Codec.CreateCustom(Codec.Json, ContentType.AtomServiceDocJson)
                                                             };
         private static readonly ICodec[] AtomCodecs = new[]
                                                       {
                                                           Codec.Xml,
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, "atom"),
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom),
                                                           Codec.Json,
-                                                          Codec.CreateCustom(Codec.Json, ContentType.AtomJson, "atomxj")
+                                                          Codec.CreateCustom(Codec.Json, ContentType.AtomJson)
                                                       };
         private static readonly ICodec DefaultResponseCodec = Codec.Xml;
 

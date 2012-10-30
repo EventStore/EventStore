@@ -334,16 +334,10 @@ namespace EventStore.Core.Services.Transport.Http
                 return true;
             }
 
-            var mediaTypes = ExtractMediaTypes(contentType);
-            if (mediaTypes.Any())
-            {
-                requestCodec = supportedCodecs.SingleOrDefault(c => c.SuitableFor(mediaTypes.Single()));
+            requestCodec = supportedCodecs.SingleOrDefault(c => c.CanParse(contentType));
                 return requestCodec != null;
             }
 
-            requestCodec = null;
-            return false;
-        }
 
         private bool TrySelectResponseCodec(NameValueCollection query,
                                             ICollection<string> acceptTypes,
@@ -361,42 +355,54 @@ namespace EventStore.Core.Services.Transport.Http
 
             if (requestedFormat != null)
             {
-                selected = supported.FirstOrDefault(c => c.SuitableFor(requestedFormat));
+                selected = supported.FirstOrDefault(c => c.SuitableForReponse(new AcceptComponent(requestedFormat)));
                 return selected != null;
             }
+            var parsedAcceptTypes =
+                acceptTypes.Select(ParseAcceptHeaderComponent)
+                           .Where(v => v != null)
+                           .OrderByDescending(v => v.Priority)
+                           .ToArray();
 
-            var mediaTypes = ExtractMediaTypes(acceptTypes.ToArray());
-            selected = mediaTypes.Select(mediaType => supported.FirstOrDefault(c => c.SuitableFor(mediaType)))
+            selected = parsedAcceptTypes.Select(type => supported.FirstOrDefault(c => c.SuitableForReponse(type)))
                                  .FirstOrDefault(corresponding => corresponding != null);
             if (selected != null)
             {
                 return true;
             }
 
-            if (mediaTypes.Contains(s => string.Equals(s, ContentType.Any, StringComparison.InvariantCultureIgnoreCase)))
-            {
-                selected = @default;
-                return true;
-            }
-
             return false;
         }
 
-        private List<string> ExtractMediaTypes(params string[] mimeTypes)
+        private AcceptComponent ParseAcceptHeaderComponent(string v)
         {
-            var result = new List<string>();
-            foreach (var mimeType in mimeTypes)
+            try
             {
-                System.Net.Mime.ContentType parsed;
-                if (ContentType.TryParse(mimeType, out parsed))
-                    result.Add(parsed.MediaType);
+                return new AcceptComponent(v);
             }
-            return result;
+            catch (ArgumentException)
+            {
+                return null;
+            }
         }
 
         private string GetFormatOrDefault(NameValueCollection query)
         {
-            return query != null && query.Count > 0 ? query.Get("format") : null;
+            var format = query != null && query.Count > 0 ? query.Get("format") : null;
+            if (format == null)
+                return null;
+            switch (format)
+            {
+                case "json":
+                    return "application/json";
+                case "text":
+                    return "text/plain";
+                case "xml":
+                    return "application/xml";
+                default:
+                    throw new NotSupportedException("Unknown format requested");
         }
+            return format;
+    }
     }
 }

@@ -51,9 +51,9 @@ namespace EventStore.Core.Services.Transport.Http
         public static readonly XmlCodec Xml = new XmlCodec();
         public static readonly TextCodec Text = new TextCodec();
 
-        public static ICodec CreateCustom(ICodec codec, string contentType, string format)
+        public static ICodec CreateCustom(ICodec codec, string contentType)
         {
-            return new CustomCodec(codec, contentType, format);
+            return new CustomCodec(codec, contentType);
         }
     }
 
@@ -67,9 +67,14 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public bool SuitableFor(string type)
+        public bool CanParse(string format)
         {
-            throw new NotSupportedException();
+            return false;
+        }
+
+        public bool SuitableForReponse(AcceptComponent component)
+        {
+            return false;
         }
 
         public T From<T>(string text)
@@ -93,7 +98,12 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public bool SuitableFor(string type)
+        public bool CanParse(string format)
+        {
+            return true;
+        }
+
+        public bool SuitableForReponse(AcceptComponent component)
         {
             return true;
         }
@@ -121,17 +131,21 @@ namespace EventStore.Core.Services.Transport.Http
 
         private readonly ICodec _codec;
         private readonly string _contentType;
-        private readonly string _format;
+        private readonly string _type;
+        private readonly string _subtype;
 
-        internal CustomCodec(ICodec codec, string contentType, string format)
+        internal CustomCodec(ICodec codec, string contentType)
         {
             Ensure.NotNull(codec, "codec");
             Ensure.NotNull(contentType, "contentType");
-            Ensure.NotNull(format, "format");
 
             _codec = codec;
             _contentType = contentType;
-            _format = format;
+            var parts = contentType.Split(new[] {'/'}, 2);
+            if (parts.Length != 2)
+                throw new ArgumentException("contentType");
+            _type = parts[0];
+            _subtype = parts[1];
         }
 
         public string ContentType
@@ -142,10 +156,17 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public bool SuitableFor(string type)
+        public bool CanParse(string format)
         {
-            return string.Equals(_contentType, type, StringComparison.InvariantCultureIgnoreCase) ||
-                   string.Equals(_format, type, StringComparison.InvariantCultureIgnoreCase);
+            return string.Equals(format, _contentType, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public bool SuitableForReponse(AcceptComponent component)
+        {
+            return component.MediaType == "*"
+                   || (string.Equals(component.MediaType, _type)
+                       && (component.MediaSubtype == "*"
+                           || string.Equals(component.MediaSubtype, _subtype, StringComparison.OrdinalIgnoreCase)));
         }
 
         public T From<T>(string text)
@@ -185,10 +206,17 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public bool SuitableFor(string type)
+        public bool CanParse(string format)
         {
-            return string.Equals("json", type, StringComparison.InvariantCultureIgnoreCase)
-                   || string.Equals(ContentType, type, StringComparison.InvariantCultureIgnoreCase);
+            return string.Equals(ContentType, format, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public bool SuitableForReponse(AcceptComponent component)
+        {
+            return component.MediaType == "*"
+                   || (string.Equals(component.MediaType, "application")
+                       && (component.MediaSubtype == "*"
+                           || string.Equals(component.MediaSubtype, "json", StringComparison.OrdinalIgnoreCase)));
         }
 
         public T From<T>(string text)
@@ -255,16 +283,17 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public bool SuitableFor(string type)
+        public bool CanParse(string format)
         {
-            if (string.Equals("xml", type, StringComparison.InvariantCultureIgnoreCase))
-                return true;
-            if (string.Equals("application/xml", type, StringComparison.InvariantCultureIgnoreCase))
-                return true;
-            if (string.Equals(ContentType, type, StringComparison.InvariantCultureIgnoreCase))
-                return true;
+            return string.Equals(ContentType, format, StringComparison.OrdinalIgnoreCase);
+        }
 
-            return false;
+        public bool SuitableForReponse(AcceptComponent component)
+        {
+            return component.MediaType == "*"
+                   || (string.Equals(component.MediaType, "text")
+                       && (component.MediaSubtype == "*"
+                           || string.Equals(component.MediaSubtype, "xml", StringComparison.OrdinalIgnoreCase)));
         }
 
         public T From<T>(string text)
@@ -353,10 +382,17 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public bool SuitableFor(string type)
+        public bool CanParse(string format)
         {
-            return string.Equals("text", type, StringComparison.InvariantCultureIgnoreCase) ||
-                   string.Equals(ContentType, type, StringComparison.InvariantCultureIgnoreCase);
+            return string.Equals(ContentType, format, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public bool SuitableForReponse(AcceptComponent component)
+        {
+            return component.MediaType == "*"
+                   || (string.Equals(component.MediaType, "text")
+                       && (component.MediaSubtype == "*"
+                           || string.Equals(component.MediaSubtype, "plain", StringComparison.OrdinalIgnoreCase)));
         }
 
         public T From<T>(string text)
