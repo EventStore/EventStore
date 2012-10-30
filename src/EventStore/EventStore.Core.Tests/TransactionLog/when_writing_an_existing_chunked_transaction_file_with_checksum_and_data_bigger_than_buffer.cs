@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.TransactionLog
         private readonly Guid _eventId = Guid.NewGuid();
         private InMemoryCheckpoint _checkpoint;
 
-        [Test, Ignore("On MONO something strange is happening just for this test, will look later.")]
+        [Test/*, Ignore("On MONO something strange is happening just for this test, will look later.")*/]
         public void a_record_can_be_written()
         {
             var filename = Path.Combine(PathName, "prefix.tf0");
@@ -75,9 +75,6 @@ namespace EventStore.Core.Tests.TransactionLog
                                               data: new byte[8000],
                                               metadata: new byte[] { 7, 17 });
 
-            Console.WriteLine(record.GetSizeWithLengthPrefixAndSuffix());
-            Console.WriteLine(record.GetSizeWithLengthPrefixAndSuffix() + 137);
-
             long pos;
             Assert.IsTrue(writer.Write(record, out pos));
             writer.Close();
@@ -89,9 +86,6 @@ namespace EventStore.Core.Tests.TransactionLog
                 filestream.Seek(ChunkHeader.Size + 137 + sizeof(int), SeekOrigin.Begin);
                 var reader = new BinaryReader(filestream);
                 var read = LogRecord.ReadFrom(reader);
-
-                Console.WriteLine(string.Join("\n", Directory.EnumerateFiles(PathName)));
-
                 Assert.AreEqual(record, read);
             }
         }

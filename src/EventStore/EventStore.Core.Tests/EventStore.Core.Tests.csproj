@@ -186,9 +186,6 @@
     <Compile Include="Infrastructure\Services\Storage\when_having_stream_with_maxage_specified.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_having_stream_with_maxcount_specified.cs" />
     <Compile Include="Infrastructure\Services\Storage\when_rebuilding_index_for_partially_persisted_transaction.cs" />
-    <Compile Include="Integration\IntegrationTestBase.cs" />
-    <Compile Include="Integration\EnvelopeCallback.cs" />
-    <Compile Include="Integration\when_writing_single_event_and_then_reading_it.cs" />
     <Compile Include="Hashes\MD5HashTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\FormatterTests.cs" />
     <Compile Include="Infrastructure\Services\Monitoring\StatsParserTests.cs" />
