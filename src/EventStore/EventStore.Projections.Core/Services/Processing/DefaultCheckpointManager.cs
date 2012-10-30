@@ -121,7 +121,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, _projectionCheckpointStreamId,
+                    Guid.NewGuid(), _writeDispatcher.Envelope, RoutingStrategy.AllowForwarding, _projectionCheckpointStreamId,
                     _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished), WriteCheckpointEventCompleted);
         }
 

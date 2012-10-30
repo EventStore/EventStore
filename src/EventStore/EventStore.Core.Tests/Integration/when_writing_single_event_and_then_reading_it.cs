@@ -48,6 +48,7 @@ namespace EventStore.Core.Tests.Integration
             _writeCallback = new EnvelopeCallback<ClientMessage.WriteEventsCompleted>();
             Publish(new ClientMessage.WriteEvents(Guid.NewGuid(),
                                                   new SendToThisEnvelope(_writeCallback), 
+                                                  RoutingStrategy.AllowForwarding, 
                                                   _eventStreamId,
                                                   _expectedVersion, 
                                                   new Event(_eventId, _eventType, false, _eventData, _eventMetadata)));

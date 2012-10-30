@@ -84,6 +84,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         ScavengeDatabase = 0xD0,
 
-        BadRequest = 0xF0
+        BadRequest = 0xf0,
+        DeniedToRoute = 0xf1
     }
 }
