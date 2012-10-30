@@ -44,7 +44,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private Guid _correlationId;
         private readonly object _corrIdLock = new object();
 
-        private readonly RoutingStrategy _routing;
+        private readonly bool _forward;
         private readonly string _stream;
         private readonly byte[] _metadata;
 
@@ -59,14 +59,14 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public CreateStreamOperation(TaskCompletionSource<object> source,
                                      Guid correlationId,
-                                     RoutingStrategy routing,
+                                     bool forward,
                                      string stream,
                                      byte[] metadata)
         {
             _source = source;
 
             _correlationId = correlationId;
-            _routing = routing;
+            _forward = forward;
             _stream = stream;
             _metadata = metadata;
         }
@@ -81,7 +81,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.CreateStream(_stream, _metadata, _routing);
+                var dto = new ClientMessages.CreateStream(_stream, _metadata, _forward);
                 return new TcpPackage(TcpCommand.CreateStream, _correlationId, dto.Serialize());
             }
         }

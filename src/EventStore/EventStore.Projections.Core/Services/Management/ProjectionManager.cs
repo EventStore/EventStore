@@ -398,7 +398,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, RoutingStrategy.AllowForwarding, "$projections-$all", ExpectedVersion.Any,
+                    Guid.NewGuid(), _writeDispatcher.Envelope, true, "$projections-$all", ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "ProjectionCreated", false, Encoding.UTF8.GetBytes(name), new byte[0])),
                 m => WriteProjectionRegistrationCompleted(m, completed, name));
         }

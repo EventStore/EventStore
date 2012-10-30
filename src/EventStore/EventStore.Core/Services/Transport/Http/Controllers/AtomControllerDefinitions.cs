@@ -372,7 +372,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   Configure.CreateStreamCompleted);
             var msg = new ClientMessage.CreateStream(create.CorrelationId == Guid.Empty ? Guid.NewGuid() : create.CorrelationId,
                                                      envelope,
-                                                     RoutingStrategy.AllowForwarding, 
+                                                     true, 
                                                      create.EventStreamId,
                                                      Encoding.UTF8.GetBytes(create.Metadata ?? string.Empty));
             Publish(msg);
@@ -402,7 +402,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   Configure.DeleteStreamCompleted);
             var msg = new ClientMessage.DeleteStream(delete.CorrelationId == Guid.Empty ? Guid.NewGuid() : delete.CorrelationId,
                                                      envelope,
-                                                     RoutingStrategy.AllowForwarding, 
+                                                     true, 
                                                      stream, 
                                                      delete.ExpectedVersion);
             Publish(msg);
@@ -446,7 +446,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var msg = new ClientMessage.WriteEvents(
                 write.CorrelationId == Guid.Empty ? Guid.NewGuid() : write.CorrelationId,
                 envelope,
-                RoutingStrategy.AllowForwarding,
+                true,
                 stream,
                 write.ExpectedVersion,
                 write.Events.Select(EventConvertion.ConvertOnWrite).ToArray());

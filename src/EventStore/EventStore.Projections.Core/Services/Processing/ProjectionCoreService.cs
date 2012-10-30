@@ -121,7 +121,7 @@ namespace EventStore.Projections.Core.Services.Processing
             // and write it after startAtCurrent to fill buffer
             _publisher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), new NoopEnvelope(), RoutingStrategy.AllowForwarding, "$temp", ExpectedVersion.Any,
+                    Guid.NewGuid(), new NoopEnvelope(), true, "$temp", ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "Starting", false, new byte[0], new byte[0])));
         }
 

@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private Guid _corrId;
         private readonly object _corrIdLock = new object();
 
-        private readonly RoutingStrategy _routing;
+        private readonly bool _forward;
         private readonly long _transactionId;
         private readonly string _stream;
         private readonly IEnumerable<IEvent> _events;
@@ -62,7 +62,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public TransactionalWriteOperation(TaskCompletionSource<object> source,
                                            Guid corrId,
-                                           RoutingStrategy routing,
+                                           bool forward,
                                            long transactionId,
                                            string stream,
                                            IEnumerable<IEvent> events)
@@ -70,7 +70,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _source = source;
 
             _corrId = corrId;
-            _routing = routing;
+            _forward = forward;
             _transactionId = transactionId;
             _stream = stream;
             _events = events;
@@ -87,7 +87,7 @@ namespace EventStore.ClientAPI.ClientOperations
             lock (_corrIdLock)
             {
                 var dtos = _events.Select(x => new ClientMessages.Event(x.EventId, x.Type, x.Data, x.Metadata)).ToArray();
-                var write = new ClientMessages.TransactionWrite(_transactionId, _stream, dtos, _routing);
+                var write = new ClientMessages.TransactionWrite(_transactionId, _stream, dtos, _forward);
                 return new TcpPackage(TcpCommand.TransactionWrite, _corrId, write.Serialize());
             }
         }
