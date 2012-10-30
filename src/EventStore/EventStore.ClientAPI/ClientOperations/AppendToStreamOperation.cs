@@ -46,6 +46,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private Guid _correlationId;
         private readonly object _corrIdLock = new object();
 
+        private readonly RoutingStrategy _routing;
         private readonly string _stream;
         private readonly int _expectedVersion;
         private readonly IEnumerable<IEvent> _events;
@@ -61,6 +62,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public AppendToStreamOperation(TaskCompletionSource<object> source,
                                        Guid corrId,
+                                       RoutingStrategy routing,
                                        string stream,
                                        int expectedVersion,
                                        IEnumerable<IEvent> events)
@@ -68,6 +70,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _source = source;
 
             _correlationId = corrId;
+            _routing = routing;
             _stream = stream;
             _expectedVersion = expectedVersion;
             _events = events;
@@ -84,7 +87,7 @@ namespace EventStore.ClientAPI.ClientOperations
             lock (_corrIdLock)
             {
                 var dtos = _events.Select(x => new ClientMessages.Event(x.EventId, x.Type, x.Data, x.Metadata)).ToArray();
-                var write = new ClientMessages.WriteEvents(_stream, _expectedVersion, dtos);
+                var write = new ClientMessages.WriteEvents(_stream, _expectedVersion, dtos, _routing);
                 return new TcpPackage(TcpCommand.WriteEvents, _correlationId, write.Serialize());
             }
         }
@@ -93,6 +96,17 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             try
             {
+                if (package.Command == TcpCommand.DeniedToRoute)
+                {
+                    var route = package.Data.Deserialize<ClientMessages.DeniedToRoute>();
+                    return new InspectionResult(InspectionDecision.NotifyError,
+                        new OperationCannotBeHandledByInstanceException(string.Format("Operation cannot be handled by server on current endpoint. " +
+                                                                                      "Try these instead : [tcp {0}][http {1}]",
+                                                                                      route.ExternalTcpEndPoint,
+                                                                                      route.ExternalHttpEndPoint),
+                                                                        route.ExternalTcpEndPoint,
+                                                                        route.ExternalHttpEndPoint));
+                }
                 if (package.Command != TcpCommand.WriteEventsCompleted)
                 {
                     return new InspectionResult(InspectionDecision.NotifyError, 

@@ -44,6 +44,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private Guid _correlationId;
         private readonly object _corrIdLock = new object();
 
+        private readonly RoutingStrategy _routing;
         private readonly string _stream;
         private readonly int _expectedVersion;
 
@@ -58,12 +59,14 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public DeleteStreamOperation(TaskCompletionSource<object> source,
                                      Guid correlationId, 
+                                     RoutingStrategy routing,
                                      string stream, 
                                      int expectedVersion)
         {
             _source = source;
 
             _correlationId = correlationId;
+            _routing = routing;
             _stream = stream;
             _expectedVersion = expectedVersion;
         }
@@ -72,7 +75,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.DeleteStream(_stream, _expectedVersion);
+                var dto = new ClientMessages.DeleteStream(_stream, _expectedVersion, _routing);
                 return new TcpPackage(TcpCommand.DeleteStream, _correlationId, dto.Serialize());
             }
         }
@@ -87,6 +90,17 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             try
             {
+                if (package.Command == TcpCommand.DeniedToRoute)
+                {
+                    var route = package.Data.Deserialize<ClientMessages.DeniedToRoute>();
+                    return new InspectionResult(InspectionDecision.NotifyError,
+                        new OperationCannotBeHandledByInstanceException(string.Format("Operation cannot be handled by server on current endpoint. " +
+                                                                                      "Try these instead : [tcp {0}][http {1}]",
+                                                                                      route.ExternalTcpEndPoint,
+                                                                                      route.ExternalHttpEndPoint),
+                                                                        route.ExternalTcpEndPoint,
+                                                                        route.ExternalHttpEndPoint));
+                }
                 if (package.Command != TcpCommand.DeleteStreamCompleted)
                 {
                     return new InspectionResult(InspectionDecision.NotifyError,

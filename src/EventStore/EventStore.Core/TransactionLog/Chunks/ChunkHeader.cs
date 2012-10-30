@@ -92,5 +92,15 @@ namespace EventStore.Core.TransactionLog.Chunks
             var chunkScavengeVersion = reader.ReadInt32();
             return new ChunkHeader(version, chunkSize, chunkStartNumber, chunkEndNumber, chunkScavengeVersion);
         }
+
+        public override string ToString()
+        {
+            return string.Format("Version: {0}, ChunkSize: {1}, ChunkStartNumber: {2}, ChunkEndNumber: {3}, ChunkScavengeVersion: {4}",
+                                 Version,
+                                 ChunkSize,
+                                 ChunkStartNumber,
+                                 ChunkEndNumber,
+                                 ChunkScavengeVersion);
+        }
     }
 }

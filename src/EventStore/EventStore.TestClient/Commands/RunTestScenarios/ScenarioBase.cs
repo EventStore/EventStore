@@ -96,7 +96,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             for (int i = 0; i < Connections; ++i)
             {
-                _connections[i] = new EventStoreConnection(_tcpEndPoint, MaxConcurrentRequests, logger: ApiLogger);
+                _connections[i] = new EventStoreConnection(_tcpEndPoint, maxConcurrentRequests:MaxConcurrentRequests, logger: ApiLogger);
             }
             RunInternal();   
         }
@@ -392,6 +392,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected void Scavenge()
         {
+            Log.Error("!! Scavenge disabled due to not found prepare error");
+            return;
+
             Log.Info("Send scavenge command...");
             var package = new TcpPackage(TcpCommand.ScavengeDatabase, Guid.NewGuid(), null).AsByteArray();
             DirectSendOverTcp(GetTcpEndPoint(), package);

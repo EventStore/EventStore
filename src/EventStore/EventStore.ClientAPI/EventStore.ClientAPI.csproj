@@ -90,6 +90,7 @@
     <Compile Include="Connection\SubscriptionsChannel.cs" />
     <Compile Include="Connection\WorkItem.cs" />
     <Compile Include="Exceptions\CannotEstablishConnectionException.cs" />
+    <Compile Include="Exceptions\OperationCannotBeHandledByInstanceException.cs" />
     <Compile Include="Exceptions\ProjectionCommandFailedException.cs" />
     <Compile Include="Exceptions\InvalidTransactionException.cs" />
     <Compile Include="Exceptions\StreamDeletedException.cs" />
@@ -119,6 +120,7 @@
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="Position.cs" />
     <Compile Include="RecordedEvent.cs" />
+    <Compile Include="RoutingStrategy.cs" />
     <Compile Include="StreamPosition.cs" />
     <Compile Include="SystemData\EventLinkPair.cs" />
     <Compile Include="SystemData\EventRecord.cs" />
