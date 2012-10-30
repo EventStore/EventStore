@@ -7,25 +7,22 @@ namespace js1 {
 	{
 	public:
 		// ignore null prelude script - likely from load module callback and isolate is already set
-		PreludeScope(CompiledScript *prelude, bool deleting = false) :
-			isolate(prelude ? prelude->get_isolate() : NULL), deleting(deleting)
+		PreludeScope(CompiledScript *prelude) :
+			isolate(prelude == NULL ? v8::Isolate::GetCurrent() : prelude->get_isolate())
 		{
-			if (isolate)
-				isolate->Enter();
+			isolate->Enter();
+			CompiledScript::isolate_add_ref(isolate);
 		}
 		~PreludeScope()
 		{
-			if (isolate) {
-				// do not exit if we havn't entered
-				v8::Isolate *current = v8::Isolate::GetCurrent();
-				if (current)
-					current->Exit();
-				if (deleting)
-					current->Dispose();
-			}
+			bool do_delete = false;
+			size_t counter = CompiledScript::isolate_release(isolate);
+			do_delete = counter == 0;
+			isolate->Exit();
+			if (do_delete)
+				isolate->Dispose();
 		}
 	private:
-		bool deleting;
 		v8::Isolate *isolate;
 		PreludeScope(const PreludeScope &);
 		PreludeScope& operator=(const PreludeScope &);

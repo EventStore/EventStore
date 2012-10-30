@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public class ReadEventDataController : CommunicationController
     {
-        private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json, Codec.Xml, Codec.Text};
+        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
         private static readonly ICodec DefaultResponseCodec = Codec.Json;
 
         public ReadEventDataController(IPublisher publisher) : base(publisher)

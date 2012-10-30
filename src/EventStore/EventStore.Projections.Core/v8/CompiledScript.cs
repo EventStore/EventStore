@@ -78,18 +78,9 @@ namespace EventStore.Projections.Core.v8
         {
             if (_disposed)
                 return;
-            if (!disposing)
-            {
-                throw new Exception(
-                    "CompiledScript finalizer has been called, but scripts cannot be disposed from other threads. Original script file name: "
-                    + _fileName);
-            }
-            else
-            {
-                var scriptHandle = _script;
-                _script = IntPtr.Zero;
-                Js1.DisposeScript(scriptHandle);
-            }
+            var scriptHandle = _script;
+            _script = IntPtr.Zero;
+            Js1.DisposeScript(scriptHandle);
             _disposed = true;
         }
 

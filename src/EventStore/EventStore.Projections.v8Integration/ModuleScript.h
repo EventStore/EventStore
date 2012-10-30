@@ -9,7 +9,10 @@ namespace js1 {
 	{
 	public:
 		ModuleScript(PreludeScript *prelude_) :
-			isolate(v8::Isolate::GetCurrent()), prelude(prelude_) {};
+			isolate(v8::Isolate::GetCurrent()), prelude(prelude_) 
+		{
+			isolate_add_ref(isolate);
+		};
 
 		virtual ~ModuleScript();
 

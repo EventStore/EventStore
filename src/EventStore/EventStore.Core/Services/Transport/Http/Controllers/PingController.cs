@@ -38,7 +38,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<PingController>();
 
-        private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json, Codec.Xml, Codec.Text};
+        private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
         private static readonly ICodec DefaultResponseCodec = Codec.Json;
 
         public void Subscribe(IHttpService service, HttpMessagePipe pipe)
