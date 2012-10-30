@@ -34,27 +34,15 @@ namespace EventStore.ClientAPI.Connection
             _log = LogManager.GetLogger();
         }
 
-        public void Connect()
+        public void Close(bool stopBackgroundThread = true)
         {
-            _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
-
-            if (_executionThread == null)
+            lock (_subscriptionChannelLock)
             {
-                _executionThread = new Thread(ExecuteUserCallbacks)
-                {
-                        IsBackground = true,
-                        Name = "SubscriptionsChannel user callbacks thread"
-                };
-                _executionThread.Start();
+                if (_connection != null)
+                    _connection.Close();
+
+                _stopExecutionThread = stopBackgroundThread;
             }
-        }
-
-        public void Close()
-        {
-            if (_connection != null)
-                _connection.Close();
-
-            _stopExecutionThread = true;
         }
 
         public Task Subscribe(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
@@ -218,7 +206,23 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public void EnsureConnected()
+        private void Connect(IPEndPoint endPoint)
+        {
+            _connection = _connector.CreateTcpConnection(endPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
+
+            if (_executionThread == null)
+            {
+                _stopExecutionThread = false;
+                _executionThread = new Thread(ExecuteUserCallbacks)
+                {
+                    IsBackground = true,
+                    Name = "SubscriptionsChannel user callbacks thread"
+                };
+                _executionThread.Start();
+            }
+        }
+
+        public void EnsureConnected(IPEndPoint endPoint)
         {
             if (!_connectedEvent.WaitOne(0))
             {
@@ -226,7 +230,7 @@ namespace EventStore.ClientAPI.Connection
                 {
                     if (!_connectedEvent.WaitOne(0))
                     {
-                        Connect();
+                        Connect(endPoint);
                         if (!_connectedEvent.WaitOne(500))
                         {
                             _log.Error("Cannot connect to {0}", _connection.EffectiveEndPoint);

@@ -34,11 +34,13 @@ namespace EventStore.ClientAPI.SystemData
     {
         public readonly InspectionDecision Decision;
         public readonly Exception Error;
+        public readonly object Data;
 
-        public InspectionResult(InspectionDecision decision, Exception error = null)
+        public InspectionResult(InspectionDecision decision, Exception error = null, object data = null)
         {
             Decision = decision;
             Error = error;
+            Data = data;
         }
     }
 }

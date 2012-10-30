@@ -459,10 +459,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private TcpPackage WrapDeniedToRoute(ClientMessage.DeniedToRoute msg)
         {
-            var dto = new ClientMessageDto.DeniedToRoute(msg.TimeStamp,
-                                                         msg.InternalTcpEndPoint,
-                                                         msg.ExternalTcpEndPoint,
-                                                         msg.InternalHttpEndPoint,
+            var dto = new ClientMessageDto.DeniedToRoute(msg.ExternalTcpEndPoint,
                                                          msg.ExternalHttpEndPoint);
             return new TcpPackage(TcpCommand.DeniedToRoute, msg.CorrelationId, dto.Serialize());
         }

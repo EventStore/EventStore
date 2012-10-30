@@ -39,23 +39,22 @@ namespace EventStore.ClientAPI.Transport.Tcp
     {
         private readonly ILogger _log;
         private readonly TcpClientConnector _connector = new TcpClientConnector();
-        private readonly IPEndPoint _tcpEndpoint;
 
-        public TcpConnector(IPEndPoint tcpEndpoint)
+        public TcpConnector()
         {
-            _tcpEndpoint = tcpEndpoint;
             _log = LogManager.GetLogger();
         }
 
-        public TcpTypedConnection CreateTcpConnection(Action<TcpTypedConnection, TcpPackage> handlePackage,
-                                              Action<TcpTypedConnection> connectionEstablished,
-                                              Action<TcpTypedConnection, IPEndPoint, SocketError> connectionClosed)
+        public TcpTypedConnection CreateTcpConnection(IPEndPoint tcpEndpoint,
+                                                      Action<TcpTypedConnection, TcpPackage> handlePackage,
+                                                      Action<TcpTypedConnection> connectionEstablished,
+                                                      Action<TcpTypedConnection, IPEndPoint, SocketError> connectionClosed)
         {
             var connectionCreatedEvent = new AutoResetEvent(false);
             TcpTypedConnection typedConnection = null;
 
             var connection = _connector.ConnectTo(
-                _tcpEndpoint,
+                tcpEndpoint,
                 tcpConnection =>
                 {
                     _log.Debug("Connected to [{0}].", tcpConnection.EffectiveEndPoint);
