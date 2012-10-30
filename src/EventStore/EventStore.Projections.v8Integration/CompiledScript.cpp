@@ -88,5 +88,20 @@ namespace js1
 		last_exception.Dispose();
 		last_exception = v8::Persistent<v8::Value>::New(exception);
 	}
+
+	void CompiledScript::isolate_add_ref(v8::Isolate * isolate) 
+	{
+		size_t counter = reinterpret_cast<size_t>(isolate->GetData());
+		counter++;
+		isolate->SetData(reinterpret_cast<void *>(counter));
+	}
+
+	size_t CompiledScript::isolate_release(v8::Isolate * isolate) 
+	{
+		size_t counter = reinterpret_cast<size_t>(isolate->GetData());
+		counter--;
+		isolate->SetData(reinterpret_cast<void *>(counter));
+		return counter;
+	}
 }
 
