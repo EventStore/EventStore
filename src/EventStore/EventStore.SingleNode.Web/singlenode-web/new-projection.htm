@@ -25,7 +25,9 @@
                 <label class="control-label" for="query">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <textarea id="query" cols="80" rows="20" class="span5"></textarea>
+                    <textarea id="query" cols="80" rows="20" class="span5">
+    fromAll().whenAny(function(state,event) { return state; });
+                    </textarea>
                 </div>
             </div>
             <div class="control-group">
@@ -65,7 +67,6 @@
     <script type="text/javascript">
         $(function(){
             $("#post").click(function () {
-                debugger;
                 function on_posted(data, textStatus, jqXHR) {
                     var statusUrl = jqXHR.getResponseHeader('Location');
                     $('#log').append("<a href='" + statusUrl + "'>" + statusUrl + "</a>");

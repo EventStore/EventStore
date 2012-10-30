@@ -63,7 +63,7 @@
     <Content Include="singlenode-web\health-charts.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="singlenode-web\index.htm">
+    <Content Include="singlenode-web\home.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="singlenode-web\js\es.menu.js">

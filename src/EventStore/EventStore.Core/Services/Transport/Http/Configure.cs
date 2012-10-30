@@ -173,9 +173,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (completed == null)
                 return InternalServerEror(entity, message);
 
-            // TODO MM: use this only in cluster node
-            var allowManagerGetStatsHeader = new KeyValuePair<string, string>("Access-Control-Allow-Origin", "http://127.0.0.1:30777");
-            return completed.Success ? OkNoCache(entity, message, allowManagerGetStatsHeader) : NotFound(entity, message);
+            return completed.Success ? OkNoCache(entity, message) : NotFound(entity, message);
         }
 
         public static ResponseConfiguration CreateStreamCompleted(HttpEntity entity, Message message)

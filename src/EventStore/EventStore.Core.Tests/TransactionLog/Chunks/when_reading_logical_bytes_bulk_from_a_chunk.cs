@@ -1,4 +1,6 @@
+using System;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Chunks
@@ -9,8 +11,6 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [Test]
         public void the_file_will_not_be_deleted_until_reader_released()
         {
-            Assert.Inconclusive("Should be modified to write some data to TFChunk.");
-
             var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 2000, 0, 0);
             using (var reader = chunk.AcquireReader())
             {
@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                 var buffer = new byte[1024];
                 var result = reader.ReadNextLogicalBytes(1024, buffer);
                 Assert.IsFalse(result.IsEOF);
-                Assert.AreEqual(1024, result.BytesRead);
+                Assert.AreEqual(0, result.BytesRead); // no data yet
             }
             chunk.WaitForDestroy(5000);
         }
@@ -73,9 +73,11 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [Test]new 
         public void if_asked_for_more_than_buffer_size_will_only_read_buffer_size()
         {
-            Assert.Inconclusive("Should be modified to write some data to TFChunk.");
-
             var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 3000, 0, 0);
+
+            var rec = LogRecord.Prepare(0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "ES", -1, PrepareFlags.None, "ET", new byte[2000], null);
+            Assert.IsTrue(chunk.TryAppend(rec).Success, "Record wasn't appended");
+
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
@@ -88,17 +90,39 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [Test]
-        public void a_read_past_eof_returns_eof_and_no_footer()
+        public void a_read_past_eof_doesnt_return_eof_if_chunk_is_not_yet_completed()
         {
-            Assert.Inconclusive("Should be modified to write some data to TFChunk.");
-
             var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 300, 0, 0);
+            var rec = LogRecord.Commit(0, Guid.NewGuid(), 0, 0);
+            Assert.IsTrue(chunk.TryAppend(rec).Success, "Record wasn't appended");
             using (var reader = chunk.AcquireReader())
             {
                 var buffer = new byte[1024];
                 var result = reader.ReadNextLogicalBytes(1024, buffer);
-                Assert.IsTrue(result.IsEOF);
-                Assert.AreEqual(300, result.BytesRead); //does not includes header and footer space
+                Assert.IsFalse(result.IsEOF, "EOF was returned.");
+                //does not include header and footer space
+                Assert.AreEqual(rec.GetSizeWithLengthPrefixAndSuffix(), result.BytesRead, "Read wrong number of bytes."); 
+            }
+            chunk.MarkForDeletion();
+            chunk.WaitForDestroy(5000);
+        }
+
+        [Test]
+        public void a_read_past_eof_returns_eof_if_chunk_is_completed()
+        {
+            var chunk = TFChunk.CreateNew(GetFilePathFor("file1"), 300, 0, 0);
+
+            var rec = LogRecord.Commit(0, Guid.NewGuid(), 0, 0);
+            Assert.IsTrue(chunk.TryAppend(rec).Success, "Record wasn't appended");
+            chunk.Complete();
+
+            using (var reader = chunk.AcquireReader())
+            {
+                var buffer = new byte[1024];
+                var result = reader.ReadNextLogicalBytes(1024, buffer);
+                Assert.IsTrue(result.IsEOF, "EOF wasn't returned.");
+                //does not include header and footer space
+                Assert.AreEqual(rec.GetSizeWithLengthPrefixAndSuffix(), result.BytesRead, "Read wrong number of bytes.");
             }
             chunk.MarkForDeletion();
             chunk.WaitForDestroy(5000);
