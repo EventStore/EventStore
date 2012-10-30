@@ -77,7 +77,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var toRead = Math.Min(_chunk.ActualDataSize - oldPos, count);
             Debug.Assert(toRead >= 0);
             _stream.Position = _stream.Position; // flush read buffer
-            var bytesRead = _stream.Read(buffer, 0, toRead);
+            int bytesRead = _stream.Read(buffer, 0, toRead);
             return new BulkReadResult(oldPos,
                                       bytesRead,
                                       isEof: _chunk.IsReadOnly && oldPos + bytesRead == _chunk.ActualDataSize);
