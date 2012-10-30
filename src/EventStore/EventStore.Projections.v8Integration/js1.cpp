@@ -21,6 +21,7 @@ extern "C"
 	//TODO: revise error reporting - it is no the best way to create faulted objects and then immediately dispose them
 	JS1_API void * STDCALL compile_module(void *prelude, const uint16_t *script, const uint16_t *file_name)
 	{
+		printf("compile_module\n");
 		js1::PreludeScript *prelude_script = reinterpret_cast<js1::PreludeScript *>(prelude);
 		js1::ModuleScript *module_script;
 
@@ -37,7 +38,7 @@ extern "C"
 
 	JS1_API void * STDCALL compile_prelude(const uint16_t *prelude, const uint16_t *file_name, LOAD_MODULE_CALLBACK load_module_callback, LOG_CALLBACK log_callback)
 	{
-
+		printf("compile_prelude\n");
 		js1::PreludeScript *prelude_script;
 		prelude_script = new js1::PreludeScript(load_module_callback, log_callback);
 		js1::PreludeScope prelude_scope(prelude_script);
@@ -77,8 +78,7 @@ extern "C"
 	{
 		js1::CompiledScript *compiled_script;
 		compiled_script = reinterpret_cast<js1::CompiledScript *>(script_handle);
-		bool owns_isolate = compiled_script->owns_isolate();
-		js1::PreludeScope prelude_scope(compiled_script, owns_isolate);
+		js1::PreludeScope prelude_scope(compiled_script);
 		delete compiled_script;
 	};
 

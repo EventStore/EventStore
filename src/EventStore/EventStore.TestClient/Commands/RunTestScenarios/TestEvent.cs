@@ -14,10 +14,14 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         public TestEvent(int index)
         {
-            EventId = Guid.NewGuid();
-            Type = index.ToString();
+            var subIndex = (index % 50);
 
-            Data = Encoding.UTF8.GetBytes(string.Format("{0}-{1}", index, new string('#', 1024)));
+            EventId = Guid.NewGuid();
+            Type = subIndex.ToString();
+
+            var body = new string('#', 1 + 17 * subIndex * subIndex);
+
+            Data = Encoding.UTF8.GetBytes(string.Format("{0}-{1}-{2}", index, body.Length, body));
             Metadata = new byte[0];
         }
     }

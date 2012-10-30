@@ -172,7 +172,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (_state == ManagedProjectionState.Running)
             {
-                var needRequest = _stateRequests == null;
+                var needRequest = false;
                 if (_stateRequests == null)
                 {
                     _stateRequests = new Dictionary<string, List<IEnvelope>>();
@@ -182,6 +182,7 @@ namespace EventStore.Projections.Core.Services.Management
                 {
                     partitionRequests = new List<IEnvelope>();
                     _stateRequests.Add(message.Partition, partitionRequests);
+                    needRequest = true;
                 }
                 partitionRequests.Add(message.Envelope);
                 if (needRequest)

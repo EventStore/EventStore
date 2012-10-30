@@ -19,6 +19,7 @@ namespace js1
 		{
 			delete *it;
 		}
+		isolate_release(isolate);
 	}
 
 	bool QueryScript::compile_script(const uint16_t *script_source, const uint16_t *file_name)

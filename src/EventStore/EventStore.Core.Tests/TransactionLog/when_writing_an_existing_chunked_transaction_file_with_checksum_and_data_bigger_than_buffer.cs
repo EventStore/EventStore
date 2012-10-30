@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.TransactionLog
         private readonly Guid _eventId = Guid.NewGuid();
         private InMemoryCheckpoint _checkpoint;
 
-        [Test, Ignore("On MONO something strange is happening just for this test, will look later.")]
+        [Test, Ignore("On MONO something strange is happening when the record size is > 4096 bytes, the first bytes are not written into file. Will have to debug later.")]
         public void a_record_can_be_written()
         {
             var filename = Path.Combine(PathName, "prefix.tf0");
@@ -61,22 +61,21 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        new ICheckpoint[0]));
             db.OpenVerifyAndClean();
 
+            var bytes = new byte[3994]; // this gives exactly 4097 size of record, with 3993 (rec size 4096) everything works fine!
+            new Random().NextBytes(bytes);
             var writer = new TFChunkWriter(db);
-            var record = new PrepareLogRecord(logPosition: 0,
+            var record = new PrepareLogRecord(logPosition: 123,
                                               correlationId: _correlationId,
                                               eventId: _eventId,
-                                              transactionPosition: 0,
-                                              transactionOffset: 0,
+                                              transactionPosition: 789,
+                                              transactionOffset: 543,
                                               eventStreamId: "WorldEnding",
                                               expectedVersion: 1234,
                                               timeStamp: new DateTime(2012, 12, 21),
-                                              flags: PrepareFlags.None,
+                                              flags: PrepareFlags.SingleWrite,
                                               eventType: "type",
-                                              data: new byte[8000],
-                                              metadata: new byte[] { 7, 17 });
-
-            Console.WriteLine(record.GetSizeWithLengthPrefixAndSuffix());
-            Console.WriteLine(record.GetSizeWithLengthPrefixAndSuffix() + 137);
+                                              data: bytes, 
+                                              metadata: new byte[] { 0x07, 0x17 });
 
             long pos;
             Assert.IsTrue(writer.Write(record, out pos));
@@ -89,9 +88,6 @@ namespace EventStore.Core.Tests.TransactionLog
                 filestream.Seek(ChunkHeader.Size + 137 + sizeof(int), SeekOrigin.Begin);
                 var reader = new BinaryReader(filestream);
                 var read = LogRecord.ReadFrom(reader);
-
-                Console.WriteLine(string.Join("\n", Directory.EnumerateFiles(PathName)));
-
                 Assert.AreEqual(record, read);
             }
         }
