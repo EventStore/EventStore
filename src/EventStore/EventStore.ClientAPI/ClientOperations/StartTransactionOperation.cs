@@ -44,7 +44,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private Guid _corrId;
         private readonly object _corrIdLock = new object();
 
-        private readonly RoutingStrategy _routing;
+        private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;
 
@@ -59,14 +59,14 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public StartTransactionOperation(TaskCompletionSource<EventStoreTransaction> source,
                                          Guid corrId,
-                                         RoutingStrategy routing,
+                                         bool forward,
                                          string stream,
                                          int expectedVersion)
         {
             _source = source;
 
             _corrId = corrId;
-            _routing = routing;
+            _forward = forward;
             _stream = stream;
             _expectedVersion = expectedVersion;
         }
@@ -81,7 +81,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var startTransaction = new ClientMessages.TransactionStart(_stream, _expectedVersion, _routing);
+                var startTransaction = new ClientMessages.TransactionStart(_stream, _expectedVersion, _forward);
                 return new TcpPackage(TcpCommand.TransactionStart, _corrId,  startTransaction.Serialize());
             }
         }

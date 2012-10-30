@@ -84,19 +84,19 @@ namespace EventStore.Core.Messages
             public byte[] Metadata { get; set; }
 
             [ProtoMember(3)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public CreateStream()
             {
             }
 
-            public CreateStream(string eventStreamId, byte[] metadata, RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+            public CreateStream(string eventStreamId, byte[] metadata, bool allowForwarding = true)
             {
                 Ensure.NotNull(eventStreamId, "streamId");
 
                 EventStreamId = eventStreamId;
                 Metadata = metadata;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -173,7 +173,7 @@ namespace EventStore.Core.Messages
             public Event[] Events { get; set; }
 
             [ProtoMember(4)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public WriteEvents()
             {
@@ -182,7 +182,7 @@ namespace EventStore.Core.Messages
             public WriteEvents(string eventStreamId, 
                                int expectedVersion, 
                                Event[] events, 
-                               RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+                               bool allowForwarding = true)
             {
                 Ensure.NotNull(events, "events");
                 Ensure.Positive(events.Length, "events.Length");
@@ -190,7 +190,7 @@ namespace EventStore.Core.Messages
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
                 Events = events;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -232,7 +232,7 @@ namespace EventStore.Core.Messages
             public int ExpectedVersion { get; set; }
 
             [ProtoMember(3)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public DeleteStream()
             {
@@ -240,13 +240,13 @@ namespace EventStore.Core.Messages
 
             public DeleteStream(string eventStreamId, 
                                 int expectedVersion, 
-                                RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+                                bool allowForwarding = true)
             {
                 Ensure.NotNull(eventStreamId, "streamId");
 
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -616,7 +616,7 @@ namespace EventStore.Core.Messages
             public int ExpectedVersion { get; set; }
 
             [ProtoMember(3)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public TransactionStart()
             {
@@ -624,11 +624,11 @@ namespace EventStore.Core.Messages
 
             public TransactionStart(string eventStreamId, 
                                     int expectedVersion,
-                                    RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+                                    bool allowForwarding = true)
             {
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -676,7 +676,7 @@ namespace EventStore.Core.Messages
             public Event[] Events { get; set; }
 
             [ProtoMember(4)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public TransactionWrite()
             {
@@ -685,12 +685,12 @@ namespace EventStore.Core.Messages
             public TransactionWrite(long transactionId, 
                                     string eventStreamId, 
                                     Event[] events,
-                                    RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+                                    bool allowForwarding = true)
             {
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
                 Events = events;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -732,7 +732,7 @@ namespace EventStore.Core.Messages
             public string EventStreamId { get; set; }
 
             [ProtoMember(3)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public TransactionCommit()
             {
@@ -740,11 +740,11 @@ namespace EventStore.Core.Messages
 
             public TransactionCommit(long transactionId, 
                                      string eventStreamId, 
-                                     RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+                                     bool allowForwarding = true)
             {
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 

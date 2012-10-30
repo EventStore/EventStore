@@ -80,19 +80,19 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public byte[] Metadata { get; set; }
 
             [ProtoMember(3)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public CreateStream()
             {
             }
 
-            public CreateStream(string eventStreamId, byte[] metadata, RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+            public CreateStream(string eventStreamId, byte[] metadata, bool allowForwarding = true)
             {
                 Ensure.NotNull(eventStreamId, "streamId");
 
                 EventStreamId = eventStreamId;
                 Metadata = metadata;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -161,7 +161,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public Event[] Events { get; set; }
 
             [ProtoMember(4)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public WriteEvents()
             {
@@ -170,7 +170,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public WriteEvents(string eventStreamId, 
                                int expectedVersion, 
                                Event[] events, 
-                               RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+                               bool allowForwarding = true)
             {
                 Ensure.NotNull(events, "events");
                 Ensure.Positive(events.Length, "events.Length");
@@ -178,7 +178,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
                 Events = events;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -220,7 +220,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public int ExpectedVersion { get; set; }
 
             [ProtoMember(3)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public DeleteStream()
             {
@@ -228,13 +228,13 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             public DeleteStream(string eventStreamId, 
                                 int expectedVersion, 
-                                RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+                                bool allowForwarding = true)
             {
                 Ensure.NotNull(eventStreamId, "streamId");
 
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -605,7 +605,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public int ExpectedVersion { get; set; }
 
             [ProtoMember(3)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public TransactionStart()
             {
@@ -613,11 +613,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             public TransactionStart(string eventStreamId, 
                                     int expectedVersion,
-                                    RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+                                    bool allowForwarding = true)
             {
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -665,7 +665,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public Event[] Events { get; set; }
 
             [ProtoMember(4)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public TransactionWrite()
             {
@@ -674,12 +674,12 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public TransactionWrite(long transactionId, 
                                     string eventStreamId, 
                                     Event[] events,
-                                    RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+                                    bool allowForwarding = true)
             {
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
                 Events = events;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -721,7 +721,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public string EventStreamId { get; set; }
 
             [ProtoMember(3)]
-            public RoutingStrategy RoutingStrategy { get; set; }
+            public bool AllowForwarding { get; set; }
 
             public TransactionCommit()
             {
@@ -729,11 +729,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             public TransactionCommit(long transactionId, 
                                      string eventStreamId, 
-                                     RoutingStrategy routingStrategy = RoutingStrategy.AllowForwarding)
+                                     bool allowForwarding = true)
             {
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
-                RoutingStrategy = routingStrategy;
+                AllowForwarding = allowForwarding;
             }
         }
 

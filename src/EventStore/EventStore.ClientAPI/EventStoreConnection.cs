@@ -60,7 +60,7 @@ namespace EventStore.ClientAPI
         private static readonly TimeSpan OperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
         private readonly IPEndPoint _tcpEndPoint;
-        private readonly RoutingStrategy _routing;
+        private readonly bool _allowForwarding;
 
         private readonly TcpConnector _connector;
         private TcpTypedConnection _connection;
@@ -95,7 +95,7 @@ namespace EventStore.ClientAPI
 
         public EventStoreConnection(IPEndPoint tcpEndPoint,
                                     IPEndPoint httpEndpoint = null,
-                                    RoutingStrategy routing = RoutingStrategy.AllowForwarding,
+                                    bool allowForwarding = true,
                                     int maxConcurrentRequests = 5000,
                                     int maxAttemptsForOperation = 10,
                                     int maxReconnections = 10,
@@ -107,7 +107,7 @@ namespace EventStore.ClientAPI
             Ensure.Nonnegative(maxReconnections, "maxReconnections");
 
             _tcpEndPoint = tcpEndPoint;
-            _routing = routing;
+            _allowForwarding = allowForwarding;
             _maxConcurrentItems = maxConcurrentRequests;
             _maxAttempts = maxAttemptsForOperation;
             _maxReconnections = maxReconnections;
@@ -170,7 +170,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<object>();
-            var operation = new CreateStreamOperation(source, Guid.NewGuid(), _routing, stream, metadata);
+            var operation = new CreateStreamOperation(source, Guid.NewGuid(), _allowForwarding, stream, metadata);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -189,7 +189,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<object>();
-            var operation = new DeleteStreamOperation(source, Guid.NewGuid(), _routing, stream, expectedVersion);
+            var operation = new DeleteStreamOperation(source, Guid.NewGuid(), _allowForwarding, stream, expectedVersion);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -210,7 +210,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<object>();
-            var operation = new AppendToStreamOperation(source, Guid.NewGuid(), _routing, stream, expectedVersion, events);
+            var operation = new AppendToStreamOperation(source, Guid.NewGuid(), _allowForwarding, stream, expectedVersion, events);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -230,7 +230,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<EventStoreTransaction>();
-            var operation = new StartTransactionOperation(source, Guid.NewGuid(), _routing, stream, expectedVersion);
+            var operation = new StartTransactionOperation(source, Guid.NewGuid(), _allowForwarding, stream, expectedVersion);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -251,7 +251,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(events, "events");
 
             var source = new TaskCompletionSource<object>();
-            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), _routing, transactionId, stream, events);
+            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), _allowForwarding, transactionId, stream, events);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -270,7 +270,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
 
             var source = new TaskCompletionSource<object>();
-            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), _routing, transactionId, stream);
+            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), _allowForwarding, transactionId, stream);
 
             EnqueueOperation(operation);
             return source.Task;

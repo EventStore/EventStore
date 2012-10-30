@@ -44,7 +44,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private Guid _correlationId;
         private readonly object _corrIdLock = new object();
 
-        private readonly RoutingStrategy _routing;
+        private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;
 
@@ -59,14 +59,14 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public DeleteStreamOperation(TaskCompletionSource<object> source,
                                      Guid correlationId, 
-                                     RoutingStrategy routing,
+                                     bool forward,
                                      string stream, 
                                      int expectedVersion)
         {
             _source = source;
 
             _correlationId = correlationId;
-            _routing = routing;
+            _forward = forward;
             _stream = stream;
             _expectedVersion = expectedVersion;
         }
@@ -75,7 +75,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.DeleteStream(_stream, _expectedVersion, _routing);
+                var dto = new ClientMessages.DeleteStream(_stream, _expectedVersion, _forward);
                 return new TcpPackage(TcpCommand.DeleteStream, _correlationId, dto.Serialize());
             }
         }
