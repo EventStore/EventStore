@@ -398,7 +398,7 @@ namespace EventStore.Core.Services.Transport.Http
                 case "text":
                     return "text/plain";
                 case "xml":
-                    return "application/xml";
+                    return "text/xml";
                 default:
                     throw new NotSupportedException("Unknown format requested");
         }

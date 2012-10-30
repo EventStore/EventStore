@@ -49,6 +49,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static readonly JsonCodec Json = new JsonCodec();
         public static readonly XmlCodec Xml = new XmlCodec();
+        public static readonly CustomCodec ApplicationXml = new CustomCodec(Xml, "application/xml");
         public static readonly TextCodec Text = new TextCodec();
 
         public static ICodec CreateCustom(ICodec codec, string contentType)
