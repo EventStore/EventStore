@@ -824,7 +824,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public int EventNumber { get; set; }
 
             [ProtoMember(3)]
-            public Guid EventId { get; set; }
+            public byte[] EventId { get; set; }
 
             [ProtoMember(4)]
             public string EventType { get; set; }

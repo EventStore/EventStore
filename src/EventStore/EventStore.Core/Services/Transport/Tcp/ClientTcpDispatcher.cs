@@ -338,7 +338,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private static TcpPackage WrapReadStreamEventsForwardCompleted(ClientMessage.ReadStreamEventsForwardCompleted msg)
         {
             var dto = new ClientMessageDto.ReadStreamEventsForwardCompleted(msg.EventStreamId,
-                                                                            msg.Events,
+                                                                            ConvertToDtos(msg.Events),
                                                                             msg.Result,
                                                                             msg.LastCommitPosition,
                                                                             msg.LastEventNumber);
@@ -362,10 +362,20 @@ namespace EventStore.Core.Services.Transport.Tcp
         private static TcpPackage WrapReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted msg)
         {
             var dto = new ClientMessageDto.ReadStreamEventsBackwardCompleted(msg.EventStreamId,
-                                                                             msg.Events,
+                                                                             ConvertToDtos(msg.Events),
                                                                              msg.Result,
                                                                              msg.LastCommitPosition);
             return new TcpPackage(TcpCommand.ReadStreamEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
+        }
+
+        private static ClientMessageDto.EventLinkPair[] ConvertToDtos(EventLinkPair[] events)
+        {
+            var result = new ClientMessageDto.EventLinkPair[events.Length];
+            for (int i = 0; i < events.Length; ++i)
+            {
+                result[i] = new ClientMessageDto.EventLinkPair(events[i].Event, events[i].Link);
+            }
+            return result;
         }
 
         private static ClientMessage.ReadAllEventsForward UnwrapReadAllEventsForward(TcpPackage package, IEnvelope envelope, TcpConnectionManager connection)
@@ -384,7 +394,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = new ClientMessageDto.ReadAllEventsForwardCompleted(msg.Result.CurrentPos.CommitPosition,
                                                                          msg.Result.CurrentPos.PreparePosition,
-                                                                         msg.Result.Records.Select(x => new EventLinkPair(x.Event, x.Link)).ToArray(),
+                                                                         ConvertToDtos(msg.Result.Records),
                                                                          msg.Result.NextPos.CommitPosition,
                                                                          msg.Result.NextPos.PreparePosition);
             return new TcpPackage(TcpCommand.ReadAllEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
@@ -406,12 +416,21 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = new ClientMessageDto.ReadAllEventsBackwardCompleted(msg.Result.CurrentPos.CommitPosition,
                                                                           msg.Result.CurrentPos.PreparePosition,
-                                                                          msg.Result.Records.Select(x => new EventLinkPair(x.Event, x.Link)).ToArray(),
+                                                                          ConvertToDtos(msg.Result.Records),
                                                                           msg.Result.NextPos.CommitPosition,
                                                                           msg.Result.NextPos.PreparePosition);
             return new TcpPackage(TcpCommand.ReadAllEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 
+        private static ClientMessageDto.EventLinkPair[] ConvertToDtos(ResolvedEventRecord[] events)
+        {
+            var result = new ClientMessageDto.EventLinkPair[events.Length];
+            for (int i = 0; i < events.Length; ++i)
+            {
+                result[i] = new ClientMessageDto.EventLinkPair(events[i].Event, events[i].Link);
+            }
+            return result;
+        }
 
         private ClientMessage.SubscribeToStream UnwrapSubscribeToStream(TcpPackage package, IEnvelope envelope, TcpConnectionManager connection)
         {

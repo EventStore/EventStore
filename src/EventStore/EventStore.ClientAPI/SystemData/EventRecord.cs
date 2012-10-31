@@ -27,150 +27,50 @@
 //  
 
 using System;
-using System.Linq;
-using EventStore.ClientAPI.Common.Utils;
+using ProtoBuf;
 
 namespace EventStore.ClientAPI.SystemData
 {
-    internal class EventRecord : IEquatable<EventRecord>
+    [ProtoContract]
+    public class EventRecord
     {
-        public static readonly byte[] Empty = new byte[0];
-
+        [ProtoMember(1)]
         public readonly int EventNumber;
 
+        [ProtoMember(2)]
         public readonly long LogPosition;
-        public readonly Guid CorrelationId;
-        public readonly Guid EventId;
+
+        [ProtoMember(3)]
+        public readonly byte[] CorrelationId;
+
+        [ProtoMember(4)]
+        public readonly byte[] EventId;
+
+        [ProtoMember(5)]
         public readonly long TransactionPosition;
+
+        [ProtoMember(6)]
         public readonly int TransactionOffset;
+
+        [ProtoMember(7)]
         public readonly string EventStreamId;
+
+        [ProtoMember(8)]
         public readonly int ExpectedVersion;
+
+        [ProtoMember(9)]
         public readonly DateTime TimeStamp;
-        public readonly PrepareFlags Flags;
+
+        [ProtoMember(10)]
+        public readonly ushort Flags;
+
+        [ProtoMember(11)]
         public readonly string EventType;
+
+        [ProtoMember(12)]
         public readonly byte[] Data;
+
+        [ProtoMember(13)]
         public readonly byte[] Metadata;
-
-        public EventRecord(int eventNumber,
-                           long logPosition,
-                           Guid correlationId,
-                           Guid eventId,
-                           long transactionPosition,
-                           int transactionOffset,
-                           string eventStreamId,
-                           int expectedVersion,
-                           DateTime timeStamp,
-                           PrepareFlags flags,
-                           string eventType,
-                           byte[] data,
-                           byte[] metadata)
-        {
-            Ensure.Nonnegative(logPosition, "logPosition");
-            Ensure.Nonnegative(transactionPosition, "transactionPosition");
-            if (transactionOffset < -1)
-                throw new ArgumentOutOfRangeException("transactionOffset");
-            Ensure.NotNull(eventStreamId, "eventStreamId");
-            Ensure.Nonnegative(eventNumber, "eventNumber");
-            Ensure.NotEmptyGuid(eventId, "eventId");
-            Ensure.NotNull(data, "data");
-
-            EventNumber = eventNumber;
-            LogPosition = logPosition;
-            CorrelationId = correlationId;
-            EventId = eventId;
-            TransactionPosition = transactionPosition;
-            TransactionOffset = transactionOffset;
-            EventStreamId = eventStreamId;
-            ExpectedVersion = expectedVersion;
-            TimeStamp = timeStamp;
-            Flags = flags;
-            EventType = eventType ?? string.Empty;
-            Data = data;
-            Metadata = metadata ?? Empty;
-        }
-
-        public bool Equals(EventRecord other)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return EventNumber == other.EventNumber
-                   && LogPosition == other.LogPosition
-                   && CorrelationId.Equals(other.CorrelationId)
-                   && EventId.Equals(other.EventId)
-                   && TransactionPosition == other.TransactionPosition
-                   && TransactionOffset == other.TransactionOffset
-                   && string.Equals(EventStreamId, other.EventStreamId)
-                   && ExpectedVersion == other.ExpectedVersion
-                   && TimeStamp.Equals(other.TimeStamp)
-                   && Flags.Equals(other.Flags)
-                   && string.Equals(EventType, other.EventType)
-                   && Data.SequenceEqual(other.Data)
-                   && Metadata.SequenceEqual(other.Metadata);
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != GetType()) return false;
-            return Equals((EventRecord)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hashCode = EventNumber;
-                hashCode = (hashCode * 397) ^ LogPosition.GetHashCode();
-                hashCode = (hashCode * 397) ^ CorrelationId.GetHashCode();
-                hashCode = (hashCode * 397) ^ EventId.GetHashCode();
-                hashCode = (hashCode * 397) ^ TransactionPosition.GetHashCode();
-                hashCode = (hashCode * 397) ^ TransactionOffset;
-                hashCode = (hashCode * 397) ^ EventStreamId.GetHashCode();
-                hashCode = (hashCode * 397) ^ ExpectedVersion;
-                hashCode = (hashCode * 397) ^ TimeStamp.GetHashCode();
-                hashCode = (hashCode * 397) ^ Flags.GetHashCode();
-                hashCode = (hashCode * 397) ^ EventType.GetHashCode();
-                hashCode = (hashCode * 397) ^ Data.GetHashCode();
-                hashCode = (hashCode * 397) ^ Metadata.GetHashCode();
-                return hashCode;
-            }
-        }
-
-        public static bool operator ==(EventRecord left, EventRecord right)
-        {
-            return Equals(left, right);
-        }
-
-        public static bool operator !=(EventRecord left, EventRecord right)
-        {
-            return !Equals(left, right);
-        }
-
-        public override string ToString()
-        {
-            return string.Format("EventNumber: {0}, "
-                                 + "LogPosition: {1}, "
-                                 + "CorrelationId: {2}, "
-                                 + "EventId: {3}, "
-                                 + "TransactionPosition: {4}, "
-                                 + "TransactionOffset: {5}, "
-                                 + "EventStreamId: {6}, "
-                                 + "ExpectedVersion: {7}, "
-                                 + "TimeStamp: {8}, "
-                                 + "Flags: {9}, "
-                                 + "EventType: {10}",
-                                 EventNumber,
-                                 LogPosition,
-                                 CorrelationId,
-                                 EventId,
-                                 TransactionPosition,
-                                 TransactionOffset,
-                                 EventStreamId,
-                                 ExpectedVersion,
-                                 TimeStamp,
-                                 Flags,
-                                 EventType);
-        }
     }
 }
