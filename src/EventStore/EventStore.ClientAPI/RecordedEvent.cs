@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 

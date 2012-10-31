@@ -28,6 +28,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
