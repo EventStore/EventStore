@@ -70,6 +70,9 @@
                 renderer: 'area',
                 stroke: true,
                 interpolation: "cardinal",
+                padding: {
+                    top: 0.2
+                },
                 series: [{
                     color: '#C9E63C',
                     data: data,

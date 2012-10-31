@@ -32,7 +32,7 @@ using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
 using ProtoBuf;
 
-namespace EventStore.ClientAPI.Transport.Tcp
+namespace EventStore.ClientAPI.Messages
 {
     internal static class ClientMessages
     {
@@ -132,34 +132,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
         }
 
         [ProtoContract]
-        internal class Event
-        {
-            [ProtoMember(1)]
-            public byte[] EventId { get; set; }
-
-            [ProtoMember(2, IsRequired = false)]
-            public string EventType { get; set; }
-
-            [ProtoMember(3)]
-            public byte[] Data { get; set; }
-
-            [ProtoMember(4, IsRequired = false)]
-            public byte[] Metadata { get; set; }
-
-            public Event()
-            {
-            }
-
-            public Event(Guid eventId, string eventType, byte[] data, byte[] metadata)
-            {
-                EventId = eventId.ToByteArray();
-                EventType = eventType;
-                Data = data;
-                Metadata = metadata;
-            }
-        }
-
-        [ProtoContract]
         internal class WriteEvents
         {
             [ProtoMember(1)]
@@ -169,7 +141,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public int ExpectedVersion { get; set; }
 
             [ProtoMember(3)]
-            public Event[] Events { get; set; }
+            public ClientEvent[] Events { get; set; }
 
             [ProtoMember(4)]
             public bool AllowForwarding { get; set; }
@@ -180,7 +152,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             public WriteEvents(string eventStreamId, 
                                int expectedVersion, 
-                               Event[] events, 
+                               ClientEvent[] events, 
                                bool allowForwarding = true)
             {
                 Ensure.NotNull(events, "events");
@@ -673,7 +645,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public string EventStreamId { get; set; }
 
             [ProtoMember(3)]
-            public Event[] Events { get; set; }
+            public ClientEvent[] Events { get; set; }
 
             [ProtoMember(4)]
             public bool AllowForwarding { get; set; }
@@ -684,7 +656,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             public TransactionWrite(long transactionId, 
                                     string eventStreamId, 
-                                    Event[] events,
+                                    ClientEvent[] events,
                                     bool allowForwarding = true)
             {
                 TransactionId = transactionId;
@@ -824,7 +796,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public int EventNumber { get; set; }
 
             [ProtoMember(3)]
-            public Guid EventId { get; set; }
+            public byte[] EventId { get; set; }
 
             [ProtoMember(4)]
             public string EventType { get; set; }

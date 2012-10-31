@@ -32,6 +32,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 
@@ -86,7 +87,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dtos = _events.Select(x => new ClientMessages.Event(x.EventId, x.Type, x.Data, x.Metadata)).ToArray();
+                var dtos = _events.Select(x => new ClientEvent(x.EventId, x.Type, x.Data, x.Metadata)).ToArray();
                 var write = new ClientMessages.WriteEvents(_stream, _expectedVersion, dtos, _forward);
                 return new TcpPackage(TcpCommand.WriteEvents, _correlationId, write.Serialize());
             }

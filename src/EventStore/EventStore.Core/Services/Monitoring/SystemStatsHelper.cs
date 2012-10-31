@@ -79,25 +79,38 @@ namespace EventStore.Core.Services.Monitoring
             var threadsCount = _perfCounter.GetProcThreadsCount();
             var freeMem = OS.IsLinux ? GetFreeMemOnLinux() : _perfCounter.GetFreeMemory();
             var gcStats = _perfCounter.GetGcStats();
+            var thrownExceptionsRate = _perfCounter.GetThrownExceptionsRate();
+            var contentionsRate = _perfCounter.GetContentionsRateCount();
+
+            stats["proc-startTime"] = startTime;
+            stats["proc-id"] = procId;
+            stats["proc-mem"] = new StatMetadata(workingSetMemory, "Process", "Process Virtual Memory");
+            stats["proc-cpu"] = new StatMetadata(procCpu, "Process", "Process Cpu Usage");
+            stats["proc-threadsCount"] = threadsCount;
+            stats["proc-contentionsRate"] = new StatMetadata(contentionsRate, "Process", "Contentions/s");
+            stats["proc-thrownExceptionsRate"] = new StatMetadata(thrownExceptionsRate, "Process", "Thrown Exceptions/s");
+
+            stats["sys-cpu"] = new StatMetadata(totalCpu, "Machine", "Machine CPU Usage");
+            stats["sys-freeMem"] = freeMem;
 
             stats["proc-diskIo-readBytes"] = new StatMetadata(diskIo.ReadBytes, "Disk IO", "Disk Read Bytes");
-            stats["proc-diskIo-readOps"] = new StatMetadata(diskIo.ReadOps, "Disk IO", "Disk Read Operations");
-            stats["proc-diskIo-writeOps"] = new StatMetadata(diskIo.WriteOps, "Disk IO", "Disk Write Operations");
             stats["proc-diskIo-writtenBytes"] = new StatMetadata(diskIo.WrittenBytes, "Disk IO", "Disk Written Bytes");
+            stats["proc-diskIo-readOps"] = diskIo.ReadOps;
+            stats["proc-diskIo-writeOps"] = diskIo.WriteOps;
             stats["proc-diskIo-readBytesFriendly"] = diskIo.ReadBytesFriendly;
             stats["proc-diskIo-readOpsFriendly"] = diskIo.ReadOpsFriendly;
             stats["proc-diskIo-writeOpsFriendly"] = diskIo.WriteOpsFriendly;
             stats["proc-diskIo-writtenBytesFriendly"] = diskIo.WrittenBytesFriendly;
 
             stats["proc-tcp-connections"] = new StatMetadata(tcp.Connections, "Tcp", "Tcp Connections");
+            stats["proc-tcp-receivingSpeed"] = new StatMetadata(tcp.ReceivingSpeed, "Tcp", "Tcp Receiving Speed");
+            stats["proc-tcp-sendingSpeed"] = new StatMetadata(tcp.SendingSpeed, "Tcp", "Tcp Sending Speed");
             stats["proc-tcp-inSend"] = new StatMetadata(tcp.InSend, "Tcp", "Tcp In Send");
             stats["proc-tcp-measureTime"] = tcp.MeasureTime;
             stats["proc-tcp-pendingReceived"] = new StatMetadata(tcp.PendingReceived, "Tcp", "Tcp Pending Received");
             stats["proc-tcp-pendingSend"] = new StatMetadata(tcp.PendingSend, "Tcp", "Tcp Pending Send");
             stats["proc-tcp-receivedBytesSinceLastRun"] = tcp.ReceivedBytesSinceLastRun;
             stats["proc-tcp-receivedBytesTotal"] = tcp.ReceivedBytesTotal;
-            stats["proc-tcp-receivingSpeed"] = new StatMetadata(tcp.ReceivingSpeed, "Tcp", "Tcp Receiving Speed");
-            stats["proc-tcp-sendingSpeed"] = new StatMetadata(tcp.SendingSpeed, "Tcp", "Tcp Sending Speed");
             stats["proc-tcp-sentBytesSinceLastRun"] = tcp.SentBytesSinceLastRun;
             stats["proc-tcp-sentBytesTotal"] = tcp.SentBytesTotal;
             stats["proc-tcp-measureTimeFriendly"] = tcp.MeasureTimeFriendly;
@@ -116,15 +129,6 @@ namespace EventStore.Core.Services.Monitoring
             stats["proc-gc-largeHeapSize"] = gcStats.LargeHeapSize;
             stats["proc-gc-timeInGc"] = gcStats.TimeInGc;
             stats["proc-gc-totalBytesInHeaps"] = gcStats.TotalBytesInHeaps;
-
-            stats["proc-mem"] = new StatMetadata(workingSetMemory, "Process", "Process Working Set Memory");
-            stats["proc-threadsCount"] = new StatMetadata(threadsCount, "Process", "Process Threads Count");
-            stats["proc-cpu"] = new StatMetadata(procCpu, "Process", "Process Cpu Usage");
-            stats["proc-startTime"] = startTime;
-            stats["proc-id"] = procId;
-
-            stats["sys-freeMem"] = new StatMetadata(freeMem, "Machine", "Machine Free Virtual Memory");
-            stats["sys-cpu"] = new StatMetadata(totalCpu, "Machine", "Machine CPU Usage");
 
             stats["es-checksum"] = checksum;
             stats["es-checksumNonFlushed"] = checksumNonFlushed;

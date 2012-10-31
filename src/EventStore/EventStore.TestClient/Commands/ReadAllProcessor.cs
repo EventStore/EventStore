@@ -95,7 +95,7 @@ namespace EventStore.TestClient.Commands
                 },
                 handlePackage: (conn, pkg) =>
                 {
-                    EventLinkPair[] records;
+                    ClientMessageDto.EventLinkPair[] records;
                     long nextCommitPos;
                     long nextPreparePos;
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,23 +25,52 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-namespace EventStore.ClientAPI.SystemData
+
+using System;
+using ProtoBuf;
+
+namespace EventStore.ClientAPI.Messages
 {
-    internal struct EventLinkPair
+    [ProtoContract]
+    internal class EventRecord
     {
-        public readonly EventRecord Event;
-        public readonly EventRecord Link;
+        [ProtoMember(1)]
+        public readonly int EventNumber;
 
-        public EventLinkPair(EventRecord @event, EventRecord link)
-        {
-            Event = @event;
-            Link = link;
-        }
+        [ProtoMember(2)]
+        public readonly long LogPosition;
 
-        public EventLinkPair(EventRecord @event)
-        {
-            Event = @event;
-            Link = null;
-        }
+        [ProtoMember(3)]
+        public readonly byte[] CorrelationId;
+
+        [ProtoMember(4)]
+        public readonly byte[] EventId;
+
+        [ProtoMember(5)]
+        public readonly long TransactionPosition;
+
+        [ProtoMember(6)]
+        public readonly int TransactionOffset;
+
+        [ProtoMember(7)]
+        public readonly string EventStreamId;
+
+        [ProtoMember(8)]
+        public readonly int ExpectedVersion;
+
+        [ProtoMember(9)]
+        public readonly DateTime TimeStamp;
+
+        [ProtoMember(10)]
+        public readonly ushort Flags;
+
+        [ProtoMember(11)]
+        public readonly string EventType;
+
+        [ProtoMember(12)]
+        public readonly byte[] Data;
+
+        [ProtoMember(13)]
+        public readonly byte[] Metadata;
     }
 }
