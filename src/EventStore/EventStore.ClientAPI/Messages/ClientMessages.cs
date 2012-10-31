@@ -811,7 +811,7 @@ namespace EventStore.ClientAPI.Messages
         [ProtoContract]
         internal class SubscriptionDropped
         {
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public string EventStreamId { get; set; }
 
             public SubscriptionDropped()
