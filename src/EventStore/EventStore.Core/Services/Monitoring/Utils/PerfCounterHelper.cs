@@ -44,10 +44,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
         private readonly PerformanceCounter procCpuCounter;
         private readonly PerformanceCounter procThreadsCounter;
 
-        private readonly PerformanceCounter exceptionsCounter;
-        private readonly PerformanceCounter exceptionsRateCounter;
-
-        private readonly PerformanceCounter contentionsCounter;
+        private readonly PerformanceCounter thrownExceptionsRateCounter;
         private readonly PerformanceCounter contentionsRateCounter;
 
         private readonly PerformanceCounter gcGen0ItemsCounter;
@@ -67,15 +64,12 @@ namespace EventStore.Core.Services.Monitoring.Utils
         {
             _log = log;
             _allCountersEnabled = true;
-           // return;
 
             SafeAssignPerfCounter(out totalCpuCounter, "Processor", "% Processor Time", "_Total");
             SafeAssignPerfCounter(out totalMemCounter, "Memory", "Available Bytes");
             SafeAssignPerfCounterForProcess(out procCpuCounter, "Process", "% Processor Time");
             SafeAssignPerfCounterForProcess(out procThreadsCounter, "Process", "Thread Count");
-            SafeAssignPerfCounterForProcess(out exceptionsCounter, ".NET CLR Exceptions", "# of Exceps Thrown");
-            SafeAssignPerfCounterForProcess(out exceptionsRateCounter, ".NET CLR Exceptions", "# of Exceps Thrown / sec");
-            SafeAssignPerfCounterForProcess(out contentionsCounter, ".NET CLR LocksAndThreads", "Total # of Contentions");
+            SafeAssignPerfCounterForProcess(out thrownExceptionsRateCounter, ".NET CLR Exceptions", "# of Exceps Thrown / sec");
             SafeAssignPerfCounterForProcess(out contentionsRateCounter, ".NET CLR LocksAndThreads", "Contention Rate / sec");
             SafeAssignPerfCounterForProcess(out gcGen0ItemsCounter, ".NET CLR Memory", "# Gen 0 Collections");
             SafeAssignPerfCounterForProcess(out gcGen1ItemsCounter, ".NET CLR Memory", "# Gen 1 Collections");
@@ -140,21 +134,9 @@ namespace EventStore.Core.Services.Monitoring.Utils
             return InvalidCounterResult;
         }
 
-        public float GetThrownExceptionsCount()
+        public float GetThrownExceptionsRate()
         {
-            if (exceptionsCounter != null) return exceptionsCounter.NextValue();
-            return InvalidCounterResult;
-        }
-
-        public float GetExceptionsThrowingRate()
-        {
-            if (exceptionsRateCounter != null) return exceptionsRateCounter.NextValue();
-            return InvalidCounterResult;
-        }
-
-        public float GetContentionsCount()
-        {
-            if (contentionsCounter != null) return contentionsCounter.NextValue();
+            if (thrownExceptionsRateCounter != null) return thrownExceptionsRateCounter.NextValue();
             return InvalidCounterResult;
         }
 
@@ -200,10 +182,7 @@ namespace EventStore.Core.Services.Monitoring.Utils
             if (procCpuCounter != null) procCpuCounter.Dispose();
             if (procThreadsCounter != null) procThreadsCounter.Dispose();
 
-            if (exceptionsCounter != null) exceptionsCounter.Dispose();
-            if (exceptionsRateCounter != null) exceptionsRateCounter.Dispose();
-
-            if (contentionsCounter != null) contentionsCounter.Dispose();
+            if (thrownExceptionsRateCounter != null) thrownExceptionsRateCounter.Dispose();
             if (contentionsRateCounter != null) contentionsRateCounter.Dispose();
 
             if (gcGen0ItemsCounter != null) gcGen0ItemsCounter.Dispose();
