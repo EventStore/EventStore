@@ -389,7 +389,7 @@ namespace EventStore.Core.Messages
             public long? LastCommitPosition { get; set; }
 
             [ProtoMember(5)]
-            public int LastEventNumber { get; set; }
+            public int? LastEventNumber { get; set; }
 
             public ReadStreamEventsForwardCompleted()
             {
@@ -399,7 +399,7 @@ namespace EventStore.Core.Messages
                                                     EventLinkPair[] events,
                                                     RangeReadResult result,
                                                     long? lastCommitPosition,
-                                                    int lastEventNumber)
+                                                    int? lastEventNumber)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "streamId");
 
