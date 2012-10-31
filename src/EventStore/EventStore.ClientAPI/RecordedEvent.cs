@@ -47,7 +47,7 @@ namespace EventStore.ClientAPI
         {
             EventStreamId = systemRecord.EventStreamId;
 
-            EventId = systemRecord.EventId;
+            EventId = new Guid(systemRecord.EventId);
             EventNumber = systemRecord.EventNumber;
 
             EventType = systemRecord.EventType;
@@ -60,7 +60,7 @@ namespace EventStore.ClientAPI
         {
             EventStreamId = streamEvent.EventStreamId;
 
-            EventId = streamEvent.EventId;
+            EventId = new Guid(streamEvent.EventId);
             EventNumber = streamEvent.EventNumber;
 
             EventType = streamEvent.EventType;

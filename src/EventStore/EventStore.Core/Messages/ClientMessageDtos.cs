@@ -30,7 +30,6 @@ using System.Net;
 using System.Runtime.Serialization;
 using System.Text;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using ProtoBuf;
@@ -474,6 +473,91 @@ namespace EventStore.Core.Messages
         }
 
         [ProtoContract]
+        public class EventLinkPair
+        {
+            [ProtoMember(1)]
+            public EventRecord Event { get; set; }
+
+            [ProtoMember(2)]
+            public EventRecord Link { get; set; }
+
+            public EventLinkPair()
+            {
+            }
+
+            public EventLinkPair(Data.EventRecord @event, Data.EventRecord link)
+            {
+                Ensure.NotNull(@event, "event");
+                Event = new EventRecord(@event);
+                Link = link == null ? null : new EventRecord(link);
+            }
+        }
+
+        [ProtoContract]
+        public class EventRecord
+        {
+            [ProtoMember(1)]
+            public readonly int EventNumber;
+
+            [ProtoMember(2)]
+            public readonly long LogPosition;
+
+            [ProtoMember(3)]
+            public readonly byte[] CorrelationId;
+
+            [ProtoMember(4)]
+            public readonly byte[] EventId;
+
+            [ProtoMember(5)]
+            public readonly long TransactionPosition;
+
+            [ProtoMember(6)]
+            public readonly int TransactionOffset;
+
+            [ProtoMember(7)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(8)]
+            public readonly int ExpectedVersion;
+
+            [ProtoMember(9)]
+            public readonly DateTime TimeStamp;
+
+            [ProtoMember(10)]
+            public readonly ushort Flags;
+
+            [ProtoMember(11)]
+            public readonly string EventType;
+
+            [ProtoMember(12)]
+            public readonly byte[] Data;
+
+            [ProtoMember(13)]
+            public readonly byte[] Metadata;
+
+            public EventRecord()
+            {
+            }
+
+            public EventRecord(Data.EventRecord eventRecord)
+            {
+                EventNumber = eventRecord.EventNumber;
+                LogPosition = eventRecord.LogPosition;
+                CorrelationId = eventRecord.CorrelationId.ToByteArray();
+                EventId = eventRecord.EventId.ToByteArray();
+                TransactionPosition = eventRecord.TransactionPosition;
+                TransactionOffset = eventRecord.TransactionOffset;
+                EventStreamId = eventRecord.EventStreamId;
+                ExpectedVersion = eventRecord.ExpectedVersion;
+                TimeStamp = eventRecord.TimeStamp;
+                Flags = (ushort)eventRecord.Flags;
+                EventType = eventRecord.EventType;
+                Data = eventRecord.Data;
+                Metadata = eventRecord.Metadata;
+            }
+        }
+
+        [ProtoContract]
         public class ReadAllEventsForward
         {
             [ProtoMember(1)]
@@ -819,7 +903,7 @@ namespace EventStore.Core.Messages
             public int EventNumber { get; set; }
 
             [ProtoMember(3)]
-            public Guid EventId { get; set; }
+            public byte[] EventId { get; set; }
 
             [ProtoMember(4)]
             public string EventType { get; set; }
@@ -838,7 +922,7 @@ namespace EventStore.Core.Messages
             {
                 EventStreamId = @event.EventStreamId;
                 EventNumber = eventNumber;
-                EventId = @event.EventId;
+                EventId = @event.EventId.ToByteArray();
                 EventType = @event.EventType;
                 Data = @event.Data;
                 Metadata = @event.Metadata;
