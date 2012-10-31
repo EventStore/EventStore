@@ -582,6 +582,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                 evnt.EventNumber,
                                 evnt));
                         }
+
+                        TestEvent.VerifyIfMatched(evnt);
                     }
                     Log.Info("Done reading [{0}] from {1,-10} count {2,-10}", stream, from, count);
                     resSource.SetResult(null);

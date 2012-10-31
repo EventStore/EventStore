@@ -28,6 +28,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 
@@ -102,13 +103,49 @@ namespace EventStore.TestClient
             executedEvent.WaitOne(1000);
             context.WaitForCompletion();
 
-            if (context.Error != null)
-                _log.ErrorException(context.Error, "Error during execution of command.");
             if (!string.IsNullOrWhiteSpace(context.Reason))
                 _log.Error("Error during execution of command: {0}.", context.Reason);
+            if (context.Error != null)
+            {
+                _log.ErrorException(context.Error, "Error during execution of command");
 
+                var details = new StringBuilder();
+                BuildFullException(context.Error, details);
+                _log.Error("Details: {0}", details.ToString());
+            }
+            
             exitCode = exitC == 0 ? context.ExitCode : exitC;
             return true;
+        }
+
+        private static void BuildFullException(Exception ex, StringBuilder details, int level = 0)
+        {
+            const int maxLevel = 3;
+
+            if (details == null)
+                throw new ArgumentNullException("details");
+
+            if (level > maxLevel)
+                return;
+
+            while (ex != null)
+            {
+                details.AppendFormat("\n{0}-->{1}", new string(' ', level * 2), ex.Message);
+
+                var aggregated = ex as AggregateException;
+                if (aggregated != null && aggregated.InnerExceptions != null)
+                {
+                    if (level > maxLevel)
+                        break;
+
+                    foreach (var innerException in aggregated.InnerExceptions.Take(2))
+                        BuildFullException(innerException, details, level + 1);
+                }
+                else
+                    ex = ex.InnerException;
+
+                level += 1;
+            }
         }
     }
 }
