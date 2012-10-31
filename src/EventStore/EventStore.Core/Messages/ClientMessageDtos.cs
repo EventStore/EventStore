@@ -932,7 +932,7 @@ namespace EventStore.Core.Messages
         [ProtoContract]
         public class SubscriptionDropped
         {
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public string EventStreamId { get; set; }
 
             public SubscriptionDropped()
