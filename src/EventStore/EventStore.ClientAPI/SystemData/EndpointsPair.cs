@@ -26,23 +26,19 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
 using System.Net;
 
-namespace EventStore.ClientAPI.Exceptions
+namespace EventStore.ClientAPI.SystemData
 {
-    public class OperationCannotBeHandledByInstanceException : Exception
+    internal struct EndpointsPair
     {
-        public readonly IPEndPoint RecommendedTcpEndpoint;
-        public readonly IPEndPoint RecommendedHttpEndpoint;
+        public readonly IPEndPoint TcpEndPoint;
+        public readonly IPEndPoint HttpEndPoint;
 
-        public OperationCannotBeHandledByInstanceException(string message,
-                                                           IPEndPoint recommendedTcpEndpoint,
-                                                           IPEndPoint recommendedHttpEndpoint)
-            : base(message)
+        public EndpointsPair(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint)
         {
-            RecommendedTcpEndpoint = recommendedTcpEndpoint;
-            RecommendedHttpEndpoint = recommendedHttpEndpoint;
+            TcpEndPoint = tcpEndPoint;
+            HttpEndPoint = httpEndPoint;
         }
     }
 }

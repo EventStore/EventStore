@@ -99,12 +99,8 @@ namespace EventStore.ClientAPI.ClientOperations
                 if (package.Command == TcpCommand.DeniedToRoute)
                 {
                     var route = package.Data.Deserialize<ClientMessages.DeniedToRoute>();
-                    return new InspectionResult(InspectionDecision.NotifyError,
-                        new OperationCannotBeHandledByInstanceException(string.Format("Operation cannot be handled by server on current endpoint. " +
-                                                                                      "Try these instead : [tcp {0}][http {1}]",
-                                                                                      route.ExternalTcpEndPoint,
-                                                                                      route.ExternalHttpEndPoint),
-                                                                        route.ExternalTcpEndPoint,
+                    return new InspectionResult(InspectionDecision.Reconnect,
+                                                data: new EndpointsPair(route.ExternalTcpEndPoint,
                                                                         route.ExternalHttpEndPoint));
                 }
                 if (package.Command != TcpCommand.TransactionWriteCompleted)

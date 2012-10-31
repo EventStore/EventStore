@@ -59,7 +59,8 @@ namespace EventStore.ClientAPI
         private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(7);
         private static readonly TimeSpan OperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
 
-        private readonly IPEndPoint _tcpEndPoint;
+        private IPEndPoint _tcpEndPoint;
+        private IPEndPoint _httpEndPoint;
         private readonly bool _allowForwarding;
 
         private readonly TcpConnector _connector;
@@ -107,6 +108,7 @@ namespace EventStore.ClientAPI
             Ensure.Nonnegative(maxReconnections, "maxReconnections");
 
             _tcpEndPoint = tcpEndPoint;
+            _httpEndPoint = httpEndpoint ?? new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000);
             _allowForwarding = allowForwarding;
             _maxConcurrentItems = maxConcurrentRequests;
             _maxAttempts = maxAttemptsForOperation;
@@ -115,12 +117,12 @@ namespace EventStore.ClientAPI
             LogManager.RegisterLogger(logger);
             _log = LogManager.GetLogger();
 
-            _connector = new TcpConnector(_tcpEndPoint);
+            _connector = new TcpConnector();
             _subscriptionsChannel = new SubscriptionsChannel(_connector);
-            _projectionsManager = new ProjectionsManager(httpEndpoint ?? new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000));
+            _projectionsManager = new ProjectionsManager();
 
             _lastReconnectionTimestamp = DateTime.UtcNow;
-            _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
+            _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
             _timeoutCheckStopwatch.Start();
 
             _worker = new Thread(MainLoop)
@@ -374,7 +376,8 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
 
-            _subscriptionsChannel.EnsureConnected();
+            lock(_connectionLock)
+                _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             return _subscriptionsChannel.Subscribe(stream, eventAppeared, subscriptionDropped);
         }
 
@@ -382,7 +385,8 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
-            _subscriptionsChannel.EnsureConnected();
+            lock (_connectionLock)
+                _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             _subscriptionsChannel.Unsubscribe(stream);
         }
 
@@ -391,13 +395,15 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
 
-            _subscriptionsChannel.EnsureConnected();
+            lock (_connectionLock)
+                _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             return _subscriptionsChannel.SubscribeToAllStreams(eventAppeared, subscriptionDropped);
         }
 
         public void UnsubscribeFromAllStreams()
         {
-            _subscriptionsChannel.EnsureConnected();
+            lock (_connectionLock)
+                _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             _subscriptionsChannel.UnsubscribeFromAllStreams();
         }
 
@@ -412,7 +418,7 @@ namespace EventStore.ClientAPI
         Task IProjectionsManagement.EnableAsync(string name)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.Enable(name);
+            return _projectionsManager.Enable(_httpEndPoint, name);
         }
 
         void IProjectionsManagement.Disable(string name)
@@ -426,7 +432,7 @@ namespace EventStore.ClientAPI
         Task IProjectionsManagement.DisableAsync(string name)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.Disable(name);
+            return _projectionsManager.Disable(_httpEndPoint, name);
         }
 
         void IProjectionsManagement.CreateOneTime(string query)
@@ -440,7 +446,7 @@ namespace EventStore.ClientAPI
         Task IProjectionsManagement.CreateOneTimeAsync(string query)
         {
             Ensure.NotNullOrEmpty(query, "query");
-            return _projectionsManager.CreateOneTime(query);
+            return _projectionsManager.CreateOneTime(_httpEndPoint, query);
         }
 
         void IProjectionsManagement.CreateAdHoc(string name, string query)
@@ -457,7 +463,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            return _projectionsManager.CreateAdHoc(name, query);
+            return _projectionsManager.CreateAdHoc(_httpEndPoint, name, query);
         }
 
         void IProjectionsManagement.CreateContinuous(string name, string query)
@@ -474,7 +480,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            return _projectionsManager.CreateContinious(name, query);
+            return _projectionsManager.CreateContinious(_httpEndPoint, name, query);
         }
 
         void IProjectionsManagement.CreatePersistent(string name, string query)
@@ -491,7 +497,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            return _projectionsManager.CreatePersistent(name, query);
+            return _projectionsManager.CreatePersistent(_httpEndPoint, name, query);
         }
 
         string IProjectionsManagement.ListAll()
@@ -503,7 +509,7 @@ namespace EventStore.ClientAPI
 
         Task<string> IProjectionsManagement.ListAllAsync()
         {
-            return _projectionsManager.ListAll();
+            return _projectionsManager.ListAll(_httpEndPoint);
         }
 
         string IProjectionsManagement.ListOneTime()
@@ -515,7 +521,7 @@ namespace EventStore.ClientAPI
 
         Task<string> IProjectionsManagement.ListOneTimeAsync()
         {
-            return _projectionsManager.ListOneTime();
+            return _projectionsManager.ListOneTime(_httpEndPoint);
         }
 
         string IProjectionsManagement.ListAdHoc()
@@ -527,7 +533,7 @@ namespace EventStore.ClientAPI
 
         Task<string> IProjectionsManagement.ListAdHocAsync()
         {
-            return _projectionsManager.ListAdHoc();
+            return _projectionsManager.ListAdHoc(_httpEndPoint);
         }
 
         string IProjectionsManagement.ListContinuous()
@@ -539,7 +545,7 @@ namespace EventStore.ClientAPI
 
         Task<string> IProjectionsManagement.ListContinuousAsync()
         {
-            return _projectionsManager.ListContinuous();
+            return _projectionsManager.ListContinuous(_httpEndPoint);
         }
 
         string IProjectionsManagement.ListPersistent()
@@ -551,7 +557,7 @@ namespace EventStore.ClientAPI
 
         Task<string> IProjectionsManagement.ListPersistentAsync()
         {
-            return _projectionsManager.ListPersistent();
+            return _projectionsManager.ListPersistent(_httpEndPoint);
         }
 
         string IProjectionsManagement.GetStatus(string name)
@@ -566,7 +572,7 @@ namespace EventStore.ClientAPI
         Task<string> IProjectionsManagement.GetStatusAsync(string name)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.GetStatus(name);
+            return _projectionsManager.GetStatus(_httpEndPoint, name);
         }
 
         string IProjectionsManagement.GetState(string name)
@@ -581,7 +587,7 @@ namespace EventStore.ClientAPI
         Task<string> IProjectionsManagement.GetStateAsync(string name)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.GetState(name);
+            return _projectionsManager.GetState(_httpEndPoint, name);
         }
 
         string IProjectionsManagement.GetStatistics(string name)
@@ -596,7 +602,7 @@ namespace EventStore.ClientAPI
         Task<string> IProjectionsManagement.GetStatisticsAsync(string name)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.GetStatistics(name);
+            return _projectionsManager.GetStatistics(_httpEndPoint, name);
         }
 
         string IProjectionsManagement.GetQuery(string name)
@@ -611,7 +617,7 @@ namespace EventStore.ClientAPI
         Task<string> IProjectionsManagement.GetQueryAsync(string name)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.GetQuery(name);
+            return _projectionsManager.GetQuery(_httpEndPoint, name);
         }
 
         void IProjectionsManagement.UpdateQuery(string name, string query)
@@ -628,7 +634,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            return _projectionsManager.UpdateQuery(name, query);
+            return _projectionsManager.UpdateQuery(_httpEndPoint, name, query);
         }
 
         void IProjectionsManagement.Delete(string name)
@@ -642,7 +648,7 @@ namespace EventStore.ClientAPI
         Task IProjectionsManagement.DeleteAsync(string name)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.Delete(name);
+            return _projectionsManager.Delete(_httpEndPoint, name);
         }
 
         private void EnqueueOperation(IClientOperation operation)
@@ -678,7 +684,7 @@ namespace EventStore.ClientAPI
                             throw new CannotEstablishConnectionException();
 
                         _lastReconnectionTimestamp = DateTime.UtcNow;
-                        _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
+                        _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
                         _reconnectionStopwatch.Stop();
                     }
                 }
@@ -771,6 +777,27 @@ namespace EventStore.ClientAPI
             }
         }
 
+        private void Reconnect(WorkItem workItem, EndpointsPair endpoints)
+        {
+            lock (_connectionLock)
+            {
+                if (!_reconnectionStopwatch.IsRunning || (_reconnectionStopwatch.IsRunning && !_tcpEndPoint.Equals(endpoints.TcpEndPoint)))
+                {
+                    _log.Info("Going to reconnect to [{0}]. Current state: {1}, Current endpoint: {2}",
+                              endpoints.TcpEndPoint,
+                              _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected",
+                              _tcpEndPoint);
+
+                    _tcpEndPoint = endpoints.TcpEndPoint;
+                    _httpEndPoint = endpoints.HttpEndPoint;
+
+                    _connection.Close();
+                    _subscriptionsChannel.Close(false);
+                }
+                Retry(workItem);
+            }
+        }
+
         private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
         {
             var corrId = package.CorrelationId;
@@ -791,6 +818,9 @@ namespace EventStore.ClientAPI
                     break;
                 case InspectionDecision.Retry:
                     Retry(workItem);
+                    break;
+                case InspectionDecision.Reconnect:
+                    Reconnect(workItem, (EndpointsPair)result.Data);
                     break;
                 case InspectionDecision.NotifyError:
                     if (TryRemoveWorkItem(workItem))

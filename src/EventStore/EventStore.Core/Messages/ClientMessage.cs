@@ -82,25 +82,16 @@ namespace EventStore.Core.Messages
         public class DeniedToRoute : Message
         {
             public readonly Guid CorrelationId;
-            public readonly DateTime TimeStamp;
 
-            public readonly IPEndPoint InternalTcpEndPoint;
             public readonly IPEndPoint ExternalTcpEndPoint;
-            public readonly IPEndPoint InternalHttpEndPoint;
             public readonly IPEndPoint ExternalHttpEndPoint;
 
             public DeniedToRoute(Guid correlationId,
-                                 DateTime timeStamp,
-                                 IPEndPoint internalTcpEndPoint,
                                  IPEndPoint externalTcpEndPoint,
-                                 IPEndPoint internalHttpEndPoint,
                                  IPEndPoint externalHttpEndPoint)
             {
                 CorrelationId = correlationId;
-                TimeStamp = timeStamp;
-                InternalTcpEndPoint = internalTcpEndPoint;
                 ExternalTcpEndPoint = externalTcpEndPoint;
-                InternalHttpEndPoint = internalHttpEndPoint;
                 ExternalHttpEndPoint = externalHttpEndPoint;
             }
         }

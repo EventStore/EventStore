@@ -44,33 +44,28 @@ namespace EventStore.Core.Messages
         public class DeniedToRoute
         {
             [ProtoMember(1)]
-            public DateTime TimeStamp { get; set; }
+            public string ExternalTcpAddress { get; set; }
 
             [ProtoMember(2)]
-            public IPEndPoint InternalTcpEndPoint { get; set; }
+            public int ExternalTcpPort { get; set; }
+
             [ProtoMember(3)]
-            public IPEndPoint ExternalTcpEndPoint { get; set; }
+            public string ExternalHttpAddress { get; set; }
+
             [ProtoMember(4)]
-            public IPEndPoint InternalHttpEndPoint { get; set; }
-            [ProtoMember(5)]
-            public IPEndPoint ExternalHttpEndPoint { get; set; }
+            public int ExternalHttpPort { get; set; }
 
             public DeniedToRoute()
             {
             }
 
-            public DeniedToRoute(DateTime timeStamp,
-                                 IPEndPoint internalTcpEndPoint,
-                                 IPEndPoint externalTcpEndPoint,
-                                 IPEndPoint internalHttpEndPoint,
-                                 IPEndPoint externalHttpEndPoint)
+            public DeniedToRoute(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint)
             {
-                TimeStamp = timeStamp;
+                ExternalTcpAddress = externalTcpEndPoint.Address.ToString();
+                ExternalTcpPort = externalTcpEndPoint.Port;
 
-                InternalTcpEndPoint = internalTcpEndPoint;
-                ExternalTcpEndPoint = externalTcpEndPoint;
-                InternalHttpEndPoint = internalHttpEndPoint;
-                ExternalHttpEndPoint = externalHttpEndPoint;
+                ExternalHttpAddress = externalHttpEndPoint.Address.ToString();
+                ExternalHttpPort = externalHttpEndPoint.Port;
             }
         }
 
