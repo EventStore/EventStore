@@ -29,10 +29,10 @@
 using System;
 using ProtoBuf;
 
-namespace EventStore.ClientAPI.SystemData
+namespace EventStore.ClientAPI.Messages
 {
     [ProtoContract]
-    public class EventRecord
+    internal class EventRecord
     {
         [ProtoMember(1)]
         public readonly int EventNumber;

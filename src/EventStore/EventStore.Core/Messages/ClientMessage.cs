@@ -461,7 +461,7 @@ namespace EventStore.Core.Messages
             public readonly RangeReadResult Result;
             public readonly int NextEventNumber;
             public readonly long? LastCommitPosition;
-            public readonly int LastEventNumber;
+            public readonly int? LastEventNumber;
 
             public ReadStreamEventsForwardCompleted(Guid correlationId,
                                                     string eventStreamId,
@@ -469,7 +469,7 @@ namespace EventStore.Core.Messages
                                                     RangeReadResult result,
                                                     int nextEventNumber,
                                                     long? lastCommitPosition,
-                                                    int lastEventNumber)
+                                                    int? lastEventNumber)
             {
                 Ensure.NotNull(events, "events");
 

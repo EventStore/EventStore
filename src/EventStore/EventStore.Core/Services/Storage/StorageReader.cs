@@ -198,7 +198,7 @@ namespace EventStore.Core.Services.Storage
             }
 
             var resolvedPairs = ResolveLinkToEvents(records, message.ResolveLinks);
-            int lastEventNumber = message.ReturnLastEventNumber ? _readIndex.GetLastStreamEventNumber(message.EventStreamId) : -1;
+            int? lastEventNumber = message.ReturnLastEventNumber ? _readIndex.GetLastStreamEventNumber(message.EventStreamId) : (int?)null;
             message.Envelope.ReplyWith(
                     new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId,
                                                                        message.EventStreamId,

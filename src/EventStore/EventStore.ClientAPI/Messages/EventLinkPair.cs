@@ -1,10 +1,10 @@
 using EventStore.ClientAPI.Common.Utils;
 using ProtoBuf;
 
-namespace EventStore.ClientAPI.SystemData
+namespace EventStore.ClientAPI.Messages
 {
     [ProtoContract]
-    public class EventLinkPair
+    internal class EventLinkPair
     {
         [ProtoMember(1)]
         public EventRecord Event { get; set; }
