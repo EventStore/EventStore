@@ -223,17 +223,28 @@ namespace EventStore.Core.Messages
         public class CommitAck : Message
         {
             public readonly Guid CorrelationId;
-            public readonly long StartPosition;
+            public readonly long TransactionPosition;
             public readonly int EventNumber;
 
-            public CommitAck(Guid correlationId, long startPosition, int eventNumber)
+            public CommitAck(Guid correlationId, long transactionPosition, int eventNumber)
             {
-                Ensure.Nonnegative(startPosition, "startPosition");
+                Ensure.Nonnegative(transactionPosition, "transactionPosition");
                 Ensure.Nonnegative(eventNumber, "eventNumber");
 
                 CorrelationId = correlationId;
-                StartPosition = startPosition;
+                TransactionPosition = transactionPosition;
                 EventNumber = eventNumber;
+            }
+        }
+
+        public class CommitDiscovered : Message
+        {
+            public readonly CommitLogRecord Commit;
+
+            public CommitDiscovered(CommitLogRecord commit)
+            {
+                Ensure.NotNull(commit, "commit");
+                Commit = commit;
             }
         }
 
