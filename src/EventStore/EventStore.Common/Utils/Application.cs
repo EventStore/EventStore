@@ -52,8 +52,8 @@ namespace EventStore.Common.Utils
                 throw new InvalidOperationException("Application should be initialized before exiting");
             Ensure.NotNullOrEmpty(reason, "reason");
 
-            Log.Info("Exiting...");
-            Log.Info("Exit reason : {0}", reason);
+            Console.WriteLine("Exiting...");
+            Console.WriteLine("Exit reason : {0}", reason);
 
             LogManager.Finish();
             _exit((int)exitCode);
