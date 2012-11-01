@@ -170,7 +170,7 @@ namespace EventStore.ClientAPI.Connection
                         var recordedEvent = new RecordedEvent(dto);
                         var commitPos = dto.CommitPosition;
                         var preparePos = dto.PreparePosition;
-                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(recordedEvent/*, commitPos, preparePos*/));
+                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(recordedEvent, new Position(commitPos, preparePos)));
                         break;
                     case TcpCommand.SubscriptionDropped:
                     case TcpCommand.SubscriptionToAllDropped:
