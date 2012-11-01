@@ -94,7 +94,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                     ++_headerBytes;
                     if (_headerBytes == HeaderLength)
                     {
-                        if (_packageLength == 0 || _packageLength > _maxPackageSize)
+                        if (_packageLength <= 0 || _packageLength > _maxPackageSize)
                             throw new PackageFramingException(string.Format("Package size is out of bounds: {0} (max: {1}).", _packageLength, _maxPackageSize));
 
                         _messageBuffer = new byte[_packageLength];
