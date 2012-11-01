@@ -60,7 +60,6 @@ namespace EventStore.TestClient.Commands
                                                      });
 
             int step = 0;
-            TcpTypedConnection<byte[]> connection = null;
             foreach (var pkg in packages)
             {
                 var established = new AutoResetEvent(false);
@@ -71,7 +70,7 @@ namespace EventStore.TestClient.Commands
                 else
                     Console.WriteLine("{0} Starting step {1} (RANDOM BYTES) {0}", new string('#', 20), step);
 
-                connection = context.Client.CreateTcpConnection(context,
+                var connection = context.Client.CreateTcpConnection(context,
                                                                     (conn, package) =>
                                                                     {
                                                                         if (package.Command != TcpCommand.BadRequest)
@@ -97,11 +96,17 @@ namespace EventStore.TestClient.Commands
                      commandsToCkeck.Length,
                      packages.Count() - commandsToCkeck.Length,
                      packages.Count());
-            connection.Close();
+
             Log.Info("Now sending raw bytes...");
             try
             {
                 SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(int.MaxValue));
+                SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(int.MinValue));
+
+                SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(double.MinValue));
+                SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(double.MinValue));
+
+                SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(new Random().NextDouble()));
             }
             catch (Exception e)
             {
