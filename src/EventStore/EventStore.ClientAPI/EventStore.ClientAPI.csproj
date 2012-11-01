@@ -144,6 +144,7 @@
     <Compile Include="Transport.Http\IPEndpointExtensions.cs" />
     <Compile Include="Transport.Http\WebRequestExtensions.cs" />
     <Compile Include="Messages\ClientMessages.cs" />
+    <Compile Include="Transport.Tcp\PackageFramingException.cs" />
     <Compile Include="Transport.Tcp\ProtobufExtensions.cs" />
     <Compile Include="Transport.Tcp\TcpConfiguratin.cs" />
     <Compile Include="Transport.Tcp\TcpConnection.cs" />

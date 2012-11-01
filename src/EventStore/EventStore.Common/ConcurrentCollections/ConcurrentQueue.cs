@@ -24,15 +24,124 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+/*
+Quote from
+
+Professional .NET Framework 2.0 (Programmer to Programmer) (Paperback)
+by Joe Duffy (Author)
+
+
+# Paperback: 601 pages
+# Publisher: Wrox (April 10, 2006)
+# Language: English
+# ISBN-10: 0764571354
+# ISBN-13: 978-0764571350
+
+*/
+
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Security;
+using System.Text;
+using System.Threading;
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Threading;
 
 namespace EventStore.Common.ConcurrentCollections
 {
+
+    class SpinLock2
+    {
+        private int state;
+        private EventWaitHandle available = new AutoResetEvent(false);
+
+        // This looks at the total number of hardware threads available; if it's
+        // only 1, we will use an optimized code path
+        private static bool isSingleProc = (Environment.ProcessorCount == 1);
+
+        private const int outerTryCount = 5;
+        private const int cexTryCount = 100;
+
+        public void Enter(out bool taken)
+        {
+            // Taken is an out parameter so that we set it *inside* the critical
+            // region, rather than returning it and permitting aborts to creep in.
+            // Without this, the caller could take the lock, but not release it
+            // because it didn't know it had to.
+            taken = false;
+
+            while (!taken)
+            {
+                if (isSingleProc)
+                {
+                    // Don't busy wait on 1-logical processor machines; try
+                    // a single swap, and if it fails, drop back to EventWaitHandle.
+                    Thread.BeginCriticalRegion();
+                    taken = Interlocked.CompareExchange(ref state, 1, 0) == 0;
+                    if (!taken)
+                        Thread.EndCriticalRegion();
+                }
+                else
+                {
+                    for (int i = 0; !taken && i < outerTryCount; i++)
+                    {
+                        // Tell the CLR we're in a critical region;
+                        // interrupting could lead to deadlocks.
+                        Thread.BeginCriticalRegion();
+
+                        // Try 'cexTryCount' times to CEX the state variable:
+                        int tries = 0;
+                        while (!(taken =
+                            Interlocked.CompareExchange(ref state, 1, 0) == 0) &&
+                            tries++ < cexTryCount)
+                        {
+                            Thread.SpinWait(1);
+                        }
+
+                        if (!taken)
+                        {
+                            // We failed to acquire in the busy spin, mark the end
+                            // of our critical region and yield to let another
+                            // thread make forward progress.
+                            Thread.EndCriticalRegion();
+                            Thread.Sleep(0);
+                        }
+                    }
+                }
+
+                // If we didn't acquire the lock, block.
+                if (!taken) available.WaitOne();
+            }
+
+            return;
+        }
+
+        public void Enter()
+        {
+            // Convenience method. Using this could be prone to deadlocks.
+            bool b;
+            Enter(out b);
+        }
+
+        public void Exit()
+        {
+            if (Interlocked.CompareExchange(ref state, 0, 1) == 1)
+            { 
+                // We notify the waking threads inside our critical region so
+                // that an abort doesn't cause us to lose a pulse, (which could
+                // lead to deadlocks).
+                available.Set();
+                Thread.EndCriticalRegion();
+            }
+        }
+    }
+
     /// <summary>
     /// This is a not concurrent concurrentqueue that actually works with mono. Alas one day it may be fixed.
     /// </summary>
@@ -40,7 +149,8 @@ namespace EventStore.Common.ConcurrentCollections
     public class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
     {
         private readonly Queue<T> _queue = new Queue<T>();
-        private readonly object _padLock = new object();
+        //private readonly object _padLock = new object();
+        private SpinLock2 _padLock = new SpinLock2();
 
         public IEnumerator<T> GetEnumerator()
         {
@@ -61,85 +171,97 @@ namespace EventStore.Common.ConcurrentCollections
         {
             get
             {
-                if (!Monitor.TryEnter(_padLock, 5000)) throw new UnableToAcquireLockException();
+                bool gotLock = false;
+
                 try
                 {
+                    _padLock.Enter(out gotLock);
+                    if (!gotLock) throw new UnableToAcquireLockException();
                     return _queue.Count;
                 }
                 finally
                 {
-                    Monitor.Exit(_padLock);
+                    if(gotLock) _padLock.Exit();
                 }
             }
         }
 
         public object SyncRoot
         {
-            get { return _padLock; }
+            get { return null; }
         }
 				
 
         public bool TryTake(out T item)
         {
             item = default(T);
-            if (!Monitor.TryEnter(_padLock, 5000)) return false;
+            bool gotLock = false;
+
             try
             {
+                _padLock.Enter(out gotLock);
+                if (!gotLock) return false;
 				if(_queue.Count == 0) return false;
                 item = _queue.Dequeue();
                 return true;
             }
             finally
             {
-                Monitor.Exit(_padLock);
+                if(gotLock) _padLock.Exit();
             }
         }
 
 		public bool TryPeek (out T item)
 		{
 			item = default(T);
-            if (!Monitor.TryEnter(_padLock, 5000)) return false;
+            bool gotLock = false;
             try
             {
+                _padLock.Enter(out gotLock);
+                if (!gotLock) return false;
 				if(_queue.Count == 0) return false;
                 item = _queue.Peek();
                 return true;
             }
             finally
             {
-                Monitor.Exit(_padLock);
+                if(gotLock) _padLock.Exit();
             }
 		}
 
         public bool IsSynchronized
         {
-            get { return true; }
+            get { return false; }
         }
 
         public void CopyTo(T[] array, int index)
         {
-            if (!Monitor.TryEnter(_padLock, 5000)) throw new UnableToAcquireLockException();
+            bool gotLock = false;
             try
             {
+                _padLock.Enter(out gotLock);       
+                if (!gotLock) throw new UnableToAcquireLockException();
                 _queue.CopyTo(array, index);
             }
             finally
             {
-                Monitor.Exit(_padLock);
+                if(gotLock) _padLock.Exit();
             }
         }
 
         public bool TryAdd(T item)
         {
-            if (!Monitor.TryEnter(_padLock, 5000)) return false;
+            bool gotLock = false;
             try
             {
+                _padLock.Enter(out gotLock);
+                if (!gotLock) throw new UnableToAcquireLockException();
                 _queue.Enqueue(item);
                 return true;
             }
             finally
             {
-                Monitor.Exit(_padLock);
+                if(gotLock) _padLock.Exit();
             }
         }
 
@@ -156,14 +278,16 @@ namespace EventStore.Common.ConcurrentCollections
 
         public T[] ToArray()
         {
-            if (!Monitor.TryEnter(_padLock, 5000)) throw new UnableToAcquireLockException();
+            bool gotLock = false;
             try
             {
+                _padLock.Enter(out gotLock);           
+                if (!gotLock) throw new UnableToAcquireLockException();
                 return _queue.ToArray();
             }
             finally
             {
-                Monitor.Exit(_padLock);
+                if(gotLock) _padLock.Exit();
             }
         }
     }

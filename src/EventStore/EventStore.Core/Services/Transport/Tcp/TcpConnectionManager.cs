@@ -162,7 +162,16 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             Interlocked.Increment(ref _messageNumber);
 
-            _framer.UnFrameData(data);
+            try
+            {
+                _framer.UnFrameData(data);
+            }
+            catch (PackageFramingException exc)
+            {
+                Log.InfoException(exc, "Invalid TCP frame received.");
+                Stop();
+                return;
+            }
             _connection.ReceiveAsync(OnRawDataReceived);
         }
 
@@ -176,10 +185,8 @@ namespace EventStore.Core.Services.Transport.Tcp
             catch (Exception e)
             {
                 Log.InfoException(e, "Received bad network package");
-
                 SendPackage(new TcpPackage(TcpCommand.BadRequest, Guid.Empty, null));
                 Stop();
-
                 return;
             }
 
