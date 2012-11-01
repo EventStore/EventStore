@@ -107,8 +107,7 @@ namespace EventStore.Transport.Tcp
         private readonly System.Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new System.Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
 #endif
 
-        private readonly Queue<Tuple<ArraySegment<byte>, Action>> _receiveQueue =
-            new Queue<Tuple<ArraySegment<byte>, Action>>();
+        private readonly Queue<Tuple<ArraySegment<byte>, Action>> _receiveQueue = new Queue<Tuple<ArraySegment<byte>, Action>>();
 
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
@@ -206,7 +205,8 @@ namespace EventStore.Transport.Tcp
 
             if (_sendSocketArgs.Count == 0)
             {
-                lock (_sendingLock) {
+                lock (_sendingLock)
+                {
                     _isSending = false;
                     return;
                 }

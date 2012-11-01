@@ -166,8 +166,11 @@ namespace EventStore.ClientAPI.Connection
                 switch (package.Command)
                 {
                     case TcpCommand.StreamEventAppeared:
-                        var recordedEvent = new RecordedEvent(package.Data.Deserialize<ClientMessages.StreamEventAppeared>());
-                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(recordedEvent));
+                        var dto = package.Data.Deserialize<ClientMessages.StreamEventAppeared>();
+                        var recordedEvent = new RecordedEvent(dto);
+                        var commitPos = dto.CommitPosition;
+                        var preparePos = dto.PreparePosition;
+                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(recordedEvent/*, commitPos, preparePos*/));
                         break;
                     case TcpCommand.SubscriptionDropped:
                     case TcpCommand.SubscriptionToAllDropped:

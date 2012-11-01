@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
 using System.Net;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
@@ -806,6 +805,12 @@ namespace EventStore.ClientAPI.Messages
 
             [ProtoMember(6)]
             public byte[] Metadata { get; set; }
+
+            [ProtoMember(7)]
+            public long CommitPosition { get; set; }
+
+            [ProtoMember(8)]
+            public long PreparePosition { get; set; }
         }
 
         [ProtoContract]

@@ -88,13 +88,18 @@ namespace EventStore.Core.Services
             foreach (var tuple in _subscribedToAll)
             {
                 var manager = tuple.Item2;
-
+                var correlationId = tuple.Item1;
                 if (manager.SendQueueSize <= ConnectionQueueSizeThreshold)
-                    manager.SendMessage(new ClientMessage.StreamEventAppeared(tuple.Item1, message.EventNumber, message.Prepare));
+                {
+                    manager.SendMessage(new ClientMessage.StreamEventAppeared(correlationId,
+                                                                              message.EventNumber,
+                                                                              message.Prepare,
+                                                                              message.CommitPosition));
+                }
                 else
                 {
                     _pendingUnsubscribeAll.Add(tuple);
-                    manager.SendMessage(new ClientMessage.SubscriptionToAllDropped(tuple.Item1));
+                    manager.SendMessage(new ClientMessage.SubscriptionToAllDropped(correlationId));
                 }
             }
 
@@ -113,12 +118,18 @@ namespace EventStore.Core.Services
                 foreach (var tuple in subscribers)
                 {
                     var manager = tuple.Item2;
+                    var correlationId = tuple.Item1;
                     if (manager.SendQueueSize <= ConnectionQueueSizeThreshold)
-                        manager.SendMessage(new ClientMessage.StreamEventAppeared(tuple.Item1, message.EventNumber, message.Prepare));
+                    {
+                        manager.SendMessage(new ClientMessage.StreamEventAppeared(correlationId,
+                                                                                  message.EventNumber,
+                                                                                  message.Prepare,
+                                                                                  message.CommitPosition));
+                    }
                     else
                     {
-                        _pendingUnsubscribe.Add(Tuple.Create(tuple.Item1, tuple.Item2));
-                        manager.SendMessage(new ClientMessage.SubscriptionDropped(tuple.Item1, eventStreamId));
+                        _pendingUnsubscribe.Add(Tuple.Create(correlationId, tuple.Item2));
+                        manager.SendMessage(new ClientMessage.SubscriptionDropped(correlationId, eventStreamId));
                     }
                 }
 
