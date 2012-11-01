@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public Task Subscribe(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        public Task Subscribe(string stream, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             var id = Guid.NewGuid();
             var source = new TaskCompletionSource<object>();
@@ -86,7 +86,7 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public Task SubscribeToAllStreams(Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        public Task SubscribeToAllStreams(Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             var id = Guid.NewGuid();
             var source = new TaskCompletionSource<object>();

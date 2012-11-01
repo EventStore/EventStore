@@ -27,7 +27,7 @@
 // 
 namespace EventStore.ClientAPI.Transport.Http
 {
-    public static class HttpStatusCode
+    internal static class HttpStatusCode
     {
         public const int Continue = (int) global::System.Net.HttpStatusCode.Continue;
         public const int SwitchingProtocols = (int) global::System.Net.HttpStatusCode.SwitchingProtocols;

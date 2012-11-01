@@ -27,7 +27,7 @@
 // 
 namespace EventStore.ClientAPI.Transport.Http
 {
-    public static class ContentType
+    internal static class ContentType
     {
         public const string Any = "*/*";
 

@@ -30,7 +30,6 @@ using System.Collections.Generic;
 using EventStore.ClientAPI.Common.Utils;
 using System.Linq;
 using EventStore.ClientAPI.Messages;
-using EventStore.ClientAPI.SystemData;
 
 namespace EventStore.ClientAPI
 {
