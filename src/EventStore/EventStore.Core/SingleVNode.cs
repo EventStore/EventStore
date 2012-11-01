@@ -91,7 +91,7 @@ namespace EventStore.Core
             //STORAGE SUBSYSTEM
             var indexPath = Path.Combine(db.Config.Path, "index");
             var tableIndex = new TableIndex(indexPath,
-                                            () => new HashListMemTable(),
+                                            () => new HashListMemTable(maxSize: 2000000),
                                             maxSizeForMemory: 1000000,
                                             maxTablesPerLevel: 2);
 

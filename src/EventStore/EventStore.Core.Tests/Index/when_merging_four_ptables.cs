@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Index
             {
                 _files.Add(Path.GetRandomFileName());
 
-                var table = new HashListMemTable();
+                var table = new HashListMemTable(maxSize: 2000);
                 for (int j=0;j<10;j++)
                 {
                     table.Add((UInt32) j + 1, i + 1, i*j);

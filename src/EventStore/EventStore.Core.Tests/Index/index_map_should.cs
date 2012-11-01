@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Index
 
             _emptyIndexMap = IndexMap.FromFile(_indexMapFileName, x => false);
 
-            var memTable = new HashListMemTable();
+            var memTable = new HashListMemTable(maxSize: 2000);
             memTable.Add(0, 1, 2);
             _ptable = PTable.FromMemtable(memTable, _ptableFileName);
         }

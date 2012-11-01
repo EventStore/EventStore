@@ -460,7 +460,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private TcpPackage WrapStreamEventAppeared(ClientMessage.StreamEventAppeared msg)
         {
-            var dto = new ClientMessageDto.StreamEventAppeared(msg.EventNumber, msg.Event);
+            var dto = new ClientMessageDto.StreamEventAppeared(msg.EventNumber, msg.Event, msg.CommitPosition);
             return new TcpPackage(TcpCommand.StreamEventAppeared, msg.CorrelationId, dto.Serialize());
         }
 

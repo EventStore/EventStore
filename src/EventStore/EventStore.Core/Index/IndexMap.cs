@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Util;
@@ -37,6 +38,8 @@ namespace EventStore.Core.Index
 {
     public class IndexMap
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<IndexMap>();
+
         public const int IndexMapVersion = 1;
 
         public readonly int Version;
@@ -263,9 +266,22 @@ namespace EventStore.Core.Index
                 }
             }
 
-            if (File.Exists(filename))
-                File.Delete(filename);
-            File.Move(tmpIndexMap, filename);
+            int trial = 0;
+            while (trial < 5)
+            {
+                try
+                {
+                    if (File.Exists(filename))
+                        File.Delete(filename);
+                    File.Move(tmpIndexMap, filename);
+                    break;
+                }
+                catch (IOException exc)
+                {
+                    Log.DebugException(exc, "Failed trial to replace indexmap.");
+                    trial += 1;
+                }
+            }
         }
 
         public bool IsCorrupt(string directory)

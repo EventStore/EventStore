@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void null_file_throws_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(new HashListMemTable(), null));
+            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(new HashListMemTable(maxSize: 2000), null));
         }
 
         [Test]
@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.Index
         public void wait_for_destroy_will_timeout()
         {
             var tmp = Path.GetRandomFileName();
-            var table = new HashListMemTable();
+            var table = new HashListMemTable(maxSize: 2000);
             table.Add(0x0101, 0x0001, 0x0001);
             var stable = PTable.FromMemtable(table, tmp);
             Assert.Throws<TimeoutException>(() => stable.WaitForDestroy(1));
@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.Index
         public void the_file_gets_created()
         {
             var tmp = Path.GetRandomFileName();
-            var table = new HashListMemTable();
+            var table = new HashListMemTable(maxSize: 2000);
             table.Add(0x0101, 0x0001, 0x0001);
             table.Add(0x0105, 0x0001, 0x0002);
             table.Add(0x0102, 0x0001, 0x0003);
@@ -98,7 +98,7 @@ namespace EventStore.Core.Tests.Index
         public void the_hash_of_file_is_valid()
         {
             var tmp = Path.GetRandomFileName();
-            var table = new HashListMemTable();
+            var table = new HashListMemTable(maxSize: 2000);
             table.Add(0x0101, 0x0001, 0x0001);
             table.Add(0x0105, 0x0001, 0x0002);
             table.Add(0x0102, 0x0001, 0x0003);
