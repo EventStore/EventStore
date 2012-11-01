@@ -49,6 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _writeDispatcher;
 
         protected readonly string _name;
+        private readonly PositionTagger _positionTagger;
         protected readonly ILogger _logger;
 
         private readonly ICoreProjection _coreProjection;
@@ -98,6 +99,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionConfig = projectionConfig;
             _logger = LogManager.GetLoggerFor<CoreProjectionCheckpointManager>();
             _name = name;
+            _positionTagger = positionTagger;
         }
 
         public virtual void Initialize()
@@ -132,7 +134,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastCompletedCheckpointPosition = checkpointTag;
             _requestedCheckpointPosition = null;
             _currentCheckpoint = new ProjectionCheckpoint(
-                _publisher, this, _lastProcessedEventPosition.LastTag, _projectionConfig.MaxWriteBatchLength, _logger);
+                _publisher, this, _lastProcessedEventPosition.LastTag, _positionTagger.MakeZeroCheckpointTag(), _projectionConfig.MaxWriteBatchLength, _logger);
             _currentCheckpoint.Start();
         }
 
@@ -206,7 +208,7 @@ namespace EventStore.Projections.Core.Services.Processing
             // running state only
             if (scheduledWrites != null)
                 foreach (var scheduledWrite in scheduledWrites)
-                    _currentCheckpoint.EmitEvents(scheduledWrite, _lastProcessedEventPosition.LastTag);
+                    _currentCheckpoint.EmitEvents(scheduledWrite);
             _handledEventsAfterCheckpoint++;
             _currentProjectionState = state;
             ProcessCheckpoints();
@@ -260,7 +262,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _closingCheckpoint = _currentCheckpoint;
             _currentCheckpoint = new ProjectionCheckpoint(
-                _publisher, this, requestedCheckpointPosition, _projectionConfig.MaxWriteBatchLength, _logger);
+                _publisher, this, requestedCheckpointPosition, _positionTagger.MakeZeroCheckpointTag(), _projectionConfig.MaxWriteBatchLength, _logger);
             // checkpoint only after assigning new current checkpoint, as it may call back immediately
             _closingCheckpoint.Prepare(requestedCheckpointPosition);
         }

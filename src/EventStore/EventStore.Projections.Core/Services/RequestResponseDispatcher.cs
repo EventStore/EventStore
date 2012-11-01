@@ -64,7 +64,9 @@ namespace EventStore.Projections.Core.Services
                 _map.Add(requestCorrelationId, action);
             }
             _publisher.Publish(request);
-            return requestCorrelationId;
+            //NOTE: the following condition is required as publishing the message could also process the message 
+            // and the correlationId is already invalid here
+            return _map.ContainsKey(requestCorrelationId) ? requestCorrelationId: Guid.Empty;
         }
 
         void IHandle<TResponse>.Handle(TResponse message)

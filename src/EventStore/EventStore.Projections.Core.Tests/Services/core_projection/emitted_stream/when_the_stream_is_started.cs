@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _publisher = new FakePublisher();
             _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _stream = new EmittedStream("test", _publisher, _readyHandler, false, 50);
+            _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _publisher, _readyHandler, 50);
             _stream.Start();
         }
 

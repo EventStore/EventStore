@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core.Services.v8
         private readonly PreludeScript _prelude;
         private readonly QueryScript _query;
         private List<EmittedEvent> _emittedEvents;
+        private CheckpointTag _eventPosition;
 
         public V8ProjectionStateHandler(
             string preludeName, string querySource, Func<string, Tuple<string, string>> getModuleSource,
@@ -91,7 +92,7 @@ namespace EventStore.Projections.Core.Services.v8
             }
             if (_emittedEvents == null)
                 _emittedEvents = new List<EmittedEvent>();
-            _emittedEvents.Add(new EmittedEvent(emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body));
+            _emittedEvents.Add(new EmittedEvent(emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body, _eventPosition, expectedTag: null));
         }
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
@@ -135,13 +136,14 @@ namespace EventStore.Projections.Core.Services.v8
         }
 
         public bool ProcessEvent(
-            EventPosition position, string streamId, string eventType, string category, Guid eventid,
+            EventPosition position, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
             int sequenceNumber, string metadata, string data, out string newState, out EmittedEvent[] emittedEvents)
         {
             if (eventType == null)
                 throw new ArgumentNullException("eventType");
             if (streamId == null)
                 throw new ArgumentNullException("streamId");
+            _eventPosition = eventPosition;
             _emittedEvents = null;
             _query.Push(
                 data.Trim(), // trimming data passed to a JS 

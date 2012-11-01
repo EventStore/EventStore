@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 + Guid.NewGuid().ToString("D") + @"""}", "{}");
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePoistion"": 50, ""LastSeenEvent"": """
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
                 + Guid.NewGuid().ToString("D") + @"""}", "{}");
             ExistingEvent(
                 FakeProjectionStateHandler._emit1StreamId, FakeProjectionStateHandler._emit1EventType,

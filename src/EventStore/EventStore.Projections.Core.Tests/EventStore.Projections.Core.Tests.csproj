@@ -120,6 +120,7 @@
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\TestFixtureWithCoreProjectionMultiStreamCheckpointManager.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_multiple_event_processed_received.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\when_a_default_checkpoint_manager_has_been_reinitialized.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_expected_tag_the_started_in_recovery_stream.cs" />
     <Compile Include="Services\core_projection\TestCheckpointManagerMessageHandler.cs" />
     <Compile Include="Services\core_projection\when_the_state_handler_with_configured_state_stream_does_process_an_event_the_projection_should.cs" />
     <Compile Include="Services\event_filter\specific_stream_event_filter.cs" />
@@ -230,10 +231,8 @@
     <Compile Include="Services\core_projection\emitted_stream\when_checkpoint_requested_with_all_writes_already_completed.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_checkpoint_requested_with_pending_writes.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_creating_an_emitted_stream.cs" />
-    <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_the_started_non_recovery_stream.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_the_started_in_recovery_stream.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_the_not_started_stream.cs" />
-    <Compile Include="Services\core_projection\emitted_stream\when_handling_a_second_emit_the_started_non_recovery_stream.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_the_stream_is_started.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_the_stream_is_started_with_already_emitted_events.cs" />
     <Compile Include="Services\core_projection\FakeProjectionHandler.cs" />

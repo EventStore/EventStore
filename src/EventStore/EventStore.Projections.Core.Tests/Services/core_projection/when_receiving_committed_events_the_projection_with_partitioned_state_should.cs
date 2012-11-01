@@ -89,11 +89,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             // 1 - for load state
             // 2 - by emitted stream to ensure idempotency
             Assert.AreEqual(
-                3,
+                2,
                 _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>().Count(
                     v => v.EventStreamId == "$projections-projection-account-01-state"));
             Assert.AreEqual(
-                3,
+                2,
                 _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>().Count(
                     v => v.EventStreamId == "$projections-projection-account-02-state"));
         }

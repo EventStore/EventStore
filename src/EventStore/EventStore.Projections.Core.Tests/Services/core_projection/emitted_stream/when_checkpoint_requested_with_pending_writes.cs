@@ -38,34 +38,38 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class when_checkpoint_requested_with_pending_writes
+    public class when_checkpoint_requested_with_pending_writes : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
-        private FakePublisher _publisher;
         private TestCheckpointManagerMessageHandler _readyHandler;
+
+        protected override void Given()
+        {
+            base.Given();
+            NoStream("test");
+        }
 
         [SetUp]
         public void setup()
         {
-            _publisher = new FakePublisher();
             _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _stream = new EmittedStream("test", _publisher, _readyHandler, false, 50);
+            _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _bus, _readyHandler, 50);
             _stream.Start();
             _stream.EmitEvents(
-                new[] {new EmittedEvent("stream", Guid.NewGuid(), "type", "data")}, CheckpointTag.FromPosition(-1, -1));
+                new[] { new EmittedEvent("test", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(100, 50), null) });
             _stream.Checkpoint();
         }
 
         [Test]
         public void does_not_publish_ready_for_checkpoint_immediately()
         {
-            Assert.AreEqual(0, _publisher.Messages.OfType<ProjectionMessage.Projections.ReadyForCheckpoint>().Count());
+            Assert.AreEqual(0, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.ReadyForCheckpoint>().Count());
         }
 
         [Test]
         public void publishes_ready_for_checkpoint_on_handling_last_write_events_completed()
         {
-            var msg = _publisher.Messages.OfType<ClientMessage.WriteEvents>().First();
+            var msg = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First();
             _stream.Handle(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, msg.EventStreamId, 0));
             Assert.AreEqual(
                 1, _readyHandler.HandledMessages.OfType<ProjectionMessage.Projections.ReadyForCheckpoint>().Count());

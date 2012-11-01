@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
     {
         private PartitionStateCache _cache;
         private CheckpointTag _cachedAtCheckpointTag;
-        private string _relockedData;
+        private PartitionStateCache.State _relockedData;
 
         [SetUp]
         public void given()
@@ -45,21 +45,21 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
             //given
             _cache = new PartitionStateCache();
             _cachedAtCheckpointTag = CheckpointTag.FromPosition(1000, 900);
-            _cache.CacheAndLockPartitionState("partition", "data", _cachedAtCheckpointTag);
+            _cache.CacheAndLockPartitionState("partition", new PartitionStateCache.State("data", _cachedAtCheckpointTag), _cachedAtCheckpointTag);
             _relockedData = _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(2000, 1900));
         }
 
         [Test]
         public void returns_correct_cached_data()
         {
-            Assert.AreEqual("data", _relockedData);
+            Assert.AreEqual("data", _relockedData.Data);
         }
 
         [Test]
         public void relocked_state_can_be_retrieved_as_locked()
         {
             var state = _cache.GetLockedPartitionState("partition");
-            Assert.AreEqual("data", state);
+            Assert.AreEqual("data", state.Data);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]

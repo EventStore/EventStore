@@ -42,37 +42,34 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_stream_id_throws_argument_null_exception()
         {
             var s = new EmittedStream(
-                null, new FakePublisher(), new TestCheckpointManagerMessageHandler(),
-                false, 50);
+                null, CheckpointTag.FromPosition(0, -1), new FakePublisher(), new TestCheckpointManagerMessageHandler(), 50);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_stream_id_throws_argument_exception()
         {
             var s = new EmittedStream(
-                "", new FakePublisher(), new TestCheckpointManagerMessageHandler(),
-                false, 50);
+                "", CheckpointTag.FromPosition(0, -1), new FakePublisher(), new TestCheckpointManagerMessageHandler(), 50);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
             var s = new EmittedStream(
-                "test", null, new TestCheckpointManagerMessageHandler(), false, 50);
+                "test", CheckpointTag.FromPosition(0, -1), null, new TestCheckpointManagerMessageHandler(), 50);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_ready_handler_throws_argumenbt_null_exception()
         {
-            var s = new EmittedStream("test", new FakePublisher(), null, false, 50);
+            var s = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), new FakePublisher(), null, 50);
         }
 
         [Test]
         public void it_can_be_created()
         {
             var s = new EmittedStream(
-                "test", new FakePublisher(), new TestCheckpointManagerMessageHandler(),
-                false, 50);
+                "test", CheckpointTag.FromPosition(0, -1), new FakePublisher(), new TestCheckpointManagerMessageHandler(), 50);
         }
     }
 }

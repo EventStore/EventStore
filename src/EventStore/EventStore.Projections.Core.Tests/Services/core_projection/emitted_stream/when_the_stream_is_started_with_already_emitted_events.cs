@@ -29,36 +29,37 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class when_the_stream_is_started_with_already_emitted_events
+    public class when_the_stream_is_started_with_already_emitted_events : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
-        private FakePublisher _publisher;
         private TestCheckpointManagerMessageHandler _readyHandler;
+
+        protected override void Given()
+        {
+            base.Given();
+            NoStream("test");
+        }
 
         [SetUp]
         public void setup()
         {
-            _publisher = new FakePublisher();
             _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _stream = new EmittedStream("test", _publisher, _readyHandler, false, 50);
+            _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _bus, _readyHandler, 50);
             _stream.EmitEvents(
-                new[] {new EmittedEvent("stream", Guid.NewGuid(), "type", "data")}, CheckpointTag.FromPosition(100, 50));
+                new[] { new EmittedEvent("test", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(100, 50), null) });
             _stream.Start();
         }
 
         [Test]
         public void publishes_write_events()
         {
-            Assert.AreEqual(1, _publisher.Messages.OfType<ClientMessage.WriteEvents>().Count());
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
     }
 }

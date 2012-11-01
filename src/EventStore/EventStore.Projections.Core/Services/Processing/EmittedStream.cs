@@ -43,12 +43,12 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly ILogger _logger;
         private readonly string _streamId;
-        private readonly bool _recoveryMode;
+        private readonly CheckpointTag _zeroPosition;
         private readonly IPublisher _publisher;
         private readonly IProjectionCheckpointManager _readyHandler;
 
-        private readonly Queue<Tuple<EmittedEvent[], CheckpointTag>> _pendingWrites =
-            new Queue<Tuple<EmittedEvent[], CheckpointTag>>();
+        private readonly Queue<EmittedEvent[]> _pendingWrites =
+            new Queue<EmittedEvent[]>();
 
         private bool _checkpointRequested;
         private bool _awaitingWriteCompleted;
@@ -56,14 +56,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _started;
 
         private readonly int _maxWriteBatchLength;
-        private CheckpointTag _lastCommittedMetadata; // TODO: rename
+        private CheckpointTag _lastSubmittedOrCommittedMetadata; // TODO: rename
         private Event[] _submittedToWriteEvents;
-        private int _lastKnownEventNumber;
+        private int _lastKnownEventNumber = ExpectedVersion.Invalid;
 
 
         public EmittedStream(
-            string streamId, IPublisher publisher,
-            IProjectionCheckpointManager readyHandler, bool recoveryMode,
+            string streamId, CheckpointTag zeroPosition, IPublisher publisher,
+            IProjectionCheckpointManager readyHandler,
             int maxWriteBatchLength, ILogger logger = null)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
@@ -71,17 +71,21 @@ namespace EventStore.Projections.Core.Services.Processing
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
-            _recoveryMode = recoveryMode;
+            _zeroPosition = zeroPosition;
             _publisher = publisher;
             _readyHandler = readyHandler;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;
         }
 
-        public void EmitEvents(EmittedEvent[] events, CheckpointTag position)
+        public void EmitEvents(EmittedEvent[] events)
         {
+            if (events == null) throw new ArgumentNullException("events");
+            foreach (var @event in events)
+                if (@event.StreamId != _streamId)
+                    throw new ArgumentException("Invalid streamId", "events");
             EnsureCheckpointNotRequested();
-            _pendingWrites.Enqueue(Tuple.Create(events, position));
+            _pendingWrites.Enqueue(events);
             ProcessWrites();
         }
 
@@ -160,14 +164,14 @@ namespace EventStore.Projections.Core.Services.Processing
             _awaitingListEventsCompleted = false;
             if (message.Events.Length == 0)
             {
-                _lastCommittedMetadata = null;
+                _lastSubmittedOrCommittedMetadata = _zeroPosition;
                 _lastKnownEventNumber = ExpectedVersion.NoStream;
                 SubmitWriteEvents();
             }
             else
             {
                 var projectionStateMetadata = message.Events[0].Event.Metadata.ParseJson<CheckpointTag>();
-                _lastCommittedMetadata = projectionStateMetadata;
+                _lastSubmittedOrCommittedMetadata = projectionStateMetadata;
                 _lastKnownEventNumber = message.Events[0].Event.EventNumber;
                 SubmitWriteEventsInRecovery();
             }
@@ -179,18 +183,10 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _awaitingWriteCompleted = true;
 
-                if (_recoveryMode && _lastCommittedMetadata == null)
-                {
+                if (_lastSubmittedOrCommittedMetadata == null)
                     SubmitListEvents();
-                }
                 else
-                {
-                    //TODO: write tests for single read events in recovery only
-                    if (_recoveryMode)
-                        SubmitWriteEventsInRecovery();
-                    else
-                        SubmitWriteEvents();
-                }
+                    SubmitWriteEventsInRecovery();
             }
         }
 
@@ -204,18 +200,25 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void SubmitWriteEvents()
         {
-            var list = new List<Tuple<EmittedEvent[], CheckpointTag>>();
-            while (_pendingWrites.Count > 0 && list.Count < _maxWriteBatchLength)
+            var events = new List<Event>();
+            while (_pendingWrites.Count > 0 && events.Count < _maxWriteBatchLength)
             {
                 var eventsToWrite = _pendingWrites.Dequeue();
-                list.Add(eventsToWrite);
-            }
-            var events = from eventsToWrite in list
-                         from v in eventsToWrite.Item1
-                         let data = v.Data
-                         let metadata = CreateSerializedMetadata(eventsToWrite)
-                         select new Event(v.EventId, v.EventType, false, data, metadata);
 
+                foreach (var e in eventsToWrite)
+                {
+                    var expectedTag = e.ExpectedTag;
+                    var causedByTag = e.CausedByTag;
+                    if (expectedTag != null)
+                        if (expectedTag != _lastSubmittedOrCommittedMetadata)
+                        {
+                            RequestRestart("Wrong expected tag");
+                            return;
+                        }
+                    _lastSubmittedOrCommittedMetadata = causedByTag;
+                    events.Add(new Event(e.EventId, e.EventType, true, e.Data, e.CausedByTag.ToJsonBytes()));
+                }
+            }
             _submittedToWriteEvents = events.ToArray();
             PublishWriteEvents();
         }
@@ -225,12 +228,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), new SendToThisEnvelope(this), _streamId,
-                    _recoveryMode ? _lastKnownEventNumber : ExpectedVersion.Any, _submittedToWriteEvents));
-        }
-
-        private byte[] CreateSerializedMetadata(Tuple<EmittedEvent[], CheckpointTag> eventsToWrite)
-        {
-            return eventsToWrite.Item2.ToJsonBytes();
+                    _lastKnownEventNumber, _submittedToWriteEvents));
         }
 
         private void EnsureCheckpointNotRequested()
@@ -265,7 +263,7 @@ namespace EventStore.Projections.Core.Services.Processing
             while (_pendingWrites.Count > 0)
             {
                 var eventsToWrite = _pendingWrites.Peek();
-                if (eventsToWrite.Item2 > _lastCommittedMetadata)
+                if (eventsToWrite[0].CausedByTag > _lastSubmittedOrCommittedMetadata)
                 {
                     SubmitWriteEvents();
                     return;

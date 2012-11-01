@@ -28,63 +28,79 @@
 
 using System;
 using System.Linq;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Common;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class when_handling_an_emit_the_started_non_recovery_stream
+    public class when_handling_an_emit_with_expected_tag_the_started_in_recovery_stream : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
-        private FakePublisher _publisher;
-
         private TestCheckpointManagerMessageHandler _readyHandler;
+
+        protected override void Given()
+        {
+            ExistingEvent("test_stream", "type", @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "data");
+        }
 
         [SetUp]
         public void setup()
         {
-            _publisher = new FakePublisher();
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _stream = new EmittedStream("test", _publisher, _readyHandler, false, 50);
+            _readyHandler = new TestCheckpointManagerMessageHandler();
+            _stream = new EmittedStream("test_stream", CheckpointTag.FromPosition(0, -1), _bus, _readyHandler, maxWriteBatchLength: 50);
             _stream.Start();
-            _stream.EmitEvents(
-                new[] {new EmittedEvent("stream", Guid.NewGuid(), "type", "data")}, CheckpointTag.FromPosition(200, 150));
         }
 
         [Test]
-        public void publishes_write_events()
+        public void does_not_publish_already_published_events()
         {
-            Assert.IsTrue(_publisher.Messages.ContainsSingle<ClientMessage.WriteEvents>());
+            _stream.EmitEvents(
+                new[] {new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data",
+                CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(40, 20))});
+            Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+        }
+
+        [Test]
+        public void publishes_not_yet_published_events_if_expected_tag_is_the_same()
+        {
+            _stream.EmitEvents(
+                new[] {new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data",
+                CheckpointTag.FromPosition(200, 150), CheckpointTag.FromPosition(100, 50))});
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
+        }
+
+        [Test]
+        public void does_not_publish_not_yet_published_events_if_expected_tag_is_different()
+        {
+            _stream.EmitEvents(
+                new[] { new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data",
+                CheckpointTag.FromPosition(200, 150), CheckpointTag.FromPosition(140, 120)) });
+            Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
 
         [Test]
         public void correct_stream_id_is_set_on_write_events_message()
         {
-            Assert.AreEqual("test", _publisher.Messages.OfType<ClientMessage.WriteEvents>().Single().EventStreamId);
-        }
-
-        [Test]
-        public void any_expected_version_is_set_on_write_events_message()
-        {
-            Assert.AreEqual(
-                ExpectedVersion.Any, _publisher.Messages.OfType<ClientMessage.WriteEvents>().Single().ExpectedVersion);
+            _stream.EmitEvents(
+                new[] { new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data",
+                CheckpointTag.FromPosition(200, 150), CheckpointTag.FromPosition(100, 50)) });
+            Assert.AreEqual("test_stream", _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single().EventStreamId);
         }
 
         [Test]
         public void metadata_include_commit_and_prepare_positions()
         {
+            _stream.EmitEvents(
+                new[] { new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data",
+                CheckpointTag.FromPosition(200, 150), CheckpointTag.FromPosition(100, 50)) });
             var metaData =
-                _publisher.Messages.OfType<ClientMessage.WriteEvents>().Single().Events[0].Metadata.ParseJson
+                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single().Events[0].Metadata.ParseJson
                     <CheckpointTag>();
             Assert.AreEqual(200, metaData.CommitPosition);
             Assert.AreEqual(150, metaData.PreparePosition);
         }
+
     }
 }

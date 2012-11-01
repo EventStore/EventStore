@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
             //given
             _cache = new PartitionStateCache();
             _cachedAtCheckpointTag = CheckpointTag.FromPosition(1000, 900);
-            _cache.CacheAndLockPartitionState("partition", "data", _cachedAtCheckpointTag);
+            _cache.CacheAndLockPartitionState("partition", new PartitionStateCache.State("data", _cachedAtCheckpointTag), _cachedAtCheckpointTag);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]

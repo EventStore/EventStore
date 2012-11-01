@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,14 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
 {
     [TestFixture]
-    public class when_unlocking_part_of_cached_states
+    public class when_the_partition_state_cache_has_been_reinitialized
     {
         private PartitionStateCache _cache;
         private CheckpointTag _cachedAtCheckpointTag1;
@@ -44,61 +43,56 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void setup()
         {
             //given
-            _cache = new PartitionStateCache();
+            _cache = new PartitionStateCache(10);
             _cachedAtCheckpointTag1 = CheckpointTag.FromPosition(1000, 900);
-            _cachedAtCheckpointTag2 = CheckpointTag.FromPosition(1200, 1100);
-            _cachedAtCheckpointTag3 = CheckpointTag.FromPosition(1400, 1300);
+            for (var i = 0; i < 15; i++)
+            {
+                CheckpointTag at = CheckpointTag.FromPosition(1000 + (i*100), 1000 + (i*100) - 50);
+                _cache.CacheAndLockPartitionState("partition1", new PartitionStateCache.State("data1", at), at);
+            }
+
+            _cachedAtCheckpointTag2 = CheckpointTag.FromPosition(20100, 20050);
+            _cachedAtCheckpointTag3 = CheckpointTag.FromPosition(20200, 20150);
             _cache.CacheAndLockPartitionState("partition1", new PartitionStateCache.State("data1", _cachedAtCheckpointTag1), _cachedAtCheckpointTag1);
             _cache.CacheAndLockPartitionState("partition2", new PartitionStateCache.State("data2", _cachedAtCheckpointTag2), _cachedAtCheckpointTag2);
             _cache.CacheAndLockPartitionState("partition3", new PartitionStateCache.State("data3", _cachedAtCheckpointTag3), _cachedAtCheckpointTag3);
-            // when
             _cache.Unlock(_cachedAtCheckpointTag2);
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void partitions_locked_before_the_unlock_position_cannot_be_retrieved_as_locked()
-        {
-            _cache.GetLockedPartitionState("partition1");
+            // when
+            _cache.Initialize();
         }
 
         [Test]
-        public void partitions_locked_before_the_unlock_position_can_be_retrieved_and_relocked_at_later_position()
+        public void state_can_be_cached()
         {
-            var data = _cache.TryGetAndLockPartitionState("partition1", CheckpointTag.FromPosition(1600, 1500));
-            Assert.AreEqual("data1", data.Data);
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void partitions_locked_at_the_unlock_position_cannot_be_retrieved_as_locked()
-        {
-            _cache.GetLockedPartitionState("partition2");
+            CheckpointTag at = CheckpointTag.FromPosition(100, 90);
+            _cache.CacheAndLockPartitionState("partition", new PartitionStateCache.State("data", at), at);
         }
 
         [Test]
-        public void partitions_locked_at_the_unlock_position_cannot_be_retrieved_as_rfelocked_at_later_position()
+        public void no_items_are_cached()
         {
-            var data = _cache.TryGetAndLockPartitionState("partition2", CheckpointTag.FromPosition(1600, 1500));
-            Assert.AreEqual("data2", data.Data);
+            Assert.AreEqual(0, _cache.CachedItemCount);
         }
 
         [Test]
-        public void partitions_locked_after_the_unlock_position_can_be_retrieved_as_locked()
+        public void random_item_cannot_be_retrieved()
         {
-            var data = _cache.GetLockedPartitionState("partition3");
-            Assert.AreEqual("data3", data.Data);
+            Assert.IsNull(
+                _cache.TryGetAndLockPartitionState("random", CheckpointTag.FromPosition(200, 190)),
+                "Cache should be empty");
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void no_other_partition_states_can_be_locked_before_the_unlock_position()
+        [Test]
+        public void root_partition_state_cannot_be_retrieved()
         {
-            CheckpointTag at = CheckpointTag.FromPosition(1040, 1030);
-            _cache.CacheAndLockPartitionState("partition4", new PartitionStateCache.State("data4", at), at);
+            Assert.IsNull(
+                _cache.TryGetAndLockPartitionState("", CheckpointTag.FromPosition(200, 190)), "Cache should be empty");
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void cached_partition_states_cannot_be_locked_before_the_unlock_position()
+        [Test]
+        public void unlock_succeeds()
         {
-            _cache.TryGetAndLockPartitionState("partition1", CheckpointTag.FromPosition(1040, 1030));
+            _cache.Unlock(CheckpointTag.FromPosition(300, 290));
         }
     }
 }

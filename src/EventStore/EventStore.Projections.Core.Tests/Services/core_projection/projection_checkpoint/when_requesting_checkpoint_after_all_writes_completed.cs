@@ -52,18 +52,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         public void setup()
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), 250);
+            _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
             _checkpoint.Start();
             _checkpoint.EmitEvents(
                 new[]
                     {
-                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2"),
-                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data4"),
-                    },
-                CheckpointTag.FromPosition(120, 110));
+                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2", CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data4", CheckpointTag.FromPosition(120, 110), null),
+                    }
+                );
             _checkpoint.EmitEvents(
-                new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data")},
-                CheckpointTag.FromPosition(140, 130));
+                new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
+                CheckpointTag.FromPosition(140, 130), null)});
             var writes = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().ToArray();
             writes[0].Envelope.ReplyWith(
                 new ClientMessage.WriteEventsCompleted(writes[0].CorrelationId, writes[0].EventStreamId, 0));
