@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Index
         public void Setup()
         {
             _filename = Path.GetRandomFileName();
-            var table = new HashListMemTable();
+            var table = new HashListMemTable(maxSize: 2000);
 
             AddItemsForScenario(table);
 
