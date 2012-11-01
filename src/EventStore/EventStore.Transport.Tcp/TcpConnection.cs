@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -38,8 +37,6 @@ using EventStore.Common.Log;
 
 namespace EventStore.Transport.Tcp
 {
-    //public static class Async {
-
     public class TcpConnection : TcpConnectionBase, ITcpConnection
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnection>();
@@ -469,6 +466,4 @@ namespace EventStore.Transport.Tcp
         }
         
     }
-
-    // }
 }

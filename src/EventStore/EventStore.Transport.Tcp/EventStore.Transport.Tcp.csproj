@@ -53,6 +53,7 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Framing\PackageFramingException.cs" />
     <Compile Include="Framing\LengthPrefixMessageFramerWithBufferPool.cs" />
     <Compile Include="IMonitoredTcpConnection.cs" />
     <Compile Include="ITcpConnection.cs" />
@@ -71,7 +72,6 @@
     <Compile Include="TcpConfiguration.cs" />
     <Compile Include="TcpConnectionBase.cs" />
     <Compile Include="TcpConnectionMonitor.cs" />
-    <Compile Include="TcpConnectionMono.cs" />
     <Compile Include="TcpServerListener.cs" />
     <Compile Include="TcpTypedConnection.cs" />
   </ItemGroup>

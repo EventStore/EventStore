@@ -30,11 +30,14 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using EventStore.ClientAPI.Common.Log;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
     internal class TcpTypedConnection
     {
+        private static readonly ILogger Log = LogManager.GetLogger();
+
         public event Action<TcpTypedConnection, SocketError> ConnectionClosed;
 
         private readonly TcpConnection _connection;
@@ -91,7 +94,17 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void OnRawDataReceived(ITcpConnection connection, IEnumerable<ArraySegment<byte>> data)
         {
-            _framer.UnFrameData(data);
+            try
+            {
+                _framer.UnFrameData(data);
+            }
+            catch (PackageFramingException exc)
+            {
+                Log.Debug(exc, "Invalid TCP frame received.");
+                Close();
+                return;
+            }
+
             connection.ReceiveAsync(OnRawDataReceived);
         }
 
