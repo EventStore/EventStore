@@ -33,10 +33,10 @@ namespace EventStore.ClientAPI
         public static readonly Position Start = new Position(0, 0);
         public static readonly Position End = new Position(-1, -1);
 
-        internal long CommitPosition;
-        internal long PreparePosition;
+        public readonly long CommitPosition;
+        public readonly long PreparePosition;
 
-        internal Position(long commitPosition, long preparePosition)
+        public Position(long commitPosition, long preparePosition)
         {
             CommitPosition = commitPosition;
             PreparePosition = preparePosition;

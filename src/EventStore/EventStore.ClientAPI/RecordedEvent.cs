@@ -27,8 +27,6 @@
 //  
 using System;
 using EventStore.ClientAPI.Messages;
-using EventStore.ClientAPI.SystemData;
-using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI
 {

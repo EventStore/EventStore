@@ -370,7 +370,7 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-        public Task SubscribeAsync(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        public Task SubscribeAsync(string stream, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
@@ -390,7 +390,7 @@ namespace EventStore.ClientAPI
             _subscriptionsChannel.Unsubscribe(stream);
         }
 
-        public Task SubscribeToAllStreamsAsync(Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        public Task SubscribeToAllStreamsAsync(Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.NotNull(subscriptionDropped, "subscriptionDropped");

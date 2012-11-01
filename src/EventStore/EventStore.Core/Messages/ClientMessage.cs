@@ -693,12 +693,14 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly int EventNumber;
             public readonly PrepareLogRecord Event;
+            public readonly long CommitPosition;
 
-            public StreamEventAppeared(Guid correlationId, int eventNumber, PrepareLogRecord @event)
+            public StreamEventAppeared(Guid correlationId, int eventNumber, PrepareLogRecord @event, long commitPosition)
             {
                 CorrelationId = correlationId;
                 EventNumber = eventNumber;
                 Event = @event;
+                CommitPosition = commitPosition;
             }
         }
 

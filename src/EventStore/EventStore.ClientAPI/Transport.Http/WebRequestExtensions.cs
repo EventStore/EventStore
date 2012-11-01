@@ -31,7 +31,7 @@ using System.Net;
 
 namespace EventStore.ClientAPI.Transport.Http
 {
-    public static class WebRequestExtensions
+    internal static class WebRequestExtensions
     {
         public static WebResponse EndGetResponseExtended(this WebRequest request, IAsyncResult asyncResult)
         {

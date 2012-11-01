@@ -32,7 +32,7 @@ using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Transport.Http
 {
-    public class AsyncStreamCopier<T>
+    internal class AsyncStreamCopier<T>
     {
         public event EventHandler Completed;
 

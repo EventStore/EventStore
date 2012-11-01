@@ -33,7 +33,9 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             Thread.Sleep(500);
             TableIndex.ClearAll(removeFiles: false);
 
-            TableIndex = new TableIndex(Path.Combine(PathName, "index"), () => new HashListMemTable(), maxSizeForMemory: 5);
+            TableIndex = new TableIndex(Path.Combine(PathName, "index"),
+                                        () => new HashListMemTable(maxSize: 2000),
+                                        maxSizeForMemory: 5);
             TableIndex.Initialize();
 
             ReadIndex = new ReadIndex(new NoopPublisher(),

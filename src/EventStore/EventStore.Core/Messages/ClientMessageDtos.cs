@@ -914,11 +914,17 @@ namespace EventStore.Core.Messages
             [ProtoMember(6)]
             public byte[] Metadata { get; set; }
 
+            [ProtoMember(7)]
+            public long CommitPosition { get; set; }
+
+            [ProtoMember(8)]
+            public long PreparePosition { get; set; }
+
             public StreamEventAppeared()
             {
             }
 
-            public StreamEventAppeared(int eventNumber, PrepareLogRecord @event)
+            public StreamEventAppeared(int eventNumber, PrepareLogRecord @event, long commitPosition)
             {
                 EventStreamId = @event.EventStreamId;
                 EventNumber = eventNumber;
@@ -926,6 +932,8 @@ namespace EventStore.Core.Messages
                 EventType = @event.EventType;
                 Data = @event.Data;
                 Metadata = @event.Metadata;
+                CommitPosition = commitPosition;
+                PreparePosition = @event.LogPosition;
             }
         }
 

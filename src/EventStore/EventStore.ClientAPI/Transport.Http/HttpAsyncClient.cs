@@ -34,7 +34,7 @@ using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Transport.Http
 {
-    public class HttpAsyncClient
+    internal class HttpAsyncClient
     {
         static HttpAsyncClient()
         {

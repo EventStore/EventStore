@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public Task Subscribe(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        public Task Subscribe(string stream, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             var id = Guid.NewGuid();
             var source = new TaskCompletionSource<object>();
@@ -86,7 +86,7 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public Task SubscribeToAllStreams(Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        public Task SubscribeToAllStreams(Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             var id = Guid.NewGuid();
             var source = new TaskCompletionSource<object>();
@@ -166,8 +166,11 @@ namespace EventStore.ClientAPI.Connection
                 switch (package.Command)
                 {
                     case TcpCommand.StreamEventAppeared:
-                        var recordedEvent = new RecordedEvent(package.Data.Deserialize<ClientMessages.StreamEventAppeared>());
-                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(recordedEvent));
+                        var dto = package.Data.Deserialize<ClientMessages.StreamEventAppeared>();
+                        var recordedEvent = new RecordedEvent(dto);
+                        var commitPos = dto.CommitPosition;
+                        var preparePos = dto.PreparePosition;
+                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(recordedEvent, new Position(commitPos, preparePos)));
                         break;
                     case TcpCommand.SubscriptionDropped:
                     case TcpCommand.SubscriptionToAllDropped:

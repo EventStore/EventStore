@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Index
             _finalmergefile2 = GetTempFilePath();
 
             _map = IndexMap.FromFile(_filename, x => false);
-            var memtable = new HashListMemTable();
+            var memtable = new HashListMemTable(maxSize: 2000);
             memtable.Add(0, 1, 0);
             _result = _map.AddFile(PTable.FromMemtable(memtable, GetTempFilePath()), 0, 0, new GuidFilenameProvider(PathName));
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
