@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _streamId;
         private readonly bool _recoveryMode;
         private readonly IPublisher _publisher;
-        private readonly IHandle<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private readonly IProjectionCheckpointManager _readyHandler;
 
         private readonly Queue<Tuple<EmittedEvent[], CheckpointTag>> _pendingWrites =
             new Queue<Tuple<EmittedEvent[], CheckpointTag>>();
@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public EmittedStream(
             string streamId, IPublisher publisher,
-            IHandle<ProjectionMessage.Projections.ReadyForCheckpoint> readyHandler, bool recoveryMode,
+            IProjectionCheckpointManager readyHandler, bool recoveryMode,
             int maxWriteBatchLength, ILogger logger = null)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
@@ -132,16 +132,25 @@ namespace EventStore.Projections.Core.Services.Processing
                 _logger.Info(
                     "Failed to write events to stream {0}. Error: {1}", message.EventStreamId,
                     Enum.GetName(typeof (OperationErrorCode), message.ErrorCode));
-            if (message.ErrorCode == OperationErrorCode.CommitTimeout
-                || message.ErrorCode == OperationErrorCode.ForwardTimeout
-                || message.ErrorCode == OperationErrorCode.PrepareTimeout
-                || message.ErrorCode == OperationErrorCode.WrongExpectedVersion)
+            switch (message.ErrorCode)
             {
-                if (_logger != null) _logger.Info("Retrying write to {0}", message.EventStreamId);
-                PublishWriteEvents();
+                case OperationErrorCode.WrongExpectedVersion:
+                    RequestRestart(string.Format("The '{0}' stream has be written to from the outside", _streamId));
+                    break;
+                case OperationErrorCode.PrepareTimeout:
+                case OperationErrorCode.ForwardTimeout:
+                case OperationErrorCode.CommitTimeout:
+                    if (_logger != null) _logger.Info("Retrying write to {0}", message.EventStreamId);
+                    PublishWriteEvents();
+                    break;
+                default:
+                    throw new NotSupportedException("Unsupported error code received");
             }
-            else
-                throw new NotSupportedException("Unsupported error code received");
+        }
+
+        private void RequestRestart(string reason)
+        {
+            _readyHandler.Handle(new ProjectionMessage.Projections.RestartRequested(reason));
         }
 
         public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
@@ -247,7 +256,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_checkpointRequested && !_awaitingWriteCompleted && _pendingWrites.Count == 0)
             {
-                _readyHandler.Handle(new ProjectionMessage.Projections.ReadyForCheckpoint());
+                _readyHandler.Handle(new ProjectionMessage.Projections.ReadyForCheckpoint(this));
             }
         }
 

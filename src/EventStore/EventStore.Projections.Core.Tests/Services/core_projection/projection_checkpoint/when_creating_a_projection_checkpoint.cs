@@ -38,12 +38,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
     [TestFixture]
     public class when_creating_a_projection_checkpoint
     {
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
 
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]

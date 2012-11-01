@@ -34,7 +34,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionCheckpoint : IHandle<ProjectionMessage.Projections.ReadyForCheckpoint>
+    public class ProjectionCheckpoint : IProjectionCheckpointManager
     {
         private readonly int _maxWriteBatchLength;
         private readonly ILogger _logger;
@@ -43,14 +43,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CheckpointTag _from;
         private CheckpointTag _last;
         private readonly IPublisher _publisher;
-        private readonly IHandle<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private readonly IProjectionCheckpointManager _readyHandler;
 
         private bool _checkpointRequested = false;
         private int _requestedCheckpoints;
         private bool _started = false;
 
         public ProjectionCheckpoint(
-            IPublisher publisher, IHandle<ProjectionMessage.Projections.ReadyForCheckpoint> readyHandler, CheckpointTag from, int maxWriteBatchLength,
+            IPublisher publisher, IProjectionCheckpointManager readyHandler, CheckpointTag from, int maxWriteBatchLength,
             ILogger logger = null)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -145,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_requestedCheckpoints == 0)
             {
-                _readyHandler.Handle(new ProjectionMessage.Projections.ReadyForCheckpoint());
+                _readyHandler.Handle(new ProjectionMessage.Projections.ReadyForCheckpoint(this));
             }
         }
 
@@ -162,6 +162,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public int GetReadsInProgress()
         {
             return _emittedStreams.Values.Sum(v => v.GetReadsInProgress());
+        }
+
+        public void Handle(ProjectionMessage.Projections.RestartRequested message)
+        {
+            _readyHandler.Handle(message);
         }
     }
 }

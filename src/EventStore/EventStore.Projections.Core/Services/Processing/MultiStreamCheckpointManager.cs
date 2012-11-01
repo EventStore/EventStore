@@ -38,8 +38,8 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class MultiStreamCheckpointManager : CoreProjectionCheckpointManager
     {
-        private int _nextStateIndexToRequest;
         private readonly string _projectionStateUpdatesStreamId;
+        private int _nextStateIndexToRequest;
 
         public MultiStreamCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
@@ -58,6 +58,12 @@ namespace EventStore.Projections.Core.Services.Processing
             CheckpointTag requestedCheckpointPosition, string requestedCheckpointState)
         {
             CheckpointWritten();
+        }
+
+        public override void Initialize()
+        {
+            base.Initialize();
+            _nextStateIndexToRequest = 0;
         }
 
         protected override void BeforeBeginLoadState()

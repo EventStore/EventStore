@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
     public class when_requesting_checkpoint_after_all_writes_completed : TestFixtureWithExistingEvents
     {
         private ProjectionCheckpoint _checkpoint;
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
 
         protected override void Given()
         {
@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
             _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), 250);
             _checkpoint.Start();
             _checkpoint.EmitEvents(

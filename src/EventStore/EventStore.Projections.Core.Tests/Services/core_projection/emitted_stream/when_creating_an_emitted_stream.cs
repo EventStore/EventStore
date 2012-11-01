@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_stream_id_throws_argument_null_exception()
         {
             var s = new EmittedStream(
-                null, new FakePublisher(), new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>(),
+                null, new FakePublisher(), new TestCheckpointManagerMessageHandler(),
                 false, 50);
         }
 
@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void empty_stream_id_throws_argument_exception()
         {
             var s = new EmittedStream(
-                "", new FakePublisher(), new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>(),
+                "", new FakePublisher(), new TestCheckpointManagerMessageHandler(),
                 false, 50);
         }
 
@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void null_publisher_throws_argument_null_exception()
         {
             var s = new EmittedStream(
-                "test", null, new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>(), false, 50);
+                "test", null, new TestCheckpointManagerMessageHandler(), false, 50);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void it_can_be_created()
         {
             var s = new EmittedStream(
-                "test", new FakePublisher(), new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>(),
+                "test", new FakePublisher(), new TestCheckpointManagerMessageHandler(),
                 false, 50);
         }
     }

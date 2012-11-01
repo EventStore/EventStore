@@ -51,6 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("CheckpointTag has not been initialized");
             _complete = readyForStage;
             _onStage = onStage;
+            _projection.EnsureTickPending();
             switch (onStage)
             {
                 case 0:
@@ -65,7 +66,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 default:
                     throw new NotSupportedException();
             }
-            _projection.EnsureTickPending();
         }
 
         protected virtual void WriteOutput()

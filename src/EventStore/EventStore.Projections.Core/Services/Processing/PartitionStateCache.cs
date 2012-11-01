@@ -35,13 +35,13 @@ namespace EventStore.Projections.Core.Services.Processing
     public class PartitionStateCache
     {
         //NOTE: _partitionStates is locked only to allow statistics retrieval from another thread 
+        private readonly int _maxCachedPartitions;
 
         private readonly Queue<Tuple<CheckpointTag, string>> _cacheOrder = new Queue<Tuple<CheckpointTag, string>>();
 
-        private readonly Dictionary<string, Tuple<string, CheckpointTag>> _partitionStates =
-            new Dictionary<string, Tuple<string, CheckpointTag>>();
+        private readonly Dictionary<string, Tuple<string, CheckpointTag, object>> _partitionStates =
+            new Dictionary<string, Tuple<string, CheckpointTag, object>>();
 
-        private readonly int _maxCachedPartitions;
         private CheckpointTag _unlockedBefore;
 
         public PartitionStateCache(int maxCachedPartitions = 1000)
@@ -58,22 +58,30 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void CacheAndLockPartitionState(string partition, string data, CheckpointTag at)
+        public void Initialize()
+        {
+            lock(_partitionStates)
+                _partitionStates.Clear();
+            _cacheOrder.Clear();
+            _unlockedBefore = null;
+        }
+
+        public void CacheAndLockPartitionState(string partition, string data, CheckpointTag at, object by = null)
         {
             if (partition == null) throw new ArgumentNullException("partition");
             if (data == null) throw new ArgumentNullException("data");
             EnsureCanLockPartitionAt(partition, at);
             lock (_partitionStates)
-                _partitionStates[partition] = Tuple.Create(data, at);
+                _partitionStates[partition] = Tuple.Create(data, at, by);
             if (!string.IsNullOrEmpty(partition)) // cached forever - for root state
                 _cacheOrder.Enqueue(Tuple.Create(at, partition));
             CleanUp();
         }
 
-        public string TryGetAndLockPartitionState(string partition, CheckpointTag at)
+        public string TryGetAndLockPartitionState(string partition, CheckpointTag at, object by = null)
         {
             if (partition == null) throw new ArgumentNullException("partition");
-            Tuple<string, CheckpointTag> stateData;
+            Tuple<string, CheckpointTag, object> stateData;
             lock (_partitionStates)
             {
                 if (!_partitionStates.TryGetValue(partition, out stateData))
@@ -84,7 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         string.Format(
                             "Attempt to relock the '{0}' partition state locked at the '{1}' position at the earlier position '{2}'",
                             partition, stateData.Item2, at));
-                _partitionStates[partition] = Tuple.Create(stateData.Item1, at);
+                _partitionStates[partition] = Tuple.Create(stateData.Item1, at, by);
             }
             if (!string.IsNullOrEmpty(partition)) // cached forever - for root state
                 _cacheOrder.Enqueue(Tuple.Create(at, partition));
@@ -94,7 +102,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public string GetLockedPartitionState(string partition)
         {
-            Tuple<string, CheckpointTag> stateData;
+            Tuple<string, CheckpointTag, object> stateData;
             lock (_partitionStates)
                 if (!_partitionStates.TryGetValue(partition, out stateData))
                 {
@@ -125,7 +133,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (top.Item1 >= _unlockedBefore)
                     break; // other entries were locked after the checkpoint (or almost .. order is not very strong)
                 _cacheOrder.Dequeue();
-                Tuple<string, CheckpointTag> entry;
+                Tuple<string, CheckpointTag, object> entry;
                 lock (_partitionStates)
                     if (!_partitionStates.TryGetValue(top.Item2, out entry))
                         continue; // already removed

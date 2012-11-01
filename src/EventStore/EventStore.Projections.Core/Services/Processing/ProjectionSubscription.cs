@@ -37,9 +37,9 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionSubscription>();
         private readonly Guid _projectionCorrelationId;
-        private readonly IHandle<ProjectionMessage.Projections.CommittedEventReceived> _eventHandler;
-        private readonly IHandle<ProjectionMessage.Projections.CheckpointSuggested> _checkpointHandler;
-        private readonly IHandle<ProjectionMessage.Projections.ProgressChanged> _progressHandler;
+        private readonly IHandle<ProjectionMessage.SubscriptionMessage.CommittedEventReceived> _eventHandler;
+        private readonly IHandle<ProjectionMessage.SubscriptionMessage.CheckpointSuggested> _checkpointHandler;
+        private readonly IHandle<ProjectionMessage.SubscriptionMessage.ProgressChanged> _progressHandler;
         private readonly CheckpointStrategy _checkpointStrategy;
         private readonly long? _checkpointUnhandledBytesThreshold;
         private readonly EventFilter _eventFilter;
@@ -47,12 +47,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PositionTracker _positionTracker;
         private EventPosition _lastPassedOrCheckpointedEventPosition;
         private float _progress = -1;
+        private long _subscriptionMessageSequenceNumber;
 
         public ProjectionSubscription(
             Guid projectionCorrelationId, CheckpointTag from,
-            IHandle<ProjectionMessage.Projections.CommittedEventReceived> eventHandler,
-            IHandle<ProjectionMessage.Projections.CheckpointSuggested> checkpointHandler,
-            IHandle<ProjectionMessage.Projections.ProgressChanged> progressHandler,
+            IHandle<ProjectionMessage.SubscriptionMessage.CommittedEventReceived> eventHandler,
+            IHandle<ProjectionMessage.SubscriptionMessage.CheckpointSuggested> checkpointHandler,
+            IHandle<ProjectionMessage.SubscriptionMessage.ProgressChanged> progressHandler,
             CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold)
         {
             if (eventHandler == null) throw new ArgumentNullException("eventHandler");
@@ -88,8 +89,9 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (progressChanged)
                     _progressHandler.Handle(
-                        new ProjectionMessage.Projections.ProgressChanged(
-                            _projectionCorrelationId, _positionTracker.LastTag, _progress));
+                        new ProjectionMessage.SubscriptionMessage.ProgressChanged(
+                            _projectionCorrelationId, _positionTracker.LastTag, _progress,
+                            _subscriptionMessageSequenceNumber++));
                 return;
             }
             // NOTE: after joining heading distribution point it delivers all cached events to the subscription
@@ -114,8 +116,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _lastPassedOrCheckpointedEventPosition = message.Position;
                 var convertedMessage =
-                    ProjectionMessage.Projections.CommittedEventReceived.FromCommittedEventDistributed(
-                        message, eventCheckpointTag);
+                    ProjectionMessage.SubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
+                        message, eventCheckpointTag, _subscriptionMessageSequenceNumber++);
                 _eventHandler.Handle(convertedMessage);
             }
             else
@@ -126,15 +128,17 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     _lastPassedOrCheckpointedEventPosition = message.Position;
                     _checkpointHandler.Handle(
-                        new ProjectionMessage.Projections.CheckpointSuggested(
-                            _projectionCorrelationId, _positionTracker.LastTag, message.Progress));
+                        new ProjectionMessage.SubscriptionMessage.CheckpointSuggested(
+                            _projectionCorrelationId, _positionTracker.LastTag, message.Progress,
+                            _subscriptionMessageSequenceNumber++));
                 }
                 else
                 {
                     if (progressChanged)
                         _progressHandler.Handle(
-                            new ProjectionMessage.Projections.ProgressChanged(
-                                _projectionCorrelationId, _positionTracker.LastTag, _progress));
+                            new ProjectionMessage.SubscriptionMessage.ProgressChanged(
+                                _projectionCorrelationId, _positionTracker.LastTag, _progress,
+                                _subscriptionMessageSequenceNumber++));
                 }
             }
         }

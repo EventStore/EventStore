@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
     public class when_handling_an_emit_the_started_in_recovery_stream : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
 
         protected override void Given()
         {
@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
             _stream = new EmittedStream("test_stream", _bus, _readyHandler, recoveryMode: true, maxWriteBatchLength: 50);
             _stream.Start();
         }

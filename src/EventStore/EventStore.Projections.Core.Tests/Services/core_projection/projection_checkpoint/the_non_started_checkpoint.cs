@@ -38,12 +38,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
     public class the_non_started_checkpoint : TestFixtureWithExistingEvents
     {
         private ProjectionCheckpoint _checkpoint;
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
 
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
             _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), 250);
         }
 
