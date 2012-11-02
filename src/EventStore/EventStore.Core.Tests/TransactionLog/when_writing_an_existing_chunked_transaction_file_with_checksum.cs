@@ -58,6 +58,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        10000,
                                                        0,
                                                        _checkpoint,
+                                                       new InMemoryCheckpoint(),
                                                        new ICheckpoint[0]));
             db.OpenVerifyAndClean();
             var tf = new TFChunkWriter(db);

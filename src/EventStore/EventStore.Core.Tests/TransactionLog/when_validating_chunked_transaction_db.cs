@@ -47,6 +47,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(500),
+                                             new InMemoryCheckpoint(), 
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             File.WriteAllText(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), "this is just some test blahbydy blah");
@@ -63,6 +64,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              12000,
                                              0,
                                              new InMemoryCheckpoint(10000),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), 10000, 12000);
@@ -79,6 +81,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(15000),
+                                             new InMemoryCheckpoint(), 
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
@@ -95,6 +98,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(10000),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
@@ -110,6 +114,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(10000),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
@@ -126,6 +131,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(15000),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
@@ -143,6 +149,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(9000),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
@@ -160,6 +167,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(15000),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
 
             var db = new TFChunkDb(config);
@@ -178,7 +186,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
-                                             new InMemoryCheckpoint(0),
+                                             new InMemoryCheckpoint(0), 
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(4)), config.ChunkSize, config.ChunkSize);
@@ -195,6 +204,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(0),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[] {new InMemoryCheckpoint(11)});
             var db = new TFChunkDb(config);
             CreateChunk(Path.Combine(PathName, config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
@@ -211,6 +221,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
@@ -224,6 +235,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
+                                             new InMemoryCheckpoint(),
                                              new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
@@ -243,6 +255,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              100,
                                              0,
                                              new InMemoryCheckpoint(350),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
 
@@ -276,6 +289,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
 
@@ -301,6 +315,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
 
@@ -327,6 +342,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
 
@@ -352,6 +368,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
 
@@ -378,6 +395,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
 
@@ -403,6 +421,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
 
@@ -423,6 +442,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              100,
                                              0,
                                              new InMemoryCheckpoint(150),
+                                             new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
 

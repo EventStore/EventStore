@@ -26,6 +26,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                                                     4096,
                                                     0,
                                                     new InMemoryCheckpoint(),
+                                                    new InMemoryCheckpoint(),
                                                     new ICheckpoint[0]));
             _db.OpenVerifyAndClean();
 

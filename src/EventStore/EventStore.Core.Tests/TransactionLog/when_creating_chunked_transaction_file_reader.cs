@@ -51,6 +51,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(0),
+                                             new InMemoryCheckpoint(0),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
             Assert.Throws<ArgumentNullException>(() => new TFChunkReader(db, null));

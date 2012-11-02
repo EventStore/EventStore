@@ -52,6 +52,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        10000,
                                                        0,
                                                        new InMemoryCheckpoint(),
+                                                       new InMemoryCheckpoint(),
                                                        new ICheckpoint[0]));
             Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, null, new InMemoryCheckpoint()));
         }
@@ -63,6 +64,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        new PrefixFileNamingStrategy(Path.GetTempPath(), "prefix.tf"),
                                                        10000,
                                                        0,
+                                                       new InMemoryCheckpoint(),
                                                        new InMemoryCheckpoint(),
                                                        new ICheckpoint[0]));
             Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, new InMemoryCheckpoint(), null));
