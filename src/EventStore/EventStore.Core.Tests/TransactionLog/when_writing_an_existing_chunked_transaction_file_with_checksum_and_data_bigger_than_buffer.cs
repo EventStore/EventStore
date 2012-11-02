@@ -58,6 +58,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        chunkHeader.ChunkSize,
                                                        0,
                                                        _checkpoint,
+                                                       new InMemoryCheckpoint(),
                                                        new ICheckpoint[0]));
             db.OpenVerifyAndClean();
 

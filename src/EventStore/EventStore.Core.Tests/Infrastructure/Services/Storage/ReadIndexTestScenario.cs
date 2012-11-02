@@ -70,7 +70,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
                                                    10000,
                                                    0,
                                                    WriterCheckpoint,
-                                                   new[] {chaserchk}));
+                                                   chaserchk,
+                                                   new[] {WriterCheckpoint, chaserchk}));
             Db.OpenVerifyAndClean();
             // create db
             Writer = new TFChunkWriter(Db);

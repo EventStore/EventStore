@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.Storage
         protected readonly TFChunkWriter Writer;
         protected readonly IReadIndex ReadIndex;
 
-        private readonly IPublisher _bus;
+        protected readonly IPublisher Bus;
         private readonly ISubscriber _subscriber;
 
         private readonly QueuedHandler _storageWriterQueue;
@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.Storage
             Ensure.NotNull(writer, "writer");
             Ensure.NotNull(readIndex, "readIndex");
 
-            _bus = bus;
+            Bus = bus;
             _subscriber = subscriber;
             ReadIndex = readIndex;
 
@@ -106,7 +106,12 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<Message>.Handle(Message message)
         {
-            if (message is StorageMessage.IFlushableWriterMessage)
+            EnqueueMessage(message);
+        }
+
+        protected virtual void EnqueueMessage(Message message)
+        {
+            if (message is StorageMessage.IFlushableMessage)
                 Interlocked.Increment(ref FlushMessagesInQueue);
 
             _storageWriterQueue.Publish(message);
@@ -115,14 +120,14 @@ namespace EventStore.Core.Services.Storage
             if (message is SystemMessage.BecomeShuttingDown)
             {
                 _storageWriterQueue.Stop();
-                _bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
+                Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
             }
         }
 
         void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message)
         {
             ReadIndex.Build();
-            _bus.Publish(new SystemMessage.StorageWriterInitializationDone());
+            Bus.Publish(new SystemMessage.StorageWriterInitializationDone());
         }
 
         void IHandle<SystemMessage.BecomeShuttingDown>.Handle(SystemMessage.BecomeShuttingDown message)
