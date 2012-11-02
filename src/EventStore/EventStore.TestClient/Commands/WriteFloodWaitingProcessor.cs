@@ -127,7 +127,7 @@ namespace EventStore.TestClient.Commands
                             eventStreamId,
                             ExpectedVersion.Any,
                             new[] { 
-                                new ClientMessageDto.Event(Guid.NewGuid() ,
+                                new ClientMessageDto.ClientEvent(Guid.NewGuid() ,
                                                            "TakeSomeSpaceEvent",
                                                            Encoding.UTF8.GetBytes("DATA" + new string('*', 256)),
                                                            Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))

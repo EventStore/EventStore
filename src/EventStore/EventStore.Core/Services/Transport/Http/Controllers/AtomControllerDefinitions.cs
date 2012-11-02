@@ -148,37 +148,37 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         public void Forward(ClientMessage.WriteEvents message, IPEndPoint endPoint)
         {
-            Client.Post(endPoint.ToHttpUrl("/streams/{0}", message.EventStreamId),
-                        Format.WriteEvents(Codec.Xml, message),
-                        Codec.Xml.ContentType,
-                        ForwardResponseReceived,
-                        exception => Log.ErrorException(exception,
-                                                        "Error while forwarding write request",
-                                                        message.EventStreamId,
-                                                        message.ExpectedVersion));
+            //Client.Post(endPoint.ToHttpUrl("/streams/{0}", message.EventStreamId),
+            //            Format.WriteEvents(Codec.Xml, message),
+            //            Codec.Xml.ContentType,
+            //            ForwardResponseReceived,
+            //            exception => Log.ErrorException(exception,
+            //                                            "Error while forwarding write request",
+            //                                            message.EventStreamId,
+            //                                            message.ExpectedVersion));
         }
 
         private void ForwardResponseReceived(HttpResponse response)
         {
-            var completed = Codec.Xml.From<ClientMessageDto.WriteEventCompletedText>(response.Body);
-            if (completed != null)
-            {
-                if (completed.ErrorCode == OperationErrorCode.Success)
-                {
-                    Publish(new ClientMessage.WriteEventsCompleted(completed.CorrelationId,
-                                                                   completed.EventStreamId,
-                                                                   completed.EventNumber));
-                }
-                else
-                {
-                    Publish(new ClientMessage.WriteEventsCompleted(completed.CorrelationId,
-                                                                   completed.EventStreamId,
-                                                                   completed.ErrorCode,
-                                                                   completed.Error));
-                }
-            }
-            else
-                Log.Error("Write request body cannot be deserialized (forward)");
+            //var completed = Codec.Xml.From<ClientMessageDto.WriteEventCompletedText>(response.Body);
+            //if (completed != null)
+            //{
+            //    if (completed.ErrorCode == OperationErrorCode.Success)
+            //    {
+            //        Publish(new ClientMessage.WriteEventsCompleted(completed.CorrelationId,
+            //                                                       completed.EventStreamId,
+            //                                                       completed.EventNumber));
+            //    }
+            //    else
+            //    {
+            //        Publish(new ClientMessage.WriteEventsCompleted(completed.CorrelationId,
+            //                                                       completed.EventStreamId,
+            //                                                       completed.ErrorCode,
+            //                                                       completed.Error));
+            //    }
+            //}
+            //else
+            //    Log.Error("Write request body cannot be deserialized (forward)");
         }
 
         //SERVICE DOCUMENT
@@ -370,7 +370,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var envelope = new SendToHttpEnvelope(entity,
                                                   Format.Atom.CreateStreamCompleted,
                                                   Configure.CreateStreamCompleted);
-            var msg = new ClientMessage.CreateStream(create.CorrelationId == Guid.Empty ? Guid.NewGuid() : create.CorrelationId,
+            var msg = new ClientMessage.CreateStream(Guid.NewGuid(),
                                                      envelope,
                                                      true, 
                                                      create.EventStreamId,
@@ -400,7 +400,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var envelope = new SendToHttpEnvelope(entity,
                                                   Format.Atom.DeleteStreamCompleted,
                                                   Configure.DeleteStreamCompleted);
-            var msg = new ClientMessage.DeleteStream(delete.CorrelationId == Guid.Empty ? Guid.NewGuid() : delete.CorrelationId,
+            var msg = new ClientMessage.DeleteStream(Guid.NewGuid(),
                                                      envelope,
                                                      true, 
                                                      stream, 
@@ -443,13 +443,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             }
 
             var envelope = new SendToHttpEnvelope(entity, Format.WriteEventsCompleted, Configure.WriteEventsCompleted);
-            var msg = new ClientMessage.WriteEvents(
-                write.CorrelationId == Guid.Empty ? Guid.NewGuid() : write.CorrelationId,
-                envelope,
-                true,
-                stream,
-                write.ExpectedVersion,
-                write.Events.Select(EventConvertion.ConvertOnWrite).ToArray());
+            var msg = new ClientMessage.WriteEvents(Guid.NewGuid(),
+                                                    envelope,
+                                                    true,
+                                                    stream,
+                                                    write.ExpectedVersion,
+                                                    write.Events.Select(EventConvertion.ConvertOnWrite).ToArray());
             Publish(msg);
         }
     }

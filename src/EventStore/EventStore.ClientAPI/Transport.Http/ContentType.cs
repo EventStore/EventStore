@@ -41,8 +41,5 @@ namespace EventStore.ClientAPI.Transport.Http
 
         public const string AtomServiceDoc = "application/atomsvc+xml";
         public const string AtomServiceDocJson = "application/atomsvc+x.json";
-
-        public const string AtomCategories = "application/atomcat+xml";
-        public const string AtomCategoriesJson = "application/atomcat+x.json";
     }
 }

@@ -65,7 +65,7 @@ namespace EventStore.TestClient.Commands
                 expectedVersion,
                 new[] 
                 { 
-                    new ClientMessageDto.Event(/*_eventId*/Guid.NewGuid(),
+                    new ClientMessageDto.ClientEvent(/*_eventId*/Guid.NewGuid(),
                                                "TakeSomeSpaceEvent",
                                                Encoding.UTF8.GetBytes(data),
                                                Encoding.UTF8.GetBytes(metadata ?? string.Empty))

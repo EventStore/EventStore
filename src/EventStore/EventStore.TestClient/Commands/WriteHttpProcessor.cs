@@ -66,9 +66,8 @@ namespace EventStore.TestClient.Commands
             context.Log.Info("Writing to {0}...", url);
 
             var request = Codec.Xml.To(new ClientMessageDto.WriteEventText(
-                    Guid.Empty, 
                     expectedVersion,
-                    new[] { new ClientMessageDto.EventText(Guid.NewGuid(), "type", data, metadata) }));
+                    new[] { new ClientMessageDto.ClientEventText(Guid.NewGuid(), "type", data, metadata) }));
 
             var sw = Stopwatch.StartNew();
             client.Post(
