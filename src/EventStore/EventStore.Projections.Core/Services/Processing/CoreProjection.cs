@@ -121,8 +121,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionStateHandler.ConfigureSourceProcessingStrategy(namingBuilder);
 
             _name = namingBuilder.ForceProjectionName ?? name;
-            _stateStreamNamePattern = namingBuilder.StateStreamName ?? ProjectionsStreamPrefix + name + "-{0}" + ProjectionsStateStreamSuffix;
-            _stateStreamName = namingBuilder.StateStreamName ?? ProjectionsStreamPrefix + name + ProjectionsStateStreamSuffix; 
+            //TODO: move into name builder
+            _stateStreamNamePattern = namingBuilder.StateStreamName ?? ProjectionsStreamPrefix + _name + "-{0}" + ProjectionsStateStreamSuffix;
+            _stateStreamName = namingBuilder.StateStreamName ?? ProjectionsStreamPrefix + _name + ProjectionsStateStreamSuffix; 
             _projectionConfig = projectionConfig;
             _logger = logger;
             _publisher = publisher;
