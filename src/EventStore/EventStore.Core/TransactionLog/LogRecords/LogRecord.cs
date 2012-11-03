@@ -53,7 +53,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
                 case LogRecordType.Commit:
                     return new CommitLogRecord(reader, version);
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("recordType");
             }
         }
 
