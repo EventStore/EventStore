@@ -26,8 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
-using EventStore.ClientAPI.SystemData;
-using EventStore.ClientAPI.Transport.Tcp;
+using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
 {
@@ -47,7 +46,7 @@ namespace EventStore.ClientAPI
         {
             EventStreamId = systemRecord.EventStreamId;
 
-            EventId = systemRecord.EventId;
+            EventId = new Guid(systemRecord.EventId);
             EventNumber = systemRecord.EventNumber;
 
             EventType = systemRecord.EventType;
@@ -60,7 +59,7 @@ namespace EventStore.ClientAPI
         {
             EventStreamId = streamEvent.EventStreamId;
 
-            EventId = streamEvent.EventId;
+            EventId = new Guid(streamEvent.EventId);
             EventNumber = streamEvent.EventNumber;
 
             EventType = streamEvent.EventType;

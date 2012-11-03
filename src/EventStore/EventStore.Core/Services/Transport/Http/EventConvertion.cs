@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Http
 {
     public static class EventConvertion
     {
-        public static Event ConvertOnWrite(ClientMessageDto.EventText eventText)
+        public static Event ConvertOnWrite(ClientMessageDto.ClientEventText eventText)
         {
             object data;
             object metadata;

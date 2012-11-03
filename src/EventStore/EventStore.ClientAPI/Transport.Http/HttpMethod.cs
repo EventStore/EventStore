@@ -27,7 +27,7 @@
 // 
 namespace EventStore.ClientAPI.Transport.Http
 {
-    public static class HttpMethod
+    internal static class HttpMethod
     {
         public const string Get = "GET";
         public const string Post = "POST";

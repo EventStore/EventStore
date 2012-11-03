@@ -193,7 +193,9 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public TFChunk GetChunkForOrDefault(string path)
         {
-            return _chunks.FirstOrDefault(c => c.FileName == path);
+            return _chunks != null
+                       ? _chunks.FirstOrDefault(c => c != null && c.FileName == path)
+                       : null;
         }
 
         public TFChunk GetChunk(int chunkNumber)

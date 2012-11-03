@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.Index
             _mergeFile = Path.Combine(PathName, "mergefile");
 
             _map = IndexMap.FromFile(_filename, x => false);
-            var memtable = new HashListMemTable();
+            var memtable = new HashListMemTable(maxSize: 2000);
             memtable.Add(0, 1, 0);
             var table = PTable.FromMemtable(memtable, _tablename);
             _result = _map.AddFile(table, 7, 11, new FakeFilenameProvider(_mergeFile));

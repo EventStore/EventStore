@@ -10,13 +10,13 @@ namespace EventStore.ClientAPI.Connection
         public readonly Guid Id;
         public readonly string Stream;
 
-        public readonly Action<RecordedEvent> EventAppeared;
+        public readonly Action<RecordedEvent, Position> EventAppeared;
         public readonly Action SubscriptionDropped;
 
         public Subscription(TaskCompletionSource<object> source,
                             Guid id,
                             string stream,
-                            Action<RecordedEvent> eventAppeared,
+                            Action<RecordedEvent, Position> eventAppeared,
                             Action subscriptionDropped)
         {
             Source = source;
@@ -30,7 +30,7 @@ namespace EventStore.ClientAPI.Connection
 
         public Subscription(TaskCompletionSource<object> source,
                             Guid id,
-                            Action<RecordedEvent> eventAppeared,
+                            Action<RecordedEvent, Position> eventAppeared,
                             Action subscriptionDropped)
         {
             Source = source;

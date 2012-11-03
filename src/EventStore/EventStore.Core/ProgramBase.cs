@@ -182,7 +182,8 @@ namespace EventStore.Core
                                                  chunkSize,
                                                  chunksToCache,
                                                  writerChk,
-                                                 new[] {chaserChk});
+                                                 chaserChk,
+                                                 new[] {writerChk, chaserChk});
 
             return nodeConfig;
         }

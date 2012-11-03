@@ -91,7 +91,7 @@ namespace EventStore.Core
             //STORAGE SUBSYSTEM
             var indexPath = Path.Combine(db.Config.Path, "index");
             var tableIndex = new TableIndex(indexPath,
-                                            () => new HashListMemTable(),
+                                            () => new HashListMemTable(maxSize: 2000000),
                                             maxSizeForMemory: 1000000,
                                             maxTablesPerLevel: 2);
 
@@ -107,7 +107,7 @@ namespace EventStore.Core
             var storageReader = new StorageReader(_mainQueue, _outputBus, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
-            var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.GetNamedCheckpoint(Checkpoint.Chaser));
+            var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
             var storageChaser = new StorageChaser(_mainQueue, chaser);
             _outputBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
             _outputBus.Subscribe<SystemMessage.SystemStart>(storageChaser);

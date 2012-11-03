@@ -30,6 +30,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 
@@ -44,6 +45,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private Guid _corrId;
         private readonly object _corrIdLock = new object();
 
+        private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;
 
@@ -58,12 +60,14 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public StartTransactionOperation(TaskCompletionSource<EventStoreTransaction> source,
                                          Guid corrId,
+                                         bool forward,
                                          string stream,
                                          int expectedVersion)
         {
             _source = source;
 
             _corrId = corrId;
+            _forward = forward;
             _stream = stream;
             _expectedVersion = expectedVersion;
         }
@@ -78,7 +82,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var startTransaction = new ClientMessages.TransactionStart(_stream, _expectedVersion);
+                var startTransaction = new ClientMessages.TransactionStart(_stream, _expectedVersion, _forward);
                 return new TcpPackage(TcpCommand.TransactionStart, _corrId,  startTransaction.Serialize());
             }
         }
@@ -87,6 +91,13 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             try
             {
+                if (package.Command == TcpCommand.DeniedToRoute)
+                {
+                    var route = package.Data.Deserialize<ClientMessages.DeniedToRoute>();
+                    return new InspectionResult(InspectionDecision.Reconnect,
+                                                data: new EndpointsPair(route.ExternalTcpEndPoint,
+                                                                        route.ExternalHttpEndPoint));
+                }
                 if (package.Command != TcpCommand.TransactionStartCompleted)
                 {
                     return new InspectionResult(InspectionDecision.NotifyError,

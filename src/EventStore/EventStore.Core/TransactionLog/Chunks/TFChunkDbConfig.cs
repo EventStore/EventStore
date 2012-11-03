@@ -40,6 +40,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public readonly int ChunkSize;
         public readonly int CachedChunkCount;
         public readonly ICheckpoint WriterCheckpoint;
+        public readonly ICheckpoint ChaserCheckpoint;
         public readonly IFileNamingStrategy FileNamingStrategy;
 
         private readonly IDictionary<string, ICheckpoint> _namedCheckpoints;
@@ -49,6 +50,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                                int chunkSize,
                                int cachedChunkCount,
                                ICheckpoint writerCheckpoint, 
+                               ICheckpoint chaserCheckpoint,
                                IEnumerable<ICheckpoint> namedCheckpoints)
         {
             Ensure.NotNullOrEmpty(path, "path");
@@ -56,6 +58,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             Ensure.Positive(chunkSize, "chunkSize");
             Ensure.Nonnegative(cachedChunkCount, "cachedChunkCount");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
+            Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
             Ensure.NotNull(namedCheckpoints, "namedCheckpoints");
 
 //            if ((chunkSize & (chunkSize-1)) != 0)
@@ -65,6 +68,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             ChunkSize = chunkSize;
             CachedChunkCount = cachedChunkCount;
             WriterCheckpoint = writerCheckpoint;
+            ChaserCheckpoint = chaserCheckpoint;
             FileNamingStrategy = fileNamingStrategy;
             _namedCheckpoints = namedCheckpoints.ToDictionary(x => x.Name);
         }

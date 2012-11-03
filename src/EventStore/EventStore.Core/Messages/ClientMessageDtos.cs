@@ -26,10 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Net;
 using System.Runtime.Serialization;
 using System.Text;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using ProtoBuf;
@@ -40,6 +40,35 @@ namespace EventStore.Core.Messages
     {
         #region TCP DTO
         [ProtoContract]
+        public class DeniedToRoute
+        {
+            [ProtoMember(1)]
+            public string ExternalTcpAddress { get; set; }
+
+            [ProtoMember(2)]
+            public int ExternalTcpPort { get; set; }
+
+            [ProtoMember(3)]
+            public string ExternalHttpAddress { get; set; }
+
+            [ProtoMember(4)]
+            public int ExternalHttpPort { get; set; }
+
+            public DeniedToRoute()
+            {
+            }
+
+            public DeniedToRoute(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint)
+            {
+                ExternalTcpAddress = externalTcpEndPoint.Address.ToString();
+                ExternalTcpPort = externalTcpEndPoint.Port;
+
+                ExternalHttpAddress = externalHttpEndPoint.Address.ToString();
+                ExternalHttpPort = externalHttpEndPoint.Port;
+            }
+        }
+
+        [ProtoContract]
         public class CreateStream
         {
             [ProtoMember(1)]
@@ -48,17 +77,20 @@ namespace EventStore.Core.Messages
             [ProtoMember(2, IsRequired = false)]
             public byte[] Metadata { get; set; }
 
+            [ProtoMember(3)]
+            public bool AllowForwarding { get; set; }
+
             public CreateStream()
             {
             }
 
-            public CreateStream(string eventStreamId,
-                                byte[] metadata)
+            public CreateStream(string eventStreamId, byte[] metadata, bool allowForwarding = true)
             {
                 Ensure.NotNull(eventStreamId, "streamId");
 
                 EventStreamId = eventStreamId;
                 Metadata = metadata;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -87,7 +119,7 @@ namespace EventStore.Core.Messages
         }
 
         [ProtoContract]
-        public class Event
+        public class ClientEvent
         {
             [ProtoMember(1)]
             public byte[] EventId { get; set; }
@@ -101,11 +133,11 @@ namespace EventStore.Core.Messages
             [ProtoMember(4, IsRequired = false)]
             public byte[] Metadata { get; set; }
 
-            public Event()
+            public ClientEvent()
             {
             }
 
-            public Event(Guid eventId, string eventType, byte[] data, byte[] metadata)
+            public ClientEvent(Guid eventId, string eventType, byte[] data, byte[] metadata)
             {
                 EventId = eventId.ToByteArray();
                 EventType = eventType;
@@ -113,7 +145,7 @@ namespace EventStore.Core.Messages
                 Metadata = metadata;
             }
 
-            public Event(Data.Event evnt)
+            public ClientEvent(Data.Event evnt)
             {
                 EventId = evnt.EventId.ToByteArray();
                 EventType = evnt.EventType;
@@ -132,13 +164,19 @@ namespace EventStore.Core.Messages
             public int ExpectedVersion { get; set; }
 
             [ProtoMember(3)]
-            public Event[] Events { get; set; }
+            public ClientEvent[] Events { get; set; }
+
+            [ProtoMember(4)]
+            public bool AllowForwarding { get; set; }
 
             public WriteEvents()
             {
             }
 
-            public WriteEvents(string eventStreamId, int expectedVersion, Event[] events)
+            public WriteEvents(string eventStreamId, 
+                               int expectedVersion, 
+                               ClientEvent[] events, 
+                               bool allowForwarding = true)
             {
                 Ensure.NotNull(events, "events");
                 Ensure.Positive(events.Length, "events.Length");
@@ -146,6 +184,7 @@ namespace EventStore.Core.Messages
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
                 Events = events;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -186,16 +225,22 @@ namespace EventStore.Core.Messages
             [ProtoMember(2)]
             public int ExpectedVersion { get; set; }
 
+            [ProtoMember(3)]
+            public bool AllowForwarding { get; set; }
+
             public DeleteStream()
             {
             }
 
-            public DeleteStream(string eventStreamId, int expectedVersion)
+            public DeleteStream(string eventStreamId, 
+                                int expectedVersion, 
+                                bool allowForwarding = true)
             {
                 Ensure.NotNull(eventStreamId, "streamId");
 
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -344,7 +389,7 @@ namespace EventStore.Core.Messages
             public long? LastCommitPosition { get; set; }
 
             [ProtoMember(5)]
-            public int LastEventNumber { get; set; }
+            public int? LastEventNumber { get; set; }
 
             public ReadStreamEventsForwardCompleted()
             {
@@ -354,7 +399,7 @@ namespace EventStore.Core.Messages
                                                     EventLinkPair[] events,
                                                     RangeReadResult result,
                                                     long? lastCommitPosition,
-                                                    int lastEventNumber)
+                                                    int? lastEventNumber)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "streamId");
 
@@ -424,6 +469,91 @@ namespace EventStore.Core.Messages
                 Events = events;
                 Result = (int)result;
                 LastCommitPosition = lastCommitPosition;
+            }
+        }
+
+        [ProtoContract]
+        public class EventLinkPair
+        {
+            [ProtoMember(1)]
+            public EventRecord Event { get; set; }
+
+            [ProtoMember(2)]
+            public EventRecord Link { get; set; }
+
+            public EventLinkPair()
+            {
+            }
+
+            public EventLinkPair(Data.EventRecord @event, Data.EventRecord link)
+            {
+                Ensure.NotNull(@event, "event");
+                Event = new EventRecord(@event);
+                Link = link == null ? null : new EventRecord(link);
+            }
+        }
+
+        [ProtoContract]
+        public class EventRecord
+        {
+            [ProtoMember(1)]
+            public readonly int EventNumber;
+
+            [ProtoMember(2)]
+            public readonly long LogPosition;
+
+            [ProtoMember(3)]
+            public readonly byte[] CorrelationId;
+
+            [ProtoMember(4)]
+            public readonly byte[] EventId;
+
+            [ProtoMember(5)]
+            public readonly long TransactionPosition;
+
+            [ProtoMember(6)]
+            public readonly int TransactionOffset;
+
+            [ProtoMember(7)]
+            public readonly string EventStreamId;
+
+            [ProtoMember(8)]
+            public readonly int ExpectedVersion;
+
+            [ProtoMember(9)]
+            public readonly DateTime TimeStamp;
+
+            [ProtoMember(10)]
+            public readonly ushort Flags;
+
+            [ProtoMember(11)]
+            public readonly string EventType;
+
+            [ProtoMember(12)]
+            public readonly byte[] Data;
+
+            [ProtoMember(13)]
+            public readonly byte[] Metadata;
+
+            public EventRecord()
+            {
+            }
+
+            public EventRecord(Data.EventRecord eventRecord)
+            {
+                EventNumber = eventRecord.EventNumber;
+                LogPosition = eventRecord.LogPosition;
+                CorrelationId = eventRecord.CorrelationId.ToByteArray();
+                EventId = eventRecord.EventId.ToByteArray();
+                TransactionPosition = eventRecord.TransactionPosition;
+                TransactionOffset = eventRecord.TransactionOffset;
+                EventStreamId = eventRecord.EventStreamId;
+                ExpectedVersion = eventRecord.ExpectedVersion;
+                TimeStamp = eventRecord.TimeStamp;
+                Flags = (ushort)eventRecord.Flags;
+                EventType = eventRecord.EventType;
+                Data = eventRecord.Data;
+                Metadata = eventRecord.Metadata;
             }
         }
 
@@ -564,14 +694,20 @@ namespace EventStore.Core.Messages
             [ProtoMember(2)]
             public int ExpectedVersion { get; set; }
 
+            [ProtoMember(3)]
+            public bool AllowForwarding { get; set; }
+
             public TransactionStart()
             {
             }
 
-            public TransactionStart(string eventStreamId, int expectedVersion)
+            public TransactionStart(string eventStreamId, 
+                                    int expectedVersion,
+                                    bool allowForwarding = true)
             {
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -616,17 +752,24 @@ namespace EventStore.Core.Messages
             public string EventStreamId { get; set; }
 
             [ProtoMember(3)]
-            public Event[] Events { get; set; }
+            public ClientEvent[] Events { get; set; }
+
+            [ProtoMember(4)]
+            public bool AllowForwarding { get; set; }
 
             public TransactionWrite()
             {
             }
 
-            public TransactionWrite(long transactionId, string eventStreamId, Event[] events)
+            public TransactionWrite(long transactionId, 
+                                    string eventStreamId, 
+                                    ClientEvent[] events,
+                                    bool allowForwarding = true)
             {
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
                 Events = events;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -667,14 +810,20 @@ namespace EventStore.Core.Messages
             [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
+            [ProtoMember(3)]
+            public bool AllowForwarding { get; set; }
+
             public TransactionCommit()
             {
             }
 
-            public TransactionCommit(long transactionId, string eventStreamId)
+            public TransactionCommit(long transactionId, 
+                                     string eventStreamId, 
+                                     bool allowForwarding = true)
             {
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -754,7 +903,7 @@ namespace EventStore.Core.Messages
             public int EventNumber { get; set; }
 
             [ProtoMember(3)]
-            public Guid EventId { get; set; }
+            public byte[] EventId { get; set; }
 
             [ProtoMember(4)]
             public string EventType { get; set; }
@@ -765,25 +914,33 @@ namespace EventStore.Core.Messages
             [ProtoMember(6)]
             public byte[] Metadata { get; set; }
 
+            [ProtoMember(7)]
+            public long CommitPosition { get; set; }
+
+            [ProtoMember(8)]
+            public long PreparePosition { get; set; }
+
             public StreamEventAppeared()
             {
             }
 
-            public StreamEventAppeared(int eventNumber, PrepareLogRecord @event)
+            public StreamEventAppeared(int eventNumber, PrepareLogRecord @event, long commitPosition)
             {
                 EventStreamId = @event.EventStreamId;
                 EventNumber = eventNumber;
-                EventId = @event.EventId;
+                EventId = @event.EventId.ToByteArray();
                 EventType = @event.EventType;
                 Data = @event.Data;
                 Metadata = @event.Metadata;
+                CommitPosition = commitPosition;
+                PreparePosition = @event.LogPosition;
             }
         }
 
         [ProtoContract]
         public class SubscriptionDropped
         {
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public string EventStreamId { get; set; }
 
             public SubscriptionDropped()
@@ -805,7 +962,7 @@ namespace EventStore.Core.Messages
         #region HTTP DTO
 
         [DataContract(Name = "event", Namespace = "")]
-        public class EventText
+        public class ClientEventText
         {
             [DataMember]
             public Guid EventId { get; set; }
@@ -817,11 +974,11 @@ namespace EventStore.Core.Messages
             [DataMember]
             public object Metadata { get; set; }
 
-            public EventText()
+            public ClientEventText()
             {
             }
 
-            public EventText(Guid eventId, string eventType, object data, object metadata)
+            public ClientEventText(Guid eventId, string eventType, object data, object metadata)
             {
                 Ensure.NotEmptyGuid(eventId, "eventId");
                 Ensure.NotNull(data, "data");
@@ -833,7 +990,7 @@ namespace EventStore.Core.Messages
                 Metadata = metadata;
             }
 
-            public EventText(Guid eventId, string eventType, byte[] data, byte[] metaData)
+            public ClientEventText(Guid eventId, string eventType, byte[] data, byte[] metaData)
             {
                 Ensure.NotEmptyGuid(eventId, "eventId");
                 Ensure.NotNull(data, "data");
@@ -850,63 +1007,28 @@ namespace EventStore.Core.Messages
         public class WriteEventText
         {
             [DataMember]
-            public Guid CorrelationId { get; set; }
-            [DataMember]
             public int ExpectedVersion { get; set; }
 
             [DataMember]
-            public EventText[] Events { get; set; }
+            public ClientEventText[] Events { get; set; }
 
             public WriteEventText()
             {
             }
 
-            public WriteEventText(Guid correlationId, int expectedVersion, EventText[] events)
+            public WriteEventText(int expectedVersion, ClientEventText[] events)
             {
                 Ensure.NotNull(events, "events");
                 Ensure.Positive(events.Length, "events.Length");
 
-                CorrelationId = correlationId;
                 ExpectedVersion = expectedVersion;
                 Events = events;
-            }
-        }
-
-        public class WriteEventCompletedText
-        {
-            public Guid CorrelationId { get; set; }
-            public string EventStreamId { get; set; }
-            public OperationErrorCode ErrorCode { get; set; }
-            public string Error { get; set; }
-            public int EventNumber { get; set; }
-
-            public WriteEventCompletedText()
-            {
-            }
-
-            public WriteEventCompletedText(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error, int eventNumber)
-            {
-                CorrelationId = correlationId;
-                EventStreamId = eventStreamId;
-                ErrorCode = errorCode;
-                Error = error;
-                EventNumber = eventNumber;
-            }
-
-            public WriteEventCompletedText(ClientMessage.WriteEventsCompleted message)
-            {
-                CorrelationId = message.CorrelationId;
-                ErrorCode = message.ErrorCode;
-                Error = message.Error;
             }
         }
 
         [DataContract(Name = "read-event-result", Namespace = "")]
         public class ReadEventCompletedText
         {
-            [DataMember]
-            public Guid CorrelationId { get; set; }
-
             [DataMember]
             public string EventStreamId { get; set; }
             [DataMember]
@@ -926,8 +1048,6 @@ namespace EventStore.Core.Messages
 
             public ReadEventCompletedText(ClientMessage.ReadEventCompleted message)
             {
-                CorrelationId = message.Record.CorrelationId;
-
                 if (message.Record != null)
                 {
                     EventStreamId = message.Record.EventStreamId;
@@ -949,12 +1069,11 @@ namespace EventStore.Core.Messages
 
             public override string ToString()
             {
-                return string.Format("CorrelationId: {0}, EventStreamId: {1}, EventNumber: {2}, EventType: {3}, Data: {4}, Metadata: {5}", 
-                                     CorrelationId, 
-                                     EventStreamId, 
-                                     EventNumber, 
-                                     EventType, 
-                                     Data, 
+                return string.Format("EventStreamId: {0}, EventNumber: {1}, EventType: {2}, Data: {3}, Metadata: {4}",
+                                     EventStreamId,
+                                     EventNumber,
+                                     EventType,
+                                     Data,
                                      Metadata);
             }
         }
@@ -962,8 +1081,6 @@ namespace EventStore.Core.Messages
         [DataContract(Name = "create-stream", Namespace = "")]
         public class CreateStreamText
         {
-            [DataMember]
-            public Guid CorrelationId { get; set; }
             [DataMember]
             public string EventStreamId { get; set; }
             [DataMember]
@@ -973,32 +1090,10 @@ namespace EventStore.Core.Messages
             {
             }
 
-            public CreateStreamText(Guid correlationId, string eventStreamId, string metadata)
+            public CreateStreamText(string eventStreamId, string metadata)
             {
-                CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
                 Metadata = metadata;
-            }
-        }
-
-        public class CreateStreamCompletedText
-        {
-            public Guid CorrelationId { get; set; }
-            public string EventStreamId { get; set; }
-
-            public int ErrorCode { get; set; }
-            public string Error { get; set; }
-
-            public CreateStreamCompletedText()
-            {
-            }
-
-            public CreateStreamCompletedText(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
-            {
-                CorrelationId = correlationId;
-                EventStreamId = eventStreamId;
-                ErrorCode = (int)errorCode;
-                Error = error;
             }
         }
 
@@ -1006,40 +1101,15 @@ namespace EventStore.Core.Messages
         public class DeleteStreamText
         {
             [DataMember]
-            public Guid CorrelationId { get; set; }
-            [DataMember]
             public int ExpectedVersion { get; set; }
 
             public DeleteStreamText()
             {
             }
 
-            public DeleteStreamText(Guid correlationId, int expectedVersion)
+            public DeleteStreamText(int expectedVersion)
             {
-                CorrelationId = correlationId;
                 ExpectedVersion = expectedVersion;
-            }
-        }
-
-        public class DeleteStreamCompletedText
-        {
-            public Guid CorrelationId { get; set; }
-            public string EventStreamId { get; set; }
-
-            public int ErrorCode { get; set; }
-            public string Error { get; set; }
-
-            public DeleteStreamCompletedText()
-            {
-            }
-
-            public DeleteStreamCompletedText(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
-            {
-                CorrelationId = correlationId;
-                EventStreamId = eventStreamId;
-
-                ErrorCode = (int)errorCode;
-                Error = error;
             }
         }
 

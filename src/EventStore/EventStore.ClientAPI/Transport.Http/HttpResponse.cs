@@ -30,7 +30,7 @@ using System.Net;
 
 namespace EventStore.ClientAPI.Transport.Http
 {
-    public class HttpResponse
+    internal class HttpResponse
     {
         public string CharacterSet { get; private set; }
 

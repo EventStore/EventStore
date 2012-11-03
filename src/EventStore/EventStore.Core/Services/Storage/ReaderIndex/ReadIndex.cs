@@ -73,6 +73,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _persistedPrepareCheckpoint = -1;
         private long _persistedCommitCheckpoint = -1;
         private long _lastCommitPosition = -1;
+        private bool _indexRebuild = true;
 
         private readonly BoundedCache<Guid, Tuple<string, int>> _committedEvents = 
             new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, 10*1024*1024, x => 16 + 4 + 2*x.Item1.Length);
@@ -168,10 +169,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 ReturnSeqReader(seqReader);
             }
+
+            _indexRebuild = false;
         }
 
         public void Commit(CommitLogRecord commit)
         {
+            if (commit.LogPosition < _lastCommitPosition || (commit.LogPosition == _lastCommitPosition && !_indexRebuild))
+                return;  // already committed
+
             bool first = true;
             int eventNumber = -1;
             uint streamHash = 0;

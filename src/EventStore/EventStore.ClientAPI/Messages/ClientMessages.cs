@@ -26,15 +26,60 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
+using System.Net;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.SystemData;
 using ProtoBuf;
 
-namespace EventStore.ClientAPI.Transport.Tcp
+namespace EventStore.ClientAPI.Messages
 {
     internal static class ClientMessages
     {
+        [ProtoContract]
+        internal class DeniedToRoute
+        {
+            [ProtoMember(1)]
+            public string ExternalTcpAddress { get; set; }
+
+            [ProtoMember(2)]
+            public int ExternalTcpPort { get; set; }
+
+            [ProtoMember(3)]
+            public string ExternalHttpAddress { get; set; }
+
+            [ProtoMember(4)]
+            public int ExternalHttpPort { get; set; }
+
+            public IPEndPoint ExternalTcpEndPoint
+            {
+                get
+                {
+                    return new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort);
+                }
+            }
+
+            public IPEndPoint ExternalHttpEndPoint
+            {
+                get
+                {
+                    return new IPEndPoint(IPAddress.Parse(ExternalHttpAddress), ExternalHttpPort);
+                }
+            }
+
+            public DeniedToRoute()
+            {
+            }
+
+            public DeniedToRoute(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint)
+            {
+                ExternalTcpAddress = externalTcpEndPoint.Address.ToString();
+                ExternalTcpPort = externalTcpEndPoint.Port;
+
+                ExternalHttpAddress = externalHttpEndPoint.Address.ToString();
+                ExternalHttpPort = externalHttpEndPoint.Port;
+            }
+        }
+
         [ProtoContract]
         internal class CreateStream
         {
@@ -44,17 +89,20 @@ namespace EventStore.ClientAPI.Transport.Tcp
             [ProtoMember(2, IsRequired = false)]
             public byte[] Metadata { get; set; }
 
+            [ProtoMember(3)]
+            public bool AllowForwarding { get; set; }
+
             public CreateStream()
             {
             }
 
-            public CreateStream(string eventStreamId,
-                                byte[] metadata)
+            public CreateStream(string eventStreamId, byte[] metadata, bool allowForwarding = true)
             {
                 Ensure.NotNull(eventStreamId, "streamId");
 
                 EventStreamId = eventStreamId;
                 Metadata = metadata;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -83,34 +131,6 @@ namespace EventStore.ClientAPI.Transport.Tcp
         }
 
         [ProtoContract]
-        internal class Event
-        {
-            [ProtoMember(1)]
-            public byte[] EventId { get; set; }
-
-            [ProtoMember(2, IsRequired = false)]
-            public string EventType { get; set; }
-
-            [ProtoMember(3)]
-            public byte[] Data { get; set; }
-
-            [ProtoMember(4, IsRequired = false)]
-            public byte[] Metadata { get; set; }
-
-            public Event()
-            {
-            }
-
-            public Event(Guid eventId, string eventType, byte[] data, byte[] metadata)
-            {
-                EventId = eventId.ToByteArray();
-                EventType = eventType;
-                Data = data;
-                Metadata = metadata;
-            }
-        }
-
-        [ProtoContract]
         internal class WriteEvents
         {
             [ProtoMember(1)]
@@ -120,13 +140,19 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public int ExpectedVersion { get; set; }
 
             [ProtoMember(3)]
-            public Event[] Events { get; set; }
+            public ClientEvent[] Events { get; set; }
+
+            [ProtoMember(4)]
+            public bool AllowForwarding { get; set; }
 
             public WriteEvents()
             {
             }
 
-            public WriteEvents(string eventStreamId, int expectedVersion, Event[] events)
+            public WriteEvents(string eventStreamId, 
+                               int expectedVersion, 
+                               ClientEvent[] events, 
+                               bool allowForwarding = true)
             {
                 Ensure.NotNull(events, "events");
                 Ensure.Positive(events.Length, "events.Length");
@@ -134,6 +160,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
                 Events = events;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -174,16 +201,22 @@ namespace EventStore.ClientAPI.Transport.Tcp
             [ProtoMember(2)]
             public int ExpectedVersion { get; set; }
 
+            [ProtoMember(3)]
+            public bool AllowForwarding { get; set; }
+
             public DeleteStream()
             {
             }
 
-            public DeleteStream(string eventStreamId, int expectedVersion)
+            public DeleteStream(string eventStreamId, 
+                                int expectedVersion, 
+                                bool allowForwarding = true)
             {
                 Ensure.NotNull(eventStreamId, "streamId");
 
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -256,6 +289,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
             [ProtoMember(6)]
             public byte[] Metadata { get; set; }
 
+            [ProtoMember(7)]
+            public long LogPosition { get; set; }
+
             public ReadEventCompleted()
             {
             }
@@ -265,7 +301,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                       SingleReadResult result,
                                       string eventType,
                                       byte[] data,
-                                      byte[] metadata)
+                                      byte[] metadata, long logPosition)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "streamId");
                 Ensure.Nonnegative(eventNumber, "eventNumber");
@@ -278,6 +314,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 EventType = eventType;
                 Data = data;
                 Metadata = metadata;
+                LogPosition = logPosition;
             }
         }
 
@@ -295,6 +332,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             [ProtoMember(4)]
             public bool ResolveLinkTos { get; set; }
+
+            [ProtoMember(5)]
+            public bool ReturnLastEventNumber { get; set; }
 
             public ReadStreamEventsForward()
             {
@@ -324,6 +364,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
             [ProtoMember(4)]
             public long? LastCommitPosition { get; set; }
 
+            [ProtoMember(5)]
+            public int? LastEventNumber { get; set; }
+
             public ReadStreamEventsForwardCompleted()
             {
             }
@@ -331,7 +374,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public ReadStreamEventsForwardCompleted(string eventStreamId,
                                                     EventLinkPair[] events,
                                                     RangeReadResult result,
-                                                    long? lastCommitPosition)
+                                                    long? lastCommitPosition,
+                                                    int? lastEventNumber)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "streamId");
 
@@ -339,6 +383,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 Events = events;
                 Result = (int)result;
                 LastCommitPosition = lastCommitPosition;
+                LastEventNumber = lastEventNumber;
             }
         }
 
@@ -541,14 +586,20 @@ namespace EventStore.ClientAPI.Transport.Tcp
             [ProtoMember(2)]
             public int ExpectedVersion { get; set; }
 
+            [ProtoMember(3)]
+            public bool AllowForwarding { get; set; }
+
             public TransactionStart()
             {
             }
 
-            public TransactionStart(string eventStreamId, int expectedVersion)
+            public TransactionStart(string eventStreamId, 
+                                    int expectedVersion,
+                                    bool allowForwarding = true)
             {
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -593,17 +644,24 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public string EventStreamId { get; set; }
 
             [ProtoMember(3)]
-            public Event[] Events { get; set; }
+            public ClientEvent[] Events { get; set; }
+
+            [ProtoMember(4)]
+            public bool AllowForwarding { get; set; }
 
             public TransactionWrite()
             {
             }
 
-            public TransactionWrite(long transactionId, string eventStreamId, Event[] events)
+            public TransactionWrite(long transactionId, 
+                                    string eventStreamId, 
+                                    ClientEvent[] events,
+                                    bool allowForwarding = true)
             {
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
                 Events = events;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -644,14 +702,20 @@ namespace EventStore.ClientAPI.Transport.Tcp
             [ProtoMember(2)]
             public string EventStreamId { get; set; }
 
+            [ProtoMember(3)]
+            public bool AllowForwarding { get; set; }
+
             public TransactionCommit()
             {
             }
 
-            public TransactionCommit(long transactionId, string eventStreamId)
+            public TransactionCommit(long transactionId, 
+                                     string eventStreamId, 
+                                     bool allowForwarding = true)
             {
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
+                AllowForwarding = allowForwarding;
             }
         }
 
@@ -731,7 +795,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             public int EventNumber { get; set; }
 
             [ProtoMember(3)]
-            public Guid EventId { get; set; }
+            public byte[] EventId { get; set; }
 
             [ProtoMember(4)]
             public string EventType { get; set; }
@@ -741,12 +805,18 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
             [ProtoMember(6)]
             public byte[] Metadata { get; set; }
+
+            [ProtoMember(7)]
+            public long CommitPosition { get; set; }
+
+            [ProtoMember(8)]
+            public long PreparePosition { get; set; }
         }
 
         [ProtoContract]
         internal class SubscriptionDropped
         {
-            [ProtoMember(2)]
+            [ProtoMember(1)]
             public string EventStreamId { get; set; }
 
             public SubscriptionDropped()

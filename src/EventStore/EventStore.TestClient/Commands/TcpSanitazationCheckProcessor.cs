@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using EventStore.Common.Log;
@@ -47,11 +49,6 @@ namespace EventStore.TestClient.Commands
                                           (byte) TcpCommand.ReadAllEventsBackward,
                                           (byte) TcpCommand.SubscribeToStream,
                                           (byte) TcpCommand.UnsubscribeFromStream,
-                                          (byte) TcpCommand.SubscribeToAllStreams,
-                                          (byte) TcpCommand.UnsubscribeFromAllStreams,
-                                          (byte) TcpCommand.StreamEventAppeared,
-                                          (byte) TcpCommand.SubscriptionDropped,
-                                          (byte) TcpCommand.SubscriptionToAllDropped,
                                       };
 
             var packages = commandsToCkeck.Select(c => new TcpPackage((TcpCommand)c, Guid.NewGuid(), new byte[] { 0, 1, 0, 1 }).AsByteArray())
@@ -99,8 +96,38 @@ namespace EventStore.TestClient.Commands
                      commandsToCkeck.Length,
                      packages.Count() - commandsToCkeck.Length,
                      packages.Count());
+
+            Log.Info("Now sending raw bytes...");
+            try
+            {
+                SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(int.MaxValue));
+                SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(int.MinValue));
+
+                SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(double.MinValue));
+                SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(double.MinValue));
+
+                SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(new Random().NextDouble()));
+            }
+            catch (Exception e)
+            {
+                context.Fail(e, "Raw bytes sent failed");
+                return false;
+            }
+
             context.Success();
             return true;
+        }
+
+        private void SendRaw(IPEndPoint endPoint, byte[] package)
+        {
+            using (var client = new TcpClient())
+            {
+                client.Connect(endPoint);
+                using (var stream = client.GetStream())
+                {
+                    stream.Write(package, 0, package.Length);
+                }
+            }
         }
     }
 }

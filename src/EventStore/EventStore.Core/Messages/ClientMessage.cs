@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
@@ -78,21 +79,40 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class DeniedToRoute : Message
+        {
+            public readonly Guid CorrelationId;
+
+            public readonly IPEndPoint ExternalTcpEndPoint;
+            public readonly IPEndPoint ExternalHttpEndPoint;
+
+            public DeniedToRoute(Guid correlationId,
+                                 IPEndPoint externalTcpEndPoint,
+                                 IPEndPoint externalHttpEndPoint)
+            {
+                CorrelationId = correlationId;
+                ExternalTcpEndPoint = externalTcpEndPoint;
+                ExternalHttpEndPoint = externalHttpEndPoint;
+            }
+        }
+
         public class CreateStream: WriteRequestMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly bool AllowForwarding;
 
             public readonly string EventStreamId;
             public readonly byte[] Metadata;
 
-            public CreateStream(Guid correlationId, IEnvelope envelope, string eventStreamId, byte[] metadata)
+            public CreateStream(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, byte[] metadata)
             {
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNull(eventStreamId, "eventStreamId");
                 
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                AllowForwarding = allowForwarding;
                 EventStreamId = eventStreamId;
                 Metadata = metadata;
             }
@@ -120,12 +140,13 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly bool AllowForwarding;
 
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
             public readonly Event[] Events;
 
-            public WriteEvents(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, Event[] events)
+            public WriteEvents(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, int expectedVersion, Event[] events)
             {
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNull(eventStreamId, "eventStreamId");
@@ -134,14 +155,15 @@ namespace EventStore.Core.Messages
 
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                AllowForwarding = allowForwarding;
 
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
                 Events = events;
             }
 
-            public WriteEvents(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion, Event @event)
-                : this(correlationId, envelope, eventStreamId, expectedVersion, new[]{@event})
+            public WriteEvents(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, int expectedVersion, Event @event)
+                : this(correlationId, envelope, allowForwarding, eventStreamId, expectedVersion, new[]{@event})
             {
             }
 
@@ -189,13 +211,16 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly bool AllowForwarding;
+
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
 
-            public TransactionStart(Guid correlationId, IEnvelope envelope, string eventStreamId, int expectedVersion)
+            public TransactionStart(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, int expectedVersion)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                AllowForwarding = allowForwarding;
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
             }
@@ -227,14 +252,17 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly bool AllowForwarding;
+
             public readonly long TransactionId;
             public readonly string EventStreamId;
             public readonly Event[] Events;
 
-            public TransactionWrite(Guid correlationId, IEnvelope envelope, long transactionId, string eventStreamId, Event[] events)
+            public TransactionWrite(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId, string eventStreamId, Event[] events)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                AllowForwarding = allowForwarding;
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
                 Events = events;
@@ -267,13 +295,16 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly bool AllowForwarding;
+
             public readonly long TransactionId;
             public readonly string EventStreamId;
 
-            public TransactionCommit(Guid correlationId, IEnvelope envelope, long transactionId, string eventStreamId)
+            public TransactionCommit(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId, string eventStreamId)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                AllowForwarding = allowForwarding;
                 TransactionId = transactionId;
                 EventStreamId = eventStreamId;
             }
@@ -302,11 +333,14 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
+            public readonly bool AllowForwarding;
+
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
 
             public DeleteStream(Guid correlationId,
                                 IEnvelope envelope,
+                                bool allowForwarding,
                                 string eventStreamId,
                                 int expectedVersion)
             {
@@ -315,6 +349,7 @@ namespace EventStore.Core.Messages
 
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
+                AllowForwarding = allowForwarding;
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
             }
@@ -426,7 +461,7 @@ namespace EventStore.Core.Messages
             public readonly RangeReadResult Result;
             public readonly int NextEventNumber;
             public readonly long? LastCommitPosition;
-            public readonly int LastEventNumber;
+            public readonly int? LastEventNumber;
 
             public ReadStreamEventsForwardCompleted(Guid correlationId,
                                                     string eventStreamId,
@@ -434,7 +469,7 @@ namespace EventStore.Core.Messages
                                                     RangeReadResult result,
                                                     int nextEventNumber,
                                                     long? lastCommitPosition,
-                                                    int lastEventNumber)
+                                                    int? lastEventNumber)
             {
                 Ensure.NotNull(events, "events");
 
@@ -658,12 +693,14 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly int EventNumber;
             public readonly PrepareLogRecord Event;
+            public readonly long CommitPosition;
 
-            public StreamEventAppeared(Guid correlationId, int eventNumber, PrepareLogRecord @event)
+            public StreamEventAppeared(Guid correlationId, int eventNumber, PrepareLogRecord @event, long commitPosition)
             {
                 CorrelationId = correlationId;
                 EventNumber = eventNumber;
                 Event = @event;
+                CommitPosition = commitPosition;
             }
         }
 

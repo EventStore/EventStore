@@ -30,6 +30,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 
@@ -44,6 +45,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private Guid _correlationId;
         private readonly object _corrIdLock = new object();
 
+        private readonly bool _forward;
         private readonly string _stream;
         private readonly byte[] _metadata;
 
@@ -58,12 +60,14 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public CreateStreamOperation(TaskCompletionSource<object> source,
                                      Guid correlationId,
+                                     bool forward,
                                      string stream,
                                      byte[] metadata)
         {
             _source = source;
 
             _correlationId = correlationId;
+            _forward = forward;
             _stream = stream;
             _metadata = metadata;
         }
@@ -78,7 +82,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.CreateStream(_stream, _metadata);
+                var dto = new ClientMessages.CreateStream(_stream, _metadata, _forward);
                 return new TcpPackage(TcpCommand.CreateStream, _correlationId, dto.Serialize());
             }
         }
@@ -87,6 +91,13 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             try
             {
+                if (package.Command == TcpCommand.DeniedToRoute)
+                {
+                    var route = package.Data.Deserialize<ClientMessages.DeniedToRoute>();
+                    return new InspectionResult(InspectionDecision.Reconnect,
+                                                data: new EndpointsPair(route.ExternalTcpEndPoint,
+                                                                        route.ExternalHttpEndPoint));
+                }
                 if (package.Command != TcpCommand.CreateStreamCompleted)
                     return new InspectionResult(InspectionDecision.NotifyError, 
                                                 new CommandNotExpectedException(TcpCommand.CreateStreamCompleted.ToString(), 

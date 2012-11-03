@@ -32,6 +32,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 
@@ -46,6 +47,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private Guid _correlationId;
         private readonly object _corrIdLock = new object();
 
+        private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;
         private readonly IEnumerable<IEvent> _events;
@@ -61,6 +63,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public AppendToStreamOperation(TaskCompletionSource<object> source,
                                        Guid corrId,
+                                       bool forward,
                                        string stream,
                                        int expectedVersion,
                                        IEnumerable<IEvent> events)
@@ -68,6 +71,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _source = source;
 
             _correlationId = corrId;
+            _forward = forward;
             _stream = stream;
             _expectedVersion = expectedVersion;
             _events = events;
@@ -83,8 +87,8 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dtos = _events.Select(x => new ClientMessages.Event(x.EventId, x.Type, x.Data, x.Metadata)).ToArray();
-                var write = new ClientMessages.WriteEvents(_stream, _expectedVersion, dtos);
+                var dtos = _events.Select(x => new ClientEvent(x.EventId, x.Type, x.Data, x.Metadata)).ToArray();
+                var write = new ClientMessages.WriteEvents(_stream, _expectedVersion, dtos, _forward);
                 return new TcpPackage(TcpCommand.WriteEvents, _correlationId, write.Serialize());
             }
         }
@@ -93,6 +97,13 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             try
             {
+                if (package.Command == TcpCommand.DeniedToRoute)
+                {
+                    var route = package.Data.Deserialize<ClientMessages.DeniedToRoute>();
+                    return new InspectionResult(InspectionDecision.Reconnect,
+                                                data: new EndpointsPair(route.ExternalTcpEndPoint,
+                                                                        route.ExternalHttpEndPoint));
+                }
                 if (package.Command != TcpCommand.WriteEventsCompleted)
                 {
                     return new InspectionResult(InspectionDecision.NotifyError, 

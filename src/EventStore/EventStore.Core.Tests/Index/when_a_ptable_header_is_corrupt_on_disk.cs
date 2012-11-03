@@ -44,7 +44,7 @@ namespace EventStore.Core.Tests.Index
         {
             _filename = Path.GetRandomFileName();
             _copiedfilename = Path.GetRandomFileName();
-            var mtable = new HashListMemTable();
+            var mtable = new HashListMemTable(maxSize: 2000);
             mtable.Add(0x0101, 0x0001, 0x0001);
             mtable.Add(0x0105, 0x0001, 0x0002);
             _table = PTable.FromMemtable(mtable, _filename);

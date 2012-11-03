@@ -227,7 +227,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _publisher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), new SendToThisEnvelope(this), _streamId,
+                    Guid.NewGuid(), new SendToThisEnvelope(this), true, _streamId,
                     _lastKnownEventNumber, _submittedToWriteEvents));
         }
 

@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Tcp;
 
@@ -34,30 +35,18 @@ namespace EventStore.ClientAPI.Connection
             _log = LogManager.GetLogger();
         }
 
-        public void Connect()
+        public void Close(bool stopBackgroundThread = true)
         {
-            _connection = _connector.CreateTcpConnection(OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
-
-            if (_executionThread == null)
+            lock (_subscriptionChannelLock)
             {
-                _executionThread = new Thread(ExecuteUserCallbacks)
-                {
-                        IsBackground = true,
-                        Name = "SubscriptionsChannel user callbacks thread"
-                };
-                _executionThread.Start();
+                if (_connection != null)
+                    _connection.Close();
+
+                _stopExecutionThread = stopBackgroundThread;
             }
         }
 
-        public void Close()
-        {
-            if (_connection != null)
-                _connection.Close();
-
-            _stopExecutionThread = true;
-        }
-
-        public Task Subscribe(string stream, Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        public Task Subscribe(string stream, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             var id = Guid.NewGuid();
             var source = new TaskCompletionSource<object>();
@@ -97,7 +86,7 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public Task SubscribeToAllStreams(Action<RecordedEvent> eventAppeared, Action subscriptionDropped)
+        public Task SubscribeToAllStreams(Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             var id = Guid.NewGuid();
             var source = new TaskCompletionSource<object>();
@@ -177,8 +166,11 @@ namespace EventStore.ClientAPI.Connection
                 switch (package.Command)
                 {
                     case TcpCommand.StreamEventAppeared:
-                        var recordedEvent = new RecordedEvent(package.Data.Deserialize<ClientMessages.StreamEventAppeared>());
-                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(recordedEvent));
+                        var dto = package.Data.Deserialize<ClientMessages.StreamEventAppeared>();
+                        var recordedEvent = new RecordedEvent(dto);
+                        var commitPos = dto.CommitPosition;
+                        var preparePos = dto.PreparePosition;
+                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(recordedEvent, new Position(commitPos, preparePos)));
                         break;
                     case TcpCommand.SubscriptionDropped:
                     case TcpCommand.SubscriptionToAllDropped:
@@ -218,7 +210,23 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public void EnsureConnected()
+        private void Connect(IPEndPoint endPoint)
+        {
+            _connection = _connector.CreateTcpConnection(endPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
+
+            if (_executionThread == null)
+            {
+                _stopExecutionThread = false;
+                _executionThread = new Thread(ExecuteUserCallbacks)
+                {
+                    IsBackground = true,
+                    Name = "SubscriptionsChannel user callbacks thread"
+                };
+                _executionThread.Start();
+            }
+        }
+
+        public void EnsureConnected(IPEndPoint endPoint)
         {
             if (!_connectedEvent.WaitOne(0))
             {
@@ -226,7 +234,7 @@ namespace EventStore.ClientAPI.Connection
                 {
                     if (!_connectedEvent.WaitOne(0))
                     {
-                        Connect();
+                        Connect(endPoint);
                         if (!_connectedEvent.WaitOne(500))
                         {
                             _log.Error("Cannot connect to {0}", _connection.EffectiveEndPoint);

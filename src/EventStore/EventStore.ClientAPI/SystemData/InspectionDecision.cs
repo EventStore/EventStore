@@ -32,6 +32,7 @@ namespace EventStore.ClientAPI.SystemData
     {
         Succeed,
         Retry,
+        Reconnect,
         NotifyError
     }
 }

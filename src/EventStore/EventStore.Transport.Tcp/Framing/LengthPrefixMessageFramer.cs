@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Tcp.Framing
 {
@@ -43,6 +44,7 @@ namespace EventStore.Transport.Tcp.Framing
         private byte[] _messageBuffer;
         private int _bufferIndex = 0;
         private Action<ArraySegment<byte>> _receivedHandler;
+        private readonly int _maxPackageSize;
 
         private int _headerBytes = 0;
         private int _packageLength = 0;
@@ -50,8 +52,10 @@ namespace EventStore.Transport.Tcp.Framing
         /// <summary>
         /// Initializes a new instance of the <see cref="LengthPrefixMessageFramer"/> class.
         /// </summary>
-        public LengthPrefixMessageFramer()
+        public LengthPrefixMessageFramer(int maxPackageSize = 64*1024*1024)
         {
+            Ensure.Positive(maxPackageSize, "maxPackageSize");
+            _maxPackageSize = maxPackageSize;
         }
 
         public void Reset()
@@ -97,8 +101,8 @@ namespace EventStore.Transport.Tcp.Framing
                     ++_headerBytes;
                     if (_headerBytes == HeaderLength)
                     {
-                        if (_packageLength == 0)
-                            throw new InvalidOperationException("Package should not be 0 sized.");
+                        if (_packageLength <= 0 || _packageLength > _maxPackageSize)
+                            throw new PackageFramingException(string.Format("Package size is out of bounds: {0} (max: {1}).", _packageLength, _maxPackageSize));
 
                         _messageBuffer = new byte[_packageLength];
                     }

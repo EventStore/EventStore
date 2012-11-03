@@ -31,7 +31,7 @@ using System.Net;
 
 namespace EventStore.ClientAPI.Transport.Http
 {
-    public static class IPEndPointExtensions
+    internal static class IPEndPointExtensions
     {
         public static string ToHttpUrl(this IPEndPoint endPoint, string rawUrl = null)
         {

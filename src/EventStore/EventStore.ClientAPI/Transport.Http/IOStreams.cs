@@ -32,7 +32,7 @@ using EventStore.ClientAPI.Common.Log;
 
 namespace EventStore.ClientAPI.Transport.Http
 {
-    public class IOStreams
+    internal class IOStreams
     {
         public static void SafelyDispose(params Stream[] streams)
         {

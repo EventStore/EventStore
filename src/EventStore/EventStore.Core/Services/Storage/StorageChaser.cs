@@ -102,8 +102,9 @@ namespace EventStore.Core.Services.Storage
                         {
                             var record = (CommitLogRecord) result.LogRecord;
                             _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, 
-                                                                                record.TransactionPosition,
-                                                                                record.EventNumber));
+                                                                            record.TransactionPosition,
+                                                                            record.EventNumber));
+                            _masterBus.Publish(new StorageMessage.CommitDiscovered(record));
                             break;
                         }
                         default:

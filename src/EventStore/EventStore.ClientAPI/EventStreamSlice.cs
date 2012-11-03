@@ -29,7 +29,7 @@
 using System.Collections.Generic;
 using EventStore.ClientAPI.Common.Utils;
 using System.Linq;
-using EventStore.ClientAPI.SystemData;
+using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
 {

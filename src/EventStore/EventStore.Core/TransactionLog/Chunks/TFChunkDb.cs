@@ -71,15 +71,19 @@ namespace EventStore.Core.TransactionLog.Chunks
             var checkpoint = Config.WriterCheckpoint.Read();
 
             var expectedFiles = (int)((checkpoint + Config.ChunkSize - 1) / Config.ChunkSize);
+            var correctFileCount = expectedFiles;
+            var onChunkBoundary = checkpoint > 0 && checkpoint % Config.ChunkSize == 0;
             if (checkpoint == 0 && Config.FileNamingStrategy.GetAllVersionsFor(0).Length == 0)
             {
                 Manager.AddNewChunk();
-                expectedFiles = 1;
+                correctFileCount = expectedFiles = 1;
             }
             else
             {
                 if (checkpoint == 0)
-                    expectedFiles = 1;
+                {
+                    correctFileCount = expectedFiles = 1;
+                }
                 for (int i=0; i<expectedFiles; ++i)
                 {
                     var versions = Config.FileNamingStrategy.GetAllVersionsFor(i);
@@ -97,20 +101,24 @@ namespace EventStore.Core.TransactionLog.Chunks
                     var chunkFileName = versions[0];
                     if (i == expectedFiles - 1)
                     {
-                        var chunk = LoadLastChunk(chunkFileName);
-                        if (verifyHash && chunk.IsReadOnly)
-                            chunk.VerifyFileHash();
+                        var chunk = LoadLastChunk(chunkFileName, verifyHash);
                         Manager.AddChunk(chunk);
 
-                        if (checkpoint % Config.ChunkSize == 0)
+                        if (onChunkBoundary)
                         {
+                            if (!chunk.IsReadOnly)
+                                chunk.Complete();
+
                             // there could be a new valid but empty chunk which could be corrupted
                             // so we can safely remove all its versions with no consequences
                             var files = Config.FileNamingStrategy.GetAllVersionsFor(expectedFiles);
-                            for (int j=0; j<files.Length; ++j)
+                            for (int j = 0; j < files.Length; ++j)
                             {
                                 File.Delete(files[j]);
                             }
+
+                            Manager.AddNewChunk();
+                            correctFileCount += 1;
                         }
                     }
                     else
@@ -121,7 +129,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
             }
 
-            EnsureNoOtherFiles(expectedFiles);
+            EnsureNoOtherFiles(correctFileCount);
 
             Manager.EnableCaching();
         }
@@ -154,7 +162,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     var chunkFileName = versions[0];
                     if (i == expectedFiles - 1)
                     {
-                        var chunk = LoadLastChunk(chunkFileName);
+                        var chunk = LoadLastChunk(chunkFileName, verifyHashes);
                         Manager.AddChunk(chunk);
                     }
                     else
@@ -184,11 +192,27 @@ namespace EventStore.Core.TransactionLog.Chunks
             return chunk;
         }
 
-        private TFChunk LoadLastChunk(string chunkFileName)
+        private TFChunk LoadLastChunk(string chunkFileName, bool verifyHash)
         {
-            var writePosition = (int)(Config.WriterCheckpoint.Read() % Config.ChunkSize);
-            var chunk = TFChunk.FromOngoingFile(chunkFileName, writePosition);
-            return chunk;
+            var pos = Config.WriterCheckpoint.Read();
+            var writerPosition = (int)(pos % Config.ChunkSize);
+            if (writerPosition == 0 && pos > 0)
+                writerPosition = Config.ChunkSize;
+
+            bool isCompleted = false;
+            if (writerPosition == Config.ChunkSize)
+            {
+                using (var stream = new FileStream(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    stream.Seek(-ChunkFooter.Size, SeekOrigin.End);
+                    var footer = ChunkFooter.FromStream(stream);
+                    isCompleted = footer.Completed;
+                }
+            }
+
+            if (isCompleted)
+                return TFChunk.FromCompletedFile(chunkFileName, verifyHash);
+            return TFChunk.FromOngoingFile(chunkFileName, writerPosition);
         }
 
         private void EnsureNoOtherFiles(int expectedFiles)

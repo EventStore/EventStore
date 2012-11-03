@@ -45,11 +45,16 @@ namespace EventStore.Core.Messages
             bool AllowImplicitStreamCreation { get; }
         }
 
-        public interface IFlushableWriterMessage
+        public interface IFlushableMessage
         {
         }
 
-        public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableWriterMessage
+        public interface IMasterWriteMessage
+        {
+             
+        }
+
+        public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage
         {
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
@@ -84,7 +89,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableWriterMessage
+        public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage
         {
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
@@ -115,7 +120,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteCommit : Message, IFlushableWriterMessage
+        public class WriteCommit : Message, IFlushableMessage, IMasterWriteMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -129,7 +134,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteTransactionStart : Message, IPreconditionedWriteMessage, IFlushableWriterMessage
+        public class WriteTransactionStart : Message, IPreconditionedWriteMessage, IFlushableMessage, IMasterWriteMessage
         {
             public Guid CorrelationId { get; private set; }
             public IEnvelope Envelope { get; private set; }
@@ -160,7 +165,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteTransactionData : Message, IFlushableWriterMessage
+        public class WriteTransactionData : Message, IFlushableMessage, IMasterWriteMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -182,7 +187,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class WriteTransactionPrepare : Message, IFlushableWriterMessage
+        public class WriteTransactionPrepare : Message, IFlushableMessage, IMasterWriteMessage
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
@@ -223,17 +228,28 @@ namespace EventStore.Core.Messages
         public class CommitAck : Message
         {
             public readonly Guid CorrelationId;
-            public readonly long StartPosition;
+            public readonly long TransactionPosition;
             public readonly int EventNumber;
 
-            public CommitAck(Guid correlationId, long startPosition, int eventNumber)
+            public CommitAck(Guid correlationId, long transactionPosition, int eventNumber)
             {
-                Ensure.Nonnegative(startPosition, "startPosition");
+                Ensure.Nonnegative(transactionPosition, "transactionPosition");
                 Ensure.Nonnegative(eventNumber, "eventNumber");
 
                 CorrelationId = correlationId;
-                StartPosition = startPosition;
+                TransactionPosition = transactionPosition;
                 EventNumber = eventNumber;
+            }
+        }
+
+        public class CommitDiscovered : Message
+        {
+            public readonly CommitLogRecord Commit;
+
+            public CommitDiscovered(CommitLogRecord commit)
+            {
+                Ensure.NotNull(commit, "commit");
+                Commit = commit;
             }
         }
 

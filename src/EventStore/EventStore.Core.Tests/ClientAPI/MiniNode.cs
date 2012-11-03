@@ -124,7 +124,8 @@ namespace EventStore.Core.Tests.ClientAPI
                                                  chunkSize,
                                                  chunksToCache,
                                                  _writerChk,
-                                                 new[] {_chaserChk});
+                                                 _chaserChk,
+                                                 new[] {_writerChk, _chaserChk});
 
             return nodeConfig;
         }

@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _externalRequestQueue.Publish(
                 new ClientMessage.WriteEvents(
-                    message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
+                    message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope), true, 
                     message.EventStreamId, message.ExpectedVersion, message.Events));
         }
 

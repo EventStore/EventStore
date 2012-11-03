@@ -315,7 +315,7 @@ namespace EventStore.Projections.Core.Services.Management
 			var managedProjectionSerializedState = _persistedState.ToJsonBytes ();
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, "$projections-" + _name, ExpectedVersion.Any,
+                    Guid.NewGuid(), _writeDispatcher.Envelope, true, "$projections-" + _name, ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "ProjectionUpdated", false,  managedProjectionSerializedState, new byte[0])),
                 m => WriteCompleted(m, completed));
         }

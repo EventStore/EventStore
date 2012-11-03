@@ -33,7 +33,7 @@ using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Transport.Http
 {
-    public class ClientOperationState
+    internal class ClientOperationState
     {
         public readonly HttpWebRequest Request;
         public readonly Action<HttpResponse> OnSuccess;

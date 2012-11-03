@@ -70,7 +70,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
                                                    10000,
                                                    0,
                                                    WriterCheckpoint,
-                                                   new[] {chaserchk}));
+                                                   chaserchk,
+                                                   new[] {WriterCheckpoint, chaserchk}));
             Db.OpenVerifyAndClean();
             // create db
             Writer = new TFChunkWriter(Db);
@@ -83,7 +84,9 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             chaserchk.Write(WriterCheckpoint.Read());
             chaserchk.Flush();
 
-            TableIndex = new TableIndex(Path.Combine(PathName, "index"), () => new HashListMemTable(), _maxEntriesInMemTable);
+            TableIndex = new TableIndex(Path.Combine(PathName, "index"),
+                                        () => new HashListMemTable(_maxEntriesInMemTable*2),
+                                        _maxEntriesInMemTable);
             TableIndex.Initialize();
 
             var reader = new TFChunkReader(Db, Db.Config.WriterCheckpoint);

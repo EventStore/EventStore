@@ -34,7 +34,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -54,12 +53,13 @@ namespace EventStore.Core.Services.Storage
         private static readonly decimal MsPerTick = 1000.0M / Stopwatch.Frequency;
 
         protected readonly TFChunkWriter Writer;
-        private readonly IPublisher _bus;
+        protected readonly IReadIndex ReadIndex;
+
+        protected readonly IPublisher Bus;
         private readonly ISubscriber _subscriber;
 
         private readonly QueuedHandler _storageWriterQueue;
         private readonly InMemoryBus _writerBus;
-        private readonly IReadIndex _readIndex;
 
         private readonly Stopwatch _watch = Stopwatch.StartNew();
         private long _flushDelay;
@@ -74,9 +74,9 @@ namespace EventStore.Core.Services.Storage
             Ensure.NotNull(writer, "writer");
             Ensure.NotNull(readIndex, "readIndex");
 
-            _bus = bus;
+            Bus = bus;
             _subscriber = subscriber;
-            _readIndex = readIndex;
+            ReadIndex = readIndex;
 
             _flushDelay = 0;
             _lastFlush = _watch.ElapsedTicks;
@@ -106,7 +106,12 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<Message>.Handle(Message message)
         {
-            if (message is StorageMessage.IFlushableWriterMessage)
+            EnqueueMessage(message);
+        }
+
+        protected virtual void EnqueueMessage(Message message)
+        {
+            if (message is StorageMessage.IFlushableMessage)
                 Interlocked.Increment(ref FlushMessagesInQueue);
 
             _storageWriterQueue.Publish(message);
@@ -115,14 +120,14 @@ namespace EventStore.Core.Services.Storage
             if (message is SystemMessage.BecomeShuttingDown)
             {
                 _storageWriterQueue.Stop();
-                _bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
+                Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
             }
         }
 
         void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message)
         {
-            _readIndex.Build();
-            _bus.Publish(new SystemMessage.StorageWriterInitializationDone());
+            ReadIndex.Build();
+            Bus.Publish(new SystemMessage.StorageWriterInitializationDone());
         }
 
         void IHandle<SystemMessage.BecomeShuttingDown>.Handle(SystemMessage.BecomeShuttingDown message)
@@ -220,7 +225,7 @@ namespace EventStore.Core.Services.Storage
                 Debug.Assert(message.Events.Length > 0);
 
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
-                var transactionOffset = _readIndex.GetLastTransactionOffset(logPosition, message.TransactionId);
+                var transactionOffset = ReadIndex.GetLastTransactionOffset(logPosition, message.TransactionId);
                 if (transactionOffset < -1)
                 {
                     throw new Exception(
@@ -276,7 +281,7 @@ namespace EventStore.Core.Services.Storage
             Interlocked.Decrement(ref FlushMessagesInQueue);
             try
             {
-                var result = _readIndex.CheckCommitStartingAt(message.PrepareStartPosition);
+                var result = ReadIndex.CheckCommitStartingAt(message.PrepareStartPosition);
                 switch (result.Decision)
                 {
                     case CommitDecision.Ok:
@@ -285,7 +290,7 @@ namespace EventStore.Core.Services.Storage
                                                                            message.CorrelationId,
                                                                            message.PrepareStartPosition,
                                                                            result.CurrentVersion + 1));
-                        _readIndex.Commit(commit);
+                        ReadIndex.Commit(commit);
                         break;
                     }
                     case CommitDecision.WrongExpectedVersion:
@@ -421,7 +426,7 @@ namespace EventStore.Core.Services.Storage
 
             return message.ExpectedVersion == ExpectedVersion.NoStream
                    || (message.ExpectedVersion == ExpectedVersion.Any
-                       && _readIndex.GetLastStreamEventNumber(message.EventStreamId) == ExpectedVersion.NoStream);
+                       && ReadIndex.GetLastStreamEventNumber(message.EventStreamId) == ExpectedVersion.NoStream);
         }
 
         protected void Flush()
@@ -445,7 +450,7 @@ namespace EventStore.Core.Services.Storage
             Writer.Flush();
             Writer.Close();
 
-            _readIndex.Close();
+            ReadIndex.Close();
 
             // TODO AN manage this cyclic thread stopping dependency
             //_storageWriterQueue.Stop();
