@@ -123,7 +123,7 @@ namespace EventStore.Core
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             //HTTP
-            HttpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpPrefixes);
+            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
@@ -163,7 +163,7 @@ namespace EventStore.Core
 
             //TIMER
             //var timer = new TimerService(new TimerBasedScheduler(new RealTimer(), new RealTimeProvider()));
-            TimerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
+            _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
             Bus.Subscribe<TimerMessage.Schedule>(TimerService);
 
             MainQueue.Start();
@@ -183,13 +183,11 @@ namespace EventStore.Core
         public HttpService HttpService
         {
             get { return _httpService; }
-            set { _httpService = value; }
         }
 
         public TimerService TimerService
         {
             get { return _timerService; }
-            set { _timerService = value; }
         }
 
         public void Start()
