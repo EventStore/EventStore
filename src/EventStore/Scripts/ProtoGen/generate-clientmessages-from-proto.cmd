@@ -1,0 +1,3 @@
+..\..\..\..\tools\protoc\protoc.exe --descriptor_set_out=ClientMessageDtos.TempDescriptors --proto_path=..\..\Protos\ClientAPI ..\..\Protos\ClientAPI\ClientMessageDtos.proto
+..\..\..\..\tools\ProtoGen\protogen.exe -p:fixCase -i:ClientMessageDtos.TempDescriptors -ns:EventStore.ClientAPI.Messages -o:..\..\EventStore.ClientAPI\Messages\ClientMessages.cs -p:umbrella="ClientMessages"
+rm -f ClientMessageDtos.TempDescriptors

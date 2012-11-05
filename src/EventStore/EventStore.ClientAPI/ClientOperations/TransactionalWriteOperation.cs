@@ -87,7 +87,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dtos = _events.Select(x => new ClientEvent(x.EventId, x.Type, x.Data, x.Metadata)).ToArray();
+                var dtos = _events.Select(x => new ClientMessages.ClientEvent(x.EventId.ToByteArray(), x.Type, x.Data, x.Metadata)).ToArray();
                 var write = new ClientMessages.TransactionWrite(_transactionId, _stream, dtos, _forward);
                 return new TcpPackage(TcpCommand.TransactionWrite, _corrId, write.Serialize());
             }

@@ -42,7 +42,7 @@ namespace EventStore.ClientAPI
         public readonly byte[] Data;
         public readonly byte[] Metadata;
 
-        internal RecordedEvent(EventRecord systemRecord)
+        internal RecordedEvent(ClientMessages.EventRecord systemRecord)
         {
             EventStreamId = systemRecord.EventStreamId;
 

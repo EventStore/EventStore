@@ -1,4 +1,4 @@
-package ClientMessages;
+package EventStore.ClientAPI.Messages;
 
 message EventLinkPair {
 	required EventRecord event = 1;
@@ -216,6 +216,8 @@ message StreamEventAppeared {
 	required string event_type = 4;
 	required bytes data = 5;
 	required bytes metadata = 6;
+	required int64 commit_position = 7;
+	required int64 prepare_position = 8;
 }
 
 message SubscriptionDropped {

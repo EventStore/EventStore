@@ -42,7 +42,7 @@ namespace EventStore.ClientAPI
         public readonly int Count;
         public readonly RecordedEvent[] Events;
 
-        internal EventStreamSlice(string stream, int startIndex, int count, IEnumerable<EventLinkPair> events)
+        internal EventStreamSlice(string stream, int startIndex, int count, IEnumerable<ClientMessages.EventLinkPair> events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
