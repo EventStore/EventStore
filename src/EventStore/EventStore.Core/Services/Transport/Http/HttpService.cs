@@ -207,7 +207,7 @@ namespace EventStore.Core.Services.Transport.Http
                 }
 
                 //add options to the list of allowed request methods
-                allowedMethods = allowedMethods.Union(new[] {HttpMethod.Options}).ToArray();
+                allowedMethods = allowedMethods.Union(new[] { HttpMethod.Options }).ToArray();
                 if (context.Request.HttpMethod.Equals(HttpMethod.Options))
                 {
                     RespondWithOptions(context, allowedMethods);
@@ -288,7 +288,7 @@ namespace EventStore.Core.Services.Transport.Http
         private void RespondWithOptions(HttpListenerContext context, string[] allowed)
         {
             var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
-            entity.Manager.Reply(HttpStatusCode.OK, 
+            entity.Manager.Reply(HttpStatusCode.OK,
                                  "OK",
                                  e => _log.ErrorException(e, "Error while closing http connection (http service core)"));
         }
@@ -347,8 +347,8 @@ namespace EventStore.Core.Services.Transport.Http
             }
 
             requestCodec = supportedCodecs.SingleOrDefault(c => c.CanParse(contentType));
-                return requestCodec != null;
-            }
+            return requestCodec != null;
+        }
 
 
         private bool TrySelectResponseCodec(NameValueCollection query,
@@ -405,15 +405,22 @@ namespace EventStore.Core.Services.Transport.Http
             switch (format)
             {
                 case "json":
-                    return "application/json";
+                    return ContentType.Json;
                 case "text":
-                    return "text/plain";
+                    return ContentType.PlainText;
                 case "xml":
-                    return "text/xml";
+                    return ContentType.Xml;
+                case "atom":
+                    return ContentType.Atom;
+                case "atomxj":
+                    return ContentType.AtomJson;
+                case "atomsvc":
+                    return ContentType.AtomServiceDoc;
+                case "atomsvcxj":
+                    return ContentType.AtomServiceDocJson;
                 default:
                     throw new NotSupportedException("Unknown format requested");
+            }
         }
-            return format;
-    }
     }
 }

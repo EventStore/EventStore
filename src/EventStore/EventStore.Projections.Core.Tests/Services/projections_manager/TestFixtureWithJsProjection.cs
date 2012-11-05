@@ -110,5 +110,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             get { return _byStream; }
         }
+
+        public Options Options 
+        {
+            get { return _options; }
+        }
     }
 }

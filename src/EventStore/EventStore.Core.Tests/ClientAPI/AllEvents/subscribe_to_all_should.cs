@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading;
 using EventStore.ClientAPI;
 using NUnit.Framework;
@@ -37,18 +36,13 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 Action<RecordedEvent, Position> eventAppeared = (x, p) => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                var subscribe1 = store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
-                var subscribe2 = store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
+                store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
+                store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
+
                 var create = store.CreateStreamAsync(stream, new byte[0]);
-
                 Assert.That(create.Wait(Timeout));
+
                 Assert.That(appeared.Wait(Timeout));
-
-                store.UnsubscribeFromAllStreams();
-                Assert.That(dropped.Wait(Timeout));
-
-                Assert.That(subscribe1.Wait(Timeout));
-                Assert.That(subscribe2.Wait(Timeout));
             }
         }
 
@@ -63,16 +57,11 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 Action<RecordedEvent, Position> eventAppeared = (x, p) => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                var subscribe1 = store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
-                var subscribe2 = store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
+                store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
+                store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
                 store.UnsubscribeFromAllStreams();
                 Assert.That(dropped.Wait(Timeout));
-
-                Assert.That(!appeared.Wait(50));
-
-                Assert.That(subscribe1.Wait(Timeout));
-                Assert.That(subscribe2.Wait(Timeout));
             }
         }
 
@@ -88,7 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 Action<RecordedEvent, Position> eventAppeared = (x, p) => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                var subscribe = store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
+                store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.That(create.Wait(Timeout));
@@ -96,41 +85,6 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 Assert.That(delete.Wait(Timeout));
 
                 Assert.That(appeared.Wait(Timeout));
-
-                store.UnsubscribeFromAllStreams();
-                Assert.That(dropped.Wait(Timeout));
-                Assert.That(subscribe.Wait(Timeout));
-            }
-        }
-
-        [Test]
-        public void not_receive_any_events_after_unsubscribe_from_all_method_call()
-        {
-            const string stream = "subscribe_to_all_should_not_receive_any_events_after_unsubscribe_from_all_method_call";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
-            {
-                var appeared = new CountdownEvent(3);
-                var dropped = new CountdownEvent(1);
-
-                Action<RecordedEvent, Position> eventAppeared = (x, p) => appeared.Signal();
-                Action subscriptionDropped = () => dropped.Signal();
-
-                var subscribe = store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
-
-                var create = store.CreateStreamAsync(stream, new byte[0]);
-                Assert.That(create.Wait(Timeout));
-                var testEvents = Enumerable.Range(0, 2).Select(x => new TestEvent((x + 1).ToString()));
-                var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
-                Assert.That(write.Wait(Timeout));
-
-                Assert.That(appeared.Wait(Timeout));
-                store.UnsubscribeFromAllStreams();
-
-                Assert.That(dropped.Wait(Timeout));
-                Assert.That(subscribe.Wait(Timeout));
-
-                var write2 = store.AppendToStreamAsync(stream, 2, testEvents);
-                Assert.That(write2.Wait(Timeout));
             }
         }
     }

@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             string state;
             EmittedEvent[] emittedEvents;
             _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
             Assert.AreEqual(1, _logged.Count);
             Assert.AreEqual(@"{}/{""a"":""b""}/stream1/type1/0/metadata", _logged[0]);
@@ -64,10 +64,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             string state;
             EmittedEvent[] emittedEvents;
             _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
             _stateHandler.ProcessEvent(
-                new EventPosition(40, 30), "stream1", "type1", "category", Guid.NewGuid(), 1, "metadata",
+                new EventPosition(40, 30), CheckpointTag.FromPosition(40, 30), "stream1", "type1", "category", Guid.NewGuid(), 1, "metadata",
                 @"{""c"":""d""}", out state, out emittedEvents);
             Assert.AreEqual(2, _logged.Count);
             Assert.AreEqual(@"{}/{""a"":""b""}/stream1/type1/0/metadata", _logged[0]);
@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             string state;
             EmittedEvent[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
 
             Assert.IsTrue(result);
@@ -92,7 +92,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             string state;
             EmittedEvent[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), "stream1", "type1", null, Guid.NewGuid(), 0, "metadata", @"{""a"":""b""}",
+                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", null, Guid.NewGuid(), 0, "metadata", @"{""a"":""b""}",
                 out state, out emittedEvents);
 
             Assert.IsTrue(result);

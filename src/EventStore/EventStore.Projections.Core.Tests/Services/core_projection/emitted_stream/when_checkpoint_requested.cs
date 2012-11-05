@@ -40,14 +40,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
     {
         private EmittedStream _stream;
         private FakePublisher _publisher;
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
 
         [SetUp]
         public void setup()
         {
             _publisher = new FakePublisher();
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
-            _stream = new EmittedStream("test", _publisher, _readyHandler, false, 50);
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
+            _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _publisher, _readyHandler, 50);
             _stream.Start();
             _stream.Checkpoint();
         }
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void emit_events_throws_invalid_operation_exception()
         {
             _stream.EmitEvents(
-                new[] {new EmittedEvent("stream", Guid.NewGuid(), "type2", "data2")}, CheckpointTag.FromPosition(-1, -1));
+                new[] {new EmittedEvent("test", Guid.NewGuid(), "type2", "data2", CheckpointTag.FromPosition(-1, -1), null)});
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]

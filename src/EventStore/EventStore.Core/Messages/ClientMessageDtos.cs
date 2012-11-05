@@ -119,7 +119,7 @@ namespace EventStore.Core.Messages
         }
 
         [ProtoContract]
-        public class Event
+        public class ClientEvent
         {
             [ProtoMember(1)]
             public byte[] EventId { get; set; }
@@ -133,11 +133,11 @@ namespace EventStore.Core.Messages
             [ProtoMember(4, IsRequired = false)]
             public byte[] Metadata { get; set; }
 
-            public Event()
+            public ClientEvent()
             {
             }
 
-            public Event(Guid eventId, string eventType, byte[] data, byte[] metadata)
+            public ClientEvent(Guid eventId, string eventType, byte[] data, byte[] metadata)
             {
                 EventId = eventId.ToByteArray();
                 EventType = eventType;
@@ -145,7 +145,7 @@ namespace EventStore.Core.Messages
                 Metadata = metadata;
             }
 
-            public Event(Data.Event evnt)
+            public ClientEvent(Data.Event evnt)
             {
                 EventId = evnt.EventId.ToByteArray();
                 EventType = evnt.EventType;
@@ -164,7 +164,7 @@ namespace EventStore.Core.Messages
             public int ExpectedVersion { get; set; }
 
             [ProtoMember(3)]
-            public Event[] Events { get; set; }
+            public ClientEvent[] Events { get; set; }
 
             [ProtoMember(4)]
             public bool AllowForwarding { get; set; }
@@ -175,7 +175,7 @@ namespace EventStore.Core.Messages
 
             public WriteEvents(string eventStreamId, 
                                int expectedVersion, 
-                               Event[] events, 
+                               ClientEvent[] events, 
                                bool allowForwarding = true)
             {
                 Ensure.NotNull(events, "events");
@@ -752,7 +752,7 @@ namespace EventStore.Core.Messages
             public string EventStreamId { get; set; }
 
             [ProtoMember(3)]
-            public Event[] Events { get; set; }
+            public ClientEvent[] Events { get; set; }
 
             [ProtoMember(4)]
             public bool AllowForwarding { get; set; }
@@ -763,7 +763,7 @@ namespace EventStore.Core.Messages
 
             public TransactionWrite(long transactionId, 
                                     string eventStreamId, 
-                                    Event[] events,
+                                    ClientEvent[] events,
                                     bool allowForwarding = true)
             {
                 TransactionId = transactionId;
@@ -962,7 +962,7 @@ namespace EventStore.Core.Messages
         #region HTTP DTO
 
         [DataContract(Name = "event", Namespace = "")]
-        public class EventText
+        public class ClientEventText
         {
             [DataMember]
             public Guid EventId { get; set; }
@@ -974,11 +974,11 @@ namespace EventStore.Core.Messages
             [DataMember]
             public object Metadata { get; set; }
 
-            public EventText()
+            public ClientEventText()
             {
             }
 
-            public EventText(Guid eventId, string eventType, object data, object metadata)
+            public ClientEventText(Guid eventId, string eventType, object data, object metadata)
             {
                 Ensure.NotEmptyGuid(eventId, "eventId");
                 Ensure.NotNull(data, "data");
@@ -990,7 +990,7 @@ namespace EventStore.Core.Messages
                 Metadata = metadata;
             }
 
-            public EventText(Guid eventId, string eventType, byte[] data, byte[] metaData)
+            public ClientEventText(Guid eventId, string eventType, byte[] data, byte[] metaData)
             {
                 Ensure.NotEmptyGuid(eventId, "eventId");
                 Ensure.NotNull(data, "data");
@@ -1007,63 +1007,28 @@ namespace EventStore.Core.Messages
         public class WriteEventText
         {
             [DataMember]
-            public Guid CorrelationId { get; set; }
-            [DataMember]
             public int ExpectedVersion { get; set; }
 
             [DataMember]
-            public EventText[] Events { get; set; }
+            public ClientEventText[] Events { get; set; }
 
             public WriteEventText()
             {
             }
 
-            public WriteEventText(Guid correlationId, int expectedVersion, EventText[] events)
+            public WriteEventText(int expectedVersion, ClientEventText[] events)
             {
                 Ensure.NotNull(events, "events");
                 Ensure.Positive(events.Length, "events.Length");
 
-                CorrelationId = correlationId;
                 ExpectedVersion = expectedVersion;
                 Events = events;
-            }
-        }
-
-        public class WriteEventCompletedText
-        {
-            public Guid CorrelationId { get; set; }
-            public string EventStreamId { get; set; }
-            public OperationErrorCode ErrorCode { get; set; }
-            public string Error { get; set; }
-            public int EventNumber { get; set; }
-
-            public WriteEventCompletedText()
-            {
-            }
-
-            public WriteEventCompletedText(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error, int eventNumber)
-            {
-                CorrelationId = correlationId;
-                EventStreamId = eventStreamId;
-                ErrorCode = errorCode;
-                Error = error;
-                EventNumber = eventNumber;
-            }
-
-            public WriteEventCompletedText(ClientMessage.WriteEventsCompleted message)
-            {
-                CorrelationId = message.CorrelationId;
-                ErrorCode = message.ErrorCode;
-                Error = message.Error;
             }
         }
 
         [DataContract(Name = "read-event-result", Namespace = "")]
         public class ReadEventCompletedText
         {
-            [DataMember]
-            public Guid CorrelationId { get; set; }
-
             [DataMember]
             public string EventStreamId { get; set; }
             [DataMember]
@@ -1083,8 +1048,6 @@ namespace EventStore.Core.Messages
 
             public ReadEventCompletedText(ClientMessage.ReadEventCompleted message)
             {
-                CorrelationId = message.Record.CorrelationId;
-
                 if (message.Record != null)
                 {
                     EventStreamId = message.Record.EventStreamId;
@@ -1106,12 +1069,11 @@ namespace EventStore.Core.Messages
 
             public override string ToString()
             {
-                return string.Format("CorrelationId: {0}, EventStreamId: {1}, EventNumber: {2}, EventType: {3}, Data: {4}, Metadata: {5}", 
-                                     CorrelationId, 
-                                     EventStreamId, 
-                                     EventNumber, 
-                                     EventType, 
-                                     Data, 
+                return string.Format("EventStreamId: {0}, EventNumber: {1}, EventType: {2}, Data: {3}, Metadata: {4}",
+                                     EventStreamId,
+                                     EventNumber,
+                                     EventType,
+                                     Data,
                                      Metadata);
             }
         }
@@ -1119,8 +1081,6 @@ namespace EventStore.Core.Messages
         [DataContract(Name = "create-stream", Namespace = "")]
         public class CreateStreamText
         {
-            [DataMember]
-            public Guid CorrelationId { get; set; }
             [DataMember]
             public string EventStreamId { get; set; }
             [DataMember]
@@ -1130,32 +1090,10 @@ namespace EventStore.Core.Messages
             {
             }
 
-            public CreateStreamText(Guid correlationId, string eventStreamId, string metadata)
+            public CreateStreamText(string eventStreamId, string metadata)
             {
-                CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
                 Metadata = metadata;
-            }
-        }
-
-        public class CreateStreamCompletedText
-        {
-            public Guid CorrelationId { get; set; }
-            public string EventStreamId { get; set; }
-
-            public int ErrorCode { get; set; }
-            public string Error { get; set; }
-
-            public CreateStreamCompletedText()
-            {
-            }
-
-            public CreateStreamCompletedText(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
-            {
-                CorrelationId = correlationId;
-                EventStreamId = eventStreamId;
-                ErrorCode = (int)errorCode;
-                Error = error;
             }
         }
 
@@ -1163,40 +1101,15 @@ namespace EventStore.Core.Messages
         public class DeleteStreamText
         {
             [DataMember]
-            public Guid CorrelationId { get; set; }
-            [DataMember]
             public int ExpectedVersion { get; set; }
 
             public DeleteStreamText()
             {
             }
 
-            public DeleteStreamText(Guid correlationId, int expectedVersion)
+            public DeleteStreamText(int expectedVersion)
             {
-                CorrelationId = correlationId;
                 ExpectedVersion = expectedVersion;
-            }
-        }
-
-        public class DeleteStreamCompletedText
-        {
-            public Guid CorrelationId { get; set; }
-            public string EventStreamId { get; set; }
-
-            public int ErrorCode { get; set; }
-            public string Error { get; set; }
-
-            public DeleteStreamCompletedText()
-            {
-            }
-
-            public DeleteStreamCompletedText(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
-            {
-                CorrelationId = correlationId;
-                EventStreamId = eventStreamId;
-
-                ErrorCode = (int)errorCode;
-                Error = error;
             }
         }
 

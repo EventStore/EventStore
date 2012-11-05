@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             string state;
             EmittedEvent[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
 
             Assert.IsTrue(result);
@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             string state;
             EmittedEvent[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
 
             Assert.IsNotNull(emittedEvents);
@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 string state;
                 EmittedEvent[] emittedEvents;
                 var result = _stateHandler.ProcessEvent(
-                    new EventPosition(i*10 + 20, i*10 + 10), "stream" + i, "type" + i, "category", Guid.NewGuid(), i,
+                    new EventPosition(i * 10 + 20, i * 10 + 10), CheckpointTag.FromPosition(i * 10 + 20, i * 10 + 10), "stream" + i, "type" + i, "category", Guid.NewGuid(), i,
                     "metadata", @"{""a"":""" + i + @"""}", out state, out emittedEvents);
 
                 Assert.IsNotNull(emittedEvents);

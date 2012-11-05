@@ -184,10 +184,9 @@ namespace EventStore.TestClient.Commands
 
                         var dataResultingSize = dataSizeCoefficient * dataSize;
                         var write = new ClientMessageDto.WriteEventText(
-                            Guid.Empty,
                             ExpectedVersion.Any,
                             new[] { 
-                                new ClientMessageDto.EventText(
+                                new ClientMessageDto.ClientEventText(
                             Guid.NewGuid(),
                             "type",
                             "DATA" + dataResultingSize.ToString(" 00000 ") + new string('*', dataResultingSize),

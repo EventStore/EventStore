@@ -678,18 +678,24 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 throw new ArgumentException(
                         string.Format("Log record at actual pos {0} has non-positive length: {1}. "
-                                      + "Something is seriously wrong.",
+                                      + "Something is seriously wrong in chunk {2}-{3} ({4}).",
                                       actualPosition,
-                                      length));
+                                      length,
+                                      _chunkHeader.ChunkStartNumber,
+                                      _chunkHeader.ChunkEndNumber,
+                                      _filename));
             }
             if (length > TFConsts.MaxLogRecordSize)
             {
                 throw new ArgumentException(
                         string.Format("Log record at actual pos {0} has too large length: {1} bytes, "
-                                      + "while limit is {2} bytes.",
+                                      + "while limit is {2} bytes. Something is seriously wrong in chunk {3}-{4} ({5}).",
                                       actualPosition,
                                       length,
-                                      TFConsts.MaxLogRecordSize));
+                                      TFConsts.MaxLogRecordSize,
+                                      _chunkHeader.ChunkStartNumber,
+                                      _chunkHeader.ChunkEndNumber,
+                                      _filename));
             }
 
             if (!VerifyDataLengthForward(workItem, length + sizeof(int) /*suffix*/))

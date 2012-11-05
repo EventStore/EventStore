@@ -31,6 +31,7 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -44,6 +45,7 @@ namespace EventStore.Core.Services.Storage
 
         private readonly IPublisher _masterBus;
         private readonly ITransactionFileChaser _chaser;
+        private readonly IReadIndex _readIndex;
         private Thread _thread;
         private volatile bool _stop;
 
@@ -51,12 +53,15 @@ namespace EventStore.Core.Services.Storage
         private long _flushDelay;
         private long _lastFlush;
 
-        public StorageChaser(IPublisher masterBus, ITransactionFileChaser chaser)
+        public StorageChaser(IPublisher masterBus, ITransactionFileChaser chaser, IReadIndex readIndex)
         {
             Ensure.NotNull(masterBus, "masterBus");
             Ensure.NotNull(chaser, "chaser");
+            Ensure.NotNull(readIndex, "readIndex");
+
             _masterBus = masterBus;
             _chaser = chaser;
+            _readIndex = readIndex;
 
             _flushDelay = 0;
             _lastFlush = _watch.ElapsedTicks;
@@ -92,8 +97,8 @@ namespace EventStore.Core.Services.Storage
                                 || (record.Flags & PrepareFlags.TransactionEnd) != 0)
                             {
                                 _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId,
-                                                                                     record.LogPosition,
-                                                                                     record.Flags));
+                                                                                 record.LogPosition,
+                                                                                 record.Flags));
                             }
 
                             break;
@@ -104,7 +109,7 @@ namespace EventStore.Core.Services.Storage
                             _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, 
                                                                             record.TransactionPosition,
                                                                             record.EventNumber));
-                            _masterBus.Publish(new StorageMessage.CommitDiscovered(record));
+                            _readIndex.Commit(record);
                             break;
                         }
                         default:

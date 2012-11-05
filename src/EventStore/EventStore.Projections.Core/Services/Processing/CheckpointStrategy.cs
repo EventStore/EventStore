@@ -193,12 +193,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
                 requestResponseDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> responseDispatcher,
-            ProjectionConfig projectionConfig, string name)
+            ProjectionConfig projectionConfig, string name, string stateUpdatesStreamId)
         {
             if (_streams != null && _streams.Count > 1)
             {
-                string projectionStateUpdatesStreamId = CoreProjection.ProjectionsStreamPrefix + name
-                                                      + CoreProjection.ProjectionsStateStreamSuffix;
+                string projectionStateUpdatesStreamId = stateUpdatesStreamId;
 
                 return new MultiStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,

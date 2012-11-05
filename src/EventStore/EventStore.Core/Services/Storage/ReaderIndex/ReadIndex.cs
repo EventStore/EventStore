@@ -25,6 +25,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+#if DEBUG
+#define CHECK_COMMIT_DUPLICATES
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -69,6 +74,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly IHasher _hasher;
         private readonly IPublisher _bus;
         private readonly ILRUCache<string, StreamMetadata> _metadataCache;
+        private readonly object _commitLock = new object();
 
         private long _persistedPrepareCheckpoint = -1;
         private long _persistedCommitCheckpoint = -1;
@@ -175,7 +181,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public void Commit(CommitLogRecord commit)
         {
-            if (commit.LogPosition < _lastCommitPosition || (commit.LogPosition == _lastCommitPosition && !_indexRebuild))
+            var lastCommitPosition = Interlocked.Read(ref _lastCommitPosition);
+            if (commit.LogPosition < lastCommitPosition || (commit.LogPosition == lastCommitPosition && !_indexRebuild))
                 return;  // already committed
 
             bool first = true;
@@ -200,21 +207,21 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     eventNumber = EventNumber.DeletedStream;
                     _committedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
                     addToIndex = commit.LogPosition > _persistedCommitCheckpoint
-                                 || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
+                                    || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
                 }
                 else if ((prepare.Flags & PrepareFlags.Data) != 0)
                 {
                     eventNumber = commit.EventNumber + prepare.TransactionOffset;
                     _committedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
                     addToIndex = commit.LogPosition > _persistedCommitCheckpoint
-                                 || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
+                                    || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
                 }
 
                 // could be just empty prepares for TransactionBegin and TransactionEnd, for instance
                 // or records which are rebuilt but are already in PTables
                 if (addToIndex)
                 {
-#if DEBUG
+#if CHECK_COMMIT_DUPLICATES
                     long pos;
                     if (_tableIndex.TryGetOneValue(streamHash, eventNumber, out pos))
                     {
@@ -236,8 +243,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     _tableIndex.Add(commit.LogPosition, streamHash, eventNumber, prepare.LogPosition);
                     _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, eventNumber, prepare));
                 }
-                _lastCommitPosition = Math.Max(_lastCommitPosition, commit.LogPosition);
             }
+
+            var newLastCommitPosition = commit.LogPosition > lastCommitPosition ? commit.LogPosition : lastCommitPosition;
+            if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) != lastCommitPosition)
+                throw new Exception("Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
         }
 
         private IEnumerable<PrepareLogRecord> GetTransactionPrepares(long transactionPos)
@@ -439,7 +449,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private bool GetStreamRecord(ITransactionFileReader reader, string streamId, int version, out EventRecord record)
         {
             // we assume that you already did check for stream deletion
-            Ensure.NotNull(streamId, "streamId");
+            Ensure.NotNullOrEmpty(streamId, "streamId");
             Ensure.Nonnegative(version, "eventNumber");
 
             var streamHash = _hasher.Hash(streamId);

@@ -155,12 +155,11 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
 
             return codec.To(new ClientMessageDto.WriteEventText(
-                writeEvents.CorrelationId,
                 writeEvents.ExpectedVersion,
-                writeEvents.Events.Select(e => new ClientMessageDto.EventText(e.EventId, 
-                                                                              e.EventType,
-                                                                              e.Data, 
-                                                                              e.Metadata)).ToArray()));
+                writeEvents.Events.Select(e => new ClientMessageDto.ClientEventText(e.EventId, 
+                                                                                    e.EventType,
+                                                                                    e.Data, 
+                                                                                    e.Metadata)).ToArray()));
         }
 
         public static string WriteEventsCompleted(HttpEntity entity, Message message)
