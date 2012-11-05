@@ -27,9 +27,7 @@
 // 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Services.Monitoring.Stats;
 
@@ -42,7 +40,9 @@ namespace EventStore.Core.Bus
         private static readonly ILogger Log = LogManager.GetLoggerFor<QueueMonitor>();
         private readonly ConcurrentDictionary<IMonitoredQueue, IMonitoredQueue> _queues = new ConcurrentDictionary<IMonitoredQueue, IMonitoredQueue>();
 
-        private QueueMonitor() {}
+        private QueueMonitor()
+        {
+        }
 
         public void Register(IMonitoredQueue monitoredQueue)
         {
