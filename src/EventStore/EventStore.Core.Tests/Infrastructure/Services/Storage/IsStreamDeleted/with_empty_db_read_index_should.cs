@@ -12,7 +12,6 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage.IsStreamDeleted
         [Test]
         public void indicate_that_any_stream_is_not_deleted()
         {
-            Assert.That(ReadIndex.IsStreamDeleted(string.Empty), Is.False);
             Assert.That(ReadIndex.IsStreamDeleted("X"), Is.False);
             Assert.That(ReadIndex.IsStreamDeleted("YY"), Is.False);
             Assert.That(ReadIndex.IsStreamDeleted("ZZZ"), Is.False);
