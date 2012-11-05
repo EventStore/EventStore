@@ -25,6 +25,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+#if DEBUG
+#define CHECK_COMMIT_DUPLICATES
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -42,10 +47,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json.Linq;
-
-#if DEBUG
-#define CHECK_COMMIT_DUPLICATES
-#endif
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {
