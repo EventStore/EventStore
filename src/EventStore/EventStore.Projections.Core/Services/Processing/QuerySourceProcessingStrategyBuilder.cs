@@ -37,6 +37,8 @@ namespace EventStore.Projections.Core.Services.Processing
             public string StateStreamName { get; set; }
 
             public string ForceProjectionName { get; set; }
+
+            public bool UseEventIndexes { get; set; }
         }
 
         protected readonly Options _options = new Options();
@@ -93,6 +95,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.ForceProjectionName = string.IsNullOrWhiteSpace(forceProjectionName) ? null : forceProjectionName;
         }
 
+        public void SetUseEventIndexes(bool useEventIndexes)
+        {
+            _options.UseEventIndexes = useEventIndexes;
+        }
+
         protected HashSet<string> ToSet(IEnumerable<string> list)
         {
             if (list == null)
@@ -116,6 +123,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Partitioned projections are not supported on stream based sources");
             if (_byStream && mode < ProjectionMode.Persistent)
                 throw new InvalidOperationException("Partitioned (foreachStream) projections require Persistent mode");
+            if (_options.UseEventIndexes && !_allStreams)
+                throw new InvalidOperationException("useEventIndexes option is only available in fromAll() projections");
+            if (_options.UseEventIndexes && _allEvents)
+                throw new InvalidOperationException("useEventIndexes option cannot be used in whenAny() projections");
         }
 
     }
