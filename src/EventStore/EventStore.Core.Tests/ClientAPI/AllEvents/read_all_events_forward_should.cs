@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using EventStore.ClientAPI;
 using NUnit.Framework;
 
@@ -8,6 +10,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
     [TestFixture, Category("LongRunning"), Explicit]
     internal class read_all_events_forward_should
     {
+        public int Timeout = 1000;
         public MiniNode Node;
 
         [SetUp]
@@ -272,6 +275,48 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
 
                 Assert.Inconclusive();
                 //Assert.That(read.Result.Events.Length, Is.EqualTo(0));
+            }
+        }
+
+        [Test]
+        public void recover_from_dropped_subscription_state_using_last_known_position()
+        {
+            const string stream = "read_all_events_forward_should_recover_from_dropped_subscription_state_using_last_known_position";
+            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            {
+                var catched = new List<RecordedEvent>();
+                Position lastKnonwPosition = null;
+                var dropped = new AutoResetEvent(false);
+
+                var create = store.CreateStreamAsync(stream, new byte[0]);
+                Assert.DoesNotThrow(create.Wait);
+
+                store.SubscribeAsync(stream, 
+                                     (@event, position) =>
+                                     {
+                                         catched.Add(@event);
+                                         lastKnonwPosition = position;
+                                     },
+                                     () => dropped.Set());
+
+
+                var testEvents = Enumerable.Range(1, 5).Select(x => new TestEvent(x.ToString())).ToArray();
+
+                var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
+                Assert.That(write.Wait(Timeout));
+
+                store.Unsubscribe(stream);
+                Assert.That(dropped.WaitOne(Timeout));
+
+                var write2 = store.AppendToStreamAsync(stream, testEvents.Length, testEvents);
+                Assert.That(write2.Wait(Timeout));
+
+                var missed = store.ReadAllEventsForwardAsync(lastKnonwPosition, int.MaxValue);
+                Assert.That(missed.Wait(Timeout));
+
+                var expected = testEvents.Concat(testEvents).ToArray();
+                var actual = catched.Concat(missed.Result.Events.Skip(1)).ToArray();//skip 1 because readallforward is inclusive
+                Assert.That(TestEventsComparer.Equal(expected, actual));
             }
         }
     }
