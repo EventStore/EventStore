@@ -448,7 +448,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private bool GetStreamRecord(ITransactionFileReader reader, string streamId, int version, out EventRecord record)
         {
             // we assume that you already did check for stream deletion
-            Ensure.NotNull(streamId, "streamId");
+            Ensure.NotNullOrEmpty(streamId, "streamId");
             Ensure.Nonnegative(version, "eventNumber");
 
             var streamHash = _hasher.Hash(streamId);

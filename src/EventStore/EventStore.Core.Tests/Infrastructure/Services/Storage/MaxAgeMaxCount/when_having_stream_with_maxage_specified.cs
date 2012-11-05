@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
@@ -6,10 +6,10 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Storage
+namespace EventStore.Core.Tests.Infrastructure.Services.Storage.MaxAgeMaxCount
 {
     [TestFixture]
-    public class when_having_stream_both_maxage_and_maxcount_specified_with_maxage_more_strict : ReadIndexTestScenario
+    public class when_having_stream_with_maxage_specified: ReadIndexTestScenario
     {
         private EventRecord _r1;
         private EventRecord _r2;
@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             var now = DateTime.UtcNow;
 
             long curPos;
-            const string metadata = @"{""$maxAge"":10,""$maxCount"":4}";
+            const string metadata = @"{""$maxAge"":10}";
 
             var streamCreated = new PrepareLogRecord(0,
                                                      Guid.NewGuid(),
