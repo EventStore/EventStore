@@ -34,7 +34,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionCheckpoint : IHandle<ProjectionMessage.Projections.ReadyForCheckpoint>
+    public class ProjectionCheckpoint : IProjectionCheckpointManager
     {
         private readonly int _maxWriteBatchLength;
         private readonly ILogger _logger;
@@ -43,22 +43,25 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly CheckpointTag _from;
         private CheckpointTag _last;
         private readonly IPublisher _publisher;
-        private readonly IHandle<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private readonly IProjectionCheckpointManager _readyHandler;
 
         private bool _checkpointRequested = false;
         private int _requestedCheckpoints;
         private bool _started = false;
+        private readonly CheckpointTag _zero;
 
         public ProjectionCheckpoint(
-            IPublisher publisher, IHandle<ProjectionMessage.Projections.ReadyForCheckpoint> readyHandler, CheckpointTag from, int maxWriteBatchLength,
+            IPublisher publisher, IProjectionCheckpointManager readyHandler, CheckpointTag from, CheckpointTag zero, int maxWriteBatchLength,
             ILogger logger = null)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
+            if (zero == null) throw new ArgumentNullException("zero");
             if (from.CommitPosition <= from.PreparePosition) throw new ArgumentException("from");
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
             _publisher = publisher;
             _readyHandler = readyHandler;
+            _zero = zero;
             _from = _last = from;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;
@@ -75,16 +78,24 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void EmitEvents(EmittedEvent[] events, CheckpointTag position)
+        public void EmitEvents(EmittedEvent[] events)
         {
-            ValidatePosition(position);
+            ValidatePosition(events);
             EnsureCheckpointNotRequested();
-            _last = position;
             
             var groupedEvents = events.GroupBy(v => v.StreamId);
             foreach (var eventGroup in groupedEvents)
             {
-                EmitEventsToStream(eventGroup.Key, eventGroup.ToArray(), position);
+                EmitEventsToStream(eventGroup.Key, eventGroup.ToArray());
+            }
+        }
+
+        private void ValidatePosition(EmittedEvent[] events)
+        {
+            foreach (var emittedEvent in events)
+            {
+                ValidatePosition(emittedEvent.CausedByTag);
+                _last = emittedEvent.CausedByTag;
             }
         }
 
@@ -120,19 +131,19 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private void EmitEventsToStream(
-            string streamId, EmittedEvent[] emittedEvents, CheckpointTag position)
+            string streamId, EmittedEvent[] emittedEvents)
         {
             EmittedStream stream;
             if (!_emittedStreams.TryGetValue(streamId, out stream))
             {
                 stream = new EmittedStream(
-                    streamId, _publisher, this, recoveryMode: true /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength,
+                    streamId, _zero, _publisher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength,
                     logger: _logger);
                 if (_started)
                     stream.Start();
                 _emittedStreams.Add(streamId, stream);
             }
-            stream.EmitEvents(emittedEvents, position);
+            stream.EmitEvents(emittedEvents);
         }
 
         public void Handle(ProjectionMessage.Projections.ReadyForCheckpoint message)
@@ -145,7 +156,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_requestedCheckpoints == 0)
             {
-                _readyHandler.Handle(new ProjectionMessage.Projections.ReadyForCheckpoint());
+                _readyHandler.Handle(new ProjectionMessage.Projections.ReadyForCheckpoint(this));
             }
         }
 
@@ -162,6 +173,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public int GetReadsInProgress()
         {
             return _emittedStreams.Values.Sum(v => v.GetReadsInProgress());
+        }
+
+        public void Handle(ProjectionMessage.Projections.RestartRequested message)
+        {
+            _readyHandler.Handle(message);
         }
     }
 }

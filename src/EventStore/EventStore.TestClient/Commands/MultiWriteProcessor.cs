@@ -64,7 +64,7 @@ namespace EventStore.TestClient.Commands
                 eventStreamId,
                 expectedVersion,
                 Enumerable.Range(0, writeCount).Select(x =>
-                                                       new ClientMessageDto.Event(Guid.NewGuid(),
+                                                       new ClientMessageDto.ClientEvent(Guid.NewGuid(),
                                                                                   "type",
                                                                                   Encoding.UTF8.GetBytes(data),
                                                                                   new byte[0])).ToArray());

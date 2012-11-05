@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 + Guid.NewGuid().ToString("D") + @"""}", "{}");
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePoistion"": 50, ""LastSeenEvent"": """
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
                 + Guid.NewGuid().ToString("D") + @"""}", "{}");
             ExistingEvent(
                 FakeProjectionStateHandler._emit1StreamId, FakeProjectionStateHandler._emit1EventType,
@@ -58,10 +58,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             //projection subscribes here
             _coreProjection.Handle(
-                ProjectionMessage.Projections.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
+                ProjectionMessage.SubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
                        new Event(
                            _causedByEventId, "emit1_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata"))));
+                           Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]

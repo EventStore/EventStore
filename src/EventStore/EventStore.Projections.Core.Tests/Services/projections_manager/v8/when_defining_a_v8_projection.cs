@@ -161,5 +161,29 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 Assert.AreEqual(true, _source.ByStream);
             }
         }
+
+        [TestFixture]
+        public class with_options : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    options({
+                        stateStreamName: 'state-stream',
+                    });
+                    fromAll().whenAny(
+                        function(state, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual("state-stream", _source.Options.StateStreamName);
+            }
+        }
     }
 }

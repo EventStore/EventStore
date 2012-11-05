@@ -50,6 +50,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        10000,
                                                        0,
                                                        writerchk,
+                                                       new InMemoryCheckpoint(), 
                                                        new ICheckpoint[0]));
             db.OpenVerifyAndClean();
 
@@ -73,7 +74,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        10000,
                                                        0,
                                                        writerchk,
-                                                       new[] {chaserchk}));
+                                                       chaserchk,
+                                                       new[] {writerchk, chaserchk}));
             db.OpenVerifyAndClean();
             writerchk.Write(12);
             writerchk.Flush();
@@ -124,6 +126,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        10000,
                                                        0,
                                                        writerchk,
+                                                       chaserchk,
                                                        new[] {chaserchk}));
             db.OpenVerifyAndClean();
 
@@ -152,6 +155,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        10000,
                                                        0,
                                                        writerchk,
+                                                       chaserchk,
                                                        new[] {chaserchk}));
             db.OpenVerifyAndClean();
 
@@ -199,6 +203,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        10000,
                                                        0,
                                                        writerchk,
+                                                       chaserchk,
                                                        new[] {chaserchk}));
             db.OpenVerifyAndClean();
 

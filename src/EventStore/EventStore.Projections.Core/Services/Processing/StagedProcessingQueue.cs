@@ -32,7 +32,7 @@ using System.Linq;
 namespace EventStore.Projections.Core.Services.Processing
 {
     /// <summary>
-    /// Stage dprocessing queue allows queued processing of multi-step tasks.  The 
+    /// Staged processing queue allows queued processing of multi-step tasks.  The 
     /// processing order allows multiple tasks to be processed at the same time with a constraint
     /// that all preceding tasks in the queue has already started processing at the given stage. 
     /// 
@@ -148,6 +148,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private void RemoveCompletedTask(TaskEntry entry)
         {
             entry.Completed = true;
+        }
+
+        public void Initialize()
+        {
+            _precedingCorrelations.Clear();
+            _tasks.Clear();
         }
     }
 

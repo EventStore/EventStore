@@ -135,7 +135,7 @@ namespace EventStore.TestClient.Commands
                             eventStreamId,
                             ExpectedVersion.Any,
                             Enumerable.Range(0, writeCnt).Select(x =>
-                                    new ClientMessageDto.Event(Guid.NewGuid(),
+                                    new ClientMessageDto.ClientEvent(Guid.NewGuid(),
                                                                "type",
                                                                Encoding.UTF8.GetBytes(data),
                                                                new byte[0])).ToArray());

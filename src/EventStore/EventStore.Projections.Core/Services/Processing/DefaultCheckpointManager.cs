@@ -38,12 +38,14 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class DefaultCheckpointManager : CoreProjectionCheckpointManager
     {
+        private readonly string _projectionCheckpointStreamId;
         private int _inCheckpointWriteAttempt;
         private int _lastWrittenCheckpointEventNumber;
-        private readonly string _projectionCheckpointStreamId;
         private int _nextStateIndexToRequest;
         private Event _checkpointEventToBePublished;
         private CheckpointTag _requestedCheckpointPosition;
+        private Guid _writeRequestId;
+        private Guid _readRequestId;
 
         public DefaultCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
@@ -99,17 +101,21 @@ namespace EventStore.Projections.Core.Services.Processing
                     _logger.Info(
                         "Failed to write projection checkpoint to stream {0}. Error: {1}", message.EventStreamId,
                         Enum.GetName(typeof (OperationErrorCode), message.ErrorCode));
-                if (message.ErrorCode == OperationErrorCode.CommitTimeout
-                    || message.ErrorCode == OperationErrorCode.ForwardTimeout
-                    || message.ErrorCode == OperationErrorCode.PrepareTimeout
-                    || message.ErrorCode == OperationErrorCode.WrongExpectedVersion)
+                switch (message.ErrorCode)
                 {
-                    if (_logger != null) _logger.Info("Retrying write checkpoint to {0}", message.EventStreamId);
-                    _inCheckpointWriteAttempt++;
-                    PublishWriteCheckpointEvent();
+                    case OperationErrorCode.WrongExpectedVersion:
+                        RequestRestart("Checkpoint stream has been written to from the outside");
+                        break;
+                    case OperationErrorCode.PrepareTimeout:
+                    case OperationErrorCode.ForwardTimeout:
+                    case OperationErrorCode.CommitTimeout:
+                        if (_logger != null) _logger.Info("Retrying write checkpoint to {0}", message.EventStreamId);
+                        _inCheckpointWriteAttempt++;
+                        PublishWriteCheckpointEvent();
+                        break;
+                    default:
+                        throw new NotSupportedException("Unsupported error code received");
                 }
-                else
-                    throw new NotSupportedException("Unsupported error code received");
             }
         }
 
@@ -119,10 +125,22 @@ namespace EventStore.Projections.Core.Services.Processing
                 _logger.Trace(
                     "Writing checkpoint for {0} at {1} with expected version number {2}", _name,
                     _requestedCheckpointPosition, _lastWrittenCheckpointEventNumber);
-            _writeDispatcher.Publish(
+            _writeRequestId = _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, _projectionCheckpointStreamId,
                     _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished), WriteCheckpointEventCompleted);
+        }
+
+        public override void Initialize()
+        {
+            base.Initialize();
+            _writeDispatcher.Cancel(_writeRequestId);
+            _readDispatcher.Cancel(_readRequestId);
+            _inCheckpointWriteAttempt = 0;
+            _lastWrittenCheckpointEventNumber = 0;
+            _nextStateIndexToRequest = 0;
+            _checkpointEventToBePublished = null;
+            _requestedCheckpointPosition = null;
         }
 
         public override void GetStatistics(ProjectionStatistics info)
@@ -143,7 +161,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override void RequestLoadState()
         {
             const int recordsToRequest = 10;
-            _readDispatcher.Publish(
+            _readRequestId = _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, _projectionCheckpointStreamId, _nextStateIndexToRequest,
                     recordsToRequest, resolveLinks: false), OnLoadStateReadRequestCompleted);

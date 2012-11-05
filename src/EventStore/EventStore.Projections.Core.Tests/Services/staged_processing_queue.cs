@@ -129,6 +129,50 @@ namespace EventStore.Projections.Core.Tests.Services
         }
 
         [TestFixture]
+        public class when_reinitializing
+        {
+            private StagedProcessingQueue _q;
+            private TestTask _t1;
+
+            [SetUp]
+            public void when()
+            {
+                _q = new StagedProcessingQueue(new[] { true, true });
+                _t1 = new TestTask(1, 2, 0);
+                _q.Enqueue(_t1);
+                _q.Initialize();
+            }
+
+            [Test]
+            public void process_does_not_execute_a_task()
+            {
+                _q.Process();
+
+                Assert.That(!_t1.Executed);
+            }
+
+            [Test]
+            public void process_returns_the_number_of_executed_tasks()
+            {
+                var processed = _q.Process();
+
+                Assert.AreEqual(0, processed);
+            }
+
+            [Test]
+            public void queue_length_iz_zero()
+            {
+                Assert.AreEqual(0, _q.Count);
+            }
+
+            [Test]
+            public void task_can_be_enqueued()
+            {
+                _q.Enqueue(new TestTask(1, 1));
+            }
+        }
+
+        [TestFixture]
         public class when_enqueuing_a_two_step_task_and_both_steps_complete_immediately
         {
             private StagedProcessingQueue _q;

@@ -33,11 +33,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 {
     public class FakeCoreProjection : ICoreProjection
     {
-        public readonly List<ProjectionMessage.Projections.CommittedEventReceived> _committedEventReceivedMessages =
-            new List<ProjectionMessage.Projections.CommittedEventReceived>();
+        public readonly List<ProjectionMessage.SubscriptionMessage.CommittedEventReceived> _committedEventReceivedMessages =
+            new List<ProjectionMessage.SubscriptionMessage.CommittedEventReceived>();
 
-        public readonly List<ProjectionMessage.Projections.CheckpointSuggested> _checkpointSuggestedMessages =
-            new List<ProjectionMessage.Projections.CheckpointSuggested>();
+        public readonly List<ProjectionMessage.SubscriptionMessage.CheckpointSuggested> _checkpointSuggestedMessages =
+            new List<ProjectionMessage.SubscriptionMessage.CheckpointSuggested>();
 
         public readonly List<ProjectionMessage.Projections.CheckpointCompleted> _checkpointCompletedMessages =
             new List<ProjectionMessage.Projections.CheckpointCompleted>();
@@ -48,15 +48,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public readonly List<ProjectionMessage.Projections.CheckpointLoaded> _checkpointLoadedMessages =
             new List<ProjectionMessage.Projections.CheckpointLoaded>();
 
-        public readonly List<ProjectionMessage.Projections.ProgressChanged> _progresschangedMessages =
-            new List<ProjectionMessage.Projections.ProgressChanged>();
+        public readonly List<ProjectionMessage.SubscriptionMessage.ProgressChanged> _progresschangedMessages =
+            new List<ProjectionMessage.SubscriptionMessage.ProgressChanged>();
 
-        public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
+        public void Handle(ProjectionMessage.SubscriptionMessage.CommittedEventReceived message)
         {
             _committedEventReceivedMessages.Add(message);
         }
 
-        public void Handle(ProjectionMessage.Projections.CheckpointSuggested message)
+        public void Handle(ProjectionMessage.SubscriptionMessage.CheckpointSuggested message)
         {
             _checkpointSuggestedMessages.Add(message);
         }
@@ -76,9 +76,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _checkpointLoadedMessages.Add(message);
         }
 
-        public void Handle(ProjectionMessage.Projections.ProgressChanged message)
+        public void Handle(ProjectionMessage.SubscriptionMessage.ProgressChanged message)
         {
             _progresschangedMessages.Add(message);
+        }
+
+        public void Handle(ProjectionMessage.Projections.RestartRequested message)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

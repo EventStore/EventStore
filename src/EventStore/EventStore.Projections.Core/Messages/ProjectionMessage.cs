@@ -36,12 +36,18 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
-    public interface ICoreProjection : IHandle<ProjectionMessage.Projections.CommittedEventReceived>,
+    public interface ICoreProjection : IHandle<ProjectionMessage.SubscriptionMessage.CommittedEventReceived>,
                                        IHandle<ProjectionMessage.Projections.CheckpointLoaded>,
-                                       IHandle<ProjectionMessage.Projections.CheckpointSuggested>,
-                                       IHandle<ProjectionMessage.Projections.ProgressChanged>,
+                                       IHandle<ProjectionMessage.SubscriptionMessage.CheckpointSuggested>,
+                                       IHandle<ProjectionMessage.SubscriptionMessage.ProgressChanged>,
                                        IHandle<ProjectionMessage.Projections.CheckpointCompleted>,
-                                       IHandle<ProjectionMessage.Projections.PauseRequested>
+                                       IHandle<ProjectionMessage.Projections.PauseRequested>,
+                                       IHandle<ProjectionMessage.Projections.RestartRequested>
+    {
+    }
+
+    public interface IProjectionCheckpointManager : IHandle<ProjectionMessage.Projections.ReadyForCheckpoint>,
+                                                    IHandle<ProjectionMessage.Projections.RestartRequested>
     {
     }
 
@@ -276,179 +282,6 @@ namespace EventStore.Projections.Core.Messages
                 }
             }
 
-            /// <summary>
-            /// A ChechpointSuggested message is sent to core projection 
-            /// to allow bookmarking a position that can be used to 
-            /// restore the projection processing (typically
-            /// an event at this position does not satisfy projection filter)
-            /// </summary>
-            public class CheckpointSuggested : Message
-            {
-                private readonly Guid _correlationId;
-                private readonly CheckpointTag _checkpointTag;
-                private readonly float _progress;
-
-                public CheckpointSuggested(Guid correlationId, CheckpointTag checkpointTag, float progress)
-                {
-                    _correlationId = correlationId;
-                    _checkpointTag = checkpointTag;
-                    _progress = progress;
-                }
-
-                public Guid CorrelationId
-                {
-                    get { return _correlationId; }
-                }
-
-                public CheckpointTag CheckpointTag
-                {
-                    get { return _checkpointTag; }
-                }
-
-                public float Progress
-                {
-                    get { return _progress; }
-                }
-            }
-
-            public class ProgressChanged : Message
-            {
-                private readonly Guid _correlationId;
-                private readonly CheckpointTag _checkpointTag;
-                private readonly float _progress;
-
-                public ProgressChanged(Guid correlationId, CheckpointTag checkpointTag, float progress)
-                {
-                    _correlationId = correlationId;
-                    _checkpointTag = checkpointTag;
-                    _progress = progress;
-                }
-
-                public Guid CorrelationId
-                {
-                    get { return _correlationId; }
-                }
-
-                public CheckpointTag CheckpointTag
-                {
-                    get { return _checkpointTag; }
-                }
-
-                public float Progress
-                {
-                    get { return _progress; }
-                }            
-            }
-
-            public class CommittedEventReceived : Message
-            {
-                public static CommittedEventReceived Sample(
-                    Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
-                    bool resolvedLinkTo, Event data)
-                {
-                    return new CommittedEventReceived(
-                        correlationId, position, eventStreamId, eventSequenceNumber, resolvedLinkTo, data, 77.7f);
-                }
-
-                private readonly Guid _correlationId;
-                private readonly Event _data;
-                private readonly string _eventStreamId;
-                private readonly int _eventSequenceNumber;
-                private readonly bool _resolvedLinkTo;
-                private readonly string _positionStreamId;
-                private readonly int _positionSequenceNumber;
-                private readonly EventPosition _position;
-                private readonly CheckpointTag _checkpointTag;
-                private readonly float _progress;
-
-                private CommittedEventReceived(
-                    Guid correlationId, EventPosition position, CheckpointTag checkpointTag, string positionStreamId,
-                    int positionSequenceNumber, string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo,
-                    Event data, float progress)
-                {
-                    if (data == null) throw new ArgumentNullException("data");
-                    _correlationId = correlationId;
-                    _data = data;
-                    _progress = progress;
-                    _position = position;
-                    _checkpointTag = checkpointTag;
-                    _positionStreamId = positionStreamId;
-                    _positionSequenceNumber = positionSequenceNumber;
-                    _eventStreamId = eventStreamId;
-                    _eventSequenceNumber = eventSequenceNumber;
-                    _resolvedLinkTo = resolvedLinkTo;
-                }
-
-                private CommittedEventReceived(
-                    Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
-                    bool resolvedLinkTo, Event data, float progress)
-                    : this(
-                        correlationId, position,
-                        CheckpointTag.FromPosition(position.CommitPosition, position.PreparePosition), eventStreamId,
-                        eventSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo, data, progress)
-                {
-                }
-
-                public Event Data
-                {
-                    get { return _data; }
-                }
-
-                public EventPosition Position
-                {
-                    get { return _position; }
-                }
-
-                public string EventStreamId
-                {
-                    get { return _eventStreamId; }
-                }
-
-                public Guid CorrelationId
-                {
-                    get { return _correlationId; }
-                }
-
-                public int EventSequenceNumber
-                {
-                    get { return _eventSequenceNumber; }
-                }
-
-                public string PositionStreamId
-                {
-                    get { return _positionStreamId; }
-                }
-
-                public int PositionSequenceNumber
-                {
-                    get { return _positionSequenceNumber; }
-                }
-
-                public bool ResolvedLinkTo
-                {
-                    get { return _resolvedLinkTo; }
-                }
-
-                public CheckpointTag CheckpointTag
-                {
-                    get { return _checkpointTag; }
-                }
-
-                public float Progress
-                {
-                    get { return _progress; }
-                }
-
-                public static CommittedEventReceived FromCommittedEventDistributed(
-                    CommittedEventDistributed message, CheckpointTag checkpointTag)
-                {
-                    return new CommittedEventReceived(
-                        message.CorrelationId, message.Position, checkpointTag, message.PositionStreamId,
-                        message.PositionSequenceNumber, message.EventStreamId, message.EventSequenceNumber,
-                        message.ResolvedLinkTo, message.Data, message.Progress);
-                }
-            }
-
             public class CommittedEventDistributed : Message
             {
                 private readonly Guid _correlationId;
@@ -590,6 +423,17 @@ namespace EventStore.Projections.Core.Messages
 
             public class ReadyForCheckpoint : Message
             {
+                private readonly object _sender;
+
+                public ReadyForCheckpoint(object sender)
+                {
+                    _sender = sender;
+                }
+
+                public object Sender
+                {
+                    get { return _sender; }
+                }
             }
 
             public class CheckpointCompleted : Message
@@ -609,6 +453,21 @@ namespace EventStore.Projections.Core.Messages
 
             public class PauseRequested : Message
             {
+            }
+
+            public class RestartRequested : Message
+            {
+                private readonly string _reason;
+
+                public RestartRequested(string reason)
+                {
+                    _reason = reason;
+                }
+
+                public string Reason
+                {
+                    get { return _reason; }
+                }
             }
 
             public class PauseProjectionSubscription : Message
@@ -709,6 +568,156 @@ namespace EventStore.Projections.Core.Messages
                         get { return _faultedReason; }
                     }
                 }
+            }
+        }
+
+        public abstract class SubscriptionMessage: Message
+        {
+            private readonly Guid _correlationId;
+            private readonly long _subscriptionMessageSequenceNumber;
+            private readonly CheckpointTag _checkpointTag;
+            private readonly float _progress;
+
+            private SubscriptionMessage(Guid correlationId, CheckpointTag checkpointTag, float progress, long subscriptionMessageSequenceNumber)
+            {
+                _correlationId = correlationId;
+                _checkpointTag = checkpointTag;
+                _progress = progress;
+                _subscriptionMessageSequenceNumber = subscriptionMessageSequenceNumber;
+            }
+
+            /// <summary>
+            /// A ChechpointSuggested message is sent to core projection 
+            /// to allow bookmarking a position that can be used to 
+            /// restore the projection processing (typically
+            /// an event at this position does not satisfy projection filter)
+            /// </summary>
+            public class CheckpointSuggested : SubscriptionMessage
+            {
+                public CheckpointSuggested(Guid correlationId, CheckpointTag checkpointTag, float progress, long subscriptionMessageSequenceNumber)
+                    : base(correlationId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                {
+                }
+            }
+
+            public class ProgressChanged : SubscriptionMessage
+            {
+                public ProgressChanged(Guid correlationId, CheckpointTag checkpointTag, float progress, long subscriptionMessageSequenceNumber)
+                    : base(correlationId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                {
+                }
+
+            }
+
+            public class CommittedEventReceived : SubscriptionMessage
+            {
+                public static CommittedEventReceived Sample(
+                    Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
+                    bool resolvedLinkTo, Event data, long subscriptionMessageSequenceNumber)
+                {
+                    return new CommittedEventReceived(
+                        correlationId, position, eventStreamId, eventSequenceNumber, resolvedLinkTo, data, 77.7f, subscriptionMessageSequenceNumber);
+                }
+
+                private readonly Event _data;
+                private readonly string _eventStreamId;
+                private readonly int _eventSequenceNumber;
+                private readonly bool _resolvedLinkTo;
+                private readonly string _positionStreamId;
+                private readonly int _positionSequenceNumber;
+                private readonly EventPosition _position;
+
+                private CommittedEventReceived(
+                    Guid correlationId, EventPosition position, CheckpointTag checkpointTag, string positionStreamId,
+                    int positionSequenceNumber, string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo,
+                    Event data, float progress, long subscriptionMessageSequenceNumber)
+                    : base(correlationId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                {
+                    if (data == null) throw new ArgumentNullException("data");
+                    _data = data;
+                    _position = position;
+                    _positionStreamId = positionStreamId;
+                    _positionSequenceNumber = positionSequenceNumber;
+                    _eventStreamId = eventStreamId;
+                    _eventSequenceNumber = eventSequenceNumber;
+                    _resolvedLinkTo = resolvedLinkTo;
+                }
+
+                private CommittedEventReceived(
+                    Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
+                    bool resolvedLinkTo, Event data, float progress, long subscriptionMessageSequenceNumber)
+                    : this(
+                        correlationId, position,
+                        CheckpointTag.FromPosition(position.CommitPosition, position.PreparePosition), eventStreamId,
+                        eventSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo, data, progress,
+                        subscriptionMessageSequenceNumber)
+                {
+                }
+
+                public Event Data
+                {
+                    get { return _data; }
+                }
+
+                public EventPosition Position
+                {
+                    get { return _position; }
+                }
+
+                public string EventStreamId
+                {
+                    get { return _eventStreamId; }
+                }
+
+                public int EventSequenceNumber
+                {
+                    get { return _eventSequenceNumber; }
+                }
+
+                public string PositionStreamId
+                {
+                    get { return _positionStreamId; }
+                }
+
+                public int PositionSequenceNumber
+                {
+                    get { return _positionSequenceNumber; }
+                }
+
+                public bool ResolvedLinkTo
+                {
+                    get { return _resolvedLinkTo; }
+                }
+
+                public static CommittedEventReceived FromCommittedEventDistributed(
+                    Projections.CommittedEventDistributed message, CheckpointTag checkpointTag,
+                    long subscriptionMessageSequenceNumber)
+                {
+                    return new CommittedEventReceived(
+                        message.CorrelationId, message.Position, checkpointTag, message.PositionStreamId,
+                        message.PositionSequenceNumber, message.EventStreamId, message.EventSequenceNumber,
+                        message.ResolvedLinkTo, message.Data, message.Progress, subscriptionMessageSequenceNumber);
+                }
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+
+            public CheckpointTag CheckpointTag
+            {
+                get { return _checkpointTag; }
+            }
+
+            public float Progress
+            {
+                get { return _progress; }
+            }
+
+            public long SubscriptionMessageSequenceNumber
+            {
+                get { return _subscriptionMessageSequenceNumber; }
             }
         }
     }

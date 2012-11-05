@@ -37,16 +37,26 @@ namespace EventStore.SingleNode
 {
     public class Program : ProgramBase<SingleNodeOptions>
     {
-        protected SingleVNode Node;
-        protected TFChunkDb Db;
+        private SingleVNode _node;
+        private TFChunkDb _db;
         
         private SingleVNodeAppSettings _appSets;
         private SingleVNodeSettings _vNodeSets;
 
-        private Projections _projections;
+        private Projections.Core.Projections _projections;
         private bool _noProjections;
         private int _projectionThreads;
         private bool _dbVerifyHashes;
+
+        protected TFChunkDb Db
+        {
+            get { return _db; }
+        }
+
+        protected SingleVNode Node
+        {
+            get { return _node; }
+        }
 
         public static int Main(string[] args)
         {
@@ -57,7 +67,7 @@ namespace EventStore.SingleNode
         protected override void OnArgsParsed(SingleNodeOptions options)
         {
             var now = DateTime.UtcNow;
-            Db = GetDb(options, now);
+            _db = GetDb(options, now);
             _appSets = GetAppSettings(options);
             _vNodeSets = GetVNodeSettings(options);
             _dbVerifyHashes = ! options.DoNotVerifyDbHashesOnStartup;
@@ -67,15 +77,15 @@ namespace EventStore.SingleNode
 
         protected override void Create()
         {
-            Node = new SingleVNode(Db, _vNodeSets, _appSets, _dbVerifyHashes);
+            _node = new SingleVNode(_db, _vNodeSets, _appSets, _dbVerifyHashes);
 
             if (!_noProjections)
-                _projections = new Projections(Db, Node.MainQueue, Node.Bus, Node.TimerService, Node.HttpService, _projectionThreads);
+                _projections = new Projections.Core.Projections(_db, _node.MainQueue, _node.Bus, _node.TimerService, _node.HttpService, _projectionThreads);
         }
 
         protected override void Start()
         {
-            Node.Start();
+            _node.Start();
 
             if (!_noProjections)
                 _projections.Start();
@@ -83,12 +93,12 @@ namespace EventStore.SingleNode
 
         public override void Stop()
         {
-            Node.Stop();
+            _node.Stop();
         }
 
         protected override string GetLogsDirectory()
         {
-            return Db.Config.Path + "-logs" ;
+            return _db.Config.Path + "-logs" ;
         }
 
         protected override string GetComponentName(SingleNodeOptions options)

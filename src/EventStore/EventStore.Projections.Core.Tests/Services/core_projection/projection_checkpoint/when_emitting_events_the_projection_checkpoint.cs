@@ -39,18 +39,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
     {
         private ProjectionCheckpoint _checkpoint;
         private Exception _lastException;
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
 
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
-            _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), 250);
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
+            _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
             try
             {
                 _checkpoint.EmitEvents(
-                    new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data")},
-                    CheckpointTag.FromPosition(40, 30));
+                    new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
+                    CheckpointTag.FromPosition(40, 30), null)});
             }
             catch (Exception ex)
             {

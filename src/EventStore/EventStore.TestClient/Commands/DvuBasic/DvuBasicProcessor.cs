@@ -328,7 +328,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 var evnt = CreateEvent(_streams[streamIdx], head + 2);
                 var write = new ClientMessageDto.WriteEvents(_streams[streamIdx],
                                                              head == -1 ? head : head + 1,
-                                                             new[] {new ClientMessageDto.Event(evnt)});
+                                                             new[] {new ClientMessageDto.ClientEvent(evnt)});
 
                 var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                 connection.EnqueueSend(package.AsByteArray());

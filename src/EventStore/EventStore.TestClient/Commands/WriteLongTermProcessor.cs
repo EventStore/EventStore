@@ -192,7 +192,7 @@ namespace EventStore.TestClient.Commands
                             esId,
                             ExpectedVersion.Any,
                             new[] { 
-                                new ClientMessageDto.Event(
+                                new ClientMessageDto.ClientEvent(
                                     Guid.NewGuid() ,
                                     "TakeSomeSpaceEvent",
                                     Encoding.UTF8.GetBytes("DATA" + dataSize.ToString(" 00000 ") + new string('*', dataSize)),

@@ -60,7 +60,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         [Test]
         public void state_can_be_cached()
         {
-            _cache.CacheAndLockPartitionState("partition", "data", CheckpointTag.FromPosition(100, 90));
+            CheckpointTag at = CheckpointTag.FromPosition(100, 90);
+            _cache.CacheAndLockPartitionState("partition", new PartitionStateCache.State("data", at), at);
         }
 
         [Test]
