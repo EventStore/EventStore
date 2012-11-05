@@ -69,6 +69,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly IHasher _hasher;
         private readonly IPublisher _bus;
         private readonly ILRUCache<string, StreamMetadata> _metadataCache;
+        private readonly object _commitLock = new object();
 
         private long _persistedPrepareCheckpoint = -1;
         private long _persistedCommitCheckpoint = -1;
@@ -175,68 +176,71 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public void Commit(CommitLogRecord commit)
         {
-            if (commit.LogPosition < _lastCommitPosition || (commit.LogPosition == _lastCommitPosition && !_indexRebuild))
-                return;  // already committed
-
-            bool first = true;
-            int eventNumber = -1;
-            uint streamHash = 0;
-            string eventStreamId = null;
-
-            foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition))
+            lock (_commitLock)
             {
-                if (first)
-                {
-                    streamHash = _hasher.Hash(prepare.EventStreamId);
-                    eventStreamId = prepare.EventStreamId;
-                    first = false;
-                }
-                else
-                    Debug.Assert(prepare.EventStreamId == eventStreamId);
+                if (commit.LogPosition < _lastCommitPosition || (commit.LogPosition == _lastCommitPosition && !_indexRebuild))
+                    return;  // already committed
 
-                bool addToIndex = false;
-                if ((prepare.Flags & PrepareFlags.StreamDelete) != 0)
-                {
-                    eventNumber = EventNumber.DeletedStream;
-                    _committedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
-                    addToIndex = commit.LogPosition > _persistedCommitCheckpoint
-                                 || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
-                }
-                else if ((prepare.Flags & PrepareFlags.Data) != 0)
-                {
-                    eventNumber = commit.EventNumber + prepare.TransactionOffset;
-                    _committedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
-                    addToIndex = commit.LogPosition > _persistedCommitCheckpoint
-                                 || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
-                }
+                bool first = true;
+                int eventNumber = -1;
+                uint streamHash = 0;
+                string eventStreamId = null;
 
-                // could be just empty prepares for TransactionBegin and TransactionEnd, for instance
-                // or records which are rebuilt but are already in PTables
-                if (addToIndex)
+                foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition))
                 {
-#if DEBUG
-                    long pos;
-                    if (_tableIndex.TryGetOneValue(streamHash, eventNumber, out pos))
+                    if (first)
                     {
-                        EventRecord rec;
-                        if (((IReadIndex)this).ReadEvent(eventStreamId, eventNumber, out rec) == SingleReadResult.Success)
-                        {
-                            Debugger.Break();
-                            throw new Exception(
-                                string.Format(
-                                    "Trying to add duplicate event #{0} for stream {1}(hash {2})\nCommit: {3}\nPrepare: {4}.",
-                                    eventNumber,
-                                    eventStreamId,
-                                    streamHash,
-                                    commit,
-                                    prepare));
-                        }
+                        streamHash = _hasher.Hash(prepare.EventStreamId);
+                        eventStreamId = prepare.EventStreamId;
+                        first = false;
                     }
+                    else
+                        Debug.Assert(prepare.EventStreamId == eventStreamId);
+
+                    bool addToIndex = false;
+                    if ((prepare.Flags & PrepareFlags.StreamDelete) != 0)
+                    {
+                        eventNumber = EventNumber.DeletedStream;
+                        _committedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
+                        addToIndex = commit.LogPosition > _persistedCommitCheckpoint
+                                     || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
+                    }
+                    else if ((prepare.Flags & PrepareFlags.Data) != 0)
+                    {
+                        eventNumber = commit.EventNumber + prepare.TransactionOffset;
+                        _committedEvents.PutRecord(prepare.EventId, Tuple.Create(eventStreamId, eventNumber), throwOnDuplicate: false);
+                        addToIndex = commit.LogPosition > _persistedCommitCheckpoint
+                                     || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
+                    }
+
+                    // could be just empty prepares for TransactionBegin and TransactionEnd, for instance
+                    // or records which are rebuilt but are already in PTables
+                    if (addToIndex)
+                    {
+#if DEBUG
+                        long pos;
+                        if (_tableIndex.TryGetOneValue(streamHash, eventNumber, out pos))
+                        {
+                            EventRecord rec;
+                            if (((IReadIndex)this).ReadEvent(eventStreamId, eventNumber, out rec) == SingleReadResult.Success)
+                            {
+                                Debugger.Break();
+                                throw new Exception(
+                                    string.Format(
+                                        "Trying to add duplicate event #{0} for stream {1}(hash {2})\nCommit: {3}\nPrepare: {4}.",
+                                        eventNumber,
+                                        eventStreamId,
+                                        streamHash,
+                                        commit,
+                                        prepare));
+                            }
+                        }
 #endif
-                    _tableIndex.Add(commit.LogPosition, streamHash, eventNumber, prepare.LogPosition);
-                    _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, eventNumber, prepare));
+                        _tableIndex.Add(commit.LogPosition, streamHash, eventNumber, prepare.LogPosition);
+                        _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, eventNumber, prepare));
+                    }
+                    _lastCommitPosition = Math.Max(_lastCommitPosition, commit.LogPosition);
                 }
-                _lastCommitPosition = Math.Max(_lastCommitPosition, commit.LogPosition);
             }
         }
 
