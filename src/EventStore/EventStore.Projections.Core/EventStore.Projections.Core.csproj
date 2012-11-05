@@ -161,6 +161,7 @@
     <Compile Include="Services\v8\V8ProjectionStateHandler.cs" />
     <Compile Include="Standard\CategorizeEventsByStreamPath.cs" />
     <Compile Include="Standard\CategorizeStreamByPath.cs" />
+    <Compile Include="Standard\IndexEventsByEventType.cs" />
     <Compile Include="Standard\IndexStreams.cs" />
     <Compile Include="Utils\EnumExtensions.cs" />
     <Compile Include="v8\CompiledScript.cs" />
