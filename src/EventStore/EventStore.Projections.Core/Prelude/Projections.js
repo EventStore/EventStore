@@ -6,7 +6,17 @@ var $projections = {
         var eventHandlers = { };
         var anyEventHandlers = [];
         var rawEventHandlers = [];
-        var sources = { all_streams: false, all_events: false, categories: [], streams: [], events: [] };
+        var sources = { 
+            all_streams: false, 
+            all_events: false, 
+            categories: [], 
+            streams: [], 
+            events: [], 
+            options: { 
+                stateStreamName: null, 
+                $forceProjectionName: null, 
+            }, 
+        };
         var initStateHandler = function() { return { }; };
 
         var projectionState = null;
@@ -125,6 +135,14 @@ var $projections = {
             _notify("emit", JSON.stringify(ev));
         }
 
+        function options(opts) {
+            for (var name in opts) {
+                if (sources.options[name] === undefined)
+                    throw "Unrecognized option: " + name;
+                sources.options[name] = opts[name];
+            }
+        }
+
         return {
             on_pure: on_pure,
             on_init_state: on_init_state,
@@ -138,6 +156,7 @@ var $projections = {
             byStream: byStream,
 
             emit: emit,
+            options: options,
 
             commandHandlers: commandHandlers,
         };

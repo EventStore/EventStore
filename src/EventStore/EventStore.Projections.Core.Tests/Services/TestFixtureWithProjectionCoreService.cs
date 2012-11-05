@@ -43,21 +43,21 @@ namespace EventStore.Projections.Core.Tests.Services
     {
         public class TestCoreProjection : ICoreProjection
         {
-            public List<ProjectionMessage.Projections.CommittedEventReceived> HandledMessages =
-                new List<ProjectionMessage.Projections.CommittedEventReceived>();
+            public List<ProjectionMessage.SubscriptionMessage.CommittedEventReceived> HandledMessages =
+                new List<ProjectionMessage.SubscriptionMessage.CommittedEventReceived>();
 
-            public List<ProjectionMessage.Projections.CheckpointSuggested> HandledCheckpoints =
-                new List<ProjectionMessage.Projections.CheckpointSuggested>();
+            public List<ProjectionMessage.SubscriptionMessage.CheckpointSuggested> HandledCheckpoints =
+                new List<ProjectionMessage.SubscriptionMessage.CheckpointSuggested>();
 
-            public List<ProjectionMessage.Projections.ProgressChanged> HandledProgress =
-                new List<ProjectionMessage.Projections.ProgressChanged>();
+            public List<ProjectionMessage.SubscriptionMessage.ProgressChanged> HandledProgress =
+                new List<ProjectionMessage.SubscriptionMessage.ProgressChanged>();
 
-            public void Handle(ProjectionMessage.Projections.CommittedEventReceived message)
+            public void Handle(ProjectionMessage.SubscriptionMessage.CommittedEventReceived message)
             {
                 HandledMessages.Add(message);
             }
 
-            public void Handle(ProjectionMessage.Projections.CheckpointSuggested message)
+            public void Handle(ProjectionMessage.SubscriptionMessage.CheckpointSuggested message)
             {
                 HandledCheckpoints.Add(message);
             }
@@ -77,9 +77,14 @@ namespace EventStore.Projections.Core.Tests.Services
                 throw new NotImplementedException();
             }
 
-            public void Handle(ProjectionMessage.Projections.ProgressChanged message)
+            public void Handle(ProjectionMessage.SubscriptionMessage.ProgressChanged message)
             {
                 HandledProgress.Add(message);
+            }
+
+            public void Handle(ProjectionMessage.Projections.RestartRequested message)
+            {
+                throw new NotImplementedException();
             }
         }
 
