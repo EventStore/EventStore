@@ -33,6 +33,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.TransactionLog;
@@ -113,6 +114,28 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
         }
 
         protected abstract void WriteTestScenario();
+
+        protected EventRecord WriteStreamCreated(string eventStreamId, string metadata = null, DateTime? timestamp = null)
+        {
+            var streamCreated = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),
+                                                      Guid.NewGuid(),
+                                                      Guid.NewGuid(),
+                                                      eventStreamId,
+                                                      ExpectedVersion.NoStream,
+                                                      SystemEventTypes.StreamCreated,
+                                                      LogRecord.NoData,
+                                                      metadata == null ? LogRecord.NoData : Encoding.UTF8.GetBytes(metadata),
+                                                      timestamp);
+
+            long pos;
+            Assert.IsTrue(Writer.Write(streamCreated, out pos));
+
+            var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), streamCreated.CorrelationId, streamCreated.LogPosition, 0);
+            Assert.IsTrue(Writer.Write(commit, out pos));
+
+            var eventRecord = new EventRecord(0, streamCreated);
+            return eventRecord;
+        }
 
         protected EventRecord WriteSingleEvent(string eventStreamId, int eventNumber, string data, DateTime? timestamp = null)
         {
@@ -232,7 +255,7 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
             return commit.LogPosition;
         }
 
-        protected void WriteDelete(string eventStreamId)
+        protected EventRecord WriteDelete(string eventStreamId)
         {
             var prepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(),
                                                            Guid.NewGuid(),
@@ -245,6 +268,8 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage
                                           prepare.LogPosition,
                                           EventNumber.DeletedStream);
             Assert.IsTrue(Writer.Write(commit, out pos));
+
+            return new EventRecord(EventNumber.DeletedStream, prepare);
         }
     }
 }
