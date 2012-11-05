@@ -96,5 +96,32 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage.MaxAgeMaxCount
             Assert.AreEqual(_r5, records[1]);
             Assert.AreEqual(_r4, records[2]);
         }
+
+        [Test]
+        public void read_all_forward_returns_all_records_including_expired_ones()
+        {
+            var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records;
+            Assert.AreEqual(6, records.Count);
+            Assert.AreEqual(_r1, records[0].Event);
+            Assert.AreEqual(_r2, records[1].Event);
+            Assert.AreEqual(_r3, records[2].Event);
+            Assert.AreEqual(_r4, records[3].Event);
+            Assert.AreEqual(_r5, records[4].Event);
+            Assert.AreEqual(_r6, records[5].Event);
+        }
+
+        [Test]
+        public void read_all_backward_returns_all_records_including_expired_ones()
+        {
+            var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
+            var records = ReadIndex.ReadAllEventsBackward(pos, 100).Records;
+            Assert.AreEqual(6, records.Count);
+            Assert.AreEqual(_r6, records[0].Event);
+            Assert.AreEqual(_r5, records[1].Event);
+            Assert.AreEqual(_r4, records[2].Event);
+            Assert.AreEqual(_r3, records[3].Event);
+            Assert.AreEqual(_r2, records[4].Event);
+            Assert.AreEqual(_r1, records[5].Event);
+        }
     }
 }

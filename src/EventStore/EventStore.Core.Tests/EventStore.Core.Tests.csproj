@@ -182,6 +182,8 @@
     <Compile Include="Infrastructure\Services\Storage\IsStreamDeleted\is_stream_deleted_should.cs" />
     <Compile Include="Infrastructure\Services\Storage\IsStreamDeleted\with_empty_db_read_index_should.cs" />
     <Compile Include="Infrastructure\Services\Storage\IsStreamDeleted\when_deleting_stream_with_1_hash_collision_and_1_stream_with_other_hash_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Storage\MaxAgeMaxCount\when_having_stream_with_maxcount_specified_and_long_transactions_written.cs" />
+    <Compile Include="Infrastructure\Services\Storage\MaxAgeMaxCount\when_having_one_stream_with_maxage_and_other_stream_with_maxcount_and_streams_have_same_hash.cs" />
     <Compile Include="Infrastructure\Services\Storage\ReadAll\with_single_deleted_stream_read_index_should.cs" />
     <Compile Include="Infrastructure\Services\Storage\IsStreamDeleted\when_deleting_stream_with_2_hash_collisions_and_mixed_order_read_index_should.cs" />
     <Compile Include="Infrastructure\Services\Storage\IsStreamDeleted\when_deleting_the_only_existing_stream_in_db_read_index_should.cs" />

@@ -22,25 +22,9 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage.MaxAgeMaxCount
         {
             var now = DateTime.UtcNow;
 
-            long curPos;
             const string metadata = @"{""$maxAge"":10,""$maxCount"":4}";
 
-            var streamCreated = new PrepareLogRecord(0,
-                                                     Guid.NewGuid(),
-                                                     Guid.NewGuid(),
-                                                     0,
-                                                     0,
-                                                     "ES",
-                                                     ExpectedVersion.NoStream,
-                                                     now.AddSeconds(-100),
-                                                     PrepareFlags.Data | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                                     SystemEventTypes.StreamCreated,
-                                                     LogRecord.NoData,
-                                                     Encoding.UTF8.GetBytes(metadata));
-            _r1 = new EventRecord(0, streamCreated);
-            Writer.Write(streamCreated, out curPos);
-            Writer.Write(LogRecord.Commit(curPos, Guid.NewGuid(), 0, 0), out curPos);
-
+            _r1 = WriteStreamCreated("ES", metadata, now.AddSeconds(-100));
             _r2 = WriteSingleEvent("ES", 1, "bla1", now.AddSeconds(-50));
             _r3 = WriteSingleEvent("ES", 2, "bla1", now.AddSeconds(-20));
             _r4 = WriteSingleEvent("ES", 3, "bla1", now.AddSeconds(-11));
@@ -93,6 +77,33 @@ namespace EventStore.Core.Tests.Infrastructure.Services.Storage.MaxAgeMaxCount
             Assert.AreEqual(2, records.Length);
             Assert.AreEqual(_r6, records[0]);
             Assert.AreEqual(_r5, records[1]);
+        }
+
+        [Test]
+        public void read_all_forward_returns_all_records_including_expired_ones()
+        {
+            var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records;
+            Assert.AreEqual(6, records.Count);
+            Assert.AreEqual(_r1, records[0].Event);
+            Assert.AreEqual(_r2, records[1].Event);
+            Assert.AreEqual(_r3, records[2].Event);
+            Assert.AreEqual(_r4, records[3].Event);
+            Assert.AreEqual(_r5, records[4].Event);
+            Assert.AreEqual(_r6, records[5].Event);
+        }
+
+        [Test]
+        public void read_all_backward_returns_all_records_including_expired_ones()
+        {
+            var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
+            var records = ReadIndex.ReadAllEventsBackward(pos, 100).Records;
+            Assert.AreEqual(6, records.Count);
+            Assert.AreEqual(_r6, records[0].Event);
+            Assert.AreEqual(_r5, records[1].Event);
+            Assert.AreEqual(_r4, records[2].Event);
+            Assert.AreEqual(_r3, records[3].Event);
+            Assert.AreEqual(_r2, records[4].Event);
+            Assert.AreEqual(_r1, records[5].Event);
         }
     }
 }
