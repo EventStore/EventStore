@@ -31,7 +31,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Storage
+namespace EventStore.Core.Tests.Infrastructure.Services.Storage.Transactions
 {
     [TestFixture]
     public class when_having_multievent_sequential_write_request_read_index_should : ReadIndexTestScenario

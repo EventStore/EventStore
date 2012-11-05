@@ -30,7 +30,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Storage
+namespace EventStore.Core.Tests.Infrastructure.Services.Storage.HashCollisions
 {
     [TestFixture]
     public class with_two_collisioned_streams_one_event_each_read_index_should : ReadIndexTestScenario

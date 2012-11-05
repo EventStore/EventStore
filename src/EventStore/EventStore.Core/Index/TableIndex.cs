@@ -95,7 +95,17 @@ namespace EventStore.Core.Index
                                               IsHashCollision,
                                               _maxTablesPerLevel);
                 if (_indexMap.IsCorrupt(_directory))
+                {
+                    foreach (var ptable in _indexMap.InOrder())
+                    {
+                        ptable.MarkForDestruction();
+                    }
+                    foreach (var ptable in _indexMap.InOrder())
+                    {
+                        ptable.WaitForDestroy(5000);
+                    }
                     throw new CorruptIndexException("IndexMap is in unsafe state.");
+                }
             }
             catch (CorruptIndexException exc)
             {

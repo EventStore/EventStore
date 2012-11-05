@@ -32,7 +32,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Storage
+namespace EventStore.Core.Tests.Infrastructure.Services.Storage.BuildingIndex
 {
     [TestFixture]
     public class when_building_an_index_off_tfile_with_two_events_in_stream : ReadIndexTestScenario

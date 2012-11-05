@@ -108,7 +108,7 @@ namespace EventStore.Core
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
             var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
-            var storageChaser = new StorageChaser(_mainQueue, chaser);
+            var storageChaser = new StorageChaser(_mainQueue, chaser, readIndex);
             _outputBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
             _outputBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
             _outputBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
