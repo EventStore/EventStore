@@ -39,14 +39,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
     public class when_the_projection_checkpoint_has_been_started
     {
         private ProjectionCheckpoint _checkpoint;
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
 
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
             _checkpoint = new ProjectionCheckpoint(
-                new FakePublisher(), _readyHandler, CheckpointTag.FromPosition(0, -1), 250);
+                new FakePublisher(), _readyHandler, CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), 250);
             _checkpoint.Start();
         }
 

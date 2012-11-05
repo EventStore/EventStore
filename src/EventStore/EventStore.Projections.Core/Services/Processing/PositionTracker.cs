@@ -67,5 +67,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Cannot update by incompatible checkpoint tag");
             _lastTag = newTag;
         }
+
+        public void Initialize()
+        {
+            _lastTag = null;
+        }
     }
 }

@@ -27,23 +27,19 @@
 // 
 using System;
 using System.Linq;
-using System.Net;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Transport.Http;
-using EventStore.Common.Utils;
 using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
-    public class AtomController : CommunicationController, IForwarder<ClientMessage.WriteEvents>
+    public class AtomController : CommunicationController
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<AtomController>();
-
         private static readonly ICodec[] ServiceDocCodecs = new[]
                                                             {
                                                                 Codec.Xml,
@@ -140,45 +136,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   AtomCodecs,
                                                                   DefaultResponseCodec),
                                              OnGetAllAfter);
-            //FORWARD WRITE
-            pipe.RegisterForwarder<ClientMessage.WriteEvents>(this);
-        }
-
-        //FORWARD WRITE
-
-        public void Forward(ClientMessage.WriteEvents message, IPEndPoint endPoint)
-        {
-            //Client.Post(endPoint.ToHttpUrl("/streams/{0}", message.EventStreamId),
-            //            Format.WriteEvents(Codec.Xml, message),
-            //            Codec.Xml.ContentType,
-            //            ForwardResponseReceived,
-            //            exception => Log.ErrorException(exception,
-            //                                            "Error while forwarding write request",
-            //                                            message.EventStreamId,
-            //                                            message.ExpectedVersion));
-        }
-
-        private void ForwardResponseReceived(HttpResponse response)
-        {
-            //var completed = Codec.Xml.From<ClientMessageDto.WriteEventCompletedText>(response.Body);
-            //if (completed != null)
-            //{
-            //    if (completed.ErrorCode == OperationErrorCode.Success)
-            //    {
-            //        Publish(new ClientMessage.WriteEventsCompleted(completed.CorrelationId,
-            //                                                       completed.EventStreamId,
-            //                                                       completed.EventNumber));
-            //    }
-            //    else
-            //    {
-            //        Publish(new ClientMessage.WriteEventsCompleted(completed.CorrelationId,
-            //                                                       completed.EventStreamId,
-            //                                                       completed.ErrorCode,
-            //                                                       completed.Error));
-            //    }
-            //}
-            //else
-            //    Log.Error("Write request body cannot be deserialized (forward)");
         }
 
         //SERVICE DOCUMENT

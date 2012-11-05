@@ -38,34 +38,38 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class when_handling_an_emit_the_not_started_stream
+    public class when_handling_an_emit_the_not_started_stream : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
-        private FakePublisher _publisher;
 
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
+
+        protected override void Given()
+        {
+            base.Given();
+            NoStream("test");
+        }
 
         [SetUp]
         public void setup()
         {
-            _publisher = new FakePublisher();
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
-            _stream = new EmittedStream("test", _publisher, _readyHandler, false, 50);
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
+            _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _bus, _readyHandler, 50);
             _stream.EmitEvents(
-                new[] {new EmittedEvent("stream", Guid.NewGuid(), "type", "data")}, CheckpointTag.FromPosition(200, 150));
+                new[] { new EmittedEvent("test", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(200, 150), null) });
         }
 
         [Test]
         public void does_not_publish_write_events()
         {
-            Assert.AreEqual(0, _publisher.Messages.OfType<ClientMessage.WriteEvents>().Count());
+            Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
 
         [Test]
         public void publishes_write_events_when_started()
         {
             _stream.Start();
-            Assert.AreEqual(1, _publisher.Messages.OfType<ClientMessage.WriteEvents>().Count());
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
     }
 }

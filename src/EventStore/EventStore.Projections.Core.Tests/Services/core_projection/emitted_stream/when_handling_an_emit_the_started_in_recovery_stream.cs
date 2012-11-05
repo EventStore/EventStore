@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
     public class when_handling_an_emit_the_started_in_recovery_stream : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
 
         protected override void Given()
         {
@@ -50,8 +50,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
-            _stream = new EmittedStream("test_stream", _bus, _readyHandler, recoveryMode: true, maxWriteBatchLength: 50);
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
+            _stream = new EmittedStream("test_stream", CheckpointTag.FromPosition(0, -1), _bus, _readyHandler, maxWriteBatchLength: 50);
             _stream.Start();
         }
 
@@ -59,8 +59,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void does_not_publish_already_published_events()
         {
             _stream.EmitEvents(
-                new[] {new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data")},
-                CheckpointTag.FromPosition(100, 50));
+                new[] {new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data",
+                CheckpointTag.FromPosition(100, 50), null)});
             Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
 
@@ -68,8 +68,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void publishes_not_yet_published_events()
         {
             _stream.EmitEvents(
-                new[] {new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data")},
-                CheckpointTag.FromPosition(200, 150));
+                new[] {new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data",
+                CheckpointTag.FromPosition(200, 150), null)});
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
     }

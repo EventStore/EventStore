@@ -26,6 +26,12 @@
 	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005CEventStore_005Csrc_005CReformatOptions_002EDotSettings/RelativePriority/@EntryValue">7</s:Double>
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005CEventStore_005Csrc_005CStyle_002EDotSettings/@KeyIndexDefined">True</s:Boolean>
 	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005CEventStore_005Csrc_005CStyle_002EDotSettings/RelativePriority/@EntryValue">8</s:Double>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005Cretrospective_005CEventStore_005Csrc_005CLicense_002EDotSettings/@KeyIndexDefined">True</s:Boolean>
+	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005Cretrospective_005CEventStore_005Csrc_005CLicense_002EDotSettings/RelativePriority/@EntryValue">15</s:Double>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005Cretrospective_005CEventStore_005Csrc_005CReformatOptions_002EDotSettings/@KeyIndexDefined">True</s:Boolean>
+	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005Cretrospective_005CEventStore_005Csrc_005CReformatOptions_002EDotSettings/RelativePriority/@EntryValue">13</s:Double>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005Cretrospective_005CEventStore_005Csrc_005CStyle_002EDotSettings/@KeyIndexDefined">True</s:Boolean>
+	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005Cretrospective_005CEventStore_005Csrc_005CStyle_002EDotSettings/RelativePriority/@EntryValue">14</s:Double>
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005Cretrospective_005Csrc_005CLicense_002EDotSettings/@KeyIndexDefined">True</s:Boolean>
 	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005Cretrospective_005Csrc_005CLicense_002EDotSettings/RelativePriority/@EntryValue">1</s:Double>
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AY_003A_005Cretrospective_005Csrc_005CReformatOptions_002EDotSettings/@KeyIndexDefined">True</s:Boolean>

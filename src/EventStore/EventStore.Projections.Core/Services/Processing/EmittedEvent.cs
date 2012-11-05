@@ -35,27 +35,34 @@ namespace EventStore.Projections.Core.Services.Processing
         public readonly string StreamId;
         public readonly Guid EventId;
         public readonly string EventType;
+        private readonly CheckpointTag _causedByTag;
+        private readonly CheckpointTag _expectedTag;
         private readonly byte[]  _data;
 
-        public EmittedEvent(string streamId, Guid eventId, string eventType, string data)
+        public EmittedEvent(string streamId, Guid eventId, string eventType, string data, CheckpointTag causedByTag, CheckpointTag expectedTag)
         {
+            if (causedByTag == null) throw new ArgumentNullException("causedByTag");
             StreamId = streamId;
             EventId = eventId;
             EventType = eventType;
+            _causedByTag = causedByTag;
+            _expectedTag = expectedTag;
             _data = data == null ? null : Encoding.UTF8.GetBytes(data);
-        }
-
-        public EmittedEvent(string streamId, Guid eventId, string eventType, byte[] data)
-        {
-            StreamId = streamId;
-            EventId = eventId;
-            EventType = eventType;
-            _data = data;
         }
 
         public byte[] Data
         {
             get { return _data; }
+        }
+
+        public CheckpointTag CausedByTag
+        {
+            get { return _causedByTag; }
+        }
+
+        public CheckpointTag ExpectedTag
+        {
+            get { return _expectedTag; }
         }
     }
 }

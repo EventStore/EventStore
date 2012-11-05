@@ -32,6 +32,14 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class QuerySourceProcessingStrategyBuilder // name it!!
     {
+        public class Options
+        {
+            public string StateStreamName { get; set; }
+
+            public string ForceProjectionName { get; set; }
+        }
+
+        protected readonly Options _options = new Options();
         protected bool _allStreams;
         protected List<string> _categories;
         protected List<string> _streams;
@@ -75,6 +83,16 @@ namespace EventStore.Projections.Core.Services.Processing
             _byStream = true;
         }
 
+        public void SetStateStreamNameOption(string stateStreamName)
+        {
+            _options.StateStreamName = string.IsNullOrWhiteSpace(stateStreamName) ? null : stateStreamName;
+        }
+
+        public void SetForceProjectionName(string forceProjectionName)
+        {
+            _options.ForceProjectionName = string.IsNullOrWhiteSpace(forceProjectionName) ? null : forceProjectionName;
+        }
+
         protected HashSet<string> ToSet(IEnumerable<string> list)
         {
             if (list == null)
@@ -99,5 +117,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_byStream && mode < ProjectionMode.Persistent)
                 throw new InvalidOperationException("Partitioned (foreachStream) projections require Persistent mode");
         }
+
     }
 }

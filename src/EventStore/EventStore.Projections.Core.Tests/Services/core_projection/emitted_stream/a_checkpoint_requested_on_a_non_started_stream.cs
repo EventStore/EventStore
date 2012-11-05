@@ -41,15 +41,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         private EmittedStream _stream;
         private FakePublisher _publisher;
 
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
         private Exception _caughtException;
 
         [SetUp]
         public void setup()
         {
             _publisher = new FakePublisher();
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
-            _stream = new EmittedStream("test", _publisher, _readyHandler, false, 50);
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
+            _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _publisher, _readyHandler, 50);
             try
             {
                 _stream.Checkpoint();

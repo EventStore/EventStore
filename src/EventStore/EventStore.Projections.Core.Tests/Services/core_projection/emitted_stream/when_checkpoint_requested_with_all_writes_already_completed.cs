@@ -29,9 +29,7 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
-using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Common;
-using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -39,22 +37,26 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class when_checkpoint_requested_with_all_writes_already_completed
+    public class when_checkpoint_requested_with_all_writes_already_completed: TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
-        private FakePublisher _publisher;
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
+
+        protected override void Given()
+        {
+            base.Given();
+            NoStream("test");
+        }
 
         [SetUp]
         public void setup()
         {
-            _publisher = new FakePublisher();
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
-            _stream = new EmittedStream("test", _publisher, _readyHandler, false, 50);
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
+            _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _bus, _readyHandler, 50);
             _stream.Start();
             _stream.EmitEvents(
-                new[] {new EmittedEvent("stream", Guid.NewGuid(), "type", "data")}, CheckpointTag.FromPosition(-1, -1));
-            var msg = _publisher.Messages.OfType<ClientMessage.WriteEvents>().First();
+                new[] { new EmittedEvent("test", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(10, 5), null) });
+            var msg = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First();
             _stream.Handle(new ClientMessage.WriteEventsCompleted(msg.CorrelationId, msg.EventStreamId, 0));
             _stream.Checkpoint();
         }

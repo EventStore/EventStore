@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             string state;
             EmittedEvent[] emittedEvents;
             _stateHandler.ProcessEvent(
-                new EventPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                new EventPosition(10, 5), CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
         }
     }

@@ -40,12 +40,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly IPublisher _publisher;
         private readonly Guid _projectionCorrelationId;
+        private readonly int _pendingEventsThreshold;
+        private readonly Action _updateStatistics;
 
         private QueueState _queueState;
         private CheckpointTag _lastEnqueuedEventTag;
         private bool _subscriptionPaused;
-        private readonly int _pendingEventsThreshold;
-        private readonly Action _updateStatistics;
 
         public CoreProjectionQueue(
             Guid projectionCorrelationId, IPublisher publisher, int pendingEventsThreshold,
@@ -55,6 +55,15 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionCorrelationId = projectionCorrelationId;
             _pendingEventsThreshold = pendingEventsThreshold;
             _updateStatistics = updateStatistics;
+        }
+
+        public void Initialize()
+        {
+            _queueState = default(QueueState);
+            _lastEnqueuedEventTag = default(CheckpointTag);
+            _subscriptionPaused = false;
+
+            _queuePendingEvents.Initialize();
         }
 
         public void ProcessEvent()

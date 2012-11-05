@@ -51,20 +51,20 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             //projection subscribes here
             _coreProjection.Handle(
-                ProjectionMessage.Projections.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
+                ProjectionMessage.SubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
                        new Event(
                            Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
-                           Encoding.UTF8.GetBytes("metadata"))));
+                           Encoding.UTF8.GetBytes("metadata")), 0));
             _coreProjection.Handle(
-                ProjectionMessage.Projections.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(140, 130), "/event_category/1", -1, false,
+                ProjectionMessage.SubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(140, 130), "/event_category/1", -1, false,
                        new Event(
                            Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
-                           Encoding.UTF8.GetBytes("metadata"))));
+                           Encoding.UTF8.GetBytes("metadata")), 1));
             _coreProjection.Handle(
-                ProjectionMessage.Projections.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(160, 150), "/event_category/1", -1, false,
+                ProjectionMessage.SubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(160, 150), "/event_category/1", -1, false,
                        new Event(
                            Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data3"),
-                           Encoding.UTF8.GetBytes("metadata"))));
+                           Encoding.UTF8.GetBytes("metadata")), 2));
             _coreProjection.Stop();
         }
 

@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Standard
         }
 
         public bool ProcessEvent(
-            EventPosition position, string streamId, string eventType, string category1, Guid eventId,
+            EventPosition position, CheckpointTag eventPosition, string streamId, string eventType, string category1, Guid eventId,
             int sequenceNumber, string metadata, string data, out string newState, out EmittedEvent[] emittedEvents)
         {
             emittedEvents = null;
@@ -79,8 +79,7 @@ namespace EventStore.Projections.Core.Standard
 
             var category = streamId.Substring(0, lastSlashPos);
 
-            emittedEvents = new[]
-                {new EmittedEvent("$category" + _separator + category, Guid.NewGuid(), "StreamCreated", streamId)};
+            emittedEvents = new[] { new EmittedEvent("$category" + _separator + category, Guid.NewGuid(), "StreamCreated", streamId, eventPosition, expectedTag: null) };
 
             return true;
         }

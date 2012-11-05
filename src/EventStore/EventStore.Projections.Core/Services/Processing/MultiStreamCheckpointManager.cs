@@ -38,8 +38,9 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class MultiStreamCheckpointManager : CoreProjectionCheckpointManager
     {
-        private int _nextStateIndexToRequest;
         private readonly string _projectionStateUpdatesStreamId;
+        private int _nextStateIndexToRequest;
+        private Guid _readRequestId;
 
         public MultiStreamCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
@@ -60,6 +61,13 @@ namespace EventStore.Projections.Core.Services.Processing
             CheckpointWritten();
         }
 
+        public override void Initialize()
+        {
+            base.Initialize();
+            _readDispatcher.Cancel(_readRequestId);
+            _nextStateIndexToRequest = 0;
+        }
+
         protected override void BeforeBeginLoadState()
         {
             _nextStateIndexToRequest = -1; // from the end
@@ -68,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override void RequestLoadState()
         {
             const int recordsToRequest = 10;
-            _readDispatcher.Publish(
+            _readRequestId = _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, _projectionStateUpdatesStreamId, _nextStateIndexToRequest,
                     recordsToRequest, resolveLinks: false), OnLoadStateReadRequestCompleted);

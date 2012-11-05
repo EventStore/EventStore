@@ -181,7 +181,9 @@ function scope($on, $notify) {
         eventProcessor.emit(message);
     }
 
-
+    function options(options_obejct) {
+        eventProcessor.options(options_obejct);
+    }
 
     return {
         log: queryLog,
@@ -195,6 +197,7 @@ function scope($on, $notify) {
         fromCategory: fromCategory,
         fromStream: fromStream,
         fromStreams: fromStreams,
+        options: options,
         emit: emit, 
         linkTo: linkTo, 
         require: modules.require,

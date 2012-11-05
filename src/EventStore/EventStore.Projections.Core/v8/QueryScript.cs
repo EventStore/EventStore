@@ -266,6 +266,19 @@ namespace EventStore.Projections.Core.v8
 
             [DataMember(Name = "by_streams")]
             public bool ByStreams { get; set; }
+
+            [DataMember(Name = "options")]
+            public QuerySourcesDefinitionOptions Options { get; set;}
+        }
+
+        [DataContract]
+        internal class QuerySourcesDefinitionOptions
+        {
+            [DataMember(Name = "stateStreamName")]
+            public string StateStreamName { get; set; }
+
+            [DataMember(Name = "$forceProjectionName")]
+            public string ForceProjectionName { get; set; }
         }
     }
 }

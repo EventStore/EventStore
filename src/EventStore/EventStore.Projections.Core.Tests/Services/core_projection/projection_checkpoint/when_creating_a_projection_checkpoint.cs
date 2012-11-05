@@ -38,38 +38,38 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
     [TestFixture]
     public class when_creating_a_projection_checkpoint
     {
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
 
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            var c = new ProjectionCheckpoint(null, _readyHandler, CheckpointTag.FromPosition(100, 50), 250);
+            var c = new ProjectionCheckpoint(null, _readyHandler, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_ready_handler_throws_argument_null_exception()
         {
-            var c = new ProjectionCheckpoint(new FakePublisher(), null, CheckpointTag.FromPosition(100, 50), 250);
+            var c = new ProjectionCheckpoint(new FakePublisher(), null, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void commit_position_less_than_or_equal_to_prepare_position_throws_argument_exception()
         {
             var c = new ProjectionCheckpoint(
-                new FakePublisher(), _readyHandler, CheckpointTag.FromPosition(100, 101), 250);
+                new FakePublisher(), _readyHandler, CheckpointTag.FromPosition(100, 101), CheckpointTag.FromPosition(0, -1), 250);
         }
 
         [Test]
         public void it_can_be_created()
         {
             var c = new ProjectionCheckpoint(
-                new FakePublisher(), _readyHandler, CheckpointTag.FromPosition(100, 50), 250);
+                new FakePublisher(), _readyHandler, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
         }
     }
 }

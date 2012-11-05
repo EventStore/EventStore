@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
     public class when_requesting_checkpoint_before_all_writes_completed : TestFixtureWithExistingEvents
     {
         private ProjectionCheckpoint _checkpoint;
-        private TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint> _readyHandler;
+        private TestCheckpointManagerMessageHandler _readyHandler;
 
         protected override void Given()
         {
@@ -51,22 +51,22 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestMessageHandler<ProjectionMessage.Projections.ReadyForCheckpoint>();
-            _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), 250);
+            _readyHandler = new TestCheckpointManagerMessageHandler();;
+            _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
             _checkpoint.Start();
             _checkpoint.EmitEvents(
                 new[]
                     {
-                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2"),
-                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data4"),
-                    },
-                CheckpointTag.FromPosition(120, 110));
+                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2", CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data4", CheckpointTag.FromPosition(120, 110), null),
+                    }
+                );
             _checkpoint.EmitEvents(
-                new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data")},
-                CheckpointTag.FromPosition(140, 130));
+                new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
+                CheckpointTag.FromPosition(140, 130), null)});
             _checkpoint.EmitEvents(
-                new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data")},
-                CheckpointTag.FromPosition(160, 150));
+                new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
+                CheckpointTag.FromPosition(160, 150), null)});
             _checkpoint.Prepare(CheckpointTag.FromPosition(200, 150));
         }
 

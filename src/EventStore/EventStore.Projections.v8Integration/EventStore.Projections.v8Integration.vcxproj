@@ -80,11 +80,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(ProjectDir)..\..\..\bin\eventstore\$(Configuration)\anycpu\</OutDir>
+    <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)\..\Libs\win32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
     <OutDir>$(ProjectDir)..\..\..\bin\eventstore\$(Configuration)\x86\</OutDir>
+    <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)\..\Libs\win32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
