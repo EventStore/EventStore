@@ -35,12 +35,12 @@ namespace EventStore.Core.Services.Transport.Http
 {
     public class HttpMessagePipe
     {
-        private readonly Dictionary<Type, IMessageForwarder> _forwarders = new Dictionary<Type, IMessageForwarder>();
+        private readonly Dictionary<Type, IMessageSender> _senders = new Dictionary<Type, IMessageSender>();
 
-        public void RegisterForwarder<T>(IForwarder<T> forwarder) where T : Message
+        public void RegisterSender<T>(ISender<T> sender) where T : Message
         {
-            Ensure.NotNull(forwarder, "forwarder");
-            _forwarders.Add(typeof (T), new MessageForwarder<T>(forwarder));
+            Ensure.NotNull(sender, "sender");
+            _senders.Add(typeof (T), new MessageSender<T>(sender));
         }
 
         public void Push(Message message, IPEndPoint endPoint)
@@ -49,40 +49,40 @@ namespace EventStore.Core.Services.Transport.Http
             Ensure.NotNull(endPoint, "endPoint");
 
             var type = message.GetType();
-            IMessageForwarder forwarder;
+            IMessageSender sender;
 
-            if (_forwarders.TryGetValue(type, out forwarder))
-                forwarder.Forward(message, endPoint);
+            if (_senders.TryGetValue(type, out sender))
+                sender.Send(message, endPoint);
         }
     }
 
-    public interface IForwarder<in T> where T : Message
+    public interface ISender<in T> where T : Message
     {
-        void Forward(T message, IPEndPoint endPoint);
+        void Send(T message, IPEndPoint endPoint);
     }
 
-    public interface IMessageForwarder
+    public interface IMessageSender
     {
-        void Forward(Message message, IPEndPoint endPoint);
+        void Send(Message message, IPEndPoint endPoint);
     }
 
-    public class MessageForwarder<T> : IMessageForwarder 
+    public class MessageSender<T> : IMessageSender 
         where T : Message
     {
-        private readonly IForwarder<T> _forwarder;
+        private readonly ISender<T> _sender;
 
-        public MessageForwarder(IForwarder<T> forwarder)
+        public MessageSender(ISender<T> sender)
         {
-            Ensure.NotNull(forwarder, "forwarder");
-            _forwarder = forwarder;
+            Ensure.NotNull(sender, "sender");
+            _sender = sender;
         }
 
-        public void Forward(Message message, IPEndPoint endPoint)
+        public void Send(Message message, IPEndPoint endPoint)
         {
             Ensure.NotNull(message, "message");
             Ensure.NotNull(endPoint, "endPoint");
 
-            _forwarder.Forward((T) message, endPoint);
+            _sender.Send((T) message, endPoint);
         }
     }
 }
