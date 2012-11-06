@@ -67,6 +67,13 @@ var $projections = {
             rawEventHandlers.push(eventHandler);
         }
 
+         function callHandler(handler, state, envelope) {
+             var newState = handler(state, envelope);
+             if (newState === undefined)
+                 newState = state;
+             return newState;
+         };
+
         function processEvent(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw, log_position) {
 
             var eventName = eventType;
@@ -88,7 +95,7 @@ var $projections = {
             // debug only
             for (index = 0; index < rawEventHandlers.length; index++) {
                 eventHandler = rawEventHandlers[index];
-                state = eventHandler(state, eventEnvelope);
+                state = callHandler(eventHandler, state, eventEnvelope);
             }
 
             eventHandler = eventHandlers[eventName];
@@ -106,12 +113,12 @@ var $projections = {
             }
             for (index = 0; index < anyEventHandlers.length; index++) {
                 eventHandler = anyEventHandlers[index];
-                state = eventHandler(state, eventEnvelope);
+                state = callHandler(eventHandler, state, eventEnvelope);
             }
 
             eventHandler = eventHandlers[eventName];
             if (eventHandler !== undefined) {
-                state = eventHandler(state, eventEnvelope);
+                state = callHandler(eventHandler, state, eventEnvelope);
             }
             projectionState = state;
         }
