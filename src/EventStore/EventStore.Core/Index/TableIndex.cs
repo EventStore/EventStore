@@ -235,6 +235,11 @@ namespace EventStore.Core.Index
                     mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
                 }
             }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Error in TableIndex.ReadOffQueue");
+                throw;
+            }
             finally
             {
                 _backgroundRunning = false;
