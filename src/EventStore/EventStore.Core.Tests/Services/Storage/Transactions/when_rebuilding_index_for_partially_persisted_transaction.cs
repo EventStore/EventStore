@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -42,7 +43,9 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
     [TestFixture]
     public class when_rebuilding_index_for_partially_persisted_transaction : ReadIndexTestScenario
     {
-        public when_rebuilding_index_for_partially_persisted_transaction(): base(maxEntriesInMemTable: 10)
+        private const int MaxEntriesInMemTable = 10;
+
+        public when_rebuilding_index_for_partially_persisted_transaction(): base(maxEntriesInMemTable: MaxEntriesInMemTable)
         {
         }
 
@@ -56,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
 
             TableIndex = new TableIndex(Path.Combine(PathName, "index"),
                                         () => new HashListMemTable(maxSize: 2000),
-                                        maxSizeForMemory: 5);
+                                        maxSizeForMemory: MaxEntriesInMemTable);
             TableIndex.Initialize();
 
             ReadIndex = new ReadIndex(new NoopPublisher(),
