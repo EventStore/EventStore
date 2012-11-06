@@ -141,7 +141,14 @@ namespace EventStore.TestClient.Commands
                                                   eventsPerStream, 
                                                   streamDeleteStep, 
                                                   TimeSpan.FromMinutes(executionPeriodMinutes)), 
-                new MassProjectionsScenario(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep)
+                new MassProjectionsScenario(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep),
+                new ProjectionWrongTagCheck(directTcpSender, 
+                                              maxConcurrentRequests, 
+                                              connections, 
+                                              streams, 
+                                              eventsPerStream, 
+                                              streamDeleteStep, 
+                                              TimeSpan.FromMinutes(executionPeriodMinutes)), 
                 };
 
             Log.Info("Found scenarios ({0} total).", allScenarios.Length);
