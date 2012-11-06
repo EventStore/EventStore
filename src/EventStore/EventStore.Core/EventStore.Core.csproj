@@ -114,7 +114,9 @@
     <Compile Include="Index\PTable.cs" />
     <Compile Include="Index\PTableHeader.cs" />
     <Compile Include="Index\SortedListExtensions.cs" />
+    <Compile Include="Messages\HttpClientMessageDto.cs" />
     <Compile Include="Messages\IAmOnlyCaredAboutForTime.cs" />
+    <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
     <Compile Include="Services\ClientService.cs" />
     <Compile Include="Services\RequestManager\Managers\CreateStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\RequestManager\Managers\DeleteStreamTwoPhaseRequestManager.cs" />
@@ -146,7 +148,7 @@
     <Compile Include="TransactionLog\Chunks\TFChunkBulkReader.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkScavenger.cs" />
     <Compile Include="Services\Transport\Http\Configure.cs" />
-    <Compile Include="Services\Transport\Http\EventConvertion.cs" />
+    <Compile Include="Services\Transport\Http\EventConversion.cs" />
     <Compile Include="Services\Transport\Http\Format.cs" />
     <Compile Include="Services\Transport\Http\SendToHttpWithConversionEnvelope.cs" />
     <Compile Include="TransactionLog\Chunks\ChunkFooter.cs" />
@@ -171,7 +173,7 @@
     <Compile Include="TransactionLog\RecordWriteResult.cs" />
     <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
     <Compile Include="Util\MD5Hash.cs" />
-    <Compile Include="Messages\ClientMessageDtos.cs" />
+    <Compile Include="Messages\TcpClientMessageDto.cs" />
     <Compile Include="Messages\MonitoringMessage.cs" />
     <Compile Include="Messages\ReplicationMessageDtos.cs" />
     <Compile Include="Messages\StorageMessage.cs" />

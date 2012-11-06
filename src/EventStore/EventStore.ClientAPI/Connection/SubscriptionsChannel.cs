@@ -81,7 +81,7 @@ namespace EventStore.ClientAPI.Connection
 
             if (_subscriptions.TryAdd(id, new Subscription(source, id, stream, eventAppeared, subscriptionDropped)))
             {
-                var subscribe = new ClientMessages.SubscribeToStream(stream);
+                var subscribe = new ClientMessage.SubscribeToStream(stream);
                 var pkg = new TcpPackage(TcpCommand.SubscribeToStream, id, subscribe.Serialize());
                 _connection.EnqueueSend(pkg.AsByteArray());
             }
@@ -108,7 +108,7 @@ namespace EventStore.ClientAPI.Connection
 
                     var pkg = new TcpPackage(TcpCommand.UnsubscribeFromStream,
                                              id,
-                                             new ClientMessages.UnsubscribeFromStream(stream).Serialize());
+                                             new ClientMessage.UnsubscribeFromStream(stream).Serialize());
                     _connection.EnqueueSend(pkg.AsByteArray());
                 }
             }
@@ -121,7 +121,7 @@ namespace EventStore.ClientAPI.Connection
 
             if (_subscriptions.TryAdd(id, new Subscription(source, id, eventAppeared, subscriptionDropped)))
             {
-                var subscribe = new ClientMessages.SubscribeToAllStreams();
+                var subscribe = new ClientMessage.SubscribeToAllStreams();
                 var pkg = new TcpPackage(TcpCommand.SubscribeToAllStreams, id, subscribe.Serialize());
                 _connection.EnqueueSend(pkg.AsByteArray());
             }
@@ -148,7 +148,7 @@ namespace EventStore.ClientAPI.Connection
 
                     var pkg = new TcpPackage(TcpCommand.UnsubscribeFromAllStreams, 
                                              id, 
-                                             new ClientMessages.UnsubscribeFromAllStreams().Serialize());
+                                             new ClientMessage.UnsubscribeFromAllStreams().Serialize());
                     _connection.EnqueueSend(pkg.AsByteArray());
                 }
             }
@@ -194,7 +194,7 @@ namespace EventStore.ClientAPI.Connection
                 switch (package.Command)
                 {
                     case TcpCommand.StreamEventAppeared:
-                        var dto = package.Data.Deserialize<ClientMessages.StreamEventAppeared>();
+                        var dto = package.Data.Deserialize<ClientMessage.StreamEventAppeared>();
                         var recordedEvent = new RecordedEvent(dto);
                         var commitPos = dto.CommitPosition;
                         var preparePos = dto.PreparePosition;

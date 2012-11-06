@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI
         public readonly Position Position;
         public readonly RecordedEvent[] Events;
 
-        internal AllEventsSlice(Position position, IEnumerable<EventLinkPair> events)
+        internal AllEventsSlice(Position position, IEnumerable<ClientMessage.EventLinkPair> events)
         {
             Position = position;
             Events = events == null ? EventStreamSlice.EmptyEvents : events.Select(x => new RecordedEvent(x.Event)).ToArray();

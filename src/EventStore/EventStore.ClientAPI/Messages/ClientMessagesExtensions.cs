@@ -24,38 +24,30 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
 
-using System;
-using ProtoBuf;
+using System.Net;
 
 namespace EventStore.ClientAPI.Messages
 {
-    [ProtoContract]
-    internal class ClientEvent
+    public static partial class ClientMessage
     {
-        [ProtoMember(1)]
-        public byte[] EventId { get; set; }
-
-        [ProtoMember(2, IsRequired = false)]
-        public string EventType { get; set; }
-
-        [ProtoMember(3)]
-        public byte[] Data { get; set; }
-
-        [ProtoMember(4, IsRequired = false)]
-        public byte[] Metadata { get; set; }
-
-        public ClientEvent()
+        public partial class DeniedToRoute
         {
-        }
+            public IPEndPoint ExternalTcpEndPoint
+            {
+                get
+                {
+                    return new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort);
+                }
+            }
 
-        public ClientEvent(Guid eventId, string eventType, byte[] data, byte[] metadata)
-        {
-            EventId = eventId.ToByteArray();
-            EventType = eventType;
-            Data = data;
-            Metadata = metadata;
+            public IPEndPoint ExternalHttpEndPoint
+            {
+                get
+                {
+                    return new IPEndPoint(IPAddress.Parse(ExternalHttpAddress), ExternalHttpPort);
+                }
+            }
         }
     }
 }

@@ -122,7 +122,7 @@ namespace EventStore.TestClient.Commands
                     for (int j = 0; j < count; ++j)
                     {
                         var corrid = Guid.NewGuid();
-                        var read = new ClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos: false);
+                        var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos: false);
                         var package = new TcpPackage(TcpCommand.ReadEvent, corrid, read.Serialize());
                         client.EnqueueSend(package.AsByteArray());
                         

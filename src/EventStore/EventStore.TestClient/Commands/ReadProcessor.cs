@@ -58,7 +58,7 @@ namespace EventStore.TestClient.Commands
 
             context.IsAsync();
 
-            var readDto = new ClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos: false);
+            var readDto = new TcpClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos: false);
             var package = new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), readDto.Serialize());
 
             var sw = new Stopwatch();
@@ -81,7 +81,7 @@ namespace EventStore.TestClient.Commands
                     dataReceived = true;
                     sw.Stop();
 
-                    var dto = pkg.Data.Deserialize<ClientMessageDto.ReadEventCompleted>();
+                    var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
 
                     context.Log.Info("READ events from <{0}>:\n\n"
                                      + "\tCorrelationId: {1}\n"

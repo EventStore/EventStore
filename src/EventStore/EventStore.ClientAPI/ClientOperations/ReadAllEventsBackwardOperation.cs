@@ -38,7 +38,7 @@ namespace EventStore.ClientAPI.ClientOperations
     internal class ReadAllEventsBackwardOperation : IClientOperation
     {
         private readonly TaskCompletionSource<AllEventsSlice> _source;
-        private ClientMessages.ReadAllEventsBackwardCompleted _result;
+        private ClientMessage.ReadAllEventsBackwardCompleted _result;
         private int _completed;
 
         private Guid _corrId;
@@ -81,7 +81,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.ReadAllEventsBackward(_position.CommitPosition,
+                var dto = new ClientMessage.ReadAllEventsBackward(_position.CommitPosition,
                                                                    _position.PreparePosition,
                                                                    _maxCount,
                                                                    _resolveLinkTos);
@@ -101,7 +101,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessages.ReadAllEventsBackwardCompleted>();
+                var dto = data.Deserialize<ClientMessage.ReadAllEventsBackwardCompleted>();
                 _result = dto;
                 return new InspectionResult(InspectionDecision.Succeed);
             }
