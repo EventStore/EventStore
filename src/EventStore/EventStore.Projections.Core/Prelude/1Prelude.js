@@ -72,22 +72,6 @@ function scope($on, $notify) {
         _log(message);
     }
 
-    function on(eventName, eventHandler) {
-        $log("Obsoleted: 'on'");
-        eventProcessor.on_pure(eventName, function (state, ev) {
-            eventHandler.call(state, ev);
-            return state;
-        });
-    }
-
-    function on_pure(eventName, eventHandler) {
-        $log("Obsoleted: 'on_pure'");
-        eventProcessor.on_pure(eventName, function (state, ev) {
-            state = eventHandler(state, ev);
-            return state;
-        });
-    }
-
     function translateOn(handlers) {
 
         for (var name in handlers) {
@@ -187,9 +171,7 @@ function scope($on, $notify) {
 
     return {
         log: queryLog,
-        on: on,
 
-        on_pure: on_pure,
         on_any: eventProcessor.on_any,
         on_raw: eventProcessor.on_raw,
 
