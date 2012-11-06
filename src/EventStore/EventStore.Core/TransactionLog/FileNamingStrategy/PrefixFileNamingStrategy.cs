@@ -24,22 +24,24 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
+
 using System;
 using System.IO;
 using EventStore.Common.Utils;
 
-namespace EventStore.Core.TransactionLog
+namespace EventStore.Core.TransactionLog.FileNamingStrategy
 {
-    public class VersionedPatternFileNamingStrategy : IFileNamingStrategy
+    public class PrefixFileNamingStrategy : IFileNamingStrategy 
     {
         private readonly string _path;
         private readonly string _prefix;
 
-        public VersionedPatternFileNamingStrategy(string path, string prefix)
+        public PrefixFileNamingStrategy(string path, string prefix)
         {
             Ensure.NotNull(path, "path");
             Ensure.NotNull(prefix, "prefix");
+
             _path = path;
             _prefix = prefix;
         }
@@ -49,20 +51,17 @@ namespace EventStore.Core.TransactionLog
             Ensure.Nonnegative(index, "index");
             Ensure.Nonnegative(version, "version");
 
-            return Path.Combine(_path, string.Format("{0}{1:000000}.{2:000000}", _prefix, index, version));
+            return Path.Combine(_path, _prefix + index);
         }
 
         public string[] GetAllVersionsFor(int index)
         {
-            var versions = Directory.GetFiles(_path, string.Format("{0}{1:000000}.*", _prefix, index));
-            Array.Sort(versions, StringComparer.CurrentCultureIgnoreCase);
-            Array.Reverse(versions);
-            return versions;
+            return Directory.GetFiles(_path, _prefix + index);
         }
 
         public string[] GetAllPresentFiles()
         {
-            return Directory.GetFiles(_path, string.Format("{0}*.*", _prefix));
+            return Directory.GetFiles(_path, _prefix + "*");
         }
 
         public string GetTempFilename()

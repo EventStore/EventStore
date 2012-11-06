@@ -26,7 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-namespace EventStore.Core.TransactionLog
+namespace EventStore.Core.TransactionLog.FileNamingStrategy
 {
     public interface IFileNamingStrategy
     {
