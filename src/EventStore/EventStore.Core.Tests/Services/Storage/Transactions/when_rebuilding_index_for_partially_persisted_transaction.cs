@@ -54,7 +54,6 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             ReadIndex.Close();
             ReadIndex.Dispose();
 
-            Thread.Sleep(500);
             TableIndex.ClearAll(removeFiles: false);
 
             TableIndex = new TableIndex(Path.Combine(PathName, "index"),
@@ -70,18 +69,6 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamMetadata>());
             ReadIndex.Build();
-        }
-
-        public override void TestFixtureTearDown()
-        {
-            try
-            {
-                base.TestFixtureTearDown();
-            }
-            catch
-            {
-                // TODO AN this is VERY bad, but it fails only on CI on Windows, not priority to check who holds lock on file
-            }
         }
 
         protected override void WriteTestScenario()

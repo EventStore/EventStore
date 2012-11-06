@@ -103,10 +103,10 @@ namespace EventStore.Core.Tests.Services.Storage
 
         public override void TestFixtureTearDown()
         {
-            TableIndex.ClearAll();
-
             ReadIndex.Close();
             ReadIndex.Dispose();
+            
+            TableIndex.ClearAll();
 
             Db.Close();
             Db.Dispose();
