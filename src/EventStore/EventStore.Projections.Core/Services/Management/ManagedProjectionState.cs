@@ -31,6 +31,7 @@ namespace EventStore.Projections.Core.Services.Management
     {
         Creating,
         Loading,
+        Starting,
         Running,
         Faulted,
         Stopping,

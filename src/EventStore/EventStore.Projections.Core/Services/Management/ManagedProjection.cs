@@ -219,6 +219,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionMessage.Projections.StatusReport.Started message)
         {
+            _state = ManagedProjectionState.Running;
         }
 
         public void Handle(ProjectionMessage.Projections.StatusReport.Stopped message)
@@ -388,7 +389,8 @@ namespace EventStore.Projections.Core.Services.Management
             if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
             if (config == null) throw new ArgumentNullException("config");
 
-            if (_state == ManagedProjectionState.Running)
+            //TODO: which states are allowed here?
+            if (_state == ManagedProjectionState.Running || _state == ManagedProjectionState.Starting)
                 throw new InvalidOperationException("Already started");
 
             //TODO: load configuration from the definition
@@ -415,7 +417,7 @@ namespace EventStore.Projections.Core.Services.Management
                 });
 
             //note: set runnign before start as coreProjection.start() can respond with faulted
-            _state = ManagedProjectionState.Running;
+            _state = ManagedProjectionState.Starting;
             _coreQueue.Publish(createProjectionMessage);
             _coreQueue.Publish(new ProjectionMessage.Projections.Management.Start(_id));
         }
