@@ -49,25 +49,9 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         {
             var now = DateTime.UtcNow;
 
-            long curPos;
             const string metadata = @"{""$maxAge"":60,""$maxCount"":3}";
 
-            var streamCreated = new PrepareLogRecord(0,
-                                                     Guid.NewGuid(),
-                                                     Guid.NewGuid(),
-                                                     0,
-                                                     0,
-                                                     "ES",
-                                                     ExpectedVersion.NoStream,
-                                                     now.AddSeconds(-100),
-                                                     PrepareFlags.Data | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                                     SystemEventTypes.StreamCreated,
-                                                     LogRecord.NoData,
-                                                     Encoding.UTF8.GetBytes(metadata));
-            _r1 = new EventRecord(0, streamCreated);
-            Writer.Write(streamCreated, out curPos);
-            Writer.Write(LogRecord.Commit(curPos, Guid.NewGuid(), 0, 0), out curPos);
-
+            _r1 = WriteStreamCreated("ES", metadata, now.AddSeconds(-100));
             _r2 = WriteSingleEvent("ES", 1, "bla1", now.AddSeconds(-50));
             _r3 = WriteSingleEvent("ES", 2, "bla1", now.AddSeconds(-20));
             _r4 = WriteSingleEvent("ES", 3, "bla1", now.AddSeconds(-11));
