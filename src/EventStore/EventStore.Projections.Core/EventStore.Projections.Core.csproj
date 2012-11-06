@@ -75,9 +75,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="nunit.framework">
-      <HintPath>..\libs\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
@@ -177,10 +174,6 @@
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
       <Name>EventStore.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj">
-      <Project>{6BC8929C-FFD0-4EE6-ACF8-BDF4A3855AF4}</Project>
-      <Name>EventStore.Core.Tests</Name>
     </ProjectReference>
     <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj">
       <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>

@@ -248,23 +248,13 @@
     <Compile Include="TransactionLog\LogRecords\LogRecord.cs" />
     <Compile Include="TransactionLog\LogRecords\LogRecordType.cs" />
     <Compile Include="TransactionLog\LogRecords\PrepareLogRecord.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileReader.cs" />
     <Compile Include="TransactionLog\ITransactionFileWriter.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileBulkRetriever.cs" />
     <Compile Include="TransactionLog\IFileNamingStrategy.cs" />
-    <Compile Include="TransactionLog\TransactionFileDatabaseConfig.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileChaser.cs" />
-    <Compile Include="TransactionLog\TransactionFileDatabaseValidator.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileWriter.cs" />
     <Compile Include="TransactionLog\PrefixFileNamingStrategy.cs" />
     <Compile Include="SingleVNode.cs" />
     <Compile Include="Util\MiniWeb.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">
-      <Project>{A794D3FB-06AC-471F-AB8D-6E98CBFA0021}</Project>
-      <Name>EventStore.BufferManagement</Name>
-    </ProjectReference>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
       <Name>EventStore.Common</Name>

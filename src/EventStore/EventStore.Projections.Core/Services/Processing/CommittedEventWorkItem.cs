@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void Load(CheckpointTag checkpointTag)
         {
-            _projection.BeginStatePartitionLoad(_partition, _message.CheckpointTag, LoadCompleted);
+            Projection.BeginStatePartitionLoad(_partition, _message.CheckpointTag, LoadCompleted);
         }
 
         private void LoadCompleted()
@@ -57,13 +57,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void ProcessEvent()
         {
-            _projection.ProcessCommittedEvent(this, _message, _partition);
+            Projection.ProcessCommittedEvent(this, _message, _partition);
             NextStage();
         }
 
         protected override void WriteOutput()
         {
-            _projection.FinalizeEventProcessing(_scheduledWrites, _message.CheckpointTag, _message.Progress);
+            Projection.FinalizeEventProcessing(_scheduledWrites, _message.CheckpointTag, _message.Progress);
             NextStage();
         }
 

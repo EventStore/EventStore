@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
                 "projection", new MultiStreamPositionTagger(new[] { "a", "b" }), _projectionStateUpdatesStreamId);
         }
 
-        protected virtual void Given()
+        protected new virtual void Given()
         {
             _projectionStateUpdatesStreamId = "$projections-projection-state";
             _projectionCorrelationId = Guid.NewGuid();

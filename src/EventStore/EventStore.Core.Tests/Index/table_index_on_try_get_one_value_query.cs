@@ -35,15 +35,17 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class table_index_on_try_get_one_value_query
+    public class table_index_on_try_get_one_value_query  :SpecificationWithDirectory
     {
         private TableIndex _tableIndex;
         private string _indexDir;
 
         [SetUp]
-        public void SetUp()
+        public override void SetUp()
         {
-            _indexDir = Path.Combine(Path.GetTempPath(), "idx-" + Guid.NewGuid().ToString());
+            base.SetUp();
+
+            _indexDir = base.PathName;
             _tableIndex = new TableIndex(_indexDir, () => new HashListMemTable(), maxSizeForMemory: 5);
             _tableIndex.Initialize();
 
@@ -64,6 +66,15 @@ namespace EventStore.Core.Tests.Index
                             
             _tableIndex.Add(0, 0xDEAD, 1, 0xFF11); // in memtable
             _tableIndex.Add(0, 0xADA, 0, 0xFF00); // in memtable
+        }
+
+
+        [TearDown]
+        public override void TearDown()
+        {
+            _tableIndex.ClearAll();
+
+            base.TearDown();
         }
 
         [Test]
@@ -89,12 +100,6 @@ namespace EventStore.Core.Tests.Index
             Assert.That(res[0].Stream, Is.EqualTo(0xADA));
             Assert.That(res[0].Version, Is.EqualTo(0));
             Assert.That(res[0].Position, Is.EqualTo(0xFF00));
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _tableIndex.ClearAll();
         }
     }
 }

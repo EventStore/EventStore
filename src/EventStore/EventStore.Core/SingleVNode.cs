@@ -37,6 +37,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;

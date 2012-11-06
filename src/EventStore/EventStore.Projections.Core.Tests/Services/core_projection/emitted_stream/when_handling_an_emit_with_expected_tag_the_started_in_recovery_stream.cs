@@ -72,11 +72,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         }
 
         [Test]
-        public void does_not_publish_not_yet_published_events_if_expected_tag_is_different()
+        public void does_not_publish_not_yet_published_events_if_expected_tag_is_before_last_event_tag()
         {
             _stream.EmitEvents(
                 new[] { new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data",
-                CheckpointTag.FromPosition(200, 150), CheckpointTag.FromPosition(140, 120)) });
+                CheckpointTag.FromPosition(200, 150), CheckpointTag.FromPosition(40, 20)) });
             Assert.AreEqual(0, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Count());
         }
 

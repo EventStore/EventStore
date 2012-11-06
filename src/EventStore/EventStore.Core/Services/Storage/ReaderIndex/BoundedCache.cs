@@ -27,10 +27,8 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex
 {

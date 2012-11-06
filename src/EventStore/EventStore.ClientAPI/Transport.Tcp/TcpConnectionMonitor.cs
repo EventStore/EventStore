@@ -190,6 +190,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                      _pendingReceivedOnLastRun,
                                      measurePeriod);
 
+#if DUMP_STATISTICS
             _log.Debug("# Total connections: {0,3}. Out: {1:0.00}b/s  In: {2:0.00}b/s  Pending Send: {3}  " +
                        "In Send: {4}  Pending Received: {5} Measure Time: {6}",
                        stats.Connections,
@@ -199,7 +200,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                        stats.InSend,
                        stats.PendingSend,
                        stats.MeasureTimeFriendly);
-
+#endif
             return stats;
         }
 

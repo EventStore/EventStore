@@ -448,6 +448,7 @@ namespace EventStore.Core.Index
                 {
                     _indexMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
                     _indexMap.InOrder().ToList().ForEach(x => x.WaitForDestroy(1000));
+                    File.Delete(Path.Combine(_directory, IndexMapFilename));
                 }
                 else
                 {

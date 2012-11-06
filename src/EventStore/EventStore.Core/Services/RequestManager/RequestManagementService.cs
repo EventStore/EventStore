@@ -25,15 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Services.Storage.ReaderIndex;
 
-namespace EventStore.Core.Services
+namespace EventStore.Core.Services.RequestManager
 {
     public class RequestManagementService : IHandle<StorageMessage.CreateStreamRequestCreated>, 
                                             IHandle<StorageMessage.WriteRequestCreated>, 
