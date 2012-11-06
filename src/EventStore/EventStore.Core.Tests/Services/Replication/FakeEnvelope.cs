@@ -29,7 +29,7 @@
 using System.Collections.Generic;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Replication
+namespace EventStore.Core.Tests.Services.Replication
 {
     public class FakeEnvelope : IEnvelope
     {
