@@ -26,12 +26,31 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using System.Collections.Generic;
+using System.Text;
+using EventStore.ClientAPI;
+using EventStore.Core.Services.Transport.Http;
+
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {
-    internal enum WriteMode
+    internal class BankAccountEvent : IEvent
     {
-        SingleEventAtTime,
-        Bucket,
-        Transactional
+        public Guid EventId { get; private set; }
+        public string Type { get; private set; }
+        public byte[] Data { get; private set; }
+        public byte[] Metadata { get; private set; }
+
+        public BankAccountEvent(object accountObject)   
+        {
+            if (accountObject == null)
+                throw new ArgumentNullException("accountObject");
+
+            EventId = Guid.NewGuid();
+            Type = accountObject.GetType().Name;
+
+            Data = Encoding.UTF8.GetBytes(Codec.Json.To(accountObject));
+            Metadata = Encoding.UTF8.GetBytes(Codec.Json.To(new Dictionary<string, object> { { "IsEmpty", true } }));
+        }
     }
 }
