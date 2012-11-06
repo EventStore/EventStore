@@ -162,7 +162,7 @@ namespace EventStore.Projections.Core.Services.Processing
             GoToState(State.Stopping);
         }
 
-        public PartitionStateCache.State GetProjectionState()
+        private PartitionStateCache.State GetProjectionState()
         {
             //TODO: separate requesting valid only state (not catching-up, non-stopped etc)
             //EnsureState(State.StateLoadedSubscribed | State.Stopping | State.Subscribed | State.Paused | State.Resumed | State.Running);
@@ -178,6 +178,7 @@ namespace EventStore.Projections.Core.Services.Processing
             info.StateReason = "";
             info.BufferedEvents = _processingQueue.GetBufferedEventCount();
             info.PartitionsCached = _partitionStateCache.CachedItemCount;
+            info.ReadsInProgress += _readRequestsInProgress;
         }
 
         public void Handle(ProjectionMessage.SubscriptionMessage.CommittedEventReceived message)
