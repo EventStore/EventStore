@@ -41,13 +41,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal class ProjectionsKillScenario : ScenarioBase
     {
-        public ProjectionsKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp,
-                                       int maxConcurrentRequests,
-                                       int connections,
-                                       int streams,
-                                       int eventsPerStream,
-                                       int streamDeleteStep)
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep)
+        public ProjectionsKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath)
+            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
         {
         }
 

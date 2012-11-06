@@ -80,8 +80,9 @@ namespace EventStore.TestClient.Commands
 
         public bool Execute(CommandProcessorContext context, string[] args)
         {
-            if (args.Length != 0 && args.Length != 7)
+            if (args.Length != 0 && false == (args.Length == 7 || args.Length == 8))
                 return false;
+
             var maxConcurrentRequests = MaxConcurrentRequests;
             var connections = ConnectionCount;
             var streams = StreamCount;
@@ -89,8 +90,9 @@ namespace EventStore.TestClient.Commands
             var streamDeleteStep = 7;
             var scenarioName = "LoopingScenario";
             var executionPeriodMinutes = 10;
+            string dbParentPath = null;
 
-            if (args.Length == 7)
+            if (args.Length == 7 || args.Length == 8)
             {
                 try
                 {
@@ -101,26 +103,33 @@ namespace EventStore.TestClient.Commands
                     streamDeleteStep = int.Parse(args[4]);
                     scenarioName = args[5];
                     executionPeriodMinutes = int.Parse(args[6]);
+
+                    if (args.Length == 8)
+                        dbParentPath = args[7];
                 }
                 catch (Exception e)
                 {
                     Log.Error("Invalid arguments ({0})", e.Message);
                     return false;
                 }
+
+               
             }
 
             context.IsAsync();
 
             Log.Info("Running scenario {0} using {1} connections, {2} streams {3} events each deleting every {4}th stream. " +
                      "Period {5} minutes. " +
-                     "Max concurrent ES requests {6}",
+                     "Max concurrent ES requests {6}; " +
+                     "Database path {7};",
                      scenarioName,
                      connections,
                      streams,
                      eventsPerStream,
                      streamDeleteStep,
                      executionPeriodMinutes,
-                     maxConcurrentRequests);
+                     maxConcurrentRequests,
+                     dbParentPath);
 
             var directTcpSender = CreateDirectTcpSender(context);
             var allScenarios = new IScenario[]
@@ -131,24 +140,45 @@ namespace EventStore.TestClient.Commands
                                     streams, 
                                     eventsPerStream, 
                                     streamDeleteStep, 
-                                    TimeSpan.FromMinutes(executionPeriodMinutes)), 
-                new ProjectionsScenario1(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep),
-                new ProjectionsKillScenario(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep),
+                                    TimeSpan.FromMinutes(executionPeriodMinutes),
+                                    dbParentPath), 
+                new ProjectionsScenario1(directTcpSender, 
+                                         maxConcurrentRequests, 
+                                         connections, 
+                                         streams, 
+                                         eventsPerStream, 
+                                         streamDeleteStep, 
+                                         dbParentPath),
+                new ProjectionsKillScenario(directTcpSender, 
+                                            maxConcurrentRequests, 
+                                            connections, 
+                                            streams, 
+                                            eventsPerStream, 
+                                            streamDeleteStep, 
+                                            dbParentPath),
                 new LoopingProjectionKillScenario(directTcpSender, 
                                                   maxConcurrentRequests, 
                                                   connections, 
                                                   streams, 
                                                   eventsPerStream, 
                                                   streamDeleteStep, 
-                                                  TimeSpan.FromMinutes(executionPeriodMinutes)), 
-                new MassProjectionsScenario(directTcpSender, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep),
+                                                  TimeSpan.FromMinutes(executionPeriodMinutes),
+                                                  dbParentPath), 
+                new MassProjectionsScenario(directTcpSender, 
+                                            maxConcurrentRequests, 
+                                            connections, 
+                                            streams, 
+                                            eventsPerStream, 
+                                            streamDeleteStep, 
+                                            dbParentPath),
                 new ProjectionWrongTagCheck(directTcpSender, 
-                                              maxConcurrentRequests, 
-                                              connections, 
-                                              streams, 
-                                              eventsPerStream, 
-                                              streamDeleteStep, 
-                                              TimeSpan.FromMinutes(executionPeriodMinutes)), 
+                                            maxConcurrentRequests, 
+                                            connections, 
+                                            streams, 
+                                            eventsPerStream, 
+                                            streamDeleteStep, 
+                                            TimeSpan.FromMinutes(executionPeriodMinutes),
+                                            dbParentPath), 
                 };
 
             Log.Info("Found scenarios ({0} total).", allScenarios.Length);
