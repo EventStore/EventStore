@@ -32,6 +32,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
@@ -72,22 +73,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _paused = false;
             _pauseRequested = false;
             _logger.Trace("Resuming event distribution {0} at '{1}'", _distibutionPointCorrelationId, _from);
-            RequestEvents();
-        }
-
-        private void RequestEvents()
-        {
-            if (_disposed) throw new InvalidOperationException("Disposed");
-            if (_eventsRequested)
-                throw new InvalidOperationException("Read operation is already in progress");
-            if (_pauseRequested || _paused)
-                throw new InvalidOperationException("Paused or pause requested");
-            _eventsRequested = true;
-
-            _publisher.Publish(
-                new ClientMessage.ReadAllEventsForward(
-                    _distibutionPointCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
-                    _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, true));
+            RequestEvents(delay: false);
         }
 
         public override void Pause()
@@ -131,13 +117,44 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
                 _from = message.Result.NextPos;
             }
+
+
             if (_pauseRequested)
                 _paused = true;
+            else if (message.Result.Records.Length == 0)
+                RequestEvents(delay: true);
             else
-                //TODO: we may publish this message somewhere 10 events before the end of the chunk
+                _publisher.Publish(CreateTickMessage());
+
+        }
+
+        private ProjectionMessage.CoreService.Tick CreateTickMessage()
+        {
+            return
+                new ProjectionMessage.CoreService.Tick(
+                    () => { if (!_paused && !_disposed) RequestEvents(delay: false); });
+        }
+
+        private void RequestEvents(bool delay)
+        {
+            if (_disposed) throw new InvalidOperationException("Disposed");
+            if (_eventsRequested)
+                throw new InvalidOperationException("Read operation is already in progress");
+            if (_pauseRequested || _paused)
+                throw new InvalidOperationException("Paused or pause requested");
+            _eventsRequested = true;
+
+
+            var readEventsForward = new ClientMessage.ReadAllEventsForward(
+                    _distibutionPointCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
+                    _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, true);
+            if (delay)
                 _publisher.Publish(
-                    new ProjectionMessage.CoreService.Tick(
-                        () => { if (!_paused && !_disposed) RequestEvents(); }));
+                    TimerMessage.Schedule.Create(
+                        TimeSpan.FromMilliseconds(250), new PublishEnvelope(_publisher, crossThread: true),
+                        readEventsForward));
+            else
+                _publisher.Publish(readEventsForward);
         }
 
         public override void Dispose()
