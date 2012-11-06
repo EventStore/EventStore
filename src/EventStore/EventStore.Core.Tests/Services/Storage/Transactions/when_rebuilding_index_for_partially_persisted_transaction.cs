@@ -28,7 +28,6 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Threading;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -53,7 +52,6 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
 
             ReadIndex.Close();
             ReadIndex.Dispose();
-
             TableIndex.ClearAll(removeFiles: false);
 
             TableIndex = new TableIndex(Path.Combine(PathName, "index"),
