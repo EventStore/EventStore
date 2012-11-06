@@ -40,7 +40,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Transactions
 {
-    [TestFixture]
+    [TestFixture, Ignore]
     public class when_rebuilding_index_for_partially_persisted_transaction : ReadIndexTestScenario
     {
         private const int MaxEntriesInMemTable = 10;
