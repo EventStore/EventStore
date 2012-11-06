@@ -440,6 +440,7 @@ namespace EventStore.Projections.Core.Services.Management
                     _stopCompleted += completed;
                     return;
                 case ManagedProjectionState.Running:
+                case ManagedProjectionState.Starting:
                     _state = ManagedProjectionState.Stopping;
                     _stopCompleted = completed;
                     _coreQueue.Publish(new ProjectionMessage.Projections.Management.Stop(_id));
