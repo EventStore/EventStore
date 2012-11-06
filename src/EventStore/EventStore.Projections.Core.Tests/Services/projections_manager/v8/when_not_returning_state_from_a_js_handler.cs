@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [Test]
-        public void process_event_should_reflect_event()
+        public void process_event_should_return_updated_state()
         {
             string state;
             EmittedEvent[] emittedEvents;
