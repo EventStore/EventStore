@@ -1,5 +1,4 @@
-﻿
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -31,7 +30,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 

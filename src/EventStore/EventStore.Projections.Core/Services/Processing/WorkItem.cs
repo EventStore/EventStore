@@ -32,7 +32,8 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class WorkItem : StagedTask
     {
-        protected readonly CoreProjection _projection;
+        protected readonly CoreProjection Projection;
+
         private readonly int _lastStage;
         private Action<int> _complete;
         private int _onStage;
@@ -41,7 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected WorkItem(CoreProjection projection, string stream)
             : base(stream)
         {
-            _projection = projection;
+            Projection = projection;
             _lastStage = 2;
         }
 
@@ -51,7 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("CheckpointTag has not been initialized");
             _complete = readyForStage;
             _onStage = onStage;
-            _projection.EnsureTickPending();
+            Projection.EnsureTickPending();
             switch (onStage)
             {
                 case 0:

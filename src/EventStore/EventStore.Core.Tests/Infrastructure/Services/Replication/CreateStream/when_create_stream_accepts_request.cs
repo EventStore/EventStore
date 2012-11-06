@@ -32,7 +32,6 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Infrastructure.Services.Replication.CreateStream

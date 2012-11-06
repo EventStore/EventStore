@@ -24,7 +24,6 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// using System.Collections.Generic;
 
 using System.Collections.Generic;
 using EventStore.Core.Data;
@@ -32,7 +31,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 

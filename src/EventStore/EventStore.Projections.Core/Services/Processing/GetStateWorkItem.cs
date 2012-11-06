@@ -37,13 +37,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _partition;
         private readonly IEnvelope _envelope;
         private readonly Guid _projectionId;
-        private readonly CoreProjection _projection;
         private readonly PartitionStateCache _partitionStateCache;
 
-        public GetStateWorkItem(
-            IEnvelope envelope, Guid projectionId, CoreProjection projection, PartitionStateCache partitionStateCache,
-            string partition)
-            : base(projection, "")
+        public GetStateWorkItem(IEnvelope envelope, 
+                                Guid projectionId, 
+                                CoreProjection projection, 
+                                PartitionStateCache partitionStateCache,
+                                string partition)
+            : base(projection, string.Empty)
         {
             if (envelope == null) throw new ArgumentNullException("envelope");
             if (partitionStateCache == null) throw new ArgumentNullException("partitionStateCache");
@@ -51,13 +52,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _partition = partition;
             _envelope = envelope;
             _projectionId = projectionId;
-            _projection = projection;
             _partitionStateCache = partitionStateCache;
         }
 
         protected override void Load(CheckpointTag checkpointTag)
         {
-            _projection.BeginStatePartitionLoad(_partition, checkpointTag, LoadCompleted);
+            Projection.BeginStatePartitionLoad(_partition, checkpointTag, LoadCompleted);
         }
 
         private void LoadCompleted()

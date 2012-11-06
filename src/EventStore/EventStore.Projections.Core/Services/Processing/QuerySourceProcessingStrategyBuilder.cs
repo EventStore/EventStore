@@ -32,14 +32,14 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class QuerySourceProcessingStrategyBuilder // name it!!
     {
-        public class Options
+        public class QuerySourceOptions
         {
             public string StateStreamName { get; set; }
 
             public string ForceProjectionName { get; set; }
         }
 
-        protected readonly Options _options = new Options();
+        protected readonly QuerySourceOptions _options = new QuerySourceOptions();
         protected bool _allStreams;
         protected List<string> _categories;
         protected List<string> _streams;

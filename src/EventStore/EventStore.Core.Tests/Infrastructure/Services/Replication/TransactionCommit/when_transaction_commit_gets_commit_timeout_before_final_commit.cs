@@ -31,7 +31,6 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 

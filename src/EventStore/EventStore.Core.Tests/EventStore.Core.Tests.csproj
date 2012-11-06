@@ -222,8 +222,6 @@
     <Compile Include="MightyMooseIgnoreAttribute.cs" />
     <Compile Include="SpecificationWithDirectoryPerTestFixture.cs" />
     <Compile Include="SpecificationWithFilePerTestFixture.cs" />
-    <Compile Include="Startup\ComparisonHelper.cs" />
-    <Compile Include="Startup\reading_args_for_vnode_with_id_1.cs" />
     <Compile Include="SpecificationWithDirectory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Infrastructure\Services\TimeService\time_service_should.cs" />
@@ -271,7 +269,6 @@
     <Compile Include="TransactionLog\when_opening_chunked_transaction_file_db_without_previous_files.cs" />
     <Compile Include="TransactionLog\when_opening_multifile_transaction_file_writer_without_previous_files.cs" />
     <Compile Include="TransactionLog\when_reading_an_empty_multifile_transaction_log.cs" />
-    <Compile Include="TransactionLog\when_reading_transaction_log_with_few_records.cs" />
     <Compile Include="TransactionLog\when_reading_bulk_records.cs" />
     <Compile Include="TransactionLog\when_validating_chunked_transaction_db.cs" />
     <Compile Include="TransactionLog\when_validating_multifile_transaction_file_reader_with_previous_files.cs" />

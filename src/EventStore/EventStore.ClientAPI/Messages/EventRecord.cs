@@ -72,5 +72,38 @@ namespace EventStore.ClientAPI.Messages
 
         [ProtoMember(13)]
         public readonly byte[] Metadata;
+
+        public EventRecord()
+        {
+        }
+
+        public EventRecord(int eventNumber, 
+                           long logPosition, 
+                           byte[] correlationId, 
+                           byte[] eventId, 
+                           long transactionPosition, 
+                           int transactionOffset, 
+                           string eventStreamId, 
+                           int expectedVersion, 
+                           DateTime timeStamp, 
+                           ushort flags, 
+                           string eventType, 
+                           byte[] data, 
+                           byte[] metadata)
+        {
+            EventNumber = eventNumber;
+            LogPosition = logPosition;
+            CorrelationId = correlationId;
+            EventId = eventId;
+            TransactionPosition = transactionPosition;
+            TransactionOffset = transactionOffset;
+            EventStreamId = eventStreamId;
+            ExpectedVersion = expectedVersion;
+            TimeStamp = timeStamp;
+            Flags = flags;
+            EventType = eventType;
+            Data = data;
+            Metadata = metadata;
+        }
     }
 }

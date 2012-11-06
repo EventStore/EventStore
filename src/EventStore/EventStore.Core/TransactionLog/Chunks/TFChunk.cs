@@ -1164,7 +1164,9 @@ namespace EventStore.Core.TransactionLog.Chunks
             ReaderWorkItem workItem;
             while (memStreams != null && memStreams.TryDequeue(out workItem))
             {
+#pragma warning disable 420
                 var destructed = Interlocked.Increment(ref _destructedMemStreams);
+#pragma warning restore 420
                 if (destructed == _maxReadThreads)
                     FreeCachedData();
             }
@@ -1227,13 +1229,17 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             if (_selfdestructin54321)
                 throw new FileBeingDeletedException();
+#pragma warning disable 420
             Interlocked.Increment(ref _lockedCount);
+#pragma warning restore 420
             return new TFChunkBulkReader(this, GetSequentialReaderFileStream());
         }
 
         public void ReleaseReader(TFChunkBulkReader reader)
         {
+#pragma warning disable 420
             Interlocked.Decrement(ref _lockedCount);
+#pragma warning restore 420
             if (_selfdestructin54321)
                 TryDestruct();
         }

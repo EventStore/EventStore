@@ -29,7 +29,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
-using EventStore.Core.Services.Monitoring.Utils;
 
 namespace EventStore.Core.Services.Monitoring.Stats
 {

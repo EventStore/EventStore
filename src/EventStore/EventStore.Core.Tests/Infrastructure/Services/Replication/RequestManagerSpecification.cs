@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
@@ -34,7 +35,7 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Replication.TwoPCManager
+namespace EventStore.Core.Tests.Infrastructure.Services.Replication
 {
     public abstract class RequestManagerSpecification
     {
