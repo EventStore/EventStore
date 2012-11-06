@@ -56,6 +56,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UnableToAllocateBufferException.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
+      <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
+      <Name>EventStore.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
