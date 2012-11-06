@@ -38,7 +38,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
     public interface ICheckpoint: IDisposable
     {
         string Name { get; }
-        void Write(long checksum);
+        void Write(long checkpoint);
         void Flush();
         void Close();
 

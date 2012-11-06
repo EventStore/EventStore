@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {

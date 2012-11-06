@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
@@ -38,6 +39,11 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         protected readonly Guid _distibutionPointCorrelationId;
         protected readonly IPublisher _publisher;
+        protected readonly ILogger _logger = LogManager.GetLoggerFor<EventDistributionPoint>();
+
+        protected bool _paused = true;
+        protected bool _pauseRequested = true;
+        protected bool _disposed;
 
         protected EventDistributionPoint(
             IPublisher publisher, Guid distibutionPointCorrelationId)
@@ -49,11 +55,51 @@ namespace EventStore.Projections.Core.Services.Processing
             _distibutionPointCorrelationId = distibutionPointCorrelationId;
         }
 
-        public abstract void Resume();
-        public abstract void Pause();
+        public void Resume()
+        {
+            if (_disposed) throw new InvalidOperationException("Disposed");
+            if (!_pauseRequested)
+                throw new InvalidOperationException("Is not paused");
+            if (!_paused)
+            {
+                _pauseRequested = false;
+                return;
+            }
+
+            _paused = false;
+            _pauseRequested = false;
+            _logger.Trace("Resuming event distribution {0} at '{1}'", _distibutionPointCorrelationId, FromAsText());
+            RequestEvents();
+        }
+
+        public void Pause()
+        {
+            if (_disposed) throw new InvalidOperationException("Disposed");
+            if (_pauseRequested)
+                throw new InvalidOperationException("Pause has been already requested");
+            _pauseRequested = true;
+            if (!AreEventsRequested())
+                _paused = true;
+            _logger.Trace("Pausing event distribution {0} at '{1}'", _distibutionPointCorrelationId, FromAsText());
+        }
+
         public abstract void Handle(ClientMessage.ReadStreamEventsForwardCompleted message);
         public abstract void Handle(ClientMessage.ReadAllEventsForwardCompleted message);
-        public abstract void Dispose();
 
+        public void Dispose()
+        {
+            _disposed = true;
+        }
+
+        protected abstract bool AreEventsRequested();
+        protected abstract string FromAsText();
+        protected abstract void RequestEvents();
+
+        protected ProjectionMessage.CoreService.Tick CreateTickMessage()
+        {
+            return
+                new ProjectionMessage.CoreService.Tick(
+                    () => { if (!_paused && !_disposed) RequestEvents(); });
+        }
     }
 }

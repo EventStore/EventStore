@@ -72,6 +72,12 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             ReadIndex.Build();
         }
 
+        public override void TestFixtureTearDown()
+        {
+            Thread.Sleep(500); // give chance to IndexMap to dump files
+            base.TestFixtureTearDown();
+        }
+
         protected override void WriteTestScenario()
         {
             var begin = WriteTransactionBegin("ES", ExpectedVersion.Any);

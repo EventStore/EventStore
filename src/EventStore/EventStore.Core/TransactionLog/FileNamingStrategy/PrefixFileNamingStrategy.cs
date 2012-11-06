@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,59 +25,53 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using System.Threading;
+using System.IO;
+using EventStore.Common.Utils;
 
-namespace EventStore.Core.TransactionLog.Checkpoint
+namespace EventStore.Core.TransactionLog.FileNamingStrategy
 {
-    public class InMemoryCheckpoint : ICheckpoint
+    public class PrefixFileNamingStrategy : IFileNamingStrategy 
     {
-        public string Name { get { return _name; } }
+        private readonly string _path;
+        private readonly string _prefix;
 
-        private long _last;
-        private long _lastFlushed;
-        private readonly string _name;
-
-        public InMemoryCheckpoint(long initialValue) : this(Guid.NewGuid().ToString(), initialValue) {}
-
-        public InMemoryCheckpoint() : this(Guid.NewGuid().ToString(), 0) {}
-
-        public InMemoryCheckpoint(string name, long initialValue)
+        public PrefixFileNamingStrategy(string path, string prefix)
         {
-            _last = initialValue;
-            _lastFlushed = initialValue;
-            _name = name;
+            Ensure.NotNull(path, "path");
+            Ensure.NotNull(prefix, "prefix");
+
+            _path = path;
+            _prefix = prefix;
         }
 
-        public void Write(long checkpoint)
+        public string GetFilenameFor(int index, int version = 0)
         {
-            Interlocked.Exchange(ref _last, checkpoint);
+            Ensure.Nonnegative(index, "index");
+            Ensure.Nonnegative(version, "version");
+
+            return Path.Combine(_path, _prefix + index);
         }
 
-        public long Read()
+        public string[] GetAllVersionsFor(int index)
         {
-            return Interlocked.Read(ref _lastFlushed);
+            return Directory.GetFiles(_path, _prefix + index);
         }
 
-        public long ReadNonFlushed()
+        public string[] GetAllPresentFiles()
         {
-            return Interlocked.Read(ref _last);
+            return Directory.GetFiles(_path, _prefix + "*");
         }
 
-        public void Flush()
+        public string GetTempFilename()
         {
-            var last = Interlocked.Read(ref _last);
-            Interlocked.Exchange(ref _lastFlushed, last);
+            return Path.Combine(_path, string.Format("{0}.tmp", Guid.NewGuid()));
         }
 
-        public void Close()
+        public string[] GetAllTempFiles()
         {
-            //NOOP
-        }
-
-        public void Dispose()
-        {
-            //NOOP
+            return Directory.GetFiles(_path, "*.tmp");
         }
     }
 }

@@ -1,10 +1,10 @@
 // Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -25,54 +25,44 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using System;
-using System.IO;
-using EventStore.Common.Utils;
+using NUnit.Framework;
 
-namespace EventStore.Core.TransactionLog
+namespace EventStore.Core.Tests.Services.Storage.IsStreamDeleted
 {
-    public class VersionedPatternFileNamingStrategy : IFileNamingStrategy
+    [TestFixture]
+    public class when_deleting_stream_spanning_through_multiple_chunks_read_index_should : ReadIndexTestScenario
     {
-        private readonly string _path;
-        private readonly string _prefix;
 
-        public VersionedPatternFileNamingStrategy(string path, string prefix)
+        protected override void WriteTestScenario()
         {
-            Ensure.NotNull(path, "path");
-            Ensure.NotNull(prefix, "prefix");
-            _path = path;
-            _prefix = prefix;
+            WriteStreamCreated("ES");
+            WriteSingleEvent("ES", 1, new string('.', 3000));
+            WriteSingleEvent("ES", 2, new string('.', 3000));
+            WriteSingleEvent("ES", 3, new string('.', 3000));
+            WriteSingleEvent("ES", 4, new string('.', 3000), retryOnFail: true); // chunk 2
+            WriteSingleEvent("ES", 5, new string('.', 3000));
+            WriteSingleEvent("ES", 6, new string('.', 3000));
+            WriteSingleEvent("ES", 7, new string('.', 3000), retryOnFail: true); // chunk 3
+
+            WriteDelete("ES");
         }
 
-        public string GetFilenameFor(int index, int version = 0)
+        [Test]
+        public void indicate_that_stream_is_deleted()
         {
-            Ensure.Nonnegative(index, "index");
-            Ensure.Nonnegative(version, "version");
-
-            return Path.Combine(_path, string.Format("{0}{1:000000}.{2:000000}", _prefix, index, version));
+            Assert.That(ReadIndex.IsStreamDeleted("ES"));
         }
 
-        public string[] GetAllVersionsFor(int index)
+        [Test]
+        public void indicate_that_nonexisting_stream_with_same_hash_is_not_deleted()
         {
-            var versions = Directory.GetFiles(_path, string.Format("{0}{1:000000}.*", _prefix, index));
-            Array.Sort(versions, StringComparer.CurrentCultureIgnoreCase);
-            Array.Reverse(versions);
-            return versions;
+            Assert.That(ReadIndex.IsStreamDeleted("ZZ"), Is.False);
         }
 
-        public string[] GetAllPresentFiles()
+        [Test]
+        public void indicate_that_nonexisting_stream_with_different_hash_is_not_deleted()
         {
-            return Directory.GetFiles(_path, string.Format("{0}*.*", _prefix));
-        }
-
-        public string GetTempFilename()
-        {
-            return Path.Combine(_path, string.Format("{0}.tmp", Guid.NewGuid()));
-        }
-
-        public string[] GetAllTempFiles()
-        {
-            return Directory.GetFiles(_path, "*.tmp");
+            Assert.That(ReadIndex.IsStreamDeleted("XXX"), Is.False);
         }
     }
 }

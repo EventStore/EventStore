@@ -40,13 +40,8 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class TransactionFileReaderEventDistributionPoint : EventDistributionPoint
     {
-        private readonly ILogger _logger = LogManager.GetLoggerFor<TransactionFileReaderEventDistributionPoint>();
-
-        private bool _paused = true;
-        private bool _pauseRequested = true;
         private bool _eventsRequested = false;
         private int _maxReadCount = 50;
-        private bool _disposed;
         private EventPosition _from;
         private readonly bool _deliverEndOfTfPosition;
 
@@ -59,32 +54,19 @@ namespace EventStore.Projections.Core.Services.Processing
             _deliverEndOfTfPosition = deliverEndOfTFPosition;
         }
 
-        public override void Resume()
+        protected override void RequestEvents()
         {
-            if (_disposed) throw new InvalidOperationException("Disposed");
-            if (!_pauseRequested)
-                throw new InvalidOperationException("Is not paused");
-            if (!_paused)
-            {
-                _pauseRequested = false;
-                return;
-            }
-            
-            _paused = false;
-            _pauseRequested = false;
-            _logger.Trace("Resuming event distribution {0} at '{1}'", _distibutionPointCorrelationId, _from);
             RequestEvents(delay: false);
         }
 
-        public override void Pause()
+        protected override string FromAsText()
         {
-            if (_disposed) throw new InvalidOperationException("Disposed");
-            if (_pauseRequested)
-                throw new InvalidOperationException("Pause has been already requested");
-            _pauseRequested = true;
-            if (!_eventsRequested)
-                _paused = true;
-            _logger.Trace("Pausing event distribution {0} at '{1}", _distibutionPointCorrelationId, _from);
+            return _from.ToString();
+        }
+
+        protected override bool AreEventsRequested()
+        {
+            return _eventsRequested;
         }
 
         public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
@@ -128,13 +110,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         }
 
-        private ProjectionMessage.CoreService.Tick CreateTickMessage()
-        {
-            return
-                new ProjectionMessage.CoreService.Tick(
-                    () => { if (!_paused && !_disposed) RequestEvents(delay: false); });
-        }
-
         private void RequestEvents(bool delay)
         {
             if (_disposed) throw new InvalidOperationException("Disposed");
@@ -145,9 +120,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested = true;
 
 
-            var readEventsForward = new ClientMessage.ReadAllEventsForward(
-                    _distibutionPointCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
-                    _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, true);
+            var readEventsForward = CreateReadEventsMessage();
             if (delay)
                 _publisher.Publish(
                     TimerMessage.Schedule.Create(
@@ -157,9 +130,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 _publisher.Publish(readEventsForward);
         }
 
-        public override void Dispose()
+        private Message CreateReadEventsMessage()
         {
-            _disposed = true;
+            return new ClientMessage.ReadAllEventsForward(
+                _distibutionPointCorrelationId, new SendToThisEnvelope(this), _from.CommitPosition,
+                _from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount, true);
         }
 
         private void DeliverLastCommitPosition(EventPosition lastPosition)

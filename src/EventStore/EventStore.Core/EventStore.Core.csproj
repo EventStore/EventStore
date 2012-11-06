@@ -140,6 +140,9 @@
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
+    <Compile Include="TransactionLog\Checkpoint\FileMultiCheckpoint.cs" />
+    <Compile Include="TransactionLog\Checkpoint\IMultiCheckpoint.cs" />
+    <Compile Include="TransactionLog\Checkpoint\InMemMultiCheckpoint.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkBulkReader.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkScavenger.cs" />
     <Compile Include="Services\Transport\Http\Configure.cs" />
@@ -166,7 +169,7 @@
     <Compile Include="TransactionLog\Chunks\TFChunk.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkManager.cs" />
     <Compile Include="TransactionLog\RecordWriteResult.cs" />
-    <Compile Include="TransactionLog\VersionedPatternFileNamingStrategy.cs" />
+    <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
     <Compile Include="Util\MD5Hash.cs" />
     <Compile Include="Messages\ClientMessageDtos.cs" />
     <Compile Include="Messages\MonitoringMessage.cs" />
@@ -249,8 +252,8 @@
     <Compile Include="TransactionLog\LogRecords\LogRecordType.cs" />
     <Compile Include="TransactionLog\LogRecords\PrepareLogRecord.cs" />
     <Compile Include="TransactionLog\ITransactionFileWriter.cs" />
-    <Compile Include="TransactionLog\IFileNamingStrategy.cs" />
-    <Compile Include="TransactionLog\PrefixFileNamingStrategy.cs" />
+    <Compile Include="TransactionLog\FileNamingStrategy\IFileNamingStrategy.cs" />
+    <Compile Include="TransactionLog\FileNamingStrategy\PrefixFileNamingStrategy.cs" />
     <Compile Include="SingleVNode.cs" />
     <Compile Include="Util\MiniWeb.cs" />
   </ItemGroup>

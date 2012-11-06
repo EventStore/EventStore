@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 {
     [TestFixture]
-    public class when_having_stream_with_maxage_specified: ReadIndexTestScenario
+    public class with_invalid_max_count_and_normal_max_age: ReadIndexTestScenario
     {
         private EventRecord _r1;
         private EventRecord _r2;
@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         {
             var now = DateTime.UtcNow;
 
-            const string metadata = @"{""$maxAge"":10}";
+            const string metadata = @"{""$maxAge"":21,""$maxCount"":2.1}";
 
             _r1 = WriteStreamCreated("ES", metadata, now.AddSeconds(-100));
             _r2 = WriteSingleEvent("ES", 1, "bla1", now.AddSeconds(-50));
@@ -60,26 +60,18 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         }
 
         [Test]
-        public void single_event_read_doesnt_return_stream_created_event()
-        {
-            EventRecord record;
-            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("ES", 0, out record));
-            Assert.IsNull(record);
-        }
-
-        [Test]
-        public void single_event_read_doesnt_return_expired_events_and_returns_all_actual_ones()
+        public void on_single_event_read_invalid_value_is_ignored()
         {
             EventRecord record;
             Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("ES", 0, out record));
             Assert.IsNull(record);
             Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("ES", 1, out record));
             Assert.IsNull(record);
-            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("ES", 2, out record));
-            Assert.IsNull(record);
-            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("ES", 3, out record));
-            Assert.IsNull(record);
 
+            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 2, out record));
+            Assert.AreEqual(_r3, record);
+            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 3, out record));
+            Assert.AreEqual(_r4, record);
             Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 4, out record));
             Assert.AreEqual(_r5, record);
             Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 5, out record));
@@ -87,27 +79,31 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         }
 
         [Test]
-        public void forward_range_read_doesnt_return_expired_records()
+        public void on_forward_range_read_invalid_value_is_ignored()
         {
             EventRecord[] records;
             Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsForward("ES", 0, 100, out records));
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_r5, records[0]);
-            Assert.AreEqual(_r6, records[1]);
+            Assert.AreEqual(4, records.Length);
+            Assert.AreEqual(_r3, records[0]);
+            Assert.AreEqual(_r4, records[1]);
+            Assert.AreEqual(_r5, records[2]);
+            Assert.AreEqual(_r6, records[3]);
         }
 
         [Test]
-        public void backward_range_read_doesnt_return_expired_records()
+        public void on_backward_range_read_invalid_value_is_ignored()
         {
             EventRecord[] records;
             Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("ES", -1, 100, out records));
-            Assert.AreEqual(2, records.Length);
+            Assert.AreEqual(4, records.Length);
             Assert.AreEqual(_r6, records[0]);
             Assert.AreEqual(_r5, records[1]);
+            Assert.AreEqual(_r4, records[2]);
+            Assert.AreEqual(_r3, records[3]);
         }
 
         [Test]
-        public void read_all_forward_returns_all_records_including_expired_ones()
+        public void on_read_all_forward_both_values_are_ignored()
         {
             var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records;
             Assert.AreEqual(6, records.Count);
@@ -120,7 +116,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         }
 
         [Test]
-        public void read_all_backward_returns_all_records_including_expired_ones()
+        public void on_read_all_backward_both_values_are_ignored()
         {
             var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
             var records = ReadIndex.ReadAllEventsBackward(pos, 100).Records;
