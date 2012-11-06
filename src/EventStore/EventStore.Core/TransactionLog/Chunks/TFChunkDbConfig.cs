@@ -51,7 +51,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                                int cachedChunkCount,
                                ICheckpoint writerCheckpoint, 
                                ICheckpoint chaserCheckpoint,
-                               IEnumerable<ICheckpoint> namedCheckpoints)
+                               params ICheckpoint[] namedCheckpoints)
         {
             Ensure.NotNullOrEmpty(path, "path");
             Ensure.NotNull(fileNamingStrategy, "fileNamingStrategy");

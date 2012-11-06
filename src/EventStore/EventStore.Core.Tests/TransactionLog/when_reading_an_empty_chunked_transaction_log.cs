@@ -28,45 +28,51 @@
 using System;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.TransactionLog.MultifileTransactionFile;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_reading_an_empty_multifile_transaction_log : SpecificationWithDirectory
+    public class when_reading_an_empty_chunked_transaction_log : SpecificationWithDirectory
     {
         [Test]
         public void try_read_returns_false_when_writer_checksum_is_zero()
         {
             var writerchk = new InMemoryCheckpoint(0);
-            var config = new TransactionFileDatabaseConfig(PathName, "prefix.tf", 10000, writerchk, new ICheckpoint[0]);
+            var db = new TFChunkDb(new TFChunkDbConfig(PathName,
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
+                                                       10000,
+                                                       0,
+                                                       writerchk,
+                                                       new InMemoryCheckpoint()));
+            db.OpenVerifyAndClean();
 
-            // create db
-            var writer = new MultifileTransactionFileWriter(config);
-            writer.Open();
-            writer.Close();
-
-            var reader = new MultifileTransactionFileChaser(config, new InMemoryCheckpoint(0));
-            reader.Open();
+            var reader = new TFChunkSequentialReader(db, writerchk, 0);
             LogRecord record;
             Assert.IsFalse(reader.TryReadNext(out record));
-            reader.Close();
+
+            db.Close();
         }
 
         [Test]
         public void try_read_does_not_cache_anything_and_returns_record_once_it_is_written_later()
         {
             var writerchk = new InMemoryCheckpoint(0);
-            var config = new TransactionFileDatabaseConfig(PathName, "prefix.tf", 10000, writerchk, new ICheckpoint[0]);
+            var db = new TFChunkDb(new TFChunkDbConfig(PathName,
+                                                       new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
+                                                       10000,
+                                                       0,
+                                                       writerchk,
+                                                       new InMemoryCheckpoint()));
+            db.OpenVerifyAndClean();
 
-            // create db
-            var writer = new MultifileTransactionFileWriter(config);
+            var writer = new TFChunkWriter(db);
             writer.Open();
 
-            var reader = new MultifileTransactionFileChaser(config, new InMemoryCheckpoint(0));
-            reader.Open();
+            var reader = new TFChunkSequentialReader(db, writerchk, 0);
+
             LogRecord record;
             Assert.IsFalse(reader.TryReadNext(out record));
 
@@ -80,6 +86,7 @@ namespace EventStore.Core.Tests.TransactionLog
             Assert.AreEqual(rec, record);
 
             reader.Close();
+            db.Close();
         }
     }
 }

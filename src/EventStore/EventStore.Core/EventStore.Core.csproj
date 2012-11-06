@@ -248,14 +248,8 @@
     <Compile Include="TransactionLog\LogRecords\LogRecord.cs" />
     <Compile Include="TransactionLog\LogRecords\LogRecordType.cs" />
     <Compile Include="TransactionLog\LogRecords\PrepareLogRecord.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileReader.cs" />
     <Compile Include="TransactionLog\ITransactionFileWriter.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileBulkRetriever.cs" />
     <Compile Include="TransactionLog\IFileNamingStrategy.cs" />
-    <Compile Include="TransactionLog\TransactionFileDatabaseConfig.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileChaser.cs" />
-    <Compile Include="TransactionLog\TransactionFileDatabaseValidator.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileWriter.cs" />
     <Compile Include="TransactionLog\PrefixFileNamingStrategy.cs" />
     <Compile Include="SingleVNode.cs" />
     <Compile Include="Util\MiniWeb.cs" />

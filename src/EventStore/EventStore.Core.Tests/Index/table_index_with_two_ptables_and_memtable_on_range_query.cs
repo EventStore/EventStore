@@ -30,7 +30,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
