@@ -89,7 +89,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             var nodeProcessId = StartNode();
 
-            var parallelWritesTimeout = TimeSpan.FromSeconds(240);
+            var parallelWritesTimeout = TimeSpan.FromMinutes((EventsPerStream / 1000.0) * 7);
 
             var parallelWriteTask = RunParallelWrites(runIndex);
 
