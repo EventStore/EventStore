@@ -256,7 +256,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _logger.Trace(
                     "The '{0}' is subscribing to the heading distribution point with TF-EOF marker event at '{1}'",
-                    projectionId, message.Position);
+                    projectionId, message.SafeTransactionFileReaderJoinPosition);
             }
 
             Guid distributionPointId = message.CorrelationId;

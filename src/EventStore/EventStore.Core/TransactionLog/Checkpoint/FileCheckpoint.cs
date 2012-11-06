@@ -33,11 +33,14 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 {
     public class FileCheckpoint : ICheckpoint
     {
-        private readonly string _filename;
         private readonly string _name;
-        private readonly bool _cached;
+        private readonly string _filename;
         private readonly FileStream _fileStream;
-        private long _last, _lastFlushed;
+        
+        private long _last;
+        private long _lastFlushed;
+        private readonly bool _cached;
+        
         private readonly BinaryWriter _writer;
         private readonly BinaryReader _reader;
 
@@ -80,9 +83,9 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             get { return _name; }
         }
 
-        public void Write(long checksum)
+        public void Write(long checkpoint)
         {
-            Interlocked.Exchange(ref _last, checksum);
+            Interlocked.Exchange(ref _last, checkpoint);
         }
 
         public void Flush()

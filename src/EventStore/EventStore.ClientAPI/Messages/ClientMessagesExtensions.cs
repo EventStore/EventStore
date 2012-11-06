@@ -48,7 +48,6 @@ namespace EventStore.ClientAPI.Messages
                     return new IPEndPoint(IPAddress.Parse(ExternalHttpAddress), ExternalHttpPort);
                 }
             }
-
         }
     }
 }

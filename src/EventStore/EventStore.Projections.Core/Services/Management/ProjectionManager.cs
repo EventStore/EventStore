@@ -341,9 +341,10 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void CreatePredefinedProjections()
         {
-            CreatePredefinedProjection("streams", typeof (IndexStreams), "");
-            CreatePredefinedProjection("stream_by_category", typeof(CategorizeStreamByPath), "-");
-            CreatePredefinedProjection("by_category", typeof(CategorizeEventsByStreamPath), "-");
+            CreatePredefinedProjection("$streams", typeof (IndexStreams), "");
+            CreatePredefinedProjection("$stream_by_category", typeof(CategorizeStreamByPath), "-");
+            CreatePredefinedProjection("$by_category", typeof(CategorizeEventsByStreamPath), "-");
+            CreatePredefinedProjection("$by_event_type", typeof(IndexEventsByEventType), "");
         }
 
         private void CreatePredefinedProjection(string name, Type handlerType, string config)

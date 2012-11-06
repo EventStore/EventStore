@@ -111,7 +111,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             get { return _byStream; }
         }
 
-        public Options Options 
+        public QuerySourceOptions Options 
         {
             get { return _options; }
         }

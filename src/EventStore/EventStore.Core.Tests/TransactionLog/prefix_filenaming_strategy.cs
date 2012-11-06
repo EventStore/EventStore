@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog

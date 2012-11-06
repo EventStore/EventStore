@@ -42,13 +42,10 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class MultiStreamReaderEventDistributionPoint : EventDistributionPoint
     {
-        private readonly ILogger _logger = LogManager.GetLoggerFor<MultiStreamReaderEventDistributionPoint>();
         private readonly HashSet<string> _streams;
         private CheckpointTag _fromPositions;
         private readonly bool _resolveLinkTos;
 
-        private bool _paused = true;
-        private bool _pauseRequested = true;
         private readonly HashSet<string> _eventsRequested = new HashSet<string>();
         private readonly Dictionary<string, long?> _preparePositions = new Dictionary<string, long?>();
 
@@ -57,7 +54,6 @@ namespace EventStore.Projections.Core.Services.Processing
             new Dictionary<string, Queue<Tuple<EventRecord, EventRecord, float>>>();
 
         private int _maxReadCount = 111;
-        private bool _disposed;
         private long? _safePositionToJoin;
 
         public MultiStreamReaderEventDistributionPoint(
@@ -91,31 +87,19 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public override void Resume()
+        protected override string FromAsText()
         {
-            if (_disposed) throw new InvalidOperationException("Disposed");
-            if (!_pauseRequested)
-                throw new InvalidOperationException("Is not paused");
-            if (!_paused)
-            {
-                _pauseRequested = false;
-                return;
-            }
-            _paused = false;
-            _pauseRequested = false;
-            _logger.Trace("Resuming event distribution {0} at '{1}'", _distibutionPointCorrelationId, _fromPositions);
+            return _fromPositions.ToString();
+        }
+
+        protected override void RequestEvents()
+        {
             RequestEventsAll();
         }
 
-        public override void Pause()
+        protected override bool AreEventsRequested()
         {
-            if (_disposed) throw new InvalidOperationException("Disposed");
-            if (_pauseRequested)
-                throw new InvalidOperationException("Pause has been already requested");
-            _pauseRequested = true;
-            if (_eventsRequested.Count == 0)
-                _paused = true;
-            _logger.Trace("Pausing event distribution {0} at '{1}'", _distibutionPointCorrelationId, _fromPositions);
+            return _eventsRequested.Count != 0;
         }
 
         public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
@@ -218,11 +202,6 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotImplementedException();
         }
 
-        public override void Dispose()
-        {
-            _disposed = true;
-        }
-
         private void RequestEventsAll()
         {
             if (_pauseRequested || _paused)
@@ -254,13 +233,6 @@ namespace EventStore.Projections.Core.Services.Processing
                         readEventsForward));
             else
                 _publisher.Publish(readEventsForward);
-        }
-
-        private ProjectionMessage.CoreService.Tick CreateTickMessage()
-        {
-            return
-                new ProjectionMessage.CoreService.Tick(
-                    () => { if (!_disposed) RequestEventsAll(); });
         }
 
         private void DeliverSafePositionToJoin()

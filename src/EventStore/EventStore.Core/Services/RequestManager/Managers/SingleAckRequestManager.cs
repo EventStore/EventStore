@@ -28,7 +28,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Security.Policy;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;

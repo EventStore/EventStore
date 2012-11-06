@@ -210,9 +210,12 @@ namespace EventStore.Projections.Core.Services.Processing
                     var expectedTag = e.ExpectedTag;
                     var causedByTag = e.CausedByTag;
                     if (expectedTag != null)
-                        if (expectedTag != _lastSubmittedOrCommittedMetadata)
+                        if (DetectConcurrencyViolations(expectedTag))
                         {
-                            RequestRestart("Wrong expected tag");
+                            RequestRestart(
+                                string.Format(
+                                    "Wrong expected tag while submitting write event request to the '{0}' stream.  The last known stream tag is: '{1}'  the expected tag is: '{2}'",
+                                    _streamId, _lastSubmittedOrCommittedMetadata, expectedTag));
                             return;
                         }
                     _lastSubmittedOrCommittedMetadata = causedByTag;
@@ -221,6 +224,16 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             _submittedToWriteEvents = events.ToArray();
             PublishWriteEvents();
+        }
+
+        private bool DetectConcurrencyViolations(CheckpointTag expectedTag)
+        {
+            //NOTE: the following condition is only meant to detect concurrency violations when
+            // another instance of the projection (running in the another node etc) has been writing to 
+            // the same stream.  However, the expected tag sometimes can be greater than last actually written tag
+            // This happens when a projection is restarted from a checkpoint and the checkpoint has been made at 
+            // position not updating the projection state 
+            return expectedTag < _lastSubmittedOrCommittedMetadata;
         }
 
         private void PublishWriteEvents()

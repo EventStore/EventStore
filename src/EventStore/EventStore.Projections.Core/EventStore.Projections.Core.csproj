@@ -75,9 +75,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="nunit.framework">
-      <HintPath>..\libs\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
@@ -107,6 +104,8 @@
     <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\DefaultCheckpointManager.cs" />
     <Compile Include="Services\Processing\GetStateWorkItem.cs" />
+    <Compile Include="Services\Processing\IndexedEventTypeEventFilter.cs" />
+    <Compile Include="Services\Processing\IndexedEventTypesEventFilter.cs" />
     <Compile Include="Services\Processing\MultiStreamCheckpointManager.cs" />
     <Compile Include="Services\Processing\CoreProjectionQueue.cs" />
     <Compile Include="Services\Processing\EventDistributionPoint.cs" />
@@ -161,6 +160,7 @@
     <Compile Include="Services\v8\V8ProjectionStateHandler.cs" />
     <Compile Include="Standard\CategorizeEventsByStreamPath.cs" />
     <Compile Include="Standard\CategorizeStreamByPath.cs" />
+    <Compile Include="Standard\IndexEventsByEventType.cs" />
     <Compile Include="Standard\IndexStreams.cs" />
     <Compile Include="Utils\EnumExtensions.cs" />
     <Compile Include="v8\CompiledScript.cs" />
@@ -174,10 +174,6 @@
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
       <Name>EventStore.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj">
-      <Project>{6BC8929C-FFD0-4EE6-ACF8-BDF4A3855AF4}</Project>
-      <Name>EventStore.Core.Tests</Name>
     </ProjectReference>
     <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj">
       <Project>{D42A5833-4F20-4FCC-B364-6207AE016732}</Project>
@@ -197,9 +193,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Prelude\1Prelude.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Prelude\2--Prelude.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Prelude\Modules.js">

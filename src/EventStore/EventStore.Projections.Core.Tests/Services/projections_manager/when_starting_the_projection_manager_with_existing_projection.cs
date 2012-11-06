@@ -76,12 +76,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         }
 
         [Test]
-        public void projection_status_is_running()
+        public void projection_status_is_starting()
         {
             _manager.Handle(
                 new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, "projection1", true));
             Assert.AreEqual(
-                ManagedProjectionState.Running,
+                ManagedProjectionState.Starting,
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().SingleOrDefault(
                     v => v.Projections[0].Name == "projection1").Projections[0].MasterStatus);
         }

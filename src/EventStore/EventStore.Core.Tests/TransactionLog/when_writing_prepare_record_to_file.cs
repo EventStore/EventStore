@@ -25,71 +25,86 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-/*
+
 using System;
-using System.IO;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.TransactionLog.MultifileTransactionFile;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_writing_prepare_record_to_file
+    public class when_writing_prepare_record_to_file: SpecificationWithDirectoryPerTestFixture
     {
-        private string _tempFileName;
-        private MultifileTransactionFileWriter _transactionFileWriter;
-        private InMemoryCheckpoint _checkSum;
+        private ITransactionFileWriter _writer;
+        private InMemoryCheckpoint _writerCheckpoint;
         private readonly Guid _eventId = Guid.NewGuid();
         private readonly Guid _correlationId = Guid.NewGuid();
         private PrepareLogRecord _record;
+        private TFChunkDb _db;
 
-        [SetUp]
+        [TestFixtureSetUp]
         public void SetUp()
         {
-            _tempFileName = Path.GetTempFileName();
-            _checkSum = new InMemoryCheckpoint();
-            _transactionFileWriter = new MultifileTransactionFileWriter(_tempFileName, _checkSum);
-            _transactionFileWriter.Open();
+            _writerCheckpoint = new InMemoryCheckpoint();
+            _db = new TFChunkDb(new TFChunkDbConfig(PathName,
+                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
+                                                    1024,
+                                                    0,
+                                                    _writerCheckpoint,
+                                                    new InMemoryCheckpoint(),
+                                                    new ICheckpoint[0]));
+            _db.OpenVerifyAndClean();
+            _writer = new TFChunkWriter(_db);
+            _writer.Open();
             _record = new PrepareLogRecord(logPosition: 0xDEAD,
                                            eventId: _eventId,
                                            correlationId: _correlationId,
                                            transactionPosition: 0xDEAD,
+                                           transactionOffset: 0xBEEF,
                                            eventStreamId: "WorldEnding",
                                            expectedVersion: 1234,
                                            timeStamp: new DateTime(2012, 12, 21),
-                // TODO KP to AN : please check if correct replacement for .First | .Last
                                            flags: PrepareFlags.SingleWrite,
                                            eventType: "type",
                                            data: new byte[] { 1, 2, 3, 4, 5 },
                                            metadata: new byte[] {7, 17});
-            _transactionFileWriter.Write(_record);
-            _transactionFileWriter.Flush();
+            long newPos;
+            _writer.Write(_record, out newPos);
+            _writer.Flush();
+        }
+
+        [TestFixtureTearDown]
+        public void Teardown()
+        {
+            _writer.Close();
+            _db.Close();
         }
 
         [Test]
         public void the_data_is_written()
         {
             //TODO MAKE THIS ACTUALLY ASSERT OFF THE FILE AND READER FROM KNOWN FILE
-            using (var reader = new TransactionFileReader(_tempFileName, _checkSum))
+            using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint))
             {
                 reader.Open();
-                LogRecord r = null;
-                Assert.IsTrue(reader.ReadEvent(ref r));
+                LogRecord r;
+                Assert.IsTrue(reader.TryReadNext(out r));
 
                 Assert.True(r is PrepareLogRecord);
                 var p = (PrepareLogRecord) r;
                 Assert.AreEqual(p.RecordType, LogRecordType.Prepare);
                 Assert.AreEqual(p.LogPosition, 0xDEAD);
                 Assert.AreEqual(p.TransactionPosition, 0xDEAD);
+                Assert.AreEqual(p.TransactionOffset, 0xBEEF);
                 Assert.AreEqual(p.CorrelationId, _correlationId);
                 Assert.AreEqual(p.EventId, _eventId);
                 Assert.AreEqual(p.EventStreamId, "WorldEnding");
                 Assert.AreEqual(p.ExpectedVersion, 1234);
                 Assert.AreEqual(p.TimeStamp, new DateTime(2012, 12, 21));
-
-                // TODO KP to AN : please check if correct replacement for .First | .Last: PrepareFlags.First | PrepareFlags.Last
                 Assert.AreEqual(p.Flags, PrepareFlags.SingleWrite);
                 Assert.AreEqual(p.EventType, "type");
                 Assert.AreEqual(p.Data.Length, 5);
@@ -100,25 +115,17 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void the_checksum_is_updated()
         {
-            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _checkSum.Read());
+            Assert.AreEqual(_record.GetSizeWithLengthPrefixAndSuffix(), _writerCheckpoint.Read());
         }
 
         [Test]
         public void trying_to_read_past_writer_checksum_returns_false()
         {
-            using (var reader = new TransactionFileReader(_tempFileName, new InMemoryCheckpoint(0)))
+            using (var reader = new TFChunkReader(_db, _writerCheckpoint))
             {
-                LogRecord record = null;
                 reader.Open();
-                Assert.IsFalse(reader.TryReadAt(ref record, 5));
+                Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read()).Success);
             }
-        }
-
-        [TearDown]
-        public void Teardown()
-        {
-            _transactionFileWriter.Close();
         }
     }
 }
-*/

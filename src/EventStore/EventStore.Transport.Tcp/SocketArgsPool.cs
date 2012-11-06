@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Net.Sockets;
-using System.Threading;
 
 namespace EventStore.Transport.Tcp
 {
@@ -41,9 +40,6 @@ namespace EventStore.Transport.Tcp
 #else
         private readonly System.Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new System.Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
 #endif
-
-        private int _getArgs = 0;
-        private int _returnedArgs = 0;
 
         public SocketArgsPool(string name, int initialCount, Func<SocketAsyncEventArgs> socketArgsCreator)
         {
@@ -63,10 +59,6 @@ namespace EventStore.Transport.Tcp
 
         public SocketAsyncEventArgs Get()
         {
-            var getArgs = Interlocked.Increment(ref _getArgs);
-            if (getArgs % 100 == 0)
-                Console.WriteLine("SocketAsyncEventArgs get from {0}: {1}", _name, getArgs);
-
             SocketAsyncEventArgs result;
             if (_socketArgsPool.TryPop(out result))
                 return result;
@@ -75,10 +67,6 @@ namespace EventStore.Transport.Tcp
 
         public void Return(SocketAsyncEventArgs socketArgs)
         {
-            var retArgs = Interlocked.Increment(ref _returnedArgs);
-            if (retArgs % 100 == 0)
-                Console.WriteLine("SocketAsyncEventArgs return from {0}: {1}", _name, retArgs);
-
             _socketArgsPool.Push(socketArgs);
         }
     }
