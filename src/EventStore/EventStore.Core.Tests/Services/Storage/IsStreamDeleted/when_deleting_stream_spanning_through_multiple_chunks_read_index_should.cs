@@ -1,10 +1,10 @@
 // Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,17 +24,45 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-namespace EventStore.Projections.Core.Services.Management
+//  
+using NUnit.Framework;
+
+namespace EventStore.Core.Tests.Services.Storage.IsStreamDeleted
 {
-    public enum ManagedProjectionState
+    [TestFixture]
+    public class when_deleting_stream_spanning_through_multiple_chunks_read_index_should : ReadIndexTestScenario
     {
-        Creating,
-        Loading,
-        Starting,
-        Running,
-        Faulted,
-        Stopping,
-        Stopped
+
+        protected override void WriteTestScenario()
+        {
+            WriteStreamCreated("ES");
+            WriteSingleEvent("ES", 1, new string('.', 3000));
+            WriteSingleEvent("ES", 2, new string('.', 3000));
+            WriteSingleEvent("ES", 3, new string('.', 3000));
+            WriteSingleEvent("ES", 4, new string('.', 3000), retryOnFail: true); // chunk 2
+            WriteSingleEvent("ES", 5, new string('.', 3000));
+            WriteSingleEvent("ES", 6, new string('.', 3000));
+            WriteSingleEvent("ES", 7, new string('.', 3000), retryOnFail: true); // chunk 3
+
+            WriteDelete("ES");
+        }
+
+        [Test]
+        public void indicate_that_stream_is_deleted()
+        {
+            Assert.That(ReadIndex.IsStreamDeleted("ES"));
+        }
+
+        [Test]
+        public void indicate_that_nonexisting_stream_with_same_hash_is_not_deleted()
+        {
+            Assert.That(ReadIndex.IsStreamDeleted("ZZ"), Is.False);
+        }
+
+        [Test]
+        public void indicate_that_nonexisting_stream_with_different_hash_is_not_deleted()
+        {
+            Assert.That(ReadIndex.IsStreamDeleted("XXX"), Is.False);
+        }
     }
 }
