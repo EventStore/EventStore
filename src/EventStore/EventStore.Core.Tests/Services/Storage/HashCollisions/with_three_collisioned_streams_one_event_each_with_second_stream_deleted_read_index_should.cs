@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
@@ -36,13 +37,14 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
     public class with_three_collisioned_streams_one_event_each_with_second_stream_deleted_read_index_should : ReadIndexTestScenario
     {
         private EventRecord _prepare1;
+        private EventRecord _prepare2;
         private EventRecord _prepare3;
 
         protected override void WriteTestScenario()
         {
             _prepare1 = WriteSingleEvent("AB", 0, "test1");
 
-            WriteSingleEvent("CD", 0, "test2");
+            _prepare2 = WriteSingleEvent("CD", 0, "test2");
             WriteDelete("CD");
 
             _prepare3 = WriteSingleEvent("EF", 0, "test3");
@@ -235,6 +237,27 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             EventRecord[] records;
             Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.ReadStreamEventsBackward("ZZ", 0, 1, out records));
             Assert.AreEqual(0, records.Length);
+        }
+
+        [Test]
+        public void return_all_events_excluding_delete_event_on_read_all_forward()
+        {
+            var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+            Assert.AreEqual(3, events.Length);
+            Assert.AreEqual(_prepare1, events[0]);
+            Assert.AreEqual(_prepare2, events[1]);
+            Assert.AreEqual(_prepare3, events[2]);
+        }
+
+        [Test]
+        public void return_all_events_excluding_delete_event_on_read_all_backward()
+        {
+            var pos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());
+            var events = ReadIndex.ReadAllEventsBackward(pos, 100).Records.Select(r => r.Event).ToArray();
+            Assert.AreEqual(3, events.Length);
+            Assert.AreEqual(_prepare1, events[2]);
+            Assert.AreEqual(_prepare2, events[1]);
+            Assert.AreEqual(_prepare3, events[0]);
         }
     }
 }
