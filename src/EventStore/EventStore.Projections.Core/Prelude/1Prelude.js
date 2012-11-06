@@ -91,8 +91,8 @@ function scope($on, $notify) {
     function translateOn(handlers) {
 
         for (var name in handlers) {
-            if (name == 0) {
-                eventProcessor.on_init_state(handlers[0]);
+            if (name == 0 || name === "$init") {
+                eventProcessor.on_init_state(handlers[name]);
             }
             else {
                 eventProcessor.on_pure(name, handlers[name]);

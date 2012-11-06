@@ -202,9 +202,6 @@
     <Content Include="Prelude\1Prelude.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Prelude\2--Prelude.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Prelude\Modules.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
