@@ -41,7 +41,7 @@ namespace EventStore.Core.Bus
     /// </summary>
     public class InMemoryBus : IBus, ISubscriber, IPublisher, IHandle<Message>
     {
-        public const int DefaultSlowMessageThresholdMs = 32;
+        public const int DefaultSlowMessageThresholdMs = 48;
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<InMemoryBus>();
 

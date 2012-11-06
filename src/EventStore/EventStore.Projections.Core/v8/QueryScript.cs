@@ -277,6 +277,9 @@ namespace EventStore.Projections.Core.v8
             [DataMember(Name = "stateStreamName")]
             public string StateStreamName { get; set; }
 
+            [DataMember(Name = "useEventIndexes")]
+            public bool UseEventIndexes { get; set; }
+
             [DataMember(Name = "$forceProjectionName")]
             public string ForceProjectionName { get; set; }
         }
