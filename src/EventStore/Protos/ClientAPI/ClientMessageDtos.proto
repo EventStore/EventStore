@@ -2,7 +2,7 @@ package EventStore.ClientAPI.Messages;
 
 message EventLinkPair {
 	required EventRecord event = 1;
-	optional EventRecord link = 2;
+	required EventRecord link = 2;
 }
 
 message ClientEvent {
@@ -21,7 +21,7 @@ message EventRecord {
 	required int32 transaction_offset = 6;
 	required string event_stream_id = 7;
 	required int32 expected_version = 8;
-	required int64 timestamp = 9;
+	required int64 time_stamp = 9;
 	required uint32 flags = 10;
 	required string event_type = 11;
 	required bytes data = 12;
@@ -83,7 +83,7 @@ message DeleteStreamCompleted {
 message ReadEvent {
 	required string event_stream_id = 1;
 	required int32 event_number = 2;
-	required bool resolve_linktos = 3;
+	required bool resolve_link_tos = 3;
 }
 
 message ReadEventCompleted {
@@ -100,7 +100,7 @@ message ReadStreamEventsForward {
 	required string event_stream_id = 1;
 	required int32 start_index = 2;
 	required int32 max_count = 3;
-	required bool resolve_linktos = 4;
+	required bool resolve_link_tos = 4;
 	required bool return_last_event_number = 5;
 }
 
@@ -116,7 +116,7 @@ message ReadStreamEventsBackward {
 	required string event_stream_id = 1;
 	required int32 start_index = 2;
 	required int32 max_count = 3;
-	required bool resolve_linktos = 4;
+	required bool resolve_link_tos = 4;
 }
 
 message ReadStreamEventsBackwardCompleted {
@@ -130,7 +130,7 @@ message ReadAllEventsForward {
 	required int64 commit_position = 1;
 	required int64 prepare_position = 2;
 	required int32 max_count = 3;
-	required bool resolve_linktos = 4;
+	required bool resolve_link_tos = 4;
 }
 
 message ReadAllEventsForwardCompleted {
@@ -145,7 +145,7 @@ message ReadAllEventsBackward {
 	required int64 commit_position = 1;
 	required int64 prepare_position = 2;
 	required int32 max_count = 3;
-	required bool resolve_linktos = 4;
+	required bool resolve_link_tos = 4;
 }
 
 message ReadAllEventsBackwardCompleted {

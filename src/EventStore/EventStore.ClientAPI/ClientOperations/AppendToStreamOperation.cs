@@ -41,7 +41,7 @@ namespace EventStore.ClientAPI.ClientOperations
     internal class AppendToStreamOperation : IClientOperation
     {
         private readonly TaskCompletionSource<object> _source;
-        private ClientMessages.WriteEventsCompleted _result;
+        private ClientMessage.WriteEventsCompleted _result;
         private int _completed;
 
         private Guid _correlationId;
@@ -87,8 +87,8 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dtos = _events.Select(x => new ClientMessages.ClientEvent(x.EventId.ToByteArray(), x.Type, x.Data, x.Metadata)).ToArray();
-                var write = new ClientMessages.WriteEvents(_stream, _expectedVersion, dtos, _forward);
+                var dtos = _events.Select(x => new ClientMessage.ClientEvent(x.EventId.ToByteArray(), x.Type, x.Data, x.Metadata)).ToArray();
+                var write = new ClientMessage.WriteEvents(_stream, _expectedVersion, dtos, _forward);
                 return new TcpPackage(TcpCommand.WriteEvents, _correlationId, write.Serialize());
             }
         }
@@ -99,7 +99,7 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 if (package.Command == TcpCommand.DeniedToRoute)
                 {
-                    var route = package.Data.Deserialize<ClientMessages.DeniedToRoute>();
+                    var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
                     return new InspectionResult(InspectionDecision.Reconnect,
                                                 data: new EndpointsPair(route.ExternalTcpEndPoint,
                                                                         route.ExternalHttpEndPoint));
@@ -112,7 +112,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessages.WriteEventsCompleted>();
+                var dto = data.Deserialize<ClientMessage.WriteEventsCompleted>();
                 _result = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)

@@ -11,7 +11,7 @@ namespace EventStore.ClientAPI.ClientOperations
     internal class ReadStreamEventsBackwardOperation : IClientOperation
     {
         private readonly TaskCompletionSource<EventStreamSlice> _source;
-        private ClientMessages.ReadStreamEventsBackwardCompleted _result;
+        private ClientMessage.ReadStreamEventsBackwardCompleted _result;
         private int _completed;
 
         private Guid _correlationId;
@@ -57,7 +57,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.ReadStreamEventsBackward(_stream, _start, _count, _resolveLinkTos);
+                var dto = new ClientMessage.ReadStreamEventsBackward(_stream, _start, _count, _resolveLinkTos);
                 return new TcpPackage(TcpCommand.ReadStreamEventsBackward, _correlationId, dto.Serialize());
             }
         }
@@ -74,7 +74,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessages.ReadStreamEventsBackwardCompleted>();
+                var dto = data.Deserialize<ClientMessage.ReadStreamEventsBackwardCompleted>();
                 _result = dto;
 
                 switch ((RangeReadResult)dto.Result)

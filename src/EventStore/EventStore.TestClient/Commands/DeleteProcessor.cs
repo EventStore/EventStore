@@ -58,7 +58,7 @@ namespace EventStore.TestClient.Commands
             context.IsAsync();
 
             var corrid = Guid.NewGuid();
-            var deleteDto = new ClientMessageDto.DeleteStream(eventStreamId, expectedVersion);
+            var deleteDto = new TcpClientMessageDto.DeleteStream(eventStreamId, expectedVersion, true);
             var package = new TcpPackage(TcpCommand.DeleteStream, corrid, deleteDto.Serialize());
 
             var sw = new Stopwatch();
@@ -82,7 +82,7 @@ namespace EventStore.TestClient.Commands
                         return;
                     }
 
-                    var dto = pkg.Data.Deserialize<ClientMessageDto.DeleteStreamCompleted>();
+                    var dto = pkg.Data.Deserialize<TcpClientMessageDto.DeleteStreamCompleted>();
 
                     if (dto.ErrorCode == (int)OperationErrorCode.Success)
                         context.Log.Info("DELETED event stream {0}.", eventStreamId);

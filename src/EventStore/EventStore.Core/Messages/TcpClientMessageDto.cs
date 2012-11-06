@@ -13,9 +13,9 @@ using System.ComponentModel;
 using System.Collections.Generic;
 using ProtoBuf;
 
-namespace EventStore.ClientAPI.Messages
+namespace EventStore.Core.Messages
 {
-  public static partial class ClientMessages
+  public static partial class TcpClientMessageDto
   {
   [Serializable, ProtoContract(Name=@"EventLinkPair")]
   public partial class EventLinkPair
@@ -23,8 +23,10 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(1, IsRequired = true, Name=@"event", DataFormat = DataFormat.Default)]
     public readonly EventRecord Event;
   
-    [ProtoMember(2, IsRequired = false, Name=@"link", DataFormat = DataFormat.Default)]
+    [ProtoMember(2, IsRequired = true, Name=@"link", DataFormat = DataFormat.Default)]
     public readonly EventRecord Link;
+  
+    private EventLinkPair() {}
   
     public EventLinkPair(EventRecord @event, EventRecord link)
     {
@@ -47,6 +49,8 @@ namespace EventStore.ClientAPI.Messages
   
     [ProtoMember(4, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
     public readonly byte[] Metadata;
+  
+    private ClientEvent() {}
   
     public ClientEvent(byte[] eventId, string eventType, byte[] data, byte[] metadata)
     {
@@ -84,8 +88,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(8, IsRequired = true, Name=@"expected_version", DataFormat = DataFormat.TwosComplement)]
     public readonly int ExpectedVersion;
   
-    [ProtoMember(9, IsRequired = true, Name=@"timestamp", DataFormat = DataFormat.TwosComplement)]
-    public readonly long Timestamp;
+    [ProtoMember(9, IsRequired = true, Name=@"time_stamp", DataFormat = DataFormat.TwosComplement)]
+    public readonly long TimeStamp;
   
     [ProtoMember(10, IsRequired = true, Name=@"flags", DataFormat = DataFormat.TwosComplement)]
     public readonly uint Flags;
@@ -99,7 +103,9 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(13, IsRequired = true, Name=@"metadata", DataFormat = DataFormat.Default)]
     public readonly byte[] Metadata;
   
-    public EventRecord(int eventNumber, long logPosition, byte[] correlationId, byte[] eventId, long transactionPosition, int transactionOffset, string eventStreamId, int expectedVersion, long timestamp, uint flags, string eventType, byte[] data, byte[] metadata)
+    private EventRecord() {}
+  
+    public EventRecord(int eventNumber, long logPosition, byte[] correlationId, byte[] eventId, long transactionPosition, int transactionOffset, string eventStreamId, int expectedVersion, long timeStamp, uint flags, string eventType, byte[] data, byte[] metadata)
     {
         EventNumber = eventNumber;
         LogPosition = logPosition;
@@ -109,7 +115,7 @@ namespace EventStore.ClientAPI.Messages
         TransactionOffset = transactionOffset;
         EventStreamId = eventStreamId;
         ExpectedVersion = expectedVersion;
-        Timestamp = timestamp;
+        TimeStamp = timeStamp;
         Flags = flags;
         EventType = eventType;
         Data = data;
@@ -132,6 +138,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"external_http_port", DataFormat = DataFormat.TwosComplement)]
     public readonly int ExternalHttpPort;
   
+    private DeniedToRoute() {}
+  
     public DeniedToRoute(string externalTcpAddress, int externalTcpPort, string externalHttpAddress, int externalHttpPort)
     {
         ExternalTcpAddress = externalTcpAddress;
@@ -153,6 +161,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
     public readonly bool AllowForwarding;
   
+    private CreateStream() {}
+  
     public CreateStream(string eventStreamId, byte[] metadata, bool allowForwarding)
     {
         EventStreamId = eventStreamId;
@@ -172,6 +182,8 @@ namespace EventStore.ClientAPI.Messages
   
     [ProtoMember(3, IsRequired = true, Name=@"error", DataFormat = DataFormat.Default)]
     public readonly string Error;
+  
+    private CreateStreamCompleted() {}
   
     public CreateStreamCompleted(string eventStreamId, int errorCode, string error)
     {
@@ -195,6 +207,8 @@ namespace EventStore.ClientAPI.Messages
   
     [ProtoMember(4, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
     public readonly byte[] Metadata;
+  
+    private Event() {}
   
     public Event(byte[] eventId, string eventType, byte[] data, byte[] metadata)
     {
@@ -220,6 +234,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
     public readonly bool AllowForwarding;
   
+    private WriteEvents() {}
+  
     public WriteEvents(string eventStreamId, int expectedVersion, ClientEvent[] events, bool allowForwarding)
     {
         EventStreamId = eventStreamId;
@@ -244,6 +260,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"event_number", DataFormat = DataFormat.TwosComplement)]
     public readonly int EventNumber;
   
+    private WriteEventsCompleted() {}
+  
     public WriteEventsCompleted(string eventStreamId, int errorCode, string error, int eventNumber)
     {
         EventStreamId = eventStreamId;
@@ -265,6 +283,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
     public readonly bool AllowForwarding;
   
+    private DeleteStream() {}
+  
     public DeleteStream(string eventStreamId, int expectedVersion, bool allowForwarding)
     {
         EventStreamId = eventStreamId;
@@ -285,6 +305,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"error", DataFormat = DataFormat.Default)]
     public readonly string Error;
   
+    private DeleteStreamCompleted() {}
+  
     public DeleteStreamCompleted(string eventStreamId, int errorCode, string error)
     {
         EventStreamId = eventStreamId;
@@ -302,14 +324,16 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(2, IsRequired = true, Name=@"event_number", DataFormat = DataFormat.TwosComplement)]
     public readonly int EventNumber;
   
-    [ProtoMember(3, IsRequired = true, Name=@"resolve_linktos", DataFormat = DataFormat.Default)]
-    public readonly bool ResolveLinktos;
+    [ProtoMember(3, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
   
-    public ReadEvent(string eventStreamId, int eventNumber, bool resolveLinktos)
+    private ReadEvent() {}
+  
+    public ReadEvent(string eventStreamId, int eventNumber, bool resolveLinkTos)
     {
         EventStreamId = eventStreamId;
         EventNumber = eventNumber;
-        ResolveLinktos = resolveLinktos;
+        ResolveLinkTos = resolveLinkTos;
     }
   }
   
@@ -337,6 +361,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(7, IsRequired = true, Name=@"log_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long LogPosition;
   
+    private ReadEventCompleted() {}
+  
     public ReadEventCompleted(string eventStreamId, int eventNumber, int result, string eventType, byte[] data, byte[] metadata, long logPosition)
     {
         EventStreamId = eventStreamId;
@@ -361,18 +387,20 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"max_count", DataFormat = DataFormat.TwosComplement)]
     public readonly int MaxCount;
   
-    [ProtoMember(4, IsRequired = true, Name=@"resolve_linktos", DataFormat = DataFormat.Default)]
-    public readonly bool ResolveLinktos;
+    [ProtoMember(4, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
   
     [ProtoMember(5, IsRequired = true, Name=@"return_last_event_number", DataFormat = DataFormat.Default)]
     public readonly bool ReturnLastEventNumber;
   
-    public ReadStreamEventsForward(string eventStreamId, int startIndex, int maxCount, bool resolveLinktos, bool returnLastEventNumber)
+    private ReadStreamEventsForward() {}
+  
+    public ReadStreamEventsForward(string eventStreamId, int startIndex, int maxCount, bool resolveLinkTos, bool returnLastEventNumber)
     {
         EventStreamId = eventStreamId;
         StartIndex = startIndex;
         MaxCount = maxCount;
-        ResolveLinktos = resolveLinktos;
+        ResolveLinkTos = resolveLinkTos;
         ReturnLastEventNumber = returnLastEventNumber;
     }
   }
@@ -390,12 +418,14 @@ namespace EventStore.ClientAPI.Messages
     public readonly int Result;
   
     [ProtoMember(4, IsRequired = false, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long LastCommitPosition;
+    public readonly long? LastCommitPosition;
   
     [ProtoMember(5, IsRequired = false, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
-    public readonly int LastEventNumber;
+    public readonly int? LastEventNumber;
   
-    public ReadStreamEventsForwardCompleted(string eventStreamId, EventLinkPair[] events, int result, long lastCommitPosition, int lastEventNumber)
+    private ReadStreamEventsForwardCompleted() {}
+  
+    public ReadStreamEventsForwardCompleted(string eventStreamId, EventLinkPair[] events, int result, long? lastCommitPosition, int? lastEventNumber)
     {
         EventStreamId = eventStreamId;
         Events = events;
@@ -417,15 +447,17 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"max_count", DataFormat = DataFormat.TwosComplement)]
     public readonly int MaxCount;
   
-    [ProtoMember(4, IsRequired = true, Name=@"resolve_linktos", DataFormat = DataFormat.Default)]
-    public readonly bool ResolveLinktos;
+    [ProtoMember(4, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
   
-    public ReadStreamEventsBackward(string eventStreamId, int startIndex, int maxCount, bool resolveLinktos)
+    private ReadStreamEventsBackward() {}
+  
+    public ReadStreamEventsBackward(string eventStreamId, int startIndex, int maxCount, bool resolveLinkTos)
     {
         EventStreamId = eventStreamId;
         StartIndex = startIndex;
         MaxCount = maxCount;
-        ResolveLinktos = resolveLinktos;
+        ResolveLinkTos = resolveLinkTos;
     }
   }
   
@@ -442,9 +474,11 @@ namespace EventStore.ClientAPI.Messages
     public readonly int Result;
   
     [ProtoMember(4, IsRequired = false, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long LastCommitPosition;
+    public readonly long? LastCommitPosition;
   
-    public ReadStreamEventsBackwardCompleted(string eventStreamId, EventLinkPair[] events, int result, long lastCommitPosition)
+    private ReadStreamEventsBackwardCompleted() {}
+  
+    public ReadStreamEventsBackwardCompleted(string eventStreamId, EventLinkPair[] events, int result, long? lastCommitPosition)
     {
         EventStreamId = eventStreamId;
         Events = events;
@@ -465,15 +499,17 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"max_count", DataFormat = DataFormat.TwosComplement)]
     public readonly int MaxCount;
   
-    [ProtoMember(4, IsRequired = true, Name=@"resolve_linktos", DataFormat = DataFormat.Default)]
-    public readonly bool ResolveLinktos;
+    [ProtoMember(4, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
   
-    public ReadAllEventsForward(long commitPosition, long preparePosition, int maxCount, bool resolveLinktos)
+    private ReadAllEventsForward() {}
+  
+    public ReadAllEventsForward(long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
         MaxCount = maxCount;
-        ResolveLinktos = resolveLinktos;
+        ResolveLinkTos = resolveLinkTos;
     }
   }
   
@@ -494,6 +530,8 @@ namespace EventStore.ClientAPI.Messages
   
     [ProtoMember(5, IsRequired = true, Name=@"next_prepare_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long NextPreparePosition;
+  
+    private ReadAllEventsForwardCompleted() {}
   
     public ReadAllEventsForwardCompleted(long commitPosition, long preparePosition, EventLinkPair[] events, long nextCommitPosition, long nextPreparePosition)
     {
@@ -517,15 +555,17 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"max_count", DataFormat = DataFormat.TwosComplement)]
     public readonly int MaxCount;
   
-    [ProtoMember(4, IsRequired = true, Name=@"resolve_linktos", DataFormat = DataFormat.Default)]
-    public readonly bool ResolveLinktos;
+    [ProtoMember(4, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
   
-    public ReadAllEventsBackward(long commitPosition, long preparePosition, int maxCount, bool resolveLinktos)
+    private ReadAllEventsBackward() {}
+  
+    public ReadAllEventsBackward(long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
         MaxCount = maxCount;
-        ResolveLinktos = resolveLinktos;
+        ResolveLinkTos = resolveLinkTos;
     }
   }
   
@@ -546,6 +586,8 @@ namespace EventStore.ClientAPI.Messages
   
     [ProtoMember(5, IsRequired = true, Name=@"next_prepare_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long NextPreparePosition;
+  
+    private ReadAllEventsBackwardCompleted() {}
   
     public ReadAllEventsBackwardCompleted(long commitPosition, long preparePosition, EventLinkPair[] events, long nextCommitPosition, long nextPreparePosition)
     {
@@ -569,6 +611,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
     public readonly bool AllowForwarding;
   
+    private TransactionStart() {}
+  
     public TransactionStart(string eventStreamId, int expectedVersion, bool allowForwarding)
     {
         EventStreamId = eventStreamId;
@@ -591,6 +635,8 @@ namespace EventStore.ClientAPI.Messages
   
     [ProtoMember(4, IsRequired = true, Name=@"error", DataFormat = DataFormat.Default)]
     public readonly string Error;
+  
+    private TransactionStartCompleted() {}
   
     public TransactionStartCompleted(long transactionId, string eventStreamId, int errorCode, string error)
     {
@@ -616,6 +662,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
     public readonly bool AllowForwarding;
   
+    private TransactionWrite() {}
+  
     public TransactionWrite(long transactionId, string eventStreamId, ClientEvent[] events, bool allowForwarding)
     {
         TransactionId = transactionId;
@@ -640,6 +688,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"error", DataFormat = DataFormat.Default)]
     public readonly string Error;
   
+    private TransactionWriteCompleted() {}
+  
     public TransactionWriteCompleted(long transactionId, string eventStreamId, int errorCode, string error)
     {
         TransactionId = transactionId;
@@ -661,6 +711,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
     public readonly bool AllowForwarding;
   
+    private TransactionCommit() {}
+  
     public TransactionCommit(long transactionId, string eventStreamId, bool allowForwarding)
     {
         TransactionId = transactionId;
@@ -681,6 +733,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"error", DataFormat = DataFormat.Default)]
     public readonly string Error;
   
+    private TransactionCommitCompleted() {}
+  
     public TransactionCommitCompleted(long transactionId, int errorCode, string error)
     {
         TransactionId = transactionId;
@@ -695,6 +749,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
   
+    private SubscribeToStream() {}
+  
     public SubscribeToStream(string eventStreamId)
     {
         EventStreamId = eventStreamId;
@@ -706,6 +762,8 @@ namespace EventStore.ClientAPI.Messages
   {
     [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
+  
+    private UnsubscribeFromStream() {}
   
     public UnsubscribeFromStream(string eventStreamId)
     {
@@ -756,6 +814,8 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(8, IsRequired = true, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long PreparePosition;
   
+    private StreamEventAppeared() {}
+  
     public StreamEventAppeared(string eventStreamId, int eventNumber, byte[] eventId, string eventType, byte[] data, byte[] metadata, long commitPosition, long preparePosition)
     {
         EventStreamId = eventStreamId;
@@ -774,6 +834,8 @@ namespace EventStore.ClientAPI.Messages
   {
     [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
+  
+    private SubscriptionDropped() {}
   
     public SubscriptionDropped(string eventStreamId)
     {

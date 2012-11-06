@@ -115,11 +115,11 @@ namespace EventStore.TestClient.Commands
 
                     for (int j = 0; j < count; ++j)
                     {
-                        var write = new ClientMessageDto.WriteEventText(
+                        var write = new HttpClientMessageDto.WriteEventText(
                             ExpectedVersion.Any,
                             new[] 
                             { 
-                                new ClientMessageDto.ClientEventText(Guid.NewGuid(), 
+                                new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), 
                                                                "type",
                                                                "DATA" + new string('*', 256),
                                                                "METADATA" + new string('$', 100))

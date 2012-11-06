@@ -105,7 +105,7 @@ namespace EventStore.TestClient.Commands
                             return;
                         }
 
-                        var dto = pkg.Data.Deserialize<ClientMessageDto.WriteEventsCompleted>();
+                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
                         if (dto.ErrorCode == (int)OperationErrorCode.Success)
                         {
                             if (Interlocked.Increment(ref succ) % 1000 == 0)
@@ -131,14 +131,16 @@ namespace EventStore.TestClient.Commands
                 {
                     for (int j = 0; j < count; ++j)
                     {
-                        var writeDto = new ClientMessageDto.WriteEvents(
+                        var writeDto = new TcpClientMessageDto.WriteEvents(
                             eventStreamId,
                             ExpectedVersion.Any,
                             Enumerable.Range(0, writeCnt).Select(x =>
-                                    new ClientMessageDto.ClientEvent(Guid.NewGuid(),
-                                                               "type",
-                                                               Encoding.UTF8.GetBytes(data),
-                                                               new byte[0])).ToArray());
+                                                                 new TcpClientMessageDto.ClientEvent(
+                                                                     Guid.NewGuid().ToByteArray(),
+                                                                     "type",
+                                                                     Encoding.UTF8.GetBytes(data),
+                                                                     new byte[0])).ToArray(),
+                            true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
                         client.EnqueueSend(package.AsByteArray());
                         autoEvent.WaitOne();

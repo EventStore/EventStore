@@ -60,16 +60,17 @@ namespace EventStore.TestClient.Commands
             }
 
             context.IsAsync();
-            var writeDto = new ClientMessageDto.WriteEvents(
+            var writeDto = new TcpClientMessageDto.WriteEvents(
                 eventStreamId,
                 expectedVersion,
-                new[] 
-                { 
-                    new ClientMessageDto.ClientEvent(/*_eventId*/Guid.NewGuid(),
-                                               "TakeSomeSpaceEvent",
-                                               Encoding.UTF8.GetBytes(data),
-                                               Encoding.UTF8.GetBytes(metadata ?? string.Empty))
-                });
+                new[]
+                    {
+                        new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
+                                                            "TakeSomeSpaceEvent",
+                                                            Encoding.UTF8.GetBytes(data),
+                                                            Encoding.UTF8.GetBytes(metadata ?? string.Empty))
+                    },
+                true);
             var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
 
             var sw = new Stopwatch();
@@ -94,7 +95,7 @@ namespace EventStore.TestClient.Commands
                     dataReceived = true;
                     sw.Stop();
 
-                    var dto = pkg.Data.Deserialize<ClientMessageDto.WriteEventsCompleted>();
+                    var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
                     if ((OperationErrorCode)dto.ErrorCode == OperationErrorCode.Success)
                     {
                         context.Log.Info("Successfully written. EventId: {0}.", package.CorrelationId);

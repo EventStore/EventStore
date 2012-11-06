@@ -117,14 +117,11 @@
     <Compile Include="ILogger.cs" />
     <Compile Include="IProjectionsManagement.cs" />
     <Compile Include="AllEventsSlice.cs" />
-    <Compile Include="Messages\ClientEvent.cs" />
     <Compile Include="Messages\ClientMessagesExtensions.cs" />
     <Compile Include="Position.cs" />
     <Compile Include="RecordedEvent.cs" />
     <Compile Include="StreamPosition.cs" />
     <Compile Include="SystemData\EndpointsPair.cs" />
-    <Compile Include="Messages\EventLinkPair.cs" />
-    <Compile Include="Messages\EventRecord.cs" />
     <Compile Include="ExpectedVersion.cs" />
     <Compile Include="SystemData\InspectionResult.cs" />
     <Compile Include="SystemData\OperationErrorCode.cs" />
@@ -144,7 +141,7 @@
     <Compile Include="Transport.Http\IOStreams.cs" />
     <Compile Include="Transport.Http\IPEndpointExtensions.cs" />
     <Compile Include="Transport.Http\WebRequestExtensions.cs" />
-    <Compile Include="Messages\ClientMessages.cs" />
+    <Compile Include="Messages\ClientMessage.cs" />
     <Compile Include="Transport.Tcp\PackageFramingException.cs" />
     <Compile Include="Transport.Tcp\ProtobufExtensions.cs" />
     <Compile Include="Transport.Tcp\TcpConfiguratin.cs" />

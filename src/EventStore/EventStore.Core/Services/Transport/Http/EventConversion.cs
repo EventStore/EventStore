@@ -37,9 +37,9 @@ using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Services.Transport.Http
 {
-    public static class EventConvertion
+    public static class EventConversion
     {
-        public static Event ConvertOnWrite(ClientMessageDto.ClientEventText eventText)
+        public static Event ConvertOnWrite(HttpClientMessageDto.ClientEventText eventText)
         {
             object data;
             object metadata;
@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static string ConvertOnRead(ClientMessage.ReadEventCompleted completed, ICodec responseCodec)
         {
-            var dto = new ClientMessageDto.ReadEventCompletedText(completed);
+            var dto = new HttpClientMessageDto.ReadEventCompletedText(completed);
 
             if (completed.Record.Flags.HasFlag(PrepareFlags.IsJson))
             {

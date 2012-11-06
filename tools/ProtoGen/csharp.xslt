@@ -134,7 +134,7 @@ using <xsl:value-of select="$ns"/>;
       </xsl:variable>
     <xsl:if test="string($namespace) != ''">
 
-namespace <xsl:value-of select="translate($namespace,':-/\','__..')"/>
+namespace <xsl:value-of select="$defaultNamespace"/><!--<xsl:value-of select="translate($namespace,':-/\','__..')"/>-->
 {
   public static partial class <xsl:value-of select="$umbrella"/>
   {</xsl:if>
@@ -171,6 +171,9 @@ namespace <xsl:value-of select="translate($namespace,':-/\','__..')"/>
   --><xsl:if test="$optionObservable">, INotifyPropertyChanged</xsl:if><!--
   --><xsl:if test="$optionPreObservable">, INotifyPropertyChanging</xsl:if>
   {<xsl:apply-templates select="*"/>
+    <xsl:if test="count(child::field/FieldDescriptorProto) > 0">
+    private <xsl:call-template name="pascal"/>() {}
+  </xsl:if>
     public <xsl:call-template name="pascal"/>(<xsl:call-template name="ConstructorParameterList" />)
     {
     <xsl:call-template name="ConstructorAssignment" />}
@@ -195,12 +198,15 @@ namespace <xsl:value-of select="translate($namespace,':-/\','__..')"/>
   </xsl:template>
   <xsl:template match="DescriptorProto/name | DescriptorProto/extension_range | DescriptorProto/extension"/>
 
+  <xsl:variable name="valueTypes">|bool|byte|char|decimal|double|float|int|long|sbyte|short|uint|ulong|ushort|</xsl:variable>
+
   <xsl:template name="ConstructorParameterList" match="DescriptorProto/field">
     <xsl:for-each select="child::field/FieldDescriptorProto">
       <xsl:variable name="fieldProto" select="." />
       <xsl:variable name="field"><xsl:call-template name="toCamelCase"><xsl:with-param name="value" select="$fieldProto/name"/></xsl:call-template></xsl:variable>
-      
-      <xsl:apply-templates select="$fieldProto" mode="type" /><xsl:if test="$fieldProto/label='LABEL_REPEATED'">[]</xsl:if>
+      <xsl:variable name="fieldType"><xsl:apply-templates select="$fieldProto" mode="type" /></xsl:variable>
+
+      <xsl:value-of select="$fieldType" /><xsl:if test="contains($valueTypes,concat('|',$fieldType,'|')) and ($fieldProto/label='LABEL_OPTIONAL' or not(label))">?</xsl:if><xsl:if test="$fieldProto/label='LABEL_REPEATED'">[]</xsl:if>
       <xsl:text> </xsl:text>
       <xsl:call-template name="escapeKeyword">
         <xsl:with-param name="value" select="$field" />
@@ -411,7 +417,7 @@ namespace <xsl:value-of select="translate($namespace,':-/\','__..')"/>
     </xsl:if><xsl:if test="$optionDataContract">
     [Runtime.Serialization.DataMember(Name=@"<xsl:value-of select="name"/>", Order = <xsl:value-of select="number"/>, IsRequired = false)]
     </xsl:if>
-    public readonly <xsl:value-of select="concat($fieldType,' ')"/> <xsl:call-template name="pascal" />;
+    public readonly <xsl:value-of select="$fieldType"/><xsl:if test="contains($valueTypes,concat('|',$fieldType,'|')) and (label='LABEL_OPTIONAL' or not(label))">?</xsl:if><xsl:text> </xsl:text><xsl:call-template name="pascal" />;
   </xsl:template>
   
   <xsl:template match="FieldDescriptorProto[label='LABEL_REQUIRED']">
