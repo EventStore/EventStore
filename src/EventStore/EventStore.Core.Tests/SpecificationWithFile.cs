@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using System.IO;
 using NUnit.Framework;
 
@@ -35,15 +37,16 @@ namespace EventStore.Core.Tests
         protected string Filename;
 
         [SetUp]
-        public void Setup()
+        public virtual void SetUp()
         {
-            Filename = Path.GetTempFileName();
+            Filename = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         }
 
         [TearDown]
-        public void Teardown()
+        public virtual void TearDown()
         {
-            File.Delete(Filename);
+            if (File.Exists(Filename))
+                File.Delete(Filename);
         }
     }
 } 

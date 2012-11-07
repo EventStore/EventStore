@@ -49,13 +49,16 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         {
         }
 
-        public FileCheckpoint(string filename, string name, bool cached = false)
+        public FileCheckpoint(string filename, string name, bool cached = false, bool mustExist = false)
         {
             _filename = filename;
             _name = name;
             _cached = cached;
             var old = File.Exists(filename);
-            _fileStream = new FileStream(_filename, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+            _fileStream = new FileStream(_filename,
+                                         mustExist ? FileMode.Open : FileMode.OpenOrCreate,
+                                         FileAccess.ReadWrite,
+                                         FileShare.ReadWrite);
             if (_fileStream.Length != 8)
                 _fileStream.SetLength(8);
             _reader = new BinaryReader(_fileStream);

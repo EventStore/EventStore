@@ -27,21 +27,21 @@
 // 
 using System;
 using System.IO;
+using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_creating_tfchunk_from_empty_file
+    public class when_creating_tfchunk_from_empty_file: SpecificationWithFile
     {
-        readonly string filename = Path.Combine(Path.GetTempPath(), "foo");
-        private Core.TransactionLog.Chunks.TFChunk _chunk;
+        private TFChunk _chunk;
 
         [SetUp]
         public void Setup()
         {
-            _chunk = Core.TransactionLog.Chunks.TFChunk.CreateNew(filename, 1024, 0, 0);
+            _chunk = TFChunk.CreateNew(Filename, 1024, 0, 0);
         }
 
         [Test]
@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [Test]
         public void the_file_is_created()
         {
-            Assert.IsTrue(File.Exists(filename));
+            Assert.IsTrue(File.Exists(Filename));
         }
 
         [Test]
@@ -104,10 +104,10 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         }
 
         [TearDown]
-        public void TearDown()
+        public override void TearDown()
         {
             _chunk.Dispose();
-            File.Delete(filename);
+            base.TearDown();
         }
     }
 
@@ -118,7 +118,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
     //    private TFChunk _chunk;
 
     //    [SetUp]
-    //    public void Setup()
+    //    public void SetUp()
     //    {
     //        _chunk = TFChunk.CreateNew(filename);
     //    }

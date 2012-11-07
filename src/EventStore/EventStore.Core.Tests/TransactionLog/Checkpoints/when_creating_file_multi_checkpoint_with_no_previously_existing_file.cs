@@ -1,27 +1,46 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.IO;
 using System.Net;
-using System.Text;
 using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Checkpoints
 {
     [TestFixture]
-    public class in_mem_multi_checkpoint
+    public class when_creating_file_multi_checkpoint_with_no_previously_existing_file: SpecificationWithFile
     {
         private static readonly IPEndPoint EndPoint1 = new IPEndPoint(IPAddress.Loopback, 1000);
         private static readonly IPEndPoint EndPoint2 = new IPEndPoint(IPAddress.Loopback, 2000);
         private static readonly IPEndPoint EndPoint3 = new IPEndPoint(IPAddress.Loopback, 3000);
         private static readonly IPEndPoint EndPoint4 = new IPEndPoint(IPAddress.Loopback, 4000);
 
-        private InMemMultiCheckpoint _checkpoint;
+        private FileMultiCheckpoint _checkpoint;
 
         [SetUp]
-        public void SetUp()
+        public override void SetUp()
         {
-            _checkpoint = new InMemMultiCheckpoint(3);
+            base.SetUp();
+
+            Assert.IsFalse(File.Exists(Filename));
+            _checkpoint = new FileMultiCheckpoint(Filename, 3);
+        }
+
+        [TearDown]
+        public override void TearDown()
+        {
+            _checkpoint.Dispose();
+            base.TearDown();
+        }
+
+        [Test]
+        public void the_checkpoint_file_is_created()
+        {
+            Assert.IsTrue(File.Exists(Filename));
+        }
+
+        [Test]
+        public void the_checkpoint_file_is_empty()
+        {
+            Assert.AreEqual(0, new FileInfo(Filename).Length);
         }
 
         [Test]
@@ -30,6 +49,31 @@ namespace EventStore.Core.Tests.TransactionLog.Checkpoints
             long checkpoint;
             Assert.IsFalse(_checkpoint.TryGetMinMax(out checkpoint));
             Assert.AreEqual(0, checkpoint);
+        }
+
+        [Test]
+        public void checkpoints_are_dumped_on_disk_only_after_flush()
+        {
+            _checkpoint.Update(EndPoint1, 1000);
+
+            Assert.AreEqual(0, new FileInfo(Filename).Length);
+
+            _checkpoint.Flush();
+
+            Assert.AreEqual(4 + 4 + 8, new FileInfo(Filename).Length);
+        }
+
+        [Test]
+        public void only_top_n_checkpoints_are_stored_in_file()
+        {
+            _checkpoint.Update(EndPoint1, 1000);
+            _checkpoint.Update(EndPoint2, 2000);
+            _checkpoint.Update(EndPoint3, 3000);
+            _checkpoint.Update(EndPoint4, 4000);
+
+            _checkpoint.Flush();
+
+            Assert.AreEqual((4 + 4 + 8) * 3, new FileInfo(Filename).Length);
         }
 
         [Test]
@@ -43,7 +87,7 @@ namespace EventStore.Core.Tests.TransactionLog.Checkpoints
         }
 
         [Test]
-        public void can_update_single_value_inplace_for_present_endpoint_to_smaller_value()
+        public void can_update_inplace_for_present_endpoint_to_smaller_value()
         {
             _checkpoint.Update(EndPoint1, 1000);
 
@@ -58,7 +102,7 @@ namespace EventStore.Core.Tests.TransactionLog.Checkpoints
         }
 
         [Test]
-        public void can_update_single_value_inplace_for_present_endpoint_to_larger_value()
+        public void can_update_inplace_for_present_endpoint_to_larger_value()
         {
             _checkpoint.Update(EndPoint1, 1000);
 
@@ -102,7 +146,7 @@ namespace EventStore.Core.Tests.TransactionLog.Checkpoints
             _checkpoint.Update(EndPoint1, 1000);
             _checkpoint.Update(EndPoint2, 2000);
             _checkpoint.Update(EndPoint3, 3000);
-            
+
             _checkpoint.Update(EndPoint4, 200);
 
             long checkpoint;
@@ -136,12 +180,6 @@ namespace EventStore.Core.Tests.TransactionLog.Checkpoints
             long checkpoint;
             Assert.IsTrue(_checkpoint.TryGetMinMax(out checkpoint));
             Assert.AreEqual(2000, checkpoint);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            
         }
     }
 }
