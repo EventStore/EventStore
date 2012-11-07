@@ -9,7 +9,7 @@ using NUnit.Framework;
 using System.Linq;
 using Newtonsoft.Json;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Transport.Http
+namespace EventStore.Core.Tests.Services.Transport.Http
 {
     internal static class FakeRequest
     {

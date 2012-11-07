@@ -29,7 +29,7 @@
 using EventStore.Transport.Http;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Infrastructure.Services.Transport.Http
+namespace EventStore.Core.Tests.Services.Transport.Http
 {
     [TestFixture]
     public class accept_component
