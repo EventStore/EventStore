@@ -1,4 +1,4 @@
-package EventStore.ClientAPI.Messages;
+package EventStore.Client.Messages;
 
 message EventLinkPair {
 	required EventRecord event = 1;
@@ -13,19 +13,12 @@ message ClientEvent {
 }
 
 message EventRecord {
-	required int32 event_number = 1;
-	required int64 log_position = 2;
-	required bytes correlation_id = 3;
-	required bytes event_id = 4;
-	required int64 transaction_position = 5;
-	required int32 transaction_offset = 6;
-	required string event_stream_id = 7;
-	required int32 expected_version = 8;
-	required int64 time_stamp = 9;
-	required uint32 flags = 10;
-	required string event_type = 11;
-	required bytes data = 12;
-	required bytes metadata = 13;
+	required string event_stream_id = 1;
+	required int32 event_number = 2;
+	required bytes event_id = 3;
+	required string event_type = 4;
+	required bytes data = 5;
+	required bytes metadata = 6;
 }
 
 message DeniedToRoute {
