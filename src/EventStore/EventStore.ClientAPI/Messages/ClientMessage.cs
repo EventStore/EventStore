@@ -64,59 +64,31 @@ namespace EventStore.ClientAPI.Messages
   [Serializable, ProtoContract(Name=@"EventRecord")]
   public partial class EventRecord
   {
-    [ProtoMember(1, IsRequired = true, Name=@"event_number", DataFormat = DataFormat.TwosComplement)]
-    public readonly int EventNumber;
-  
-    [ProtoMember(2, IsRequired = true, Name=@"log_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long LogPosition;
-  
-    [ProtoMember(3, IsRequired = true, Name=@"correlation_id", DataFormat = DataFormat.Default)]
-    public readonly byte[] CorrelationId;
-  
-    [ProtoMember(4, IsRequired = true, Name=@"event_id", DataFormat = DataFormat.Default)]
-    public readonly byte[] EventId;
-  
-    [ProtoMember(5, IsRequired = true, Name=@"transaction_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long TransactionPosition;
-  
-    [ProtoMember(6, IsRequired = true, Name=@"transaction_offset", DataFormat = DataFormat.TwosComplement)]
-    public readonly int TransactionOffset;
-  
-    [ProtoMember(7, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
+    [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
   
-    [ProtoMember(8, IsRequired = true, Name=@"expected_version", DataFormat = DataFormat.TwosComplement)]
-    public readonly int ExpectedVersion;
+    [ProtoMember(2, IsRequired = true, Name=@"event_number", DataFormat = DataFormat.TwosComplement)]
+    public readonly int EventNumber;
   
-    [ProtoMember(9, IsRequired = true, Name=@"time_stamp", DataFormat = DataFormat.TwosComplement)]
-    public readonly long TimeStamp;
+    [ProtoMember(3, IsRequired = true, Name=@"event_id", DataFormat = DataFormat.Default)]
+    public readonly byte[] EventId;
   
-    [ProtoMember(10, IsRequired = true, Name=@"flags", DataFormat = DataFormat.TwosComplement)]
-    public readonly uint Flags;
-  
-    [ProtoMember(11, IsRequired = true, Name=@"event_type", DataFormat = DataFormat.Default)]
+    [ProtoMember(4, IsRequired = true, Name=@"event_type", DataFormat = DataFormat.Default)]
     public readonly string EventType;
   
-    [ProtoMember(12, IsRequired = true, Name=@"data", DataFormat = DataFormat.Default)]
+    [ProtoMember(5, IsRequired = true, Name=@"data", DataFormat = DataFormat.Default)]
     public readonly byte[] Data;
   
-    [ProtoMember(13, IsRequired = true, Name=@"metadata", DataFormat = DataFormat.Default)]
+    [ProtoMember(6, IsRequired = true, Name=@"metadata", DataFormat = DataFormat.Default)]
     public readonly byte[] Metadata;
   
     private EventRecord() {}
   
-    public EventRecord(int eventNumber, long logPosition, byte[] correlationId, byte[] eventId, long transactionPosition, int transactionOffset, string eventStreamId, int expectedVersion, long timeStamp, uint flags, string eventType, byte[] data, byte[] metadata)
+    public EventRecord(string eventStreamId, int eventNumber, byte[] eventId, string eventType, byte[] data, byte[] metadata)
     {
-        EventNumber = eventNumber;
-        LogPosition = logPosition;
-        CorrelationId = correlationId;
-        EventId = eventId;
-        TransactionPosition = transactionPosition;
-        TransactionOffset = transactionOffset;
         EventStreamId = eventStreamId;
-        ExpectedVersion = expectedVersion;
-        TimeStamp = timeStamp;
-        Flags = flags;
+        EventNumber = eventNumber;
+        EventId = eventId;
         EventType = eventType;
         Data = data;
         Metadata = metadata;

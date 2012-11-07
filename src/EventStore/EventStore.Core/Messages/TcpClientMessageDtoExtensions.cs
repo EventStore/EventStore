@@ -1,7 +1,5 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Util;
 
 namespace EventStore.Core.Messages
 {
@@ -46,25 +44,11 @@ namespace EventStore.Core.Messages
 
         public partial class EventRecord
         {
-            private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
-            private static long UnixTimeStampMillisFromDateTime(DateTime timestamp)
-            {
-                return (long)(timestamp - UnixEpoch).TotalMilliseconds;
-            }
-
             public EventRecord(Data.EventRecord eventRecord)
             {
-                EventNumber = eventRecord.EventNumber;
-                LogPosition = eventRecord.LogPosition;
-                CorrelationId = eventRecord.CorrelationId.ToByteArray();
-                EventId = eventRecord.EventId.ToByteArray();
-                TransactionPosition = eventRecord.TransactionPosition;
-                TransactionOffset = eventRecord.TransactionOffset;
                 EventStreamId = eventRecord.EventStreamId;
-                ExpectedVersion = eventRecord.ExpectedVersion;
-                TimeStamp = UnixTimeStampMillisFromDateTime(eventRecord.TimeStamp);
-                Flags = (ushort)eventRecord.Flags;
+                EventNumber = eventRecord.EventNumber;
+                EventId = eventRecord.EventId.ToByteArray();
                 EventType = eventRecord.EventType;
                 Data = eventRecord.Data;
                 Metadata = eventRecord.Metadata;

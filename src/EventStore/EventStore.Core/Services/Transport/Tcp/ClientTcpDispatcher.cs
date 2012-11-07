@@ -337,15 +337,12 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private static TcpPackage WrapReadStreamEventsForwardCompleted(ClientMessage.ReadStreamEventsForwardCompleted msg)
         {
-            var temp = ConvertToDtos(msg.Events);
-
             var dto = new TcpClientMessageDto.ReadStreamEventsForwardCompleted(msg.EventStreamId,
                                                                             ConvertToDtos(msg.Events),
                                                                             (int)msg.Result,
                                                                             msg.LastCommitPosition,
                                                                             msg.LastEventNumber);
-            var serialized = dto.Serialize();
-            return new TcpPackage(TcpCommand.ReadStreamEventsForwardCompleted, msg.CorrelationId, serialized);
+            return new TcpPackage(TcpCommand.ReadStreamEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 
         private static ClientMessage.ReadStreamEventsBackward UnwrapReadStreamEventsBackward(TcpPackage package,
