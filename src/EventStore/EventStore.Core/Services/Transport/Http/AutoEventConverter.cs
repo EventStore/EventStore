@@ -58,7 +58,7 @@ namespace EventStore.Core.Services.Transport.Http
  
         public static string SmartFormat(ClientMessage.ReadEventCompleted completed, ICodec targetCodec)
         {
-            var dto = new ClientMessageDto.ReadEventCompletedText(completed);
+            var dto = new HttpClientMessageDto.ReadEventCompletedText(completed);
             if (completed.Record.Flags.HasFlag(PrepareFlags.IsJson))
             {
                 var deserializedData = Codec.Json.From<object>((string) dto.Data);
@@ -80,7 +80,7 @@ namespace EventStore.Core.Services.Transport.Http
             return targetCodec.To(dto);
         }
 
-        private static ClientMessageDto.WriteEventsText Load(string s, ICodec sourceCodec)
+        private static HttpClientMessageDto.WriteEventsText Load(string s, ICodec sourceCodec)
         {
             var requestType = sourceCodec.ContentType;
 
@@ -92,12 +92,12 @@ namespace EventStore.Core.Services.Transport.Http
             return null;
         }
 
-        private static ClientMessageDto.WriteEventsText LoadFromJson(string json)
+        private static HttpClientMessageDto.WriteEventsText LoadFromJson(string json)
         {
-            return Codec.Json.From<ClientMessageDto.WriteEventsText>(json);
+            return Codec.Json.From<HttpClientMessageDto.WriteEventsText>(json);
         }
 
-        private static ClientMessageDto.WriteEventsText LoadFromXml(string xml)
+        private static HttpClientMessageDto.WriteEventsText LoadFromXml(string xml)
         {
             try
             {
@@ -110,8 +110,8 @@ namespace EventStore.Core.Services.Transport.Http
                 version.Remove();
 
                 var json = JsonConvert.SerializeXNode(doc, Formatting.None, true);
-                var textEvents = JsonConvert.DeserializeObject<JObject>(json)["Events"].ToObject<ClientMessageDto.ClientEventText[]>();
-                return new ClientMessageDto.WriteEventsText(int.Parse(version.Value), textEvents.ToArray());
+                var textEvents = JsonConvert.DeserializeObject<JObject>(json)["Events"].ToObject<HttpClientMessageDto.ClientEventText[]>();
+                return new HttpClientMessageDto.WriteEventsText(int.Parse(version.Value), textEvents.ToArray());
             }
             catch (Exception e)
             {
@@ -120,7 +120,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        private static Event[] Parse(ClientMessageDto.ClientEventText[] textEvents)
+        private static Event[] Parse(HttpClientMessageDto.ClientEventText[] textEvents)
         {
             var events = new List<Event>(textEvents.Length);
             foreach (var textEvent in textEvents)
