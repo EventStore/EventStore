@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
@@ -51,7 +52,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                                int cachedChunkCount,
                                ICheckpoint writerCheckpoint, 
                                ICheckpoint chaserCheckpoint,
-                               IEnumerable<ICheckpoint> namedCheckpoints)
+                               params ICheckpoint[] namedCheckpoints)
         {
             Ensure.NotNullOrEmpty(path, "path");
             Ensure.NotNull(fileNamingStrategy, "fileNamingStrategy");

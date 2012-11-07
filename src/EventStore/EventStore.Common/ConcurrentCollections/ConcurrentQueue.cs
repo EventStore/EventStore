@@ -24,6 +24,7 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 /*
 Quote from
 
@@ -39,16 +40,8 @@ by Joe Duffy (Author)
 
 */
 
-
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Security;
-using System.Text;
 using System.Threading;
 using System.Collections;
 using System.Collections.Concurrent;

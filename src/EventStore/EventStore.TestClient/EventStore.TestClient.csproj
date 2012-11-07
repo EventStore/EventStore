@@ -48,7 +48,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
@@ -58,7 +57,12 @@
     <Compile Include="CommandsProcessor.cs" />
     <Compile Include="Commands\ReadAllProcessor.cs" />
     <Compile Include="Commands\RunTestScenariosProcessor.cs" />
+    <Compile Include="Commands\RunTestScenarios\BankAccountEvent.cs" />
+    <Compile Include="Commands\RunTestScenarios\LoopingProjectionKillScenario.cs" />
     <Compile Include="Commands\RunTestScenarios\MassProjectionsScenario.cs" />
+    <Compile Include="Commands\RunTestScenarios\ProjectionWrongTagCheck.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Commands\RunTestScenarios\ProjectionsKillScenario.cs" />
     <Compile Include="Commands\RunTestScenarios\IScenario.cs" />
     <Compile Include="Commands\RunTestScenarios\ClientApiLogger.cs" />
@@ -105,6 +109,7 @@
     <Compile Include="PerfUtils.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="MessageUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">

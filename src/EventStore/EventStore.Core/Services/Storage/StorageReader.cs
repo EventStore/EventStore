@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Storage
         private readonly int _threadCount;
         private readonly ICheckpoint _writerCheckpoint;
         private QueuedHandler[] _storageReaderQueues;
-        private int _nextQueueNumber;
+        private int _lastQueueNumber = -1; // to start from queue #0
 
         public StorageReader(IPublisher bus, ISubscriber subscriber, IReadIndex readIndex, int threadCount, ICheckpoint writerCheckpoint)
         {
@@ -112,7 +112,7 @@ namespace EventStore.Core.Services.Storage
 
         public void Handle(Message message)
         {
-            var queueNumber = ((uint)Interlocked.Increment(ref _nextQueueNumber)) % _threadCount;
+            var queueNumber = ((uint)Interlocked.Increment(ref _lastQueueNumber)) % _threadCount;
             _storageReaderQueues[queueNumber].Handle(message);
 
             // TODO AN manage this cyclic thread stopping dependency

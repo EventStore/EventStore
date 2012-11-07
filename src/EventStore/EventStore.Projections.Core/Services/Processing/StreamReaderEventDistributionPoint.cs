@@ -40,16 +40,12 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class StreamReaderEventDistributionPoint : EventDistributionPoint
     {
-        private readonly ILogger _logger = LogManager.GetLoggerFor<StreamReaderEventDistributionPoint>();
         private readonly string _streamName;
         private int _fromSequenceNumber;
         private readonly bool _resolveLinkTos;
 
-        private bool _paused = true;
-        private bool _pauseRequested = true;
         private bool _eventsRequested;
         private int _maxReadCount = 111;
-        private bool _disposed;
 
         public StreamReaderEventDistributionPoint(
             IPublisher publisher, Guid distibutionPointCorrelationId, string streamName, int fromSequenceNumber,
@@ -64,35 +60,19 @@ namespace EventStore.Projections.Core.Services.Processing
             _resolveLinkTos = resolveLinkTos;
         }
 
-        public override void Resume()
+        protected override void RequestEvents()
         {
-            if (_disposed) throw new InvalidOperationException("Disposed");
-            if (!_pauseRequested)
-                throw new InvalidOperationException("Is not paused");
-            if (!_paused)
-            {
-                _pauseRequested = false;
-                return;
-            }
-            _paused = false;
-            _pauseRequested = false;
-            _logger.Trace(
-                "Resuming event distribution {0} at '{1}@{2}'", _distibutionPointCorrelationId, _fromSequenceNumber,
-                _streamName);
             RequestEvents(delay: false);
         }
 
-        public override void Pause()
+        protected override string FromAsText()
         {
-            if (_disposed) throw new InvalidOperationException("Disposed");
-            if (_pauseRequested)
-                throw new InvalidOperationException("Pause has been already requested");
-            _pauseRequested = true;
-            if (!_eventsRequested)
-                _paused = true;
-            _logger.Trace(
-                "Pausing event distribution {0} at '{1}@{2}'", _distibutionPointCorrelationId, _fromSequenceNumber,
-                _streamName);
+            return _fromSequenceNumber + "@" + _streamName;
+        }
+
+        protected override bool AreEventsRequested()
+        {
+            return _eventsRequested;
         }
 
         public override void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
@@ -150,11 +130,6 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotImplementedException();
         }
 
-        public override void Dispose()
-        {
-            _disposed = true;
-        }
-
         private void RequestEvents(bool delay)
         {
             if (_disposed) throw new InvalidOperationException("Disposed");
@@ -165,9 +140,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested = true;
 
 
-            var readEventsForward = new ClientMessage.ReadStreamEventsForward(
-                _distibutionPointCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
-                _maxReadCount, _resolveLinkTos, returnLastEventNumber: true);
+            var readEventsForward = CreateReadEventsMessage();
             if (delay)
                 _publisher.Publish(
                     TimerMessage.Schedule.Create(
@@ -177,11 +150,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 _publisher.Publish(readEventsForward);
         }
 
-        private ProjectionMessage.CoreService.Tick CreateTickMessage()
+        private Message CreateReadEventsMessage()
         {
-            return
-                new ProjectionMessage.CoreService.Tick(
-                    () => { if (!_paused && !_disposed) RequestEvents(delay: false); });
+            return new ClientMessage.ReadStreamEventsForward(
+                _distibutionPointCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
+                _maxReadCount, _resolveLinkTos, returnLastEventNumber: true);
         }
 
         private void DeliverSafeJoinPosition(long safeJoinPosition)

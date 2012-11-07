@@ -93,9 +93,6 @@
   <ItemGroup>
     <Content Include="app.ico" />
     <Content Include="app2.ico" />
-    <Content Include="TextFile.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

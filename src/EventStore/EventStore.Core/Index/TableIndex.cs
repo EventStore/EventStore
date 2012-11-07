@@ -95,7 +95,17 @@ namespace EventStore.Core.Index
                                               IsHashCollision,
                                               _maxTablesPerLevel);
                 if (_indexMap.IsCorrupt(_directory))
+                {
+                    foreach (var ptable in _indexMap.InOrder())
+                    {
+                        ptable.MarkForDestruction();
+                    }
+                    foreach (var ptable in _indexMap.InOrder())
+                    {
+                        ptable.WaitForDestroy(5000);
+                    }
                     throw new CorruptIndexException("IndexMap is in unsafe state.");
+                }
             }
             catch (CorruptIndexException exc)
             {
@@ -224,6 +234,11 @@ namespace EventStore.Core.Index
 
                     mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
                 }
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Error in TableIndex.ReadOffQueue");
+                throw;
             }
             finally
             {
@@ -438,6 +453,7 @@ namespace EventStore.Core.Index
                 {
                     _indexMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
                     _indexMap.InOrder().ToList().ForEach(x => x.WaitForDestroy(1000));
+                    File.Delete(Path.Combine(_directory, IndexMapFilename));
                 }
                 else
                 {

@@ -35,6 +35,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.TestClient", "Ev
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.Web", "EventStore.Web\EventStore.Web.csproj", "{68065B8C-0FDC-473F-9C32-54078E32FD5C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.SingleNode.Web", "EventStore.SingleNode.Web\EventStore.SingleNode.Web.csproj", "{D597790A-0AB4-4962-B50A-B4ACA40765EB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -97,6 +99,10 @@ Global
 		{68065B8C-0FDC-473F-9C32-54078E32FD5C}.Debug|x64.Build.0 = Debug|Any CPU
 		{68065B8C-0FDC-473F-9C32-54078E32FD5C}.Debug|x86.ActiveCfg = Debug|x86
 		{68065B8C-0FDC-473F-9C32-54078E32FD5C}.Debug|x86.Build.0 = Debug|x86
+		{D597790A-0AB4-4962-B50A-B4ACA40765EB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D597790A-0AB4-4962-B50A-B4ACA40765EB}.Debug|x64.Build.0 = Debug|Any CPU
+		{D597790A-0AB4-4962-B50A-B4ACA40765EB}.Debug|x86.ActiveCfg = Debug|x86
+		{D597790A-0AB4-4962-B50A-B4ACA40765EB}.Debug|x86.Build.0 = Debug|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

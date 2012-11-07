@@ -156,7 +156,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             return codec.To(new ClientMessageDto.WriteEventsText(
                 writeEvents.ExpectedVersion,
-                writeEvents.Events.Select(e => new ClientMessageDto.ClientEventText(e.EventId, 
+                writeEvents.Events.Select(e => new HttpClientMessageDto.ClientEventText(e.EventId, 
                                                                                     e.EventType,
                                                                                     e.Data, 
                                                                                     e.Metadata)).ToArray()));

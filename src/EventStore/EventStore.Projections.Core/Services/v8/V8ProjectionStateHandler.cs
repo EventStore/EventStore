@@ -123,6 +123,8 @@ namespace EventStore.Projections.Core.Services.v8
                 builder.SetStateStreamNameOption(sourcesDefintion.Options.StateStreamName);
             if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.ForceProjectionName))
                 builder.SetForceProjectionName(sourcesDefintion.Options.ForceProjectionName);
+            if (sourcesDefintion.Options.UseEventIndexes)
+                builder.SetUseEventIndexes(true);
         }
 
         public void Load(string state)

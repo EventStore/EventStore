@@ -120,7 +120,7 @@ namespace EventStore.TestClient.Commands
                             return;
                         }
 
-                        var dto = pkg.Data.Deserialize<ClientMessageDto.WriteEventsCompleted>();
+                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
                         if (dto.ErrorCode == (int)OperationErrorCode.Success)
                         {
                             var succDone = Interlocked.Increment(ref succ);
@@ -188,16 +188,18 @@ namespace EventStore.TestClient.Commands
                         }
 
                         var dataSize = dataSizeCoefficient * 8;
-                        var write = new ClientMessageDto.WriteEvents(
+                        var write = new TcpClientMessageDto.WriteEvents(
                             esId,
                             ExpectedVersion.Any,
-                            new[] { 
-                                new ClientMessageDto.ClientEvent(
-                                    Guid.NewGuid() ,
-                                    "TakeSomeSpaceEvent",
-                                    Encoding.UTF8.GetBytes("DATA" + dataSize.ToString(" 00000 ") + new string('*', dataSize)),
-                                    Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
-                            });
+                            new[]
+                                {
+                                    new TcpClientMessageDto.ClientEvent(
+                                        Guid.NewGuid().ToByteArray(),
+                                        "TakeSomeSpaceEvent",
+                                        Encoding.UTF8.GetBytes("DATA" + dataSize.ToString(" 00000 ") + new string('*', dataSize)),
+                                        Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
+                                },
+                            true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                         client.EnqueueSend(package.AsByteArray());
 

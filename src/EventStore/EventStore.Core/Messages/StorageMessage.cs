@@ -242,17 +242,6 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class CommitDiscovered : Message
-        {
-            public readonly CommitLogRecord Commit;
-
-            public CommitDiscovered(CommitLogRecord commit)
-            {
-                Ensure.NotNull(commit, "commit");
-                Commit = commit;
-            }
-        }
-
         public class EventCommited: Message
         {
             public readonly long CommitPosition;

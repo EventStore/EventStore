@@ -263,7 +263,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
 
             Action<TcpTypedConnection<byte[]>, TcpPackage> packageHandler = (conn, pkg) =>
             {
-                var dto = pkg.Data.Deserialize<ClientMessageDto.WriteEventsCompleted>();
+                var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
                 switch ((OperationErrorCode)dto.ErrorCode)
                 {
                     case OperationErrorCode.Success:
@@ -326,9 +326,10 @@ namespace EventStore.TestClient.Commands.DvuBasic
                     head = _heads[streamIdx];
                 }
                 var evnt = CreateEvent(_streams[streamIdx], head + 2);
-                var write = new ClientMessageDto.WriteEvents(_streams[streamIdx],
+                var write = new TcpClientMessageDto.WriteEvents(_streams[streamIdx],
                                                              head == -1 ? head : head + 1,
-                                                             new[] {new ClientMessageDto.ClientEvent(evnt)});
+                                                             new[] { ClientEventUtil.FromDataEvent(evnt) },
+                                                             true);
 
                 var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                 connection.EnqueueSend(package.AsByteArray());
@@ -356,7 +357,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
 
             Action<TcpTypedConnection<byte[]>, TcpPackage> packageReceived = (conn, pkg) =>
             {
-                var dto = pkg.Data.Deserialize<ClientMessageDto.ReadEventCompleted>();
+                var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
                 switch ((SingleReadResult)dto.Result)
                 {
                     case SingleReadResult.Success:
@@ -406,7 +407,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                     eventidx = NextRandomEventVersion(rnd, head);
                     var stream = _streams[streamIdx];
                     var corrid = Guid.NewGuid();
-                    var read = new ClientMessageDto.ReadEvent(stream, eventidx, resolveLinkTos: false);
+                    var read = new TcpClientMessageDto.ReadEvent(stream, eventidx, resolveLinkTos: false);
                     var package = new TcpPackage(TcpCommand.ReadEvent, corrid, read.Serialize());
 
                     connection.EnqueueSend(package.AsByteArray());

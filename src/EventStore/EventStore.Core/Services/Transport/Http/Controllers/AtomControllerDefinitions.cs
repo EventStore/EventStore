@@ -317,7 +317,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var entity = manager.HttpEntity;
 
-            var create = entity.RequestCodec.From<ClientMessageDto.CreateStreamText>(body);
+            var create = entity.RequestCodec.From<HttpClientMessageDto.CreateStreamText>(body);
             if (create == null)
             {
                 SendBadRequest(entity, "Create stream request body cannot be deserialized");
@@ -347,7 +347,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var entity = manager.HttpEntity;
             var stream = (string)manager.AsyncState;
 
-            var delete = entity.RequestCodec.From<ClientMessageDto.DeleteStreamText>(body);
+            var delete = entity.RequestCodec.From<HttpClientMessageDto.DeleteStreamText>(body);
             if (delete == null)
             {
                 SendBadRequest(entity, "Delete stream request body cannot be deserialized");

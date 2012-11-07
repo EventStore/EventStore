@@ -115,7 +115,9 @@
     <Compile Include="Index\PTable.cs" />
     <Compile Include="Index\PTableHeader.cs" />
     <Compile Include="Index\SortedListExtensions.cs" />
+    <Compile Include="Messages\HttpClientMessageDto.cs" />
     <Compile Include="Messages\IAmOnlyCaredAboutForTime.cs" />
+    <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
     <Compile Include="Services\ClientService.cs" />
     <Compile Include="Services\RequestManager\Managers\CreateStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\RequestManager\Managers\DeleteStreamTwoPhaseRequestManager.cs" />
@@ -141,6 +143,9 @@
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
+    <Compile Include="TransactionLog\Checkpoint\FileMultiCheckpoint.cs" />
+    <Compile Include="TransactionLog\Checkpoint\IMultiCheckpoint.cs" />
+    <Compile Include="TransactionLog\Checkpoint\InMemMultiCheckpoint.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkBulkReader.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkScavenger.cs" />
     <Compile Include="Services\Transport\Http\Configure.cs" />
@@ -167,9 +172,9 @@
     <Compile Include="TransactionLog\Chunks\TFChunk.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkManager.cs" />
     <Compile Include="TransactionLog\RecordWriteResult.cs" />
-    <Compile Include="TransactionLog\VersionedPatternFileNamingStrategy.cs" />
+    <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
     <Compile Include="Util\MD5Hash.cs" />
-    <Compile Include="Messages\ClientMessageDtos.cs" />
+    <Compile Include="Messages\TcpClientMessageDto.cs" />
     <Compile Include="Messages\MonitoringMessage.cs" />
     <Compile Include="Messages\ReplicationMessageDtos.cs" />
     <Compile Include="Messages\StorageMessage.cs" />
@@ -249,23 +254,13 @@
     <Compile Include="TransactionLog\LogRecords\LogRecord.cs" />
     <Compile Include="TransactionLog\LogRecords\LogRecordType.cs" />
     <Compile Include="TransactionLog\LogRecords\PrepareLogRecord.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileReader.cs" />
     <Compile Include="TransactionLog\ITransactionFileWriter.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileBulkRetriever.cs" />
-    <Compile Include="TransactionLog\IFileNamingStrategy.cs" />
-    <Compile Include="TransactionLog\TransactionFileDatabaseConfig.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileChaser.cs" />
-    <Compile Include="TransactionLog\TransactionFileDatabaseValidator.cs" />
-    <Compile Include="TransactionLog\MultifileTransactionFile\MultifileTransactionFileWriter.cs" />
-    <Compile Include="TransactionLog\PrefixFileNamingStrategy.cs" />
+    <Compile Include="TransactionLog\FileNamingStrategy\IFileNamingStrategy.cs" />
+    <Compile Include="TransactionLog\FileNamingStrategy\PrefixFileNamingStrategy.cs" />
     <Compile Include="SingleVNode.cs" />
     <Compile Include="Util\MiniWeb.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj">
-      <Project>{A794D3FB-06AC-471F-AB8D-6E98CBFA0021}</Project>
-      <Name>EventStore.BufferManagement</Name>
-    </ProjectReference>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
       <Name>EventStore.Common</Name>
