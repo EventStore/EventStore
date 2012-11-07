@@ -27,7 +27,6 @@
 // 
 using System;
 using System.IO;
-using System.Runtime.Serialization;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
@@ -199,6 +198,8 @@ namespace EventStore.Core.Services.Transport.Http
                     }
             };
 
+        public static Formatting Formatting = Formatting.Indented;
+
         public string ContentType
         {
             get
@@ -237,36 +238,11 @@ namespace EventStore.Core.Services.Transport.Http
         {
             try
             {
-#if DEBUG
-                return JsonConvert.SerializeObject(value, Formatting.Indented, JsonSettings);
-#else
-                return JsonConvert.SerializeObject(value, JsonSettings);
-#endif
+                return JsonConvert.SerializeObject(value, Formatting, JsonSettings);
             }
             catch (Exception ex)
             {
                 Log.ErrorException(ex, "Error serializing object {0}", value);
-                return null;
-            }
-        }
-
-        public string ToXmlUsingJson(object value)
-        {
-            try
-            {
-                var json = To(value);
-
-                var doc = JsonConvert.DeserializeXmlNode(json, value.GetType().Name);
-                var xml = new StringBuilder();
-
-                using(var writer = XmlWriter.Create(xml))
-                    doc.WriteTo(writer);
-
-                return xml.ToString();
-            }
-            catch (Exception e)
-            {
-                Log.ErrorException(e, "Error serializing object {0}", value);
                 return null;
             }
         }
@@ -300,16 +276,12 @@ namespace EventStore.Core.Services.Transport.Http
         public T From<T>(string text)
         {
             if (String.IsNullOrEmpty(text))
-            {
                 return default(T);
-            }
 
             try
             {
-                using (var memory = new MemoryStream(Encoding.UTF8.GetBytes(text)))
-                {
-                    return (T)new DataContractSerializer(typeof(T)).ReadObject(memory);
-                }
+                using (var reader = new StringReader(text))
+                    return (T) new XmlSerializer(typeof (T)).Deserialize(reader);
             }
             catch (Exception e)
             {
@@ -331,7 +303,7 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 using (var memory = new MemoryStream())
                 {
-                    new DataContractSerializer(value.GetType()).WriteObject(memory, value);
+                    new XmlSerializer(typeof (T)).Serialize(memory, value);
                     memory.Flush();
                     memory.Seek(0L, SeekOrigin.Begin);
                     return Encoding.UTF8.GetString(memory.GetBuffer(), 0, (int)memory.Length);
@@ -346,11 +318,6 @@ namespace EventStore.Core.Services.Transport.Http
 
         private string ToSerializable(IXmlSerializable serializable)
         {
-            if (serializable == null)
-            {
-                return null;
-            }
-
             try
             {
                 using (var memory = new MemoryStream())
