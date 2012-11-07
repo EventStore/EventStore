@@ -142,6 +142,7 @@
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
+    <Compile Include="TransactionLog\Checkpoint\Checkpoint.cs" />
     <Compile Include="TransactionLog\Checkpoint\FileMultiCheckpoint.cs" />
     <Compile Include="TransactionLog\Checkpoint\IMultiCheckpoint.cs" />
     <Compile Include="TransactionLog\Checkpoint\InMemMultiCheckpoint.cs" />

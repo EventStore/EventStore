@@ -42,7 +42,7 @@ namespace EventStore.TestClient.Commands
         {
             get
             {
-                return String.Format("{0} [<clients> <messages>]", Keyword);
+                return string.Format("{0} [<clients> <messages>]", Keyword);
             }
         }
 

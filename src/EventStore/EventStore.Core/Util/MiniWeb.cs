@@ -125,7 +125,7 @@ namespace EventStore.Core.Util
                 {
                     var sf = new StackFrame(0, true);
                     var fileName = sf.GetFileName();
-                    var sourceWebRootDirectory = String.IsNullOrEmpty(fileName)
+                    var sourceWebRootDirectory = string.IsNullOrEmpty(fileName)
                                                      ? ""
                                                      : Path.GetFullPath(Path.Combine(fileName, @"..\..\..", debugPath));
                     fileSystemWebRoot = Directory.Exists(sourceWebRootDirectory)

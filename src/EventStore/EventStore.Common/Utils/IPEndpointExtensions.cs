@@ -34,18 +34,18 @@ namespace EventStore.Common.Utils
     {
         public static string ToHttpUrl(this IPEndPoint endPoint, string rawUrl = null)
         {
-            return String.Format("http://{0}:{1}/{2}",
+            return string.Format("http://{0}:{1}/{2}",
                                  endPoint.Address,
                                  endPoint.Port,
-                                 rawUrl != null ? rawUrl.TrimStart('/') : String.Empty);
+                                 rawUrl != null ? rawUrl.TrimStart('/') : string.Empty);
         }
 
         public static string ToHttpUrl(this IPEndPoint endPoint, string formatString, params object[] args)
         {
-            return String.Format("http://{0}:{1}/{2}",
+            return string.Format("http://{0}:{1}/{2}",
                                  endPoint.Address,
                                  endPoint.Port,
-                                 String.Format(formatString.TrimStart('/'), args));
+                                 string.Format(formatString.TrimStart('/'), args));
         }
     }
 }

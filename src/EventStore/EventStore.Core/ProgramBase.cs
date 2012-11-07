@@ -36,7 +36,6 @@ using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using System.Linq;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -47,40 +46,37 @@ namespace EventStore.Core
     {
         private static readonly ILogger Log = LogManager.GetLogger("ProgramBase");
 
-        public bool BoxMode { get; set; }
         private int _exitCode;
         private readonly ManualResetEventSlim _exitEvent = new ManualResetEventSlim(false);
 
+        protected abstract string GetLogsDirectory(TOptions options);
+        protected abstract string GetComponentName(TOptions options);
+
+        protected abstract void Create(TOptions options);
+        protected abstract void Start();
+        public abstract void Stop();
+
         public int Run(string[] args)
         {
+            if (args.Length == 1 && (args[0] == "--help" || args[0] == "/?"))
+            {
+                Console.WriteLine(new TOptions().GetUsage());
+                return 0;
+            }
+
             try
             {
-                if (args.Length == 1 && (args[0] == "--help" || args[0] == "/?"))
-                {
-                    Console.WriteLine((new TOptions()).GetUsage());
-                    return 0;
-                }
+                Application.RegisterExitAction(Exit);
 
-                if (!BoxMode)
-                {
-                    Application.Start(exitAction: Exit);
-                }
+                var options = new TOptions();
+                if (!CommandLineParser.Default.ParseArguments(args, options, Console.Error, Constants.EnvVarPrefix))
+                    throw new ApplicationInitializationException("Error while parsing options");
 
-                var options = ParseAndInit(args);
-
-                if (!BoxMode)
-                {
-                    var projName = Assembly.GetEntryAssembly().GetName().Name.Replace(".", " - ");
-                    Console.Title = String.Format("{0}, {1}", projName, GetComponentName(options));
-                }
-
-                Create();
+                Init(options);
+                Create(options);
                 Start();
 
-                if (!BoxMode)
-                {
-                    _exitEvent.Wait();
-                }
+                _exitEvent.Wait();
             }
             catch (ApplicationInitializationException ex)
             {
@@ -93,6 +89,29 @@ namespace EventStore.Core
             }
 
             return _exitCode;
+        }
+
+        private void Exit(ExitCode exitCode)
+        {
+            _exitCode = (int)exitCode;
+            _exitEvent.Set();
+        }
+
+        private void Init(TOptions options)
+        {
+            var projName = Assembly.GetEntryAssembly().GetName().Name.Replace(".", " - ");
+            var componentName = GetComponentName(options);
+
+            Console.Title = string.Format("{0}, {1}", projName, componentName);
+
+            LogManager.Init(componentName, options.LogsDir.IsNotEmptyString() ? options.LogsDir : GetLogsDirectory(options));
+            var logger = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
+
+            var logsDirectory = string.Format("LOGS DIRECTORY : {0}", LogManager.LogsDirectory);
+            var systemInfo = string.Format("{0} {1}", OS.IsLinux ? "Linux" : "Windows", Runtime.IsMono ? "MONO" : ".NET");
+            var startInfo = string.Join(Environment.NewLine, 
+                                        options.GetLoadedOptionsPairs().Select(pair => string.Format("{0} : {1}", pair.Key, pair.Value)));
+            logger.Info(string.Format("{0}\n{1}\n{2}", logsDirectory, systemInfo, startInfo));
         }
 
         private string FormatExceptionMessage(Exception ex)
@@ -109,58 +128,7 @@ namespace EventStore.Core
             return msg;
         }
 
-        protected abstract void OnArgsParsed(TOptions options);
-        protected abstract string GetLogsDirectory();
-        protected abstract string GetComponentName(TOptions options); 
-        protected abstract void Create();
-        protected abstract void Start();
-        public abstract void Stop();
-
-        private TOptions ParseAndInit(string[] args)
-        {
-            var options = new TOptions();
-            if (!CommandLineParser.Default.ParseArguments(args, options, Console.Error, Constants.EnvVarPrefix))
-                throw new ApplicationInitializationException("Error while parsing options");
-
-            // todo MM: init should execute before OnArgsParsed, remove dependencies between log path and parsed options
-            OnArgsParsed(options);
-            Init(options);
-
-            return options;
-        }
-
-        private void Init(TOptions options)
-        {
-            if (!BoxMode)
-            {
-                var logsDir = !string.IsNullOrEmpty(options.LogsDir) ? options.LogsDir : GetLogsDirectory();
-                LogManager.Init(GetComponentName(options), logsDir);
-            }
-
-            var systemInfo = String.Format("{0} {1}", OS.IsLinux ? "Linux" : "Windows", Runtime.IsMono ? "MONO" : ".NET");
-            var startInfo = String.Join(Environment.NewLine, options.GetLoadedOptionsPairs().Select(pair => String.Format("{0} : {1}", pair.Key, pair.Value)));
-            var logsDirectory = String.Format("LOGS DIRECTORY : {0}", LogManager.LogsDirectory);
-            
-            var logger = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
-            logger.Info(String.Format("{0}{1}{2}{1}{3}", logsDirectory, Environment.NewLine, systemInfo, startInfo));
-        }
-
-        private void Exit(int exitCode)
-        {
-            _exitCode = exitCode;
-            _exitEvent.Set();
-        }
-
-        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int httpPort, DateTime timeStamp, int chunksToCache)
-        {
-            if (string.IsNullOrEmpty(dbPath))
-                dbPath = GetAutoGeneratedPath(timeStamp, httpPort);
-
-            var nodeDbConfig = CreateDbConfig(TFConsts.ChunkSize, dbPath, chunksToCache);
-            return nodeDbConfig;
-        }
-
-        private static TFChunkDbConfig CreateDbConfig(int chunkSize, string dbPath, int chunksToCache)
+        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int chunksToCache)
         {
             if (!Directory.Exists(dbPath)) // mono crashes without this check
                 Directory.CreateDirectory(dbPath);
@@ -180,22 +148,12 @@ namespace EventStore.Core
             }
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
-                                                 chunkSize,
+                                                 TFConsts.ChunkSize,
                                                  chunksToCache,
                                                  writerChk,
                                                  chaserChk,
                                                  new[] {writerChk, chaserChk});
-
             return nodeConfig;
-        }
-
-        protected static string GetAutoGeneratedPath(DateTime timeStamp, int port)
-        {
-            return Path.Combine(Path.GetTempPath(),
-                                "EventStore",
-                                string.Format("{0:yyyy-MM-dd_HH.mm.ss.ffffff}-Node{1}",
-                                              timeStamp,
-                                              port));
         }
     }
 }

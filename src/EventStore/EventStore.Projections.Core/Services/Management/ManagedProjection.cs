@@ -409,7 +409,7 @@ namespace EventStore.Projections.Core.Services.Management
                     }
                     catch (Exception ex)
                     {
-                        SetFaulted(String.Format("Cannot create a projection state handler.\r\n\r\nHandler type: {0}\r\nQuery:\r\n\r\n{1}\r\n\r\nMessage:\r\n\r\n{2}", HandlerType, Query, ex.Message), ex);
+                        SetFaulted(string.Format("Cannot create a projection state handler.\r\n\r\nHandler type: {0}\r\nQuery:\r\n\r\n{1}\r\n\r\nMessage:\r\n\r\n{2}", HandlerType, Query, ex.Message), ex);
                         if (stateHandler != null)
                             stateHandler.Dispose();
                         throw;

@@ -100,7 +100,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private static string ToString(object obj)
         {
-            return (obj is JObject ? Codec.Json.To(obj) : (string) obj) ?? String.Empty;
+            return (obj is JObject ? Codec.Json.To(obj) : (string) obj) ?? string.Empty;
         }
     }
 }

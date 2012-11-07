@@ -63,7 +63,7 @@ namespace EventStore.Core
         private HttpService _httpService;
         private TimerService _timerService;
 
-        public SingleVNode(TFChunkDb db, SingleVNodeSettings vNodeSettings, SingleVNodeAppSettings appSettings, bool dbVerifyHashes = true)
+        public SingleVNode(TFChunkDb db, SingleVNodeSettings vNodeSettings, SingleVNodeAppSettings appSettings, bool dbVerifyHashes)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(vNodeSettings, "vNodeSettings");

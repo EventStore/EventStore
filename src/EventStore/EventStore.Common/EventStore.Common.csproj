@@ -67,6 +67,7 @@
     <Compile Include="Log\NLogger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utils\Application.cs" />
+    <Compile Include="Utils\StringExtensions.cs" />
     <Compile Include="Utils\Helper.cs" />
     <Compile Include="Utils\HostName.cs" />
     <Compile Include="Utils\OS.cs" />

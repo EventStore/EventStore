@@ -123,7 +123,7 @@ namespace EventStore.Core.Index
                    select table.Filename;
         }
 
-        public static IndexMap FromFile(string filename, Func<IndexEntry, bool> isHashCollision, int maxTablesPerLevel = 4)
+        public static IndexMap FromFile(string filename, Func<IndexEntry, bool> isHashCollision, int maxTablesPerLevel = 4, bool loadPTables = true)
         {
             var tables = new List<List<PTable>>();
             int version;
@@ -190,6 +190,9 @@ namespace EventStore.Core.Index
                 {
                     if (prepareCheckpoint < 0 || commitCheckpoint < 0)
                         throw new CorruptIndexException("Negative prepare/commit checkpoint in non-empty IndexMap.");
+
+                    if (!loadPTables)
+                        break;
 
                     PTable ptable = null;
                     var pieces = text.Split(',');

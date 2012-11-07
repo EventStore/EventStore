@@ -191,7 +191,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.GetStatistics message)
         {
-            if (!String.IsNullOrEmpty(message.Name))
+            if (!string.IsNullOrEmpty(message.Name))
             {
                 var projection = GetProjection(message.Name);
                 if (projection == null)

@@ -321,7 +321,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             Interlocked.Increment(ref _packagesReceived);
             Interlocked.Add(ref _bytesReceived, socketArgs.BytesTransferred);
 
-            //Console.WriteLine(String.Format("{0:mmss.fff}", DateTime.UtcNow) + " received " + socketArgs.BytesTransferred + " bytes.");
+            //Console.WriteLine(string.Format("{0:mmss.fff}", DateTime.UtcNow) + " received " + socketArgs.BytesTransferred + " bytes.");
             // OK, so what does this line of code do? It makes an ArraySegment<byte> representing the data 
             // that we actually read.
             // Then it constructs a little array to meet the IEnumerable interface.

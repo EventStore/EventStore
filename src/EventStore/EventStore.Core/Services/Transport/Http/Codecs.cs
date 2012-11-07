@@ -299,7 +299,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public T From<T>(string text)
         {
-            if (String.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(text))
             {
                 return default(T);
             }

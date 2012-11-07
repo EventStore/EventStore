@@ -181,5 +181,33 @@ namespace EventStore.Core.Tests.TransactionLog.Checkpoints
             Assert.IsTrue(_checkpoint.TryGetMinMax(out checkpoint));
             Assert.AreEqual(2000, checkpoint);
         }
+
+        [Test]
+        public void has_no_checkpoints_to_return_after_clear()
+        {
+            _checkpoint.Update(EndPoint1, 1000);
+            _checkpoint.Update(EndPoint2, 2000);
+            _checkpoint.Update(EndPoint3, 3000);
+
+            _checkpoint.Clear();
+
+            long check;
+            Assert.IsFalse(_checkpoint.TryGetMinMax(out check));
+        }
+
+        [Test]
+        public void checkpoint_file_is_empty_after_clear_and_flush()
+        {
+            _checkpoint.Update(EndPoint1, 1000);
+            _checkpoint.Update(EndPoint2, 2000);
+            _checkpoint.Update(EndPoint3, 3000);
+
+            _checkpoint.Clear();
+            _checkpoint.Flush();
+
+            long check;
+            Assert.IsFalse(_checkpoint.TryGetMinMax(out check));
+            Assert.AreEqual(0, new FileInfo(Filename).Length);
+        }
     }
 }

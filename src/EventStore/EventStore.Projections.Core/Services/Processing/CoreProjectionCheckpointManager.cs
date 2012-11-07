@@ -157,7 +157,7 @@ namespace EventStore.Projections.Core.Services.Processing
             info.Mode = _projectionConfig.Mode;
             info.Position = _lastProcessedEventPosition.LastTag;
             info.Progress = _lastProcessedEventProgress;
-            info.LastCheckpoint = String.Format(CultureInfo.InvariantCulture, "{0}", _lastCompletedCheckpointPosition);
+            info.LastCheckpoint = string.Format(CultureInfo.InvariantCulture, "{0}", _lastCompletedCheckpointPosition);
             info.EventsProcessedAfterRestart = _eventsProcessedAfterRestart;
             info.WritePendingEventsBeforeCheckpoint = _closingCheckpoint != null
                                                           ? _closingCheckpoint.GetWritePendingEvents()

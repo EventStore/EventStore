@@ -8,6 +8,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         string Name { get; }
 
         void Update(IPEndPoint endPoint, long checkpoint);
+        void Clear();
+
         void Flush();
         void Close();
 

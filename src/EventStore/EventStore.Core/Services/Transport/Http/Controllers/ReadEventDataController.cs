@@ -60,7 +60,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             //TODO: reply invalid ??? if neither NO nor YES
             int version;
 
-            if (String.IsNullOrEmpty(stream) || !Int32.TryParse(versionString, out version))
+            if (string.IsNullOrEmpty(stream) || !Int32.TryParse(versionString, out version))
             {
                 SendBadRequest(entity, "Stream must bu non-empty string and id must be integer value");
                 return;

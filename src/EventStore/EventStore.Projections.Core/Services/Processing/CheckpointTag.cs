@@ -123,7 +123,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private static void ThrowIncomparable(CheckpointTag left, CheckpointTag right)
         {
             throw new InvalidOperationException(
-                String.Format("Incomparable multi-stream checkpoint tags. '{0}' and '{1}'", left, right));
+                string.Format("Incomparable multi-stream checkpoint tags. '{0}' and '{1}'", left, right));
         }
 
         public static bool operator >=(CheckpointTag left, CheckpointTag right)
@@ -320,7 +320,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     if (eventSequenceNumber < stream.Value)
                         throw new InvalidOperationException(
-                            String.Format(
+                            string.Format(
                                 "Cannot make a checkpoint tag before the current position. Stream: '{0}'  Current: {1} Message Position Event SequenceNo: {2}",
                                 stream.Key, stream.Value, eventSequenceNumber));
                     resultDictionary.Add(stream.Key, eventSequenceNumber);

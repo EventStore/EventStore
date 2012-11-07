@@ -134,6 +134,11 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _memCheckpoint.Update(endPoint, checkpoint);
         }
 
+        public void Clear()
+        {
+            _memCheckpoint.Clear();
+        }
+
         public void Flush()
         {
             _fileStream.SetLength(EntrySize * _memCheckpoint.CheckpointCount);
