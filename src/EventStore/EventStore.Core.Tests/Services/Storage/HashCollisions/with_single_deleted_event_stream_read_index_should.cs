@@ -156,8 +156,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_all_events_excluding_delete_event_on_read_all_backward()
         {
-            var pos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());
-            var events = ReadIndex.ReadAllEventsBackward(pos, 100).Records.Select(r => r.Event).ToArray();
+            var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event).ToArray();
             Assert.AreEqual(1, events.Length);
             Assert.AreEqual(_prepare1, events[0]);
         }

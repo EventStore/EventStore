@@ -154,7 +154,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (writeEvents == null)
                 return string.Empty;
 
-            return codec.To(new HttpClientMessageDto.WriteEventText(
+            return codec.To(new HttpClientMessageDto.WriteEventsText(
                 writeEvents.ExpectedVersion,
                 writeEvents.Events.Select(e => new HttpClientMessageDto.ClientEventText(e.EventId, 
                                                                                     e.EventType,
@@ -178,7 +178,7 @@ namespace EventStore.Core.Services.Transport.Http
                 switch (completed.Result)
                 {
                     case SingleReadResult.Success:
-                        return EventConversion.ConvertOnRead(completed, entity.ResponseCodec);
+                        return AutoEventConverter.SmartFormat(completed, entity.ResponseCodec);
                     case SingleReadResult.NotFound:
                     case SingleReadResult.NoStream:
                     case SingleReadResult.StreamDeleted:

@@ -67,10 +67,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             while (stopWatch.Elapsed < _executionPeriod)
             {
-                Log.Info("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
-                         GetIterationCode(),
-                         (int)stopWatch.Elapsed.TotalMinutes,
-                         _executionPeriod.TotalMinutes);
+                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
+                           GetIterationCode(),
+                           (int)stopWatch.Elapsed.TotalMinutes,
+                           _executionPeriod.TotalMinutes);
+                Log.Info(msg);
+                Log.Info("##teamcity[message '{0}']", msg);
 
                 var iterationTask = RunIteration();
                 iterationTask.Wait();

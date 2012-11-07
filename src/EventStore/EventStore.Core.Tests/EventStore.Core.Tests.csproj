@@ -53,6 +53,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="nunit.framework">
       <HintPath>..\libs\nunit.framework.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
@@ -101,7 +105,6 @@
     <Compile Include="Hashes\SMHasher.cs" />
     <Compile Include="Hashes\xxhash_hash_should.cs" />
     <Compile Include="Helper\ReflectionDynamic.cs" />
-    <Compile Include="Http\accept_component.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\create_index_map_from_non_existing_file.cs" />
@@ -180,16 +183,18 @@
     <Compile Include="Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Services\Replication\WriteEvents\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
-    <Compile Include="Services\Storage\DeleteAndScavenge\when_having_single_deleted_stream_spanning_through_2_chunks_in_db_with_3_chunks.cs" />
-    <Compile Include="Services\Storage\DeleteAndScavenge\when_having_single_stream_spanning_through_2_chunks.cs" />
-    <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_stream_spanning_through_multiple_chunks_and_other_streams_on_scavenged_db_read_index_should.cs" />
-    <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_streams_with_different_hashes_spanning_through_multiple_chunks_in_db_with_1_stream_with_same_hash_read_index_should.cs" />
-    <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_streams_with_same_hash_spanning_through_multiple_chunks_in_db_with_1_stream_with_different_hash_read_index_should.cs" />
-    <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_stream_spanning_through_multiple_chunks_and_1_stream_with_same_hash_and_1_stream_with_different_hash_read_index_should.cs" />
-    <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_stream_spanning_through_multiple_chunks_read_index_should.cs" />
-    <Compile Include="Services\Storage\IsStreamDeleted\is_stream_deleted_should.cs" />
-    <Compile Include="Services\Storage\IsStreamDeleted\with_empty_db_read_index_should.cs" />
-    <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_stream_with_1_hash_collision_and_1_stream_with_other_hash_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_writing_few_prepares_on_same_event_number_and_commiting_delete_on_this_version_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_writing_delete_prepare_but_no_commit_read_index_should.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_having_single_deleted_stream_spanning_through_2_chunks_in_db_with_3_chunks.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_having_single_stream_spanning_through_2_chunks.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_spanning_through_multiple_chunks_and_other_streams_on_scavenged_db_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_deleting_streams_with_different_hashes_spanning_through_multiple_chunks_in_db_with_1_stream_with_same_hash_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_deleting_streams_with_same_hash_spanning_through_multiple_chunks_in_db_with_1_stream_with_different_hash_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_spanning_through_multiple_chunks_and_1_stream_with_same_hash_and_1_stream_with_different_hash_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_spanning_through_multiple_chunks_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\is_stream_deleted_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\with_empty_db_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_with_1_hash_collision_and_1_stream_with_other_hash_read_index_should.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\with_invalid_metadata.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\with_invalid_max_count_and_normal_max_age.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\with_invalid_max_age_and_normal_max_count.cs" />
@@ -201,8 +206,8 @@
     <Compile Include="Services\Storage\MaxAgeMaxCount\with_big_max_age.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\when_having_stream_with_maxcount_specified_and_long_transactions_written.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\when_having_one_stream_with_maxage_and_other_stream_with_maxcount_and_streams_have_same_hash.cs" />
-    <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_stream_with_2_hash_collisions_and_mixed_order_read_index_should.cs" />
-    <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_the_only_existing_stream_in_db_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_with_2_hash_collisions_and_mixed_order_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_deleting_the_only_existing_stream_in_db_read_index_should.cs" />
     <Compile Include="Services\Storage\Transactions\when_having_two_intermingled_transactions_and_some_uncommited_prepares_spanning_few_chunks_read_index_should.cs" />
     <Compile Include="Services\Storage\Transactions\when_having_two_intermingled_transactions_spanning_few_chunks_read_index_should.cs" />
     <Compile Include="Services\Storage\Transactions\when_having_two_intermingled_transactions_and_some_uncommited_prepares_in_the_end_read_index_should.cs" />
@@ -232,7 +237,9 @@
     <Compile Include="Services\Storage\HashCollisions\with_two_collisioned_streams_one_event_each_read_index_should.cs" />
     <Compile Include="Services\Storage\HashCollisions\with_no_hash_collisions_read_index_should.cs" />
     <Compile Include="Services\Storage\HashCollisions\with_three_collisioned_streams_one_event_each_read_index_should.cs" />
+    <Compile Include="Services\Transport\Http\accept_component.cs" />
     <Compile Include="Services\Transport\Http\atom_specs.cs" />
+    <Compile Include="Services\Transport\Http\auto_convertion.cs" />
     <Compile Include="Services\Transport\Http\HttpBootstrap.cs" />
     <Compile Include="Services\Transport\Http\http_service_should.cs" />
     <Compile Include="Services\Transport\Http\PortableServer.cs" />
