@@ -84,6 +84,9 @@
     <Content Include="singlenode-web\queues.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="singlenode-web\simple-chat.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="singlenode-web\view-projection.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
