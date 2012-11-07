@@ -25,12 +25,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.IsStreamDeleted
+namespace EventStore.Core.Tests.Services.Storage.DeletingStream
 {
     [TestFixture]
-    public class when_deleting_streams_with_different_hashes_spanning_through_multiple_chunks_in_db_with_1_stream_with_same_hash_read_index_should : ReadIndexTestScenario
+    public class when_deleting_stream_spanning_through_multiple_chunks_and_1_stream_with_same_hash_and_1_stream_with_different_hash_read_index_should : ReadIndexTestScenario
     {
 
         protected override void WriteTestScenario()
@@ -56,21 +57,18 @@ namespace EventStore.Core.Tests.Services.Storage.IsStreamDeleted
             WriteSingleEvent("ES", 4, new string('.', 3000));
 
             WriteDelete("ES1");
-            WriteDelete("ES");
         }
 
         [Test]
-        public void indicate_that_streams_are_deleted()
+        public void indicate_that_stream_is_deleted()
         {
             Assert.That(ReadIndex.IsStreamDeleted("ES1"));
-            Assert.That(ReadIndex.IsStreamDeleted("ES"));
         }
 
         [Test]
-        public void indicate_that_nonexisting_streams_with_same_hashes_are_not_deleted()
+        public void indicate_that_nonexisting_stream_with_same_hash_is_not_deleted()
         {
             Assert.That(ReadIndex.IsStreamDeleted("XXX"), Is.False);
-            Assert.That(ReadIndex.IsStreamDeleted("XX"), Is.False);
         }
 
         [Test]
@@ -80,9 +78,15 @@ namespace EventStore.Core.Tests.Services.Storage.IsStreamDeleted
         }
 
         [Test]
-        public void indicate_that_existing_stream_with_different_hash_is_not_deleted()
+        public void indicate_that_existing_stream_with_same_hash_is_not_deleted()
         {
             Assert.That(ReadIndex.IsStreamDeleted("ES2"), Is.False);
+        }
+
+        [Test]
+        public void indicate_that_existing_stream_with_different_hash_is_not_deleted()
+        {
+            Assert.That(ReadIndex.IsStreamDeleted("ES"), Is.False);
         }
     }
 }

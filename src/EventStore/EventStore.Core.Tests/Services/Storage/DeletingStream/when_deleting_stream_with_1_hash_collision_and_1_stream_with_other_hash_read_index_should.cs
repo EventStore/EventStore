@@ -25,67 +25,57 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.IsStreamDeleted
+namespace EventStore.Core.Tests.Services.Storage.DeletingStream
 {
     [TestFixture]
-    public class when_deleting_stream_spanning_through_multiple_chunks_and_other_streams_on_scavenged_db_read_index_should : ReadIndexTestScenario
+    public class when_deleting_stream_with_1_hash_collision_and_1_stream_with_other_hash_read_index_should : ReadIndexTestScenario
     {
-
         protected override void WriteTestScenario()
         {
-            WriteStreamCreated("ES1");
-            WriteStreamCreated("ES2");
-            WriteStreamCreated("ES");
+            WriteStreamCreated("S1");
+            WriteSingleEvent("S1", 1, "bla1");
+            WriteStreamCreated("S2");
+            WriteSingleEvent("S1", 2, "bla1");
+            WriteSingleEvent("S2", 1, "bla1");
+            WriteSingleEvent("S2", 2, "bla1");
+            WriteStreamCreated("SSS");
+            WriteSingleEvent("S1", 3, "bla1");
+            WriteSingleEvent("SSS", 1, "bla1");
 
-            WriteSingleEvent("ES1", 1, new string('.', 3000));
-            WriteSingleEvent("ES1", 2, new string('.', 3000));
-            WriteSingleEvent("ES2", 1, new string('.', 3000));
-
-            WriteSingleEvent("ES", 1, new string('.', 3000), retryOnFail: true); // chunk 2
-            WriteSingleEvent("ES", 2, new string('.', 3000));
-            WriteSingleEvent("ES1", 3, new string('.', 3000));
-
-            WriteSingleEvent("ES2", 2, new string('.', 3000), retryOnFail: true); // chunk 3
-            WriteSingleEvent("ES1", 4, new string('.', 3000));
-            WriteSingleEvent("ES1", 5, new string('.', 3000));
-
-            WriteSingleEvent("ES2", 3, new string('.', 3000), retryOnFail: true); // chunk 4
-            WriteSingleEvent("ES", 3, new string('.', 3000));
-            WriteSingleEvent("ES", 4, new string('.', 3000));
-
-            WriteDelete("ES1");
+            WriteDelete("S1");
         }
 
         [Test]
         public void indicate_that_stream_is_deleted()
         {
-            Assert.That(ReadIndex.IsStreamDeleted("ES1"));
+            Assert.That(ReadIndex.IsStreamDeleted("S1"));
         }
 
         [Test]
-        public void indicate_that_nonexisting_stream_with_same_hash_is_not_deleted()
+        public void indicate_that_other_stream_with_same_hash_is_not_deleted()
+        {
+            Assert.That(ReadIndex.IsStreamDeleted("S2"), Is.False);
+        }
+
+        [Test]
+        public void indicate_that_other_stream_with_different_hash_is_not_deleted()
+        {
+            Assert.That(ReadIndex.IsStreamDeleted("SSS"), Is.False);
+        }
+
+        [Test]
+        public void indicate_that_not_existing_stream_with_same_hash_is_not_deleted()
+        {
+            Assert.That(ReadIndex.IsStreamDeleted("XX"), Is.False);
+        }
+
+        [Test]
+        public void indicate_that_not_existing_stream_with_different_hash_is_not_deleted()
         {
             Assert.That(ReadIndex.IsStreamDeleted("XXX"), Is.False);
-        }
-
-        [Test]
-        public void indicate_that_nonexisting_stream_with_different_hash_is_not_deleted()
-        {
-            Assert.That(ReadIndex.IsStreamDeleted("XXXX"), Is.False);
-        }
-
-        [Test]
-        public void indicate_that_existing_stream_with_same_hash_is_not_deleted()
-        {
-            Assert.That(ReadIndex.IsStreamDeleted("ES2"), Is.False);
-        }
-
-        [Test]
-        public void indicate_that_existing_stream_with_different_hash_is_not_deleted()
-        {
-            Assert.That(ReadIndex.IsStreamDeleted("ES"), Is.False);
         }
     }
 }
