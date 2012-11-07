@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             var pos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());
             var events = ReadIndex.ReadAllEventsBackward(pos, 100).Records.Select(r => r.Event).ToArray();
             Assert.AreEqual(1, events.Length);
-            Assert.AreEqual(_prepare1, events[2]);
+            Assert.AreEqual(_prepare1, events[0]);
         }
     }
 }

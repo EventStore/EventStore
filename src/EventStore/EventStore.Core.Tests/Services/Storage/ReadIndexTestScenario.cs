@@ -36,6 +36,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -55,6 +56,9 @@ namespace EventStore.Core.Tests.Services.Storage
         protected TFChunkWriter Writer;
         protected ICheckpoint WriterCheckpoint;
 
+        private TFChunkScavenger _scavenger;
+        private Action _scavengeActions;
+
         protected ReadIndexTestScenario(int maxEntriesInMemTable = 1000000)
         {
             Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
@@ -66,7 +70,7 @@ namespace EventStore.Core.Tests.Services.Storage
             base.TestFixtureSetUp();
 
             WriterCheckpoint = new InMemoryCheckpoint(0);
-            var chaserchk = new InMemoryCheckpoint(Checkpoint.Chaser, 0);
+            var chaserchk = new InMemoryCheckpoint(0);
             Db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                    10000,
@@ -74,6 +78,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                                    WriterCheckpoint,
                                                    chaserchk,
                                                    new[] {WriterCheckpoint, chaserchk}));
+
             Db.OpenVerifyAndClean();
             // create db
             Writer = new TFChunkWriter(Db);
@@ -99,7 +104,14 @@ namespace EventStore.Core.Tests.Services.Storage
                                       TableIndex,
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamMetadata>());
+
             ReadIndex.Build();
+
+            // scavenge must run after readIndex is built
+            _scavenger = new TFChunkScavenger(Db, ReadIndex);
+            RunScavengeInternal();
+            _scavengeActions = null;
+            _scavenger = null;
         }
 
         public override void TestFixtureTearDown()
@@ -294,6 +306,17 @@ namespace EventStore.Core.Tests.Services.Storage
             Assert.IsTrue(Writer.Write(commit, out pos));
 
             return new EventRecord(EventNumber.DeletedStream, prepare);
+        }
+
+        protected void Scavenge()
+        {
+            _scavengeActions += () => _scavenger.Scavenge(alwaysKeepScavenged: true);
+        }
+
+        private void RunScavengeInternal()
+        {
+            if (_scavengeActions != null)
+                _scavengeActions.Invoke();
         }
     }
 }

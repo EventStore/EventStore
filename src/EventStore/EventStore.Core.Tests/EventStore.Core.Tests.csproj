@@ -180,6 +180,9 @@
     <Compile Include="Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Services\Replication\WriteEvents\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Services\Storage\DeleteAndScavenge\when_having_single_deleted_stream_spanning_through_2_chunks_in_db_with_3_chunks.cs" />
+    <Compile Include="Services\Storage\DeleteAndScavenge\when_having_single_stream_spanning_through_2_chunks.cs" />
+    <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_stream_spanning_through_multiple_chunks_and_other_streams_on_scavenged_db_read_index_should.cs" />
     <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_streams_with_different_hashes_spanning_through_multiple_chunks_in_db_with_1_stream_with_same_hash_read_index_should.cs" />
     <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_streams_with_same_hash_spanning_through_multiple_chunks_in_db_with_1_stream_with_different_hash_read_index_should.cs" />
     <Compile Include="Services\Storage\IsStreamDeleted\when_deleting_stream_spanning_through_multiple_chunks_and_1_stream_with_same_hash_and_1_stream_with_different_hash_read_index_should.cs" />
