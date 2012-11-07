@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,11 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Http
+namespace EventStore.Core.Tests.Infrastructure.Services.Transport.Http
 {
     [TestFixture]
     public class accept_component

@@ -120,7 +120,7 @@ namespace EventStore.TestClient.Commands
                     for (int j = 0; j < count; ++j)
                     {
                         var url = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}", esId);
-                        var write = new ClientMessageDto.WriteEventText(
+                        var write = new ClientMessageDto.WriteEventsText(
                             ExpectedVersion.Any,
                             new[] { 
                                 new ClientMessageDto.ClientEventText(Guid.NewGuid(), 

@@ -27,11 +27,13 @@
 // 
 using System;
 using System.Net;
-using System.Runtime.Serialization;
 using System.Text;
+using System.Xml.Serialization;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ProtoBuf;
 
 namespace EventStore.Core.Messages
@@ -961,17 +963,12 @@ namespace EventStore.Core.Messages
 
         #region HTTP DTO
 
-        [DataContract(Name = "event", Namespace = "")]
         public class ClientEventText
         {
-            [DataMember]
             public Guid EventId { get; set; }
-            [DataMember]
             public string EventType { get; set; }
 
-            [DataMember]
             public object Data { get; set; }
-            [DataMember]
             public object Metadata { get; set; }
 
             public ClientEventText()
@@ -1003,20 +1000,16 @@ namespace EventStore.Core.Messages
             }
         }
 
-        [DataContract(Name = "write-event", Namespace = "")]
-        public class WriteEventText
+        public class WriteEventsText
         {
-            [DataMember]
             public int ExpectedVersion { get; set; }
-
-            [DataMember]
             public ClientEventText[] Events { get; set; }
 
-            public WriteEventText()
+            public WriteEventsText()
             {
             }
 
-            public WriteEventText(int expectedVersion, ClientEventText[] events)
+            public WriteEventsText(int expectedVersion, ClientEventText[] events)
             {
                 Ensure.NotNull(events, "events");
                 Ensure.Positive(events.Length, "events.Length");
@@ -1026,20 +1019,12 @@ namespace EventStore.Core.Messages
             }
         }
 
-        [DataContract(Name = "read-event-result", Namespace = "")]
         public class ReadEventCompletedText
         {
-            [DataMember]
             public string EventStreamId { get; set; }
-            [DataMember]
             public int EventNumber { get; set; }
-
-            [DataMember]
             public string EventType { get; set; }
-
-            [DataMember]
             public object Data { get; set; }
-            [DataMember]
             public object Metadata { get; set; }
 
             public ReadEventCompletedText()
@@ -1078,12 +1063,10 @@ namespace EventStore.Core.Messages
             }
         }
 
-        [DataContract(Name = "create-stream", Namespace = "")]
+        [XmlRoot(ElementName = "create-stream")]
         public class CreateStreamText
         {
-            [DataMember]
             public string EventStreamId { get; set; }
-            [DataMember]
             public string Metadata { get; set; }
 
             public CreateStreamText()
@@ -1097,10 +1080,9 @@ namespace EventStore.Core.Messages
             }
         }
 
-        [DataContract(Name = "delete-stream", Namespace = "")]
+        [XmlRoot(ElementName = "delete-stream")]
         public class DeleteStreamText
         {
-            [DataMember]
             public int ExpectedVersion { get; set; }
 
             public DeleteStreamText()

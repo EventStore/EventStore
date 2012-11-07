@@ -53,6 +53,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="nunit.framework">
       <HintPath>..\libs\nunit.framework.dll</HintPath>
     </Reference>
@@ -100,7 +104,6 @@
     <Compile Include="Hashes\SMHasher.cs" />
     <Compile Include="Hashes\xxhash_hash_should.cs" />
     <Compile Include="Helper\ReflectionDynamic.cs" />
-    <Compile Include="Http\accept_component.cs" />
     <Compile Include="Index\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\adding_two_items_to_empty_index_map_with_two_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\create_index_map_from_non_existing_file.cs" />
@@ -208,7 +211,9 @@
     <Compile Include="Infrastructure\Services\Storage\with_two_collisioned_streams_one_event_each_read_index_should.cs" />
     <Compile Include="Infrastructure\Services\Storage\with_no_hash_collisions_read_index_should.cs" />
     <Compile Include="Infrastructure\Services\Storage\with_three_collisioned_streams_one_event_each_read_index_should.cs" />
+    <Compile Include="Infrastructure\Services\Transport\Http\accept_component.cs" />
     <Compile Include="Infrastructure\Services\Transport\Http\atom_specs.cs" />
+    <Compile Include="Infrastructure\Services\Transport\Http\auto_convertion.cs" />
     <Compile Include="Infrastructure\Services\Transport\Http\HttpBootstrap.cs" />
     <Compile Include="Infrastructure\Services\Transport\Http\http_service_should.cs" />
     <Compile Include="Infrastructure\Services\Transport\Http\PortableServer.cs" />

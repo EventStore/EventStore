@@ -61,6 +61,7 @@
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.ServiceModel.Web" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bus\WideningHandler.cs" />
@@ -143,7 +144,7 @@
     <Compile Include="TransactionLog\Chunks\TFChunkBulkReader.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkScavenger.cs" />
     <Compile Include="Services\Transport\Http\Configure.cs" />
-    <Compile Include="Services\Transport\Http\EventConvertion.cs" />
+    <Compile Include="Services\Transport\Http\AutoEventConverter.cs" />
     <Compile Include="Services\Transport\Http\Format.cs" />
     <Compile Include="Services\Transport\Http\SendToHttpWithConversionEnvelope.cs" />
     <Compile Include="TransactionLog\Chunks\ChunkFooter.cs" />

@@ -392,20 +392,19 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var entity = manager.HttpEntity;
             var stream = (string)manager.AsyncState;
 
-            var write = entity.RequestCodec.From<ClientMessageDto.WriteEventText>(body);
-            if (write == null || write.Events == null || write.Events.Length == 0)
+            var parsed = AutoEventConverter.SmartParse(body, entity.RequestCodec);
+            var expectedVersion = parsed.Item1;
+            var events = parsed.Item2;
+
+            if (events == null || events.Length == 0)
             {
                 SendBadRequest(entity, "Write request body invalid");
                 return;
             }
 
             var envelope = new SendToHttpEnvelope(entity, Format.WriteEventsCompleted, Configure.WriteEventsCompleted);
-            var msg = new ClientMessage.WriteEvents(Guid.NewGuid(),
-                                                    envelope,
-                                                    true,
-                                                    stream,
-                                                    write.ExpectedVersion,
-                                                    write.Events.Select(EventConvertion.ConvertOnWrite).ToArray());
+            var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, true, stream, expectedVersion, events);
+
             Publish(msg);
         }
     }

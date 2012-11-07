@@ -115,7 +115,7 @@ namespace EventStore.TestClient.Commands
 
                     for (int j = 0; j < count; ++j)
                     {
-                        var write = new ClientMessageDto.WriteEventText(
+                        var write = new ClientMessageDto.WriteEventsText(
                             ExpectedVersion.Any,
                             new[] 
                             { 
