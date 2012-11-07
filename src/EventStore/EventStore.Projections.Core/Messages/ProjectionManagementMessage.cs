@@ -180,11 +180,15 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly IEnvelope _envelope;
             private readonly string _name;
+            private readonly bool _deleteCheckpointStream;
+            private readonly bool _deleteStateStream;
 
-            public Delete(IEnvelope envelope, string name)
+            public Delete(IEnvelope envelope, string name, bool deleteCheckpointStream, bool deleteStateStream)
             {
                 _envelope = envelope;
                 _name = name;
+                _deleteCheckpointStream = deleteCheckpointStream;
+                _deleteStateStream = deleteStateStream;
             }
 
             public IEnvelope Envelope
@@ -195,6 +199,16 @@ namespace EventStore.Projections.Core.Messages
             public string Name
             {
                 get { return _name; }
+            }
+
+            public bool DeleteCheckpointStream
+            {
+                get { return _deleteCheckpointStream; }
+            }
+
+            public bool DeleteStateStream
+            {
+                get { return _deleteStateStream; }
             }
         }
 

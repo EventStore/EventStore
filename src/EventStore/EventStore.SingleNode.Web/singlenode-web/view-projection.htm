@@ -22,6 +22,8 @@
                             <img src="/web/es/img/stop_btn.png" title="Disable" alt="Disable" /></a> </li>
                         <li style="display: inline;"><a href="#" id="commandEnable">
                             <img src="/web/es/img/start_btn.png" title="Enable" alt="Enable" /></a> </li>
+                        <li style="display: inline;"><a href="#" id="commandDelete">
+                            <img src="/web/es/img/delete-btn.png" title="Delete" alt="Delete" /></a> </li>
                     </ul>
                 </div>
             </div>
@@ -228,6 +230,17 @@
                 });
             }
 
+            function onDelete() {
+                $.ajax(projectionStatusUrl, {
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    type: "DELETE",
+                    success: successPostCommand,
+                    error: function() { alert("Failed!"); }
+                });
+            }
+
             $(function() {
                 $.templates("projectionTemplate", "#projectionTemplate");
                 $.templates("projectionTemplateButton", "#projectionTemplateButton");
@@ -241,6 +254,7 @@
 
                 $('#commandDisable').click(onDisable);
                 $("#commandEnable").click(onEnable);
+                $("#commandDelete").click(onDelete);
 
                 /* $("#projectiontab a").click(function (e) {
                     e.preventDefault();
