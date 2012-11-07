@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,53 +24,30 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-using System;
-using System.IO;
-using EventStore.Common.Utils;
 
-namespace EventStore.Core.TransactionLog
+using System.Net;
+
+namespace EventStore.ClientAPI.Messages
 {
-    public class PrefixFileNamingStrategy : IFileNamingStrategy 
+    public static partial class ClientMessage
     {
-        private readonly string _path;
-        private readonly string _prefix;
-
-        public PrefixFileNamingStrategy(string path, string prefix)
+        public partial class DeniedToRoute
         {
-            Ensure.NotNull(path, "path");
-            Ensure.NotNull(prefix, "prefix");
+            public IPEndPoint ExternalTcpEndPoint
+            {
+                get
+                {
+                    return new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort);
+                }
+            }
 
-            _path = path;
-            _prefix = prefix;
-        }
-
-        public string GetFilenameFor(int index, int version = 0)
-        {
-            Ensure.Nonnegative(index, "index");
-            Ensure.Nonnegative(version, "version");
-
-            return Path.Combine(_path, _prefix + index);
-        }
-
-        public string[] GetAllVersionsFor(int index)
-        {
-            return Directory.GetFiles(_path, _prefix + index);
-        }
-
-        public string[] GetAllPresentFiles()
-        {
-            return Directory.GetFiles(_path, _prefix + "*");
-        }
-
-        public string GetTempFilename()
-        {
-            return Path.Combine(_path, string.Format("{0}.tmp", Guid.NewGuid()));
-        }
-
-        public string[] GetAllTempFiles()
-        {
-            return Directory.GetFiles(_path, "*.tmp");
+            public IPEndPoint ExternalHttpEndPoint
+            {
+                get
+                {
+                    return new IPEndPoint(IPAddress.Parse(ExternalHttpAddress), ExternalHttpPort);
+                }
+            }
         }
     }
 }

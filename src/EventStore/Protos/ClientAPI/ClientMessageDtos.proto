@@ -1,0 +1,228 @@
+package EventStore.ClientAPI.Messages;
+
+message EventLinkPair {
+	required EventRecord event = 1;
+	required EventRecord link = 2;
+}
+
+message ClientEvent {
+	required bytes event_id = 1;
+	optional string event_type = 2;
+	required bytes data = 3;
+	optional bytes metadata = 4;
+}
+
+message EventRecord {
+	required int32 event_number = 1;
+	required int64 log_position = 2;
+	required bytes correlation_id = 3;
+	required bytes event_id = 4;
+	required int64 transaction_position = 5;
+	required int32 transaction_offset = 6;
+	required string event_stream_id = 7;
+	required int32 expected_version = 8;
+	required int64 time_stamp = 9;
+	required uint32 flags = 10;
+	required string event_type = 11;
+	required bytes data = 12;
+	required bytes metadata = 13;
+}
+
+message DeniedToRoute {
+	required string external_tcp_address = 1;
+	required int32 external_tcp_port = 2;
+	required string external_http_address = 3;
+	required int32 external_http_port = 4;
+}
+
+message CreateStream {
+	required string event_stream_id = 1;
+	optional bytes metadata = 2;
+	required bool allow_forwarding = 3;
+}
+
+message CreateStreamCompleted {
+	required string event_stream_id = 1;
+	required int32 error_code = 2;
+	required string error = 3;
+}
+
+message Event {
+	required bytes event_id = 1;
+	optional string event_type = 2;
+	required bytes data = 3;
+	optional bytes metadata = 4;
+}
+
+message WriteEvents {
+	required string event_stream_id = 1;
+	required int32 expected_version = 2;
+	repeated ClientEvent events = 3;
+	required bool allow_forwarding = 4;
+}
+
+message WriteEventsCompleted {
+	required string event_stream_id = 1;
+	required int32 error_code = 2;
+	required string error = 3;
+	required int32 event_number = 4;
+}
+
+message DeleteStream {
+	required string event_stream_id = 1;
+	required int32 expected_version = 2;
+	required bool allow_forwarding = 3;
+}
+
+message DeleteStreamCompleted {
+	required string event_stream_id = 1;
+	required int32 error_code = 2;
+	required string error = 3;
+}
+
+message ReadEvent {
+	required string event_stream_id = 1;
+	required int32 event_number = 2;
+	required bool resolve_link_tos = 3;
+}
+
+message ReadEventCompleted {
+	required string event_stream_id = 1;
+	required int32 event_number = 2;
+	required int32 result = 3;
+	required string event_type = 4;
+	required bytes data = 5;
+	required bytes metadata = 6;
+	required int64 log_position = 7;
+}
+
+message ReadStreamEventsForward {
+	required string event_stream_id = 1;
+	required int32 start_index = 2;
+	required int32 max_count = 3;
+	required bool resolve_link_tos = 4;
+	required bool return_last_event_number = 5;
+}
+
+message ReadStreamEventsForwardCompleted {
+	required string event_stream_id = 1;
+	repeated EventLinkPair events = 2;
+	required int32 result = 3;
+	optional int64 last_commit_position = 4;
+	optional int32 last_event_number = 5;
+}
+
+message ReadStreamEventsBackward {
+	required string event_stream_id = 1;
+	required int32 start_index = 2;
+	required int32 max_count = 3;
+	required bool resolve_link_tos = 4;
+}
+
+message ReadStreamEventsBackwardCompleted {
+	required string event_stream_id = 1;
+	repeated EventLinkPair events = 2;
+	required int32 result = 3;
+	optional int64 last_commit_position = 4;
+}
+
+message ReadAllEventsForward {
+	required int64 commit_position = 1;
+	required int64 prepare_position = 2;
+	required int32 max_count = 3;
+	required bool resolve_link_tos = 4;
+}
+
+message ReadAllEventsForwardCompleted {
+	required int64 commit_position = 1;
+	required int64 prepare_position = 2;
+	repeated EventLinkPair events = 3;
+	required int64 next_commit_position = 4;
+	required int64 next_prepare_position = 5;
+}
+
+message ReadAllEventsBackward {
+	required int64 commit_position = 1;
+	required int64 prepare_position = 2;
+	required int32 max_count = 3;
+	required bool resolve_link_tos = 4;
+}
+
+message ReadAllEventsBackwardCompleted {
+	required int64 commit_position = 1;
+	required int64 prepare_position = 2;
+	repeated EventLinkPair events = 3;
+	required int64 next_commit_position = 4;
+	required int64 next_prepare_position = 5;
+}
+	
+message TransactionStart {
+	required string event_stream_id = 1;
+	required int32 expected_version = 2;
+	required bool allow_forwarding = 3;
+}
+
+message TransactionStartCompleted {
+	required int64 transaction_id = 1;
+	required string event_stream_id = 2;
+	required int32 error_code = 3;
+	required string error = 4;
+}
+
+message TransactionWrite {
+	required int64 transaction_id = 1;
+	required string event_stream_id = 2;
+	repeated ClientEvent events = 3;
+	required bool allow_forwarding = 4;
+}
+
+message TransactionWriteCompleted {
+	required int64 transaction_id = 1;
+	required string event_stream_id = 2;
+	required int32 error_code = 3;
+	required string error = 4;
+}
+
+message TransactionCommit {
+	required int64 transaction_id = 1;
+	required string event_stream_id = 2;
+	required bool allow_forwarding = 3;
+}
+
+message TransactionCommitCompleted {
+	required int64 transaction_id = 1;
+	required int32 error_code = 2;
+	required string error = 3;
+}
+
+message SubscribeToStream {
+	required string event_stream_id = 1;
+}
+
+message UnsubscribeFromStream {
+	required string event_stream_id = 1;
+}
+
+message SubscribeToAllStreams {
+}
+
+message UnsubscribeFromAllStreams {
+}
+
+message StreamEventAppeared {
+	required string event_stream_id = 1;
+	required int32 event_number = 2;
+	required bytes event_id = 3;
+	required string event_type = 4;
+	required bytes data = 5;
+	required bytes metadata = 6;
+	required int64 commit_position = 7;
+	required int64 prepare_position = 8;
+}
+
+message SubscriptionDropped {
+	required string event_stream_id = 1;
+}
+
+message SubscriptionToAllDropped {
+}

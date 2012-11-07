@@ -55,9 +55,10 @@ namespace EventStore.TestClient.Commands
             }
 
             context.IsAsync();
-            var createStreamDto = new ClientMessageDto.CreateStream(
+            var createStreamDto = new TcpClientMessageDto.CreateStream(
                     eventStreamId,
-                    Encoding.UTF8.GetBytes(metadata ?? string.Format("{{\"StreamName\": \"{0}\"}}", eventStreamId)));
+                    Encoding.UTF8.GetBytes(metadata ?? string.Format("{{\"StreamName\": \"{0}\"}}", eventStreamId)),
+                    true);
             var package = new TcpPackage(TcpCommand.CreateStream, Guid.NewGuid(), createStreamDto.Serialize());
 
             var sw = new Stopwatch();
@@ -80,7 +81,7 @@ namespace EventStore.TestClient.Commands
 
                         sw.Stop();
 
-                        var dto = pkg.Data.Deserialize<ClientMessageDto.CreateStreamCompleted>();
+                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.CreateStreamCompleted>();
                         if ((OperationErrorCode)dto.ErrorCode == OperationErrorCode.Success)
                         {
                             context.Log.Info("Successfully created stream '{0}'.", dto.EventStreamId);

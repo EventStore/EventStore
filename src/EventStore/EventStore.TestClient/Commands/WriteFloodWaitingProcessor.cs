@@ -96,7 +96,7 @@ namespace EventStore.TestClient.Commands
                             return;
                         }
 
-                        var dto = pkg.Data.Deserialize<ClientMessageDto.WriteEventsCompleted>();
+                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
                         if (dto.ErrorCode == (int)OperationErrorCode.Success)
                         {
                             if (Interlocked.Increment(ref succ)%1000 == 0)
@@ -123,15 +123,17 @@ namespace EventStore.TestClient.Commands
                     
                     for (int j = 0; j < count; ++j)
                     {
-                        var write = new ClientMessageDto.WriteEvents(
+                        var write = new TcpClientMessageDto.WriteEvents(
                             eventStreamId,
                             ExpectedVersion.Any,
-                            new[] { 
-                                new ClientMessageDto.ClientEvent(Guid.NewGuid() ,
-                                                           "TakeSomeSpaceEvent",
-                                                           Encoding.UTF8.GetBytes("DATA" + new string('*', 256)),
-                                                           Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
-                            });
+                            new[]
+                                {
+                                    new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
+                                                                        "TakeSomeSpaceEvent",
+                                                                        Encoding.UTF8.GetBytes("DATA" + new string('*', 256)),
+                                                                        Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
+                                },
+                            true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                         client.EnqueueSend(package.AsByteArray());
                         autoEvent.WaitOne();

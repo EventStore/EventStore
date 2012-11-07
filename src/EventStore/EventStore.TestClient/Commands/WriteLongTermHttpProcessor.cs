@@ -183,10 +183,10 @@ namespace EventStore.TestClient.Commands
                         var url = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}", esId);
 
                         var dataResultingSize = dataSizeCoefficient * dataSize;
-                        var write = new ClientMessageDto.WriteEventText(
+                        var write = new HttpClientMessageDto.WriteEventText(
                             ExpectedVersion.Any,
                             new[] { 
-                                new ClientMessageDto.ClientEventText(
+                                new HttpClientMessageDto.ClientEventText(
                             Guid.NewGuid(),
                             "type",
                             "DATA" + dataResultingSize.ToString(" 00000 ") + new string('*', dataResultingSize),

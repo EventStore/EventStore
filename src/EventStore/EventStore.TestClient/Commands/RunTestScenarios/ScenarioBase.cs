@@ -54,7 +54,10 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected void CreateNewDbPath()
         {
-            var dataFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "data");
+            var dbParent = DbParentPath ?? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            Debug.Assert(dbParent != null, "dbParent != null");
+
+            var dataFolder = Path.Combine(dbParent, "data");
             var idx = 0;
             _dbPath = Path.Combine(dataFolder, string.Format("es_{0}", idx));
 
@@ -73,6 +76,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         protected readonly int Streams;
         protected readonly int EventsPerStream;
         protected readonly int StreamDeleteStep;
+        protected readonly string DbParentPath;
 
         private readonly HashSet<int> _startedNodesProcIds;
 
@@ -91,7 +95,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                int connections,
                                int streams,
                                int eventsPerStream,
-                               int streamDeleteStep)
+                               int streamDeleteStep,
+                               string dbParentPath)
         {
             DirectSendOverTcp = directSendOverTcp;
             MaxConcurrentRequests = maxConcurrentRequests;
@@ -99,6 +104,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Streams = streams;
             EventsPerStream = eventsPerStream;
             StreamDeleteStep = streamDeleteStep;
+            DbParentPath = dbParentPath;
 
             _startedNodesProcIds = new HashSet<int>();
             CreateNewDbPath();
@@ -262,6 +268,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected int StartNode()
         {
+            
             var clientFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
             string fileName;

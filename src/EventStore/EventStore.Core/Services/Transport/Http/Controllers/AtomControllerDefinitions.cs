@@ -317,7 +317,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var entity = manager.HttpEntity;
 
-            var create = entity.RequestCodec.From<ClientMessageDto.CreateStreamText>(body);
+            var create = entity.RequestCodec.From<HttpClientMessageDto.CreateStreamText>(body);
             if (create == null)
             {
                 SendBadRequest(entity, "Create stream request body cannot be deserialized");
@@ -347,7 +347,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var entity = manager.HttpEntity;
             var stream = (string)manager.AsyncState;
 
-            var delete = entity.RequestCodec.From<ClientMessageDto.DeleteStreamText>(body);
+            var delete = entity.RequestCodec.From<HttpClientMessageDto.DeleteStreamText>(body);
             if (delete == null)
             {
                 SendBadRequest(entity, "Delete stream request body cannot be deserialized");
@@ -392,7 +392,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var entity = manager.HttpEntity;
             var stream = (string)manager.AsyncState;
 
-            var write = entity.RequestCodec.From<ClientMessageDto.WriteEventText>(body);
+            var write = entity.RequestCodec.From<HttpClientMessageDto.WriteEventText>(body);
             if (write == null || write.Events == null || write.Events.Length == 0)
             {
                 SendBadRequest(entity, "Write request body invalid");
@@ -405,7 +405,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                     true,
                                                     stream,
                                                     write.ExpectedVersion,
-                                                    write.Events.Select(EventConvertion.ConvertOnWrite).ToArray());
+                                                    write.Events.Select(EventConversion.ConvertOnWrite).ToArray());
             Publish(msg);
         }
     }

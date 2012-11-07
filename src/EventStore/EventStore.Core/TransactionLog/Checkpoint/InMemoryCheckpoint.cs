@@ -49,9 +49,9 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _name = name;
         }
 
-        public void Write(long checksum)
+        public void Write(long checkpoint)
         {
-            Interlocked.Exchange(ref _last, checksum);
+            Interlocked.Exchange(ref _last, checkpoint);
         }
 
         public long Read()

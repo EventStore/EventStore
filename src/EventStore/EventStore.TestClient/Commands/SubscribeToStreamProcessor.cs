@@ -53,7 +53,7 @@ namespace EventStore.TestClient.Commands
                         {
                             case TcpCommand.StreamEventAppeared:
                             {
-                                var dto = pkg.Data.Deserialize<ClientMessageDto.StreamEventAppeared>();
+                                var dto = pkg.Data.Deserialize<TcpClientMessageDto.StreamEventAppeared>();
                                 context.Log.Info("NEW EVENT:\n\n"
                                                  + "\tEventStreamId: {0}\n"
                                                  + "\tEventNumber:   {1}\n"
@@ -69,13 +69,13 @@ namespace EventStore.TestClient.Commands
                             }
                             case TcpCommand.SubscriptionDropped:
                             {
-                                var dto = pkg.Data.Deserialize<ClientMessageDto.SubscriptionDropped>();
+                                var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
                                 context.Log.Error("Subscription to <{0}> WAS DROPPED!", dto.EventStreamId);
                                 break;
                             }
                             case TcpCommand.SubscriptionToAllDropped:
                             {
-                                var dto = pkg.Data.Deserialize<ClientMessageDto.SubscriptionToAllDropped>();
+                                var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionToAllDropped>();
                                 context.Log.Error("Subscription to ALL WAS DROPPED!");
                                 break;
                             }
@@ -95,7 +95,7 @@ namespace EventStore.TestClient.Commands
             if (args.Length == 0)
             {
                 context.Log.Info("SUBSCRIBING TO ALL STREAMS...");
-                var cmd = new ClientMessageDto.SubscribeToAllStreams();
+                var cmd = new TcpClientMessageDto.SubscribeToAllStreams();
                 connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToAllStreams, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
             }
             else
@@ -103,7 +103,7 @@ namespace EventStore.TestClient.Commands
                 foreach (var stream in args)
                 {
                     context.Log.Info("SUBSCRIBING TO STREAM <{0}>...", stream);
-                    var cmd = new ClientMessageDto.SubscribeToStream(stream);
+                    var cmd = new TcpClientMessageDto.SubscribeToStream(stream);
                     connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
                 }
             }

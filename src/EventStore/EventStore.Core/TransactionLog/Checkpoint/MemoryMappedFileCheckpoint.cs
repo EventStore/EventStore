@@ -84,9 +84,9 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _file.Dispose();
         }
 
-        public void Write(long checksum)
+        public void Write(long checkpoint)
         {
-            Interlocked.Exchange(ref _last, checksum);
+            Interlocked.Exchange(ref _last, checkpoint);
         }
 
         public void Flush()

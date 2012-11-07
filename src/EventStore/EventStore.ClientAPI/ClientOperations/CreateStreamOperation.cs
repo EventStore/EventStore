@@ -39,7 +39,7 @@ namespace EventStore.ClientAPI.ClientOperations
     internal class CreateStreamOperation : IClientOperation
     {
         private readonly TaskCompletionSource<object> _source;
-        private ClientMessages.CreateStreamCompleted _result;
+        private ClientMessage.CreateStreamCompleted _result;
         private int _completed;
 
         private Guid _correlationId;
@@ -82,7 +82,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.CreateStream(_stream, _metadata, _forward);
+                var dto = new ClientMessage.CreateStream(_stream, _metadata, _forward);
                 return new TcpPackage(TcpCommand.CreateStream, _correlationId, dto.Serialize());
             }
         }
@@ -93,7 +93,7 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 if (package.Command == TcpCommand.DeniedToRoute)
                 {
-                    var route = package.Data.Deserialize<ClientMessages.DeniedToRoute>();
+                    var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
                     return new InspectionResult(InspectionDecision.Reconnect,
                                                 data: new EndpointsPair(route.ExternalTcpEndPoint,
                                                                         route.ExternalHttpEndPoint));
@@ -104,7 +104,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                                                                 package.Command.ToString()));
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessages.CreateStreamCompleted>();
+                var dto = data.Deserialize<ClientMessage.CreateStreamCompleted>();
                 _result = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)

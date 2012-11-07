@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,38 +24,54 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
 using System;
-using ProtoBuf;
+using System.IO;
+using EventStore.Common.Utils;
 
-namespace EventStore.ClientAPI.Messages
+namespace EventStore.Core.TransactionLog.FileNamingStrategy
 {
-    [ProtoContract]
-    internal class ClientEvent
+    public class PrefixFileNamingStrategy : IFileNamingStrategy 
     {
-        [ProtoMember(1)]
-        public byte[] EventId { get; set; }
+        private readonly string _path;
+        private readonly string _prefix;
 
-        [ProtoMember(2, IsRequired = false)]
-        public string EventType { get; set; }
-
-        [ProtoMember(3)]
-        public byte[] Data { get; set; }
-
-        [ProtoMember(4, IsRequired = false)]
-        public byte[] Metadata { get; set; }
-
-        public ClientEvent()
+        public PrefixFileNamingStrategy(string path, string prefix)
         {
+            Ensure.NotNull(path, "path");
+            Ensure.NotNull(prefix, "prefix");
+
+            _path = path;
+            _prefix = prefix;
         }
 
-        public ClientEvent(Guid eventId, string eventType, byte[] data, byte[] metadata)
+        public string GetFilenameFor(int index, int version = 0)
         {
-            EventId = eventId.ToByteArray();
-            EventType = eventType;
-            Data = data;
-            Metadata = metadata;
+            Ensure.Nonnegative(index, "index");
+            Ensure.Nonnegative(version, "version");
+
+            return Path.Combine(_path, _prefix + index);
+        }
+
+        public string[] GetAllVersionsFor(int index)
+        {
+            return Directory.GetFiles(_path, _prefix + index);
+        }
+
+        public string[] GetAllPresentFiles()
+        {
+            return Directory.GetFiles(_path, _prefix + "*");
+        }
+
+        public string GetTempFilename()
+        {
+            return Path.Combine(_path, string.Format("{0}.tmp", Guid.NewGuid()));
+        }
+
+        public string[] GetAllTempFiles()
+        {
+            return Directory.GetFiles(_path, "*.tmp");
         }
     }
 }

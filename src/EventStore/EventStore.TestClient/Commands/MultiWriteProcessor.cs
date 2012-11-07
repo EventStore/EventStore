@@ -60,14 +60,15 @@ namespace EventStore.TestClient.Commands
             }
 
             context.IsAsync();
-            var writeDto = new ClientMessageDto.WriteEvents(
+            var writeDto = new TcpClientMessageDto.WriteEvents(
                 eventStreamId,
                 expectedVersion,
                 Enumerable.Range(0, writeCount).Select(x =>
-                                                       new ClientMessageDto.ClientEvent(Guid.NewGuid(),
+                                                       new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
                                                                                   "type",
                                                                                   Encoding.UTF8.GetBytes(data),
-                                                                                  new byte[0])).ToArray());
+                                                                                  new byte[0])).ToArray(),
+                true);
 
             var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
 
@@ -91,7 +92,7 @@ namespace EventStore.TestClient.Commands
 
                     sw.Stop();
 
-                    var dto = pkg.Data.Deserialize<ClientMessageDto.WriteEventsCompleted>();
+                    var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
                     if (dto.ErrorCode == (int)OperationErrorCode.Success)
                     {
                         context.Log.Info("Successfully written {0} events. CorrelationId: {1}.", writeCount, package.CorrelationId);

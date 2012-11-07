@@ -54,8 +54,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                                int streams, 
                                int eventsPerStream, 
                                int streamDeleteStep,
-                               TimeSpan executionPeriod) 
-            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep)
+                               TimeSpan executionPeriod,
+                               string dbParentPath)
+            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
         {
             _executionPeriod = executionPeriod;
             SetStartupWaitInterval(TimeSpan.FromSeconds(10));
@@ -88,7 +89,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             var nodeProcessId = StartNode();
 
-            var parallelWritesTimeout = TimeSpan.FromSeconds(240);
+            var parallelWritesTimeout = TimeSpan.FromMinutes((EventsPerStream / 1000.0) * 7);
 
             var parallelWriteTask = RunParallelWrites(runIndex);
 

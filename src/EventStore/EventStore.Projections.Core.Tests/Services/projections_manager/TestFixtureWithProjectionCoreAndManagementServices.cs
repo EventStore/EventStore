@@ -50,6 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
             _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, checkpointForStatistics: null);
             _coreService = new ProjectionCoreService(_bus, _bus, 10, new InMemoryCheckpoint(1000));
+            _bus.Subscribe<ProjectionMessage.Projections.StatusReport.Started>(_manager);
             _bus.Subscribe<ProjectionMessage.Projections.StatusReport.Stopped>(_manager);
             _bus.Subscribe<ProjectionMessage.Projections.Management.StateReport>(_manager);
             _bus.Subscribe<ProjectionMessage.Projections.Management.StatisticsReport>(_manager);

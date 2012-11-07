@@ -39,7 +39,7 @@ namespace EventStore.ClientAPI.ClientOperations
     internal class StartTransactionOperation : IClientOperation
     {
         private readonly TaskCompletionSource<EventStoreTransaction> _source;
-        private ClientMessages.TransactionStartCompleted _result;
+        private ClientMessage.TransactionStartCompleted _result;
         private int _completed;
 
         private Guid _corrId;
@@ -82,7 +82,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var startTransaction = new ClientMessages.TransactionStart(_stream, _expectedVersion, _forward);
+                var startTransaction = new ClientMessage.TransactionStart(_stream, _expectedVersion, _forward);
                 return new TcpPackage(TcpCommand.TransactionStart, _corrId,  startTransaction.Serialize());
             }
         }
@@ -93,7 +93,7 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 if (package.Command == TcpCommand.DeniedToRoute)
                 {
-                    var route = package.Data.Deserialize<ClientMessages.DeniedToRoute>();
+                    var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
                     return new InspectionResult(InspectionDecision.Reconnect,
                                                 data: new EndpointsPair(route.ExternalTcpEndPoint,
                                                                         route.ExternalHttpEndPoint));
@@ -106,7 +106,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessages.TransactionStartCompleted>();
+                var dto = data.Deserialize<ClientMessage.TransactionStartCompleted>();
                 _result = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)

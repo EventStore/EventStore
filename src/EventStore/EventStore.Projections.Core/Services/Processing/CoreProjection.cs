@@ -65,6 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
             Stopped = 0x80,
             FaultedStopping = 0x100,
             Faulted = 0x200,
+            Subscribed = StateLoadedSubscribed | Running | Paused | Resumed
         }
 
         private readonly string _name;
@@ -158,8 +159,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Stop()
         {
-            EnsureState(State.StateLoadedSubscribed | State.Paused | State.Resumed | State.Running);
-            GoToState(State.Stopping);
+            EnsureState(State.LoadStateRequsted | State.StateLoadedSubscribed | State.Paused | State.Resumed | State.Running);
+            if (_state == State.LoadStateRequsted)
+                GoToState(State.Stopped);
+            else
+                GoToState(State.Stopping);
         }
 
         private PartitionStateCache.State GetProjectionState()
@@ -288,7 +292,6 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 OnLoadStateCompleted(message.CheckpointTag, message.CheckpointData);
-                GoToState(State.StateLoadedSubscribed);
             }
             catch (Exception ex)
             {
@@ -302,7 +305,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 "Projection '{0}'({1}) restart has been requested due to: '{2}'", _name, _projectionCorrelationId,
                 message.Reason);
             //
-            _publisher.Publish(new ProjectionMessage.Projections.UnsubscribeProjection(_projectionCorrelationId));
+            if ((_state & State.Subscribed) != 0)
+                _publisher.Publish(new ProjectionMessage.Projections.UnsubscribeProjection(_projectionCorrelationId));
             GoToState(State.Initial);
             Start();
         }
@@ -425,7 +429,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterStopping()
         {
-            Console.WriteLine("Stopping");
             _publisher.Publish(new ProjectionMessage.Projections.UnsubscribeProjection(_projectionCorrelationId));
             // core projection may be stopped to change its configuration
             // it is important to checkpoint it so no writes pending remain when stopped

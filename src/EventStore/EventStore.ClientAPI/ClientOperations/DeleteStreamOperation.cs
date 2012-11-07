@@ -39,7 +39,7 @@ namespace EventStore.ClientAPI.ClientOperations
     internal class DeleteStreamOperation : IClientOperation
     {
         private readonly TaskCompletionSource<object> _source;
-        private ClientMessages.DeleteStreamCompleted _result;
+        private ClientMessage.DeleteStreamCompleted _result;
         private int _completed;
 
         private Guid _correlationId;
@@ -76,7 +76,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessages.DeleteStream(_stream, _expectedVersion, _forward);
+                var dto = new ClientMessage.DeleteStream(_stream, _expectedVersion, _forward);
                 return new TcpPackage(TcpCommand.DeleteStream, _correlationId, dto.Serialize());
             }
         }
@@ -93,7 +93,7 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 if (package.Command == TcpCommand.DeniedToRoute)
                 {
-                    var route = package.Data.Deserialize<ClientMessages.DeniedToRoute>();
+                    var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
                     return new InspectionResult(InspectionDecision.Reconnect,
                                                 data: new EndpointsPair(route.ExternalTcpEndPoint,
                                                                         route.ExternalHttpEndPoint));
@@ -106,7 +106,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 }
 
                 var data = package.Data;
-                var dto = data.Deserialize<ClientMessages.DeleteStreamCompleted>();
+                var dto = data.Deserialize<ClientMessage.DeleteStreamCompleted>();
                 _result = dto;
 
                 switch ((OperationErrorCode)dto.ErrorCode)
