@@ -54,6 +54,9 @@
     <Content Include="singlenode-web\chat.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="singlenode-web\delete-projection.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="singlenode-web\edit-projection-source.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

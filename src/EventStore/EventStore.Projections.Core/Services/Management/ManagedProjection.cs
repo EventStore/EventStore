@@ -511,7 +511,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void DoDelete(ProjectionManagementMessage.Delete message)
         {
-            Disable();
+            if (Enabled)
+                Disable();
             Delete();
             BeginWrite(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
         }

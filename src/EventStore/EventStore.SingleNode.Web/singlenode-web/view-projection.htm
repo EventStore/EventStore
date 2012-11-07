@@ -22,8 +22,7 @@
                             <img src="/web/es/img/stop_btn.png" title="Disable" alt="Disable" /></a> </li>
                         <li style="display: inline;"><a href="#" id="commandEnable">
                             <img src="/web/es/img/start_btn.png" title="Enable" alt="Enable" /></a> </li>
-                        <li style="display: inline;"><a href="#" id="commandDelete">
-                            <img src="/web/es/img/delete-btn.png" title="Delete" alt="Delete" /></a> </li>
+                        <li style="display: inline;" id="delete-projection-container"></li>
                     </ul>
                 </div>
             </div>
@@ -97,6 +96,9 @@
         <script id="editSourceTemplate" type="text/x-jsrender">
                 <a href="{{>'edit-projection-source.htm#'+statusUrl}}" class="btn btn-success"><i class="icon-pencil"></i> Edit</a>
         </script>       
+        <script id="deleteProjectionTemplate" type="text/x-jsrender">
+                <a href="{{>'delete-projection.htm#'+statusUrl}}">[Delete]</a> 
+        </script>       
         <script id="r-body">
                 es.tmpl.renderBody();
         </script>
@@ -131,7 +133,9 @@
                 $("#edit-source-container-top").html(
                     $.render.editSourceTemplate(projection)
                 );
-
+                $("#delete-projection-container").html(
+                    $.render.deleteProjectionTemplate(projection)
+                );
                 delayedRequestProjection();
             }
 
@@ -230,22 +234,12 @@
                 });
             }
 
-            function onDelete() {
-                $.ajax(projectionStatusUrl, {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    type: "DELETE",
-                    success: successPostCommand,
-                    error: function() { alert("Failed!"); }
-                });
-            }
-
             $(function() {
                 $.templates("projectionTemplate", "#projectionTemplate");
                 $.templates("projectionTemplateButton", "#projectionTemplateButton");
                 $.templates("projectionTemplateReason", "#projectionTemplateReason");
                 $.templates("editSourceTemplate", "#editSourceTemplate");
+                $.templates("deleteProjectionTemplate", "#deleteProjectionTemplate");
 
                 projectionStatusUrl = location.hash.substr(1);
                 requestProjection();
@@ -254,7 +248,6 @@
 
                 $('#commandDisable').click(onDisable);
                 $("#commandEnable").click(onEnable);
-                $("#commandDelete").click(onDelete);
 
                 /* $("#projectiontab a").click(function (e) {
                     e.preventDefault();
