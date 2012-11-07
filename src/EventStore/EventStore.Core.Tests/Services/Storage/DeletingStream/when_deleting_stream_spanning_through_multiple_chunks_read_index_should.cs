@@ -25,9 +25,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.IsStreamDeleted
+namespace EventStore.Core.Tests.Services.Storage.DeletingStream
 {
     [TestFixture]
     public class when_deleting_stream_spanning_through_multiple_chunks_read_index_should : ReadIndexTestScenario
