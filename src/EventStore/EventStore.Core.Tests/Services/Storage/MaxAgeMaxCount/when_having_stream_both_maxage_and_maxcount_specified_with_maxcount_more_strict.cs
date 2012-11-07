@@ -124,8 +124,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         [Test]
         public void read_all_backward_returns_all_records_including_expired_ones()
         {
-            var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
-            var records = ReadIndex.ReadAllEventsBackward(pos, 100).Records;
+            var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
             Assert.AreEqual(6, records.Count);
             Assert.AreEqual(_r6, records[0].Event);
             Assert.AreEqual(_r5, records[1].Event);

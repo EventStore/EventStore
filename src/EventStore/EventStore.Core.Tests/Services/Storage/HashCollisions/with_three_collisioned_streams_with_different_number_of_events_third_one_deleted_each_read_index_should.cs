@@ -663,8 +663,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_all_prepares_on_read_all_backward()
         {
-            var pos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());
-            var events = ReadIndex.ReadAllEventsBackward(pos, 100).Records.Select(r => r.Event).ToArray();
+            var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event).ToArray();
             Assert.AreEqual(3 + 5 + 7, events.Length);
 
             Assert.AreEqual(_prepares1[0], events[14]);

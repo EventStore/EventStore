@@ -90,8 +90,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         [Test]
         public void read_all_events_backward_returns_all_events_in_correct_order()
         {
-            var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
-            var records = ReadIndex.ReadAllEventsBackward(pos, 10).Records;
+            var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).Records;
 
             Assert.AreEqual(5, records.Count);
             Assert.AreEqual(_p5, records[0].Event);
@@ -172,7 +171,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             var recs = new[] { _p5, _p3, _p1, _p4, _p2 }; // in reverse committed order
 
             int count = 0;
-            var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
+            var pos = GetBackwardReadPos();
             IndexReadAllResult result;
             while ((result = ReadIndex.ReadAllEventsBackward(pos, 1)).Records.Count != 0)
             {
@@ -220,7 +219,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             var recs = new[] { _p5, _p3, _p1, _p4, _p2 }; // in reverse committed order
 
             int count = 0;
-            var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
+            var pos = GetBackwardReadPos();
             IndexReadAllResult result;
             while ((result = ReadIndex.ReadAllEventsBackward(pos, 1)).Records.Count != 0)
             {
