@@ -1144,7 +1144,7 @@ namespace EventStore.Common.CommandLine.lib
             _optionsHelp.Append("    ");
             if (option.Required)
             {
-                option.HelpText = String.Format("{0} ", requiredWord) + option.HelpText;
+                option.HelpText = string.Format("{0} ", requiredWord) + option.HelpText;
             }
 
             FormatOptionHelpTextEventArgs e = new FormatOptionHelpTextEventArgs(option);

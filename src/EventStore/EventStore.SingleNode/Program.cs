@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.IO;
 using System.Net;
 using EventStore.Common.Settings;
 using EventStore.Core;
@@ -38,25 +39,8 @@ namespace EventStore.SingleNode
     public class Program : ProgramBase<SingleNodeOptions>
     {
         private SingleVNode _node;
-        private TFChunkDb _db;
-        
-        private SingleVNodeAppSettings _appSets;
-        private SingleVNodeSettings _vNodeSets;
-
         private Projections.Core.Projections _projections;
-        private bool _noProjections;
-        private int _projectionThreads;
-        private bool _dbVerifyHashes;
-
-        protected TFChunkDb Db
-        {
-            get { return _db; }
-        }
-
-        protected SingleVNode Node
-        {
-            get { return _node; }
-        }
+        private readonly DateTime _startupTimeStamp = DateTime.UtcNow;
 
         public static int Main(string[] args)
         {
@@ -64,41 +48,19 @@ namespace EventStore.SingleNode
             return p.Run(args);
         }
 
-        protected override void OnArgsParsed(SingleNodeOptions options)
+        protected override string GetLogsDirectory(SingleNodeOptions options)
         {
-            var now = DateTime.UtcNow;
-            _db = GetDb(options, now);
-            _appSets = GetAppSettings(options);
-            _vNodeSets = GetVNodeSettings(options);
-            _dbVerifyHashes = ! options.DoNotVerifyDbHashesOnStartup;
-            _noProjections = options.NoProjections;
-            _projectionThreads = options.ProjectionThreads;
+            return ResolveDbPath(options.DbPath, options.HttpPort) + "-logs";
         }
 
-        protected override void Create()
+        private string ResolveDbPath(string optionsPath, int nodePort)
         {
-            _node = new SingleVNode(_db, _vNodeSets, _appSets, _dbVerifyHashes);
+            if (optionsPath.IsNotEmptyString())
+                return optionsPath;
 
-            if (!_noProjections)
-                _projections = new Projections.Core.Projections(_db, _node.MainQueue, _node.Bus, _node.TimerService, _node.HttpService, _projectionThreads);
-        }
-
-        protected override void Start()
-        {
-            _node.Start();
-
-            if (!_noProjections)
-                _projections.Start();
-        }
-
-        public override void Stop()
-        {
-            _node.Stop();
-        }
-
-        protected override string GetLogsDirectory()
-        {
-            return _db.Config.Path + "-logs" ;
+            return Path.Combine(Path.GetTempPath(),
+                                "EventStore",
+                                string.Format("{0:yyyy-MM-dd_HH.mm.ss.ffffff}-Node{1}", _startupTimeStamp, nodePort));
         }
 
         protected override string GetComponentName(SingleNodeOptions options)
@@ -106,28 +68,49 @@ namespace EventStore.SingleNode
             return string.Format("{0}-{1}", options.Ip, options.HttpPort);
         }
 
-        private static TFChunkDb GetDb(SingleNodeOptions options, DateTime timeStamp)
+        protected override void Create(SingleNodeOptions options)
         {
-            var config = CreateDbConfig(options.DbPath, options.HttpPort, timeStamp, options.ChunksToCache);
-            return new TFChunkDb(config);
-        }
+            var dbPath = ResolveDbPath(options.DbPath, options.HttpPort);
+            var db = new TFChunkDb(CreateDbConfig(dbPath, options.ChunksToCache));
+            var vnodeSettings = GetVNodeSettings(options);
+            var appSettings = new SingleVNodeAppSettings(TimeSpan.FromSeconds(options.StatsPeriodSec));
+            var dbVerifyHashes = !options.DoNotVerifyDbHashesOnStartup;
+            _node = new SingleVNode(db, vnodeSettings, appSettings, dbVerifyHashes);
 
-        private static SingleVNodeAppSettings GetAppSettings(SingleNodeOptions options)
-        {
-            var app = new SingleVNodeAppSettings(TimeSpan.FromSeconds(options.StatsPeriodSec));
-            return app;
+            if (!options.NoProjections)
+            {
+                _projections = new Projections.Core.Projections(db,
+                                                                _node.MainQueue,
+                                                                _node.Bus,
+                                                                _node.TimerService,
+                                                                _node.HttpService,
+                                                                options.ProjectionThreads);
+            }
         }
 
         private static SingleVNodeSettings GetVNodeSettings(SingleNodeOptions options)
         {
             var tcp = new IPEndPoint(options.Ip, options.TcpPort);
             var http = new IPEndPoint(options.Ip, options.HttpPort);
-            var prefixes = !String.IsNullOrEmpty(options.PrefixesString)
-                               ? options.PrefixesString.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)
-                               : new[] {http.ToHttpUrl()};
+            var prefixes = options.PrefixesString.IsNotEmptyString()
+                                   ? options.PrefixesString.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)
+                                   : new[] {http.ToHttpUrl()};
 
             var vnodeSettings = new SingleVNodeSettings(tcp, http, prefixes.Select(p => p.Trim()).ToArray());
             return vnodeSettings;
+        }
+
+        protected override void Start()
+        {
+            _node.Start();
+
+            if (_projections != null)
+                _projections.Start();
+        }
+
+        public override void Stop()
+        {
+            _node.Stop();
         }
     }
 }

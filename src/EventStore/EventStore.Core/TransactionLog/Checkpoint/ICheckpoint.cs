@@ -29,12 +29,6 @@ using System;
 
 namespace EventStore.Core.TransactionLog.Checkpoint
 {
-    public static class Checkpoint
-    {
-        public const string Writer = "writer";
-        public const string Chaser = "chaser";
-    }
-
     public interface ICheckpoint: IDisposable
     {
         string Name { get; }

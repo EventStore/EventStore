@@ -88,7 +88,7 @@ namespace EventStore.Core.Messages
 
             public ServiceShutdown(string serviceName)
             {
-                if (String.IsNullOrEmpty(serviceName)) 
+                if (string.IsNullOrEmpty(serviceName)) 
                     throw new ArgumentNullException("serviceName");
                 ServiceName = serviceName;
             }

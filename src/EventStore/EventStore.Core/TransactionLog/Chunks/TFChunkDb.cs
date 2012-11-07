@@ -238,5 +238,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (Manager != null)
                 Manager.Dispose();
         }
+
     }
 }

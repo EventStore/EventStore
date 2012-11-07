@@ -24,6 +24,12 @@ namespace EventStore.Core.Tests.TransactionLog.Checkpoints
             _checkpoint = new InMemMultiCheckpoint(3);
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            _checkpoint.Dispose();
+        }
+
         [Test]
         public void should_not_return_checkpoint_when_empty()
         {
@@ -138,10 +144,17 @@ namespace EventStore.Core.Tests.TransactionLog.Checkpoints
             Assert.AreEqual(2000, checkpoint);
         }
 
-        [TearDown]
-        public void TearDown()
+        [Test]
+        public void has_no_checkpoints_to_return_after_clear()
         {
-            
+            _checkpoint.Update(EndPoint1, 1000);
+            _checkpoint.Update(EndPoint2, 2000);
+            _checkpoint.Update(EndPoint3, 3000);
+
+            _checkpoint.Clear();
+
+            long check;
+            Assert.IsFalse(_checkpoint.TryGetMinMax(out check));
         }
     }
 }

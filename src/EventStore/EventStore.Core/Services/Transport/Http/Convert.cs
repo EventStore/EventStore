@@ -104,7 +104,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var self = HostName.Combine(userHostName, "/streams/{0}", eventStreamId);
             var feed = new FeedElement();
-            feed.SetTitle(String.Format("Event stream '{0}'", eventStreamId));
+            feed.SetTitle(string.Format("Event stream '{0}'", eventStreamId));
             feed.SetId(self);
             feed.SetUpdated(updateTime);
             feed.SetAuthor(AtomSpecs.Author);
@@ -145,7 +145,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             var self = HostName.Combine(userHostName, "/streams/$all");
             var feed = new FeedElement();
-            feed.SetTitle(String.Format("All events"));
+            feed.SetTitle(string.Format("All events"));
             feed.SetId(self);
 
             var items = result.Records.Select(rer => rer.Event).ToList();
@@ -191,7 +191,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             var self = HostName.Combine(userHostName, "/streams/$all");
             var feed = new FeedElement();
-            feed.SetTitle(String.Format("All events"));
+            feed.SetTitle(string.Format("All events"));
             feed.SetId(self);
 
             var items = result.Records.Select(rer => rer.Event).OrderByDescending(re => re.TimeStamp).ToList();
@@ -253,13 +253,13 @@ namespace EventStore.Core.Services.Transport.Http
 
             var entry = new EntryElement();
 
-            entry.SetTitle(String.Format("{0} #{1}", evnt.EventStreamId, evnt.EventNumber));
+            entry.SetTitle(string.Format("{0} #{1}", evnt.EventStreamId, evnt.EventNumber));
 
             entry.SetId(HostName.Combine(userHostName, "/streams/{0}/{1}", evnt.EventStreamId, evnt.EventNumber));
             entry.SetUpdated(evnt.TimeStamp);
 
             entry.SetAuthor(AtomSpecs.Author);
-            entry.SetSummary(String.Format("Entry #{0}", evnt.EventNumber));
+            entry.SetSummary(string.Format("Entry #{0}", evnt.EventNumber));
 
             entry.AddLink(HostName.Combine(userHostName, "/streams/{0}/{1}", evnt.EventStreamId, evnt.EventNumber), "edit", null);
 

@@ -76,7 +76,7 @@ namespace EventStore.Common.Utils
         public static void Equal(int expected, int actual)
         {
             if (expected != actual)
-                throw new Exception(String.Format("expected {0} actual {1}", expected, actual));
+                throw new Exception(string.Format("expected {0} actual {1}", expected, actual));
         }
     }
 }

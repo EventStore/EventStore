@@ -62,7 +62,7 @@ namespace EventStore.TestClient
                     return -1;
                 }
 
-                var logsDir = !string.IsNullOrEmpty(options.LogsDir) ? options.LogsDir : Helper.GetDefaultLogsDir();
+                var logsDir = options.LogsDir.IsNotEmptyString() ? options.LogsDir : Helper.GetDefaultLogsDir();
                 LogManager.Init("client", logsDir);
 
                 IPAddress ipAddr;
@@ -72,11 +72,11 @@ namespace EventStore.TestClient
                     return -1;
                 }
 
-                var systemInfo = String.Format("{0} {1}", OS.IsLinux ? "Linux" : "Windows", Runtime.IsMono ? "MONO" : ".NET");
-                var startInfo = String.Join(Environment.NewLine, options.GetLoadedOptionsPairs().Select(pair => String.Format("{0} : {1}", pair.Key, pair.Value)));
-                var logsDirectory = String.Format("LOGS DIRECTORY : {0}", LogManager.LogsDirectory);
+                var systemInfo = string.Format("{0} {1}", OS.IsLinux ? "Linux" : "Windows", Runtime.IsMono ? "MONO" : ".NET");
+                var startInfo = string.Join(Environment.NewLine, options.GetLoadedOptionsPairs().Select(pair => string.Format("{0} : {1}", pair.Key, pair.Value)));
+                var logsDirectory = string.Format("LOGS DIRECTORY : {0}", LogManager.LogsDirectory);
 
-                Log.Info(String.Format("{0}{1}{2}{1}{3}", logsDirectory, Environment.NewLine, systemInfo, startInfo));
+                Log.Info(string.Format("{0}{1}{2}{1}{3}", logsDirectory, Environment.NewLine, systemInfo, startInfo));
 
                 var client = new Client(options);
                 var exitCode = client.Run();

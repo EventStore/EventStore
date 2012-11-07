@@ -36,7 +36,7 @@ var
 	core_indexOf = Array.prototype.indexOf,
 	core_toString = Object.prototype.toString,
 	core_hasOwn = Object.prototype.hasOwnProperty,
-	core_trim = String.prototype.trim,
+	core_trim = string.prototype.trim,
 
 	// Define a local copy of jQuery
 	jQuery = function( selector, context ) {
@@ -618,7 +618,7 @@ jQuery.extend({
 		return obj;
 	},
 
-	// Use native String.trim function wherever possible
+	// Use native string.trim function wherever possible
 	trim: core_trim ?
 		function( text ) {
 			return text == null ?

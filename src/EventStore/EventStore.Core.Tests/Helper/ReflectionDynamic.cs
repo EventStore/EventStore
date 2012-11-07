@@ -199,9 +199,9 @@ namespace EventStore.Core.Tests.Helper
             // For fields, skip the auto property backing fields (which name start with <)
             var propNames = typeProperties.Keys.Where(name => name[0] != '<').OrderBy(name => name);
             throw new ArgumentException(
-                String.Format(
+                string.Format(
                 "The property {0} doesn't exist on type {1}. Supported properties are: {2}",
-                propertyName, RealObject.GetType(), String.Join(", ", propNames)));
+                propertyName, RealObject.GetType(), string.Join(", ", propNames)));
         }
 
         private static IDictionary<string, IProperty> GetTypeProperties(Type type)

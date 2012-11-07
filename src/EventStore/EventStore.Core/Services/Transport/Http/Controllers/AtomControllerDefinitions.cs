@@ -156,9 +156,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void OnDeleteStream(HttpEntity entity, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
-            if (String.IsNullOrEmpty(stream))
+            if (string.IsNullOrEmpty(stream))
             {
-                SendBadRequest(entity, String.Format("Invalid stream name '{0}'", stream));
+                SendBadRequest(entity, string.Format("Invalid stream name '{0}'", stream));
                 return;
             }
 
@@ -170,7 +170,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var stream = match.BoundVariables["stream"];
             if (string.IsNullOrEmpty(stream))
             {
-                SendBadRequest(entity, String.Format("Invalid stream name '{0}'", stream));
+                SendBadRequest(entity, string.Format("Invalid stream name '{0}'", stream));
                 return;
             }
 
@@ -188,17 +188,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             if (string.IsNullOrEmpty(stream))
             {
-                SendBadRequest(entity, String.Format("Invalid stream name '{0}'", stream));
+                SendBadRequest(entity, string.Format("Invalid stream name '{0}'", stream));
                 return;
             }
             if (!int.TryParse(start, out startIdx) || startIdx < -1)
             {
-                SendBadRequest(entity, String.Format("'{0}' is not valid start index", start));
+                SendBadRequest(entity, string.Format("'{0}' is not valid start index", start));
                 return;
             }
             if (!int.TryParse(count, out cnt) || cnt <= 0)
             {
-                SendBadRequest(entity, String.Format("'{0}' is not valid count. Should be positive integer", count));
+                SendBadRequest(entity, string.Format("'{0}' is not valid count. Should be positive integer", count));
                 return;
             }
 

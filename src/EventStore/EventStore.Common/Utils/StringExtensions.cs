@@ -25,45 +25,19 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using EventStore.Common.Log;
 
 namespace EventStore.Common.Utils
 {
-    public enum ExitCode
+    public static class StringExtensions
     {
-        Success = 0,
-        Error
-    }
-
-    public class Application
-    {
-        private static Action<ExitCode> _exit;
-        private static bool _initialized;
-
-        public static void RegisterExitAction(Action<ExitCode> exitAction)
+        public static bool IsEmptyString(this string s)
         {
-            Ensure.NotNull(exitAction, "exitAction");
-
-            if (_initialized)
-                throw new InvalidOperationException("Application is already initialized");
-
-            _exit = exitAction;
-            _initialized = true;
+            return string.IsNullOrEmpty(s);
         }
 
-        public static void Exit(ExitCode exitCode, string reason)
+        public static bool IsNotEmptyString(this string s)
         {
-            Ensure.NotNullOrEmpty(reason, "reason");
-            
-            if (!_initialized)
-                throw new InvalidOperationException("Application should be initialized before exiting");
-
-            Console.WriteLine("Exiting...");
-            Console.WriteLine("Exit reason : {0}", reason);
-
-            LogManager.Finish();
-            _exit(exitCode);
+            return !string.IsNullOrEmpty(s);
         }
     }
 }

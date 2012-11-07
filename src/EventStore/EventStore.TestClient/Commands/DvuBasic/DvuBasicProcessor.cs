@@ -61,7 +61,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                                      "<streams per plugin, default = 100> " +
                                      "<producers, default = [bank], available = [{1}]>",
                                      Keyword, 
-                                     String.Join(",", AvailableProducers));
+                                     string.Join(",", AvailableProducers));
             }
         }
 
@@ -122,7 +122,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                                     if (producersArg.Any(p => !AvailableProducers.Contains(p)))
                                     {
                                         context.Log.Error("Invalid producers argument. Pass comma-separated subset of [{0}]",
-                                                          String.Join(",", AvailableProducers));
+                                                          string.Join(",", AvailableProducers));
                                         return false;
                                     }
 
@@ -448,7 +448,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
 
         private IBasicProducer CorrespondingProducer(string stream)
         {
-            return Producers.Single(f => String.Equals(f.Name, stream, StringComparison.OrdinalIgnoreCase));
+            return Producers.Single(f => string.Equals(f.Name, stream, StringComparison.OrdinalIgnoreCase));
         }
 
         private Event CreateEvent(string stream, int version)

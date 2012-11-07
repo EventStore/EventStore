@@ -99,6 +99,11 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             // checkpoint is too small, we just ignore it
         }
 
+        public void Clear()
+        {
+            _curCount = 0;
+        }
+
         public bool TryGetMinMax(out long checkpoint)
         {
             if (_curCount == 0)
