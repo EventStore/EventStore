@@ -122,10 +122,10 @@ namespace EventStore.Projections.Core.Services.Management
             set { _persistedState.Enabled = value; }
         }
 
-        private bool Deleted
+        public bool Deleted
         {
             get { return _persistedState.Deleted; }
-            set { _persistedState.Deleted = value; }
+            private set { _persistedState.Deleted = value; }
         }
 
         public void Dispose()
@@ -378,6 +378,11 @@ namespace EventStore.Projections.Core.Services.Management
             Enabled = false;
         }
 
+        private void Delete()
+        {
+            Deleted = true;
+        }
+
         private void UpdateQuery(string handlerType, string query)
         {
             HandlerType = handlerType;
@@ -497,6 +502,19 @@ namespace EventStore.Projections.Core.Services.Management
             Disable();
             BeginWrite(
                 () => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
+        }
+
+        public void Handle(ProjectionManagementMessage.Delete message)
+        {
+            Stop(() => DoDelete(message));
+        }
+
+        private void DoDelete(ProjectionManagementMessage.Delete message)
+        {
+            if (Enabled)
+                Disable();
+            Delete();
+            BeginWrite(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
         }
     }
 }

@@ -133,8 +133,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         [Test]
         public void read_all_events_backward_returns_all_events_in_correct_order()
         {
-            var pos = new TFPos(Db.Config.WriterCheckpoint.Read(), Db.Config.WriterCheckpoint.Read());
-            var records = ReadIndex.ReadAllEventsBackward(pos, 10).Records;
+            var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
 
             Assert.AreEqual(3, records.Count);
             Assert.AreEqual(_p1, records[2].Event);

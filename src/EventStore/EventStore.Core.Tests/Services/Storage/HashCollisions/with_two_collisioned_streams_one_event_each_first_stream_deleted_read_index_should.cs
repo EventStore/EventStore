@@ -147,7 +147,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void return_all_events_excluding_delete_event_on_read_all_forward()
         {
             var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(3, events.Length);
+            Assert.AreEqual(2, events.Length);
             Assert.AreEqual(_prepare1, events[0]);
             Assert.AreEqual(_prepare2, events[1]);
         }
@@ -155,9 +155,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_all_events_excluding_delete_event_on_read_all_backward()
         {
-            var pos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());
-            var events = ReadIndex.ReadAllEventsBackward(pos, 100).Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(3, events.Length);
+            var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event).ToArray();
+            Assert.AreEqual(2, events.Length);
             Assert.AreEqual(_prepare1, events[1]);
             Assert.AreEqual(_prepare2, events[0]);
         }

@@ -36,6 +36,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -45,7 +46,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage
 {
-    public abstract class ReadIndexTestScenario: SpecificationWithDirectoryPerTestFixture
+    public abstract class ReadIndexTestScenario : SpecificationWithDirectoryPerTestFixture
     {
         private readonly int _maxEntriesInMemTable;
         protected TableIndex TableIndex;
@@ -54,6 +55,9 @@ namespace EventStore.Core.Tests.Services.Storage
         protected TFChunkDb Db;
         protected TFChunkWriter Writer;
         protected ICheckpoint WriterCheckpoint;
+
+        private TFChunkScavenger _scavenger;
+        private bool _scavenge;
 
         protected ReadIndexTestScenario(int maxEntriesInMemTable = 1000000)
         {
@@ -66,14 +70,15 @@ namespace EventStore.Core.Tests.Services.Storage
             base.TestFixtureSetUp();
 
             WriterCheckpoint = new InMemoryCheckpoint(0);
-            var chaserchk = new InMemoryCheckpoint(Checkpoint.Chaser, 0);
+            var chaserchk = new InMemoryCheckpoint(0);
             Db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                    10000,
                                                    0,
                                                    WriterCheckpoint,
                                                    chaserchk,
-                                                   new[] {WriterCheckpoint, chaserchk}));
+                                                   new[] { WriterCheckpoint, chaserchk }));
+
             Db.OpenVerifyAndClean();
             // create db
             Writer = new TFChunkWriter(Db);
@@ -87,7 +92,7 @@ namespace EventStore.Core.Tests.Services.Storage
             chaserchk.Flush();
 
             TableIndex = new TableIndex(Path.Combine(PathName, "index"),
-                                        () => new HashListMemTable(_maxEntriesInMemTable*2),
+                                        () => new HashListMemTable(_maxEntriesInMemTable * 2),
                                         _maxEntriesInMemTable);
             TableIndex.Initialize();
 
@@ -99,14 +104,22 @@ namespace EventStore.Core.Tests.Services.Storage
                                       TableIndex,
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamMetadata>());
+
             ReadIndex.Build();
+
+            // scavenge must run after readIndex is built
+            if (_scavenge)
+            {
+                _scavenger = new TFChunkScavenger(Db, ReadIndex);
+                _scavenger.Scavenge(alwaysKeepScavenged: true);
+            }
         }
 
         public override void TestFixtureTearDown()
         {
             ReadIndex.Close();
             ReadIndex.Dispose();
-            
+
             TableIndex.ClearAll();
 
             Db.Close();
@@ -191,7 +204,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                             0,
                                             eventStreamId,
                                             expectedVersion,
-                                            PrepareFlags.Data | PrepareFlags.TransactionBegin, 
+                                            PrepareFlags.Data | PrepareFlags.TransactionBegin,
                                             "some-type",
                                             Encoding.UTF8.GetBytes(eventData),
                                             null);
@@ -208,11 +221,11 @@ namespace EventStore.Core.Tests.Services.Storage
             return prepare;
         }
 
-        protected EventRecord WriteTransactionEvent(Guid correlationId, 
-                                                    long transactionPos, 
+        protected EventRecord WriteTransactionEvent(Guid correlationId,
+                                                    long transactionPos,
                                                     int transactionOffset,
-                                                    string eventStreamId, 
-                                                    int eventNumber, 
+                                                    string eventStreamId,
+                                                    int eventNumber,
                                                     string eventData,
                                                     PrepareFlags flags,
                                                     bool retryOnFail = false)
@@ -294,6 +307,19 @@ namespace EventStore.Core.Tests.Services.Storage
             Assert.IsTrue(Writer.Write(commit, out pos));
 
             return new EventRecord(EventNumber.DeletedStream, prepare);
+        }
+
+        protected TFPos GetBackwardReadPos()
+        {
+            var pos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());
+            return pos;
+        }
+
+        protected void Scavenge()
+        {
+            if (_scavenge)
+                throw new InvalidOperationException("Scavenge can be executed only once in ReadIndexTestScenario");
+            _scavenge = true;
         }
     }
 }

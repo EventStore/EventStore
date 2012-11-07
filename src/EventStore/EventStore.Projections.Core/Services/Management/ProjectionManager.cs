@@ -143,7 +143,11 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Delete message)
         {
-            throw new NotImplementedException();
+            var projection = GetProjection(message.Name);
+            if (projection == null)
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
+            else
+                projection.Handle(message);
         }
 
         public void Handle(ProjectionManagementMessage.GetQuery message)
@@ -205,6 +209,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 var statuses = (from projectionNameValue in _projections
                                 let projection = projectionNameValue.Value
+                                where !projection.Deleted
                                 where message.Mode == null || message.Mode == projection.GetMode()
                                 let status = projection.GetStatistics()
                                 select status).ToArray();

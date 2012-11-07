@@ -74,10 +74,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var runIndex = 0;
             while (stopWatch.Elapsed < _executionPeriod)
             {
-                Log.Info("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
-                         runIndex,
-                         (int)stopWatch.Elapsed.TotalMinutes,
-                         _executionPeriod.TotalMinutes);
+                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
+                                        runIndex,
+                                        (int)stopWatch.Elapsed.TotalMinutes,
+                                        _executionPeriod.TotalMinutes);
+                Log.Info(msg);
+                Log.Info("##teamcity[message '{0}']", msg);
 
                 SetStartupWaitInterval(TimeSpan.FromSeconds(10 + (2 * (runIndex % 200))));
                 InnerRun(runIndex);
