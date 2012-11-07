@@ -141,9 +141,8 @@ namespace EventStore.TestClient.Commands
                     for (int i = 0; i < records.Length; ++i)
                     {
                         var evnt = records[i].Event;
-                        sb.AppendFormat("\n{0}:\tLogPosition: {1},\n\tStreamId: {2},\n\tEventNumber: {3},\n\tData:\n{4},\n\tEventType: {5}\n",
+                        sb.AppendFormat("\n{0}:\tStreamId: {1},\n\tEventNumber: {2},\n\tData:\n{3},\n\tEventType: {4}\n",
                                         total,
-                                        evnt.LogPosition,
                                         evnt.EventStreamId,
                                         evnt.EventNumber,
                                         Encoding.UTF8.GetString(evnt.Data),

@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
@@ -35,9 +36,11 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
     [TestFixture]
     public class with_single_deleted_event_stream_read_index_should : ReadIndexTestScenario
     {
+        private EventRecord _prepare1;
+
         protected override void WriteTestScenario()
         {
-            WriteSingleEvent("ES", 0, "test1");
+            _prepare1 = WriteSingleEvent("ES", 0, "test1");
             WriteDelete("ES");
         }
 
@@ -140,6 +143,23 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         {
             EventRecord prepare;
             Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.ReadEvent("CL", 1, out prepare));
+        }
+
+        [Test]
+        public void return_all_events_excluding_delete_event_on_read_all_forward()
+        {
+            var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+            Assert.AreEqual(1, events.Length);
+            Assert.AreEqual(_prepare1, events[0]);
+        }
+
+        [Test]
+        public void return_all_events_excluding_delete_event_on_read_all_backward()
+        {
+            var pos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());
+            var events = ReadIndex.ReadAllEventsBackward(pos, 100).Records.Select(r => r.Event).ToArray();
+            Assert.AreEqual(1, events.Length);
+            Assert.AreEqual(_prepare1, events[0]);
         }
     }
 }

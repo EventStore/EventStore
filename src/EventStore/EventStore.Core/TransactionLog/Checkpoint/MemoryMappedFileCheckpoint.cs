@@ -52,16 +52,20 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         private long _lastFlushed;
         private readonly MemoryMappedViewAccessor _accessor;
 
-        public MemoryMappedFileCheckpoint(string filename) : this(filename, Guid.NewGuid().ToString(), false)
+        public MemoryMappedFileCheckpoint(string filename)
+            : this(filename, Guid.NewGuid().ToString(), false)
         {
         }
 
-        public MemoryMappedFileCheckpoint(string filename, string name, bool cached)
+        public MemoryMappedFileCheckpoint(string filename, string name, bool cached, bool mustExist = false)
         {
             _filename = filename;
             _name = name;
             _cached = cached;
-            var filestream = new FileStream(_filename, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+            var filestream = new FileStream(_filename,
+                                            mustExist ? FileMode.Open : FileMode.OpenOrCreate,
+                                            FileAccess.ReadWrite,
+                                            FileShare.ReadWrite);
             _file = MemoryMappedFile.CreateFromFile(filestream,
                                                     Guid.NewGuid().ToString(),
                                                     8,
