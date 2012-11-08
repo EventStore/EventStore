@@ -165,7 +165,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                                     RangeReadResult.Success,
                                     nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber - 1 : -1,
                                     lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
-                                    isEndOfStream: records.Any() && records.Last().Event.EventNumber == 0,
+                                    isEndOfStream: records.Length > 0 && records.Last().Event.EventNumber == 0,
                                     lastCommitPosition: _lastPosition));
                 }
                 else
