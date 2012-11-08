@@ -26,15 +26,16 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using EventStore.Common.Log;
 
 namespace EventStore.Core.Tests.Fakes
 {
-    class FakeLogger: ILogger 
+    public class FakeLogger: ILogger 
     {
+        public void Flush(TimeSpan? maxTimeToWait = null)
+        {
+        }
+
         public void Fatal(string text)
         {
         }

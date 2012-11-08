@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Linq;
+using System.Threading;
 using NLog;
 
 namespace EventStore.Common.Log
@@ -37,6 +39,17 @@ namespace EventStore.Common.Log
         public NLogger(string name)
         {
             _logger = NLog.LogManager.GetLogger(name);
+        }
+
+        public void Flush(TimeSpan? maxTimeToWait = null)
+        {
+            var asyncs = NLog.LogManager.Configuration.AllTargets.OfType<NLog.Targets.Wrappers.AsyncTargetWrapper>().ToArray();
+            var countdown = new CountdownEvent(asyncs.Length);
+            foreach (var wrapper in asyncs)
+            {
+                wrapper.Flush(x => countdown.Signal());
+            }
+            countdown.Wait(maxTimeToWait ?? TimeSpan.FromMilliseconds(500));
         }
 
         public void Fatal(string text)

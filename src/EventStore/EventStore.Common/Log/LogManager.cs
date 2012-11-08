@@ -34,13 +34,15 @@ namespace EventStore.Common.Log
 {
     public static class LogManager
     {
-        private static bool _Initialized;
+        private static readonly ILogger GlobalLogger = GetLogger("GLOBAL-LOGGER");
+        private static bool _initialized;
 
         public static string LogsDirectory
         {
             get
             {
-                EnsureInitialized();
+                if (!_initialized)
+                    throw new InvalidOperationException("Init method must be called");
                 return Environment.GetEnvironmentVariable(Constants.EnvVarPrefix + Constants.EnvVarLogsSuffix);
             }
         }
@@ -58,25 +60,14 @@ namespace EventStore.Common.Log
         public static void Init(string componentName, string logsDirectory)
         {
             Ensure.NotNull(componentName, "componentName");
-            if (_Initialized)
+            if (_initialized)
                 throw new InvalidOperationException("Cannot initialize twice");
 
-            _Initialized = true;
+            _initialized = true;
 
             SetLogsDirectoryInternal(logsDirectory);
             SetComponentName(componentName);
             RegisterGlobalExceptionHandler();
-        }
-
-        public static void Finish()
-        {
-            NLog.LogManager.Configuration = null;
-        }
-
-        private static void EnsureInitialized()
-        {
-            if (!_Initialized)
-                throw new InvalidOperationException("Init method must be called");
         }
 
         private static void SetLogsDirectoryInternal(string logsDirectory)
@@ -92,19 +83,20 @@ namespace EventStore.Common.Log
 
         private static void RegisterGlobalExceptionHandler()
         {
-            var globalLogger = GetLogger("GLOBAL-LOGGER");
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
-                {
-                    var exc = e.ExceptionObject as Exception;
-                    if (exc != null)
-                    {
-                        globalLogger.FatalException(exc, "Global Unhandled Exception occured.");
-                    }
-                    else
-                    {
-                        globalLogger.Fatal("Global Unhandled Exception object: {0}.", e.ExceptionObject);
-                    }
-                };
+            {
+                var exc = e.ExceptionObject as Exception;
+                if (exc != null)
+                    GlobalLogger.FatalException(exc, "Global Unhandled Exception occurred.");
+                else
+                    GlobalLogger.Fatal("Global Unhandled Exception object: {0}.", e.ExceptionObject);
+                GlobalLogger.Flush(TimeSpan.FromMilliseconds(500));
+            };
+        }
+
+        public static void Finish()
+        {
+            NLog.LogManager.Configuration = null;
         }
     }
 }
