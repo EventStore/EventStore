@@ -56,24 +56,25 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_not_found_for_get_record_from_non_existing_stream()
         {
-            EventRecord record;
-            Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.ReadEvent("ES-NONEXISTING", 0, out record));
+            var result = ReadIndex.ReadEvent("ES-NONEXISTING", 0);
+            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
         public void return_empty_range_on_try_get_records_from_start_for_nonexistent_stream()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.ReadStreamEventsForward("ES-NONEXISTING", 0, 1, out records));
-            Assert.AreEqual(0, records.Length);
+            var result = ReadIndex.ReadStreamEventsForward("ES-NONEXISTING", 0, 1);
+            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(0, result.Records.Length);
         }
 
         [Test]
         public void return_empty_range_on_try_get_records_from_end_for_nonexisting_stream()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.ReadStreamEventsBackward("ES-NONEXISTING", 0, 1, out records));
-            Assert.AreEqual(0, records.Length);
+            var result = ReadIndex.ReadStreamEventsBackward("ES-NONEXISTING", 0, 1);
+            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(0, result.Records.Length);
         }
 
         [Test]
@@ -85,27 +86,27 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_correct_record_for_event_stream_with_single_event()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 0, out prepare));
-            Assert.AreEqual(_prepare1, prepare);
+            var result = ReadIndex.ReadEvent("ES", 0);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_prepare1, result.Record);
         }
 
         [Test]
         public void return_correct_range_on_try_get_records_from_start_for_event_stream_with_single_event()
         {
-            EventRecord[] record;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsForward("ES", 0, 1, out record));
-            Assert.AreEqual(1, record.Length);
-            Assert.AreEqual(_prepare1, record[0]);
+            var result = ReadIndex.ReadStreamEventsForward("ES", 0, 1);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(1, result.Records.Length);
+            Assert.AreEqual(_prepare1, result.Records[0]);
         }
 
         [Test]
         public void return_correct_range_on_try_get_records_from_end_for_event_stream_with_single_event()
         {
-            EventRecord[] record;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("ES", 0, 1, out record));
-            Assert.AreEqual(1, record.Length);
-            Assert.AreEqual(_prepare1, record[0]);
+            var result = ReadIndex.ReadStreamEventsBackward("ES", 0, 1);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(1, result.Records.Length);
+            Assert.AreEqual(_prepare1, result.Records[0]);
         }
 
         [Test]
@@ -117,38 +118,41 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void not_find_record_for_nonexistent_event_stream_with_same_hash_as_existing_one()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.ReadEvent("AB", 0, out prepare));
+            var result = ReadIndex.ReadEvent("AB", 0);
+            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
         public void return_empty_range_on_try_get_records_from_start_for_nonexisting_event_stream_with_same_hash_as_existing_one()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.ReadStreamEventsForward("HG", 0, 1, out records));
-            Assert.AreEqual(0, records.Length);
+            var result = ReadIndex.ReadStreamEventsForward("HG", 0, 1);
+            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(0, result.Records.Length);
         }
 
         [Test]
         public void return_empty_range_on_try_get_records_from_end_for_nonexisting_event_stream_with_same_hash_as_existing_one()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.ReadStreamEventsBackward("HG", 0, 1, out records));
-            Assert.AreEqual(0, records.Length);
+            var result = ReadIndex.ReadStreamEventsBackward("HG", 0, 1);
+            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(0, result.Records.Length);
         }
 
         [Test]
         public void not_find_record_with_nonexistent_version_for_event_stream_with_single_event()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("ES", 1, out prepare));
+            var result = ReadIndex.ReadEvent("ES", 1);
+            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
         public void not_find_record_with_non_existing_version_for_event_stream_with_same_hash_as_existing_one()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.ReadEvent("CL", 1, out prepare));
+            var result = ReadIndex.ReadEvent("CL", 1);
+            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
@@ -160,85 +164,87 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         [Test]
         public void return_correct_first_record_for_event_stream_with_two_events()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ESES", 0, out prepare));
-            Assert.AreEqual(_prepare2, prepare);
+            var result = ReadIndex.ReadEvent("ESES", 0);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_prepare2, result.Record);
         }
 
         [Test]
         public void return_correct_second_record_for_event_stream_with_two_events()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ESES", 1, out prepare));
-            Assert.AreEqual(_prepare3, prepare);
+            var result = ReadIndex.ReadEvent("ESES", 1);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_prepare3, result.Record);
         }
 
         [Test]
         public void return_correct_range_on_from_start_range_query_for_event_stream_with_two_events()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsForward("ESES", 0, 2, out records));
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_prepare2, records[0]);
-            Assert.AreEqual(_prepare3, records[1]);
+            var result = ReadIndex.ReadStreamEventsForward("ESES", 0, 2);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(2, result.Records.Length);
+            Assert.AreEqual(_prepare2, result.Records[0]);
+            Assert.AreEqual(_prepare3, result.Records[1]);
         }
         
         [Test]
         public void return_correct_range_on_from_end_range_query_for_event_stream_with_two_events_with_specific_version()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("ESES", 1, 2, out records));
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_prepare3, records[0]);
-            Assert.AreEqual(_prepare2, records[1]);
+            var result = ReadIndex.ReadStreamEventsBackward("ESES", 1, 2);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(2, result.Records.Length);
+            Assert.AreEqual(_prepare3, result.Records[0]);
+            Assert.AreEqual(_prepare2, result.Records[1]);
         }
 
         [Test]
         public void return_correct_range_on_from_end_range_query_for_event_stream_with_two_events_with_from_end_version()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("ESES", -1, 2, out records));
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_prepare3, records[0]);
-            Assert.AreEqual(_prepare2, records[1]);
+            var result = ReadIndex.ReadStreamEventsBackward("ESES", -1, 2);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(2, result.Records.Length);
+            Assert.AreEqual(_prepare3, result.Records[0]);
+            Assert.AreEqual(_prepare2, result.Records[1]);
         }
 
         [Test]
         public void not_find_record_with_nonexistent_version_for_event_stream_with_two_events()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("ESES", 2, out prepare));
+            var result = ReadIndex.ReadEvent("ESES", 2);
+            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
         public void not_find_record_with_non_existing_version_for_non_existing_event_stream_with_same_hash_as_stream_with_two_events()
         {
-            EventRecord record;
-            Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.ReadEvent("NONE", 2, out record));
+            var result = ReadIndex.ReadEvent("NONE", 2);
+            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
         public void not_return_range_on_from_start_range_query_for_non_existing_stream_with_same_hash_as_stream_with_two_events()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.ReadStreamEventsForward("NONE", 0, 2, out records));
-            Assert.AreEqual(0, records.Length);
+            var result = ReadIndex.ReadStreamEventsForward("NONE", 0, 2);
+            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(0, result.Records.Length);
         }
 
         [Test]
         public void not_return_range_on_from_end_query_for_non_existing_stream_with_same_hash_as_stream_with_two_events()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.ReadStreamEventsBackward("NONE", 0, 2, out records));
-            Assert.AreEqual(0, records.Length);
+            var result = ReadIndex.ReadStreamEventsBackward("NONE", 0, 2);
+            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(0, result.Records.Length);
         }
 
         [Test]
         public void not_return_range_on_from_end_query_with_from_end_version_for_non_existing_stream_with_same_hash_as_stream_with_two_events()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.NoStream, ReadIndex.ReadStreamEventsBackward("NONE", -1, 2, out records));
-            Assert.AreEqual(0, records.Length);
+            var result = ReadIndex.ReadStreamEventsBackward("NONE", -1, 2);
+            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(0, result.Records.Length);
         }
     }
 }

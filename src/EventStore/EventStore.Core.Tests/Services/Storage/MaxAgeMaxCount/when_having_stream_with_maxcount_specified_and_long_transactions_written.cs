@@ -65,11 +65,11 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         [Test]
         public void forward_range_read_returns_last_transaction_events_and_doesnt_return_expired_ones()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsForward("ES", 0, 100, out records));
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_records[8], records[0]);
-            Assert.AreEqual(_records[9], records[1]);
+            var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(2, result.Records.Length);
+            Assert.AreEqual(_records[8], result.Records[0]);
+            Assert.AreEqual(_records[9], result.Records[1]);
         }
     }
 }

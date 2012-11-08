@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -144,29 +145,43 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)
         {
-            //throw new NotImplementedException();
-
             List<EventRecord> list;
             if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list))
             {
                 if (list != null && list.Count > 0 && (list.Last().EventNumber <= message.FromEventNumber)
                     || (message.FromEventNumber == -1))
                 {
-                    EventLinkPair[] records =
-                        (list != null ? list.AsEnumerable() : Enumerable.Empty<EventRecord>()).Reverse().SkipWhile(
-                            v => message.FromEventNumber != -1 && v.EventNumber > message.FromEventNumber).Take(
-                                message.MaxCount).Select(x => new EventLinkPair(x, null)).ToArray();
+                    EventLinkPair[] records = list.Safe()
+                                                  .Reverse()
+                                                  .SkipWhile(v => message.FromEventNumber != -1 && v.EventNumber > message.FromEventNumber)
+                                                  .Take(message.MaxCount)
+                                                  .Select(x => new EventLinkPair(x, null))
+                                                  .ToArray();
                     message.Envelope.ReplyWith(
-                        new ClientMessage.ReadStreamEventsBackwardCompleted(
-                            message.CorrelationId, message.EventStreamId, records, RangeReadResult.Success,
-                            (records.Length > 0) ? records[records.Length - 1].Event.EventNumber - 1 : -1,
-                            lastCommitPosition: _lastPosition));
+                            new ClientMessage.ReadStreamEventsBackwardCompleted(
+                                    message.CorrelationId,
+                                    message.EventStreamId,
+                                    records,
+                                    RangeReadResult.Success,
+                                    nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber - 1 : -1,
+                                    lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
+                                    isEndOfStream: records.Length > 0 && records.Last().Event.EventNumber == 0,
+                                    lastCommitPosition: _lastPosition));
                 }
                 else
+                {
+                    throw new NotImplementedException();
                     message.Envelope.ReplyWith(
-                        new ClientMessage.ReadStreamEventsBackwardCompleted(
-                            message.CorrelationId, message.EventStreamId, new EventLinkPair[0],
-                            RangeReadResult.Success, -1, lastCommitPosition: _lastPosition));
+                            new ClientMessage.ReadStreamEventsBackwardCompleted(
+                                    message.CorrelationId,
+                                    message.EventStreamId,
+                                    new EventLinkPair[0],
+                                    RangeReadResult.Success,
+                                    nextEventNumber: -1,
+                                    lastEventNumber: list.Safe().Last().EventNumber,
+                                    isEndOfStream: true,// NOTE AN: don't know how to correctly determine this here
+                                    lastCommitPosition: _lastPosition));
+                }
             }
         }
 

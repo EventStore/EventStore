@@ -72,65 +72,66 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         [Test]
         public void return_correct_first_record_for_larger_stream()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 0, out prepare));
-            Assert.AreEqual(_p1, prepare);
+            var result = ReadIndex.ReadEvent("ES", 0);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_p1, result.Record);
         }
 
         [Test]
         public void return_correct_second_record_for_larger_stream()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 1, out prepare));
-            Assert.AreEqual(_p3, prepare);
+            var result = ReadIndex.ReadEvent("ES", 1);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_p3, result.Record);
         }
 
         [Test]
         public void return_correct_third_record_for_larger_stream()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 2, out prepare));
-            Assert.AreEqual(_p5, prepare);
+            var result = ReadIndex.ReadEvent("ES", 2);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_p5, result.Record);
         }
 
         [Test]
         public void not_find_record_with_nonexistent_version_for_larger_stream()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("ES", 3, out prepare));
+            var result = ReadIndex.ReadEvent("ES", 3);
+            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
         public void return_correct_range_on_from_start_range_query_for_larger_stream()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsForward("ES", 0, 3, out records));
-            Assert.AreEqual(3, records.Length);
-            Assert.AreEqual(_p1, records[0]);
-            Assert.AreEqual(_p3, records[1]);
-            Assert.AreEqual(_p5, records[2]);
+            var result = ReadIndex.ReadStreamEventsForward("ES", 0, 3);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(3, result.Records.Length);
+            Assert.AreEqual(_p1, result.Records[0]);
+            Assert.AreEqual(_p3, result.Records[1]);
+            Assert.AreEqual(_p5, result.Records[2]);
         }
 
         [Test]
         public void return_correct_range_on_from_end_range_query_for_larger_stream_with_specific_version()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("ES", 2, 3, out records));
-            Assert.AreEqual(3, records.Length);
-            Assert.AreEqual(_p5, records[0]);
-            Assert.AreEqual(_p3, records[1]);
-            Assert.AreEqual(_p1, records[2]);
+            var result = ReadIndex.ReadStreamEventsBackward("ES", 2, 3);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(3, result.Records.Length);
+            Assert.AreEqual(_p5, result.Records[0]);
+            Assert.AreEqual(_p3, result.Records[1]);
+            Assert.AreEqual(_p1, result.Records[2]);
         }
 
         [Test]
         public void return_correct_range_on_from_end_range_query_for_larger_stream_with_from_end_version()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("ES", -1, 3, out records));
-            Assert.AreEqual(3, records.Length);
-            Assert.AreEqual(_p5, records[0]);
-            Assert.AreEqual(_p3, records[1]);
-            Assert.AreEqual(_p1, records[2]);
+            var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 3);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(3, result.Records.Length);
+            Assert.AreEqual(_p5, result.Records[0]);
+            Assert.AreEqual(_p3, result.Records[1]);
+            Assert.AreEqual(_p1, result.Records[2]);
         }
 
         [Test]
@@ -142,54 +143,55 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         [Test]
         public void return_correct_first_record_for_smaller_stream()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ABC", 0, out prepare));
-            Assert.AreEqual(_p2, prepare);
+            var result = ReadIndex.ReadEvent("ABC", 0);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_p2, result.Record);
         }
 
         [Test]
         public void return_correct_second_record_for_smaller_stream()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ABC", 1, out prepare));
-            Assert.AreEqual(_p4, prepare);
+            var result = ReadIndex.ReadEvent("ABC", 1);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_p4, result.Record);
         }
 
         [Test]
         public void not_find_record_with_nonexistent_version_for_smaller_stream()
         {
-            EventRecord prepare;
-            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("ABC", 2, out prepare));
+            var result = ReadIndex.ReadEvent("ABC", 2);
+            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
         public void return_correct_range_on_from_start_range_query_for_smaller_stream()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsForward("ABC", 0, 2, out records));
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_p2, records[0]);
-            Assert.AreEqual(_p4, records[1]);
+            var result = ReadIndex.ReadStreamEventsForward("ABC", 0, 2);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(2, result.Records.Length);
+            Assert.AreEqual(_p2, result.Records[0]);
+            Assert.AreEqual(_p4, result.Records[1]);
         }
 
         [Test]
         public void return_correct_range_on_from_end_range_query_for_smaller_stream_with_specific_version()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("ABC", 1, 2, out records));
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_p4, records[0]);
-            Assert.AreEqual(_p2, records[1]);
+            var result = ReadIndex.ReadStreamEventsBackward("ABC", 1, 2);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(2, result.Records.Length);
+            Assert.AreEqual(_p4, result.Records[0]);
+            Assert.AreEqual(_p2, result.Records[1]);
         }
 
         [Test]
         public void return_correct_range_on_from_end_range_query_for_smaller_stream_with_from_end_version()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("ABC", -1, 2, out records));
-            Assert.AreEqual(2, records.Length);
-            Assert.AreEqual(_p4, records[0]);
-            Assert.AreEqual(_p2, records[1]);
+            var result = ReadIndex.ReadStreamEventsBackward("ABC", -1, 2);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(2, result.Records.Length);
+            Assert.AreEqual(_p4, result.Records[0]);
+            Assert.AreEqual(_p2, result.Records[1]);
         }
 
         [Test]

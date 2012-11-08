@@ -145,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                 _buffers.Add(positionEvent.EventStreamId, queue);
                             }
                             //TODO: progress calculation below is incorrect.  sum(current)/sum(last_event) where sum by all streams
-                            queue.Enqueue(Tuple.Create(@event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber.Value));
+                            queue.Enqueue(Tuple.Create(@event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber));
                         }
                     }
                     ProcessBuffers();
@@ -225,7 +225,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             var readEventsForward = new ClientMessage.ReadStreamEventsForward(
                 _distibutionPointCorrelationId, new SendToThisEnvelope(this), stream, _fromPositions.Streams[stream],
-                _maxReadCount, _resolveLinkTos, returnLastEventNumber: true);
+                _maxReadCount, _resolveLinkTos);
             if (delay)
                 _publisher.Publish(
                     TimerMessage.Schedule.Create(
