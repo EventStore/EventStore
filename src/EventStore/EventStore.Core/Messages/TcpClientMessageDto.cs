@@ -165,32 +165,6 @@ namespace EventStore.Core.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"Event")]
-  public partial class Event
-  {
-    [ProtoMember(1, IsRequired = true, Name=@"event_id", DataFormat = DataFormat.Default)]
-    public readonly byte[] EventId;
-  
-    [ProtoMember(2, IsRequired = false, Name=@"event_type", DataFormat = DataFormat.Default)]
-    public readonly string EventType;
-  
-    [ProtoMember(3, IsRequired = true, Name=@"data", DataFormat = DataFormat.Default)]
-    public readonly byte[] Data;
-  
-    [ProtoMember(4, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
-    public readonly byte[] Metadata;
-  
-    private Event() {}
-  
-    public Event(byte[] eventId, string eventType, byte[] data, byte[] metadata)
-    {
-        EventId = eventId;
-        EventType = eventType;
-        Data = data;
-        Metadata = metadata;
-    }
-  }
-  
   [Serializable, ProtoContract(Name=@"WriteEvents")]
   public partial class WriteEvents
   {
@@ -362,18 +336,14 @@ namespace EventStore.Core.Messages
     [ProtoMember(4, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
     public readonly bool ResolveLinkTos;
   
-    [ProtoMember(5, IsRequired = true, Name=@"return_last_event_number", DataFormat = DataFormat.Default)]
-    public readonly bool ReturnLastEventNumber;
-  
     private ReadStreamEventsForward() {}
   
-    public ReadStreamEventsForward(string eventStreamId, int startIndex, int maxCount, bool resolveLinkTos, bool returnLastEventNumber)
+    public ReadStreamEventsForward(string eventStreamId, int startIndex, int maxCount, bool resolveLinkTos)
     {
         EventStreamId = eventStreamId;
         StartIndex = startIndex;
         MaxCount = maxCount;
         ResolveLinkTos = resolveLinkTos;
-        ReturnLastEventNumber = returnLastEventNumber;
     }
   }
   
@@ -389,21 +359,29 @@ namespace EventStore.Core.Messages
     [ProtoMember(3, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
     public readonly int Result;
   
-    [ProtoMember(4, IsRequired = false, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long? LastCommitPosition;
+    [ProtoMember(4, IsRequired = true, Name=@"next_event_number", DataFormat = DataFormat.TwosComplement)]
+    public readonly int NextEventNumber;
   
-    [ProtoMember(5, IsRequired = false, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
-    public readonly int? LastEventNumber;
+    [ProtoMember(5, IsRequired = true, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
+    public readonly int LastEventNumber;
+  
+    [ProtoMember(6, IsRequired = true, Name=@"is_end_of_stream", DataFormat = DataFormat.Default)]
+    public readonly bool IsEndOfStream;
+  
+    [ProtoMember(7, IsRequired = false, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? LastCommitPosition;
   
     private ReadStreamEventsForwardCompleted() {}
   
-    public ReadStreamEventsForwardCompleted(string eventStreamId, EventLinkPair[] events, int result, long? lastCommitPosition, int? lastEventNumber)
+    public ReadStreamEventsForwardCompleted(string eventStreamId, EventLinkPair[] events, int result, int nextEventNumber, int lastEventNumber, bool isEndOfStream, long? lastCommitPosition)
     {
         EventStreamId = eventStreamId;
         Events = events;
         Result = result;
-        LastCommitPosition = lastCommitPosition;
+        NextEventNumber = nextEventNumber;
         LastEventNumber = lastEventNumber;
+        IsEndOfStream = isEndOfStream;
+        LastCommitPosition = lastCommitPosition;
     }
   }
   
@@ -445,16 +423,28 @@ namespace EventStore.Core.Messages
     [ProtoMember(3, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
     public readonly int Result;
   
-    [ProtoMember(4, IsRequired = false, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
+    [ProtoMember(4, IsRequired = true, Name=@"next_event_number", DataFormat = DataFormat.TwosComplement)]
+    public readonly int NextEventNumber;
+  
+    [ProtoMember(5, IsRequired = true, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
+    public readonly int LastEventNumber;
+  
+    [ProtoMember(6, IsRequired = true, Name=@"is_end_of_stream", DataFormat = DataFormat.Default)]
+    public readonly bool IsEndOfStream;
+  
+    [ProtoMember(7, IsRequired = false, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long? LastCommitPosition;
   
     private ReadStreamEventsBackwardCompleted() {}
   
-    public ReadStreamEventsBackwardCompleted(string eventStreamId, EventLinkPair[] events, int result, long? lastCommitPosition)
+    public ReadStreamEventsBackwardCompleted(string eventStreamId, EventLinkPair[] events, int result, int nextEventNumber, int lastEventNumber, bool isEndOfStream, long? lastCommitPosition)
     {
         EventStreamId = eventStreamId;
         Events = events;
         Result = result;
+        NextEventNumber = nextEventNumber;
+        LastEventNumber = lastEventNumber;
+        IsEndOfStream = isEndOfStream;
         LastCommitPosition = lastCommitPosition;
     }
   }

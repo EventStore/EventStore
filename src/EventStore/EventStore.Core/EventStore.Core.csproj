@@ -133,8 +133,10 @@
     <Compile Include="Services\Storage\ReaderIndex\IReadIndex.cs" />
     <Compile Include="Services\Storage\ReaderIndex\RangeReadResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\ReadAllResult.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\ReadEventResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\ReadIndex.cs" />
     <Compile Include="Index\TableIndex.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\ReadStreamResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\SingleReadResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\StreamMetadata.cs" />
     <Compile Include="Services\Storage\StorageScavenger.cs" />

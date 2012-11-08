@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
                     _listEventsHandler.HandledMessages[0].EventStreamId, new EventLinkPair[0], 
-                    RangeReadResult.NoStream, -1, 1000));
+                    RangeReadResult.NoStream, -1, -1, false, 1000));
         }
 
         [Test]
@@ -98,7 +98,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
                     _listEventsHandler.HandledMessages[0].EventStreamId, new EventLinkPair[0],
-                    RangeReadResult.Success, -1, 1000));
+                    RangeReadResult.Success, -1, -1, false, 1000));
         }
     }
 }

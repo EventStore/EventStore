@@ -38,9 +38,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         void Commit(CommitLogRecord record);
         ReadIndexStats GetStatistics();
         
-        SingleReadResult ReadEvent(string streamId, int eventNumber, out EventRecord record);
-        RangeReadResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount, out EventRecord[] records);
-        RangeReadResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount, out EventRecord[] records);
+        ReadEventResult ReadEvent(string streamId, int eventNumber);
+        ReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
+        ReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount);
         IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
         IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
 

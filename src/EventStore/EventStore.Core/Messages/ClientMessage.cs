@@ -427,16 +427,13 @@ namespace EventStore.Core.Messages
             public readonly int FromEventNumber;
             public readonly int MaxCount;
             public readonly bool ResolveLinks;
-            // return number of events is an optimization for projections 
-            public readonly bool ReturnLastEventNumber;
 
             public ReadStreamEventsForward(Guid correlationId,
                                            IEnvelope envelope,
                                            string eventStreamId,
                                            int fromEventNumber,
                                            int maxCount,
-                                           bool resolveLinks,
-                                           bool returnLastEventNumber)
+                                           bool resolveLinks)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
@@ -444,12 +441,16 @@ namespace EventStore.Core.Messages
                 FromEventNumber = fromEventNumber;
                 MaxCount = maxCount;
                 ResolveLinks = resolveLinks;
-                ReturnLastEventNumber = returnLastEventNumber;
             }
 
             public override string ToString()
             {
-                return string.Format(GetType().Name + " CorrelationId: {0}, EventStreamId: {1}, FromEventNumber: {2}, MaxCount: {3}, ResolveLinks: {4}", CorrelationId, EventStreamId, FromEventNumber, MaxCount, ResolveLinks);
+                return string.Format(GetType().Name + " CorrelationId: {0}, EventStreamId: {1}, FromEventNumber: {2}, MaxCount: {3}, ResolveLinks: {4}",
+                                     CorrelationId,
+                                     EventStreamId,
+                                     FromEventNumber,
+                                     MaxCount,
+                                     ResolveLinks);
             }
         }
 
@@ -460,16 +461,18 @@ namespace EventStore.Core.Messages
             public readonly EventLinkPair[] Events;
             public readonly RangeReadResult Result;
             public readonly int NextEventNumber;
+            public readonly int LastEventNumber;
+            public readonly bool IsEndOfStream;
             public readonly long? LastCommitPosition;
-            public readonly int? LastEventNumber;
 
             public ReadStreamEventsForwardCompleted(Guid correlationId,
                                                     string eventStreamId,
                                                     EventLinkPair[] events,
                                                     RangeReadResult result,
                                                     int nextEventNumber,
-                                                    long? lastCommitPosition,
-                                                    int? lastEventNumber)
+                                                    int lastEventNumber,
+                                                    bool isEndOfStream,
+                                                    long? lastCommitPosition)
             {
                 Ensure.NotNull(events, "events");
 
@@ -478,8 +481,9 @@ namespace EventStore.Core.Messages
                 Events = events;
                 Result = result;
                 NextEventNumber = nextEventNumber;
-                LastCommitPosition = lastCommitPosition;
                 LastEventNumber = lastEventNumber;
+                IsEndOfStream = isEndOfStream;
+                LastCommitPosition = lastCommitPosition;
             }
         }
 
@@ -520,6 +524,8 @@ namespace EventStore.Core.Messages
             public readonly EventLinkPair[] Events;
             public readonly RangeReadResult Result;
             public readonly int NextEventNumber;
+            public readonly int LastEventNumber;
+            public readonly bool IsEndOfStream;
             public readonly long? LastCommitPosition;
 
             public ReadStreamEventsBackwardCompleted(Guid correlationId,
@@ -527,6 +533,8 @@ namespace EventStore.Core.Messages
                                                      EventLinkPair[] events,
                                                      RangeReadResult result,
                                                      int nextEventNumber,
+                                                     int lastEventNumber,
+                                                     bool isEndOfStream,
                                                      long? lastCommitPosition)
             {
                 Ensure.NotNull(events, "events");
@@ -536,6 +544,8 @@ namespace EventStore.Core.Messages
                 Events = events;
                 Result = result;
                 NextEventNumber = nextEventNumber;
+                LastEventNumber = lastEventNumber;
+                IsEndOfStream = isEndOfStream;
                 LastCommitPosition = lastCommitPosition;
             }
         }

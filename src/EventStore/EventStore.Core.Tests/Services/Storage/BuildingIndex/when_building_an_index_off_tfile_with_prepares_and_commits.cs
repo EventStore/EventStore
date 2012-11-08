@@ -64,49 +64,50 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         [Test]
         public void the_first_event_can_be_read()
         {
-            EventRecord record;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("test1", 0, out record));
+            var result = ReadIndex.ReadEvent("test1", 0);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
         }
 
         [Test]
         public void the_nonexisting_event_can_not_be_read()
         {
-            EventRecord record;
-            Assert.AreEqual(SingleReadResult.NotFound, ReadIndex.ReadEvent("test1", 1, out record));
+            var result = ReadIndex.ReadEvent("test1", 1);
+            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
         public void the_second_event_can_be_read()
         {
-            EventRecord record;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("test2", 0, out record));
+            var result = ReadIndex.ReadEvent("test2", 0);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
         }
 
         [Test]
         public void the_stream_can_be_read_for_first_stream()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("test1", 0, 1, out records));
-            Assert.AreEqual(1, records.Length);
-            Assert.AreEqual(_id1, records[0].EventId);
+            var result = ReadIndex.ReadStreamEventsBackward("test1", 0, 1);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(1, result.Records.Length);
+            Assert.AreEqual(_id1, result.Records[0].EventId);
         }
 
         [Test]
         public void the_stream_can_be_read_for_second_stream_from_end()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("test2", -1, 1, out records));
-            Assert.AreEqual(1, records.Length);
-            Assert.AreEqual(_id3, records[0].EventId);
+            var result = ReadIndex.ReadStreamEventsBackward("test2", -1, 1);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(1, result.Records.Length);
+            Assert.AreEqual(_id3, result.Records[0].EventId);
         }
 
         [Test]
         public void the_stream_can_be_read_for_second_stream_from_event_number()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("test2", 1, 1, out records));
-            Assert.AreEqual(1, records.Length);
-            Assert.AreEqual(_id3, records[0].EventId);
+            var result = ReadIndex.ReadStreamEventsBackward("test2", 1, 1);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(1, result.Records.Length);
+            Assert.AreEqual(_id3, result.Records[0].EventId);
         }
     
         [Test]
