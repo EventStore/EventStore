@@ -33,12 +33,12 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     class CommittedEventWorkItem : WorkItem
     {
-        private readonly ProjectionMessage.SubscriptionMessage.CommittedEventReceived _message;
+        private readonly ProjectionSubscriptionMessage.CommittedEventReceived _message;
         private readonly string _partition;
         private List<EmittedEvent[]> _scheduledWrites;
 
         public CommittedEventWorkItem(
-            CoreProjection projection, ProjectionMessage.SubscriptionMessage.CommittedEventReceived message, string partition)
+            CoreProjection projection, ProjectionSubscriptionMessage.CommittedEventReceived message, string partition)
             : base(projection, message.EventStreamId)
         {
             _message = message;

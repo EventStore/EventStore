@@ -55,11 +55,11 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<ProjectionManagementMessage.GetState>,
                                      IHandle<ProjectionManagementMessage.Disable>,
                                      IHandle<ProjectionManagementMessage.Enable>,
-                                     IHandle<ProjectionMessage.Projections.StatusReport.Started>,
-                                     IHandle<ProjectionMessage.Projections.StatusReport.Stopped>,
-                                     IHandle<ProjectionMessage.Projections.StatusReport.Faulted>,
-                                     IHandle<ProjectionMessage.Projections.Management.StateReport>,
-                                     IHandle<ProjectionMessage.Projections.Management.StatisticsReport>
+                                     IHandle<CoreProjectionManagementMessage.Started>,
+                                     IHandle<CoreProjectionManagementMessage.Stopped>,
+                                     IHandle<CoreProjectionManagementMessage.Faulted>,
+                                     IHandle<CoreProjectionManagementMessage.StateReport>,
+                                     IHandle<CoreProjectionManagementMessage.StatisticsReport>
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionManager>();
 
@@ -113,7 +113,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(SystemMessage.SystemStart message)
         {
             foreach (var queue in _queues)
-                queue.Publish(new ProjectionMessage.CoreService.Start());
+                queue.Publish(new ProjectionCoreServiceMessage.Start());
             StartExistingProjections();
         }
 
@@ -227,7 +227,7 @@ namespace EventStore.Projections.Core.Services.Management
                 projection.Handle(message);
         }
 
-        public void Handle(ProjectionMessage.Projections.StatusReport.Started message)
+        public void Handle(CoreProjectionManagementMessage.Started message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
@@ -237,7 +237,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(ProjectionMessage.Projections.StatusReport.Stopped message)
+        public void Handle(CoreProjectionManagementMessage.Stopped message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
@@ -247,7 +247,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(ProjectionMessage.Projections.StatusReport.Faulted message)
+        public void Handle(CoreProjectionManagementMessage.Faulted message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
@@ -257,7 +257,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(ProjectionMessage.Projections.Management.StateReport message)
+        public void Handle(CoreProjectionManagementMessage.StateReport message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
@@ -267,7 +267,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
-        public void Handle(ProjectionMessage.Projections.Management.StatisticsReport message)
+        public void Handle(CoreProjectionManagementMessage.StatisticsReport message)
         {
             string name;
             if (_projectionsMap.TryGetValue(message.CorrelationId, out name))

@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ByStreamStatePartitionSelector : StatePartitionSelector
     {
-        public override string GetStatePartition(ProjectionMessage.SubscriptionMessage.CommittedEventReceived @event)
+        public override string GetStatePartition(ProjectionSubscriptionMessage.CommittedEventReceived @event)
         {
             return @event.EventStreamId;
         }

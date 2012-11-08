@@ -147,7 +147,7 @@ namespace EventStore.Projections.Core.Services.Processing
             stream.EmitEvents(emittedEvents);
         }
 
-        public void Handle(ProjectionMessage.Projections.ReadyForCheckpoint message)
+        public void Handle(CoreProjectionProcessingMessage.ReadyForCheckpoint message)
         {
             _requestedCheckpoints--;
             OnCheckpointCompleted();
@@ -157,7 +157,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_requestedCheckpoints == 0)
             {
-                _readyHandler.Handle(new ProjectionMessage.Projections.ReadyForCheckpoint(this));
+                _readyHandler.Handle(new CoreProjectionProcessingMessage.ReadyForCheckpoint(this));
             }
         }
 
@@ -176,7 +176,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return _emittedStreams.Values.Sum(v => v.GetReadsInProgress());
         }
 
-        public void Handle(ProjectionMessage.Projections.RestartRequested message)
+        public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             _readyHandler.Handle(message);
         }

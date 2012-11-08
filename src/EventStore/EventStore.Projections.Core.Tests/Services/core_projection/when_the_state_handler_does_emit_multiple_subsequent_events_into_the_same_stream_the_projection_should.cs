@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             //projection subscribes here
             _coreProjection.Handle(
-                ProjectionMessage.SubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
                        new Event(
                            Guid.NewGuid(), "emit22_type", false, Encoding.UTF8.GetBytes("data"),
                            Encoding.UTF8.GetBytes("metadata")), 0));

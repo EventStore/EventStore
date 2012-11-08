@@ -96,12 +96,12 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
         public void publishes_correct_committed_event_received_messages()
         {
             Assert.AreEqual(
-                3, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
-            var first = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().First();
+                3, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
+            var first = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().First();
             var second =
-                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(1).First();
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Skip(1).First();
             var third =
-                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(2).First();
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Skip(2).First();
 
             Assert.IsNull(third.Data);
             Assert.AreEqual(100, third.SafeTransactionFileReaderJoinPosition);

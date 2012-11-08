@@ -38,20 +38,20 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionCoreService : IHandle<ProjectionMessage.CoreService.Start>,
-                                         IHandle<ProjectionMessage.CoreService.Stop>,
-                                         IHandle<ProjectionMessage.CoreService.Tick>,
-                                         IHandle<ProjectionMessage.Projections.SubscribeProjection>,
-                                         IHandle<ProjectionMessage.Projections.UnsubscribeProjection>,
-                                         IHandle<ProjectionMessage.Projections.PauseProjectionSubscription>,
-                                         IHandle<ProjectionMessage.Projections.ResumeProjectionSubscription>,
-                                         IHandle<ProjectionMessage.Projections.CommittedEventDistributed>,
-                                         IHandle<ProjectionMessage.CoreService.Management.Create>,
-                                         IHandle<ProjectionMessage.CoreService.Management.Dispose>,
-                                         IHandle<ProjectionMessage.Projections.Management.Start>,
-                                         IHandle<ProjectionMessage.Projections.Management.Stop>,
-                                         IHandle<ProjectionMessage.Projections.Management.GetState>,
-                                         IHandle<ProjectionMessage.Projections.Management.UpdateStatistics>,
+    public class ProjectionCoreService : IHandle<ProjectionCoreServiceMessage.Start>,
+                                         IHandle<ProjectionCoreServiceMessage.Stop>,
+                                         IHandle<ProjectionCoreServiceMessage.Tick>,
+                                         IHandle<ProjectionSubscriptionManagement.Subscribe>,
+                                         IHandle<ProjectionSubscriptionManagement.Unsubscribe>,
+                                         IHandle<ProjectionSubscriptionManagement.Pause>,
+                                         IHandle<ProjectionSubscriptionManagement.Resume>,
+                                         IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>,
+                                         IHandle<ProjectionCoreServiceMessage.Management.Create>,
+                                         IHandle<ProjectionCoreServiceMessage.Management.Dispose>,
+                                         IHandle<CoreProjectionManagementMessage.Start>,
+                                         IHandle<CoreProjectionManagementMessage.Stop>,
+                                         IHandle<CoreProjectionManagementMessage.GetState>,
+                                         IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
                                          IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
@@ -106,7 +106,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _publisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
         }
 
-        public void Handle(ProjectionMessage.CoreService.Start message)
+        public void Handle(ProjectionCoreServiceMessage.Start message)
         {
             //TODO: do we need to clear subscribed projections here?
             //TODO: do we need to clear subscribed distribution points here?
@@ -125,13 +125,13 @@ namespace EventStore.Projections.Core.Services.Processing
                     new Event(Guid.NewGuid(), "Starting", false, new byte[0], new byte[0])));
         }
 
-        public void Handle(ProjectionMessage.CoreService.Stop message)
+        public void Handle(ProjectionCoreServiceMessage.Stop message)
         {
             _headingEventDistributionPoint.Stop();
             _stopped = true;
         }
 
-        public void Handle(ProjectionMessage.Projections.PauseProjectionSubscription message)
+        public void Handle(ProjectionSubscriptionManagement.Pause message)
         {
             if (!_pausedProjections.Add(message.CorrelationId))
                 throw new InvalidOperationException("Already paused projection");
@@ -154,7 +154,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void Handle(ProjectionMessage.Projections.ResumeProjectionSubscription message)
+        public void Handle(ProjectionSubscriptionManagement.Resume message)
         {
             if (!_pausedProjections.Remove(message.CorrelationId))
                 throw new InvalidOperationException("Not a paused projection");
@@ -162,7 +162,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _distributionPoints[distributionPoint].Resume();
         }
 
-        public void Handle(ProjectionMessage.Projections.SubscribeProjection message)
+        public void Handle(ProjectionSubscriptionManagement.Subscribe message)
         {
             if (_stopped)
                 return;
@@ -185,10 +185,10 @@ namespace EventStore.Projections.Core.Services.Processing
             eventDistributionPoint.Resume();
         }
 
-        public void Handle(ProjectionMessage.Projections.UnsubscribeProjection message)
+        public void Handle(ProjectionSubscriptionManagement.Unsubscribe message)
         {
             if (!_pausedProjections.Contains(message.CorrelationId))
-                Handle(new ProjectionMessage.Projections.PauseProjectionSubscription(message.CorrelationId));
+                Handle(new ProjectionSubscriptionManagement.Pause(message.CorrelationId));
             var distributionPointId = _projectionDistributionPoints[message.CorrelationId];
             if (distributionPointId != Guid.Empty)
             {
@@ -205,7 +205,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptions.Remove(message.CorrelationId);
         }
 
-        public void Handle(ProjectionMessage.CoreService.Tick message)
+        public void Handle(ProjectionCoreServiceMessage.Tick message)
         {
             message.Action();
         }
@@ -224,7 +224,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 distributionPoint.Handle(message);
         }
 
-        public void Handle(ProjectionMessage.Projections.CommittedEventDistributed message)
+        public void Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
         {
             Guid projectionId;
             if (_stopped)
@@ -240,7 +240,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private bool TrySubscribeHeadingDistributionPoint(
-            ProjectionMessage.Projections.CommittedEventDistributed message, Guid projectionId)
+            ProjectionCoreServiceMessage.CommittedEventDistributed message, Guid projectionId)
         {
             if (_pausedProjections.Contains(projectionId))
                 return false;
@@ -267,7 +267,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        public void Handle(ProjectionMessage.CoreService.Management.Create message)
+        public void Handle(ProjectionCoreServiceMessage.Management.Create message)
         {
             try
             {
@@ -283,11 +283,11 @@ namespace EventStore.Projections.Core.Services.Processing
             catch (Exception ex)
             {
                 message.Envelope.ReplyWith(
-                    new ProjectionMessage.Projections.StatusReport.Faulted(message.CorrelationId, ex.Message));
+                    new CoreProjectionManagementMessage.Faulted(message.CorrelationId, ex.Message));
             }
         }
 
-        public void Handle(ProjectionMessage.CoreService.Management.Dispose message)
+        public void Handle(ProjectionCoreServiceMessage.Management.Dispose message)
         {
             CoreProjection projection;
             if (_projections.TryGetValue(message.CorrelationId, out projection))
@@ -297,25 +297,25 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void Handle(ProjectionMessage.Projections.Management.Start message)
+        public void Handle(CoreProjectionManagementMessage.Start message)
         {
             var projection = _projections[message.CorrelationId];
             projection.Start();
         }
 
-        public void Handle(ProjectionMessage.Projections.Management.Stop message)
+        public void Handle(CoreProjectionManagementMessage.Stop message)
         {
             var projection = _projections[message.CorrelationId];
             projection.Stop();
         }
 
-        public void Handle(ProjectionMessage.Projections.Management.GetState message)
+        public void Handle(CoreProjectionManagementMessage.GetState message)
         {
             var projection = _projections[message.CorrelationId];
             projection.Handle(message);
         }
 
-        public void Handle(ProjectionMessage.Projections.Management.UpdateStatistics message)
+        public void Handle(CoreProjectionManagementMessage.UpdateStatistics message)
         {
             CoreProjection projection;
             if (_projections.TryGetValue(message.CorrelationId, out projection))

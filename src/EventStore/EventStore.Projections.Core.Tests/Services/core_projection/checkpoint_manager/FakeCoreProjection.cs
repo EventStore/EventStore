@@ -33,55 +33,55 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 {
     public class FakeCoreProjection : ICoreProjection
     {
-        public readonly List<ProjectionMessage.SubscriptionMessage.CommittedEventReceived> _committedEventReceivedMessages =
-            new List<ProjectionMessage.SubscriptionMessage.CommittedEventReceived>();
+        public readonly List<ProjectionSubscriptionMessage.CommittedEventReceived> _committedEventReceivedMessages =
+            new List<ProjectionSubscriptionMessage.CommittedEventReceived>();
 
-        public readonly List<ProjectionMessage.SubscriptionMessage.CheckpointSuggested> _checkpointSuggestedMessages =
-            new List<ProjectionMessage.SubscriptionMessage.CheckpointSuggested>();
+        public readonly List<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointSuggestedMessages =
+            new List<ProjectionSubscriptionMessage.CheckpointSuggested>();
 
-        public readonly List<ProjectionMessage.Projections.CheckpointCompleted> _checkpointCompletedMessages =
-            new List<ProjectionMessage.Projections.CheckpointCompleted>();
+        public readonly List<CoreProjectionProcessingMessage.CheckpointCompleted> _checkpointCompletedMessages =
+            new List<CoreProjectionProcessingMessage.CheckpointCompleted>();
 
-        public readonly List<ProjectionMessage.Projections.PauseRequested> _pauseRequestedMessages =
-            new List<ProjectionMessage.Projections.PauseRequested>();
+        public readonly List<CoreProjectionProcessingMessage.PauseRequested> _pauseRequestedMessages =
+            new List<CoreProjectionProcessingMessage.PauseRequested>();
 
-        public readonly List<ProjectionMessage.Projections.CheckpointLoaded> _checkpointLoadedMessages =
-            new List<ProjectionMessage.Projections.CheckpointLoaded>();
+        public readonly List<CoreProjectionProcessingMessage.CheckpointLoaded> _checkpointLoadedMessages =
+            new List<CoreProjectionProcessingMessage.CheckpointLoaded>();
 
-        public readonly List<ProjectionMessage.SubscriptionMessage.ProgressChanged> _progresschangedMessages =
-            new List<ProjectionMessage.SubscriptionMessage.ProgressChanged>();
+        public readonly List<ProjectionSubscriptionMessage.ProgressChanged> _progresschangedMessages =
+            new List<ProjectionSubscriptionMessage.ProgressChanged>();
 
-        public void Handle(ProjectionMessage.SubscriptionMessage.CommittedEventReceived message)
+        public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
             _committedEventReceivedMessages.Add(message);
         }
 
-        public void Handle(ProjectionMessage.SubscriptionMessage.CheckpointSuggested message)
+        public void Handle(ProjectionSubscriptionMessage.CheckpointSuggested message)
         {
             _checkpointSuggestedMessages.Add(message);
         }
 
-        public void Handle(ProjectionMessage.Projections.CheckpointCompleted message)
+        public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
         {
             _checkpointCompletedMessages.Add(message);
         }
 
-        public void Handle(ProjectionMessage.Projections.PauseRequested message)
+        public void Handle(CoreProjectionProcessingMessage.PauseRequested message)
         {
             _pauseRequestedMessages.Add(message);
         }
 
-        public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
+        public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
         {
             _checkpointLoadedMessages.Add(message);
         }
 
-        public void Handle(ProjectionMessage.SubscriptionMessage.ProgressChanged message)
+        public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
         {
             _progresschangedMessages.Add(message);
         }
 
-        public void Handle(ProjectionMessage.Projections.RestartRequested message)
+        public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             throw new System.NotImplementedException();
         }

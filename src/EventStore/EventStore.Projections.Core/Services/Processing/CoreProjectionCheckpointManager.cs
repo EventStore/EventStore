@@ -193,7 +193,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             _coreProjection.Handle(
-                new ProjectionMessage.Projections.CheckpointCompleted(_lastCompletedCheckpointPosition));
+                new CoreProjectionProcessingMessage.CheckpointCompleted(_lastCompletedCheckpointPosition));
         }
 
         public void EventProcessed(
@@ -263,7 +263,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_inCheckpoint)
                 CompleteCheckpoint(lastProcessedEventPosition, _currentProjectionState);
             else
-                _coreProjection.Handle(new ProjectionMessage.Projections.PauseRequested());
+                _coreProjection.Handle(new CoreProjectionProcessingMessage.PauseRequested());
         }
 
         private void CompleteCheckpoint(PositionTracker lastProcessedEventPosition, string projectionState)
@@ -298,13 +298,13 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _stateLoaded = true;
             _coreProjection.Handle(
-                new ProjectionMessage.Projections.CheckpointLoaded(
+                new CoreProjectionProcessingMessage.CheckpointLoaded(
                     _projectionCorrelationId, checkpointTag, checkpointData));
         }
 
         protected void RequestRestart(string reason)
         {
-            _coreProjection.Handle(new ProjectionMessage.Projections.RestartRequested(reason));
+            _coreProjection.Handle(new CoreProjectionProcessingMessage.RestartRequested(reason));
         }
 
         protected abstract void BeforeBeginLoadState();
@@ -313,7 +313,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected abstract void BeginWriteCheckpoint(
             CheckpointTag requestedCheckpointPosition, string requestedCheckpointState);
 
-        public void Handle(ProjectionMessage.Projections.ReadyForCheckpoint message)
+        public void Handle(CoreProjectionProcessingMessage.ReadyForCheckpoint message)
         {
             // ignore any messages from previous checkpoints probably before RestartRequested
             if (message.Sender != _closingCheckpoint)
@@ -335,10 +335,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
             ProcessCheckpoints();
             _coreProjection.Handle(
-                new ProjectionMessage.Projections.CheckpointCompleted(_lastCompletedCheckpointPosition));
+                new CoreProjectionProcessingMessage.CheckpointCompleted(_lastCompletedCheckpointPosition));
         }
 
-        public void Handle(ProjectionMessage.Projections.RestartRequested message)
+        public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             RequestRestart(message.Reason);
         }

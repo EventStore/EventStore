@@ -102,14 +102,14 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
         public void publishes_correct_committed_event_received_messages()
         {
             Assert.AreEqual(
-                3, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
+                3, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
             var first =
-                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().First();
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().First();
             var second =
-                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
                          .Skip(1)
                          .First();
-            var third = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>()
+            var third = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
                          .Skip(2)
                          .First();
             Assert.IsNull(third.Data);

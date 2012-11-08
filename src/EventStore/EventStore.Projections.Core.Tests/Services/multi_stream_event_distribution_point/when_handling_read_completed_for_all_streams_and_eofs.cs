@@ -93,15 +93,15 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
         public void publishes_correct_committed_event_received_messages()
         {
             Assert.AreEqual(
-                6, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
+                6, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
             var first =
-                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().First();
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().First();
             var fifth =
-                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
                          .Skip(4)
                          .First();
             var sixth =
-                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
                          .Skip(5)
                          .First();
 
@@ -164,13 +164,13 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
         public void publishes_committed_event_received_messages_in_correct_order()
         {
             Assert.AreEqual(
-                6, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
-            var first = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(0).First();
-            var second = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(1).First();
-            var third = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(2).First();
-            var fourth = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(3).First();
-            var fifth = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(4).First();
-            var sixth = _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Skip(5).First();
+                6, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
+            var first = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Skip(0).First();
+            var second = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Skip(1).First();
+            var third = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Skip(2).First();
+            var fourth = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Skip(3).First();
+            var fifth = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Skip(4).First();
+            var sixth = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Skip(5).First();
 
             Assert.AreEqual(first.Data.EventId, _firstEventId);
             Assert.AreEqual(second.Data.EventId, _thirdEventId);

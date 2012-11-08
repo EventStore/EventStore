@@ -38,16 +38,16 @@ namespace EventStore.Projections.Core.Tests.Services.stream_position_tagger
     [TestFixture]
     public class stream_position_tagger
     {
-        private ProjectionMessage.Projections.CommittedEventDistributed _zeroEvent;
-        private ProjectionMessage.Projections.CommittedEventDistributed _firstEvent;
-        private ProjectionMessage.Projections.CommittedEventDistributed _secondEvent;
+        private ProjectionCoreServiceMessage.CommittedEventDistributed _zeroEvent;
+        private ProjectionCoreServiceMessage.CommittedEventDistributed _firstEvent;
+        private ProjectionCoreServiceMessage.CommittedEventDistributed _secondEvent;
 
         [SetUp]
         public void setup()
         {
-            _zeroEvent = new ProjectionMessage.Projections.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(10, 0), "stream1", 0, false, new Event(Guid.NewGuid(), "StreamCreated", false, new byte[0], new byte[0]));
-            _firstEvent = new ProjectionMessage.Projections.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(30, 20), "stream1", 1, false, new Event(Guid.NewGuid(), "Data", true, Encoding.UTF8.GetBytes("{}"), new byte[0]));
-            _secondEvent = new ProjectionMessage.Projections.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(50, 40), "stream1", 2, false, new Event(Guid.NewGuid(), "Data", true, Encoding.UTF8.GetBytes("{}"), new byte[0]));
+            _zeroEvent = new ProjectionCoreServiceMessage.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(10, 0), "stream1", 0, false, new Event(Guid.NewGuid(), "StreamCreated", false, new byte[0], new byte[0]));
+            _firstEvent = new ProjectionCoreServiceMessage.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(30, 20), "stream1", 1, false, new Event(Guid.NewGuid(), "Data", true, Encoding.UTF8.GetBytes("{}"), new byte[0]));
+            _secondEvent = new ProjectionCoreServiceMessage.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(50, 40), "stream1", 2, false, new Event(Guid.NewGuid(), "Data", true, Encoding.UTF8.GetBytes("{}"), new byte[0]));
         }
 
         [Test]

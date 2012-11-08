@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
         public void does_not_publish_committed_event_received_messages()
         {
             Assert.AreEqual(
-                0, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
+                0, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
         }
 
         [Test]

@@ -154,7 +154,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void RequestRestart(string reason)
         {
-            _readyHandler.Handle(new ProjectionMessage.Projections.RestartRequested(reason));
+            _readyHandler.Handle(new CoreProjectionProcessingMessage.RestartRequested(reason));
         }
 
         public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
@@ -267,7 +267,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_checkpointRequested && !_awaitingWriteCompleted && _pendingWrites.Count == 0)
             {
-                _readyHandler.Handle(new ProjectionMessage.Projections.ReadyForCheckpoint(this));
+                _readyHandler.Handle(new CoreProjectionProcessingMessage.ReadyForCheckpoint(this));
             }
         }
 

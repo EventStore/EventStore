@@ -34,18 +34,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     public class TestCheckpointManagerMessageHandler : IProjectionCheckpointManager
     {
-        public readonly List<ProjectionMessage.Projections.ReadyForCheckpoint> HandledMessages =
-            new List<ProjectionMessage.Projections.ReadyForCheckpoint>();
+        public readonly List<CoreProjectionProcessingMessage.ReadyForCheckpoint> HandledMessages =
+            new List<CoreProjectionProcessingMessage.ReadyForCheckpoint>();
 
-        public readonly List<ProjectionMessage.Projections.RestartRequested> HandledRestartRequestedMessages =
-            new List<ProjectionMessage.Projections.RestartRequested>();
+        public readonly List<CoreProjectionProcessingMessage.RestartRequested> HandledRestartRequestedMessages =
+            new List<CoreProjectionProcessingMessage.RestartRequested>();
 
-        public void Handle(ProjectionMessage.Projections.ReadyForCheckpoint message)
+        public void Handle(CoreProjectionProcessingMessage.ReadyForCheckpoint message)
         {
             HandledMessages.Add(message);
         }
 
-        public void Handle(ProjectionMessage.Projections.RestartRequested message)
+        public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             HandledRestartRequestedMessages.Add(message);
         }

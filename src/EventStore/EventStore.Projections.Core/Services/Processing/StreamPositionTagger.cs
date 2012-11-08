@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _stream = stream;
         }
 
-        public override bool IsMessageAfterCheckpointTag(CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent)
+        public override bool IsMessageAfterCheckpointTag(CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
         {
             if (previous.GetMode() != CheckpointTag.Mode.Stream)
                 throw new ArgumentException("Mode.Stream expected", "previous");
@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
                    && comittedEvent.PositionSequenceNumber > previous.Streams[_stream];
         }
 
-        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ProjectionMessage.Projections.CommittedEventDistributed comittedEvent)
+        public override CheckpointTag MakeCheckpointTag(CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
         {
             if (comittedEvent.PositionStreamId != _stream)
                 throw new InvalidOperationException(string.Format("Invalid stream '{0}'.  Expected stream is '{1}'", comittedEvent.EventStreamId, _stream));

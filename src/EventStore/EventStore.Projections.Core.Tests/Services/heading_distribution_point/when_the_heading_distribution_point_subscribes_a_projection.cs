@@ -64,11 +64,11 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
                 new TransactionFileReaderEventDistributionPoint(
                     _bus, _distibutionPointCorrelationId, new EventPosition(0, -1)));
             _point.Handle(
-                new ProjectionMessage.Projections.CommittedEventDistributed(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, new EventPosition(20, 10), "stream", 10, false,
                     new Event(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
             _point.Handle(
-                new ProjectionMessage.Projections.CommittedEventDistributed(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, new EventPosition(40, 30), "stream", 11, false,
                     new Event(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
             _subscription = new FakeProjectionSubscription();

@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     public abstract class TestFixtureWithExistingEvents : TestFixtureWithReadWriteDisaptchers,
                                                           IHandle<ClientMessage.ReadStreamEventsBackward>,
                                                           IHandle<ClientMessage.WriteEvents>,
-                                                          IHandle<ProjectionMessage.CoreService.Tick>
+                                                          IHandle<ProjectionCoreServiceMessage.Tick>
     {
         protected TestMessageHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 
@@ -128,7 +128,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(_listEventsHandler);
             _bus.Subscribe<ClientMessage.WriteEvents>(this);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
-            _bus.Subscribe<ProjectionMessage.CoreService.Tick>(this);
+            _bus.Subscribe<ProjectionCoreServiceMessage.Tick>(this);
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             _lastMessageReplies.Clear();
@@ -198,7 +198,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 _writesQueue.Enqueue(message);
         }
 
-        public void Handle(ProjectionMessage.CoreService.Tick message)
+        public void Handle(ProjectionCoreServiceMessage.Tick message)
         {
             if (_ticksAreHandledImmediately)
                 message.Action();

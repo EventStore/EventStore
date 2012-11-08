@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void publishes_ready_for_checkpoint()
         {
             Assert.IsTrue(
-                _readyHandler.HandledMessages.ContainsSingle<ProjectionMessage.Projections.ReadyForCheckpoint>());
+                _readyHandler.HandledMessages.ContainsSingle<CoreProjectionProcessingMessage.ReadyForCheckpoint>());
         }
     }
 }

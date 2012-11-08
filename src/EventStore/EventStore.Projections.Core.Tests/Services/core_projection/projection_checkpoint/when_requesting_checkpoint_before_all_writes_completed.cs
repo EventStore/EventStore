@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         public void not_ready_for_checkpoint_immediately()
         {
             Assert.AreEqual(
-                0, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.ReadyForCheckpoint>().Count());
+                0, _consumer.HandledMessages.OfType<CoreProjectionProcessingMessage.ReadyForCheckpoint>().Count());
         }
 
         [Test]
@@ -90,7 +90,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                 new ClientMessage.WriteEventsCompleted(writes[2].CorrelationId, writes[2].EventStreamId, 0));
 
             Assert.AreEqual(
-                1, _readyHandler.HandledMessages.OfType<ProjectionMessage.Projections.ReadyForCheckpoint>().Count());
+                1, _readyHandler.HandledMessages.OfType<CoreProjectionProcessingMessage.ReadyForCheckpoint>().Count());
         }
     }
 }

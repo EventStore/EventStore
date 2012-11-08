@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             //projection subscribes here
             _coreProjection.Handle(
-                new ProjectionMessage.SubscriptionMessage.CheckpointSuggested(Guid.Empty, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
+                new ProjectionSubscriptionMessage.CheckpointSuggested(Guid.Empty, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
         }
 
         [Test]
