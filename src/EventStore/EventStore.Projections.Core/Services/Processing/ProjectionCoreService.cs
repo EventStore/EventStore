@@ -46,8 +46,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionSubscriptionManagement.Pause>,
                                          IHandle<ProjectionSubscriptionManagement.Resume>,
                                          IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>,
-                                         IHandle<ProjectionCoreServiceMessage.Management.Create>,
-                                         IHandle<ProjectionCoreServiceMessage.Management.Dispose>,
+                                         IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
+                                         IHandle<CoreProjectionManagementMessage.Dispose>,
                                          IHandle<CoreProjectionManagementMessage.Start>,
                                          IHandle<CoreProjectionManagementMessage.Stop>,
                                          IHandle<CoreProjectionManagementMessage.GetState>,
@@ -267,7 +267,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
-        public void Handle(ProjectionCoreServiceMessage.Management.Create message)
+        public void Handle(CoreProjectionManagementMessage.CreateAndPrepare message)
         {
             try
             {
@@ -279,6 +279,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     message.Name, message.CorrelationId, _publisher, stateHandler, message.Config, _readDispatcher,
                     _writeDispatcher, _logger);
                 _projections.Add(message.CorrelationId, projection);
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.Prepared(message.CorrelationId));
             }
             catch (Exception ex)
             {
@@ -287,7 +289,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void Handle(ProjectionCoreServiceMessage.Management.Dispose message)
+        public void Handle(CoreProjectionManagementMessage.Dispose message)
         {
             CoreProjection projection;
             if (_projections.TryGetValue(message.CorrelationId, out projection))

@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void Given()
         {
             _projectionName = "test-projection";
-            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] { _bus }, checkpointForStatistics: null);
+            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] { _bus });
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             AllWritesQueueUp();
         }

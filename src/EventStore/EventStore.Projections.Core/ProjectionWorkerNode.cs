@@ -60,8 +60,8 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<ProjectionCoreServiceMessage.Start>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionCoreServiceMessage.Stop>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionCoreServiceMessage.Tick>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionCoreServiceMessage.Management.Create>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionCoreServiceMessage.Management.Dispose>(_projectionCoreService);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(_projectionCoreService);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.Dispose>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionSubscriptionManagement.Subscribe>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionSubscriptionManagement.Unsubscribe>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionSubscriptionManagement.Pause>(_projectionCoreService);

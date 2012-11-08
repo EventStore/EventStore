@@ -48,18 +48,20 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             //TODO: this became a n integration test - proper ProjectionCoreService and ProjectionManager testing is required instead
             _bus.Subscribe(_consumer);
 
-            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, checkpointForStatistics: null);
+            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus});
             _coreService = new ProjectionCoreService(_bus, _bus, 10, new InMemoryCheckpoint(1000));
             _bus.Subscribe<CoreProjectionManagementMessage.Started>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.Stopped>(_manager);
+            _bus.Subscribe<CoreProjectionManagementMessage.Prepared>(_manager);
+            _bus.Subscribe<CoreProjectionManagementMessage.Faulted>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.StateReport>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
 
-            _bus.Subscribe<ProjectionCoreServiceMessage.Management.Create>(_coreService);
-            _bus.Subscribe<ProjectionCoreServiceMessage.Management.Dispose>(_coreService);
+            _bus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(_coreService);
+            _bus.Subscribe<CoreProjectionManagementMessage.Dispose>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.Start>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.Stop>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.GetState>(_coreService);

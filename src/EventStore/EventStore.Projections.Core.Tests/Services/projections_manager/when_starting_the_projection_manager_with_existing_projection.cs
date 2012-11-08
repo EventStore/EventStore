@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [SetUp]
         public void setup()
         {
-            _manager = new ProjectionManager(_bus, _bus, new IPublisher[]{_bus}, checkpointForStatistics: null);
+            _manager = new ProjectionManager(_bus, _bus, new IPublisher[]{_bus});
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _manager.Handle(new SystemMessage.SystemStart());
@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _manager.Handle(
                 new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, "projection1", true));
             Assert.AreEqual(
-                ManagedProjectionState.Starting,
+                ManagedProjectionState.Preparing,
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().SingleOrDefault(
                     v => v.Projections[0].Name == "projection1").Projections[0].MasterStatus);
         }

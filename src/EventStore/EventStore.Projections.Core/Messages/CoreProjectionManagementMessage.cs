@@ -165,5 +165,60 @@ namespace EventStore.Projections.Core.Messages
                 get { return _statistics; }
             }
         }
+
+        public class Prepared : CoreProjectionManagementMessage
+        {
+            public Prepared(Guid correlationId)
+                : base(correlationId)
+            {
+            }
+        }
+
+        public class CreateAndPrepare : CoreProjectionManagementMessage
+        {
+            private readonly IEnvelope _envelope;
+            private readonly ProjectionConfig _config;
+            private readonly Func<IProjectionStateHandler> _handlerFactory;
+            private readonly string _name;
+
+            public CreateAndPrepare(
+                IEnvelope envelope, Guid correlationId, string name, ProjectionConfig config,
+                Func<IProjectionStateHandler> handlerFactory)
+                : base(correlationId)
+            {
+                _envelope = envelope;
+                _name = name;
+                _config = config;
+                _handlerFactory = handlerFactory;
+            }
+
+            public ProjectionConfig Config
+            {
+                get { return _config; }
+            }
+
+            public Func<IProjectionStateHandler> HandlerFactory
+            {
+                get { return _handlerFactory; }
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+        }
+
+        public class Dispose : CoreProjectionManagementMessage
+        {
+            public Dispose(Guid correlationId)
+                : base(correlationId)
+            {
+            }
+        }
     }
 }

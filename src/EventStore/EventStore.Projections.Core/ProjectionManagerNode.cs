@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core
         private ProjectionManagerNode(IPublisher inputQueue, IPublisher[] queues, ICheckpoint checkpointForStatistics)
         {
             _output = new InMemoryBus("ProjectionManagerOutput");
-            _projectionManager = new ProjectionManager(inputQueue, _output, queues, checkpointForStatistics);
+            _projectionManager = new ProjectionManager(inputQueue, _output, queues);
         }
 
         public InMemoryBus Output
@@ -40,6 +40,7 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<CoreProjectionManagementMessage.Started>(_projectionManager);
             mainBus.Subscribe<CoreProjectionManagementMessage.Stopped>(_projectionManager);
             mainBus.Subscribe<CoreProjectionManagementMessage.Faulted>(_projectionManager);
+            mainBus.Subscribe<CoreProjectionManagementMessage.Prepared>(_projectionManager);
             mainBus.Subscribe<CoreProjectionManagementMessage.StateReport>(_projectionManager);
             mainBus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_projectionManager);
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
