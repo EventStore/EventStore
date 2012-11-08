@@ -27,17 +27,22 @@
 // 
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class QuerySourceProcessingStrategyBuilder // name it!!
     {
+        [DataContract]
         public class QuerySourceOptions
         {
+            [DataMember]
             public string StateStreamName { get; set; }
 
+            [DataMember]
             public string ForceProjectionName { get; set; }
 
+            [DataMember]
             public bool UseEventIndexes { get; set; }
         }
 

@@ -275,12 +275,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 IProjectionStateHandler stateHandler = message.HandlerFactory();
                 // constructor can fail if wrong source defintion
                 //TODO: revise it
+                var sourceDefintionRecorder = new SourceDefintionRecorder();
+                stateHandler.ConfigureSourceProcessingStrategy(sourceDefintionRecorder);
+                var sourceDefintion = sourceDefintionRecorder.Build();
                 var projection = new CoreProjection(
                     message.Name, message.CorrelationId, _publisher, stateHandler, message.Config, _readDispatcher,
                     _writeDispatcher, _logger);
                 _projections.Add(message.CorrelationId, projection);
                 message.Envelope.ReplyWith(
-                    new CoreProjectionManagementMessage.Prepared(message.CorrelationId));
+                    new CoreProjectionManagementMessage.Prepared(message.CorrelationId, sourceDefintion));
             }
             catch (Exception ex)
             {

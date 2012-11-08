@@ -29,6 +29,7 @@
 using System;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
@@ -168,9 +169,17 @@ namespace EventStore.Projections.Core.Messages
 
         public class Prepared : CoreProjectionManagementMessage
         {
-            public Prepared(Guid correlationId)
+            private readonly ProjectionSourceDefintion _sourceDefintion;
+
+            public Prepared(Guid correlationId, ProjectionSourceDefintion sourceDefintion)
                 : base(correlationId)
             {
+                _sourceDefintion = sourceDefintion;
+            }
+
+            public ProjectionSourceDefintion SourceDefintion
+            {
+                get { return _sourceDefintion; }
             }
         }
 

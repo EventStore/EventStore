@@ -52,6 +52,7 @@ namespace EventStore.Projections.Core.Services.Management
             public ProjectionMode Mode { get; set; }
             public bool Enabled { get; set; }
             public bool Deleted { get; set; }
+            public ProjectionSourceDefintion SourceDefintion { get; set; }
         }
 
         private readonly IPublisher _inputQueue;
@@ -222,6 +223,11 @@ namespace EventStore.Projections.Core.Services.Management
                         () => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name))));
         }
 
+        public void Handle(ProjectionManagementMessage.Delete message)
+        {
+            Stop(() => DoDelete(message));
+        }
+
         public void Handle(CoreProjectionManagementMessage.Started message)
         {
             _state = ManagedProjectionState.Running;
@@ -246,24 +252,19 @@ namespace EventStore.Projections.Core.Services.Management
         {
             SetFaulted(message.FaultedReason);
             if (_state == ManagedProjectionState.Preparing)
+            {
+                // cannot prepare - thus we don't know source defintion
+                _persistedState.SourceDefintion = null;
                 OnPrepared();
+            }
             DisposeCoreProjection();
         }
 
         public void Handle(CoreProjectionManagementMessage.Prepared message)
         {
             _state = ManagedProjectionState.Prepared;
+            _persistedState.SourceDefintion = message.SourceDefintion;
             OnPrepared();
-        }
-
-        private void OnPrepared()
-        {
-            if (_onPrepared != null)
-            {
-                var action = _onPrepared;
-                _onPrepared = null;
-                action();
-            }
         }
 
         public void Handle(CoreProjectionManagementMessage.StateReport message)
@@ -348,6 +349,16 @@ namespace EventStore.Projections.Core.Services.Management
                 Prepare(() => BeginWrite(completed));
             else
                 BeginWrite(completed);
+        }
+
+        private void OnPrepared()
+        {
+            if (_onPrepared != null)
+            {
+                var action = _onPrepared;
+                _onPrepared = null;
+                action();
+            }
         }
 
         private void BeginWrite(Action completed)
@@ -567,11 +578,6 @@ namespace EventStore.Projections.Core.Services.Management
             PrepareAndBeginWrite(
                 forcePrepare: false,
                 completed: () => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
-        }
-
-        public void Handle(ProjectionManagementMessage.Delete message)
-        {
-            Stop(() => DoDelete(message));
         }
 
         private void DoDelete(ProjectionManagementMessage.Delete message)
