@@ -33,11 +33,11 @@ namespace EventStore.Projections.Core.Services.Processing
     class CheckpointSuggestedWorkItem : WorkItem
     {
         private readonly ProjectionMessage.SubscriptionMessage.CheckpointSuggested _message;
-        private readonly CoreProjectionCheckpointManager _checkpointManager;
+        private readonly ICoreProjectionCheckpointManager _checkpointManager;
 
         public CheckpointSuggestedWorkItem(
             CoreProjection projection, ProjectionMessage.SubscriptionMessage.CheckpointSuggested message,
-            CoreProjectionCheckpointManager checkpointManager)
+            ICoreProjectionCheckpointManager checkpointManager)
             : base(projection, "") // checkpoints are serialized based on string.empty token stream name
         {
             _message = message;

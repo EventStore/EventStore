@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using System.Linq;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing

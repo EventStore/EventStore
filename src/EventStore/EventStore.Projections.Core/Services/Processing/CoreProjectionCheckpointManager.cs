@@ -36,7 +36,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointManager
+    public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointManager, ICoreProjectionCheckpointManager
     {
         private readonly IPublisher _publisher;
 
@@ -234,6 +234,22 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastProcessedEventProgress = progress;
         }
 
+        public void BeginLoadState()
+        {
+            if (_stateRequested)
+                throw new InvalidOperationException("State has been already requested");
+            BeforeBeginLoadState();
+            _stateRequested = true;
+            if (_projectionConfig.CheckpointsEnabled)
+            {
+                RequestLoadState();
+            }
+            else
+            {
+                CheckpointLoaded(null, null);
+            }
+        }
+
         protected void EnsureStarted()
         {
             if (!_started)
@@ -293,22 +309,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected abstract void BeforeBeginLoadState();
         protected abstract void RequestLoadState();
-
-        public void BeginLoadState()
-        {
-            if (_stateRequested)
-                throw new InvalidOperationException("State has been already requested");
-            BeforeBeginLoadState();
-            _stateRequested = true;
-            if (_projectionConfig.CheckpointsEnabled)
-            {
-                RequestLoadState();
-            }
-            else
-            {
-                CheckpointLoaded(null, null);
-            }
-        }
 
         protected abstract void BeginWriteCheckpoint(
             CheckpointTag requestedCheckpointPosition, string requestedCheckpointState);

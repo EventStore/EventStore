@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private string _handlerPartition;
         private readonly PartitionStateCache _partitionStateCache;
         private readonly CoreProjectionQueue _processingQueue;
-        private readonly CoreProjectionCheckpointManager _checkpointManager;
+        private readonly ICoreProjectionCheckpointManager _checkpointManager;
 
         private bool _tickPending;
         private int _readRequestsInProgress;

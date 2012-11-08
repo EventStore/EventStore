@@ -209,7 +209,7 @@ namespace EventStore.Projections.Core.Services.Processing
                        : new NoopStatePartitionSelector();
         }
 
-        public CoreProjectionCheckpointManager CreateCheckpointManager(
+        public ICoreProjectionCheckpointManager CreateCheckpointManager(
             ICoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
