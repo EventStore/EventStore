@@ -27,53 +27,42 @@
 // 
 
 using System.Linq;
-using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_posting_a_persistent_projection_and_writes_succeed : TestFixtureWithExistingEvents
+    public class when_posting_a_persistent_projection_and_writes_succeed : TestFixtureWithProjectionCoreAndManagementServices
     {
         protected override void Given()
         {
+            NoStream("$projections-test-projection-checkpoint");
             AllWritesSucceed();
         }
 
-        private ProjectionManager _manager;
         private string _projectionName;
 
-        [SetUp]
-        public void setup()
+        protected override void When()
         {
-            _manager = new ProjectionManager(_bus, _bus, new IPublisher[]{_bus});
-            _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _projectionName = "test-projection";
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Persistent, _projectionName, "JS",
-                    @"fromAll(); on_any(function(){});log(1);", enabled: true));
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _manager.Dispose();
+                    @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
         }
 
         [Test]
-        public void projection_status_is_starting()
+        public void projection_status_is_running()
         {
             _manager.Handle(
                 new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, true));
             Assert.AreEqual(
-                ManagedProjectionState.Preparing,
+                ManagedProjectionState.Running,
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections[0].
                     MasterStatus);
         }

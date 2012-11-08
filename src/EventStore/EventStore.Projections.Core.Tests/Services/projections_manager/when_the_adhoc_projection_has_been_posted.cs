@@ -27,11 +27,8 @@
 // 
 
 using System.Linq;
-using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager

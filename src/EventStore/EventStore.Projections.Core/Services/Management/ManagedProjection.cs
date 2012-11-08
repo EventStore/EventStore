@@ -77,7 +77,8 @@ namespace EventStore.Projections.Core.Services.Management
         private Action _stopCompleted;
         private Dictionary<string, List<IEnvelope>> _stateRequests;
         private ProjectionStatistics _lastReceivedStatistics;
-        private Action<CoreProjectionManagementMessage.Prepared> _onPrepared;
+        private Action _onPrepared;
+        private Action _onStarted;
 
         public ManagedProjection(
             IPublisher coreQueue, Guid id, string name, ILogger logger,
@@ -214,16 +215,22 @@ namespace EventStore.Projections.Core.Services.Management
             }
             Enable();
             PrepareAndBeginWrite(
-                forcePrepare: true, completed: () =>
-                    {
-                        message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name));
-                        StartIfEnabled();
-                    });
+                forcePrepare: true,
+                completed:
+                    () =>
+                    Start(
+                        () => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name))));
         }
 
         public void Handle(CoreProjectionManagementMessage.Started message)
         {
             _state = ManagedProjectionState.Running;
+            if (_onStarted != null)
+            {
+                var action = _onStarted;
+                _onStarted = null;
+                action();
+            }
         }
 
         public void Handle(CoreProjectionManagementMessage.Stopped message)
@@ -238,17 +245,24 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.Faulted message)
         {
             SetFaulted(message.FaultedReason);
+            if (_state == ManagedProjectionState.Preparing)
+                OnPrepared();
             DisposeCoreProjection();
         }
 
         public void Handle(CoreProjectionManagementMessage.Prepared message)
         {
             _state = ManagedProjectionState.Prepared;
+            OnPrepared();
+        }
+
+        private void OnPrepared()
+        {
             if (_onPrepared != null)
             {
                 var action = _onPrepared;
                 _onPrepared = null;
-                action(message);
+                action();
             }
         }
 
@@ -301,7 +315,8 @@ namespace EventStore.Projections.Core.Services.Management
                 LoadPersistedState(state.ParseJson<PersistedState>());
                 //TODO: encapsulate this into managed projection
                 _state = ManagedProjectionState.Stopped;
-                StartIfEnabled();
+                if (Enabled)
+                    Prepare(() => Start(() => { }));
                 return;
             }
 
@@ -329,7 +344,10 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void PrepareAndBeginWrite(bool forcePrepare, Action completed)
         {
-            BeginWrite(completed);
+            if (Enabled || forcePrepare)
+                Prepare(() => BeginWrite(completed));
+            else
+                BeginWrite(completed);
         }
 
         private void BeginWrite(Action completed)
@@ -370,13 +388,23 @@ namespace EventStore.Projections.Core.Services.Management
                 throw new NotSupportedException("Unsupported error code received");
         }
 
-        private void StartIfEnabled()
+        private void Prepare(Action onPrepared)
         {
-            if (Enabled)
-            {
-                var config = CreateDefaultProjectionConfiguration(GetMode());
-                PrepareAndStart(_projectionStateHandlerFactory, config);
-            }
+            if (!Enabled)
+                throw new InvalidOperationException("Disable projection cannot be prepared");
+
+            var config = CreateDefaultProjectionConfiguration(GetMode());
+
+            BeginCreateAndPrepare(_projectionStateHandlerFactory, config, onPrepared);
+        }
+
+        private void Start(Action onStarted)
+        {
+            if (!Enabled)
+                throw new InvalidOperationException("Projection is disabled");
+            _onStarted = onStarted;
+            _state = ManagedProjectionState.Starting;
+            _coreQueue.Publish(new CoreProjectionManagementMessage.Start(_id));
         }
 
         private void DisposeCoreProjection()
@@ -415,8 +443,11 @@ namespace EventStore.Projections.Core.Services.Management
             Query = query;
         }
 
-        private void PrepareAndStart(ProjectionStateHandlerFactory handlerFactory, ProjectionConfig config)
+        private void BeginCreateAndPrepare(
+            ProjectionStateHandlerFactory handlerFactory, ProjectionConfig config,
+            Action onPrepared)
         {
+            _onPrepared = onPrepared;
             if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
             if (config == null) throw new ArgumentNullException("config");
 
@@ -456,11 +487,6 @@ namespace EventStore.Projections.Core.Services.Management
 
             //note: set runnign before start as coreProjection.start() can respond with faulted
             _state = ManagedProjectionState.Preparing;
-            _onPrepared = delegate
-                {
-                    _state = ManagedProjectionState.Starting;
-                    _coreQueue.Publish(new CoreProjectionManagementMessage.Start(_id));
-                };
             _coreQueue.Publish(createProjectionMessage);
         }
 
@@ -513,9 +539,9 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void StartNew(Action completed)
         {
-            _state = ManagedProjectionState.Stopped;
-            StartIfEnabled();
-            if (completed != null) completed();
+            if (Enabled)
+                Start(() => { if (completed != null) completed(); });
+            else if (completed != null) completed();
         }
 
         private void DoUpdateQuery(ProjectionManagementMessage.UpdateQuery message)
@@ -524,7 +550,8 @@ namespace EventStore.Projections.Core.Services.Management
             PrepareAndBeginWrite(
                 forcePrepare: true, completed: () =>
                     {
-                        StartIfEnabled();
+                        if (Enabled)
+                            Start(() => { });
                         message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name));
                     });
         }

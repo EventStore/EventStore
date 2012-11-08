@@ -40,32 +40,23 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_posting_a_persistent_projection : TestFixtureWithExistingEvents
+    public class when_posting_a_persistent_projection : TestFixtureWithProjectionCoreAndManagementServices
     {
-        private ProjectionManager _manager;
         private string _projectionName;
 
         protected override void Given()
         {
             _projectionName = "test-projection";
-            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] { _bus });
-            _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             AllWritesQueueUp();
         }
 
-        [SetUp]
-        public void Setup()
+        protected override void When()
         {
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), ProjectionMode.Persistent, _projectionName, "JS", @"log(1);", enabled: true));
+                    new PublishEnvelope(_bus), ProjectionMode.Persistent, _projectionName, "JS",
+                    @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
             OneWriteCompletes();
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _manager.Dispose();
         }
 
         [Test]
@@ -74,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _manager.Handle(
                 new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, true));
             Assert.AreEqual(
-                ManagedProjectionState.Creating,
+                ManagedProjectionState.Prepared,
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections[0].
                     MasterStatus);
         }
@@ -97,5 +88,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             // not published until all writes complete
             Assert.AreEqual(0, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Count());
         }
+
     }
 }

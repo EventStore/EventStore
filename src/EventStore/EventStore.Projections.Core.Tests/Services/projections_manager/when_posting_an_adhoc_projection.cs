@@ -37,30 +37,19 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_posting_an_adhoc_projection
+    public class when_posting_an_adhoc_projection: TestFixtureWithProjectionCoreAndManagementServices
     {
-        private ProjectionManager _manager;
-        private FakePublisher _publisher;
-
-        [SetUp]
-        public void setup()
+        protected override void When()
         {
-            _publisher = new FakePublisher();
-            _manager = new ProjectionManager(_publisher, _publisher, new IPublisher[] { _publisher });
-
-            _manager.Handle(new ProjectionManagementMessage.Post(new PublishEnvelope(_publisher), @"log(1);", enabled: true));
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _manager.Dispose();
+            _manager.Handle(
+                new ProjectionManagementMessage.Post(
+                    new PublishEnvelope(_bus), @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
         }
 
         [Test]
         public void projection_updated_is_published()
         {
-            Assert.AreEqual(1, _publisher.Messages.OfType<ProjectionManagementMessage.Updated>().Count());
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Count());
         }
     }
 }
