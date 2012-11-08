@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
                                                  "ES",
                                                  0,
                                                  "some-type",
-                                                 EventRecord.Empty,
+                                                 LogRecord.NoData,
                                                  null,
                                                  DateTime.UtcNow);
             Assert.IsTrue(Writer.Write(prepare1, out pos));
@@ -63,16 +63,17 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
                                                  "ES",
                                                  0,
                                                  "some-type",
-                                                 EventRecord.Empty,
+                                                 LogRecord.NoData,
                                                  null,
                                                  DateTime.UtcNow);
             Assert.IsTrue(Writer.Write(prepare2, out pos));
 
             
-            var deleteprepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(),  // delete prepare
+            var deletePrepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(),  // delete prepare
                                                           Guid.NewGuid(),
                                                           "ES",
                                                           0);
+            Assert.IsTrue(Writer.Write(deletePrepare, out pos));
 
             var prepare3 = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),     // prepare3
                                                  Guid.NewGuid(),
@@ -80,14 +81,14 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
                                                  "ES",
                                                  0,
                                                  "some-type",
-                                                 EventRecord.Empty,
+                                                 LogRecord.NoData,
                                                  null,
                                                  DateTime.UtcNow);
             Assert.IsTrue(Writer.Write(prepare3, out pos));
 
             var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(),     // committing delete
-                                          deleteprepare.CorrelationId,
-                                          deleteprepare.LogPosition,
+                                          deletePrepare.CorrelationId,
+                                          deletePrepare.LogPosition,
                                           EventNumber.DeletedStream);
             Assert.IsTrue(Writer.Write(commit, out pos));
         }
@@ -141,7 +142,6 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
         [Test]
         public void read_all_forward_should_return_all_stream_records_except_uncommited()
         {
-            Assert.Inconclusive();
             var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
             Assert.AreEqual(1, events.Length);
             Assert.AreEqual(_event1, events[0]);
@@ -150,7 +150,6 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
         [Test]
         public void read_all_backward_should_return_all_stream_records_except_uncommited()
         {
-            Assert.Inconclusive();
             var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event).ToArray();
             Assert.AreEqual(1, events.Length);
             Assert.AreEqual(_event1, events[0]);

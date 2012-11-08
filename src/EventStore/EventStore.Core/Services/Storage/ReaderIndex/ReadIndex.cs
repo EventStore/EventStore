@@ -74,7 +74,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly IHasher _hasher;
         private readonly IPublisher _bus;
         private readonly ILRUCache<string, StreamMetadata> _metadataCache;
-        private readonly object _commitLock = new object();
 
         private long _persistedPrepareCheckpoint = -1;
         private long _persistedCommitCheckpoint = -1;
