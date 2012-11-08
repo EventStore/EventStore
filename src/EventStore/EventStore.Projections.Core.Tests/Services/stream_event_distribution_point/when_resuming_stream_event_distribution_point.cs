@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
                             10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type", new byte[0], new byte[0]))
-                    }, RangeReadResult.Success, 11, 100, 4));
+                    }, RangeReadResult.Success, 11, 10, true, 100));
         }
     }
 }

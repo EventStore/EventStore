@@ -63,11 +63,11 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                             2, 100, Guid.NewGuid(), _secondEventId, 100, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, RangeReadResult.Success, 3, 200, 2));
+                        }, RangeReadResult.Success, 3, 2, true, 200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "b",
-                    new EventLinkPair[0], RangeReadResult.NoStream, 0, 200, ExpectedVersion.NoStream));
+                    new EventLinkPair[0], RangeReadResult.NoStream, -1, ExpectedVersion.NoStream, false, 200));
         }
 
         [Test]
@@ -144,7 +144,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                                 3, 250, Guid.NewGuid(), Guid.NewGuid(), 250, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                                 "event_type", new byte[0], new byte[0]), null)
-                    }, RangeReadResult.Success, 11, 300, 4));
+                    }, RangeReadResult.Success, 4, 3, true, 300));
         }
 
 

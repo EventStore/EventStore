@@ -153,12 +153,12 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadEvent>.Handle(ClientMessage.ReadEvent message)
         {
-            EventRecord record;
-            var result = _readIndex.ReadEvent(message.EventStreamId, message.EventNumber, out record);
+            var result = _readIndex.ReadEvent(message.EventStreamId, message.EventNumber);
 
-            if (result == SingleReadResult.Success && message.ResolveLinkTos)
+            EventRecord record = result.Record;
+            if (result.Result == SingleReadResult.Success && message.ResolveLinkTos)
             {
-                Debug.Assert(record != null);
+                Debug.Assert(result.Record != null);
                 record = ResolveLinkToEvent(record) ?? record;
             }
 
@@ -166,7 +166,7 @@ namespace EventStore.Core.Services.Storage
             message.Envelope.ReplyWith(new ClientMessage.ReadEventCompleted(message.CorrelationId,
                                                                             message.EventStreamId,
                                                                             message.EventNumber,
-                                                                            result,
+                                                                            result.Result,
                                                                             record));
         }
 
@@ -174,13 +174,10 @@ namespace EventStore.Core.Services.Storage
         {
             var lastCommitPosition = _readIndex.LastCommitPosition;
 
-            EventRecord[] records;
-            var result = _readIndex.ReadStreamEventsForward(message.EventStreamId, message.FromEventNumber, message.MaxCount, out records);
-            var nextEventNumber = result == RangeReadResult.Success && records.Length > 0
-                                          ? records[records.Length - 1].EventNumber + 1
-                                          : -1;
-            if (result == RangeReadResult.Success && records.Length > 1)
+            var result = _readIndex.ReadStreamEventsForward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
+            if (result.Result == RangeReadResult.Success && result.Records.Length > 1)
             {
+                var records = result.Records;
                 for (var index = 1; index < records.Length; index++)
                 {
                     if (records[index].EventNumber != records[index - 1].EventNumber + 1)
@@ -197,29 +194,26 @@ namespace EventStore.Core.Services.Storage
                 }
             }
 
-            var resolvedPairs = ResolveLinkToEvents(records, message.ResolveLinks);
-            int? lastEventNumber = message.ReturnLastEventNumber ? _readIndex.GetLastStreamEventNumber(message.EventStreamId) : (int?)null;
+            var resolvedPairs = ResolveLinkToEvents(result.Records, message.ResolveLinks);
             message.Envelope.ReplyWith(
-                    new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId,
-                                                                       message.EventStreamId,
-                                                                       resolvedPairs,
-                                                                       result,
-                                                                       nextEventNumber,
-                                                                       records.Length == 0 ? lastCommitPosition : (long?) null,
-                                                                       lastEventNumber));
+                new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId,
+                                                                   message.EventStreamId,
+                                                                   resolvedPairs,
+                                                                   result.Result,
+                                                                   result.NextEventNumber,
+                                                                   result.LastEventNumber,
+                                                                   result.IsEndOfStream,
+                                                                   result.IsEndOfStream ? lastCommitPosition : (long?) null));
         }
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)
         {
             var lastCommitPosition = _readIndex.LastCommitPosition;
 
-            EventRecord[] records;
-            var result = _readIndex.ReadStreamEventsBackward(message.EventStreamId, message.FromEventNumber, message.MaxCount, out records);
-            var nextEventNumber = result == RangeReadResult.Success & records.Length > 0
-                                      ? records[records.Length - 1].EventNumber - 1
-                                      : -1;
-            if (result == RangeReadResult.Success && records.Length > 1)
+            var result = _readIndex.ReadStreamEventsBackward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
+            if (result.Result == RangeReadResult.Success && result.Records.Length > 1)
             {
+                var records = result.Records;
                 for (var index = 1; index < records.Length; index++)
                 {
                     if (records[index].EventNumber != records[index - 1].EventNumber - 1)
@@ -235,14 +229,16 @@ namespace EventStore.Core.Services.Storage
                     }
                 }
             }
-            var resolvedPairs = ResolveLinkToEvents(records, message.ResolveLinks);
+            var resolvedPairs = ResolveLinkToEvents(result.Records, message.ResolveLinks);
             message.Envelope.ReplyWith(
                 new ClientMessage.ReadStreamEventsBackwardCompleted(message.CorrelationId,
                                                                     message.EventStreamId,
                                                                     resolvedPairs,
-                                                                    result,
-                                                                    nextEventNumber,
-                                                                    records.Length == 0 ? lastCommitPosition : (long?) null));
+                                                                    result.Result,
+                                                                    result.NextEventNumber,
+                                                                    result.LastEventNumber,
+                                                                    result.IsEndOfStream,
+                                                                    result.IsEndOfStream ? lastCommitPosition : (long?) null));
         }
 
         private EventLinkPair[] ResolveLinkToEvents(EventRecord[] records, bool resolveLinks)
@@ -291,7 +287,7 @@ namespace EventStore.Core.Services.Storage
                 if (faulted)
                     return null;
 
-                _readIndex.ReadEvent(streamId, eventNumber, out record);
+                record = _readIndex.ReadEvent(streamId, eventNumber).Record; // we don't care if unsuccessful
             }
             return record;
         }
@@ -345,22 +341,24 @@ namespace EventStore.Core.Services.Storage
         {
             try
             {
-                EventRecord[] eventsBatch;
-
                 // from 1 to skip $stream-created event in $streams stream
-                var result = _readIndex.ReadStreamEventsForward(SystemStreams.StreamsStream, 1, int.MaxValue, out eventsBatch);
-                if (result != RangeReadResult.Success)
+                var result = _readIndex.ReadStreamEventsForward(SystemStreams.StreamsStream, 1, int.MaxValue);
+                if (result.Result != RangeReadResult.Success)
                     throw new SystemStreamNotFoundException(
                         string.Format("Couldn't find system stream {0}, which should've been created with projection 'Index By Streams'",
                                         SystemStreams.StreamsStream));
 
-                var streamIds = eventsBatch
+                var streamIds = result.Records
                     .Select(e =>
                     {
                         var dataStr = Encoding.UTF8.GetString(e.Data);
                         var parts = dataStr.Split('@');
                         if (parts.Length < 2)
-                            throw new FormatException(string.Format("{0} stream event data is in bad format: {1}. Expected: eventNumber@streamid", SystemStreams.StreamsStream, dataStr));
+                        {
+                            throw new FormatException(string.Format("{0} stream event data is in bad format: {1}. Expected: eventNumber@streamid",
+                                                                    SystemStreams.StreamsStream,
+                                                                    dataStr));
+                        }
                         var streamid = parts[1];
                         return streamid;
                     })

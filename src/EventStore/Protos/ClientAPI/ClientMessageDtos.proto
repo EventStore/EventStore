@@ -40,13 +40,6 @@ message CreateStreamCompleted {
 	required string error = 3;
 }
 
-message Event {
-	required bytes event_id = 1;
-	optional string event_type = 2;
-	required bytes data = 3;
-	optional bytes metadata = 4;
-}
-
 message WriteEvents {
 	required string event_stream_id = 1;
 	required int32 expected_version = 2;
@@ -94,15 +87,16 @@ message ReadStreamEventsForward {
 	required int32 start_index = 2;
 	required int32 max_count = 3;
 	required bool resolve_link_tos = 4;
-	required bool return_last_event_number = 5;
 }
 
 message ReadStreamEventsForwardCompleted {
 	required string event_stream_id = 1;
 	repeated EventLinkPair events = 2;
 	required int32 result = 3;
-	optional int64 last_commit_position = 4;
-	optional int32 last_event_number = 5;
+	required int32 next_event_number = 4;
+	required int32 last_event_number = 5;
+	required bool is_end_of_stream = 6;
+	optional int64 last_commit_position = 7;
 }
 
 message ReadStreamEventsBackward {
@@ -116,7 +110,10 @@ message ReadStreamEventsBackwardCompleted {
 	required string event_stream_id = 1;
 	repeated EventLinkPair events = 2;
 	required int32 result = 3;
-	optional int64 last_commit_position = 4;
+	required int32 next_event_number = 4;
+	required int32 last_event_number = 5;
+	required bool is_end_of_stream = 6;
+	optional int64 last_commit_position = 7;
 }
 
 message ReadAllEventsForward {

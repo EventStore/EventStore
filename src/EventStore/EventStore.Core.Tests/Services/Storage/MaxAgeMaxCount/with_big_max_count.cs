@@ -26,11 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
-using System.Text;
 using EventStore.Core.Data;
-using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
@@ -62,62 +59,72 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         [Test]
         public void single_event_read_returns_stream_created()
         {
-            EventRecord record;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 0, out record));
-            Assert.AreEqual(_r1, record);
+            var result = ReadIndex.ReadEvent("ES", 0);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_r1, result.Record);
         }
 
         [Test]
         public void single_event_read_returns_all_records()
         {
-            EventRecord record;
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 0, out record));
-            Assert.AreEqual(_r1, record);
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 1, out record));
-            Assert.AreEqual(_r2, record);
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 2, out record));
-            Assert.AreEqual(_r3, record);
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 3, out record));
-            Assert.AreEqual(_r4, record);
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 4, out record));
-            Assert.AreEqual(_r5, record);
-            Assert.AreEqual(SingleReadResult.Success, ReadIndex.ReadEvent("ES", 5, out record));
-            Assert.AreEqual(_r6, record);
+            var result = ReadIndex.ReadEvent("ES", 0);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_r1, result.Record);
+
+            result = ReadIndex.ReadEvent("ES", 1);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_r2, result.Record);
+
+            result = ReadIndex.ReadEvent("ES", 2);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_r3, result.Record);
+
+            result = ReadIndex.ReadEvent("ES", 3);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_r4, result.Record);
+
+            result = ReadIndex.ReadEvent("ES", 4);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_r5, result.Record);
+
+            result = ReadIndex.ReadEvent("ES", 5);
+            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(_r6, result.Record);
         }
 
         [Test]
         public void forward_range_read_returns_all_records()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsForward("ES", 0, 100, out records));
-            Assert.AreEqual(6, records.Length);
-            Assert.AreEqual(_r1, records[0]);
-            Assert.AreEqual(_r2, records[1]);
-            Assert.AreEqual(_r3, records[2]);
-            Assert.AreEqual(_r4, records[3]);
-            Assert.AreEqual(_r5, records[4]);
-            Assert.AreEqual(_r6, records[5]);
+            var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(6, result.Records.Length);
+            Assert.AreEqual(_r1, result.Records[0]);
+            Assert.AreEqual(_r2, result.Records[1]);
+            Assert.AreEqual(_r3, result.Records[2]);
+            Assert.AreEqual(_r4, result.Records[3]);
+            Assert.AreEqual(_r5, result.Records[4]);
+            Assert.AreEqual(_r6, result.Records[5]);
         }
 
         [Test]
         public void backward_range_read_returns_all_records()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.Success, ReadIndex.ReadStreamEventsBackward("ES", -1, 100, out records));
-            Assert.AreEqual(6, records.Length);
-            Assert.AreEqual(_r1, records[5]);
-            Assert.AreEqual(_r2, records[4]);
-            Assert.AreEqual(_r3, records[3]);
-            Assert.AreEqual(_r4, records[2]);
-            Assert.AreEqual(_r5, records[1]);
-            Assert.AreEqual(_r6, records[0]);
+            var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
+            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(6, result.Records.Length);
+            Assert.AreEqual(_r1, result.Records[5]);
+            Assert.AreEqual(_r2, result.Records[4]);
+            Assert.AreEqual(_r3, result.Records[3]);
+            Assert.AreEqual(_r4, result.Records[2]);
+            Assert.AreEqual(_r5, result.Records[1]);
+            Assert.AreEqual(_r6, result.Records[0]);
         }
 
         [Test]
         public void read_all_forward_returns_all_records()
         {
             var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records;
-            Assert.AreEqual(6, records.Count);
+            Assert.AreEqual(6,   records.Count);
             Assert.AreEqual(_r1, records[0].Event);
             Assert.AreEqual(_r2, records[1].Event);
             Assert.AreEqual(_r3, records[2].Event);
@@ -130,7 +137,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         public void read_all_backward_returns_all_records()
         {
             var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
-            Assert.AreEqual(6, records.Count);
+            Assert.AreEqual(6,   records.Count);
             Assert.AreEqual(_r6, records[0].Event);
             Assert.AreEqual(_r5, records[1].Event);
             Assert.AreEqual(_r4, records[2].Event);

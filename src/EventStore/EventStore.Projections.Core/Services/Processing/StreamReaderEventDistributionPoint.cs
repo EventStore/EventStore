@@ -109,7 +109,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         {
                             var @event = message.Events[index].Event;
                             var @link = message.Events[index].Link;
-                            DeliverEvent(@event, @link, 100.0f * (link ?? @event).EventNumber / message.LastEventNumber.Value);
+                            DeliverEvent(@event, @link, 100.0f * (link ?? @event).EventNumber / message.LastEventNumber);
                         }
                     }
                     if (_pauseRequested)
@@ -154,7 +154,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             return new ClientMessage.ReadStreamEventsForward(
                 _distibutionPointCorrelationId, new SendToThisEnvelope(this), _streamName, _fromSequenceNumber,
-                _maxReadCount, _resolveLinkTos, returnLastEventNumber: true);
+                _maxReadCount, _resolveLinkTos);
         }
 
         private void DeliverSafeJoinPosition(long safeJoinPosition)

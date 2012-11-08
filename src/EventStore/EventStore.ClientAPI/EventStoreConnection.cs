@@ -297,7 +297,7 @@ namespace EventStore.ClientAPI
             Ensure.Positive(count, "count");
 
             var source = new TaskCompletionSource<EventStreamSlice>();
-            var operation = new ReadStreamEventsForwardOperation(source, Guid.NewGuid(), stream, start, count, true, true);
+            var operation = new ReadStreamEventsForwardOperation(source, Guid.NewGuid(), stream, start, count, true);
 
             EnqueueOperation(operation);
             return source.Task;
