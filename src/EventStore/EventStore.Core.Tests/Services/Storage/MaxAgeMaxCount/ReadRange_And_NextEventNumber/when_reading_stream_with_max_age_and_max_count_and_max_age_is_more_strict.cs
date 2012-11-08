@@ -22,12 +22,12 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRange_And_Ne
         {
             var now = DateTime.UtcNow;
 
-            WriteStreamCreated("ES", @"{""$maxAge"":20,""$maxCount"":5}", now.AddSeconds(-100));
-            WriteSingleEvent("ES", 1, "bla", now.AddSeconds(-50));
-            WriteSingleEvent("ES", 2, "bla", now.AddSeconds(-25));
-            WriteSingleEvent("ES", 3, "bla", now.AddSeconds(-15));
-            WriteSingleEvent("ES", 4, "bla", now.AddSeconds(-11));
-            WriteSingleEvent("ES", 5, "bla", now.AddSeconds(-3));
+            _event0 = WriteStreamCreated("ES", @"{""$maxAge"":20,""$maxCount"":5}", now.AddSeconds(-100));
+            _event1 = WriteSingleEvent("ES", 1, "bla", now.AddSeconds(-50));
+            _event2 = WriteSingleEvent("ES", 2, "bla", now.AddSeconds(-25));
+            _event3 = WriteSingleEvent("ES", 3, "bla", now.AddSeconds(-15));
+            _event4 = WriteSingleEvent("ES", 4, "bla", now.AddSeconds(-11));
+            _event5 = WriteSingleEvent("ES", 5, "bla", now.AddSeconds(-3));
         }
 
         [Test]
