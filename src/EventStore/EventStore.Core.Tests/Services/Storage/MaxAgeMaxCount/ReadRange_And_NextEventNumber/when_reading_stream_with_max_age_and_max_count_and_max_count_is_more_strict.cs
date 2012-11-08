@@ -6,14 +6,14 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRange_And_NextEventNumber
 {
-    public class when_reading_stream_with_max_age: ReadIndexTestScenario
+    public class when_reading_stream_with_max_age_and_max_count_and_max_count_is_more_strict: ReadIndexTestScenario
     {
         
         protected override void WriteTestScenario()
         {
             var now = DateTime.UtcNow;
 
-            WriteStreamCreated("ES", @"{""$maxAge"":20}", now.AddSeconds(-100));
+            WriteStreamCreated("ES", @"{""$maxAge"":61,""$maxCount"":3}", now.AddSeconds(-100));
             WriteSingleEvent("ES", 1, "bla", now.AddSeconds(-50));
             WriteSingleEvent("ES", 2, "bla", now.AddSeconds(-25));
             WriteSingleEvent("ES", 3, "bla", now.AddSeconds(-15));
@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRange_And_Ne
         }
 
         [Test]
-        public void on_read_forward_from_start_to_expired_next_event_number_is_expired_plus_1_and_its_not_end_of_stream()
+        public void on_read_forward_from_start_to_expired_next_event_number_is_first_active_and_its_not_end_of_stream()
         {
         }
 
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRange_And_Ne
         }
 
         [Test]
-        public void on_read_backward_from_end_to_maxage_bound_next_event_number_is_maxage_bound_minus_1_and_its_not_end_of_stream() // just no way to tell this
+        public void on_read_backward_from_end_to_maxcount_bound_its_end_of_stream()
         {
         }
 
