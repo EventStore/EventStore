@@ -31,7 +31,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IProjectionSubscription : IHandle<ProjectionMessage.Projections.CommittedEventDistributed>
+    public interface IProjectionSubscription : IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>
     {
     }
 }

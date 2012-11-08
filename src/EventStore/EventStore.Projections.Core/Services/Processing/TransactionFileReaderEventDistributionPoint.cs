@@ -140,7 +140,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void DeliverLastCommitPosition(EventPosition lastPosition)
         {
             _publisher.Publish(
-                new ProjectionMessage.Projections.CommittedEventDistributed(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, default(EventPosition), null, int.MinValue,
                     null, int.MinValue, false, null, lastPosition.PreparePosition, 100.0f)); //TODO: check was is passed here
         }
@@ -156,7 +156,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         _from, receivedPosition));
 
             _publisher.Publish(
-                new ProjectionMessage.Projections.CommittedEventDistributed(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, receivedPosition, positionEvent.EventStreamId,
                     positionEvent.EventNumber, @event.Event.EventStreamId, @event.Event.EventNumber, @event.Link != null,
                     new Event(

@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         public void ready_for_checkpoint_immediately()
         {
             Assert.AreEqual(
-                1, _readyHandler.HandledMessages.OfType<ProjectionMessage.Projections.ReadyForCheckpoint>().Count());
+                1, _readyHandler.HandledMessages.OfType<CoreProjectionProcessingMessage.ReadyForCheckpoint>().Count());
         }
     }
 }

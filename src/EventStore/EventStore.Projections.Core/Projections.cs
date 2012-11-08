@@ -82,15 +82,15 @@ namespace EventStore.Projections.Core
                 projectionNode.CoreOutput.Subscribe<ClientMessage.WriteEvents>(forwarder);
 
                 projectionNode.CoreOutput.Subscribe(
-                    Forwarder.Create<ProjectionMessage.Projections.Management.StateReport>(_managerInputQueue));
+                    Forwarder.Create<CoreProjectionManagementMessage.StateReport>(_managerInputQueue));
                 projectionNode.CoreOutput.Subscribe(
-                    Forwarder.Create<ProjectionMessage.Projections.Management.StatisticsReport>(_managerInputQueue));
+                    Forwarder.Create<CoreProjectionManagementMessage.StatisticsReport>(_managerInputQueue));
                 projectionNode.CoreOutput.Subscribe(
-                    Forwarder.Create<ProjectionMessage.Projections.StatusReport.Started>(_managerInputQueue));
+                    Forwarder.Create<CoreProjectionManagementMessage.Started>(_managerInputQueue));
                 projectionNode.CoreOutput.Subscribe(
-                    Forwarder.Create<ProjectionMessage.Projections.StatusReport.Stopped>(_managerInputQueue));
+                    Forwarder.Create<CoreProjectionManagementMessage.Stopped>(_managerInputQueue));
                 projectionNode.CoreOutput.Subscribe(
-                    Forwarder.Create<ProjectionMessage.Projections.StatusReport.Faulted>(_managerInputQueue));
+                    Forwarder.Create<CoreProjectionManagementMessage.Faulted>(_managerInputQueue));
 
                 projectionNode.CoreOutput.Subscribe(timerService);
 

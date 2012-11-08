@@ -34,15 +34,15 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
 {
     class FakeProjectionSubscription : IProjectionSubscription
     {
-        private readonly List<ProjectionMessage.Projections.CommittedEventDistributed> _receivedEvents =
-            new List<ProjectionMessage.Projections.CommittedEventDistributed>();
+        private readonly List<ProjectionCoreServiceMessage.CommittedEventDistributed> _receivedEvents =
+            new List<ProjectionCoreServiceMessage.CommittedEventDistributed>();
 
-        public void Handle(ProjectionMessage.Projections.CommittedEventDistributed message)
+        public void Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
         {
             _receivedEvents.Add(message);
         }
 
-        public List<ProjectionMessage.Projections.CommittedEventDistributed> ReceivedEvents
+        public List<ProjectionCoreServiceMessage.CommittedEventDistributed> ReceivedEvents
         {
             get { return _receivedEvents; }
         }

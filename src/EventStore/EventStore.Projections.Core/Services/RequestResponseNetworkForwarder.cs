@@ -38,9 +38,9 @@ namespace EventStore.Projections.Core.Services
     public class RequestResponseNetworkForwarder :
         IHandle<ClientMessage.ReadEvent>,
         IHandle<ClientMessage.ReadEventCompleted>,
-        IHandle<ProjectionMessage.CoreService.Connected>,
-        IHandle<ProjectionMessage.CoreService.Start>,
-        IHandle<ProjectionMessage.CoreService.Stop>
+        IHandle<ProjectionCoreServiceMessage.Connected>,
+        IHandle<ProjectionCoreServiceMessage.Start>,
+        IHandle<ProjectionCoreServiceMessage.Stop>
     {
         private TcpConnectionManager _connection;
         private Dictionary<Guid, IEnvelope> _correlations;
@@ -53,18 +53,18 @@ namespace EventStore.Projections.Core.Services
             _connection.SendMessage(message);
         }
 
-        public void Handle(ProjectionMessage.CoreService.Connected message)
+        public void Handle(ProjectionCoreServiceMessage.Connected message)
         {
             _connection = message.Connection;
         }
 
-        public void Handle(ProjectionMessage.CoreService.Stop message)
+        public void Handle(ProjectionCoreServiceMessage.Stop message)
         {
             _connection = null;
             _correlations = null;
         }
 
-        public void Handle(ProjectionMessage.CoreService.Start message)
+        public void Handle(ProjectionCoreServiceMessage.Start message)
         {
             _correlations = new Dictionary<Guid, IEnvelope>();
         }

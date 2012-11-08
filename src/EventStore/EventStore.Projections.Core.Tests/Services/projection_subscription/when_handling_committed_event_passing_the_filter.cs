@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected override void When()
         {
             _subscription.Handle(
-                new ProjectionMessage.Projections.CommittedEventDistributed(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false,
                     new Event(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
         }

@@ -50,20 +50,20 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 
             _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, checkpointForStatistics: null);
             _coreService = new ProjectionCoreService(_bus, _bus, 10, new InMemoryCheckpoint(1000));
-            _bus.Subscribe<ProjectionMessage.Projections.StatusReport.Started>(_manager);
-            _bus.Subscribe<ProjectionMessage.Projections.StatusReport.Stopped>(_manager);
-            _bus.Subscribe<ProjectionMessage.Projections.Management.StateReport>(_manager);
-            _bus.Subscribe<ProjectionMessage.Projections.Management.StatisticsReport>(_manager);
+            _bus.Subscribe<CoreProjectionManagementMessage.Started>(_manager);
+            _bus.Subscribe<CoreProjectionManagementMessage.Stopped>(_manager);
+            _bus.Subscribe<CoreProjectionManagementMessage.StateReport>(_manager);
+            _bus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
 
-            _bus.Subscribe<ProjectionMessage.CoreService.Management.Create>(_coreService);
-            _bus.Subscribe<ProjectionMessage.CoreService.Management.Dispose>(_coreService);
-            _bus.Subscribe<ProjectionMessage.Projections.Management.Start>(_coreService);
-            _bus.Subscribe<ProjectionMessage.Projections.Management.Stop>(_coreService);
-            _bus.Subscribe<ProjectionMessage.Projections.Management.GetState>(_coreService);
-            _bus.Subscribe<ProjectionMessage.Projections.Management.UpdateStatistics>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.Management.Create>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.Management.Dispose>(_coreService);
+            _bus.Subscribe<CoreProjectionManagementMessage.Start>(_coreService);
+            _bus.Subscribe<CoreProjectionManagementMessage.Stop>(_coreService);
+            _bus.Subscribe<CoreProjectionManagementMessage.GetState>(_coreService);
+            _bus.Subscribe<CoreProjectionManagementMessage.UpdateStatistics>(_coreService);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_coreService);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_coreService);
 

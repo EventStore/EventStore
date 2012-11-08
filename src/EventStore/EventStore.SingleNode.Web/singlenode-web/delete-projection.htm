@@ -11,8 +11,7 @@
 </head>
 <body>
     <div id="content">
-        <h1>
-            Delete Projection</h1>
+        <h1>Delete Projection</h1>
         <div class="form-horizontal">
             <div class="row">
                 <div class="span12">
@@ -32,17 +31,25 @@
                 <label class="control-label" for="source">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <pre id="source" style="font-family: consolas, 'courier new'; width: 200px; height: 100px;"
+                    <pre id="source" style="font-family: consolas, 'courier new'; width: 400px; height: 200px;"
                         class="span5"></pre>
                 </div>
             </div>
             <div class="control-group">
                 <div class="controls" id="delete-container">
-                    <button id="delete-button" class="btn btn-success">
-                        Confirm Delete</button>
+                    <div>
+                        <input type="checkbox" id="delete-checkpoint-stream-checkbox" disabled="disabled">Delete Checkpoint Stream
+                    </div>
+                    <div>
+                        <input type="checkbox" id="delete-state-stream-checkbox" disabled="disabled">Delete State Stream
+                    </div>
+                    <div>
+                        <button id="delete-button" class="btn btn-success">
+                            Confirm Delete</button>
+                    </div>
                 </div>
             </div>
-        </div> 
+        </div>
 
         <script id="r-body">
             es.tmpl.renderBody();
@@ -51,7 +58,7 @@
 
     <script type="text/javascript">
 
-        (function() {
+        (function () {
 
             var projectionStatusUrl = "";
 
@@ -126,19 +133,23 @@
                 });
             }
 
-            $(function() {
+            $(function () {
                 $.templates("editSourceTemplate", "#editSourceTemplate");
                 projectionStatusUrl = location.hash.substr(1);
 
-                $('#delete-button').click(function() {
-                    $.ajax(projectionStatusUrl, {
+                $('#delete-button').click(function () {
+                    $.ajax(projectionStatusUrl + "?" + $.param({
+                        deleteCheckpointStream: $("#delete-checkpoint-stream-checkbox").attr("checked") ? "yes" : "no",
+                        deleteStateStream: $("#delete-state-stream-checkbox").attr("checked") ? "yes" : "no",
+                    }), {
                         headers: {
                             Accept: "application/json",
                         },
 
+
                         type: "DELETE",
                         success: successDeleteProjection,
-                        error: function() { alert("Failed!"); }
+                        error: function () { alert("Failed!"); }
                     });
                 });
 

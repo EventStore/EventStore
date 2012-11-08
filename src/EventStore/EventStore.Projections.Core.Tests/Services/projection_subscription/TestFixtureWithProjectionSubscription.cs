@@ -40,10 +40,10 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
     public abstract class TestFixtureWithProjectionSubscription
     {
         private Guid _projectionCorrelationId;
-        protected TestMessageHandler<ProjectionMessage.SubscriptionMessage.CommittedEventReceived> _eventHandler;
-        protected TestMessageHandler<ProjectionMessage.SubscriptionMessage.CheckpointSuggested> _checkpointHandler;
-        protected TestMessageHandler<ProjectionMessage.SubscriptionMessage.ProgressChanged> _progressHandler;
-        protected IHandle<ProjectionMessage.Projections.CommittedEventDistributed> _subscription;
+        protected TestMessageHandler<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
+        protected TestMessageHandler<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
+        protected TestMessageHandler<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
+        protected IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed> _subscription;
         protected EventDistributionPoint _forkedDistributionPoint;
         protected FakePublisher _bus;
         protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
@@ -56,9 +56,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             Given();
             _bus = new FakePublisher();
             _projectionCorrelationId = Guid.NewGuid();
-            _eventHandler = new TestMessageHandler<ProjectionMessage.SubscriptionMessage.CommittedEventReceived>();
-            _checkpointHandler = new TestMessageHandler<ProjectionMessage.SubscriptionMessage.CheckpointSuggested>();
-            _progressHandler = new TestMessageHandler<ProjectionMessage.SubscriptionMessage.ProgressChanged>();
+            _eventHandler = new TestMessageHandler<ProjectionSubscriptionMessage.CommittedEventReceived>();
+            _checkpointHandler = new TestMessageHandler<ProjectionSubscriptionMessage.CheckpointSuggested>();
+            _progressHandler = new TestMessageHandler<ProjectionSubscriptionMessage.ProgressChanged>();
             _subscription = new ProjectionSubscription(
                 _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler, _progressHandler,
                 CreateCheckpointStrategy(), _checkpointUnhandledBytesThreshold);

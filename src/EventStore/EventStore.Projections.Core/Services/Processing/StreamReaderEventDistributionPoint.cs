@@ -162,7 +162,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (safeJoinPosition == -1)
                 return; //TODO: this should not happen, but StorageReader does not return it now
             _publisher.Publish(
-                new ProjectionMessage.Projections.CommittedEventDistributed(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, default(EventPosition), _streamName, _fromSequenceNumber,
                     _streamName, _fromSequenceNumber, false, null, safeJoinPosition, 100.0f));
         }
@@ -180,7 +180,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                  || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(
                 //TODO: publish both link and event data
-                new ProjectionMessage.Projections.CommittedEventDistributed(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, default(EventPosition), positionEvent.EventStreamId,
                     positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
                     new Event(@event.EventId, @event.EventType, false, @event.Data, @event.Metadata),

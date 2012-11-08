@@ -57,20 +57,20 @@ namespace EventStore.Projections.Core
 
         public void SetupMessaging(IBus coreInputBus)
         {
-            coreInputBus.Subscribe<ProjectionMessage.CoreService.Start>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.CoreService.Stop>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.CoreService.Tick>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.CoreService.Management.Create>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.CoreService.Management.Dispose>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.Projections.SubscribeProjection>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.Projections.UnsubscribeProjection>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.Projections.PauseProjectionSubscription>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.Projections.ResumeProjectionSubscription>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.Projections.CommittedEventDistributed>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.Projections.Management.Start>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.Projections.Management.Stop>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.Projections.Management.GetState>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionMessage.Projections.Management.UpdateStatistics>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionCoreServiceMessage.Start>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionCoreServiceMessage.Stop>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionCoreServiceMessage.Tick>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionCoreServiceMessage.Management.Create>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionCoreServiceMessage.Management.Dispose>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionSubscriptionManagement.Subscribe>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionSubscriptionManagement.Unsubscribe>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionSubscriptionManagement.Pause>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionSubscriptionManagement.Resume>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionCoreServiceMessage.CommittedEventDistributed>(_projectionCoreService);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.Start>(_projectionCoreService);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.Stop>(_projectionCoreService);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.GetState>(_projectionCoreService);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.UpdateStatistics>(_projectionCoreService);
             coreInputBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionCoreService);
             coreInputBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionCoreService);
             //NOTE: message forwarding is set up outside (for Read/Write events)

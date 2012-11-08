@@ -26,25 +26,24 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Collections.Generic;
+
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class ProgressWorkItem : WorkItem
+    public interface ICoreProjectionCheckpointManager
     {
-        private readonly ICoreProjectionCheckpointManager _checkpointManager;
-        private readonly float _progress;
+        void Initialize();
+        void Start(CheckpointTag checkpointTag);
+        void Stopping();
+        void Stopped();
+        void GetStatistics(ProjectionStatistics info);
+        void RequestCheckpointToStop();
 
-        public ProgressWorkItem(
-            CoreProjection projection, ICoreProjectionCheckpointManager checkpointManager, float progress)
-            : base(projection, "") // checkpoints are serialized based on string.empty token stream name
-        {
-            _checkpointManager = checkpointManager;
-            _progress = progress;
-        }
+        void EventProcessed(
+            string state, List<EmittedEvent[]> scheduledWrites, CheckpointTag checkpointTag, float progress);
 
-        protected override void WriteOutput()
-        {
-            _checkpointManager.Progress(_progress);
-            NextStage();
-        }
+        void CheckpointSuggested(CheckpointTag checkpointTag, float progress);
+        void Progress(float progress);
+        void BeginLoadState();
     }
 }

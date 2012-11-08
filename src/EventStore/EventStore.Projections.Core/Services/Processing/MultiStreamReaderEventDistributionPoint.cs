@@ -241,7 +241,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             // deliver if already available
             _publisher.Publish(
-                new ProjectionMessage.Projections.CommittedEventDistributed(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, default(EventPosition), "", -1, "", -1, false, null,
                     _safePositionToJoin, 100.0f));
         }
@@ -266,7 +266,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var resolvedLinkTo = streamId != @event.EventStreamId || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(
                 //TODO: publish both link and event data
-                new ProjectionMessage.Projections.CommittedEventDistributed(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, default(EventPosition), streamId, positionEvent.EventNumber,
                     @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
                     new Event(@event.EventId, @event.EventType, false, @event.Data, @event.Metadata),

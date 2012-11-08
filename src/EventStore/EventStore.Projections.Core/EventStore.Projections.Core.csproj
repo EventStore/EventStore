@@ -88,6 +88,13 @@
   <ItemGroup>
     <Compile Include="EventPosition.cs" />
     <Compile Include="Json.cs" />
+    <Compile Include="Messages\CoreProjectionManagementMessage.cs" />
+    <Compile Include="Messages\CoreProjectionProcessingMessage.cs" />
+    <Compile Include="Messages\ICoreProjection.cs" />
+    <Compile Include="Messages\IProjectionCheckpointManager.cs" />
+    <Compile Include="Messages\ProjectionCoreServiceMessage.cs" />
+    <Compile Include="Messages\ProjectionSubscriptionManagement.cs" />
+    <Compile Include="Messages\ProjectionSubscriptionMessage.cs" />
     <Compile Include="Messaging\PublishToWrapEnvelop.cs" />
     <Compile Include="Messaging\UnwrapEnvelopeHandler.cs" />
     <Compile Include="Messaging\UnwrapEnvelopeMessage.cs" />
@@ -104,6 +111,7 @@
     <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\DefaultCheckpointManager.cs" />
     <Compile Include="Services\Processing\GetStateWorkItem.cs" />
+    <Compile Include="Services\Processing\ICoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\IndexedEventTypeEventFilter.cs" />
     <Compile Include="Services\Processing\IndexedEventTypesEventFilter.cs" />
     <Compile Include="Services\Processing\MultiStreamCheckpointManager.cs" />
@@ -141,7 +149,6 @@
     <Compile Include="Services\Processing\TransactionFileReaderEventDistributionPoint.cs" />
     <Compile Include="Services\Processing\WorkItem.cs" />
     <Compile Include="Services\ProjectionConfig.cs" />
-    <Compile Include="Messages\ProjectionMessage.cs" />
     <Compile Include="Services\ProjectionClientConnectionManager.cs" />
     <Compile Include="Services\Processing\ProjectionCoreService.cs" />
     <Compile Include="Messages\ProjectionManagementMessage.cs" />

@@ -95,9 +95,9 @@ namespace EventStore.Projections.Core.Tests.Services.stream_event_distribution_p
         public void publishes_correct_committed_event_received_messages()
         {
             Assert.AreEqual(
-                1, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Count());
+                1, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
             var first =
-                _consumer.HandledMessages.OfType<ProjectionMessage.Projections.CommittedEventDistributed>().Single();
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Single();
             Assert.IsNull(first.Data);
             Assert.AreEqual(200, first.SafeTransactionFileReaderJoinPosition);
         }

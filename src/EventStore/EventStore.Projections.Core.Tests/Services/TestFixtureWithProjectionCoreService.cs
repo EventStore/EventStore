@@ -43,46 +43,46 @@ namespace EventStore.Projections.Core.Tests.Services
     {
         public class TestCoreProjection : ICoreProjection
         {
-            public List<ProjectionMessage.SubscriptionMessage.CommittedEventReceived> HandledMessages =
-                new List<ProjectionMessage.SubscriptionMessage.CommittedEventReceived>();
+            public List<ProjectionSubscriptionMessage.CommittedEventReceived> HandledMessages =
+                new List<ProjectionSubscriptionMessage.CommittedEventReceived>();
 
-            public List<ProjectionMessage.SubscriptionMessage.CheckpointSuggested> HandledCheckpoints =
-                new List<ProjectionMessage.SubscriptionMessage.CheckpointSuggested>();
+            public List<ProjectionSubscriptionMessage.CheckpointSuggested> HandledCheckpoints =
+                new List<ProjectionSubscriptionMessage.CheckpointSuggested>();
 
-            public List<ProjectionMessage.SubscriptionMessage.ProgressChanged> HandledProgress =
-                new List<ProjectionMessage.SubscriptionMessage.ProgressChanged>();
+            public List<ProjectionSubscriptionMessage.ProgressChanged> HandledProgress =
+                new List<ProjectionSubscriptionMessage.ProgressChanged>();
 
-            public void Handle(ProjectionMessage.SubscriptionMessage.CommittedEventReceived message)
+            public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
             {
                 HandledMessages.Add(message);
             }
 
-            public void Handle(ProjectionMessage.SubscriptionMessage.CheckpointSuggested message)
+            public void Handle(ProjectionSubscriptionMessage.CheckpointSuggested message)
             {
                 HandledCheckpoints.Add(message);
             }
 
-            public void Handle(ProjectionMessage.Projections.CheckpointCompleted message)
+            public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
             {
                 throw new NotImplementedException();
             }
 
-            public void Handle(ProjectionMessage.Projections.PauseRequested message)
+            public void Handle(CoreProjectionProcessingMessage.PauseRequested message)
             {
                 throw new NotImplementedException();
             }
 
-            public void Handle(ProjectionMessage.Projections.CheckpointLoaded message)
+            public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
             {
                 throw new NotImplementedException();
             }
 
-            public void Handle(ProjectionMessage.SubscriptionMessage.ProgressChanged message)
+            public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
             {
                 HandledProgress.Add(message);
             }
 
-            public void Handle(ProjectionMessage.Projections.RestartRequested message)
+            public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
             {
                 throw new NotImplementedException();
             }
@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Tests.Services
             _bus = new InMemoryBus("temp");
             _bus.Subscribe(_consumer);
             _service = new ProjectionCoreService(_bus, _bus, 10, new InMemoryCheckpoint(1000));
-            _service.Handle(new ProjectionMessage.CoreService.Start());
+            _service.Handle(new ProjectionCoreServiceMessage.Start());
         }
 
         protected CheckpointStrategy CreateCheckpointStrategy()

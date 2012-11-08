@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var projectionState = _partitionStateCache.GetLockedPartitionState(_partition).Data;
             _envelope.ReplyWith(
-                new ProjectionMessage.Projections.Management.StateReport(_projectionId, _partition, projectionState));
+                new CoreProjectionManagementMessage.StateReport(_projectionId, _partition, projectionState));
             NextStage();
         }
     }

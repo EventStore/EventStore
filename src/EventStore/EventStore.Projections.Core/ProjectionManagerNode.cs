@@ -37,11 +37,11 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<ProjectionManagementMessage.GetState>(_projectionManager);
             mainBus.Subscribe<ProjectionManagementMessage.Disable>(_projectionManager);
             mainBus.Subscribe<ProjectionManagementMessage.Enable>(_projectionManager);
-            mainBus.Subscribe<ProjectionMessage.Projections.StatusReport.Started>(_projectionManager);
-            mainBus.Subscribe<ProjectionMessage.Projections.StatusReport.Stopped>(_projectionManager);
-            mainBus.Subscribe<ProjectionMessage.Projections.StatusReport.Faulted>(_projectionManager);
-            mainBus.Subscribe<ProjectionMessage.Projections.Management.StateReport>(_projectionManager);
-            mainBus.Subscribe<ProjectionMessage.Projections.Management.StatisticsReport>(_projectionManager);
+            mainBus.Subscribe<CoreProjectionManagementMessage.Started>(_projectionManager);
+            mainBus.Subscribe<CoreProjectionManagementMessage.Stopped>(_projectionManager);
+            mainBus.Subscribe<CoreProjectionManagementMessage.Faulted>(_projectionManager);
+            mainBus.Subscribe<CoreProjectionManagementMessage.StateReport>(_projectionManager);
+            mainBus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_projectionManager);
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);
         }

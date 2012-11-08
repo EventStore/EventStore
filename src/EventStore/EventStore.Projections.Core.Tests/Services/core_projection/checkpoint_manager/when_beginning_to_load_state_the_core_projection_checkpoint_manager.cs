@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void ready_for_checkpoint_throws_invalid_operation_exception()
         {
-            _manager.Handle(new ProjectionMessage.Projections.ReadyForCheckpoint(null));
+            _manager.Handle(new CoreProjectionProcessingMessage.ReadyForCheckpoint(null));
         }
 
         [Test]

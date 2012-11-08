@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void should_publiseh_faulted_message()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionMessage.Projections.StatusReport.Faulted>().Count());
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Faulted>().Count());
         }
 
         [Test]
