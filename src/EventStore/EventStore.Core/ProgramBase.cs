@@ -87,6 +87,10 @@ namespace EventStore.Core
                 Log.ErrorException(ex, "Unhandled exception while starting application: {0}", FormatExceptionMessage(ex));
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
+            finally
+            {
+                Log.Flush();
+            }
 
             return _exitCode;
         }

@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                             2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, RangeReadResult.Success, 12, 200, 2));
+                        }, RangeReadResult.Success, 3, 2, true, 200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "b",
@@ -105,7 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                             3, 200, Guid.NewGuid(), _fourthEventId, 200, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, RangeReadResult.Success, 12, 200, 3));
+                        }, RangeReadResult.Success, 4, 3, true, 200));
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
@@ -186,7 +186,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                             DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type", new byte[0], new byte[0]), null)
-                        }, RangeReadResult.Success, 11, 100, 4));
+                        }, RangeReadResult.Success, 11, 10, true, 100));
         }
 
         [Test]
@@ -203,7 +203,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                             DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type", new byte[0], new byte[0]), null)
-                        }, RangeReadResult.Success, 11, 300, 4));
+                        }, RangeReadResult.Success, 4, 4, false, 300));
         }
 
         [Test]
@@ -219,7 +219,6 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
             Assert.AreEqual(second.Data.EventId, _thirdEventId);
             Assert.AreEqual(third.Data.EventId, _secondEventId);
         }
-
 
     }
 }

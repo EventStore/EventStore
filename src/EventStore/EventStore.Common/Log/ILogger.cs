@@ -31,6 +31,8 @@ namespace EventStore.Common.Log
 {
     public interface ILogger
     {
+        void Flush(TimeSpan? maxTimeToWait = null);
+
         void Fatal(string text);
         void Error(string text);
         void Info(string text);

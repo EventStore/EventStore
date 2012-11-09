@@ -331,17 +331,18 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                              dto.EventStreamId,
                                                              dto.StartIndex,
                                                              dto.MaxCount,
-                                                             dto.ResolveLinkTos,
-                                                             dto.ReturnLastEventNumber);
+                                                             dto.ResolveLinkTos);
         }
 
         private static TcpPackage WrapReadStreamEventsForwardCompleted(ClientMessage.ReadStreamEventsForwardCompleted msg)
         {
             var dto = new TcpClientMessageDto.ReadStreamEventsForwardCompleted(msg.EventStreamId,
-                                                                            ConvertToDtos(msg.Events),
-                                                                            (int)msg.Result,
-                                                                            msg.LastCommitPosition,
-                                                                            msg.LastEventNumber);
+                                                                               ConvertToDtos(msg.Events),
+                                                                               (int)msg.Result,
+                                                                               msg.NextEventNumber,
+                                                                               msg.LastEventNumber,
+                                                                               msg.IsEndOfStream,
+                                                                               msg.LastCommitPosition);
             return new TcpPackage(TcpCommand.ReadStreamEventsForwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 
@@ -362,9 +363,12 @@ namespace EventStore.Core.Services.Transport.Tcp
         private static TcpPackage WrapReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted msg)
         {
             var dto = new TcpClientMessageDto.ReadStreamEventsBackwardCompleted(msg.EventStreamId,
-                                                                             ConvertToDtos(msg.Events),
-                                                                             (int)msg.Result,
-                                                                             msg.LastCommitPosition);
+                                                                                ConvertToDtos(msg.Events),
+                                                                                (int) msg.Result,
+                                                                                msg.NextEventNumber,
+                                                                                msg.LastEventNumber,
+                                                                                msg.IsEndOfStream,
+                                                                                msg.LastCommitPosition);
             return new TcpPackage(TcpCommand.ReadStreamEventsBackwardCompleted, msg.CorrelationId, dto.Serialize());
         }
 

@@ -185,6 +185,11 @@
     <Compile Include="Services\Replication\WriteEvents\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_writing_few_prepares_on_same_event_number_and_commiting_delete_on_this_version_read_index_should.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_writing_delete_prepare_but_no_commit_read_index_should.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_age_is_more_strict.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_count_is_more_strict.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_count.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_no_max_age_max_count.cs" />
     <Compile Include="Services\Storage\Scavenge\when_writing_delete_prepare_without_commit_on_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_db_with_3_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />

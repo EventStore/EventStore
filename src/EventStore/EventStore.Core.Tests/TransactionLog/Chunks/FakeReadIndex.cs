@@ -44,53 +44,33 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             Ensure.NotNull(isStreamDeleted, "isStreamDeleted");
             _isStreamDeleted = isStreamDeleted;
         }
+        
+        public void Build()
+        {
+            throw new NotImplementedException();
+        }
 
         public void Commit(CommitLogRecord record)
         {
             throw new NotImplementedException();
         }
 
-        public PrepareLogRecord ReadPrepare(long pos)
+        public ReadIndexStats GetStatistics()
         {
             throw new NotImplementedException();
         }
 
-        public SingleReadResult ReadEvent(string streamId, int eventNumber, out EventRecord record)
+        public ReadEventResult ReadEvent(string streamId, int eventNumber)
         {
             throw new NotImplementedException();
         }
 
-        public RangeReadResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount, out EventRecord[] records)
+        public ReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
         {
             throw new NotImplementedException();
         }
 
-        public RangeReadResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount, out EventRecord[] records)
-        {
-            throw new NotImplementedException();
-        }
-
-        public int GetLastStreamEventNumber(string streamId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool IsStreamDeleted(string streamId)
-        {
-            return _isStreamDeleted(streamId);
-        }
-
-        public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount)
-        {
-            throw new NotImplementedException();
-        }
-
-        public EventRecord ResolveLinkToEvent(EventRecord eventRecord)
-        {
-            throw new NotImplementedException();
-        }
-
-        public CommitCheckResult CheckCommitStartingAt(long prepareStartPosition)
+        public ReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
         {
             throw new NotImplementedException();
         }
@@ -100,17 +80,27 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             throw new NotImplementedException();
         }
 
+        public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsStreamDeleted(string streamId)
+        {
+            return _isStreamDeleted(streamId);
+        }
+
+        public int GetLastStreamEventNumber(string streamId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public CommitCheckResult CheckCommitStartingAt(long prepareStartPosition)
+        {
+            throw new NotImplementedException();
+        }
+
         public int GetLastTransactionOffset(long writerCheckpoint, long transactionId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Build()
-        {
-            throw new NotImplementedException();
-        }
-
-        public ReadIndexStats GetStatistics()
         {
             throw new NotImplementedException();
         }

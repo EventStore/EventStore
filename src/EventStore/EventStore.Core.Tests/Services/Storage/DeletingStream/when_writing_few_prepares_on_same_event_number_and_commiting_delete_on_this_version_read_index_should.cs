@@ -114,29 +114,33 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
         [Test]
         public void read_single_events_with_number_0_should_return_stream_deleted()
         {
-            EventRecord rec;
-            Assert.AreEqual(SingleReadResult.StreamDeleted, ReadIndex.ReadEvent("ES", 0, out rec));
+            var result = ReadIndex.ReadEvent("ES", 0);
+            Assert.AreEqual(SingleReadResult.StreamDeleted, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
         public void read_single_events_with_number_1_should_return_stream_deleted()
         {
-            EventRecord rec;
-            Assert.AreEqual(SingleReadResult.StreamDeleted, ReadIndex.ReadEvent("ES", 1, out rec));
+            var result = ReadIndex.ReadEvent("ES", 1);
+            Assert.AreEqual(SingleReadResult.StreamDeleted, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
         public void read_stream_events_forward_should_return_stream_deleted()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.StreamDeleted, ReadIndex.ReadStreamEventsForward("ES", 0, 100, out records));
+            var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
+            Assert.AreEqual(RangeReadResult.StreamDeleted, result.Result);
+            Assert.AreEqual(0, result.Records.Length);
         }
 
         [Test]
         public void read_stream_events_backward_should_return_stream_deleted()
         {
-            EventRecord[] records;
-            Assert.AreEqual(RangeReadResult.StreamDeleted, ReadIndex.ReadStreamEventsBackward("ES", -1, 100, out records));
+            var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
+            Assert.AreEqual(RangeReadResult.StreamDeleted, result.Result);
+            Assert.AreEqual(0, result.Records.Length);
         }
 
         [Test]

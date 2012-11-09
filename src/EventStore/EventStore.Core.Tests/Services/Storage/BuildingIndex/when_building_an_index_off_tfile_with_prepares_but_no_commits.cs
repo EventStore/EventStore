@@ -56,15 +56,17 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         [Test]
         public void the_first_stream_is_not_in_index_yet()
         {
-            EventRecord record;
-            Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.ReadEvent("test1", 0, out record));
+            var result = ReadIndex.ReadEvent("test1", 0);
+            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
         public void the_second_stream_is_not_in_index_yet()
         {
-            EventRecord record;
-            Assert.AreEqual(SingleReadResult.NoStream, ReadIndex.ReadEvent("test2", 0, out record));
+            var result = ReadIndex.ReadEvent("test2", 0);
+            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.IsNull(result.Record);
         }
 
         [Test]
