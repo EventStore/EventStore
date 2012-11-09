@@ -117,7 +117,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 _lastPassedOrCheckpointedEventPosition = message.Position;
                 var convertedMessage =
                     ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
-                        message, eventCheckpointTag, _subscriptionMessageSequenceNumber++);
+                        message, eventCheckpointTag, _eventFilter.GetCategory(message.PositionStreamId),
+                        _subscriptionMessageSequenceNumber++);
                 _eventHandler.Handle(convertedMessage);
             }
             else
