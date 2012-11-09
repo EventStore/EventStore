@@ -47,6 +47,8 @@ namespace EventStore.ClientAPI
 {
     public class EventStoreConnection : IProjectionsManagement, IDisposable
     {
+        public IProjectionsManagement Projections { get { return this; } }
+
         private readonly ILogger _log;
 
         private const int MaxQueueSize = 5000;
@@ -87,14 +89,6 @@ namespace EventStore.ClientAPI
         private Thread _worker;
         private volatile bool _stopping;
 
-        public IProjectionsManagement Projections
-        {
-            get
-            {
-                return this;
-            }
-        }
-
         public EventStoreConnection(IPEndPoint tcpEndPoint = null,
                                     IPEndPoint httpEndPoint = null,
                                     bool allowForwarding = true,
@@ -126,8 +120,7 @@ namespace EventStore.ClientAPI
                 else
                     Connect(tcpEndPoint);
             }
-            else if (httpEndPoint != null)
-                _httpEndPoint = httpEndPoint;
+            _httpEndPoint = httpEndPoint;
         }
 
         public void Connect(IPEndPoint tcpEndPoint)

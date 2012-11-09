@@ -34,7 +34,7 @@ namespace EventStore.ClientAPI.Connection
         public Task<EndpointsPair?> Resolve(string dns)
         {
             var resolve = Task.Factory.StartNew(() => Dns.GetHostAddresses(dns));
-            return resolve.ContinueWith(addresses => DiscoverCLuster(addresses.Result), TaskContinuationOptions.OnlyOnRanToCompletion);
+            return resolve.ContinueWith(addresses => DiscoverCLuster(addresses.Result));
         }
 
         private EndpointsPair? DiscoverCLuster(IPAddress[] managers)
@@ -45,10 +45,11 @@ namespace EventStore.ClientAPI.Connection
             var clusterInfo = GetClusterInfo(managers);
             if (clusterInfo != null && clusterInfo.Members != null && clusterInfo.Members.Any())
             {
+                var aliveMembers = clusterInfo.Members.Where(m => m.IsAlive);
                 if (!_allowForwarding)
                 {
                     _log.Info("Forwarding denied. Looking for master...");
-                    var master = clusterInfo.Members.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Master);
+                    var master = aliveMembers.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Master);
                     if (master == null)
                     {
                         _log.Info("Master not found");
@@ -59,10 +60,10 @@ namespace EventStore.ClientAPI.Connection
                                              new IPEndPoint(IPAddress.Parse(master.ExternalHttpIp), master.ExternalHttpPort));
                 }
 
-                var node = ((clusterInfo.Members.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Master) ??
-                             clusterInfo.Members.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Slave)) ??
-                             clusterInfo.Members.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Clone)) ??
-                             clusterInfo.Members.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.CatchingUp);
+                var node = ((aliveMembers.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Master) ??
+                             aliveMembers.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Slave)) ??
+                             aliveMembers.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Clone)) ??
+                             aliveMembers.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.CatchingUp);
 
                 if (node == null)
                 {
@@ -132,9 +133,10 @@ namespace EventStore.ClientAPI.Connection
 
         private ClusterMessages.ClusterInfoDto Accumulte(ClusterMessages.ClusterInfoDto info1, ClusterMessages.ClusterInfoDto info2)
         {
-            var members = info1.Members.Concat(info2.Members).ToLookup(x => new IPEndPoint(IPAddress.Parse(x.InternalHttpIp), x.InternalHttpPort))
-                                   .Select(x => x.OrderByDescending(y => y.TimeStamp).First())
-                                   .ToArray();
+            var members = info1.Members.Concat(info2.Members)
+                                       .ToLookup(x => new IPEndPoint(IPAddress.Parse(x.InternalHttpIp), x.InternalHttpPort))
+                                       .Select(x => x.OrderByDescending(y => y.TimeStamp).First())
+                                       .ToArray();
             return new ClusterMessages.ClusterInfoDto(members);
         }
     }

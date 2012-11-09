@@ -29,9 +29,9 @@ using System;
 
 namespace EventStore.ClientAPI.Messages
 {
-    internal class ClusterMessages
+    public class ClusterMessages
     {
-        internal class ClusterInfoDto
+        public class ClusterInfoDto
         {
             public MemberInfoDto[] Members { get; set; }
 
@@ -45,7 +45,7 @@ namespace EventStore.ClientAPI.Messages
             }
         }
 
-        internal class MemberInfoDto
+        public class MemberInfoDto
         {
             public DateTime TimeStamp { get; set; }
             public VNodeState State { get; set; }
@@ -67,7 +67,7 @@ namespace EventStore.ClientAPI.Messages
             public long ChaserCheckpoint { get; set; }
         }
 
-        internal enum VNodeState
+        public enum VNodeState
         {
             Initializing,
             Unknown,
