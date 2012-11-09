@@ -43,6 +43,7 @@ namespace EventStore.Projections.Core.Services.v8
         private readonly QueryScript _query;
         private List<EmittedEvent> _emittedEvents;
         private CheckpointTag _eventPosition;
+        private bool _disposed;
 
         public V8ProjectionStateHandler(
             string preludeName, string querySource, Func<string, Tuple<string, string>> getModuleSource,
@@ -97,6 +98,7 @@ namespace EventStore.Projections.Core.Services.v8
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
         {
+            CheckDisposed();
             var sourcesDefintion = _query.GetSourcesDefintion();
             if (sourcesDefintion == null)
                 throw new InvalidOperationException("Invalid query.  No source definition.");
@@ -129,11 +131,13 @@ namespace EventStore.Projections.Core.Services.v8
 
         public void Load(string state)
         {
+            CheckDisposed();
             _query.SetState(state);
         }
 
         public void Initialize()
         {
+            CheckDisposed();
             _query.Initialize();
         }
 
@@ -141,6 +145,7 @@ namespace EventStore.Projections.Core.Services.v8
             EventPosition position, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
             int sequenceNumber, string metadata, string data, out string newState, out EmittedEvent[] emittedEvents)
         {
+            CheckDisposed();
             if (eventType == null)
                 throw new ArgumentNullException("eventType");
             if (streamId == null)
@@ -155,8 +160,15 @@ namespace EventStore.Projections.Core.Services.v8
             return true;
         }
 
+        private void CheckDisposed()
+        {
+            if (_disposed)
+                throw new InvalidOperationException("Disposed");
+        }
+
         public void Dispose()
         {
+            _disposed = true;
             if (_query != null)
                 _query.Dispose();
             if (_prelude != null)

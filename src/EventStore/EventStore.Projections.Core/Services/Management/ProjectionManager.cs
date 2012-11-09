@@ -32,19 +32,18 @@ using System.Linq;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
+using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
 
 namespace EventStore.Projections.Core.Services.Management
 {
     public class ProjectionManager : IDisposable,
-                                     IHandle<SystemMessage.SystemInit>,
-                                     IHandle<SystemMessage.SystemStart>,
+                                     IHandle<SystemMessage.StateChangeMessage>,
                                      IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
                                      IHandle<ClientMessage.WriteEventsCompleted>,
                                      IHandle<ProjectionManagementMessage.Post>,
@@ -58,6 +57,7 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<CoreProjectionManagementMessage.Started>,
                                      IHandle<CoreProjectionManagementMessage.Stopped>,
                                      IHandle<CoreProjectionManagementMessage.Faulted>,
+                                     IHandle<CoreProjectionManagementMessage.Prepared>,
                                      IHandle<CoreProjectionManagementMessage.StateReport>,
                                      IHandle<CoreProjectionManagementMessage.StatisticsReport>
     {
@@ -65,7 +65,6 @@ namespace EventStore.Projections.Core.Services.Management
 
         private readonly IPublisher _inputQueue;
         private readonly IPublisher _publisher;
-        private readonly ICheckpoint _checkpointForStatistics;
         private readonly IPublisher[] _queues;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
         private readonly Dictionary<string, ManagedProjection> _projections;
@@ -80,7 +79,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private int _readEventsBatchSize = 100;
 
-        public ProjectionManager(IPublisher inputQueue, IPublisher publisher, IPublisher[] queues, ICheckpoint checkpointForStatistics)
+        public ProjectionManager(IPublisher inputQueue, IPublisher publisher, IPublisher[] queues)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -89,7 +88,6 @@ namespace EventStore.Projections.Core.Services.Management
 
             _inputQueue = inputQueue;
             _publisher = publisher;
-            _checkpointForStatistics = checkpointForStatistics;
             _queues = queues;
 
             _writeDispatcher =
@@ -106,15 +104,20 @@ namespace EventStore.Projections.Core.Services.Management
             _projectionsMap = new Dictionary<Guid, string>();
         }
 
-        public void Handle(SystemMessage.SystemInit message)
+        private void Start()
         {
-        }
-
-        public void Handle(SystemMessage.SystemStart message)
-        {
+            _started = true;
             foreach (var queue in _queues)
                 queue.Publish(new ProjectionCoreServiceMessage.Start());
             StartExistingProjections();
+        }
+
+        private void Stop()
+        {
+            _started = false;
+            foreach (var queue in _queues)
+                queue.Publish(new ProjectionCoreServiceMessage.Stop());
+            throw new NotImplementedException("Clean local state");
         }
 
         public void Handle(ProjectionManagementMessage.Post message)
@@ -257,6 +260,16 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
+        public void Handle(CoreProjectionManagementMessage.Prepared message)
+        {
+            string name;
+            if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
+            {
+                var projection = _projections[name];
+                projection.Handle(message);
+            }
+        }
+
         public void Handle(CoreProjectionManagementMessage.StateReport message)
         {
             string name;
@@ -382,6 +395,7 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
         private int _lastUsedQueue = 0;
+        private bool _started;
 
         private ManagedProjection CreateManagedProjectionInstance(string name)
         {
@@ -430,6 +444,20 @@ namespace EventStore.Projections.Core.Services.Management
             }
             else
                 throw new NotSupportedException("Unsupported error code received");
+        }
+
+        public void Handle(SystemMessage.StateChangeMessage message)
+        {
+            if (message.State == VNodeState.Master)
+            {
+                if (!_started)
+                    Start();
+            }
+            else
+            {
+                if (_started)
+                    Stop();
+            }
         }
     }
 }
