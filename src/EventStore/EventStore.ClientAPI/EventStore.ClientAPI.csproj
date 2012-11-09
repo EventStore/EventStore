@@ -118,6 +118,7 @@
     <Compile Include="IProjectionsManagement.cs" />
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="Messages\ClientMessagesExtensions.cs" />
+    <Compile Include="Messages\ClusterMessages.cs" />
     <Compile Include="Position.cs" />
     <Compile Include="RecordedEvent.cs" />
     <Compile Include="StreamPosition.cs" />
