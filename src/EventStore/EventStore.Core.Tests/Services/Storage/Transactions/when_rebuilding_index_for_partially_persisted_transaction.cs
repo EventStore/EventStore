@@ -43,9 +43,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
     [TestFixture, Ignore]
     public class when_rebuilding_index_for_partially_persisted_transaction : ReadIndexTestScenario
     {
-        private const int MaxEntriesInMemTable = 10;
-
-        public when_rebuilding_index_for_partially_persisted_transaction(): base(maxEntriesInMemTable: MaxEntriesInMemTable)
+        public when_rebuilding_index_for_partially_persisted_transaction(): base(maxEntriesInMemTable: 10)
         {
         }
 
@@ -64,8 +62,8 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
 
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       2,
-                                      () => new TFChunkSequentialReader(Db, WriterCheckpoint, 0),
-                                      () => new TFChunkReader(Db, WriterCheckpoint),
+                                      () => new TFChunkSequentialReader(Db, WriterChecksum, 0),
+                                      () => new TFChunkReader(Db, WriterChecksum),
                                       TableIndex,
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamMetadata>());

@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
             _event1 = WriteStreamCreated("ES");
             _event2 = WriteSingleEvent("ES", 1, "bla1");
 
-            var prepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(),
+            var prepare = LogRecord.DeleteTombstone(WriterChecksum.ReadNonFlushed(),
                                                     Guid.NewGuid(),
                                                     "ES",
                                                     2);
