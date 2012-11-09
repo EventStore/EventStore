@@ -140,15 +140,17 @@ namespace EventStore.Core
             ICheckpoint writerChk;
             ICheckpoint chaserChk;
 
+            var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
+            var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
             if (Runtime.IsMono)
             {
-                writerChk = new FileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"), Checkpoint.Writer, cached: true);
-                chaserChk = new FileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"), Checkpoint.Chaser, cached: true);
+                writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+                chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
             }
             else
             {
-                writerChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"), Checkpoint.Writer, cached: true);
-                chaserChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"), Checkpoint.Chaser, cached: true);
+                writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+                chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
             }
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),

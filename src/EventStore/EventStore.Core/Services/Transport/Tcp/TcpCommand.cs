@@ -42,9 +42,10 @@ namespace EventStore.Core.Services.Transport.Tcp
         CloneAssignment = 0x08,
 
         SubscribeReplica = 0x10,
-        CreateChunk = 0x11,
-        PhysicalChunkBulk = 0x12,
-        LogicalChunkBulk = 0x13,
+        ReplicaLogPositionAck = 0x11,
+        CreateChunk = 0x12,
+        PhysicalChunkBulk = 0x13,
+        LogicalChunkBulk = 0x14,
 
         // CLIENT COMMANDS
         CreateStream = 0x80,
