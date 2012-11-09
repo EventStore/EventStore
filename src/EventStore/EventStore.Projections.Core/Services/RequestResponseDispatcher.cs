@@ -98,5 +98,11 @@ namespace EventStore.Projections.Core.Services
             lock (_map)
                 _map.Remove(requestId);
         }
+
+        public void CancelAll()
+        {
+            lock (_map)
+                _map.Clear();
+        }
     }
 }
