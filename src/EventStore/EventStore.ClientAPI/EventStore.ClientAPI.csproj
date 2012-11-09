@@ -85,6 +85,7 @@
     <Compile Include="ClientOperations\StartTransactionOperation.cs" />
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
     <Compile Include="Common\Log\DefaultLogger.cs" />
+    <Compile Include="Connection\ClusterExplorer.cs" />
     <Compile Include="Connection\ProjectionsManager.cs" />
     <Compile Include="Connection\Subscription.cs" />
     <Compile Include="Connection\SubscriptionsChannel.cs" />

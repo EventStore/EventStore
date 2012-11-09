@@ -34,6 +34,15 @@ namespace EventStore.ClientAPI.Messages
         internal class ClusterInfoDto
         {
             public MemberInfoDto[] Members { get; set; }
+
+            public ClusterInfoDto()
+            {
+            }
+
+            public ClusterInfoDto(MemberInfoDto[] members)
+            {
+                Members = members;
+            }
         }
 
         internal class MemberInfoDto
