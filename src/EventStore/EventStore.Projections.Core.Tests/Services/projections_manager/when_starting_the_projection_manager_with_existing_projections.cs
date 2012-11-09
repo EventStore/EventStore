@@ -52,10 +52,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         [SetUp]
         public void setup()
         {
-            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] { _bus }, checkpointForStatistics: null);
+            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] { _bus });
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
-            _manager.Handle(new SystemMessage.SystemStart());
+            _manager.Handle(new SystemMessage.BecomeWorking());
         }
 
         [TearDown]

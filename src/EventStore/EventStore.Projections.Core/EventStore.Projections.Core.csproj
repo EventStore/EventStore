@@ -126,11 +126,13 @@
     <Compile Include="Services\Processing\PositionTracker.cs" />
     <Compile Include="Services\Processing\ProgressWorkItem.cs" />
     <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
+    <Compile Include="Services\Processing\ProjectionSourceDefintion.cs" />
     <Compile Include="Services\Processing\QuerySourceProcessingStrategyBuilder.cs" />
     <Compile Include="Services\Processing\CheckpointTag.cs" />
     <Compile Include="Services\Processing\EmittedEvent.cs" />
     <Compile Include="Services\Processing\EmittedStream.cs" />
     <Compile Include="Services\Processing\HeadingEventDistributionPoint.cs" />
+    <Compile Include="Services\Processing\SourceDefintionRecorder.cs" />
     <Compile Include="Services\Processing\StagedProcessingQueue.cs" />
     <Compile Include="Services\Processing\StatePartitionSelector.cs" />
     <Compile Include="Services\Processing\StreamEventFilter.cs" />

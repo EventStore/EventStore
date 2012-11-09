@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             _event1 = WriteStreamCreated("ES");
             _event2 = WriteSingleEvent("ES", 1, "bla1");
 
-            var prepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), "ES", 2);
+            var prepare = LogRecord.DeleteTombstone(WriterChecksum.ReadNonFlushed(), Guid.NewGuid(), "ES", 2);
             long pos;
             Assert.IsTrue(Writer.Write(prepare, out pos));
 

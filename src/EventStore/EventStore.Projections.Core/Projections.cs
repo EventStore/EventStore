@@ -91,6 +91,8 @@ namespace EventStore.Projections.Core
                     Forwarder.Create<CoreProjectionManagementMessage.Stopped>(_managerInputQueue));
                 projectionNode.CoreOutput.Subscribe(
                     Forwarder.Create<CoreProjectionManagementMessage.Faulted>(_managerInputQueue));
+                projectionNode.CoreOutput.Subscribe(
+                    Forwarder.Create<CoreProjectionManagementMessage.Prepared>(_managerInputQueue));
 
                 projectionNode.CoreOutput.Subscribe(timerService);
 
@@ -116,8 +118,6 @@ namespace EventStore.Projections.Core
                 _projectionManagerNode.Output.Subscribe(Forwarder.Create<Message>(_managerInputQueue));
                     // self forward all
 
-                mainBus.Subscribe(Forwarder.Create<SystemMessage.SystemInit>(_managerInputQueue));
-                mainBus.Subscribe(Forwarder.Create<SystemMessage.SystemStart>(_managerInputQueue));
                 mainBus.Subscribe(Forwarder.Create<SystemMessage.StateChangeMessage>(_managerInputQueue));
                 _managerInputBus.Subscribe(new UnwrapEnvelopeHandler());
             }
