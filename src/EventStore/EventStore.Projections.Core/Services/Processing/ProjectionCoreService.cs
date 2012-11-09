@@ -50,6 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<CoreProjectionManagementMessage.Dispose>,
                                          IHandle<CoreProjectionManagementMessage.Start>,
                                          IHandle<CoreProjectionManagementMessage.Stop>,
+                                         IHandle<CoreProjectionManagementMessage.Kill>,
                                          IHandle<CoreProjectionManagementMessage.GetState>,
                                          IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
                                          IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
@@ -239,34 +240,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 _subscriptions[projectionId].Handle(message);
         }
 
-        private bool TrySubscribeHeadingDistributionPoint(
-            ProjectionCoreServiceMessage.CommittedEventDistributed message, Guid projectionId)
-        {
-            if (_pausedProjections.Contains(projectionId))
-                return false;
-
-            var projectionSubscription = _subscriptions[projectionId];
-
-            if (message.SafeTransactionFileReaderJoinPosition == null
-                || !_headingEventDistributionPoint.TrySubscribe(
-                    projectionId, projectionSubscription, message.SafeTransactionFileReaderJoinPosition.Value))
-                return false;
-
-            if (message.Data == null)
-            {
-                _logger.Trace(
-                    "The '{0}' is subscribing to the heading distribution point with TF-EOF marker event at '{1}'",
-                    projectionId, message.SafeTransactionFileReaderJoinPosition);
-            }
-
-            Guid distributionPointId = message.CorrelationId;
-            _distributionPoints[distributionPointId].Dispose();
-            _distributionPoints.Remove(distributionPointId);
-            _distributionPointSubscriptions.Remove(distributionPointId);
-            _projectionDistributionPoints[projectionId] = Guid.Empty;
-            return true;
-        }
-
         public void Handle(CoreProjectionManagementMessage.CreateAndPrepare message)
         {
             try
@@ -314,6 +287,12 @@ namespace EventStore.Projections.Core.Services.Processing
             projection.Stop();
         }
 
+        public void Handle(CoreProjectionManagementMessage.Kill message)
+        {
+            var projection = _projections[message.CorrelationId];
+            projection.Kill();
+        }
+
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
             var projection = _projections[message.CorrelationId];
@@ -337,6 +316,34 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(ClientMessage.WriteEventsCompleted message)
         {
             _writeDispatcher.Handle(message);
+        }
+
+        private bool TrySubscribeHeadingDistributionPoint(
+            ProjectionCoreServiceMessage.CommittedEventDistributed message, Guid projectionId)
+        {
+            if (_pausedProjections.Contains(projectionId))
+                return false;
+
+            var projectionSubscription = _subscriptions[projectionId];
+
+            if (message.SafeTransactionFileReaderJoinPosition == null
+                || !_headingEventDistributionPoint.TrySubscribe(
+                    projectionId, projectionSubscription, message.SafeTransactionFileReaderJoinPosition.Value))
+                return false;
+
+            if (message.Data == null)
+            {
+                _logger.Trace(
+                    "The '{0}' is subscribing to the heading distribution point with TF-EOF marker event at '{1}'",
+                    projectionId, message.SafeTransactionFileReaderJoinPosition);
+            }
+
+            Guid distributionPointId = message.CorrelationId;
+            _distributionPoints[distributionPointId].Dispose();
+            _distributionPoints.Remove(distributionPointId);
+            _distributionPointSubscriptions.Remove(distributionPointId);
+            _projectionDistributionPoints[projectionId] = Guid.Empty;
+            return true;
         }
     }
 }

@@ -101,6 +101,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _readRequestsInProgress;
         private long _expectedSubscriptionMessageSequenceNumber = -1;
         private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
+        private bool _subscribed;
 
         public CoreProjection(
             string name, Guid projectionCorrelationId, IPublisher publisher,
@@ -162,6 +163,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 GoToState(State.Stopped);
             else
                 GoToState(State.Stopping);
+        }
+
+        public void Kill()
+        {
+            SetFaulted("Killed");
         }
 
         private PartitionStateCache.State GetProjectionState()
@@ -303,10 +309,18 @@ namespace EventStore.Projections.Core.Services.Processing
                 "Projection '{0}'({1}) restart has been requested due to: '{2}'", _name, _projectionCorrelationId,
                 message.Reason);
             //
-            if ((_state & State.Subscribed) != 0)
-                _publisher.Publish(new ProjectionSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
+            EnsureUnsubscribed();
             GoToState(State.Initial);
             Start();
+        }
+
+        private void EnsureUnsubscribed()
+        {
+            if (_subscribed)
+            {
+                _subscribed = false;
+                _publisher.Publish(new ProjectionSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
+            }
         }
 
         private void GoToState(State state)
@@ -427,7 +441,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterStopping()
         {
-            _publisher.Publish(new ProjectionSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
+            EnsureUnsubscribed();
             // core projection may be stopped to change its configuration
             // it is important to checkpoint it so no writes pending remain when stopped
             _checkpointManager.RequestCheckpointToStop(); // should always report completed even if skipped
@@ -440,13 +454,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterFaultedStopping()
         {
-            _publisher.Publish(new ProjectionSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
+            EnsureUnsubscribed();
             // checkpoint last known correct state on fault
             _checkpointManager.RequestCheckpointToStop(); // should always report completed even if skipped
         }
 
         private void EnterFaulted()
         {
+            EnsureUnsubscribed();
             _publisher.Publish(
                 new CoreProjectionManagementMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }
@@ -656,6 +671,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             _processingQueue.InitializeQueue(_checkpointStrategy.PositionTagger.MakeZeroCheckpointTag());
             _expectedSubscriptionMessageSequenceNumber = 0;
+            _subscribed = true;
             _publisher.Publish(
                 new ProjectionSubscriptionManagement.Subscribe(
                     _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,
@@ -750,7 +766,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void SetFaulted(Exception ex)
         {
-            _faultedReason = ex.Message;
+            SetFaulted(ex.Message);
+        }
+
+        private void SetFaulted(string reason)
+        {
+            _faultedReason = reason;
             GoToState(State.Faulted);
         }
 

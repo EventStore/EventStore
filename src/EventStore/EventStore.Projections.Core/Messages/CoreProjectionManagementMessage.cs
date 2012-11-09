@@ -95,6 +95,14 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class Kill : CoreProjectionManagementMessage
+        {
+            public Kill(Guid correlationId)
+                : base(correlationId)
+            {
+            }
+        }
+
         public class GetState : CoreProjectionManagementMessage
         {
             private readonly IEnvelope _envelope;
