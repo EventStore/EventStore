@@ -30,7 +30,7 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Common.Log
 {
-    class LazyLogger : ILogger
+    public class LazyLogger : ILogger
     {
         private readonly Lazy<ILogger> _logger;
 
@@ -38,6 +38,11 @@ namespace EventStore.Common.Log
         {
             Ensure.NotNull(factory, "factory");
             _logger = new Lazy<ILogger>(factory);
+        }
+
+        public void Flush(TimeSpan? maxTimeToWait = null)
+        {
+            _logger.Value.Flush(maxTimeToWait);
         }
 
         public void Fatal(string text)

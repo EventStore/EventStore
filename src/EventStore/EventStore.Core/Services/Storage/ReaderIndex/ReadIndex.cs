@@ -402,21 +402,24 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     return new ReadStreamResult(RangeReadResult.NoStream);
 
                 int endEventNumber = fromEventNumber < 0 ? lastStreamEventNumber : fromEventNumber;
-                var startEventNumber = (int)Math.Max(0L, (long)endEventNumber - maxCount + 1);
+                int startEventNumber = (int)Math.Max(0L, (long)endEventNumber - maxCount + 1);
 
                 StreamMetadata metadata;
                 bool streamExists;
                 bool useMetadata = GetStreamMetadataInternal(reader, streamId, out streamExists, out metadata);
                 Debug.Assert(streamExists);
 
-                bool maxCountBoundedEndOfStream = false;
+                bool isEndOfStream = false;
                 if (useMetadata && metadata.MaxCount.HasValue)
                 {
                     var minEventNumber = lastStreamEventNumber - metadata.MaxCount.Value + 1;
                     if (endEventNumber < minEventNumber)
                         return new ReadStreamResult(RangeReadResult.Success, EmptyRecords, -1, lastStreamEventNumber, isEndOfStream: true);
-                    startEventNumber = Math.Max(startEventNumber, minEventNumber);
-                    maxCountBoundedEndOfStream = startEventNumber <= minEventNumber;
+                    if (startEventNumber <= minEventNumber)
+                    {
+                        isEndOfStream = true;
+                        startEventNumber = minEventNumber;
+                    }
                 }
 
                 var recordsQuery = _tableIndex.GetRange(streamHash, startEventNumber, endEventNumber)
@@ -431,8 +434,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                 var records = recordsQuery.ToArray();
 
-                var isEndOfStream = maxCountBoundedEndOfStream || startEventNumber == 0;
-                int nextEventNumber = isEndOfStream ? -1 : startEventNumber - 1;
+                isEndOfStream = isEndOfStream 
+                                || startEventNumber == 0 
+                                || startEventNumber <= lastStreamEventNumber 
+                                   && (records.Length == 0 || records[records.Length - 1].EventNumber != startEventNumber);
+                int nextEventNumber = isEndOfStream ? -1 : Math.Min(startEventNumber - 1, lastStreamEventNumber);
                 return new ReadStreamResult(RangeReadResult.Success, records, nextEventNumber, lastStreamEventNumber, isEndOfStream);
             }
             finally
