@@ -32,6 +32,7 @@ using System.Linq;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
+using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -42,8 +43,7 @@ using EventStore.Projections.Core.Standard;
 namespace EventStore.Projections.Core.Services.Management
 {
     public class ProjectionManager : IDisposable,
-                                     IHandle<SystemMessage.SystemInit>,
-                                     IHandle<SystemMessage.SystemStart>,
+                                     IHandle<SystemMessage.StateChangeMessage>,
                                      IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
                                      IHandle<ClientMessage.WriteEventsCompleted>,
                                      IHandle<ProjectionManagementMessage.Post>,
@@ -104,15 +104,20 @@ namespace EventStore.Projections.Core.Services.Management
             _projectionsMap = new Dictionary<Guid, string>();
         }
 
-        public void Handle(SystemMessage.SystemInit message)
+        private void Start()
         {
-        }
-
-        public void Handle(SystemMessage.SystemStart message)
-        {
+            _started = true;
             foreach (var queue in _queues)
                 queue.Publish(new ProjectionCoreServiceMessage.Start());
             StartExistingProjections();
+        }
+
+        private void Stop()
+        {
+            _started = false;
+            foreach (var queue in _queues)
+                queue.Publish(new ProjectionCoreServiceMessage.Stop());
+            throw new NotImplementedException("Clean local state");
         }
 
         public void Handle(ProjectionManagementMessage.Post message)
@@ -390,6 +395,7 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
         private int _lastUsedQueue = 0;
+        private bool _started;
 
         private ManagedProjection CreateManagedProjectionInstance(string name)
         {
@@ -438,6 +444,20 @@ namespace EventStore.Projections.Core.Services.Management
             }
             else
                 throw new NotSupportedException("Unsupported error code received");
+        }
+
+        public void Handle(SystemMessage.StateChangeMessage message)
+        {
+            if (message.State == VNodeState.Master)
+            {
+                if (!_started)
+                    Start();
+            }
+            else
+            {
+                if (_started)
+                    Stop();
+            }
         }
     }
 }

@@ -27,8 +27,7 @@ namespace EventStore.Projections.Core
 
         public void SetupMessaging(ISubscriber mainBus)
         {
-            mainBus.Subscribe<SystemMessage.SystemInit>(_projectionManager);
-            mainBus.Subscribe<SystemMessage.SystemStart>(_projectionManager);
+            mainBus.Subscribe<SystemMessage.StateChangeMessage>(_projectionManager);
             mainBus.Subscribe<ProjectionManagementMessage.Post>(_projectionManager);
             mainBus.Subscribe<ProjectionManagementMessage.UpdateQuery>(_projectionManager);
             mainBus.Subscribe<ProjectionManagementMessage.GetQuery>(_projectionManager);
