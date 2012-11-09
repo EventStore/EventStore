@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing
     //TODO: separate check-pointing from projection handling
     public class CoreProjection : IDisposable,
                                   ICoreProjection,
+                                  IHandle<CoreProjectionManagementMessage.GetState>,
                                   IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
                                   IHandle<CoreProjectionProcessingMessage.PauseRequested>,
                                   IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>,

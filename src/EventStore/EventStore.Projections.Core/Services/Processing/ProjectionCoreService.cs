@@ -80,7 +80,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<Guid, Guid> _distributionPointSubscriptions = new Dictionary<Guid, Guid>();
         private readonly HashSet<Guid> _pausedProjections = new HashSet<Guid>();
         private readonly HeadingEventDistributionPoint _headingEventDistributionPoint;
-        private TransactionFileReaderEventDistributionPoint _headDistributionPoint;
 
         private readonly
             RequestResponseDispatcher
@@ -113,11 +112,11 @@ namespace EventStore.Projections.Core.Services.Processing
             //TODO: do we need to clear subscribed distribution points here?
             _stopped = false;
             var distibutionPointCorrelationId = Guid.NewGuid();
-            _headDistributionPoint = new TransactionFileReaderEventDistributionPoint(
+            var transactionFileReader = new TransactionFileReaderEventDistributionPoint(
                 _publisher, distibutionPointCorrelationId, new EventPosition(_writerCheckpoint.Read(), -1),
                 deliverEndOfTFPosition: false);
-            _distributionPoints.Add(distibutionPointCorrelationId, _headDistributionPoint);
-            _headingEventDistributionPoint.Start(distibutionPointCorrelationId, _headDistributionPoint);
+            _distributionPoints.Add(distibutionPointCorrelationId, transactionFileReader);
+            _headingEventDistributionPoint.Start(distibutionPointCorrelationId, transactionFileReader);
             //NOTE: writing any event to avoid empty database which we don not handle properly
             // and write it after startAtCurrent to fill buffer
             _publisher.Publish(
@@ -128,6 +127,44 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ProjectionCoreServiceMessage.Stop message)
         {
+
+            _readDispatcher.CancelAll();
+            _writeDispatcher.CancelAll();
+
+            var allProjections = _projections.Values;
+            foreach (var projection in allProjections)
+                projection.Kill();
+
+            if (_subscriptions.Count > 0)
+            {
+                _logger.Info("_subscriptions is not empty after all the projections have been killed");
+                _subscriptions.Clear();
+            }
+
+            if (_projections.Count > 0)
+            {
+                _logger.Info("_projections is not empty after all the projections have been killed");
+                _projections.Clear();
+            }
+
+            if (_distributionPoints.Count > 0)
+            {
+                _logger.Info("_distributionPoints is not empty after all the projections have been killed");
+                _distributionPoints.Clear();
+            }
+
+            if (_projectionDistributionPoints.Count > 0)
+            {
+                _logger.Info("_projectionDistributionPoints is not empty after all the projections have been killed");
+                _projectionDistributionPoints.Clear();
+            }
+
+            if (_distributionPointSubscriptions.Count > 0)
+            {
+                _logger.Info("_distributionPointSubscriptions is not empty after all the projections have been killed");
+                _distributionPointSubscriptions.Clear();
+            }
+
             _headingEventDistributionPoint.Stop();
             _stopped = true;
         }
