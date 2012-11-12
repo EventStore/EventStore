@@ -38,6 +38,7 @@ namespace EventStore.Core.Messages
     {
         #region HTTP DTO
 
+        [XmlType(TypeName = "event")]
         public class ClientEventText
         {
             public Guid EventId { get; set; }
@@ -75,6 +76,7 @@ namespace EventStore.Core.Messages
             }
         }
 
+        [XmlRoot(ElementName = "write-events")]
         public class WriteEventsText
         {
             public int ExpectedVersion { get; set; }
@@ -94,6 +96,7 @@ namespace EventStore.Core.Messages
             }
         }
 
+        [XmlRoot(ElementName = "read-event-result")]
         public class ReadEventCompletedText
         {
             public string EventStreamId { get; set; }

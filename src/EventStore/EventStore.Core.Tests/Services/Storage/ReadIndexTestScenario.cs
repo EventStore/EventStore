@@ -93,7 +93,6 @@ namespace EventStore.Core.Tests.Services.Storage
             TableIndex = new TableIndex(Path.Combine(PathName, "index"),
                                         () => new HashListMemTable(MaxEntriesInMemTable * 2),
                                         MaxEntriesInMemTable);
-            TableIndex.Initialize();
 
             var reader = new TFChunkReader(Db, Db.Config.WriterCheckpoint);
             ReadIndex = new ReadIndex(new NoopPublisher(),
