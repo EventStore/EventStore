@@ -27,7 +27,7 @@
 // 
 
 #if DEBUG
-#define CHECK_COMMIT_DUPLICATES
+//#define CHECK_COMMIT_DUPLICATES
 #endif
 
 using System;

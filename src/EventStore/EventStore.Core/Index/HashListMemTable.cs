@@ -82,10 +82,14 @@ namespace EventStore.Core.Index
             try
             {
                 var tuple = new Tuple<int, long>(version, position);
-                if (!list.ContainsKey(tuple))
+                // TODO AN: why do we need to check for existing value?..
+                //if (!list.ContainsKey(tuple))
                 {
                     list.Add(tuple, 1);
-                    _latestPosition = Math.Max(_latestPosition, position);
+
+                    // TODO AN: positions should be strictly increasing, no need for Max
+                    //_latestPosition = Math.Max(_latestPosition, position);
+                    _latestPosition = position;
                 }
             }
             finally
