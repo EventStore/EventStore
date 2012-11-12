@@ -128,8 +128,8 @@ namespace EventStore.TestClient.Commands
                                                                "DATA" + new string('*', 256),
                                                                "METADATA" + new string('$', 100))
                             });
-                        var requestString = Codec.Xml.To(write);
-                        client.Post(url, requestString, Codec.Xml.ContentType, succHandler, exc => 
+                        var requestString = Codec.Json.To(write);
+                        client.Post(url, requestString, Codec.Json.ContentType, succHandler, exc => 
                         {
                             context.Log.ErrorException(exc, "Error during POST.");
                             Interlocked.Increment(ref fail);
