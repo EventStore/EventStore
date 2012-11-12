@@ -429,7 +429,7 @@ namespace EventStore.Core.Services.Storage
                        && ReadIndex.GetLastStreamEventNumber(message.EventStreamId) == ExpectedVersion.NoStream);
         }
 
-        protected void Flush()
+        protected bool Flush()
         {
             if (ShouldForceFlush())
             {
@@ -437,7 +437,10 @@ namespace EventStore.Core.Services.Storage
                 Writer.Flush();
                 _flushDelay = _watch.ElapsedTicks - start;
                 _lastFlush = _watch.ElapsedTicks;
+
+                return true;
             }
+            return false;
         }
 
         private bool ShouldForceFlush()
