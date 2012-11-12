@@ -101,17 +101,30 @@ namespace EventStore.Core.Services.Transport.Http
         {
             try
             {
-                xml = xml.Replace("<Events>", string.Empty).Replace("</Events>", string.Empty)
-                         .Replace("<write-events>", "<write-events xmlns:json='http://james.newtonking.com/projects/json'>")
-                         .Replace("<event>", "<Events json:Array='true'>").Replace("</event>", "</Events>");
                 var doc = XDocument.Parse(xml);
 
-                var version = doc.Descendants("ExpectedVersion").Single();
-                version.Remove();
+                XNamespace jsonNs = "http://james.newtonking.com/projects/json";
+                XName jsonName = XNamespace.Xmlns + "json";
 
-                var json = JsonConvert.SerializeXNode(doc, Formatting.None, true);
-                var textEvents = JsonConvert.DeserializeObject<JObject>(json)["Events"].ToObject<HttpClientMessageDto.ClientEventText[]>();
-                return new HttpClientMessageDto.WriteEventsText(int.Parse(version.Value), textEvents.ToArray());
+                doc.Root.SetAttributeValue(jsonName, jsonNs);
+
+                var expectedVersion = doc.Root.Element("ExpectedVersion");
+                var events = doc.Root.Descendants("event").ToArray();
+
+                foreach (var @event in events)
+                {
+                    @event.Name = "Events";
+                    @event.SetAttributeValue(jsonNs + "Array", "true");
+                }
+
+                doc.Root.ReplaceNodes(events);
+
+                foreach (var element in doc.Root.Descendants("Data").Concat(doc.Root.Descendants("Metadata")))
+                    element.RemoveAttributes();
+
+                var json = JsonConvert.SerializeXNode(doc, Formatting.None, false);
+                var textEvents = JsonConvert.DeserializeObject<JObject>(json)["write-events"]["Events"].ToObject<HttpClientMessageDto.ClientEventText[]>();
+                return new HttpClientMessageDto.WriteEventsText(int.Parse(expectedVersion.Value), textEvents.ToArray());
             }
             catch (Exception e)
             {

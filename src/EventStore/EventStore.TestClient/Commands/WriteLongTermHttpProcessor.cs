@@ -192,10 +192,10 @@ namespace EventStore.TestClient.Commands
                             "DATA" + dataResultingSize.ToString(" 00000 ") + new string('*', dataResultingSize),
                                     "METADATA" + new string('$', 100))
                             });
-                        var request = Codec.Json.To(write);
+                        var request = Codec.Xml.To(write);
                         client.Post(url, 
                                     request, 
-                                    Codec.Json.ContentType,
+                                    Codec.Xml.ContentType,
                                     succHandler, 
                                     exc =>
                                         {
