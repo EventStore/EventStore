@@ -36,6 +36,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Connection;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
@@ -89,18 +90,12 @@ namespace EventStore.ClientAPI
         private Thread _worker;
         private volatile bool _stopping;
 
-        public EventStoreConnection(IPEndPoint tcpEndPoint = null,
-                                    IPEndPoint httpEndPoint = null,
-                                    bool allowForwarding = true,
-                                    int maxConcurrentRequests = 5000,
-                                    int maxAttemptsForOperation = 10,
-                                    int maxReconnections = 10,
-                                    ILogger logger = null)
+        private EventStoreConnection(bool allowForwarding,
+                                     int maxConcurrentRequests,
+                                     int maxAttemptsForOperation,
+                                     int maxReconnections,
+                                     ILogger logger)
         {
-            Ensure.Positive(maxConcurrentRequests, "maxConcurrentRequests");
-            Ensure.Nonnegative(maxAttemptsForOperation, "maxAttemptsForOperation");
-            Ensure.Nonnegative(maxReconnections, "maxReconnections");
-
             _allowForwarding = allowForwarding;
             _maxConcurrentItems = maxConcurrentRequests;
             _maxAttempts = maxAttemptsForOperation;
@@ -112,48 +107,76 @@ namespace EventStore.ClientAPI
             _connector = new TcpConnector();
             _subscriptionsChannel = new SubscriptionsChannel(_connector);
             _projectionsManager = new ProjectionsManager();
-
-            if (tcpEndPoint != null)
-            {
-                if (httpEndPoint != null)
-                    Connect(tcpEndPoint, httpEndPoint);
-                else
-                    Connect(tcpEndPoint);
-            }
-            _httpEndPoint = httpEndPoint;
         }
 
-        public void Connect(IPEndPoint tcpEndPoint)
+        public static EventStoreConnection Create()
+        {
+            return new EventStoreConnection(allowForwarding: true,
+                                            maxConcurrentRequests: 5000,
+                                            maxAttemptsForOperation: 10,
+                                            maxReconnections: 10,
+                                            logger: null);
+        }
+
+        public static EventStoreConnection Create(bool allowForwarding = true,
+                                                  int maxConcurrentRequests = 5000,
+                                                  int maxAttemptsForOperation = 10,
+                                                  int maxReconnections = 10,
+                                                  ILogger logger = null)
+        {
+            Ensure.Positive(maxConcurrentRequests, "maxConcurrentRequests");
+            Ensure.Positive(maxAttemptsForOperation, "maxAttemptsForOperation");
+            Ensure.Nonnegative(maxReconnections, "maxReconnections");
+
+            return new EventStoreConnection(allowForwarding,
+                                            maxConcurrentRequests,
+                                            maxAttemptsForOperation,
+                                            maxReconnections,
+                                            logger);
+        }
+
+        public void Connect(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint = null)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
-            Connect(tcpEndPoint, _httpEndPoint ?? new IPEndPoint(tcpEndPoint.Address, tcpEndPoint.Port + 1000));
+            var task = ConnectAsync(tcpEndPoint, httpEndPoint);
+            task.Wait();
         }
 
-        public void Connect(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint)
+        public Task ConnectAsync(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint = null)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
-            Ensure.NotNull(httpEndPoint, "httpEndPoint");
-
-            InitiateConnection(tcpEndPoint, httpEndPoint);
+            return EstablishConnectionAsync(tcpEndPoint, httpEndPoint ?? new IPEndPoint(tcpEndPoint.Address, tcpEndPoint.Port + 1000));
         }
 
-        public void Connect(string clusterDns, int port = 30777)
+        public void Connect(string clusterDns, int maxAttempts = 10, int port = 30777)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
+            Ensure.Positive(maxAttempts, "maxAttempts");
             Ensure.Nonnegative(port, "port");
 
-            var explorer = new ClusterExplorer(_allowForwarding, port);
-            var resolve = explorer.Resolve(clusterDns);
-            resolve.Wait();
-
-            var endpointsPair = resolve.Result;
-            if(!endpointsPair.HasValue)
-                throw new CannotEstablishConnectionException("Failed to find node to connect");
-
-            InitiateConnection(endpointsPair.Value.TcpEndPoint, endpointsPair.Value.HttpEndPoint);
+            var task = ConnectAsync(clusterDns, maxAttempts, port);
+            task.Wait();
         }
 
-        private void InitiateConnection(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint)
+        public Task ConnectAsync(string clusterDns, int maxAttempts = 10, int port = 30777)
+        {
+            Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
+            Ensure.Positive(maxAttempts, "maxAttempts");
+            Ensure.Nonnegative(port, "port");
+
+            var explorer = new ClusterExplorer(_allowForwarding, maxAttempts, port);
+            return explorer.Resolve(clusterDns)
+                           .ContinueWith(t =>
+                                         {
+                                             var pair = t.Result;
+                                             if (!pair.HasValue)
+                                                 throw new CannotEstablishConnectionException("Failed to find node to connect");
+
+                                             return EstablishConnectionAsync(pair.Value.TcpEndPoint, pair.Value.HttpEndPoint);
+                                         });
+        }
+
+        private Task EstablishConnectionAsync(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint)
         {
             lock (_connectionLock)
             {
@@ -170,6 +193,8 @@ namespace EventStore.ClientAPI
 
                 _worker = new Thread(MainLoop) {IsBackground = true, Name = "Worker thread"};
                 _worker.Start();
+
+                return Tasks.CreateCompleted();
             }
         }
 
@@ -448,7 +473,7 @@ namespace EventStore.ClientAPI
             return _subscriptionsChannel.Subscribe(stream, eventAppeared, subscriptionDropped);
         }
 
-        public void Unsubscribe(string stream)
+        public Task UnsubscribeAsync(string stream)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             EnsureActive();
@@ -456,6 +481,8 @@ namespace EventStore.ClientAPI
             lock (_connectionLock)
                 _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             _subscriptionsChannel.Unsubscribe(stream);
+
+            return Tasks.CreateCompleted();
         }
 
         public Task SubscribeToAllStreamsAsync(Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
@@ -469,13 +496,15 @@ namespace EventStore.ClientAPI
             return _subscriptionsChannel.SubscribeToAllStreams(eventAppeared, subscriptionDropped);
         }
 
-        public void UnsubscribeFromAllStreams()
+        public Task UnsubscribeFromAllStreamsAsync()
         {
             EnsureActive();
 
             lock (_connectionLock)
                 _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             _subscriptionsChannel.UnsubscribeFromAllStreams();
+
+            return Tasks.CreateCompleted();
         }
 
         void IProjectionsManagement.Enable(string name)

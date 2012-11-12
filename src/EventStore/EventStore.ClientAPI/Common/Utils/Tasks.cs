@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,47 +25,25 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using System;
-using System.Net;
 
-namespace EventStore.ClientAPI
+using System.Threading.Tasks;
+
+namespace EventStore.ClientAPI.Common.Utils
 {
-    public class Configure
+    internal static class Tasks
     {
-        internal IPAddress _address;
-        internal int _port;
-        internal string _name;
-
-        private Configure(string name, IPAddress ipaddress, int port)
+        public static Task CreateCompleted()
         {
-            _name = name;
-            _address = ipaddress;
-            _port = port;
+            var source = new TaskCompletionSource<object>();
+            source.SetResult(null);
+            return source.Task;
         }
 
-        public static Configure AsDefault()
+        public static Task<TResult> CreateCompleted<TResult>(TResult result)
         {
-            return new Configure("Default", IPAddress.Loopback, 1113);
-        }
-
-        public static Configure Named(string name)
-        {
-            return new Configure(name, IPAddress.Loopback, 1113);
-        }
-
-        public Configure ToServerNamed(string name)
-        {
-            var addresses = Dns.GetHostAddresses(name);
-            if (addresses.Length == 0) throw new HostNotFoundException(name);
-            
-            return new Configure(_name, addresses[0], _port);
-        }
-    }
-
-    public class HostNotFoundException : Exception
-    {
-        public HostNotFoundException(string name) : base("Host with name " + name + " not found")
-        {
+            var source = new TaskCompletionSource<TResult>();
+            source.SetResult(result);
+            return source.Task;
         }
     }
 }

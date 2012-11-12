@@ -1,5 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Copyright (c) 2012, Event Store LLP
+// All rights reserved.
+//  
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//  
+// Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+// Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+// Neither the name of the Event Store LLP nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  
+
+using System;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -21,35 +48,37 @@ namespace EventStore.ClientAPI.Connection
         private readonly HttpAsyncClient _client = new HttpAsyncClient();
 
         private readonly bool _allowForwarding;
+        private readonly int _maxAttempts;
         private readonly int _port;
 
-        public ClusterExplorer(bool allowForwarding, int port)
+        public ClusterExplorer(bool allowForwarding, int maxAttempts, int port)
         {
             _log = LogManager.GetLogger();
 
             _allowForwarding = allowForwarding;
+            _maxAttempts = maxAttempts;
             _port = port;
         }
 
         public Task<EndpointsPair?> Resolve(string dns)
         {
             var resolve = Task.Factory.StartNew(() => Dns.GetHostAddresses(dns));
-            return resolve.ContinueWith(addresses => DiscoverCLuster(addresses.Result));
+            return resolve.ContinueWith(addresses => DiscoverCLuster(addresses.Result, _maxAttempts));
         }
 
-        private EndpointsPair? DiscoverCLuster(IPAddress[] managers)
+        private EndpointsPair? DiscoverCLuster(IPAddress[] managers, int maxAttempts)
         {
             if (managers == null || managers.Length == 0)
-                throw new CannotEstablishConnectionException("DNS entry resolved to empty ip addresses list");
+                throw new CannotEstablishConnectionException("DNS entry resolved in empty ip addresses list");
 
-            var clusterInfo = GetClusterInfo(managers);
-            if (clusterInfo != null && clusterInfo.Members != null && clusterInfo.Members.Any())
+            var info = GetClusterInfo(managers, maxAttempts);
+            if (info != null && info.Members != null && info.Members.Any())
             {
-                var aliveMembers = clusterInfo.Members.Where(m => m.IsAlive);
+                var alive = info.Members.Where(m => m.IsAlive).ToArray();
                 if (!_allowForwarding)
                 {
                     _log.Info("Forwarding denied. Looking for master...");
-                    var master = aliveMembers.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Master);
+                    var master = alive.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Master);
                     if (master == null)
                     {
                         _log.Info("Master not found");
@@ -60,17 +89,15 @@ namespace EventStore.ClientAPI.Connection
                                              new IPEndPoint(IPAddress.Parse(master.ExternalHttpIp), master.ExternalHttpPort));
                 }
 
-                var node = ((aliveMembers.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Master) ??
-                             aliveMembers.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Slave)) ??
-                             aliveMembers.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Clone)) ??
-                             aliveMembers.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.CatchingUp);
+                var node = alive.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Master) ??
+                           alive.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Slave) ??
+                           alive.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Clone);
 
                 if (node == null)
                 {
-                    _log.Info("Unable to locate master or slave or clone or catching up node");
+                    _log.Info("Unable to locate master, slave or clone node");
                     return null;
                 }
-
                 _log.Info("Best choise found, it's {0} on [{1}:{2}, {3}:{4}]", 
                           node.State, 
                           node.ExternalTcpIp,
@@ -85,59 +112,67 @@ namespace EventStore.ClientAPI.Connection
             return null;
         }
 
-        private ClusterMessages.ClusterInfoDto GetClusterInfo(IPAddress[] managers)
+        private ClusterMessages.ClusterInfoDto GetClusterInfo(IPAddress[] managers, int maxAttempts)
         {
-            var allInfo = new List<ClusterMessages.ClusterInfoDto>(managers.Length);
-            var requestCompleted = new CountdownEvent(managers.Length);
+            var attempt = 0;
+            var random = new Random();
+            while (attempt < maxAttempts)
+            {
+                _log.Info("Discovering cluster. Attempt {0}...", attempt + 1);
+                var i = random.Next(0, managers.Length);
+                _log.Info("Picked [{0}]", managers[i]);
+                var info = ClusterInfoOrDefault(managers[i]);
+                if(info != null)
+                {
+                    _log.Info("Going to select node based on info from [{0}]", managers[i]);
+                    return info;
+                }
+
+                _log.Info("Failed to get cluster info from [{0}]. Attempt {1} of {2}", attempt + 1, maxAttempts);
+                attempt++;
+                Thread.Sleep(TimeSpan.FromSeconds(1));
+            }
+            return null;
+        }
+
+        private ClusterMessages.ClusterInfoDto ClusterInfoOrDefault(IPAddress manager)
+        {
+            ClusterMessages.ClusterInfoDto info = null;
+            var completed = new ManualResetEvent(false);
 
             Action<HttpResponse> success = response =>
             {
-                _log.Info("Got response from manager");
+                _log.Info("Got response from manager on [{0}]", manager);
                 if (response.HttpStatusCode != HttpStatusCode.OK)
                 {
                     _log.Info("Manager responded with {0} ({1})", response.HttpStatusCode, response.StatusDescription);
-                    requestCompleted.Signal();
+                    completed.Set();
                     return;
                 }
                 try
                 {
                     using (var reader = new StringReader(response.Body))
-                        allInfo.Add((ClusterMessages.ClusterInfoDto)new XmlSerializer(typeof(ClusterMessages.ClusterInfoDto)).Deserialize(reader));
+                        info = (ClusterMessages.ClusterInfoDto)new XmlSerializer(typeof(ClusterMessages.ClusterInfoDto)).Deserialize(reader);
                 }
                 catch (Exception e)
                 {
-                    _log.Info(e, "Failed to get cluster info from manager. Deserialization error");
+                    _log.Info(e, "Failed to get cluster info from manager on [{0}]. Deserialization error", manager);
                 }
-
-                requestCompleted.Signal();
+                completed.Set();
             };
 
             Action<Exception> error = e =>
             {
-                _log.Info(e, "Failed to get cluster info from manager");
-                requestCompleted.Signal();
+                _log.Info(e, "Failed to get cluster info from manager on [{0}]. Request failed");
+                completed.Set();
             };
 
-            foreach (var manager in managers)
-            {
-                var url = new IPEndPoint(manager, _port).ToHttpUrl("/gossip?format=xml");
-                _log.Info("Sending gossip request to {0}...", url);
-                _client.Get(url, success, error);
-            }
+            var url = new IPEndPoint(manager, _port).ToHttpUrl("/gossip?format=xml");
+            _log.Info("Sending gossip request to {0}...", url);
+            _client.Get(url, success, error);
 
-            requestCompleted.Wait();
-
-            _log.Info("Aggregating info about cluster...");
-            return allInfo.Any() ? allInfo.Aggregate(Accumulte) : null;
-        }
-
-        private ClusterMessages.ClusterInfoDto Accumulte(ClusterMessages.ClusterInfoDto info1, ClusterMessages.ClusterInfoDto info2)
-        {
-            var members = info1.Members.Concat(info2.Members)
-                                       .ToLookup(x => new IPEndPoint(IPAddress.Parse(x.InternalHttpIp), x.InternalHttpPort))
-                                       .Select(x => x.OrderByDescending(y => y.TimeStamp).First())
-                                       .ToArray();
-            return new ClusterMessages.ClusterInfoDto(members);
+            completed.WaitOne();
+            return info;
         }
     }
 }
