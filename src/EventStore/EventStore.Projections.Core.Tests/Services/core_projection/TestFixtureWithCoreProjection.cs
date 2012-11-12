@@ -40,8 +40,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     public abstract class TestFixtureWithCoreProjection : TestFixtureWithExistingEvents
     {
         protected CoreProjection _coreProjection;
-        protected TestMessageHandler<ProjectionSubscriptionManagement.Subscribe> _subscribeProjectionHandler;
-        protected TestMessageHandler<ClientMessage.WriteEvents> _writeEventHandler;
+        protected TestHandler<ProjectionSubscriptionManagement.Subscribe> _subscribeProjectionHandler;
+        protected TestHandler<ClientMessage.WriteEvents> _writeEventHandler;
         protected readonly string _lastSeenEvent = Guid.NewGuid().ToString("D");
 
         protected Guid _firstWriteCorrelationId;
@@ -57,8 +57,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [SetUp]
         public void setup()
         {
-            _subscribeProjectionHandler = new TestMessageHandler<ProjectionSubscriptionManagement.Subscribe>();
-            _writeEventHandler = new TestMessageHandler<ClientMessage.WriteEvents>();
+            _subscribeProjectionHandler = new TestHandler<ProjectionSubscriptionManagement.Subscribe>();
+            _writeEventHandler = new TestHandler<ClientMessage.WriteEvents>();
             _bus.Subscribe(_subscribeProjectionHandler);
             _bus.Subscribe(_writeEventHandler);
 

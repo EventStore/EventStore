@@ -429,20 +429,19 @@ namespace EventStore.Core.Services.Storage
                        && ReadIndex.GetLastStreamEventNumber(message.EventStreamId) == ExpectedVersion.NoStream);
         }
 
-        protected void Flush()
+        protected bool Flush()
         {
-            if (ShouldForceFlush())
+            var start = _watch.ElapsedTicks;
+            if (start - _lastFlush >= _flushDelay + 2 * MsPerTick || FlushMessagesInQueue == 0)
             {
-                var start = _watch.ElapsedTicks;
                 Writer.Flush();
-                _flushDelay = _watch.ElapsedTicks - start;
-                _lastFlush = _watch.ElapsedTicks;
-            }
-        }
+                var end = _watch.ElapsedTicks;
+                _flushDelay = end - start;
+                _lastFlush = end;
 
-        private bool ShouldForceFlush()
-        {
-            return _watch.ElapsedTicks - _lastFlush >= _flushDelay + 2 * MsPerTick || FlushMessagesInQueue == 0;
+                return true;
+            }
+            return false;
         }
 
         public void Dispose()

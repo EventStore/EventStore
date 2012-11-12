@@ -33,6 +33,7 @@ namespace EventStore.Projections.Core.Messages
 {
     public static class ProjectionManagementMessage
     {
+
         public class OperationFailed : Message
         {
             private readonly string _reason;

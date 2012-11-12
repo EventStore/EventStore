@@ -80,22 +80,23 @@ namespace EventStore.Projections.Core.Messages
                 bool resolvedLinkTo, Event data, long subscriptionMessageSequenceNumber)
             {
                 return new CommittedEventReceived(
-                    correlationId, position, eventStreamId, eventSequenceNumber, resolvedLinkTo, data, 77.7f,
+                    correlationId, position, eventStreamId, eventSequenceNumber, null, resolvedLinkTo, data, 77.7f,
                     subscriptionMessageSequenceNumber);
             }
-
+            
             private readonly Event _data;
             private readonly string _eventStreamId;
             private readonly int _eventSequenceNumber;
             private readonly bool _resolvedLinkTo;
             private readonly string _positionStreamId;
             private readonly int _positionSequenceNumber;
+            private readonly string _eventCategory;
             private readonly EventPosition _position;
 
             private CommittedEventReceived(
                 Guid correlationId, EventPosition position, CheckpointTag checkpointTag, string positionStreamId,
-                int positionSequenceNumber, string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo,
-                Event data, float progress, long subscriptionMessageSequenceNumber)
+                int positionSequenceNumber, string eventStreamId, int eventSequenceNumber, string eventCategory,
+                bool resolvedLinkTo, Event data, float progress, long subscriptionMessageSequenceNumber)
                 : base(correlationId, checkpointTag, progress, subscriptionMessageSequenceNumber)
             {
                 if (data == null) throw new ArgumentNullException("data");
@@ -105,17 +106,19 @@ namespace EventStore.Projections.Core.Messages
                 _positionSequenceNumber = positionSequenceNumber;
                 _eventStreamId = eventStreamId;
                 _eventSequenceNumber = eventSequenceNumber;
+                _eventCategory = eventCategory;
                 _resolvedLinkTo = resolvedLinkTo;
             }
 
             private CommittedEventReceived(
                 Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
-                bool resolvedLinkTo, Event data, float progress, long subscriptionMessageSequenceNumber)
+                string eventCategory, bool resolvedLinkTo, Event data, float progress,
+                long subscriptionMessageSequenceNumber)
                 : this(
                     correlationId, position,
                     CheckpointTag.FromPosition(position.CommitPosition, position.PreparePosition), eventStreamId,
-                    eventSequenceNumber, eventStreamId, eventSequenceNumber, resolvedLinkTo, data, progress,
-                    subscriptionMessageSequenceNumber)
+                    eventSequenceNumber, eventStreamId, eventSequenceNumber, eventCategory, resolvedLinkTo, data,
+                    progress, subscriptionMessageSequenceNumber)
             {
             }
 
@@ -154,13 +157,18 @@ namespace EventStore.Projections.Core.Messages
                 get { return _resolvedLinkTo; }
             }
 
+            public string EventCategory
+            {
+                get { return _eventCategory; }
+            }
+
             public static CommittedEventReceived FromCommittedEventDistributed(
                 ProjectionCoreServiceMessage.CommittedEventDistributed message, CheckpointTag checkpointTag,
-                long subscriptionMessageSequenceNumber)
+                string eventCategory, long subscriptionMessageSequenceNumber)
             {
                 return new CommittedEventReceived(
                     message.CorrelationId, message.Position, checkpointTag, message.PositionStreamId,
-                    message.PositionSequenceNumber, message.EventStreamId, message.EventSequenceNumber,
+                    message.PositionSequenceNumber, message.EventStreamId, message.EventSequenceNumber, eventCategory,
                     message.ResolvedLinkTo, message.Data, message.Progress, subscriptionMessageSequenceNumber);
             }
         }

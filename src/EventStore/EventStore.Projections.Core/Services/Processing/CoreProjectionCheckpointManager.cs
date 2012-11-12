@@ -71,6 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _stateLoaded;
         private bool _started;
         private bool _stopping;
+        private bool _stopped;
         private bool _stateRequested;
         private string _currentProjectionState;
 
@@ -150,6 +151,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             EnsureStarted();
             _started = false;
+            _stopped = true;
         }
 
         public virtual void GetStatistics(ProjectionStatistics info)
@@ -315,10 +317,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionProcessingMessage.ReadyForCheckpoint message)
         {
+            // ignore any messages - typically when faulted
+            if (_stopped)
+                return;
             // ignore any messages from previous checkpoints probably before RestartRequested
             if (message.Sender != _closingCheckpoint)
                 return;
-            EnsureStarted();
             if (!_inCheckpoint)
                 throw new InvalidOperationException();
             BeginWriteCheckpoint(_requestedCheckpointPosition, _requestedCheckpointState);

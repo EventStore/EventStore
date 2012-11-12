@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,25 +25,45 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
+using EventStore.Core.Tests.Bus.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Bus.QueuedHandler
+namespace EventStore.Core.Tests.Bus
 {
     [TestFixture]
-    public class queue_handler_should : QueuedHandlerTestWithStupidConsumer
+    public class when_starting_queued_handler : QueuedHandlerTestWithNoopConsumer
     {
-        [Test]
-        public void throw_if_handler_is_null()
+        public override void SetUp()
         {
-            Assert.Throws<ArgumentNullException>(() => new Core.Bus.QueuedHandler(null, "throwing", watchSlowMsg: false));
+            base.SetUp();
+            Queue.Start();
+        }
+
+        public override void TearDown()
+        {
+            Queue.Stop();
+            base.TearDown();
         }
 
         [Test]
-        public void throw_if_name_is_null()
+        public void gracefully_should_not_throw()
         {
-            Assert.Throws<ArgumentNullException>(() => new Core.Bus.QueuedHandler(_consumer, null, watchSlowMsg: false));
+            Assert.Throws<InvalidOperationException>(() => Queue.Start());
+        }
+
+        [Test]
+        public void multiple_times_should_throw()
+        {
+            Assert.Throws<InvalidOperationException>(() => Queue.Start());
+        }
+
+        [Test]
+        public void after_being_stopped_should_throw()
+        {
+            Queue.Stop();
+            Assert.Throws<InvalidOperationException>(() => Queue.Start());
         }
     }
 }

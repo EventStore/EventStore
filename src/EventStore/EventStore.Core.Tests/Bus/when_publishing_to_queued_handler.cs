@@ -25,84 +25,81 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
 using EventStore.Core.Tests.Common;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Bus.QueuedHandler
+namespace EventStore.Core.Tests.Bus
 {
     [TestFixture]
-    public class when_publishing : QueuedHandlerTestWithWaitingConsumer
+    public class when_publishing_to_queued_handler : QueuedHandlerTestWithWaitingConsumer
     {
         public override void SetUp()
         {
             base.SetUp();
-            _queue.Start();
+            Queue.Start();
         }
 
         public override void TearDown()
         {
-            _consumer.Dispose();
-            _queue.Stop();
+            Consumer.Dispose();
+            Queue.Stop();
             base.TearDown();
         }
 
         [Test]
         public void null_message_should_throw()
         {
-            Assert.Throws<ArgumentNullException>(() => _queue.Publish(null));
+            Assert.Throws<ArgumentNullException>(() => Queue.Publish(null));
         }
 
         [Test]
         public void message_it_should_be_delivered_to_bus()
         {
-            _consumer.SetWaitingCount(1);
+            Consumer.SetWaitingCount(1);
 
-            _queue.Publish(new TestMessage());
+            Queue.Publish(new TestMessage());
 
-            _consumer.Wait();
-            Assert.That(_consumer.HandledMessages.ContainsSingle<TestMessage>());
+            Consumer.Wait();
+            Assert.That(Consumer.HandledMessages.ContainsSingle<TestMessage>());
         }
 
         [Test]
         public void multiple_messages_they_should_be_delivered_to_bus()
         {
-            _consumer.SetWaitingCount(2);
+            Consumer.SetWaitingCount(2);
 
-            _queue.Publish(new TestMessage());
-            _queue.Publish(new TestMessage2());
+            Queue.Publish(new TestMessage());
+            Queue.Publish(new TestMessage2());
 
-            _consumer.Wait();
+            Consumer.Wait();
 
-            Assert.That(_consumer.HandledMessages.ContainsSingle<TestMessage>() &&
-                        _consumer.HandledMessages.ContainsSingle<TestMessage2>());
+            Assert.That(Consumer.HandledMessages.ContainsSingle<TestMessage>() &&
+                        Consumer.HandledMessages.ContainsSingle<TestMessage2>());
         }
 
         [Test]
         public void messages_from_different_threads_they_should_be_all_executed_in_same_one()
         {
-            _consumer.SetWaitingCount(3);
+            Consumer.SetWaitingCount(3);
 
             int msg1ThreadId = 0, msg2ThreadId = 1, msg3ThreadId = 2;
 
             var threads = new[] 
             {
-                new Thread(() => _queue.Publish(new DeferredExecutionTestMessage(() =>{msg1ThreadId = Thread.CurrentThread.ManagedThreadId;}))),
-                new Thread(() => _queue.Publish(new DeferredExecutionTestMessage(() =>{msg2ThreadId = Thread.CurrentThread.ManagedThreadId;}))),
-                new Thread(() => _queue.Publish(new DeferredExecutionTestMessage(() =>{msg3ThreadId = Thread.CurrentThread.ManagedThreadId;})))
+                new Thread(() => Queue.Publish(new DeferredExecutionTestMessage(() =>{msg1ThreadId = Thread.CurrentThread.ManagedThreadId;}))),
+                new Thread(() => Queue.Publish(new DeferredExecutionTestMessage(() =>{msg2ThreadId = Thread.CurrentThread.ManagedThreadId;}))),
+                new Thread(() => Queue.Publish(new DeferredExecutionTestMessage(() =>{msg3ThreadId = Thread.CurrentThread.ManagedThreadId;})))
             };
 
             foreach (var thread in threads)
                 thread.Start();
 
-            bool executedOnTime = _consumer.Wait(500);
+            bool executedOnTime = Consumer.Wait(500);
 
             if (!executedOnTime)
             {
@@ -116,18 +113,18 @@ namespace EventStore.Core.Tests.Bus.QueuedHandler
         [Test]
         public void messages_order_should_remain_the_same()
         {
-            _consumer.SetWaitingCount(6);
+            Consumer.SetWaitingCount(6);
 
-            _queue.Publish(new TestMessageWithId(4));
-            _queue.Publish(new TestMessageWithId(8));
-            _queue.Publish(new TestMessageWithId(15));
-            _queue.Publish(new TestMessageWithId(16));
-            _queue.Publish(new TestMessageWithId(23));
-            _queue.Publish(new TestMessageWithId(42));
+            Queue.Publish(new TestMessageWithId(4));
+            Queue.Publish(new TestMessageWithId(8));
+            Queue.Publish(new TestMessageWithId(15));
+            Queue.Publish(new TestMessageWithId(16));
+            Queue.Publish(new TestMessageWithId(23));
+            Queue.Publish(new TestMessageWithId(42));
 
-            _consumer.Wait();
+            Consumer.Wait();
 
-            var typedMessages = _consumer.HandledMessages.OfType<TestMessageWithId>().ToArray();
+            var typedMessages = Consumer.HandledMessages.OfType<TestMessageWithId>().ToArray();
             Assert.That(typedMessages.Length == 6 &&
                         typedMessages[0].Id == 4 &&
                         typedMessages[1].Id == 8 &&
@@ -140,19 +137,19 @@ namespace EventStore.Core.Tests.Bus.QueuedHandler
         [Test]
         public void message_while_queue_has_hanged_it_should_not_be_executed()
         {
-            _consumer.SetWaitingCount(2);
+            Consumer.SetWaitingCount(2);
             var waitHandle = new ManualResetEvent(false);
             try
             {
-                _queue.Publish(new DeferredExecutionTestMessage(() => waitHandle.WaitOne()));
-                _queue.Publish(new TestMessage());
+                Queue.Publish(new DeferredExecutionTestMessage(() => waitHandle.WaitOne()));
+                Queue.Publish(new TestMessage());
 
-                Assert.That(_consumer.HandledMessages.ContainsNo<TestMessage>());
+                Assert.That(Consumer.HandledMessages.ContainsNo<TestMessage>());
             }
             finally
             {
                 waitHandle.Set();
-                _consumer.Wait();
+                Consumer.Wait();
                 waitHandle.Dispose();
             }
         }

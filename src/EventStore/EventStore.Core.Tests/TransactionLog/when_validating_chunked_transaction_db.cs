@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.TransactionLog
             db.Dispose();
         }
 
-        [Test]
+        [Test, Ignore("Not valid test now after disabling size validation on ongoing TFChunk ")]
         public void with_wrong_actual_chunk_size_in_chunk_footer()
         {
             var config = new TFChunkDbConfig(PathName,
@@ -124,7 +124,7 @@ namespace EventStore.Core.Tests.TransactionLog
             db.Dispose();
         }
 
-        [Test]
+        [Test, Ignore("Not valid test now after disabling size validation on ongoing TFChunk ")]
         public void with_wrong_size_file_less_than_checksum_throws()
         {
             var config = new TFChunkDbConfig(PathName,
@@ -414,7 +414,7 @@ namespace EventStore.Core.Tests.TransactionLog
             db.Dispose();
         }
 
-        [Test]
+        [Test, Ignore("Not valid test now after disabling size validation on ongoing TFChunk ")]
         public void when_checkpoint_is_on_boundary_of_new_chunk_and_last_chunk_is_truncated_but_not_completed_exception_is_thrown()
         {
             var config = new TFChunkDbConfig(PathName,
