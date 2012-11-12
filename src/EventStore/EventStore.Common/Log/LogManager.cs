@@ -27,15 +27,34 @@
 // 
 using System;
 using System.IO;
+using System.Text;
 using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
+using NLog;
+using NLog.LayoutRenderers;
 
 namespace EventStore.Common.Log
 {
+    [LayoutRenderer("logsdir")]
+    public class NLogDirectoryLayoutRendered : LayoutRenderer
+    {
+        protected override void Append(StringBuilder builder, LogEventInfo logEvent)
+        {
+            builder.Append(LogManager._logsDirectory);
+        }
+    }
+
     public static class LogManager
     {
+
+        static LogManager()
+        {
+            NLog.Config.ConfigurationItemFactory.Default.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
+        }
+
         private static readonly ILogger GlobalLogger = GetLogger("GLOBAL-LOGGER");
         private static bool _initialized;
+        internal static string _logsDirectory;
 
         public static string LogsDirectory
         {
@@ -43,7 +62,7 @@ namespace EventStore.Common.Log
             {
                 if (!_initialized)
                     throw new InvalidOperationException("Init method must be called");
-                return Environment.GetEnvironmentVariable(Constants.EnvVarPrefix + Constants.EnvVarLogsSuffix);
+                return _logsDirectory;
             }
         }
 
@@ -72,8 +91,7 @@ namespace EventStore.Common.Log
 
         private static void SetLogsDirectoryInternal(string logsDirectory)
         {
-            const string logsDirEnvVar = Constants.EnvVarPrefix + Constants.EnvVarLogsSuffix;
-            Environment.SetEnvironmentVariable(logsDirEnvVar, logsDirectory, EnvironmentVariableTarget.Process);
+            _logsDirectory = logsDirectory;
         }
 
         private static void SetComponentName(string componentName)

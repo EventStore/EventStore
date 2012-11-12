@@ -37,7 +37,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -51,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                                                           IHandle<ClientMessage.WriteEvents>,
                                                           IHandle<ProjectionCoreServiceMessage.Tick>
     {
-        protected TestMessageHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
+        protected TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
 
         protected readonly Dictionary<string, List<EventRecord>> _lastMessageReplies = new Dictionary<string, List<EventRecord>>();
 
@@ -120,7 +119,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             _ticksAreHandledImmediately = false;
             _writesQueue = new Queue<ClientMessage.WriteEvents>();
-            _listEventsHandler = new TestMessageHandler<ClientMessage.ReadStreamEventsBackward>();
+            _listEventsHandler = new TestHandler<ClientMessage.ReadStreamEventsBackward>();
             _readDispatcher = new RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
                 _bus, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_bus));

@@ -25,43 +25,19 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Bus.Helpers;
 
-namespace EventStore.Core.Tests.Bus.QueuedHandler.Helpers
+namespace EventStore.Core.Tests.Bus.Helpers
 {
-    public class StupidConsumer : IHandle<Message>
-    {
-        public void Handle(Message message) { }
-    }
-
-    public abstract class WatchingConsumerBase : IHandle<Message>
+    public class WaitingConsumer : IHandle<Message>, IDisposable
     {
         public readonly List<Message> HandledMessages = new List<Message>();
-
-        public virtual void Handle(Message message)
-        {
-            HandledMessages.Add(message);
-        }
-
-        protected static void ExecuteIf<TMessage>(Message msg, Action<TMessage> action) where TMessage : Message
-        {
-            var typedMsg = msg as TMessage;
-            if (typedMsg != null)
-                action(typedMsg);
-        }
-    }
-
-    public class WatchingConsumer : WatchingConsumerBase { }
-
-    public class WaitingConsumer : WatchingConsumerBase, IDisposable
-    {
+        
         private readonly CountdownEvent _countdownEvent;
 
         public WaitingConsumer(int initialCount)
@@ -79,11 +55,13 @@ namespace EventStore.Core.Tests.Bus.QueuedHandler.Helpers
             return _countdownEvent.Wait(ms);
         }
 
-        public override void Handle(Message message)
+        public void Handle(Message message)
         {
-            base.Handle(message);
+            HandledMessages.Add(message);
 
-            ExecuteIf<DeferredExecutionTestMessage>(message, deffered => deffered.Execute());
+            var typedMsg = message as DeferredExecutionTestMessage;
+            if (typedMsg != null)
+                ((Action<DeferredExecutionTestMessage>) (deffered => deffered.Execute()))(typedMsg);
 
             _countdownEvent.Signal();
         }

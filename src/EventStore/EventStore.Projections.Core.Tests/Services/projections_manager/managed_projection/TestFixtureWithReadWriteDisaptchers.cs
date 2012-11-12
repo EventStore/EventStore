@@ -29,7 +29,7 @@
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
+using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
         protected RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
 
         protected readonly ProjectionStateHandlerFactory _handlerFactory = new ProjectionStateHandlerFactory();
-        protected WatchingConsumer _consumer;
+        protected TestHandler<Message> _consumer;
 
         [SetUp]
         public void setup0()
@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
                     _bus, e => e.CorrelationId, e => e.CorrelationId, new PublishEnvelope(_bus));
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
-            _consumer = new WatchingConsumer();
+            _consumer = new TestHandler<Message>();
             _bus.Subscribe(_consumer);
         }
     }

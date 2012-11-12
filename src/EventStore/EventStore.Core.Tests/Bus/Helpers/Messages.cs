@@ -25,55 +25,26 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using EventStore.Core.Bus;
+
+using System;
 using EventStore.Core.Messaging;
-using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Bus.QueuedHandler.Helpers
+namespace EventStore.Core.Tests.Bus.Helpers
 {
-    public abstract class QueuedHandlerTestBase
+    public class DeferredExecutionTestMessage : Message
     {
-        protected Core.Bus.QueuedHandler _queue;
+        private readonly Action _action;
 
-        [SetUp]
-        public abstract void SetUp();
-
-        [TearDown]
-        public abstract void TearDown();
-    }
-
-    public abstract class QueuedHandlerTestWithStupidConsumer :QueuedHandlerTestBase
-    {
-        protected IHandle<Message> _consumer;
-
-        public override void SetUp()
+        public DeferredExecutionTestMessage(Action action)
         {
-            _consumer = new StupidConsumer();
-            _queue = new Core.Bus.QueuedHandler(_consumer, "test_name", watchSlowMsg: false, threadStopWaitTimeoutMs: 100);
+            if (action == null)
+                throw new ArgumentNullException("action");
+            _action = action;
         }
 
-        public override void TearDown()
+        public void Execute()
         {
-            _queue = null;
-            _consumer = null;
-        }
-    }
-
-    public class QueuedHandlerTestWithWaitingConsumer :QueuedHandlerTestBase
-    {
-        protected WaitingConsumer _consumer;
-
-        public override void SetUp()
-        {
-            _consumer = new WaitingConsumer(0);
-            _queue = new Core.Bus.QueuedHandler(_consumer,"waiting_queue",watchSlowMsg: false, threadStopWaitTimeoutMs:100);
-        }
-
-        public override void TearDown()
-        {
-            _queue = null;
-            _consumer.Dispose();
-            _consumer = null;
+            _action();
         }
     }
 }
