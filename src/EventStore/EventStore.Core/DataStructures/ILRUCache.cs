@@ -25,24 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
+using System;
+
 namespace EventStore.Core.DataStructures
 {
-    public interface ILRUCache<in TKey, TValue>
+    public interface ILRUCache<TKey, TValue>
     {
         bool TryGet(TKey key, out TValue value);
         void Put(TKey key, TValue value);
-    }
-
-    public class NoLRUCache<TKey, TValue>: ILRUCache<TKey, TValue>
-    {
-        public bool TryGet(TKey key, out TValue value)
-        {
-            value = default(TValue);
-            return false;
-        }
-
-        public void Put(TKey key, TValue value)
-        {
-        }
+        void Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory);
     }
 }

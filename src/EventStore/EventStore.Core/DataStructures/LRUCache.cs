@@ -27,6 +27,7 @@
 //  
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.DataStructures
 {
@@ -94,7 +95,34 @@ namespace EventStore.Core.DataStructures
                 _orderList.AddLast(node);
             }
         }
-        
+
+        public void Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory)
+        {
+            Ensure.NotNull(addFactory, "addFactory");
+            Ensure.NotNull(updateFactory, "updateFactory");
+
+            lock (_lock)
+            {
+                LinkedListNode<LRUItem> node;
+                if (!_items.TryGetValue(key, out node))
+                {
+                    node = GetNode();
+                    node.Value.Key = key;
+                    node.Value.Value = addFactory(key);
+
+                    EnsureCapacity();
+
+                    _items.Add(key, node);
+                }
+                else
+                {
+                    node.Value.Value = updateFactory(key, node.Value.Value);
+                    _orderList.Remove(node);
+                }
+                _orderList.AddLast(node);
+            }
+        }
+
         private void EnsureCapacity()
         {
             while (_items.Count >= _maxCount)
