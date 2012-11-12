@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                       () => reader,
                                       TableIndex,
                                       new ByLengthHasher(),
-                                      new NoLRUCache<string, StreamMetadata>());
+                                      new NoLRUCache<string, StreamCacheInfo>());
 
             ReadIndex.Build();
 

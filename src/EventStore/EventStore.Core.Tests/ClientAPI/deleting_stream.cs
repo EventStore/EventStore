@@ -40,8 +40,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_already_exists_should_success_when_passed_empty_stream_expected_version()
         {
             const string stream = "which_already_exists_should_success_when_passed_empty_stream_expected_version";
-            using (var connection = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var connection = EventStoreConnection.Create())
             {
+                connection.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -55,8 +56,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_already_exists_should_success_when_passed_any_for_expected_version()
         {
             const string stream = "which_already_exists_should_success_when_passed_any_for_expected_version";
-            using (var connection = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var connection = EventStoreConnection.Create())
             {
+                connection.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -70,8 +72,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void with_invalid_expected_version_should_fail()
         {
             const string stream = "with_invalid_expected_version_should_fail";
-            using (var connection = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var connection = EventStoreConnection.Create())
             {
+                connection.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -85,8 +88,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_does_not_exist_should_fail()
         {
             const string stream = "which_does_not_exist_should_fail";
-            using (var connection = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var connection = EventStoreConnection.Create())
             {
+                connection.Connect(MiniNode.Instance.TcpEndPoint);
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any);
                 Assert.Inconclusive();
                 //Assert.That(() => delete.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
@@ -98,8 +102,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_was_allready_deleted_should_fail()
         {
             const string stream = "which_was_allready_deleted_should_fail";
-            using (var connection = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var connection = EventStoreConnection.Create())
             {
+                connection.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 

@@ -40,8 +40,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_does_not_exist_should_be_successfull()
         {
             const string stream = "which_does_not_exist_should_be_successfull";
-            using (var connection = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var connection = EventStoreConnection.Create())
             {
+                connection.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
             }
@@ -52,8 +53,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_supposed_to_be_system_should_succees__but_on_your_own_risk()
         {
             const string stream = "$which_supposed_to_be_system_should_succees__but_on_your_own_risk";
-            using (var connection = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var connection = EventStoreConnection.Create())
             {
+                connection.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
             }
@@ -64,8 +66,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_already_exists_should_fail()
         {
             const string stream = "which_already_exists_should_fail";
-            using (var connection = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var connection = EventStoreConnection.Create())
             {
+                connection.Connect(MiniNode.Instance.TcpEndPoint);
                 var initialCreate = connection.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(initialCreate.Wait);
 
@@ -80,8 +83,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void which_was_deleted_should_fail()
         {
             const string stream = "which_was_deleted_should_fail";
-            using (var connection = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var connection = EventStoreConnection.Create())
             {
+                connection.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 

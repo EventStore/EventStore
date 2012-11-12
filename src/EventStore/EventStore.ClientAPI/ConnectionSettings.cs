@@ -26,14 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
-
-namespace EventStore.Core.DataStructures
+namespace EventStore.ClientAPI
 {
-    public interface ILRUCache<TKey, TValue>
+    public enum Mode
     {
-        bool TryGet(TKey key, out TValue value);
-        void Put(TKey key, TValue value);
-        void Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory);
+        FullConsistency,
+        ConsistentWrites,
+        ConsistentReads,
     }
 }

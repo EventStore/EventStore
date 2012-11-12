@@ -76,8 +76,9 @@ namespace EventStore.Padmin
                 var port = int.Parse(config["tcp-port"]);
                 var tcpEndPoint = new IPEndPoint(ip, port);
 
-                using (var store = new EventStoreConnection(tcpEndPoint))
+                using (var store = EventStoreConnection.Create())
                 {
+                    store.Connect(tcpEndPoint);
                     Execute(store, args);
                     return true;
                 }

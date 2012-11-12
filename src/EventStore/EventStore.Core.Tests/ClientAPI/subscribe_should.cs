@@ -41,8 +41,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void be_able_to_subscribe_to_non_existing_stream_and_then_catch_created_event()
         {
             const string stream = "subscribe_should_be_able_to_subscribe_to_non_existing_stream_and_then_catch_created_event";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
@@ -62,8 +63,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void allow_multiple_subscriptions_to_same_stream()
         {
             const string stream = "subscribe_should_allow_multiple_subscriptions_to_same_stream";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
@@ -84,8 +86,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void call_dropped_callback_after_unsubscribe_method_call()
         {
             const string stream = "subscribe_should_call_dropped_callback_after_unsubscribe_method_call";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var appeared =  new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
@@ -95,7 +98,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
                 Assert.That(!appeared.Wait(50));
 
-                store.Unsubscribe(stream);
+                store.UnsubscribeAsync(stream);
                 Assert.That(dropped.Wait(Timeout));
             }
         }
@@ -104,8 +107,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void subscribe_to_deleted_stream_as_well_but_never_invoke_user_callbacks()
         {
             const string stream = "subscribe_should_subscribe_to_deleted_stream_as_well_but_never_invoke_user_callbacks";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
@@ -127,8 +131,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void not_call_dropped_if_stream_was_deleted()
         {
             const string stream = "subscribe_should_not_call_dropped_if_stream_was_deleted";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
@@ -154,8 +159,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void catch_created_and_deleted_events_as_well()
         {
             const string stream = "subscribe_should_catch_created_and_deleted_events_as_well";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(1);
 
