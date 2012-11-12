@@ -64,6 +64,8 @@ namespace EventStore.Core.Index
         private volatile bool _backgroundRunning;
         private readonly ManualResetEvent _backgroundRunningEvent = new ManualResetEvent(true);
 
+        private bool _initialized;
+
         public TableIndex(string directory, 
                           Func<IMemTable> memTableFactory, 
                           int maxSizeForMemory = 1000000, 
@@ -87,6 +89,12 @@ namespace EventStore.Core.Index
         public void Initialize()
         {
             //NOT THREAD SAFE (assumes one thread)
+
+            if (_initialized)
+                throw new IOException("TableIndex is already initialized.");
+            
+            _initialized = true;
+            
             CreateIfDoesNotExist(_directory);
 
             try
@@ -442,10 +450,10 @@ namespace EventStore.Core.Index
 
         public void ClearAll(bool removeFiles = true)
         {
-            _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
-
             _backgroundRunningEvent.WaitOne(1000);
             //this should also make sure that no background tasks are running anymore
+
+            _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
 
             if (_indexMap != null)
             {
