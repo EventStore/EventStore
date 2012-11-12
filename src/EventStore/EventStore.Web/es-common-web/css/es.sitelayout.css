@@ -155,6 +155,10 @@ footer  p {
 #commands-container {
     margin-left: -25px;
 }
+
+#commands-container li {
+    display: inline;
+}
 /* ==========================================================================
 Footer Stick to the Bottom
 ========================================================================== */
