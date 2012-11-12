@@ -176,7 +176,10 @@ namespace EventStore.TestClient.Commands
                 string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt),
                 100*fail/(fail + succ));
 
-            context.Success();
+            if (succ < fail)
+                context.Fail(reason:"Number of failures is greater than number of successes");
+            else
+                context.Success();
         }
     }
 }
