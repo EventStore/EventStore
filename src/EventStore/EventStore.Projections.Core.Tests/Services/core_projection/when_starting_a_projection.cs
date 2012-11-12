@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private const string _projectionCheckpointStream = "$projections-projection-checkpoint";
         private CoreProjection _coreProjection;
         private InMemoryBus _bus;
-        private TestMessageHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
+        private TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
         private RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
         private RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
 
@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void setup()
         {
             _bus = new InMemoryBus("bus");
-            _listEventsHandler = new TestMessageHandler<ClientMessage.ReadStreamEventsBackward>();
+            _listEventsHandler = new TestHandler<ClientMessage.ReadStreamEventsBackward>();
             _bus.Subscribe(_listEventsHandler);
             _readDispatcher = new RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(

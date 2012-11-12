@@ -66,21 +66,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bus\Helpers\BusTestBase.cs" />
     <Compile Include="Bus\Helpers\BusTestMessages.cs" />
-    <Compile Include="Bus\Helpers\BusTestHandlers.cs" />
+    <Compile Include="Bus\Helpers\NoopConsumer.cs" />
+    <Compile Include="Bus\Helpers\QueuedHandlerTestWithWaitingConsumer.cs" />
+    <Compile Include="Bus\Helpers\TestMultiHandler.cs" />
+    <Compile Include="Bus\Helpers\TestHandler.cs" />
     <Compile Include="Bus\Helpers\TimeoutHelper.cs" />
-    <Compile Include="Bus\QueuedHandler\Helpers\Consumers.cs" />
-    <Compile Include="Bus\QueuedHandler\Helpers\Messages.cs" />
-    <Compile Include="Bus\QueuedHandler\Helpers\QueuedHandlerTestBase.cs" />
-    <Compile Include="Bus\QueuedHandler\queued_handler_should.cs" />
-    <Compile Include="Bus\QueuedHandler\when_publishing.cs" />
-    <Compile Include="Bus\QueuedHandler\when_publishing_before_starting.cs" />
-    <Compile Include="Bus\QueuedHandler\when_starting.cs" />
-    <Compile Include="Bus\QueuedHandler\when_stopping.cs" />
-    <Compile Include="Bus\when_publishing.cs" />
-    <Compile Include="Bus\when_subscribing.cs" />
-    <Compile Include="Bus\when_unsubscribing.cs" />
+    <Compile Include="Bus\Helpers\WaitingConsumer.cs" />
+    <Compile Include="Bus\Helpers\Messages.cs" />
+    <Compile Include="Bus\Helpers\QueuedHandlerTestWithNoopConsumer.cs" />
+    <Compile Include="Bus\queued_handler_should.cs" />
+    <Compile Include="Bus\when_publishing_to_queued_handler.cs" />
+    <Compile Include="Bus\when_publishing_to_queued_handler_before_starting.cs" />
+    <Compile Include="Bus\when_starting_queued_handler.cs" />
+    <Compile Include="Bus\when_stopping_queued_handler.cs" />
+    <Compile Include="Bus\when_publishing_into_memory_bus.cs" />
+    <Compile Include="Bus\when_subscribing_to_memory_bus.cs" />
+    <Compile Include="Bus\when_unsubscribing_from_memory_bus.cs" />
     <Compile Include="ClientAPI\AllEvents\read_all_events_backward_should.cs" />
     <Compile Include="ClientAPI\AllEvents\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\AllEvents\subscribe_to_all_should.cs" />

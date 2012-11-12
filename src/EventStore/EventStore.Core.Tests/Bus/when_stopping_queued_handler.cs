@@ -25,63 +25,71 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Threading;
+using EventStore.Core.Bus;
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Bus.QueuedHandler
+namespace EventStore.Core.Tests.Bus
 {
     [TestFixture]
-    public class when_stopping : QueuedHandlerTestWithStupidConsumer
+    public class when_stopping_queued_handler : QueuedHandlerTestWithNoopConsumer
     {
         [Test]
         public void gracefully_should_not_throw()
         {
-            _queue.Start();
-            Assert.DoesNotThrow(() => _queue.Stop());
+            Queue.Start();
+            Assert.DoesNotThrow(() => Queue.Stop());
         }
 
         [Test]
         public void gracefully_and_queue_is_not_busy_should_not_take_much_time()
         {
-            _queue.Start();
+            Queue.Start();
             
-            Action onSuccess = Assert.Pass;
-            Action onTimeout = () => Assert.Fail("couldn't stop queue in time");
+            var wait = new ManualResetEventSlim(false);
 
-            TimeoutHelper.CallWithTimeout(() => _queue.Stop(), 100, onSuccess, onTimeout);
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                Queue.Stop();
+                wait.Set();
+            });
+
+            Assert.IsTrue(wait.Wait(100), "Couldn't stop queue in time.");
         }
 
         [Test]
         public void second_time_should_not_throw()
         {
-            _queue.Start();
-            _queue.Stop();
-            Assert.DoesNotThrow(() => _queue.Stop());
+            Queue.Start();
+            Queue.Stop();
+            Assert.DoesNotThrow(() => Queue.Stop());
         }
 
         [Test]
         public void second_time_should_not_take_much_time()
         {
-            _queue.Start();
-            _queue.Stop();
+            Queue.Start();
+            Queue.Stop();
 
-            Action onSuccess = Assert.Pass;
-            Action onTimeout = () => Assert.Fail("couldn't stop queue in time");
+            var wait = new ManualResetEventSlim(false);
 
-            TimeoutHelper.CallWithTimeout(() => _queue.Stop(), 10, onSuccess, onTimeout);
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                Queue.Stop();
+                wait.Set();
+            });
+
+            Assert.IsTrue(wait.Wait(10), "Couldn't stop queue in time.");
         }
 
         [Test]
         public void while_queue_is_busy_should_crash_with_timeout()
         {
             var consumer = new WaitingConsumer(1);
-            var busyQueue = new Core.Bus.QueuedHandler(consumer,
-                                                       "busy_test_queue",
-                                                       watchSlowMsg: false,
-                                                       threadStopWaitTimeoutMs: 100);
+            var busyQueue = new QueuedHandler(consumer, "busy_test_queue", watchSlowMsg: false, threadStopWaitTimeoutMs: 100);
             var waitHandle = new ManualResetEvent(false);
             var handledEvent = new ManualResetEvent(false);
             try

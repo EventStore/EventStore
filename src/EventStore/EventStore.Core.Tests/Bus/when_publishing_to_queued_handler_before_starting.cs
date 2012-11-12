@@ -25,76 +25,75 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
+
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
 using EventStore.Core.Tests.Common;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Bus.QueuedHandler
+namespace EventStore.Core.Tests.Bus
 {
     [TestFixture]
-    public class when_publishing_before_starting : QueuedHandlerTestWithWaitingConsumer
+    public class when_publishing_to_queued_handler_before_starting : QueuedHandlerTestWithWaitingConsumer
     {
         [Test]
         public void should_not_throw()
         {
-            Assert.DoesNotThrow(() => _queue.Publish(new TestMessage()));
+            Assert.DoesNotThrow(() => Queue.Publish(new TestMessage()));
         }
 
         [Test]
         public void should_not_forward_message_to_bus()
         {
-            _consumer.SetWaitingCount(1);
+            Consumer.SetWaitingCount(1);
 
-            _queue.Publish(new TestMessage());
+            Queue.Publish(new TestMessage());
 
-            _consumer.Wait(10);
+            Consumer.Wait(10);
 
-            Assert.That(_consumer.HandledMessages.ContainsNo<TestMessage>());
+            Assert.That(Consumer.HandledMessages.ContainsNo<TestMessage>());
         }
 
         [Test]
         public void and_then_starting_message_should_be_forwarded_to_bus()
         {
-            _consumer.SetWaitingCount(1);
+            Consumer.SetWaitingCount(1);
 
-            _queue.Publish(new TestMessage());
+            Queue.Publish(new TestMessage());
             try
             {
-                _queue.Start();
-                _consumer.Wait();
+                Queue.Start();
+                Consumer.Wait();
             }
             finally
             {
-                _queue.Stop();
+                Queue.Stop();
             }
 
-            Assert.That(_consumer.HandledMessages.ContainsSingle<TestMessage>());
+            Assert.That(Consumer.HandledMessages.ContainsSingle<TestMessage>());
         }
 
         [Test]
         public void multiple_messages_and_then_starting_messages_should_be_forwarded_to_bus()
         {
-            _consumer.SetWaitingCount(3);
+            Consumer.SetWaitingCount(3);
 
-            _queue.Publish(new TestMessage());
-            _queue.Publish(new TestMessage2());
-            _queue.Publish(new TestMessage3());
+            Queue.Publish(new TestMessage());
+            Queue.Publish(new TestMessage2());
+            Queue.Publish(new TestMessage3());
 
             try
             {
-                _queue.Start();
-                _consumer.Wait();
+                Queue.Start();
+                Consumer.Wait();
             }
             finally
             {
-                _queue.Stop();
+                Queue.Stop();
             }
 
-            Assert.That(_consumer.HandledMessages.ContainsSingle<TestMessage>() &&
-                        _consumer.HandledMessages.ContainsSingle<TestMessage2>() &&
-                        _consumer.HandledMessages.ContainsSingle<TestMessage3>());
+            Assert.That(Consumer.HandledMessages.ContainsSingle<TestMessage>() &&
+                        Consumer.HandledMessages.ContainsSingle<TestMessage2>() &&
+                        Consumer.HandledMessages.ContainsSingle<TestMessage3>());
         }
     }
 }

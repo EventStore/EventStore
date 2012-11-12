@@ -25,25 +25,29 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+using System.Collections.Generic;
 using EventStore.Core.Bus;
-using NUnit.Framework;
+using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Tests.Bus.Helpers
 {
-    public abstract class BusTestBase
+    public class TestMultiHandler : IHandle<TestMessage>, IHandle<TestMessage2>, IHandle<TestMessage3>
     {
-        protected InMemoryBus Bus;
+        public readonly List<Message> HandledMessages = new List<Message>();
 
-        [SetUp]
-        protected virtual void SetUp()
+        public void Handle(TestMessage message)
         {
-            Bus = new InMemoryBus("test_bus", watchSlowMsg: false);
+            HandledMessages.Add(message);
         }
 
-        [TearDown]
-        protected virtual void TearDown()
+        public void Handle(TestMessage2 message)
         {
-            Bus = null;
+            HandledMessages.Add(message);
+        }
+
+        public void Handle(TestMessage3 message)
+        {
+            HandledMessages.Add(message);
         }
     }
 }

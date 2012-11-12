@@ -40,9 +40,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
     public abstract class TestFixtureWithProjectionSubscription
     {
         private Guid _projectionCorrelationId;
-        protected TestMessageHandler<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
-        protected TestMessageHandler<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
-        protected TestMessageHandler<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
+        protected TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
+        protected TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
+        protected TestHandler<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
         protected IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed> _subscription;
         protected EventDistributionPoint _forkedDistributionPoint;
         protected FakePublisher _bus;
@@ -56,9 +56,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             Given();
             _bus = new FakePublisher();
             _projectionCorrelationId = Guid.NewGuid();
-            _eventHandler = new TestMessageHandler<ProjectionSubscriptionMessage.CommittedEventReceived>();
-            _checkpointHandler = new TestMessageHandler<ProjectionSubscriptionMessage.CheckpointSuggested>();
-            _progressHandler = new TestMessageHandler<ProjectionSubscriptionMessage.ProgressChanged>();
+            _eventHandler = new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>();
+            _checkpointHandler = new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>();
+            _progressHandler = new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>();
             _subscription = new ProjectionSubscription(
                 _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler, _progressHandler,
                 CreateCheckpointStrategy(), _checkpointUnhandledBytesThreshold);
