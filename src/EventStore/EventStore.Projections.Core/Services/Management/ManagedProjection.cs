@@ -402,7 +402,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void Prepare(Action onPrepared)
         {
             if (!Enabled)
-                throw new InvalidOperationException("Disable projection cannot be prepared");
+                throw new InvalidOperationException("Disabled projection cannot be prepared");
 
             var config = CreateDefaultProjectionConfiguration(GetMode());
 

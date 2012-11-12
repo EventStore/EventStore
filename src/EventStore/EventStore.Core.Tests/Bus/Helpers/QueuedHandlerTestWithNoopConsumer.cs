@@ -25,25 +25,31 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
+
+using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Bus.QueuedHandler.Helpers
+namespace EventStore.Core.Tests.Bus.Helpers
 {
-    public class DeferredExecutionTestMessage : Message
+    public abstract class QueuedHandlerTestWithNoopConsumer
     {
-        private readonly Action _action;
+        protected QueuedHandler Queue;
+        protected IHandle<Message> Consumer;
 
-        public DeferredExecutionTestMessage(Action action)
+        [SetUp]
+        public virtual void SetUp()
         {
-            if (action == null)
-                throw new ArgumentNullException("action");
-            _action = action;
+            Consumer = new NoopConsumer();
+            Queue = new QueuedHandler(Consumer, "test_name", watchSlowMsg: false, threadStopWaitTimeoutMs: 100);
         }
 
-        public void Execute()
+        [TearDown]
+        public virtual void TearDown()
         {
-            _action();
+            Queue.Stop();
+            Queue = null;
+            Consumer = null;
         }
     }
 }
