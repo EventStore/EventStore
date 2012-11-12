@@ -199,20 +199,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (writerPosition == 0 && pos > 0)
                 writerPosition = Config.ChunkSize;
 
-            bool isCompleted = false;
-            if (writerPosition == Config.ChunkSize)
-            {
-                using (var stream = new FileStream(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-                {
-                    stream.Seek(-ChunkFooter.Size, SeekOrigin.End);
-                    var footer = ChunkFooter.FromStream(stream);
-                    isCompleted = footer.Completed;
-                }
-            }
-
-            if (isCompleted)
-                return TFChunk.FromCompletedFile(chunkFileName, verifyHash);
-            return TFChunk.FromOngoingFile(chunkFileName, writerPosition);
+            return TFChunk.FromOngoingFile(chunkFileName, writerPosition, checkSize: false);
         }
 
         private void EnsureNoOtherFiles(int expectedFiles)

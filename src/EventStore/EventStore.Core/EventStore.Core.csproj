@@ -179,7 +179,6 @@
     <Compile Include="Util\MD5Hash.cs" />
     <Compile Include="Messages\TcpClientMessageDto.cs" />
     <Compile Include="Messages\MonitoringMessage.cs" />
-    <Compile Include="Messages\ReplicationMessageDtos.cs" />
     <Compile Include="Messages\StorageMessage.cs" />
     <Compile Include="Messaging\Forwarder.cs" />
     <Compile Include="Messaging\SendToThisEnvelope.cs" />

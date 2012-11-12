@@ -167,7 +167,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             SetAttributes();
         }
 
-        private void InitOngoing(int writePosition)
+        private void InitOngoing(int writePosition, bool checkSize)
         {
             Ensure.Nonnegative(writePosition, "writePosition");
             if (!File.Exists(_filename))
@@ -181,14 +181,17 @@ namespace EventStore.Core.TransactionLog.Chunks
                 throw new CorruptDatabaseException(new WrongTFChunkVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
             CreateReaderStreams();
 
-            var expectedFileSize = _chunkHeader.ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
-            if (_writerWorkItem.Stream.Length != expectedFileSize)
+            if (checkSize)
             {
-                throw new CorruptDatabaseException(new BadChunkInDatabaseException(
-                    string.Format("Chunk file '{0}' should have file size {1} bytes, but instead has {2} bytes length.",
-                                  _filename,
-                                  expectedFileSize,
-                                  _writerWorkItem.Stream.Length)));
+                var expectedFileSize = _chunkHeader.ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
+                if (_writerWorkItem.Stream.Length != expectedFileSize)
+                {
+                    throw new CorruptDatabaseException(new BadChunkInDatabaseException(
+                        string.Format("Chunk file '{0}' should have file size {1} bytes, but instead has {2} bytes length.",
+                                      _filename,
+                                      expectedFileSize,
+                                      _writerWorkItem.Stream.Length)));
+                }
             }
 
             SetAttributes();
@@ -209,12 +212,12 @@ namespace EventStore.Core.TransactionLog.Chunks
             return chunk;
         }
 
-        public static TFChunk FromOngoingFile(string filename, int writePosition)
+        public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize)
         {
             var chunk = new TFChunk(filename, TFConsts.TFChunkReaderCount, TFConsts.MidpointsDepth);
             try
             {
-                chunk.InitOngoing(writePosition);
+                chunk.InitOngoing(writePosition, checkSize);
             }
             catch
             {

@@ -43,7 +43,10 @@ namespace EventStore.Common.Log
 
         public void Flush(TimeSpan? maxTimeToWait = null)
         {
-            var asyncs = NLog.LogManager.Configuration.AllTargets.OfType<NLog.Targets.Wrappers.AsyncTargetWrapper>().ToArray();
+            var config = NLog.LogManager.Configuration;
+            if (config == null)
+                return;
+            var asyncs = config.AllTargets.OfType<NLog.Targets.Wrappers.AsyncTargetWrapper>().ToArray();
             var countdown = new CountdownEvent(asyncs.Length);
             foreach (var wrapper in asyncs)
             {

@@ -48,6 +48,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 
         private readonly InMemMultiCheckpoint _memCheckpoint;
 
+        private bool _dirty = true;
+
         public FileMultiCheckpoint(string filename, int bestCount)
             : this(filename, Guid.NewGuid().ToString(), bestCount)
         {
@@ -131,16 +133,21 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 
         public void Update(IPEndPoint endPoint, long checkpoint)
         {
+            _dirty = true;
             _memCheckpoint.Update(endPoint, checkpoint);
         }
 
         public void Clear()
         {
+            _dirty = true;
             _memCheckpoint.Clear();
         }
 
         public void Flush()
         {
+            if (!_dirty)
+                return;
+
             _fileStream.SetLength(EntrySize * _memCheckpoint.CheckpointCount);
             _fileStream.Seek(0, SeekOrigin.Begin);
 
@@ -151,6 +158,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
                 _writer.Write(check.Item2.Port);
             }
             _fileStream.Flush(flushToDisk: true);
+
+            _dirty = false;
         }
     }
 }
