@@ -102,8 +102,6 @@ namespace EventStore.Core.Bus
 
         private void DispatchByType(Message message)
         {
-            //Log.Debug("{0}: dispatching {1} message.", Name, message);
-
             var type = message.GetType();
             PublishByType(message, type);
             do
@@ -118,8 +116,9 @@ namespace EventStore.Core.Bus
             List<IMessageHandler> handlers;
             if (_typeHash.TryGetValue(type, out handlers))
             {
-                foreach (var handler in handlers)
+                for (int i = 0, n = handlers.Count; i < n; ++i)
                 {
+                    var handler = handlers[i];
                     if (_watchSlowMsg)
                     {
                         _slowMsgWatch.Restart();
@@ -136,7 +135,9 @@ namespace EventStore.Core.Bus
                         }
                     }
                     else
+                    {
                         handler.TryHandle(message);
+                    }
                 }
             }
         }
