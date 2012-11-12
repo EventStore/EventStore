@@ -40,8 +40,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void throw_if_count_le_zero()
         {
             const string stream = "read_event_stream_forward_should_throw_if_count_le_zero";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 Assert.Throws<ArgumentOutOfRangeException>(() => store.ReadEventStreamForwardAsync(stream, 0, 0));
             }
         }
@@ -51,8 +52,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void throw_if_start_lt_zero()
         {
             const string stream = "read_event_stream_forward_should_throw_if_start_lt_zero";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 Assert.Throws<ArgumentOutOfRangeException>(() => store.ReadEventStreamForwardAsync(stream, -1, 1));
             }
         }
@@ -62,8 +64,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void throw_if_no_stream()
         {
             const string stream = "read_event_stream_forward_should_throw_if_no_stream";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var read = store.ReadEventStreamForwardAsync(stream, 0, 1);
                 Assert.That(() => read.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDoesNotExistException>());
             }
@@ -74,8 +77,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void throw_if_stream_deleted()
         {
             const string stream = "read_event_stream_forward_should_throw_if_stream_deleted";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
@@ -91,8 +95,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_single_event_when_called_on_empty_stream()
         {
             const string stream = "read_event_stream_forward_should_return_single_event_when_called_on_empty_stream";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -108,8 +113,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_empty_slice_when_called_on_empty_stream_starting_at_position_1()
         {
             const string stream = "read_event_stream_forward_should_return_empty_slice_when_called_on_empty_stream_starting_at_position_1";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -125,8 +131,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_empty_slice_when_called_on_non_existing_range()
         {
             const string stream = "read_event_stream_forward_should_return_empty_slice_when_called_on_non_existing_range";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -145,8 +152,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_partial_slice_if_no_enough_events_in_stream()
         {
             const string stream = "read_event_stream_forward_should_return_partial_slice_if_no_enough_events_in_stream";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -165,8 +173,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_partial_slice_when_got_int_max_value_as_maxcount()
         {
             const string stream = "read_event_stream_forward_should_return_partial_slice_when_got_int_max_value_as_maxcount";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -185,8 +194,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void return_events_in_same_order_as_written()
         {
             const string stream = "read_event_stream_forward_should_return_events_in_same_order_as_written";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -206,8 +216,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void be_able_to_read_single_event_from_arbitrary_position()
         {
             const string stream = "read_event_stream_forward_should_be_able_to_read_from_arbitrary_position";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -227,8 +238,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void be_able_to_read_slice_from_arbitrary_position()
         {
             const string stream = "read_event_stream_forward_should_be_able_to_read_slice_from_arbitrary_position";
-            using (var store = new EventStoreConnection(MiniNode.Instance.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(MiniNode.Instance.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 

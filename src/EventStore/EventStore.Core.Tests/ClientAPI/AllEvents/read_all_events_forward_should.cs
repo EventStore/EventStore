@@ -57,8 +57,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void return_empty_slice_if_asked_to_read_from_end()
         {
             const string stream = "read_all_events_forward_should_return_empty_slice_if_asked_to_read_from_end";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -77,8 +78,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         [Test]
         public void return_empty_slice_if_no_events_present()
         {
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var all = new List<RecordedEvent>();
                 var position = Position.Start;
                 AllEventsSlice slice;
@@ -97,8 +99,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void return_events_in_same_order_as_written()
         {
             const string stream = "read_all_events_forward_should_return_events_in_same_order_as_written";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var testEvents = Enumerable.Range(0, 5).Select(x => new TestEvent((x + 1).ToString())).ToArray();
 
                 var create1 = store.CreateStreamAsync(stream + 1, new byte[0]);
@@ -125,8 +128,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void read_stream_created_events_as_well()
         {
             const string stream = "read_all_events_forward_should_read_system_events_as_well";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var create1 = store.CreateStreamAsync(stream + 1, new byte[0]);
                 Assert.DoesNotThrow(create1.Wait);
 
@@ -145,8 +149,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void be_able_to_read_all_one_by_one_and_return_empty_slice_at_last()
         {
             const string stream = "read_all_events_forward_should_be_able_to_read_all_one_by_one_and_return_empty_slice_at_last";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -173,8 +178,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void be_able_to_read_events_slice_at_time()
         {
             const string stream = "read_all_events_forward_should_be_able_to_read_events_slice_at_time";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -201,8 +207,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void return_partial_slice_if_not_enough_events()
         {
             const string stream = "read_all_events_forward_should_return_partial_slice_if_not_enough_events";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var create = store.CreateStreamAsync(stream, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
@@ -222,8 +229,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void not_return_events_from_deleted_streams()
         {
             const string stream = "read_all_events_forward_should_not_return_events_from_deleted_streams";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var create1 = store.CreateStreamAsync(stream + 1, new byte[0]);
                 Assert.DoesNotThrow(create1.Wait);
 
@@ -260,8 +268,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void not_return_stream_deleted_records()
         {
             const string stream = "read_all_events_forward_should_not_return_stream_deleted_records";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var create1 = store.CreateStreamAsync(stream + 1, new byte[0]);
                 Assert.DoesNotThrow(create1.Wait);
 
@@ -283,8 +292,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void return_no_records_if_stream_created_than_deleted()
         {
             const string stream = "read_all_events_forward_should_return_no_records_if_stream_created_than_deleted";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var create1 = store.CreateStreamAsync(stream + 1, new byte[0]);
                 Assert.DoesNotThrow(create1.Wait);
 
@@ -309,8 +319,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void recover_from_dropped_subscription_state_using_last_known_position()
         {
             const string stream = "read_all_events_forward_should_recover_from_dropped_subscription_state_using_last_known_position";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var catched = new List<RecordedEvent>();
                 Position lastKnonwPosition = null;
                 var dropped = new AutoResetEvent(false);
@@ -332,7 +343,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.That(write.Wait(Timeout));
 
-                store.Unsubscribe(stream);
+                store.UnsubscribeAsync(stream);
                 Assert.That(dropped.WaitOne(Timeout));
 
                 var write2 = store.AppendToStreamAsync(stream, testEvents.Length, testEvents);
