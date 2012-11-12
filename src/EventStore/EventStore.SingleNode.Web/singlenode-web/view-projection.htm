@@ -17,12 +17,12 @@
             <div class="span12">
                 <div id="commands-container">
                     <ul style="display: inline;">
-                        <li style="display: inline;" id="edit-source-container-top"></li>
+                        <li style="display: inline;" id="edit-source-btn-container"></li>
+                        <li style="display: inline;" id="delete-projection-btn-container"></li>
                         <li style="display: inline;"><a href="#" id="commandDisable">
                             <img src="/web/es/img/stop_btn.png" title="Disable" alt="Disable" /></a> </li>
                         <li style="display: inline;"><a href="#" id="commandEnable">
                             <img src="/web/es/img/start_btn.png" title="Enable" alt="Enable" /></a> </li>
-                        <li style="display: inline;" id="delete-projection-container"></li>
                     </ul>
                 </div>
             </div>
@@ -45,14 +45,14 @@
         <div class="row ">
             <div class="span12">
                 <div class="well">
-                    <div id="raw_state">
+                    <div id="projection-state">
                     </div>
-                    <div id="projection-status-button">
+                    <div id="projection-statistics">
                     </div>
                 </div>
             </div>
         </div>
-        <script id="projectionTemplateButton" type="text/x-jsrender"> 
+        <script id="projectionTemplateStatistics" type="text/x-jsrender"> 
                 <table class="table 1table-bordered 1table-striped table-thin">
                   <tbody>
                     <tr>
@@ -87,7 +87,7 @@
         </div>
         <script id="projectionTemplateReason" type="text/x-jsrender">
                 
-                <h4>Reason:<h4>
+                <h4>Failure Reason:<h4>
                 <div class="projection-reason-data">
                     <pre>{{>stateReason}}</pre>    
                 </div>
@@ -95,12 +95,12 @@
         </script>
         <script id="editSourceTemplate" type="text/x-jsrender">
                 <a href="{{>'edit-projection-source.htm#'+statusUrl}}" class="btn btn-success"><i class="icon-pencil"></i> Edit</a>
-        </script>       
+        </script>
         <script id="deleteProjectionTemplate" type="text/x-jsrender">
-                <a href="{{>'delete-projection.htm#'+statusUrl}}">[Delete]</a> 
-        </script>       
+               <a href="{{>'delete-projection.htm#'+statusUrl}}" class="btn btn-danger"><i class="icon-remove"></i> Delete</a> 
+        </script>
         <script id="r-body">
-                es.tmpl.renderBody();
+            es.tmpl.renderBody();
         </script>
     </div>
     <script type="text/javascript">
@@ -109,73 +109,50 @@
 
             var projectionStatusUrl = "";
 
-            function success(data, status, xhr) {
-                var projection = data.projections[0];
-                document.title = projection.name + " - Projection Status";
-                $("#raw_data").text(JSON.stringify(projection));
+            $(function() {
+                $.templates("projectionTemplate", "#projectionTemplate");
+                $.templates("projectionTemplateStatistics", "#projectionTemplateStatistics");
+                $.templates("projectionTemplateReason", "#projectionTemplateReason");
+                $.templates("editSourceTemplate", "#editSourceTemplate");
+                $.templates("deleteProjectionTemplate", "#deleteProjectionTemplate");
 
-                $("#projection-status").html(
-                    $.render.projectionTemplate(projection, {})
-                );
+                projectionStatusUrl = "/projection/" + getUrlParam('name');
 
-                $("#projection-status-button").html(
-                    $.render.projectionTemplateButton(projection, {})
-                );
+                requestProjectionStats();
+                requestProjectionState();
+                requestProjectionSource();
 
-                $("#projection-reason").html(
-                    $.render.projectionTemplateReason(projection, {})
-                );
+                $('#commandDisable').click(onDisable);
+                $("#commandEnable").click(onEnable);
 
-
-                $("#edit-source-container").html(
-                    $.render.editSourceTemplate(projection)
-                );
-                $("#edit-source-container-top").html(
-                    $.render.editSourceTemplate(projection)
-                );
-                $("#delete-projection-container").html(
-                    $.render.deleteProjectionTemplate(projection)
-                );
-                delayedRequestProjection();
-            }
-
-            function error(xhr, status) {
-                delayedRequestProjection();
-            }
-
-            function successState(data, status, xhr) {
-                if (data) {
-                    $("#raw_state").text(JSON.stringify(data));
+                function onDisable() {
+                    $.ajax(projectionStatusUrl + "/command/disable", {
+                        headers: {
+                            Accept: "application/json",
+                        },
+                        type: "POST",
+                        success: successPostCommand,
+                        error: function() { alert("Failed!"); }
+                    });
                 }
-                delayedRequestProjectionState();
-            }
 
-            function errorState(xhr, status) {
-                delayedRequestProjectionState();
-            }
+                function onEnable() {
+                    $.ajax(projectionStatusUrl + "/command/enable", {
+                        headers: {
+                            Accept: "application/json",
+                        },
+                        type: "POST",
+                        success: successPostCommand,
+                        error: function() { alert("Failed!"); }
+                    });
+                }
+                
+                function successPostCommand(data, status, xhr) {
+                    window.location = "view-projection.htm#" + projectionStatusUrl;
+                }
+            });
 
-            function successSource(data, status, xhr) {
-                $("#source").text(data);
-                delayedRequestProjectionSource();
-            }
-
-            function errorSource(xhr, status) {
-                delayedRequestProjectionSource();
-            }
-
-            function delayedRequestProjection() {
-                setTimeout(requestProjection, 1000);
-            }
-
-            function delayedRequestProjectionState() {
-                setTimeout(requestProjectionState, 1000);
-            }
-
-            function delayedRequestProjectionSource() {
-                setTimeout(requestProjectionSource, 5000);
-            }
-
-            function requestProjection() {
+            function requestProjectionStats() {
                 $.ajax(projectionStatusUrl + "/statistics", {
                     cache: false,
                     headers: {
@@ -184,6 +161,43 @@
                     success: success,
                     error: error
                 });
+
+                function success(data, status, xhr) {
+                    var projection = data.projections[0];
+                    document.title = projection.name + " - Projection Status";
+
+                    $("#projection-status").html(
+                        $.render.projectionTemplate(projection)
+                    );
+
+                    $("#projection-statistics").html(
+                        $.render.projectionTemplateStatistics(projection)
+                    );
+
+                    var html = projection.stateReason !== ''
+                               ? $.render.projectionTemplateReason(projection)
+                               : '';
+                    $("#projection-reason").html(html);
+
+                    $("#edit-source-container").html(
+                        $.render.editSourceTemplate(projection)
+                    );
+                    $("#edit-source-btn-container").html(
+                        $.render.editSourceTemplate(projection)
+                    );
+                    $("#delete-projection-btn-container").html(
+                        $.render.deleteProjectionTemplate(projection)
+                    );
+                    delayedRequestProjection();
+                }
+
+                function error(xhr, status) {
+                    delayedRequestProjection();
+                }
+
+                function delayedRequestProjection() {
+                    setTimeout(requestProjectionStats, 1000);
+                }
             }
 
             function requestProjectionState() {
@@ -194,6 +208,22 @@
                     success: successState,
                     error: errorState
                 });
+
+                function successState(data, status, xhr) {
+                    if (data) {
+                        $("#projection-state").text(JSON.stringify(data));
+                    }
+                    delayedRequestProjectionState();
+                }
+
+                function errorState(xhr, status) {
+                    delayedRequestProjectionState();
+                }
+
+                function delayedRequestProjectionState() {
+                    setTimeout(requestProjectionState, 1000);
+                }
+
             }
 
             function requestProjectionSource() {
@@ -205,56 +235,32 @@
                     success: successSource,
                     error: errorSource
                 });
+
+                function successSource(data, status, xhr) {
+                    $("#source").text(data);
+                    delayedRequestProjectionSource();
+                }
+
+                function errorSource(xhr, status) {
+                    delayedRequestProjectionSource();
+                }
+
+                function delayedRequestProjectionSource() {
+                    setTimeout(requestProjectionSource, 5000);
+                }
             }
-
-            function successPostCommand(data, status, xhr) {
-                window.location = "view-projection.htm#" + projectionStatusUrl;
-            }
-
-
-            function onDisable() {
-                $.ajax(projectionStatusUrl + "/command/disable", {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    type: "POST",
-                    success: successPostCommand,
-                    error: function() { alert("Failed!"); }
-                });
-            }
-
-            function onEnable() {
-                $.ajax(projectionStatusUrl + "/command/enable", {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    type: "POST",
-                    success: successPostCommand,
-                    error: function() { alert("Failed!"); }
-                });
-            }
-
-            $(function() {
-                $.templates("projectionTemplate", "#projectionTemplate");
-                $.templates("projectionTemplateButton", "#projectionTemplateButton");
-                $.templates("projectionTemplateReason", "#projectionTemplateReason");
-                $.templates("editSourceTemplate", "#editSourceTemplate");
-                $.templates("deleteProjectionTemplate", "#deleteProjectionTemplate");
-
-                projectionStatusUrl = location.hash.substr(1);
-                requestProjection();
-                requestProjectionState();
-                requestProjectionSource();
-
-                $('#commandDisable').click(onDisable);
-                $("#commandEnable").click(onEnable);
-
-                /* $("#projectiontab a").click(function (e) {
-                    e.preventDefault();
-                    $(this).tab('show');
-                });*/
-            });
-
+            
+            function getUrlParam(name) {
+                name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+                var regexS = "[\\?&]" + name + "=([^&#]*)";
+                var regex = new RegExp(regexS);
+                var results = regex.exec(window.location.search);
+                if (results == null)
+                    return "";
+                else
+                    return decodeURIComponent(results[1].replace(/\+/g, " "));
+            };
+            
         })();
     </script>
 </body>

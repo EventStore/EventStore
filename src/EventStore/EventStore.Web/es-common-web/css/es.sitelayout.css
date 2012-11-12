@@ -25,15 +25,15 @@ h6 { font-size: 1em; font-weight: bold; }
     padding: 2px 8px;
 }
 
-#projection-status-button {
+#projection-statistics {
     margin-top: 10px;
     margin-bottom: -30px;
 }
 
 #projection-reason > .projection-reason-data, #source{
     max-height: 250px;
-    *height: 250px;
-    overflow-y: scroll;
+    height: 250px;
+    overflow-y: auto;
 }
 .error {
 	min-width: 40%;

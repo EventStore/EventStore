@@ -79,7 +79,7 @@
         </table>
         <script id="projectionTemplate" type="text/x-jsrender">
         <tr>
-          <td class="name"><a href="view-projection.htm#{{>statusUrl}}">{{>name}}</a></td>
+          <td class="name"><a href="view-projection.htm?name={{>~encode(name)}}">{{>name}}</a></td>
           <td>{{>status}}</td>
           <td>{{>mode}}</td>
           <td class="r">{{>progress.toFixed(1)}}%</td>
@@ -109,17 +109,32 @@
 
         (function() {
 
+            $(function() {
+                requestList();
+            });
+            
+            function requestList() {
+                $.ajax("/projections/any", {
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    success: success,
+                    error: error
+                });
+            }
+
             function success(data, status, xhr) {
 
                 data.projections.sort(function(a, b) {
                     return a.name.localeCompare(b.name);
                 });
 
-                /*$("#raw_data").text(JSON.stringify(data));*/
                 $.templates("projectionTemplate", "#projectionTemplate");
 
                 $("#projections").html(
-                    $.render.projectionTemplate(data.projections, {})
+                    $.render.projectionTemplate(data.projections, {
+                        encode: window.encodeURIComponent
+                    })
                 );
 
                 delayedRequestList();
@@ -132,21 +147,6 @@
             function delayedRequestList() {
                 setTimeout(requestList, 1000);
             }
-
-            function requestList() {
-                $.ajax("/projections/any", {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    success: success,
-                    error: error
-                });
-            }
-
-            $(function() {
-                requestList();
-            });
-
         })();
     </script>
 </body>
