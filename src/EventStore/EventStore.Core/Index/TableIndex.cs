@@ -62,7 +62,7 @@ namespace EventStore.Core.Index
         private long _prepareCheckpoint = -1;
 
         private volatile bool _backgroundRunning;
-        private readonly ManualResetEvent _backgroundRunningEvent = new ManualResetEvent(true);
+        private readonly ManualResetEventSlim _backgroundRunningEvent = new ManualResetEventSlim(true);
 
         private bool _initialized;
 
@@ -171,6 +171,7 @@ namespace EventStore.Core.Index
                     _awaitingMemTables = newTables;
                     if (!_backgroundRunning)
                     {
+                        _backgroundRunningEvent.Reset();
                         _backgroundRunning = true;
                         ThreadPool.QueueUserWorkItem(x => ReadOffQueue());
                     }
@@ -183,7 +184,6 @@ namespace EventStore.Core.Index
 
         private void ReadOffQueue()
         {
-            _backgroundRunningEvent.Reset();
             try
             {
                 while (true)
@@ -196,6 +196,7 @@ namespace EventStore.Core.Index
                         if (_awaitingMemTables.Count == 1)
                         {
                             _backgroundRunning = false;
+                            _backgroundRunningEvent.Set(); 
                             return;
                         }
                         tableItem = _awaitingMemTables[_awaitingMemTables.Count - 1];
@@ -247,11 +248,6 @@ namespace EventStore.Core.Index
             {
                 Log.ErrorException(exc, "Error in TableIndex.ReadOffQueue");
                 throw;
-            }
-            finally
-            {
-                _backgroundRunning = false;
-                _backgroundRunningEvent.Set();
             }
         }
 
@@ -450,10 +446,10 @@ namespace EventStore.Core.Index
 
         public void ClearAll(bool removeFiles = true)
         {
-            _backgroundRunningEvent.WaitOne(1000);
             //this should also make sure that no background tasks are running anymore
 
-            _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
+            if (!_backgroundRunningEvent.Wait(1000))
+                throw new TimeoutException("Could not finish background thread in reasonable time.");
 
             if (_indexMap != null)
             {
