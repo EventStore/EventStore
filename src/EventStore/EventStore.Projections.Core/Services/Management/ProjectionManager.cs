@@ -117,7 +117,12 @@ namespace EventStore.Projections.Core.Services.Management
             _started = false;
             foreach (var queue in _queues)
                 queue.Publish(new ProjectionCoreServiceMessage.Stop());
-            throw new NotImplementedException("Clean local state");
+
+            _writeDispatcher.CancelAll();
+            _readDispatcher.CancelAll();
+
+            _projections.Clear();
+            _projectionsMap.Clear();
         }
 
         public void Handle(ProjectionManagementMessage.Post message)
