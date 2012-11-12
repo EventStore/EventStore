@@ -30,7 +30,8 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Tests.Bus.QueuedHandler.Helpers;
+using EventStore.Core.Messaging;
+using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -88,14 +89,14 @@ namespace EventStore.Projections.Core.Tests.Services
             }
         }
 
-        protected WatchingConsumer _consumer;
+        protected TestHandler<Message> _consumer;
         protected InMemoryBus _bus;
         protected ProjectionCoreService _service;
 
         [SetUp]
         public void Setup()
         {
-            _consumer = new WatchingConsumer();
+            _consumer = new TestHandler<Message>();
             _bus = new InMemoryBus("temp");
             _bus.Subscribe(_consumer);
             _service = new ProjectionCoreService(_bus, _bus, 10, new InMemoryCheckpoint(1000));

@@ -63,7 +63,7 @@ namespace EventStore.Core.Bus
 
         private Thread _thread;
         private volatile bool _stop;
-        private readonly ManualResetEvent _stopped = new ManualResetEvent(false);
+        private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
         private readonly int _threadStopWaitTimeoutMs;
 
         // monitoring
@@ -117,12 +117,14 @@ namespace EventStore.Core.Bus
             _thread.IsBackground = true;
             _thread.Name = _name;
             _thread.Start();
+
+            _stopped.Reset();
         }
 
         public void Stop()
         {
             _stop = true;
-            if (!_stopped.WaitOne(_threadStopWaitTimeoutMs))
+            if (!_stopped.Wait(_threadStopWaitTimeoutMs))
                 throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", _name));
             _queueMonitor.Unregister(this);
         }

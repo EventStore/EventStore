@@ -431,21 +431,17 @@ namespace EventStore.Core.Services.Storage
 
         protected bool Flush()
         {
-            if (ShouldForceFlush())
+            var start = _watch.ElapsedTicks;
+            if (start - _lastFlush >= _flushDelay + 2 * MsPerTick || FlushMessagesInQueue == 0)
             {
-                var start = _watch.ElapsedTicks;
                 Writer.Flush();
-                _flushDelay = _watch.ElapsedTicks - start;
-                _lastFlush = _watch.ElapsedTicks;
+                var end = _watch.ElapsedTicks;
+                _flushDelay = end - start;
+                _lastFlush = end;
 
                 return true;
             }
             return false;
-        }
-
-        private bool ShouldForceFlush()
-        {
-            return _watch.ElapsedTicks - _lastFlush >= _flushDelay + 2 * MsPerTick || FlushMessagesInQueue == 0;
         }
 
         public void Dispose()
