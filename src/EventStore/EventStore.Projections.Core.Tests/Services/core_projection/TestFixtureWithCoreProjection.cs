@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected int _checkpointHandledThreshold = 5;
         protected int _checkpointUnhandledBytesThreshold = 10000;
         protected Action<QuerySourceProcessingStrategyBuilder> _configureBuilderByQuerySource = null;
-        private Guid _projectionCorrelationId;
+        protected Guid _projectionCorrelationId;
         private ProjectionMode _projectionMode = ProjectionMode.Persistent;
 
         [SetUp]

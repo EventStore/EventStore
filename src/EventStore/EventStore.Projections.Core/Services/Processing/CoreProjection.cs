@@ -66,7 +66,6 @@ namespace EventStore.Projections.Core.Services.Processing
             Stopped = 0x80,
             FaultedStopping = 0x100,
             Faulted = 0x200,
-            Subscribed = StateLoadedSubscribed | Running | Paused | Resumed
         }
 
         private readonly string _name;
