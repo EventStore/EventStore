@@ -1,8 +1,11 @@
 if (!window.es) { window.es = {}; };
-if (!es.utils) { es.utils = {}; };
+if (es.util)
+    throw 'es.util is already declared.';
 
-es.utils.loadMenu = function(pages) {
-  
+es.util = {};
+
+es.util.loadMenu = function (pages) {
+
     var tmplStr = '<li class="{{>class}}"> <a href="{{>link}}"> {{>name}} </a> </li>';
     var tmpl = $.templates(tmplStr);
     var htmlString = tmpl.render(pages);
@@ -18,4 +21,12 @@ es.utils.loadMenu = function(pages) {
         if (active.length == 1)
             active.parent().addClass("active");
     }
+};
+
+es.util.formatError = function (text, xhr) {
+    var reason = xhr.responseText
+                     || xhr.statusText
+                     || (xhr.status === 0 ? "Couldn't connect to server." : null)
+                     || '(unknown)';
+    return [text, "\r\nReason: ", reason].join('');
 };

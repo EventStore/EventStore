@@ -28,12 +28,7 @@ $(function () {
         function error(xhr, status, err) {
             if (unloading)
                 return;
-            var msg;
-
-            if (xhr.status === 0)
-                msg = "cannot connect to server";
-            else
-                msg = "error: " + err;
+            var msg = es.util.formatError("Couldn't build charts.", xhr);
             $(".error").text(msg).show();
         };
 
@@ -129,6 +124,13 @@ $(function () {
             function success(data) {
                 $(".error").hide();
                 publishNewStat(data);
+            }
+            
+            function error(xhr, status, err) {
+                if (unloading)
+                    return;
+                var msg = es.util.formatError("Couldn't update charts.", xhr);
+                $(".error").text(msg).show();
             }
 
             function publishNewStat(stat) {

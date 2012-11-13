@@ -18,14 +18,14 @@
                 <label class="control-label" for="name">
                     <strong>Name</strong></label>
                 <div class="controls">
-                    <input id="name" type="text" class="span4" />
+                    <input id="name" type="text" />
                 </div>
             </div>
             <div class="control-group">
-                <label class="control-label" for="query">
+                <label class="control-label" for="source">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <textarea id="query" cols="80" rows="20" class="span5"></textarea>
+                    <textarea id="source" ></textarea>
                 </div>
             </div>
             <div class="control-group">
@@ -60,22 +60,26 @@
     <script>
             $(function(){
                 $('#post').click(function () {
-                    function on_posted(data, textStatus, jqXHR) {
-                        var statusUrl = jqXHR.getResponseHeader('Location');
-                        $('#log').append("<a href='" + statusUrl + "'>" + statusUrl + "</a>");
-                        window.location = "view-projection.htm#" + statusUrl;
-                    }
+                    
                     var name = $("#name").val();
                     $.ajax("/projections/persistent?name=" + name + "&type=" + encodeURIComponent($("#type").val()), {
-                                headers: {
-                                    Accept: "application/json",
-                                    "Content-Type": "text/plain",
-                                },
-                                data: $('#query').val(),
-                                type: 'POST',
-                                success: on_posted,
-                                error: function () { alert('error'); }
-                            });
+                        headers: {
+                            Accept: "application/json",
+                            "Content-Type": "text/plain",
+                        },
+                        data: $('#source').val(),
+                        type: 'POST',
+                        success: on_posted,
+                        error: function(xhr) {
+                            var msg = es.util.formatError("Couldn't create new projection.", xhr);
+                            alert(msg);
+                        }
+                    });
+                    
+                    function on_posted(data, textStatus, jqXHR) {
+                        var statusUrl = jqXHR.getResponseHeader('Location');
+                        window.location = "view-projection.htm#" + statusUrl;
+                    }
                 });
             });
     </script>

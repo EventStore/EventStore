@@ -19,27 +19,16 @@
                     <ul style="display: inline;">
                         <li id="edit-source-btn-container"></li>
                         <li id="delete-projection-btn-container"></li>
-                        <li style="display: none;" id="command-disable-container"><a href="#" id="command-disable">
-                            <img src="/web/es/img/stop_btn.png" title="Disable" alt="Disable" /></a> </li>
-                        <li style="display: none;" id="command-enable-container"><a href="#" id="command-enable">
-                            <img src="/web/es/img/start_btn.png" title="Enable" alt="Enable" /></a> </li>
+                        <li id="command-disable-container"><a id="command-disable">
+                            <img src="/web/es/img/stop_btn.png" title="Disable & Stop" alt="Disable & Stop" /></a> </li>
+                        <li id="command-enable-container"><a id="command-enable">
+                            <img src="/web/es/img/start_btn.png" title="Enable & Start" alt="Enable & Start" /></a> </li>
                     </ul>
                 </div>
             </div>
         </div>
         <div id="projection-status">
         </div>
-        <script id="projectionTemplate" type="text/x-jsrender">
-                <div class="row">
-                    <div class="span12">
-                        <ul class="breadcrumb">
-                            <li><strong> {{>name}}</strong> <span class="divider">/</span></li>
-                            <li><strong>Mode:</strong> {{>mode}} <span class="divider">/</span></li>
-                            <li><strong>Status:</strong> {{>status}} <span class="divider">/</span></li>
-                        </ul>
-                    </div>
-                </div>
-        </script>
         <h4>
             State</h4>
         <div class="row ">
@@ -52,7 +41,30 @@
                 </div>
             </div>
         </div>
-        <script id="projectionTemplateStatistics" type="text/x-jsrender"> 
+        <div class="row">
+            <div class="span12">
+                <h4>
+                    Source: <span id="edit-source-container"></span>
+                </h4>
+                <pre id="source" style="font-family: consolas, 'courier new';"></pre>
+            </div>
+        </div>
+        <div class="row">
+            <div class="span12" id="projection-reason">
+            </div>
+        </div>
+        <script id="statusTemplate" type="text/x-jsrender">
+                <div class="row">
+                    <div class="span12">
+                        <ul class="breadcrumb">
+                            <li><strong> {{>name}}</strong> <span class="divider">/</span></li>
+                            <li><strong>Mode:</strong> {{>mode}} <span class="divider">/</span></li>
+                            <li><strong>Status:</strong> {{>status}} <span class="divider">/</span></li>
+                        </ul>
+                    </div>
+                </div>
+        </script>
+        <script id="statisticsTemplate" type="text/x-jsrender"> 
                 <table class="table 1table-bordered 1table-striped table-thin">
                   <tbody>
                     <tr>
@@ -73,19 +85,7 @@
                   </tbody>
                 </table>
         </script>
-        <div class="row">
-            <div class="span12">
-                <h4>
-                    Source: <span id="edit-source-container"></span>
-                </h4>
-                <pre id="source" style="font-family: consolas, 'courier new';"></pre>
-            </div>
-        </div>
-        <div class="row">
-            <div class="span12" id="projection-reason">
-            </div>
-        </div>
-        <script id="projectionTemplateReason" type="text/x-jsrender">
+        <script id="reasonTemplate" type="text/x-jsrender">
                 
                 <h4>Failure Reason:<h4>
                 <div class="projection-reason-data">
@@ -110,15 +110,15 @@
             var projectionStatusUrl = "";
 
             $(function() {
-                $.templates("projectionTemplate", "#projectionTemplate");
-                $.templates("projectionTemplateStatistics", "#projectionTemplateStatistics");
-                $.templates("projectionTemplateReason", "#projectionTemplateReason");
+                $.templates("statusTemplate", "#statusTemplate");
+                $.templates("statisticsTemplate", "#statisticsTemplate");
+                $.templates("reasonTemplate", "#reasonTemplate");
                 $.templates("editSourceTemplate", "#editSourceTemplate");
                 $.templates("deleteProjectionTemplate", "#deleteProjectionTemplate");
 
-                projectionStatusUrl = "/projection/" + getUrlParam('name');
+                projectionStatusUrl = document.location.hash.substring(1);
 
-                initialRequest();
+                init();
                 requestProjectionStats();
                 requestProjectionState();
                 requestProjectionSource();
@@ -136,7 +136,10 @@
                         },
                         type: "POST",
                         success: successPostCommand,
-                        error: function() { alert("Failed!"); }
+                        error: function(xhr, status, error) {
+                            var err = es.util.formatError("Couldn't disable projection.", xhr);
+                            alert(err);
+                        }
                     });
 
                     return false;
@@ -151,20 +154,22 @@
                         },
                         type: "POST",
                         success: successPostCommand,
-                        error: function() { alert("Failed!"); }
+                        error: function(xhr) {
+                            var err = es.util.formatError("Couldn't enable projection.", xhr);
+                            alert(err);
+                        }
                     });
 
                     return false;
                 }
                 
                 function successPostCommand(data, status, xhr) {
-                    $('#command-disable-container').toggle();
-                    $('#command-enable-container').toggle();
-                    //window.location = "view-projection.htm#" + projectionStatusUrl;
+
                 }
             });
             
-            function initialRequest() {
+            function init() {
+                
                  $.ajax(projectionStatusUrl + "/statistics", {
                     cache: false,
                     headers: {
@@ -178,18 +183,13 @@
                     var projection = data.projections[0];
                     document.title = projection.name + " - Projection Status";
 
-                    if (projection.status === 'Running/Running') {
-                        $('#command-disable-container').show();
-                    } else {
-                        $('#command-enable-container').show();
-                    }
-
                     $("#edit-source-btn-container").html(
                         $.render.editSourceTemplate(projection)
                     );
                     $("#delete-projection-btn-container").html(
                         $.render.deleteProjectionTemplate(projection)
                     );
+                    
                 }
 
                 function error(xhr, status) {
@@ -213,18 +213,17 @@
 
                 function success(data, status, xhr) {
                     var projection = data.projections[0];
-                    document.title = projection.name + " - Projection Status";
 
                     $("#projection-status").html(
-                        $.render.projectionTemplate(projection)
+                        $.render.statusTemplate(projection)
                     );
 
                     $("#projection-statistics").html(
-                        $.render.projectionTemplateStatistics(projection)
+                        $.render.statisticsTemplate(projection)
                     );
 
-                    var html = projection.stateReason !== ''
-                               ? $.render.projectionTemplateReason(projection)
+                    var html = !!projection.stateReason // on disabled its undefined, on enabled its ''
+                               ? $.render.reasonTemplate(projection)
                                : '';
                     $("#projection-reason").html(html);
 
