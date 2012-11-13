@@ -27,26 +27,24 @@
 //  
 
 using System;
-using System.Runtime.Serialization;
 
-namespace EventStore.ClientAPI.Exceptions
+namespace EventStore.ClientAPI.SystemData
 {
-    public class StreamDoesNotExistException : Exception
+    internal class StatusCode
     {
-        public StreamDoesNotExistException()
+        public static SliceReadStatus Convert(RangeReadResult code)
         {
-        }
-
-        public StreamDoesNotExistException(string message) : base(message)
-        {
-        }
-
-        public StreamDoesNotExistException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected StreamDoesNotExistException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
+            switch (code)
+            {
+                case RangeReadResult.Success:
+                    return SliceReadStatus.Success;
+                case RangeReadResult.NoStream:
+                    return SliceReadStatus.StreamNotFound;
+                case RangeReadResult.StreamDeleted:
+                    return SliceReadStatus.StreamDeleted;
+                default:
+                    throw new ArgumentOutOfRangeException("code");
+            }
         }
     }
 }

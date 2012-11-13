@@ -222,7 +222,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 var s = stream;
                 var task = store.ReadEventStreamForwardAsync(stream, 0, 1).ContinueWith(t =>
                 {
-                    if (!t.IsFaulted)
+                    if (t.Result.Status != SliceReadStatus.StreamDeleted)
                         throw new Exception(string.Format("Stream '{0}' is not deleted, but should be!", s));
                 });
 
