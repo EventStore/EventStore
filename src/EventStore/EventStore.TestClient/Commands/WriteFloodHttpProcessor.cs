@@ -128,8 +128,8 @@ namespace EventStore.TestClient.Commands
                                                                "DATA" + new string('*', 256),
                                                                "METADATA" + new string('$', 100))
                             });
-                        var requestString = Codec.Xml.To(write);
-                        client.Post(url, requestString, Codec.Xml.ContentType, succHandler, exc => 
+                        var requestString = Codec.Json.To(write);
+                        client.Post(url, requestString, Codec.Json.ContentType, succHandler, exc => 
                         {
                             context.Log.ErrorException(exc, "Error during POST.");
                             Interlocked.Increment(ref fail);
@@ -176,7 +176,10 @@ namespace EventStore.TestClient.Commands
                 string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt),
                 100*fail/(fail + succ));
 
-            context.Success();
+            if (succ < fail)
+                context.Fail(reason:"Number of failures is greater than number of successes");
+            else
+                context.Success();
         }
     }
 }

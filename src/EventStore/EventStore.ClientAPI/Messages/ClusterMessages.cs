@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -24,16 +24,60 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
 
 using System;
 
-namespace EventStore.Core.DataStructures
+namespace EventStore.ClientAPI.Messages
 {
-    public interface ILRUCache<TKey, TValue>
+    public class ClusterMessages
     {
-        bool TryGet(TKey key, out TValue value);
-        void Put(TKey key, TValue value);
-        void Put(TKey key, Func<TKey, TValue> addFactory, Func<TKey, TValue, TValue> updateFactory);
+        public class ClusterInfoDto
+        {
+            public MemberInfoDto[] Members { get; set; }
+
+            public ClusterInfoDto()
+            {
+            }
+
+            public ClusterInfoDto(MemberInfoDto[] members)
+            {
+                Members = members;
+            }
+        }
+
+        public class MemberInfoDto
+        {
+            public DateTime TimeStamp { get; set; }
+            public VNodeState State { get; set; }
+            public bool IsAlive { get; set; }
+
+            public string InternalTcpIp { get; set; }
+            public int InternalTcpPort { get; set; }
+
+            public string ExternalTcpIp { get; set; }
+            public int ExternalTcpPort { get; set; }
+
+            public string InternalHttpIp { get; set; }
+            public int InternalHttpPort { get; set; }
+
+            public string ExternalHttpIp { get; set; }
+            public int ExternalHttpPort { get; set; }
+
+            public long WriterCheckpoint { get; set; }
+            public long ChaserCheckpoint { get; set; }
+        }
+
+        public enum VNodeState
+        {
+            Initializing,
+            Unknown,
+            CatchingUp,
+            Clone,
+            Slave,
+            Master,
+            Manager,
+            ShuttingDown,
+            Shutdown
+        }
     }
 }

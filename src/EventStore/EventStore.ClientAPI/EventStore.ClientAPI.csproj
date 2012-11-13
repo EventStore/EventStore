@@ -85,6 +85,8 @@
     <Compile Include="ClientOperations\StartTransactionOperation.cs" />
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
     <Compile Include="Common\Log\DefaultLogger.cs" />
+    <Compile Include="Common\Utils\Tasks.cs" />
+    <Compile Include="Connection\ClusterExplorer.cs" />
     <Compile Include="Connection\ProjectionsManager.cs" />
     <Compile Include="Connection\Subscription.cs" />
     <Compile Include="Connection\SubscriptionsChannel.cs" />
@@ -109,7 +111,6 @@
     <Compile Include="Common\Utils\BytesFormatter.cs" />
     <Compile Include="Common\ConcurrentCollections\ConcurrentQueue.cs" />
     <Compile Include="Common\ConcurrentCollections\ConcurrentStack.cs" />
-    <Compile Include="Configure.cs" />
     <Compile Include="ClientOperations\DeleteStreamOperation.cs" />
     <Compile Include="ClientOperations\IClientOperation.cs" />
     <Compile Include="ClientOperations\ReadStreamEventsForwardOperation.cs" />
@@ -118,6 +119,7 @@
     <Compile Include="IProjectionsManagement.cs" />
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="Messages\ClientMessagesExtensions.cs" />
+    <Compile Include="Messages\ClusterMessages.cs" />
     <Compile Include="Position.cs" />
     <Compile Include="RecordedEvent.cs" />
     <Compile Include="StreamPosition.cs" />
@@ -151,7 +153,6 @@
     <Compile Include="Transport.Tcp\TcpConnector.cs" />
     <Compile Include="Transport.Tcp\TcpTypedConnection.cs" />
     <Compile Include="EventStoreConnection.cs" />
-    <Compile Include="EventStore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Transport.Tcp\TcpClientConnector.cs" />
     <Compile Include="Transport.Tcp\IMonitoredTcpConnection.cs" />

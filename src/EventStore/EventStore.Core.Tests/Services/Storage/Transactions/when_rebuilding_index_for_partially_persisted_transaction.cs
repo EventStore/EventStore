@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
                                       () => new TFChunkReader(Db, WriterChecksum),
                                       TableIndex,
                                       new ByLengthHasher(),
-                                      new NoLRUCache<string, StreamMetadata>());
+                                      new NoLRUCache<string, StreamCacheInfo>());
             ReadIndex.Build();
         }
 

@@ -180,7 +180,10 @@ namespace EventStore.TestClient.Commands
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
                                            (int) (sw.ElapsedMilliseconds/requestsCnt));
 
-            context.Success();
+            if (succ < fail)
+                context.Fail(reason: "Number of failures is greater than number of successes");
+            else
+                context.Success();
         }
     }
 }

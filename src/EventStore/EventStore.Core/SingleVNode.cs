@@ -102,7 +102,7 @@ namespace EventStore.Core
                                           () => new TFChunkReader(db, db.Config.WriterCheckpoint), 
                                           tableIndex, 
                                           new XXHashUnsafe(),
-                                          new LRUCache<string, StreamMetadata>(TFConsts.MetadataCacheCapacity));
+                                          new LRUCache<string, StreamCacheInfo>(TFConsts.MetadataCacheCapacity));
             var writer = new TFChunkWriter(db);
             var storageWriter = new StorageWriter(_mainQueue, _outputBus, writer, readIndex);
             var storageReader = new StorageReader(_mainQueue, _outputBus, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);

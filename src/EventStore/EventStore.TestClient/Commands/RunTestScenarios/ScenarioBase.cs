@@ -130,7 +130,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             for (int i = 0; i < Connections; ++i)
             {
-                _connections[i] = new EventStoreConnection(_tcpEndPoint, maxConcurrentRequests:MaxConcurrentRequests, logger: ApiLogger);
+                _connections[i] = EventStoreConnection.Create(maxConcurrentRequests:MaxConcurrentRequests, logger: ApiLogger);
+                _connections[i].Connect(_tcpEndPoint);
             }
             RunInternal();   
         }

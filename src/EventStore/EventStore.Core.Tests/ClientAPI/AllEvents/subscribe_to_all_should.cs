@@ -55,8 +55,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void allow_multiple_subscriptions()
         {
             const string stream = "subscribe_to_all_should_allow_multiple_subscriptions";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
@@ -76,8 +77,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         [Test]
         public void drop_all_global_subscribers_when_unsubscribe_from_all_called()
         {
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(2);
 
@@ -87,7 +89,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
-                store.UnsubscribeFromAllStreams();
+                store.UnsubscribeFromAllStreamsAsync();
                 Assert.That(dropped.Wait(Timeout));
             }
         }
@@ -96,8 +98,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         public void catch_created_and_deleted_events_as_well()
         {
             const string stream = "subscribe_to_all_should_catch_created_and_deleted_events_as_well";
-            using (var store = new EventStoreConnection(Node.TcpEndPoint))
+            using (var store = EventStoreConnection.Create())
             {
+                store.Connect(Node.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(1);
 

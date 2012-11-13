@@ -36,6 +36,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
 using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Connection;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.SystemData;
@@ -47,6 +48,8 @@ namespace EventStore.ClientAPI
 {
     public class EventStoreConnection : IProjectionsManagement, IDisposable
     {
+        public IProjectionsManagement Projections { get { return this; } }
+
         private readonly ILogger _log;
 
         private const int MaxQueueSize = 5000;
@@ -66,6 +69,7 @@ namespace EventStore.ClientAPI
         private readonly TcpConnector _connector;
         private TcpTypedConnection _connection;
         private readonly object _connectionLock = new object();
+        private volatile bool _isActive;
 
         private readonly SubscriptionsChannel _subscriptionsChannel;
         private readonly ProjectionsManager _projectionsManager;
@@ -83,32 +87,15 @@ namespace EventStore.ClientAPI
         private readonly Stopwatch _timeoutCheckStopwatch = new Stopwatch();
         private int _reconnectionsCount;
 
-        private readonly Thread _worker;
+        private Thread _worker;
         private volatile bool _stopping;
 
-        public IProjectionsManagement Projections
+        private EventStoreConnection(bool allowForwarding,
+                                     int maxConcurrentRequests,
+                                     int maxAttemptsForOperation,
+                                     int maxReconnections,
+                                     ILogger logger)
         {
-            get
-            {
-                return this;
-            }
-        }
-
-        public EventStoreConnection(IPEndPoint tcpEndPoint,
-                                    IPEndPoint httpEndpoint = null,
-                                    bool allowForwarding = true,
-                                    int maxConcurrentRequests = 5000,
-                                    int maxAttemptsForOperation = 10,
-                                    int maxReconnections = 10,
-                                    ILogger logger = null)
-        {
-            Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
-            Ensure.Positive(maxConcurrentRequests, "maxConcurrentRequests");
-            Ensure.Nonnegative(maxAttemptsForOperation, "maxAttemptsForOperation");
-            Ensure.Nonnegative(maxReconnections, "maxReconnections");
-
-            _tcpEndPoint = tcpEndPoint;
-            _httpEndPoint = httpEndpoint ?? new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000);
             _allowForwarding = allowForwarding;
             _maxConcurrentItems = maxConcurrentRequests;
             _maxAttempts = maxAttemptsForOperation;
@@ -120,17 +107,101 @@ namespace EventStore.ClientAPI
             _connector = new TcpConnector();
             _subscriptionsChannel = new SubscriptionsChannel(_connector);
             _projectionsManager = new ProjectionsManager();
+        }
 
-            _lastReconnectionTimestamp = DateTime.UtcNow;
-            _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
-            _timeoutCheckStopwatch.Start();
+        public static EventStoreConnection Create()
+        {
+            return new EventStoreConnection(allowForwarding: true,
+                                            maxConcurrentRequests: 5000,
+                                            maxAttemptsForOperation: 10,
+                                            maxReconnections: 10,
+                                            logger: null);
+        }
 
-            _worker = new Thread(MainLoop)
+        public static EventStoreConnection Create(bool allowForwarding = true,
+                                                  int maxConcurrentRequests = 5000,
+                                                  int maxAttemptsForOperation = 10,
+                                                  int maxReconnections = 10,
+                                                  ILogger logger = null)
+        {
+            Ensure.Positive(maxConcurrentRequests, "maxConcurrentRequests");
+            Ensure.Positive(maxAttemptsForOperation, "maxAttemptsForOperation");
+            Ensure.Nonnegative(maxReconnections, "maxReconnections");
+
+            return new EventStoreConnection(allowForwarding,
+                                            maxConcurrentRequests,
+                                            maxAttemptsForOperation,
+                                            maxReconnections,
+                                            logger);
+        }
+
+        public void Connect(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint = null)
+        {
+            Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+            var task = ConnectAsync(tcpEndPoint, httpEndPoint);
+            task.Wait();
+        }
+
+        public Task ConnectAsync(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint = null)
+        {
+            Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+            return EstablishConnectionAsync(tcpEndPoint, httpEndPoint ?? new IPEndPoint(tcpEndPoint.Address, tcpEndPoint.Port + 1000));
+        }
+
+        public void Connect(string clusterDns, int maxAttempts = 10, int port = 30777)
+        {
+            Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
+            Ensure.Positive(maxAttempts, "maxAttempts");
+            Ensure.Nonnegative(port, "port");
+
+            var task = ConnectAsync(clusterDns, maxAttempts, port);
+            task.Wait();
+        }
+
+        public Task ConnectAsync(string clusterDns, int maxAttempts = 10, int port = 30777)
+        {
+            Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
+            Ensure.Positive(maxAttempts, "maxAttempts");
+            Ensure.Nonnegative(port, "port");
+
+            var explorer = new ClusterExplorer(_allowForwarding, maxAttempts, port);
+            return explorer.Resolve(clusterDns)
+                           .ContinueWith(t =>
+                                         {
+                                             var pair = t.Result;
+                                             if (!pair.HasValue)
+                                                 throw new CannotEstablishConnectionException("Failed to find node to connect");
+
+                                             return EstablishConnectionAsync(pair.Value.TcpEndPoint, pair.Value.HttpEndPoint);
+                                         });
+        }
+
+        private Task EstablishConnectionAsync(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint)
+        {
+            lock (_connectionLock)
             {
-                IsBackground = true,
-                Name = "Worker thread"
-            };
-            _worker.Start();
+                if (_isActive)
+                    throw new InvalidOperationException("EventStoreConnection is already active");
+                _isActive = true;
+
+                _tcpEndPoint = tcpEndPoint;
+                _httpEndPoint = httpEndPoint;
+
+                _lastReconnectionTimestamp = DateTime.UtcNow;
+                _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
+                _timeoutCheckStopwatch.Start();
+
+                _worker = new Thread(MainLoop) {IsBackground = true, Name = "Worker thread"};
+                _worker.Start();
+
+                return Tasks.CreateCompleted();
+            }
+        }
+
+        private void EnsureActive()
+        {
+            if (!_isActive)
+                throw new InvalidOperationException("EventStoreConnection is not active");
         }
 
         public void Close()
@@ -162,6 +233,7 @@ namespace EventStore.ClientAPI
         public void CreateStream(string stream, byte[] metadata)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            EnsureActive();
 
             var task = CreateStreamAsync(stream, metadata);
             task.Wait();
@@ -170,6 +242,7 @@ namespace EventStore.ClientAPI
         public Task CreateStreamAsync(string stream, byte[] metadata)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            EnsureActive();
 
             var source = new TaskCompletionSource<object>();
             var operation = new CreateStreamOperation(source, Guid.NewGuid(), _allowForwarding, stream, metadata);
@@ -181,6 +254,7 @@ namespace EventStore.ClientAPI
         public void DeleteStream(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            EnsureActive();
 
             var task = DeleteStreamAsync(stream, expectedVersion);
             task.Wait();
@@ -189,6 +263,7 @@ namespace EventStore.ClientAPI
         public Task DeleteStreamAsync(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            EnsureActive();
 
             var source = new TaskCompletionSource<object>();
             var operation = new DeleteStreamOperation(source, Guid.NewGuid(), _allowForwarding, stream, expectedVersion);
@@ -201,6 +276,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
+            EnsureActive();
 
             var task = AppendToStreamAsync(stream, expectedVersion, events);
             task.Wait();
@@ -210,6 +286,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
+            EnsureActive();
 
             var source = new TaskCompletionSource<object>();
             var operation = new AppendToStreamOperation(source, Guid.NewGuid(), _allowForwarding, stream, expectedVersion, events);
@@ -221,6 +298,7 @@ namespace EventStore.ClientAPI
         public EventStoreTransaction StartTransaction(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            EnsureActive();
 
             var task = StartTransactionAsync(stream, expectedVersion);
             task.Wait();
@@ -230,6 +308,7 @@ namespace EventStore.ClientAPI
         public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            EnsureActive();
 
             var source = new TaskCompletionSource<EventStoreTransaction>();
             var operation = new StartTransactionOperation(source, Guid.NewGuid(), _allowForwarding, stream, expectedVersion);
@@ -242,6 +321,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
+            EnsureActive();
 
             var task = TransactionalWriteAsync(transactionId, stream, events);
             task.Wait();
@@ -251,6 +331,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
+            EnsureActive();
 
             var source = new TaskCompletionSource<object>();
             var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), _allowForwarding, transactionId, stream, events);
@@ -262,6 +343,7 @@ namespace EventStore.ClientAPI
         public void CommitTransaction(long transactionId, string stream)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            EnsureActive();
 
             var task = CommitTransactionAsync(transactionId, stream);
             task.Wait();
@@ -270,6 +352,7 @@ namespace EventStore.ClientAPI
         public Task CommitTransactionAsync(long transactionId, string stream)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            EnsureActive();
 
             var source = new TaskCompletionSource<object>();
             var operation = new CommitTransactionOperation(source, Guid.NewGuid(), _allowForwarding, transactionId, stream);
@@ -283,6 +366,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(start, "start");
             Ensure.Positive(count, "count");
+            EnsureActive();
 
             var task = ReadEventStreamForwardAsync(stream, start, count);
             task.Wait();
@@ -295,6 +379,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(start, "start");
             Ensure.Positive(count, "count");
+            EnsureActive();
 
             var source = new TaskCompletionSource<EventStreamSlice>();
             var operation = new ReadStreamEventsForwardOperation(source, Guid.NewGuid(), stream, start, count, true);
@@ -307,6 +392,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
+            EnsureActive();
 
             var task = ReadEventStreamBackwardAsync(stream, start, count);
             task.Wait();
@@ -318,6 +404,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
+            EnsureActive();
 
             var source = new TaskCompletionSource<EventStreamSlice>();
             var operation = new ReadStreamEventsBackwardOperation(source, Guid.NewGuid(), stream, start, count, true);
@@ -330,6 +417,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNull(position, "position");
             Ensure.Positive(maxCount, "maxCount");
+            EnsureActive();
 
             var task = ReadAllEventsForwardAsync(position, maxCount);
             task.Wait();
@@ -340,6 +428,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNull(position, "position");
             Ensure.Positive(maxCount, "maxCount");
+            EnsureActive();
 
             var source = new TaskCompletionSource<AllEventsSlice>();
             var operation = new ReadAllEventsForwardOperation(source, Guid.NewGuid(), position, maxCount, true);
@@ -352,6 +441,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNull(position, "position");
             Ensure.Positive(maxCount, "maxCount");
+            EnsureActive();
 
             var task = ReadAllEventsBackwardAsync(position, maxCount);
             task.Wait();
@@ -362,6 +452,7 @@ namespace EventStore.ClientAPI
         {
             Ensure.NotNull(position, "position");
             Ensure.Positive(maxCount, "maxCount");
+            EnsureActive();
 
             var source = new TaskCompletionSource<AllEventsSlice>();
             var operation = new ReadAllEventsBackwardOperation(source, Guid.NewGuid(), position, maxCount, true);
@@ -375,36 +466,45 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
+            EnsureActive();
 
             lock(_connectionLock)
                 _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             return _subscriptionsChannel.Subscribe(stream, eventAppeared, subscriptionDropped);
         }
 
-        public void Unsubscribe(string stream)
+        public Task UnsubscribeAsync(string stream)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            EnsureActive();
 
             lock (_connectionLock)
                 _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             _subscriptionsChannel.Unsubscribe(stream);
+
+            return Tasks.CreateCompleted();
         }
 
         public Task SubscribeToAllStreamsAsync(Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
+            EnsureActive();
 
             lock (_connectionLock)
                 _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             return _subscriptionsChannel.SubscribeToAllStreams(eventAppeared, subscriptionDropped);
         }
 
-        public void UnsubscribeFromAllStreams()
+        public Task UnsubscribeFromAllStreamsAsync()
         {
+            EnsureActive();
+
             lock (_connectionLock)
                 _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             _subscriptionsChannel.UnsubscribeFromAllStreams();
+
+            return Tasks.CreateCompleted();
         }
 
         void IProjectionsManagement.Enable(string name)

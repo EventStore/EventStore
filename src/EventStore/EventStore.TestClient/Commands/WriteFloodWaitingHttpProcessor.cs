@@ -124,10 +124,10 @@ namespace EventStore.TestClient.Commands
                                                                "DATA" + new string('*', 256),
                                                                "METADATA" + new string('$', 100))
                             });
-                        var request = Codec.Xml.To(write);
+                        var request = Codec.Json.To(write);
                         client.Post(url, 
                                     request, 
-                                    Codec.Xml.ContentType,
+                                    Codec.Json.ContentType,
                                     succHandler, 
                                     exc => 
                                     {
@@ -176,7 +176,10 @@ namespace EventStore.TestClient.Commands
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
                                            (int)(sw.ElapsedMilliseconds / requestsCnt));
 
-            context.Success();
+            if (succ < fail)
+                context.Fail(reason: "Number of failures is greater than number of successes");
+            else
+                context.Success();
         }
     }
 }

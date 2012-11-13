@@ -192,10 +192,10 @@ namespace EventStore.TestClient.Commands
                             "DATA" + dataResultingSize.ToString(" 00000 ") + new string('*', dataResultingSize),
                                     "METADATA" + new string('$', 100))
                             });
-                        var request = Codec.Xml.To(write);
+                        var request = Codec.Json.To(write);
                         client.Post(url, 
                                     request, 
-                                    Codec.Xml.ContentType,
+                                    Codec.Json.ContentType,
                                     succHandler, 
                                     exc =>
                                         {
@@ -253,7 +253,10 @@ namespace EventStore.TestClient.Commands
                 string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt),
                 100 * fail / (fail + succ));
 
-            context.Success();
+            if (succ < fail)
+                context.Fail(reason: "Number of failures is greater than number of successes");
+            else
+                context.Success();
         }
     }
 }
