@@ -145,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _coreQueue.Publish(new CoreProjectionManagementMessage.UpdateStatistics(_id));
             ProjectionStatistics status;
-            if (_lastReceivedStatistics == null || _state != ManagedProjectionState.Running)
+            if (_lastReceivedStatistics == null)
             {
                 status = new ProjectionStatistics
                     {Name = _name, Mode = GetMode(), Status = _state.EnumVaueName(), MasterStatus = _state};

@@ -417,6 +417,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterStopped()
         {
+            UpdateStatistics();
+            EnsureUnsubscribed();
             _publisher.Publish(new CoreProjectionManagementMessage.Stopped(_projectionCorrelationId));
         }
 
@@ -429,6 +431,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterFaulted()
         {
+            UpdateStatistics();
             EnsureUnsubscribed();
             _publisher.Publish(
                 new CoreProjectionManagementMessage.Faulted(_projectionCorrelationId, _faultedReason));
@@ -497,6 +500,8 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             catch (Exception ex)
             {
+                // update progress to reflect exact fault position
+                _checkpointManager.Progress(message.Progress);
                 ProcessEventFaulted(
                     string.Format(
                         "The {0} projection failed to process an event.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
