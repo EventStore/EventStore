@@ -14,17 +14,11 @@
         <h1>
             Edit Projection Source</h1>
         <div class="form-horizontal">
-            <div class="row">
-                <div class="span12">
-                    <div id="projection-status">
-                    </div>
-                </div>
-            </div>
             <div class="control-group">
-                <label class="control-label" for="raw_state">
+                <label class="control-label" for="projection-state">
                     <strong>State</strong></label>
                 <div class="controls">
-                    <div id="raw_state">
+                    <div id="projection-state">
                     </div>
                 </div>
             </div>
@@ -32,24 +26,13 @@
                 <label class="control-label" for="source">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <textarea rows="20" cols="100" id="source" style="font-family: consolas, 'courier new';"
-                        class="span5"></textarea>
+                    <textarea id="source" ></textarea>
                 </div>
             </div>
             <div class="control-group">
                 <div class="controls" id="update-source-container">
                     <button id="update-button" class="btn btn-success">
                         Update</button>
-                </div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="raw_data">
-                    <strong>Log:</strong></label>
-                <div class="controls">
-                    <div id="raw_data" style="display: none; font-family: consolas, 'courier new';">
-                    </div>
-                    <div id="debug" style="display: none;">
-                    </div>
                 </div>
             </div>
         </div> 
@@ -65,55 +48,29 @@
 
             var projectionStatusUrl = "";
 
-            function success(data, status, xhr) {
-                var projection = data.projections[0];
-            }
+            $(function() {
+                $.templates("editSourceTemplate", "#editSourceTemplate");
+                projectionStatusUrl = location.hash.substr(1);
 
-            function successUpdateSource(data, status, xhr) {
-                window.location = "view-projection.htm#" + projectionStatusUrl;
-            }
+                $('#update-button').click(function(ev) {
+                    $.ajax(projectionStatusUrl + "/query", {
+                        headers: {
+                            Accept: "application/json",
+                        },
 
-            function error(xhr, status) {
-                delayedRequestProjection();
-            }
-
-            function successState(data, status, xhr) {
-                $("#raw_state").text(JSON.stringify(data));
-            }
-
-            function errorState(xhr, status) {
-                delayedRequestProjectionState();
-            }
-
-            function successSource(data, status, xhr) {
-                $("#source").text(data);
-            }
-
-            function errorSource(xhr, status) {
-                delayedRequestProjectionSource();
-            }
-
-            function delayedRequestProjection() {
-                setTimeout(requestProjection, 1000);
-            }
-
-            function delayedRequestProjectionState() {
-                setTimeout(requestProjectionState, 1000);
-            }
-
-            function delayedRequestProjectionSource() {
-                setTimeout(requestProjectionSource, 1000);
-            }
-
-            function requestProjection() {
-                $.ajax(projectionStatusUrl + "/statistics", {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    success: success,
-                    error: error
+                        type: "PUT",
+                        data: $("#source").val(),
+                        success: successUpdateSource,
+                        error: function(xhr) {
+                             var msg = es.util.formatError("Couldn't delete projection", xhr);
+                            alert(msg);
+                        }
+                    });
                 });
-            }
+
+                requestProjectionState();
+                requestProjectionSource();
+            });
 
             function requestProjectionState() {
                 $.ajax(projectionStatusUrl + "/state", {
@@ -123,6 +80,15 @@
                     success: successState,
                     error: errorState
                 });
+
+                function successState(data, status, xhr) {
+                    var state = JSON.stringify(data);
+                    $("#projection-state").text(state);
+                }
+
+                function errorState(xhr, status) {
+                    setTimeout(requestProjectionState, 1000);
+                }
             }
 
             function requestProjectionSource() {
@@ -134,29 +100,20 @@
                     success: successSource,
                     error: errorSource
                 });
+
+                function successSource(data, status, xhr) {
+                    $("#source").text(data);
+                }
+
+                function errorSource(xhr, status) {
+                    setTimeout(requestProjectionSource, 1000);
+                }
             }
 
-            $(function() {
-                $.templates("editSourceTemplate", "#editSourceTemplate");
-                projectionStatusUrl = location.hash.substr(1);
-
-                $('#update-button').click(function() {
-                    $.ajax(projectionStatusUrl + "/query", {
-                        headers: {
-                            Accept: "application/json",
-                        },
-
-                        type: "PUT",
-                        data: $("#source").val(),
-                        success: successUpdateSource,
-                        error: function() { alert("Failed!"); }
-                    });
-                });
-
-                requestProjection();
-                requestProjectionState();
-                requestProjectionSource();
-            });
+            function successUpdateSource(data, status, xhr) {
+                window.location = "view-projection.htm#" + projectionStatusUrl;
+            }            
+            
         })();
 
     </script>

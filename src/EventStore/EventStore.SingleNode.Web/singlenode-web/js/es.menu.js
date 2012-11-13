@@ -1,4 +1,4 @@
-es.utils.loadMenu([
+es.util.loadMenu([
     { "name": "Home", "link": "home.htm", "class": "" },
     { "name": "Projections", "link": "projections.htm", "class": "" },
     { "name": "New Projection", "link": "new-projection.htm", "class": "" },

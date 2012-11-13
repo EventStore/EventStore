@@ -18,14 +18,14 @@
                 <label class="control-label" for="name">
                     <strong>Name</strong></label>
                 <div class="controls">
-                    <input id="name" type="text" class="span4" />
+                    <input id="name" type="text"  />
                 </div>
             </div>
             <div class="control-group">
-                <label class="control-label" for="query">
+                <label class="control-label" for="source">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <textarea id="query" cols="80" rows="20" class="span5">
+                    <textarea id="source">
     fromAll().whenAny(function(state,event) { return state; });
                     </textarea>
                 </div>
@@ -34,7 +34,7 @@
                 <label class="control-label" for="mode">
                     <strong>Select Mode</strong></label>
                 <div class="controls">
-                    <select id="mode" class="span4">
+                    <select id="mode" >
                         <option selected="selected" value="onetime">One-Time</option>
                         <option value="adhoc">Ad-Hoc</option>
                         <option value="continuous">Continuous</option>
@@ -47,8 +47,6 @@
                     <button id="post" class="btn btn-success">
                         Post</button>
                 </div>
-            </div>
-            <div id="log">
             </div>
         </div>
         
@@ -67,21 +65,25 @@
     <script type="text/javascript">
         $(function(){
             $("#post").click(function () {
-                function on_posted(data, textStatus, jqXHR) {
-                    var statusUrl = jqXHR.getResponseHeader('Location');
-                    $('#log').append("<a href='" + statusUrl + "'>" + statusUrl + "</a>");
-                    window.location = "view-projection.htm#" + statusUrl;
-                }
+                
                 var name = $("#name").val();
                 $.ajax("/projections/" + $("#mode").val() + (name == "" ? "" : "?name=" + name), {
                     headers: {
                         Accept: "application/json",
                     },
-                    data: $('#query').val(),
+                    data: $('#source').val(),
                     type: 'POST',
                     success: on_posted,
-                    error: function () { alert('error'); }
+                    error: function (xhr) {
+                        var msg = es.util.formatError("Couldn't create new projection.", xhr);
+                        alert(msg);
+                    }
                 });
+                
+                function on_posted(data, textStatus, jqXHR) {
+                    var statusUrl = jqXHR.getResponseHeader('Location');
+                    window.location = "view-projection.htm#" + statusUrl;
+                }
             });
         });
     </script>

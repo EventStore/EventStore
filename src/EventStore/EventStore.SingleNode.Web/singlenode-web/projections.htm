@@ -33,6 +33,20 @@
     <div id="content">
         <h1>
             Projections</h1>
+        <div class="row">
+            <div class="span12">
+                <div id="commands-container">
+                    <ul style="display: inline;">
+                        <li><a id="command-disable-all">
+                            <img src="/web/es/img/stop_btn.png" title="Disable & Stop All" alt="Disable & Stop All" /> Disable & Stop All
+                        </a></li>
+                        <li><a id="command-enable-all">
+                            <img src="/web/es/img/start_btn.png" title="Enable & Start All" alt="Enable & Start All" /> Enable & Start All</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>
@@ -102,37 +116,88 @@
             es.tmpl.renderBody();
         </script>
     </div>
-
-    
-
     <script type="text/javascript">
 
         (function() {
 
-            function success(data, status, xhr) {
+            $(function() {
 
-                data.projections.sort(function(a, b) {
-                    return a.name.localeCompare(b.name);
-                });
+                requestList();
 
-                /*$("#raw_data").text(JSON.stringify(data));*/
-                $.templates("projectionTemplate", "#projectionTemplate");
+                $("#command-disable-all").click(onDisableAll);
+                $("#command-enable-all").click(onEnableAll);
+                    
+                function onDisableAll(ev) {
+                    ev.preventDefault();
 
-                $("#projections").html(
-                    $.render.projectionTemplate(data.projections, {})
-                );
+                    postToEachProjection("/command/disable");
 
-                delayedRequestList();
-            }
+                    return false;
+                }
+                
+                function onEnableAll(ev) {
+                    ev.preventDefault();
 
-            function error(xhr, status) {
-                delayedRequestList();
-            }
+                    postToEachProjection("/command/enable");
 
-            function delayedRequestList() {
-                setTimeout(requestList, 1000);
-            }
+                    return false;
+                }
 
+                function postToEachProjection(relativeUrl) {
+                    $.ajax("/projections/any", {
+                        headers: {
+                            Accept: "application/json",
+                        },
+                        success: success,
+                        error: error
+                    });
+
+                    function success(data, status, xhr) {
+
+                        var errors = [];
+                        var ajaxes = [];
+
+                        $.each(data.projections, function(i,projection) {
+                            ajaxes.push(disableProjection(projection, errors));
+                        });
+
+                        $.when.apply($, ajaxes)
+                         .then(function() {
+                             if (errors.length === 0)
+                                 return;
+
+                             var errorText = "There was some errors:\r\n" + errors.join('\r\n');
+                             alert(errorText);
+                         });
+                         
+                        function disableProjection(projection, errors) {
+                            var ajax = $.ajax(projection.statusUrl + relativeUrl, {
+                                headers: {
+                                    Accept: "application/json",
+                                },
+                                type: "POST",
+                                success: function() {
+                                },
+                                error: function(xhr, status, error) {
+                                    var err = es.util.formatError("Error when posting to projection '" + projection.name + "'", xhr);
+                                    errors.push(err);
+                                }
+                            });
+                            
+                            // make fails look like success to wait for them and show all errors at once
+                            var newDfd = $.Deferred();
+                            ajax.always(newDfd.resolve);
+                            return newDfd.promise();
+                        }
+                    }
+
+                    function error(xhr) {
+                        var msg = es.util.formatError("Couldn't get projections list.", xhr);
+                        alert(msg);
+                    }
+                }
+            });
+            
             function requestList() {
                 $.ajax("/projections/any", {
                     headers: {
@@ -141,12 +206,28 @@
                     success: success,
                     error: error
                 });
+
+                function success(data, status, xhr) {
+
+                    data.projections.sort(function(a, b) {
+                        return a.name.localeCompare(b.name);
+                    });
+
+                    $.templates("projectionTemplate", "#projectionTemplate");
+
+                    $("#projections").html(
+                        $.render.projectionTemplate(data.projections, {
+                            encode: window.encodeURIComponent
+                        })
+                    );
+
+                    setTimeout(requestList, 1000);
+                }
+
+                function error(xhr, status) {
+                    setTimeout(requestList, 1000);
+                }
             }
-
-            $(function() {
-                requestList();
-            });
-
         })();
     </script>
 </body>

@@ -1,4 +1,35 @@
 
+body {
+    /*padding: 0;*/
+}
+
+.navbar 
+{
+    /*note MM: fixes extra blank space at page bottom problem, but with small side effects*/
+    position: static !important;
+}
+
+.control_btn_wrapper {
+    display: block;
+}
+
+.control_btn_list {
+    display: inline;
+}
+
+footer {
+    width: 100%;
+    background: #d6d6d6;
+}
+
+footer  p {
+    font-family: Arial;
+    font-size: 13px;
+    color: #363636;
+    margin-top: 15px;
+}
+
+
 /* Typography */
 
 h1,h2,h3,h4,h5,h6 { font-weight: normal; color: #000000; }
@@ -25,15 +56,26 @@ h6 { font-size: 1em; font-weight: bold; }
     padding: 2px 8px;
 }
 
-#projection-status-button {
+#projection-statistics {
     margin-top: 10px;
     margin-bottom: -30px;
 }
 
-#projection-reason > .projection-reason-data, #source{
+#projection-reason > .projection-reason-data{
     max-height: 250px;
-    *height: 250px;
-    overflow-y: scroll;
+    height: 250px;
+    overflow-y: auto;
+}
+#source {
+    height: 250px;
+    overflow-y: auto;
+    font-family: consolas, 'courier new'; 
+}
+#source, #name {
+    min-width: 500px;
+}
+#mode {
+    min-width: 515px; /*width of #source + 15px - todo: find out why*/
 }
 .error {
 	min-width: 40%;
@@ -48,6 +90,33 @@ h6 { font-size: 1em; font-weight: bold; }
     white-space: normal;
     text-shadow: none;
 }
+
+#commands-container {
+    margin-left: -25px;
+}
+
+#commands-container li {
+    display: inline;
+}
+#commands-container a {
+    cursor: pointer;
+}
+#commands-container i.icon-remove {
+    margin-top: 2px;
+    margin-bottom: 2px;
+    margin-left: -3px;
+}
+
+.form-horizontal .control-label {
+    padding-top: 0;
+}
+textarea[disabled='disabled'] {
+    cursor: default;
+}
+#projection-state {
+    word-wrap: break-word;
+}
+
 /*===================================== charts =================================*/
 .dropdown {
     margin-left: 10px;
@@ -114,47 +183,6 @@ h6 { font-size: 1em; font-weight: bold; }
     overflow-x: hidden!important;
 }
 
-
-/* ==========================================================================
-   Author's custom styles
-   ========================================================================== */
-
-body {
-    /*padding: 0;*/
-    
-    
-}
-
-.navbar 
-{
-    /*note MM: fixes extra blank space at page bottom problem, but with small side effects*/
-    position: static !important;
-}
-
-
-.control_btn_wrapper {
-    display: block;
-}
-
-.control_btn_list {
-    display: inline;
-}
-
-footer {
-    width: 100%;
-    background: #d6d6d6;
-}
-
-footer  p {
-    font-family: Arial;
-    font-size: 13px;
-    color: #363636;
-    margin-top: 15px;
-}
-
-#commands-container {
-    margin-left: -25px;
-}
 /* ==========================================================================
 Footer Stick to the Bottom
 ========================================================================== */
