@@ -174,7 +174,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.GetState message)
         {
-            if (_state == ManagedProjectionState.Running)
+            if (_state >= ManagedProjectionState.Stopped)
             {
                 var needRequest = false;
                 if (_stateRequests == null)
@@ -218,9 +218,7 @@ namespace EventStore.Projections.Core.Services.Management
             PrepareAndBeginWrite(
                 forcePrepare: true,
                 completed:
-                    () =>
-                    Start(
-                        () => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name))));
+                    () => Start(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name))));
         }
 
         public void Handle(ProjectionManagementMessage.Delete message)
@@ -242,7 +240,6 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.Stopped message)
         {
             _state = ManagedProjectionState.Stopped;
-            DisposeCoreProjection();
             var stopCompleted = _onStopped;
             _onStopped = null;
             if (stopCompleted != null) stopCompleted();
@@ -257,7 +254,6 @@ namespace EventStore.Projections.Core.Services.Management
                 _persistedState.SourceDefintion = null;
                 OnPrepared();
             }
-            DisposeCoreProjection();
         }
 
         public void Handle(CoreProjectionManagementMessage.Prepared message)
@@ -404,7 +400,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void Prepare(Action onPrepared)
         {
             var config = CreateDefaultProjectionConfiguration(GetMode());
-
+            DisposeCoreProjection(); 
             BeginCreateAndPrepare(_projectionStateHandlerFactory, config, onPrepared);
         }
 
@@ -461,8 +457,7 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
         private void BeginCreateAndPrepare(
-            ProjectionStateHandlerFactory handlerFactory, ProjectionConfig config,
-            Action onPrepared)
+            ProjectionStateHandlerFactory handlerFactory, ProjectionConfig config, Action onPrepared)
         {
             _onPrepared = onPrepared;
             if (handlerFactory == null) throw new ArgumentNullException("handlerFactory");
@@ -593,8 +588,11 @@ namespace EventStore.Projections.Core.Services.Management
                 Disable();
             Delete();
             PrepareAndBeginWrite(
-                forcePrepare: false,
-                completed: () => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
+                forcePrepare: false, completed: () =>
+                    {
+                        message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name));
+                        DisposeCoreProjection();
+                    });
         }
     }
 }

@@ -716,6 +716,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Dispose()
         {
+            EnsureUnsubscribed();
             if (_projectionStateHandler != null)
                 _projectionStateHandler.Dispose();
         }

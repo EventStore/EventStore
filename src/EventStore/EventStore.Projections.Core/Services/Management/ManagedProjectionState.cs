@@ -36,8 +36,8 @@ namespace EventStore.Projections.Core.Services.Management
         Preparing,
         Prepared,
         Starting,
+        LoadingState,
         Running,
         Stopping,
-        LoadingState,
     }
 }
