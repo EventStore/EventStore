@@ -26,45 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using EventStore.Projections.Core.Messages;
-using NUnit.Framework;
-using System.Linq;
-
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
-    [TestFixture]
-    public class when_starting_a_new_projection : TestFixtureWithCoreProjectionStarted
+    public abstract class TestFixtureWithCoreProjectionLoaded : TestFixtureWithCoreProjection
     {
-        protected override void Given()
+        protected override void PreWhen()
         {
-            NoStream("$projections-projection-state");
-            NoStream("$projections-projection-checkpoint");
-        }
-
-        protected override void When()
-        {
-        }
-
-        [Test]
-        public void should_subscribe_from_beginning()
-        {
-            Assert.AreEqual(1, _subscribeProjectionHandler.HandledMessages.Count);
-            Assert.AreEqual(0, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.CommitPosition);
-            Assert.AreEqual(-1, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.PreparePosition);
-        }
-
-        [Test]
-        public void should_subscribe_non_null_subscriber()
-        {
-            Assert.NotNull(_subscribeProjectionHandler.HandledMessages[0].Subscriber);
-        }
-
-        [Test]
-        public void should_publish_started_message()
-        {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
-            var startedMessage = _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Single();
-            Assert.AreEqual(_projectionCorrelationId, startedMessage.CorrelationId);
+            _coreProjection.LoadStopped();
         }
     }
 }

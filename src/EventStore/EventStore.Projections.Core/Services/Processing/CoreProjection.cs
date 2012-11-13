@@ -102,6 +102,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private long _expectedSubscriptionMessageSequenceNumber = -1;
         private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
         private bool _subscribed;
+        private bool _startOnLoad;
 
         public CoreProjection(
             string name, Guid projectionCorrelationId, IPublisher publisher,
@@ -152,6 +153,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Start()
         {
+            _startOnLoad = true;
+            EnsureState(State.Initial);
+            GoToState(State.LoadStateRequsted);
+        }
+
+        public void LoadStopped()
+        {
+            _startOnLoad = false;
             EnsureState(State.Initial);
             GoToState(State.LoadStateRequsted);
         }
@@ -414,7 +423,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterStateLoadedSubscribed()
         {
-            GoToState(State.Running);
+            if (_startOnLoad)
+            {
+                GoToState(State.Running);
+                _publisher.Publish(new CoreProjectionManagementMessage.Started(_projectionCorrelationId));
+            }
+            else
+                GoToState(State.Stopped);
         }
 
         private void EnterRunning()
@@ -661,7 +676,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointManager.Start(checkpointTag);
             try
             {
-                SetHandlerState("");
                 GoToState(State.StateLoadedSubscribed);
             }
             catch (Exception ex)
@@ -676,7 +690,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ProjectionSubscriptionManagement.Subscribe(
                     _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,
                     _projectionConfig.CheckpointUnhandledBytesThreshold));
-            _publisher.Publish(new CoreProjectionManagementMessage.Started(_projectionCorrelationId));
         }
 
         internal void BeginStatePartitionLoad(string statePartition, CheckpointTag eventCheckpointTag, Action loadCompleted)
@@ -814,5 +827,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     GetProjectionState().Data, scheduledWrites, checkpointTag, progress);
             }
         }
+
     }
 }

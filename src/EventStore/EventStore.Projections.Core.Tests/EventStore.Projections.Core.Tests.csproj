@@ -124,7 +124,13 @@
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_expected_tag_the_started_in_recovery_stream.cs" />
     <Compile Include="Services\core_projection\TestCheckpointManagerMessageHandler.cs" />
     <Compile Include="Services\core_projection\TestFixtureWithCoreProjection.cs" />
+    <Compile Include="Services\core_projection\TestFixtureWithCoreProjectionLoaded.cs" />
+    <Compile Include="Services\core_projection\when_loading_an_existing_projection.cs" />
+    <Compile Include="Services\core_projection\when_loading_a_new_projection.cs" />
+    <Compile Include="Services\core_projection\when_starting_an_existing_projection_and_an_event_is_received.cs" />
+    <Compile Include="Services\core_projection\when_starting_a_new_projection_and_an_event_is_received.cs" />
     <Compile Include="Services\core_projection\when_the_projection_with_pending_writes_is_killed.cs" />
+    <Compile Include="Services\core_projection\when_the_state_handler_fails_to_load_state_the_projection_should.cs" />
     <Compile Include="Services\core_projection\when_the_state_handler_with_configured_state_stream_does_process_an_event_the_projection_should.cs" />
     <Compile Include="Services\event_filter\specific_stream_event_filter.cs" />
     <Compile Include="Services\multi_stream_event_distribution_point\when_handling_read_completed_and_no_stream.cs" />
@@ -197,7 +203,6 @@
     <Compile Include="Services\transaction_file_position_tagger\when_creating_transaction_file_postion_tracker.cs" />
     <Compile Include="Services\transaction_file_position_tagger\when_updating_transaction_file_postion_tracker.cs" />
     <Compile Include="Services\transaction_file_position_tagger\when_updating_postion_tagger_from_a_tag.cs" />
-    <Compile Include="Services\core_projection\when_starting_an_existing_projection_with_a_faulting_handler.cs" />
     <Compile Include="Services\core_projection\when_the_checkpoint_is_suggested.cs" />
     <Compile Include="Services\core_projection\when_the_projection_with_pending_writes_is_stopped.cs" />
     <Compile Include="Services\core_projection\when_the_state_handler_fails_to_process_an_event_the_projection_should.cs" />

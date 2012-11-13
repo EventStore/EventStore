@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_state_handler_fails_to_process_an_event_the_projection_should : TestFixtureWithCoreProjectionStarted
+    public class when_the_state_handler_fails_to_load_state_the_projection_should : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {
@@ -48,17 +48,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
                 + Guid.NewGuid().ToString("D") + @"""}", "{}");
-            _stateHandler = new FakeProjectionStateHandler(failOnProcessEvent: true);
+            _stateHandler = new FakeProjectionStateHandler(failOnLoad: true);
         }
 
         protected override void When()
         {
             //projection subscribes here
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                       new Event(
-                           Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata")), 0));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    new Event(
+                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]

@@ -78,13 +78,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         [Test]
-        public void should_load_projection_state_handler()
-        {
-            Assert.AreEqual(1, _stateHandler._loadCalled);
-            Assert.AreEqual(_testProjectionState, _stateHandler._loadedState);
-        }
-
-        [Test]
         public void should_publish_started_message()
         {
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());

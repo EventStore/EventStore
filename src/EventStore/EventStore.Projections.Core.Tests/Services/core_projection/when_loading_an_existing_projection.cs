@@ -34,7 +34,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_starting_an_existing_projection_with_a_faulting_handler : TestFixtureWithCoreProjectionStarted
+    public class when_loading_an_existing_projection : TestFixtureWithCoreProjectionLoaded
     {
         private string _testProjectionState = @"{""test"":1}";
 
@@ -56,23 +56,37 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 "$projections-projection-state", "StateUpdated",
                 @"{""CommitPosition"": 300, ""PreparePosition"": 250, ""LastSeenEvent"": """
                 + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
-            _stateHandler = new FakeProjectionStateHandler(failOnLoad: true);
         }
 
         protected override void When()
         {
         }
 
+
         [Test]
-        public void should_publiseh_faulted_message()
+        public void should_subscribe_from_the_last_known_checkpoint_position()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Faulted>().Count());
+            Assert.AreEqual(1, _subscribeProjectionHandler.HandledMessages.Count);
+            Assert.AreEqual(100, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.CommitPosition);
+            Assert.AreEqual(50, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.PreparePosition);
         }
 
         [Test]
-        public void should_not_subscribe()
+        public void should_subscribe_non_null_subscriber()
         {
-            Assert.AreEqual(0, _subscribeProjectionHandler.HandledMessages.Count);
+            Assert.NotNull(_subscribeProjectionHandler.HandledMessages[0].Subscriber);
+        }
+
+        [Test]
+        public void should_not_load_projection_state_handler()
+        {
+            Assert.AreEqual(0, _stateHandler._loadCalled);
+        }
+
+        [Test]
+        public void should_not_publish_started_message()
+        {
+            Assert.AreEqual(0, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
         }
     }
 }
