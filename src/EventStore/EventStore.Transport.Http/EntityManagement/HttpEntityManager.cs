@@ -213,10 +213,10 @@ namespace EventStore.Transport.Http.EntityManagement
             SetResponseLength(response.Length);
 
             var state = new ManagerOperationState(HttpEntity, (sender, e) => {}, onError)
-                            {
-                                InputStream = new MemoryStream(response),
-                                OutputStream = HttpEntity.Response.OutputStream
-                            };
+            {
+                InputStream = new MemoryStream(response),
+                OutputStream = HttpEntity.Response.OutputStream
+            };
             var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
             copier.Completed += ResponseWritten;
             copier.Start();
@@ -242,14 +242,19 @@ namespace EventStore.Transport.Http.EntityManagement
 
         public void ReadRequestAsync(Action<HttpEntityManager, string> onSuccess, Action<Exception> onError)
         {
+            ReadRequestAsync((manager, bytes) => onSuccess(manager, Encoding.UTF8.GetString(bytes)), onError);
+        }
+
+        public void ReadRequestAsync(Action<HttpEntityManager, byte[]> onSuccess, Action<Exception> onError)
+        {
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onError, "onError");
 
             var state = new ManagerOperationState(HttpEntity, onSuccess, onError)
-                            {
-                                InputStream = HttpEntity.Request.InputStream,
-                                OutputStream = new MemoryStream()
-                            };
+            {
+                InputStream = HttpEntity.Request.InputStream,
+                OutputStream = new MemoryStream()
+            };
 
             var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
             copier.Completed += RequestRead;
@@ -273,7 +278,12 @@ namespace EventStore.Transport.Http.EntityManagement
             state.OutputStream.Seek(0, SeekOrigin.Begin);
             var memory = (MemoryStream)state.OutputStream;
 
-            var request = Encoding.UTF8.GetString(memory.GetBuffer(), 0, (int)memory.Length);
+            var request = memory.GetBuffer();
+            if (memory.Length != memory.GetBuffer().Length)
+            {
+                request = new byte[memory.Length];
+                Buffer.BlockCopy(memory.GetBuffer(), 0, request, 0, (int)memory.Length);
+            }
             state.OnSuccess(this, request);
         }
 

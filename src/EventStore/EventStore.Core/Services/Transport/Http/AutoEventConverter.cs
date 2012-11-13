@@ -27,7 +27,9 @@
 // 
 
 using System;
+using System.IO;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
@@ -75,7 +77,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public static Tuple<int, Event[]> SmartParse(string request, ICodec sourceCodec)
+        public static Tuple<int, Event[]> SmartParse(byte[] request, ICodec sourceCodec)
         {
             var write = Load(request, sourceCodec);
             if (write == null || write.Events == null || write.Events.Length == 0)
@@ -85,34 +87,39 @@ namespace EventStore.Core.Services.Transport.Http
             return new Tuple<int, Event[]>(write.ExpectedVersion, events);
         }
 
-        private static HttpClientMessageDto.WriteEventsDynamic Load(string s, ICodec sourceCodec)
+        private static HttpClientMessageDto.WriteEventsDynamic Load(byte[] data, ICodec sourceCodec)
         {
             switch(sourceCodec.ContentType)
             {
                 case ContentType.Json:
                 case ContentType.AtomJson:
-                    return LoadFromJson(s);
+                    return LoadFromJson(data);
 
                 case ContentType.Xml:
                 case ContentType.ApplicationXml:
                 case ContentType.Atom:
-                    return LoadFromXml(s);
+                    return LoadFromXml(data);
 
                 default:
                     return null;
             }
         }
 
-        private static HttpClientMessageDto.WriteEventsDynamic LoadFromJson(string json)
+        private static HttpClientMessageDto.WriteEventsDynamic LoadFromJson(byte[] json)
         {
-            return Codec.Json.From<HttpClientMessageDto.WriteEventsDynamic>(json);
+            return Codec.Json.From<HttpClientMessageDto.WriteEventsDynamic>(Encoding.UTF8.GetString(json));
         }
 
-        private static HttpClientMessageDto.WriteEventsDynamic LoadFromXml(string xml)
+        private static HttpClientMessageDto.WriteEventsDynamic LoadFromXml(byte[] xml)
         {
             try
             {
-                var doc = XDocument.Parse(xml);
+                XDocument doc;
+                using (var memStream = new MemoryStream(xml))
+                using (var xmlTextReader = new XmlTextReader(memStream))
+                {
+                    doc = XDocument.Load(xmlTextReader);
+                }
 
                 XNamespace jsonNsValue = "http://james.newtonking.com/projects/json";
                 XName jsonNsName = XNamespace.Xmlns + "json";
