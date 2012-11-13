@@ -264,8 +264,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Checkpoints are not allowed");
             if (!_inCheckpoint)
                 CompleteCheckpoint(lastProcessedEventPosition, _currentProjectionState);
-            else
-                _coreProjection.Handle(new CoreProjectionProcessingMessage.PauseRequested());
         }
 
         private void CompleteCheckpoint(PositionTracker lastProcessedEventPosition, string projectionState)

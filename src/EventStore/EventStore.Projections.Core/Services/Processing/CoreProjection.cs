@@ -44,7 +44,6 @@ namespace EventStore.Projections.Core.Services.Processing
                                   ICoreProjection,
                                   IHandle<CoreProjectionManagementMessage.GetState>,
                                   IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
-                                  IHandle<CoreProjectionProcessingMessage.PauseRequested>,
                                   IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>,
                                   IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>,
                                   IHandle<ProjectionSubscriptionMessage.ProgressChanged>
@@ -60,8 +59,6 @@ namespace EventStore.Projections.Core.Services.Processing
             LoadStateRequsted = 0x1,
             StateLoadedSubscribed = 0x2,
             Running = 0x08,
-            Paused = 0x10,
-            Resumed = 0x20,
             Stopping = 0x40,
             Stopped = 0x80,
             FaultedStopping = 0x100,
@@ -167,7 +164,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Stop()
         {
-            EnsureState(State.LoadStateRequsted | State.StateLoadedSubscribed | State.Paused | State.Resumed | State.Running);
+            EnsureState(State.LoadStateRequsted | State.StateLoadedSubscribed | State.Running);
             if (_state == State.LoadStateRequsted)
                 GoToState(State.Stopped);
             else
@@ -205,10 +202,10 @@ namespace EventStore.Projections.Core.Services.Processing
             RegisterSubscriptionMessage(message);
 
             EnsureState(
-                State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                if (_state == State.Running || _state == State.Paused)
+                if (_state == State.Running)
                 {
                     CheckpointTag eventTag = message.CheckpointTag;
                     string partition = _checkpointStrategy.StatePartitionSelector.GetStatePartition(message);
@@ -230,10 +227,10 @@ namespace EventStore.Projections.Core.Services.Processing
             RegisterSubscriptionMessage(message);
 
             EnsureState(
-                State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                if (_state == State.Running || _state == State.Paused)
+                if (_state == State.Running)
                 {
                     var progressWorkItem = new ProgressWorkItem(this, _checkpointManager, message.Progress);
                     _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
@@ -253,10 +250,10 @@ namespace EventStore.Projections.Core.Services.Processing
             RegisterSubscriptionMessage(message);
 
             EnsureState(
-                State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                if ((_state == State.Running || _state == State.Paused) && _projectionConfig.CheckpointsEnabled)
+                if ((_state == State.Running) && _projectionConfig.CheckpointsEnabled)
                 {
                     CheckpointTag checkpointTag = message.CheckpointTag;
                     var checkpointSuggestedWorkItem = new CheckpointSuggestedWorkItem(this, message, _checkpointManager);
@@ -273,10 +270,10 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
             EnsureState(
-                State.Running | State.Paused | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                if (_state == State.Running || _state == State.Paused)
+                if (_state == State.Running)
                 {
                     var getStateWorkItem = new GetStateWorkItem(message.Envelope, message.CorrelationId, this, _partitionStateCache, message.Partition);
                     _processingQueue.EnqueueOutOfOrderTask(getStateWorkItem);
@@ -292,11 +289,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
         {
             CheckpointCompleted(message.CheckpointTag);
-        }
-
-        public void Handle(CoreProjectionProcessingMessage.PauseRequested message)
-        {
-            Pause();
         }
 
         public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
@@ -336,21 +328,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var wasStopped = _state == State.Stopped || _state == State.Faulted;
             var wasStopping = _state == State.Stopping || _state == State.FaultedStopping;
-            var wasStarted = _state == State.StateLoadedSubscribed || _state == State.Paused || _state == State.Resumed
+            var wasStarted = _state == State.StateLoadedSubscribed 
                              || _state == State.Running || _state == State.Stopping || _state == State.FaultedStopping;
             _state = state; // set state before transition to allow further state change
-            switch (state)
-            {
-                case State.Running:
-                    _processingQueue.SetRunning();
-                    break;
-                case State.Paused:
-                    _processingQueue.SetPaused();
-                    break;
-                default:
-                    _processingQueue.SetStopped();
-                    break;
-            }
             switch (state)
             {
                 case State.Stopped:
@@ -377,12 +357,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     break;
                 case State.Running:
                     EnterRunning();
-                    break;
-                case State.Paused:
-                    EnterPaused();
-                    break;
-                case State.Resumed:
-                    EnterResumed();
                     break;
                 case State.Stopping:
                     EnterStopping();
@@ -443,15 +417,6 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 SetFaulted(ex);
             }
-        }
-
-        private void EnterPaused()
-        {
-        }
-
-        private void EnterResumed()
-        {
-            GoToState(State.Running);
         }
 
         private void EnterStopping()
@@ -517,11 +482,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private string GetHandlerTypeName()
         {
             return _projectionStateHandler.GetType().Namespace + "." + _projectionStateHandler.GetType().Name;
-        }
-
-        private void TryResume()
-        {
-            GoToState(State.Resumed);
         }
 
         internal void ProcessCommittedEvent(
@@ -641,7 +601,7 @@ namespace EventStore.Projections.Core.Services.Processing
             // ignore any ticks received when not pending. this may happen when restart requested
             if (!_tickPending)
                 return;
-            EnsureState(State.Running | State.Paused | State.Stopping | State.FaultedStopping | State.Faulted);
+            EnsureState(State.Running | State.Stopping | State.FaultedStopping | State.Faulted);
             // we may get into faulted any time, so it is allowed
             try
             {
@@ -768,13 +728,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         internal void EnsureTickPending()
         {
+            // ticks are requested when an async operation is completed or when an item is being processed
+            // thus, the tick message is rmeoved from the queue when it does not process any work item (and 
+            // it is renewed therefore)
             if (_tickPending)
                 return;
-            if (_state == State.Running || _state == State.Stopping || _state == State.FaultedStopping)
-            {
-                _tickPending = true;
-                _publisher.Publish(new ProjectionCoreServiceMessage.Tick(Tick));
-            }
+            _tickPending = true;
+            _publisher.Publish(new ProjectionCoreServiceMessage.Tick(Tick));
         }
 
         private void SetFaulted(Exception ex)
@@ -796,9 +756,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
             switch (_state)
             {
-                case State.Paused:
-                    TryResume();
-                    break;
                 case State.Stopping:
                     GoToState(State.Stopped);
                     break;
@@ -806,13 +763,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     GoToState(State.Faulted);
                     break;
             }
-        }
-
-        private void Pause()
-        {
-            if (_state != State.Stopping && _state != State.FaultedStopping)
-                // stopping projection is already paused
-                GoToState(State.Paused);
         }
 
         internal void FinalizeEventProcessing(

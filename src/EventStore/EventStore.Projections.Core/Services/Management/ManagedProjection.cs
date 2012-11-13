@@ -542,7 +542,8 @@ namespace EventStore.Projections.Core.Services.Management
         private static ProjectionConfig CreateDefaultProjectionConfiguration(ProjectionMode mode)
         {
             var projectionConfig = new ProjectionConfig(
-                mode, mode > ProjectionMode.AdHoc ? 2000 : 0, mode > ProjectionMode.AdHoc ? 10*1000*1000 : 0, 1000, 500,
+                mode, mode > ProjectionMode.AdHoc ? 2000 : 0, mode > ProjectionMode.AdHoc ? 10*1000*1000 : 0,
+                pendingEventsThreshold: 1000, maxWriteBatchLength: 500,
                 publishStateUpdates: mode == ProjectionMode.Persistent, checkpointsEnabled: mode > ProjectionMode.AdHoc,
                 emitEventEnabled: mode == ProjectionMode.Persistent); //TODO: allow emit in continuous
             return projectionConfig;
