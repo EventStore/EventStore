@@ -87,6 +87,14 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class LoadStopped : CoreProjectionManagementMessage
+        {
+            public LoadStopped(Guid correlationId)
+                : base(correlationId)
+            {
+            }
+        }
+
         public class Stop : CoreProjectionManagementMessage
         {
             public Stop(Guid correlationId)

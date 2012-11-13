@@ -38,5 +38,6 @@ namespace EventStore.Projections.Core.Services.Management
         Starting,
         Running,
         Stopping,
+        LoadingState,
     }
 }

@@ -63,6 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.Dispose>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.Start>(_coreService);
+            _bus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.Stop>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.Kill>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.GetState>(_coreService);

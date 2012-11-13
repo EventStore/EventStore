@@ -49,6 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
                                          IHandle<CoreProjectionManagementMessage.Dispose>,
                                          IHandle<CoreProjectionManagementMessage.Start>,
+                                         IHandle<CoreProjectionManagementMessage.LoadStopped>,
                                          IHandle<CoreProjectionManagementMessage.Stop>,
                                          IHandle<CoreProjectionManagementMessage.Kill>,
                                          IHandle<CoreProjectionManagementMessage.GetState>,
@@ -316,6 +317,12 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var projection = _projections[message.CorrelationId];
             projection.Start();
+        }
+
+        public void Handle(CoreProjectionManagementMessage.LoadStopped message)
+        {
+            var projection = _projections[message.CorrelationId];
+            projection.LoadStopped();
         }
 
         public void Handle(CoreProjectionManagementMessage.Stop message)

@@ -595,8 +595,8 @@ namespace EventStore.Projections.Core.Services.Processing
             // ignore any ticks received when not pending. this may happen when restart requested
             if (!_tickPending)
                 return;
-            EnsureState(State.Running | State.Stopping | State.FaultedStopping | State.Faulted);
-            // we may get into faulted any time, so it is allowed
+            // process messagesin almost all states as we now ignore work items when processing
+            EnsureState(State.Running | State.Stopped | State.Stopping | State.FaultedStopping | State.Faulted);
             try
             {
                 _tickPending = false;
