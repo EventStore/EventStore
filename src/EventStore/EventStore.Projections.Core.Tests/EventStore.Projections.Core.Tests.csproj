@@ -123,6 +123,7 @@
     <Compile Include="Services\core_projection\checkpoint_manager\when_a_default_checkpoint_manager_has_been_reinitialized.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_expected_tag_the_started_in_recovery_stream.cs" />
     <Compile Include="Services\core_projection\TestCheckpointManagerMessageHandler.cs" />
+    <Compile Include="Services\core_projection\TestFixtureWithCoreProjection.cs" />
     <Compile Include="Services\core_projection\when_the_projection_with_pending_writes_is_killed.cs" />
     <Compile Include="Services\core_projection\when_the_state_handler_with_configured_state_stream_does_process_an_event_the_projection_should.cs" />
     <Compile Include="Services\event_filter\specific_stream_event_filter.cs" />
@@ -252,7 +253,7 @@
     <Compile Include="Services\core_projection\projection_checkpoint\when_requesting_checkpoint_before_all_writes_completed.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_starting_the_projection_checkpoint_with_some_events_already_emitted.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_the_projection_checkpoint_has_been_started.cs" />
-    <Compile Include="Services\core_projection\TestFixtureWithCoreProjection.cs" />
+    <Compile Include="Services\core_projection\TestFixtureWithCoreProjectionStarted.cs" />
     <Compile Include="Services\core_projection\TestFixtureWithExistingEvents.cs" />
     <Compile Include="Services\core_projection\when_creating_a_projection.cs" />
     <Compile Include="Services\core_projection\when_receiving_a_committed_event_the_projection_should.cs" />

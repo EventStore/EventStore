@@ -34,7 +34,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_starting_an_existing_projection_with_a_faulting_handler : TestFixtureWithCoreProjection
+    public class when_starting_an_existing_projection_with_a_faulting_handler : TestFixtureWithCoreProjectionStarted
     {
         private string _testProjectionState = @"{""test"":1}";
 

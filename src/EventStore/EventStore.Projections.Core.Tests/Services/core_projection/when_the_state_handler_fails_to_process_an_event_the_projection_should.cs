@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_state_handler_fails_to_process_an_event_the_projection_should : TestFixtureWithCoreProjection
+    public class when_the_state_handler_fails_to_process_an_event_the_projection_should : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {

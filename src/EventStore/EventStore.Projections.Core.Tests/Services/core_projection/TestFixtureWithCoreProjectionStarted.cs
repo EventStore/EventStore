@@ -26,41 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using NUnit.Framework;
-
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
-    [TestFixture]
-    public class when_starting_a_new_projection : TestFixtureWithCoreProjectionStarted
+    public abstract class TestFixtureWithCoreProjectionStarted : TestFixtureWithCoreProjection
     {
-        protected override void Given()
+        protected override void PreWhen()
         {
-            NoStream("$projections-projection-state");
-            NoStream("$projections-projection-checkpoint");
-        }
-
-        protected override void When()
-        {
-        }
-
-        [Test]
-        public void should_subscribe_from_beginning()
-        {
-            Assert.AreEqual(1, _subscribeProjectionHandler.HandledMessages.Count);
-            Assert.AreEqual(0, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.CommitPosition);
-            Assert.AreEqual(-1, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.PreparePosition);
-        }
-
-        [Test]
-        public void should_subscribe_non_null_subscriber()
-        {
-            Assert.NotNull(_subscribeProjectionHandler.HandledMessages[0].Subscriber);
-        }
-
-        [Test]
-        public void should_initialize_projection_state_handler()
-        {
-            Assert.AreEqual(1, _stateHandler._initializeCalled);
+            _coreProjection.Start();
         }
     }
 }

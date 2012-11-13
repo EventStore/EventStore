@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_projection_with_pending_writes_is_stopped : TestFixtureWithCoreProjection
+    public class when_the_projection_with_pending_writes_is_stopped : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {
