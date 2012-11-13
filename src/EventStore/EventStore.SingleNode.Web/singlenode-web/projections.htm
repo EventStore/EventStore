@@ -33,6 +33,20 @@
     <div id="content">
         <h1>
             Projections</h1>
+        <div class="row">
+            <div class="span12">
+                <div id="commands-container">
+                    <ul style="display: inline;">
+                        <li><a id="command-disable-all">
+                            <img src="/web/es/img/stop_btn.png" title="Disable & Stop All" alt="Disable & Stop All" /> Disable & Stop All
+                        </a></li>
+                        <li><a id="command-enable-all">
+                            <img src="/web/es/img/start_btn.png" title="Enable & Start All" alt="Enable & Start All" /> Enable & Start All</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>
@@ -102,15 +116,86 @@
             es.tmpl.renderBody();
         </script>
     </div>
-
-    
-
     <script type="text/javascript">
 
         (function() {
 
             $(function() {
+
                 requestList();
+
+                $("#command-disable-all").click(onDisableAll);
+                $("#command-enable-all").click(onEnableAll);
+                    
+                function onDisableAll(ev) {
+                    ev.preventDefault();
+
+                    postToEachProjection("/command/disable");
+
+                    return false;
+                }
+                
+                function onEnableAll(ev) {
+                    ev.preventDefault();
+
+                    postToEachProjection("/command/enable");
+
+                    return false;
+                }
+
+                function postToEachProjection(relativeUrl) {
+                    $.ajax("/projections/any", {
+                        headers: {
+                            Accept: "application/json",
+                        },
+                        success: success,
+                        error: error
+                    });
+
+                    function success(data, status, xhr) {
+
+                        var errors = [];
+                        var ajaxes = [];
+
+                        $.each(data.projections, function(i,projection) {
+                            ajaxes.push(disableProjection(projection, errors));
+                        });
+
+                        $.when.apply($, ajaxes)
+                         .then(function() {
+                             if (errors.length === 0)
+                                 return;
+
+                             var errorText = "There was some errors:\r\n" + errors.join('\r\n');
+                             alert(errorText);
+                         });
+                         
+                        function disableProjection(projection, errors) {
+                            var ajax = $.ajax(projection.statusUrl + relativeUrl, {
+                                headers: {
+                                    Accept: "application/json",
+                                },
+                                type: "POST",
+                                success: function() {
+                                },
+                                error: function(xhr, status, error) {
+                                    var err = es.util.formatError("Error when posting to projection '" + projection.name + "'", xhr);
+                                    errors.push(err);
+                                }
+                            });
+                            
+                            // make fails look like success to wait for them and show all errors at once
+                            var newDfd = $.Deferred();
+                            ajax.always(newDfd.resolve);
+                            return newDfd.promise();
+                        }
+                    }
+
+                    function error(xhr) {
+                        var msg = es.util.formatError("Couldn't get projections list.", xhr);
+                        alert(msg);
+                    }
+                }
             });
             
             function requestList() {
@@ -121,31 +206,27 @@
                     success: success,
                     error: error
                 });
-            }
 
-            function success(data, status, xhr) {
+                function success(data, status, xhr) {
 
-                data.projections.sort(function(a, b) {
-                    return a.name.localeCompare(b.name);
-                });
+                    data.projections.sort(function(a, b) {
+                        return a.name.localeCompare(b.name);
+                    });
 
-                $.templates("projectionTemplate", "#projectionTemplate");
+                    $.templates("projectionTemplate", "#projectionTemplate");
 
-                $("#projections").html(
-                    $.render.projectionTemplate(data.projections, {
-                        encode: window.encodeURIComponent
-                    })
-                );
+                    $("#projections").html(
+                        $.render.projectionTemplate(data.projections, {
+                            encode: window.encodeURIComponent
+                        })
+                    );
 
-                delayedRequestList();
-            }
+                    setTimeout(requestList, 1000);
+                }
 
-            function error(xhr, status) {
-                delayedRequestList();
-            }
-
-            function delayedRequestList() {
-                setTimeout(requestList, 1000);
+                function error(xhr, status) {
+                    setTimeout(requestList, 1000);
+                }
             }
         })();
     </script>

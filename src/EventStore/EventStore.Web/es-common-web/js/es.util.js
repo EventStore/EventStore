@@ -25,8 +25,8 @@ es.util.loadMenu = function (pages) {
 
 es.util.formatError = function (text, xhr) {
     var reason = xhr.responseText
-                     || xhr.statusText
                      || (xhr.status === 0 ? "Couldn't connect to server." : null)
+                     || xhr.statusText
                      || '(unknown)';
     return [text, "\r\nReason: ", reason].join('');
 };
