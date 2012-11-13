@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using System.Xml.Linq;
 using EventStore.Common.Log;
@@ -102,9 +101,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             try
             {
-                XDocument doc;
-                using(var reader = new StringReader(xml))
-                    doc = XDocument.Load(reader);
+                var doc = XDocument.Parse(xml);
 
                 XNamespace jsonNs = "http://james.newtonking.com/projects/json";
                 XName jsonName = XNamespace.Xmlns + "json";

@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         [SetUp]
         public void SetUp()
         {
-            Node = MiniNode.Create(8111, 9111);
+            Node = MiniNode.Create(40111, 40112);
             Node.Start();
         }
 

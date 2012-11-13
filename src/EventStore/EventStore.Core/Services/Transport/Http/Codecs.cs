@@ -302,8 +302,9 @@ namespace EventStore.Core.Services.Transport.Http
             try
             {
                 using (var memory = new MemoryStream())
+                using (var writer = new XmlTextWriter(memory, new UTF8Encoding(false)))
                 {
-                    new XmlSerializer(typeof (T)).Serialize(memory, value);
+                    new XmlSerializer(typeof (T)).Serialize(writer, value);
                     memory.Flush();
                     memory.Seek(0L, SeekOrigin.Begin);
                     return Encoding.UTF8.GetString(memory.GetBuffer(), 0, (int)memory.Length);
