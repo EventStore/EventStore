@@ -220,9 +220,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_projectionConfig.CheckpointsEnabled)
                 throw new InvalidOperationException("Checkpoints are not enabled");
+            if (_stopped || _stopping)
+                return;
             EnsureStarted();
-            if (_stopping)
-                throw new InvalidOperationException("Stopping");
             _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointTag);
             _lastProcessedEventProgress = progress;
             RequestCheckpoint(_lastProcessedEventPosition);
@@ -230,9 +230,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Progress(float progress)
         {
+            if (_stopping || _stopped)
+                return;
             EnsureStarted();
-            if (_stopping)
-                throw new InvalidOperationException("Stopping");
             _lastProcessedEventProgress = progress;
         }
 

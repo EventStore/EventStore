@@ -201,17 +201,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             RegisterSubscriptionMessage(message);
 
-            EnsureState(
-                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                if (_state == State.Running)
-                {
-                    CheckpointTag eventTag = message.CheckpointTag;
-                    string partition = _checkpointStrategy.StatePartitionSelector.GetStatePartition(message);
-                    var committedEventWorkItem = new CommittedEventWorkItem(this, message, partition);
-                    _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
-                }
+                CheckpointTag eventTag = message.CheckpointTag;
+                string partition = _checkpointStrategy.StatePartitionSelector.GetStatePartition(message);
+                var committedEventWorkItem = new CommittedEventWorkItem(this, message, partition);
+                _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
                 _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
@@ -226,15 +222,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             RegisterSubscriptionMessage(message);
 
-            EnsureState(
-                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                if (_state == State.Running)
-                {
-                    var progressWorkItem = new ProgressWorkItem(this, _checkpointManager, message.Progress);
-                    _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
-                }
+                var progressWorkItem = new ProgressWorkItem(this, _checkpointManager, message.Progress);
+                _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
@@ -249,11 +241,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             RegisterSubscriptionMessage(message);
 
-            EnsureState(
-                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                if ((_state == State.Running) && _projectionConfig.CheckpointsEnabled)
+                if (_projectionConfig.CheckpointsEnabled)
                 {
                     CheckpointTag checkpointTag = message.CheckpointTag;
                     var checkpointSuggestedWorkItem = new CheckpointSuggestedWorkItem(this, message, _checkpointManager);
@@ -269,15 +260,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
-            EnsureState(
-                State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                if (_state == State.Running)
-                {
-                    var getStateWorkItem = new GetStateWorkItem(message.Envelope, message.CorrelationId, this, _partitionStateCache, message.Partition);
-                    _processingQueue.EnqueueOutOfOrderTask(getStateWorkItem);
-                }
+                var getStateWorkItem = new GetStateWorkItem(
+                    message.Envelope, message.CorrelationId, this, _partitionStateCache, message.Partition);
+                _processingQueue.EnqueueOutOfOrderTask(getStateWorkItem);
                 _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
@@ -400,7 +388,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_startOnLoad)
             {
                 GoToState(State.Running);
-                _publisher.Publish(new CoreProjectionManagementMessage.Started(_projectionCorrelationId));
             }
             else
                 GoToState(State.Stopped);
@@ -410,6 +397,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             try
             {
+                _publisher.Publish(new CoreProjectionManagementMessage.Started(_projectionCorrelationId));
                 UpdateStatistics();
                 _processingQueue.ProcessEvent();
             }
@@ -488,9 +476,10 @@ namespace EventStore.Projections.Core.Services.Processing
             CommittedEventWorkItem committedEventWorkItem, ProjectionSubscriptionMessage.CommittedEventReceived message,
             string partition)
         {
-
-            EnsureState(State.Running);
-            InternalProcessCommittedEvent(committedEventWorkItem, partition, message);
+            if (_state == State.Running)
+                InternalProcessCommittedEvent(committedEventWorkItem, partition, message);
+            else // TODO: implement
+                ;
         }
 
         private void InternalProcessCommittedEvent(
@@ -768,9 +757,8 @@ namespace EventStore.Projections.Core.Services.Processing
         internal void FinalizeEventProcessing(
             List<EmittedEvent[]> scheduledWrites, CheckpointTag eventCheckpointTag, float progress)
         {
-            if (_state != State.Faulted && _state != State.FaultedStopping)
+            if (_state == State.Running)
             {
-                EnsureState(State.Running);
                 //TODO: move to separate projection method and cache result in work item
                 var checkpointTag = eventCheckpointTag;
                 _checkpointManager.EventProcessed(
