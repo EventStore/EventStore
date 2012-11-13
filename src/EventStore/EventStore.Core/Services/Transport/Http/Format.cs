@@ -31,7 +31,6 @@ using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http
@@ -144,22 +143,6 @@ namespace EventStore.Core.Services.Transport.Http
 
             var textMessage = message as HttpMessage.TextMessage;
             return textMessage != null ? entity.ResponseCodec.To(textMessage) : string.Empty;
-        }
-
-        public static string WriteEvents(ICodec codec, Message message)
-        {
-            Debug.Assert(message.GetType() == typeof (ClientMessage.WriteEvents));
-
-            var writeEvents = message as ClientMessage.WriteEvents;
-            if (writeEvents == null)
-                return string.Empty;
-
-            return codec.To(new HttpClientMessageDto.WriteEventsText(
-                writeEvents.ExpectedVersion,
-                writeEvents.Events.Select(e => new HttpClientMessageDto.ClientEventText(e.EventId, 
-                                                                                    e.EventType,
-                                                                                    e.Data, 
-                                                                                    e.Metadata)).ToArray()));
         }
 
         public static string WriteEventsCompleted(HttpEntity entity, Message message)

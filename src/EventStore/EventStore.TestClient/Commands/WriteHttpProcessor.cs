@@ -65,7 +65,7 @@ namespace EventStore.TestClient.Commands
             var url = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}", eventStreamId);
             context.Log.Info("Writing to {0}...", url);
 
-            var request = Codec.Json.To(new HttpClientMessageDto.WriteEventsText(
+            var request = Codec.Xml.To(new HttpClientMessageDto.WriteEventsText(
                     expectedVersion,
                     new[] { new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), "type", data, metadata) }));
 
@@ -73,7 +73,7 @@ namespace EventStore.TestClient.Commands
             client.Post(
                 url,
                 request,
-                Codec.Json.ContentType,
+                Codec.Xml.ContentType,
                 response =>
                 {
                     sw.Stop();
