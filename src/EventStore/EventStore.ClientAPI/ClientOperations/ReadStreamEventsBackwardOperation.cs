@@ -107,11 +107,9 @@ namespace EventStore.ClientAPI.ClientOperations
                 switch ((RangeReadResult)dto.Result)
                 {
                     case RangeReadResult.Success:
-                        return new InspectionResult(InspectionDecision.Succeed);
                     case RangeReadResult.StreamDeleted:
-                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
                     case RangeReadResult.NoStream:
-                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDoesNotExistException());
+                        return new InspectionResult(InspectionDecision.Succeed);
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -127,7 +125,14 @@ namespace EventStore.ClientAPI.ClientOperations
             if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
             {
                 if (_result != null)
-                    _source.SetResult(new EventStreamSlice(_stream, _start, _count, _result.Events));
+                    _source.SetResult(new EventStreamSlice(StatusCode.Convert((RangeReadResult) _result.Result),
+                                                           _stream,
+                                                           _start,
+                                                           _count,
+                                                           _result.Events,
+                                                           _result.NextEventNumber,
+                                                           _result.LastEventNumber,
+                                                           _result.IsEndOfStream));
                 else
                     _source.SetException(new NoResultException());
             }

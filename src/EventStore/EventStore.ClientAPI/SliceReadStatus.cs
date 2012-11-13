@@ -26,48 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System.Collections.Generic;
-using EventStore.ClientAPI.Common.Utils;
-using System.Linq;
-using EventStore.ClientAPI.Messages;
-
 namespace EventStore.ClientAPI
 {
-    public class EventStreamSlice
+    public enum SliceReadStatus
     {
-        internal static readonly RecordedEvent[] EmptyEvents = new RecordedEvent[0];
-
-        public readonly SliceReadStatus Status;
-        public readonly string Stream;
-
-        public readonly int Start;
-        public readonly int Count;
-        public readonly RecordedEvent[] Events;
-
-        public readonly int NextEventNumber;
-        public readonly int LastEventNumber;
-
-        public readonly bool IsEndOfStream;
-
-        internal EventStreamSlice(SliceReadStatus status, 
-                                  string stream, 
-                                  int start, 
-                                  int count, 
-                                  IEnumerable<ClientMessage.EventLinkPair> events,
-                                  int nextEventNumber,
-                                  int lastEventNumber,
-                                  bool isEndOfStream)
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
-
-            Status = status;
-            Stream = stream;
-            Start = start;
-            Count = count;
-            Events = events == null ? EmptyEvents : events.Select(e => new RecordedEvent(e.Event)).ToArray();
-            NextEventNumber = nextEventNumber;
-            LastEventNumber = lastEventNumber;
-            IsEndOfStream = isEndOfStream;
-        }
+        Success,
+        StreamNotFound,
+        StreamDeleted
     }
 }
