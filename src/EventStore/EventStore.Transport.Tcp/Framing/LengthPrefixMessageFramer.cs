@@ -79,9 +79,6 @@ namespace EventStore.Transport.Tcp.Framing
 
         public void UnFrameData(ArraySegment<byte> data)
         {
-            if (data == null)
-                throw new ArgumentNullException("data");
-
             Parse(data);
         }
         /// <summary>
