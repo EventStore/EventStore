@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,36 +26,24 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using EventStore.ClientAPI;
-using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Services.Transport.Http.Codecs;
+using EventStore.Transport.Http;
 
-namespace EventStore.TestClient.Commands.RunTestScenarios
+namespace EventStore.Core.Services.Transport.Http.Codecs
 {
-    internal class BankAccountEvent : IEvent
+    public static class Codec
     {
-        public Guid EventId { get; private set; }
-        public string Type { get; private set; }
+        public static readonly NoCodec NoCodec = new NoCodec();
+        public static readonly ICodec[] NoCodecs = new ICodec[0];
+        public static readonly ManualEncoding ManualEncoding = new ManualEncoding();
 
-        public bool IsJson { get; private set; }
+        public static readonly JsonCodec Json = new JsonCodec();
+        public static readonly XmlCodec Xml = new XmlCodec();
+        public static readonly CustomCodec ApplicationXml = new CustomCodec(Xml, ContentType.ApplicationXml);
+        public static readonly TextCodec Text = new TextCodec();
 
-        public byte[] Data { get; private set; }
-        public byte[] Metadata { get; private set; }
-
-        public BankAccountEvent(object accountObject)   
+        public static ICodec CreateCustom(ICodec codec, string contentType)
         {
-            if (accountObject == null)
-                throw new ArgumentNullException("accountObject");
-
-            EventId = Guid.NewGuid();
-            Type = accountObject.GetType().Name;
-
-            IsJson = true;
-            Data = Encoding.UTF8.GetBytes(Codec.Json.To(accountObject));
-            Metadata = Encoding.UTF8.GetBytes(Codec.Json.To(new Dictionary<string, object> { { "IsEmpty", true } }));
+            return new CustomCodec(codec, contentType);
         }
     }
 }
