@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -63,11 +64,8 @@ namespace EventStore.Core.Index
         private readonly long _size;
         private readonly GCHandle _bufferPtr;
         private readonly byte[] _buffer;
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentQueue<FileStream> _streams = new Common.ConcurrentCollections.ConcurrentQueue<FileStream>();
-#else
-        private readonly System.Collections.Concurrent.ConcurrentQueue<FileStream> _streams = new System.Collections.Concurrent.ConcurrentQueue<FileStream>();
-#endif
+        private readonly ConcurrentQueue<FileStream> _streams = new ConcurrentQueue<FileStream>();
+
         private readonly Midpoint[] _midpoints;
         private readonly ManualResetEvent _destroyEvent = new ManualResetEvent(false);
         private readonly Guid _id;
@@ -216,9 +214,7 @@ namespace EventStore.Core.Index
         ~PTable()
         {
             if (_bufferPtr.IsAllocated)
-            {
                 _bufferPtr.Free();
-            }
         }
 
         public static PTable FromFile(string filename)

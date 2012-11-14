@@ -31,6 +31,7 @@
 #endif
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -60,16 +61,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _succReadCount;
         private long _failedReadCount;
 
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentStack<ITransactionFileReader> _readers = new Common.ConcurrentCollections.ConcurrentStack<ITransactionFileReader>();
-#else
-        private readonly System.Collections.Concurrent.ConcurrentStack<ITransactionFileReader> _readers = new System.Collections.Concurrent.ConcurrentStack<ITransactionFileReader>();
-#endif
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentStack<ITransactionFileSequentialReader> _seqReaders = new Common.ConcurrentCollections.ConcurrentStack<ITransactionFileSequentialReader>();
-#else
-        private readonly System.Collections.Concurrent.ConcurrentStack<ITransactionFileSequentialReader> _seqReaders = new System.Collections.Concurrent.ConcurrentStack<ITransactionFileSequentialReader>();
-#endif
+        private readonly ConcurrentStack<ITransactionFileReader> _readers = new ConcurrentStack<ITransactionFileReader>();
+        private readonly ConcurrentStack<ITransactionFileSequentialReader> _seqReaders = new ConcurrentStack<ITransactionFileSequentialReader>();
+
         private readonly ITableIndex _tableIndex;
         private readonly IHasher _hasher;
         private readonly IPublisher _bus;

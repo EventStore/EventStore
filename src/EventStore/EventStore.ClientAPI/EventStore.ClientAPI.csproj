@@ -108,8 +108,6 @@
     <Compile Include="ClientOperations\CreateStreamOperation.cs" />
     <Compile Include="Common\Log\LogManager.cs" />
     <Compile Include="Common\Utils\BytesFormatter.cs" />
-    <Compile Include="Common\ConcurrentCollections\ConcurrentQueue.cs" />
-    <Compile Include="Common\ConcurrentCollections\ConcurrentStack.cs" />
     <Compile Include="ClientOperations\DeleteStreamOperation.cs" />
     <Compile Include="ClientOperations\IClientOperation.cs" />
     <Compile Include="ClientOperations\ReadStreamEventsForwardOperation.cs" />

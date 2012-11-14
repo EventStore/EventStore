@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -39,7 +40,13 @@ namespace EventStore.Transport.Tcp
 {
     public class TcpConnection : TcpConnectionBase, ITcpConnection
     {
+        private const int MaxSendPacketSize = 64 * 1024;
+
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnection>();
+        private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool",
+                                                                                   TcpConfiguration.SendReceivePoolSize,
+                                                                                   () => new SocketAsyncEventArgs());
+        private static readonly BufferManager BufferManager = new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
 
         internal static TcpConnection CreateConnectingTcpConnection(IPEndPoint remoteEndPoint, 
                                                                     TcpClientConnector connector, 
@@ -70,42 +77,17 @@ namespace EventStore.Transport.Tcp
             return connection;
         }
 
-        private const int MaxSendPacketSize = 64*1024;
-
-        private static readonly SocketArgsPool SocketArgsPool =
-            new SocketArgsPool("TcpConnection.SocketArgsPool", 
-                               TcpConfiguration.SendReceivePoolSize,
-                               () => new SocketAsyncEventArgs());
-
-        private static readonly BufferManager BufferManager =
-            new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
-
-        private int _packagesSent;
-        private long _bytesSent;
-        private int _packagesReceived;
-        private long _bytesReceived;
-
         public event Action<ITcpConnection, SocketError> ConnectionClosed;
 
         public IPEndPoint EffectiveEndPoint { get; private set; }
-
-        public int SendQueueSize
-        {
-            get { return _sendQueue.Count; }
-        }
+        public int SendQueueSize { get { return _sendQueue.Count; } }
 
         private Socket _socket;
         private SocketAsyncEventArgs _receiveSocketArgs;
         private SocketAsyncEventArgs _sendSocketArgs;
 
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.ConcurrentCollections.ConcurrentQueue<ArraySegment<byte>>();
-#else
-        private readonly System.Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new System.Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
-#endif
-
+        private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
         private readonly Queue<Tuple<ArraySegment<byte>, Action>> _receiveQueue = new Queue<Tuple<ArraySegment<byte>, Action>>();
-
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
         private readonly object _receivingLock = new object();
@@ -115,6 +97,10 @@ namespace EventStore.Transport.Tcp
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
+        private int _packagesSent;
+        private long _bytesSent;
+        private int _packagesReceived;
+        private long _bytesReceived;
         private int _sentAsyncs;
         private int _sentAsyncCallbacks;
         private int _recvAsyncs;
@@ -131,6 +117,7 @@ namespace EventStore.Transport.Tcp
         private void InitSocket(Socket socket)
         {
             Console.WriteLine("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
+
             base.InitSocket(socket, EffectiveEndPoint);
             lock (_sendingLock)
             {

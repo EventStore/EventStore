@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -40,12 +41,6 @@ using EventStore.Core.Util;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
-#if __MonoCS__
-    using ConcurrentReaderWorkItemQueue = Common.ConcurrentCollections.ConcurrentQueue<ReaderWorkItem>;
-#else
-    using ConcurrentReaderWorkItemQueue = System.Collections.Concurrent.ConcurrentQueue<ReaderWorkItem>;
-#endif
-
     public unsafe class TFChunk : IDisposable
     {
         public const byte CurrentChunkVersion = 2;
@@ -80,8 +75,8 @@ namespace EventStore.Core.TransactionLog.Chunks
         private ChunkFooter _chunkFooter;
         
         private readonly int _maxReadThreads;
-        private readonly ConcurrentReaderWorkItemQueue _streams = new ConcurrentReaderWorkItemQueue();
-        private ConcurrentReaderWorkItemQueue _memoryStreams;
+        private readonly ConcurrentQueue<ReaderWorkItem> _streams = new ConcurrentQueue<ReaderWorkItem>();
+        private ConcurrentQueue<ReaderWorkItem> _memoryStreams;
         private WriterWorkItem _writerWorkItem;
         private volatile int _actualDataSize;
 
@@ -504,9 +499,9 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private ConcurrentReaderWorkItemQueue BuildCacheReaders()
+        private ConcurrentQueue<ReaderWorkItem> BuildCacheReaders()
         {
-            var queue = new ConcurrentReaderWorkItemQueue();
+            var queue = new ConcurrentQueue<ReaderWorkItem>();
             for (int i = 0; i < _maxReadThreads; i++)
             {
                 var stream = new UnmanagedMemoryStream(_cachedData, _cachedDataLength);

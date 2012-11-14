@@ -74,11 +74,7 @@ namespace EventStore.ClientAPI
         private readonly SubscriptionsChannel _subscriptionsChannel;
         private readonly ProjectionsManager _projectionsManager;
 
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentQueue<IClientOperation> _queue = new Common.ConcurrentCollections.ConcurrentQueue<IClientOperation>();
-#else
         private readonly ConcurrentQueue<IClientOperation> _queue = new ConcurrentQueue<IClientOperation>();
-#endif
         private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
         private int _inProgressCount;
 
