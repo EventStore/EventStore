@@ -1,6 +1,10 @@
 ﻿if (!window.es) { window.es = {}; };
 es.postEvent = function (settings) {
 
+    var eventType = settings.eventType || (function () { throw "eventType is required"; })();
+    var stream = settings.stream || (function () { throw "stream is required"; })();
+    var data = settings.data || (function () { throw "data is required"; })();
+
     var expectedVersion = settings.expectedVersion || -2;
     var eventId = settings.eventId || guid();
     var correlationId = settings.correlationId || guid();
@@ -8,10 +12,7 @@ es.postEvent = function (settings) {
     var onError = settings.error || function() {};
     var onSuccess = settings.success || function() {};
 
-    
-    var eventType = settings.eventType || (function() { throw "eventType is required"; })();
-    var stream = settings.stream || (function() { throw "stream is required"; })();
-    var data = settings.data || (function() { throw "data is required"; })();
+
 
     var dataStr = null;
     if (typeof data === "object") {

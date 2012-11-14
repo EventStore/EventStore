@@ -28,10 +28,10 @@
 
 namespace EventStore.ClientAPI
 {
-    public enum Mode
+    public enum SliceReadStatus
     {
-        FullConsistency,
-        ConsistentWrites,
-        ConsistentReads,
+        Success,
+        StreamNotFound,
+        StreamDeleted
     }
 }

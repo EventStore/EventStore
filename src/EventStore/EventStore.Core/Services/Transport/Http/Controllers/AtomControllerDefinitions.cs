@@ -387,7 +387,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                             e => Log.ErrorException(e, "Error while reading request (POST entry)"));
         }
 
-        private void OnPostEntryRequestRead(HttpEntityManager manager, string body)
+        private void OnPostEntryRequestRead(HttpEntityManager manager, byte[] body)
         {
             var entity = manager.HttpEntity;
             var stream = (string)manager.AsyncState;

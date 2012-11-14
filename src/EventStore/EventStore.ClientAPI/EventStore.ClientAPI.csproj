@@ -86,7 +86,6 @@
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
     <Compile Include="Common\Log\DefaultLogger.cs" />
     <Compile Include="Common\Utils\Tasks.cs" />
-    <Compile Include="ConnectionSettings.cs" />
     <Compile Include="Connection\ClusterExplorer.cs" />
     <Compile Include="Connection\ProjectionsManager.cs" />
     <Compile Include="Connection\Subscription.cs" />
@@ -96,7 +95,6 @@
     <Compile Include="Exceptions\ProjectionCommandFailedException.cs" />
     <Compile Include="Exceptions\InvalidTransactionException.cs" />
     <Compile Include="Exceptions\StreamDeletedException.cs" />
-    <Compile Include="Exceptions\StreamDoesNotExistException.cs" />
     <Compile Include="Exceptions\WrongExpectedVersionException.cs" />
     <Compile Include="IEvent.cs" />
     <Compile Include="EventStoreTransaction.cs" />
@@ -123,7 +121,9 @@
     <Compile Include="Messages\ClusterMessages.cs" />
     <Compile Include="Position.cs" />
     <Compile Include="RecordedEvent.cs" />
+    <Compile Include="SliceReadStatus.cs" />
     <Compile Include="StreamPosition.cs" />
+    <Compile Include="SystemData\StatusCode.cs" />
     <Compile Include="SystemData\EndpointsPair.cs" />
     <Compile Include="ExpectedVersion.cs" />
     <Compile Include="SystemData\InspectionResult.cs" />

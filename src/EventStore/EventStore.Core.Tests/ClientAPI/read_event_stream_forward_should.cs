@@ -28,7 +28,6 @@
 using System;
 using System.Linq;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
@@ -61,22 +60,24 @@ namespace EventStore.Core.Tests.ClientAPI
 
         [Test]
         [Category("Network")]
-        public void throw_if_no_stream()
+        public void notify_using_status_code_if_stream_not_found()
         {
-            const string stream = "read_event_stream_forward_should_throw_if_no_stream";
+            const string stream = "read_event_stream_forward_should_notify_using_status_code_if_stream_not_found";
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
                 var read = store.ReadEventStreamForwardAsync(stream, 0, 1);
-                Assert.That(() => read.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDoesNotExistException>());
+                Assert.DoesNotThrow(read.Wait);
+
+                Assert.That(read.Result.Status, Is.EqualTo(SliceReadStatus.StreamNotFound));
             }
         }
 
         [Test]
         [Category("Network")]
-        public void throw_if_stream_deleted()
+        public void notify_using_status_code_if_stream_was_deleted()
         {
-            const string stream = "read_event_stream_forward_should_throw_if_stream_deleted";
+            const string stream = "read_event_stream_forward_should_notify_using_status_code_if_stream_was_deleted";
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
@@ -86,7 +87,9 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.DoesNotThrow(delete.Wait);
 
                 var read = store.ReadEventStreamForwardAsync(stream, 0, 1);
-                Assert.That(() => read.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
+                Assert.DoesNotThrow(read.Wait);
+
+                Assert.That(read.Result.Status, Is.EqualTo(SliceReadStatus.StreamDeleted));
             }
         }
 

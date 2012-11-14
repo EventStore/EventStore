@@ -27,8 +27,9 @@
 // 
 
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
@@ -46,16 +47,6 @@ namespace EventStore.Core.Services.Transport.Http
     {
         private static readonly ILogger Log = LogManager.GetLogger("AutoEventConverter");
 
-        public static Tuple<int, Event[]> SmartParse(string request, ICodec sourceCodec)
-        {
-            var write = Load(request, sourceCodec);
-            if (write == null || write.Events == null || write.Events.Length == 0)
-                return new Tuple<int, Event[]>(-1, null);
-
-            var events = Parse(write.Events);
-            return new Tuple<int, Event[]>(write.ExpectedVersion, events);
-        }
- 
         public static string SmartFormat(ClientMessage.ReadEventCompleted completed, ICodec targetCodec)
         {
             var dto = new HttpClientMessageDto.ReadEventCompletedText(completed);
@@ -70,43 +61,70 @@ namespace EventStore.Core.Services.Transport.Http
                     dto.Metadata = deserializedMetadata;
             }
 
-            if (new[] { ContentType.Xml, "application/xml", ContentType.Atom }.Contains(targetCodec.ContentType))
+            switch (targetCodec.ContentType)
             {
-                var serializeObject = JsonConvert.SerializeObject(dto);
-                var deserializeXmlNode = JsonConvert.DeserializeXmlNode(serializeObject, "read-event-result");
-                return deserializeXmlNode.InnerXml;
+                case ContentType.Xml:
+                case ContentType.ApplicationXml:
+                case ContentType.Atom:
+                {
+                    var serializeObject = JsonConvert.SerializeObject(dto);
+                    var deserializeXmlNode = JsonConvert.DeserializeXmlNode(serializeObject, "read-event-result");
+                    return deserializeXmlNode.InnerXml;
+                }
+
+                default:
+                    return targetCodec.To(dto);
             }
-
-            return targetCodec.To(dto);
         }
 
-        private static HttpClientMessageDto.WriteEventsText Load(string s, ICodec sourceCodec)
+        public static Tuple<int, Event[]> SmartParse(byte[] request, ICodec sourceCodec)
         {
-            var requestType = sourceCodec.ContentType;
+            var write = Load(request, sourceCodec);
+            if (write == null || write.Events == null || write.Events.Length == 0)
+                return new Tuple<int, Event[]>(-1, null);
 
-            if (new[] {ContentType.Json, ContentType.AtomJson}.Contains(requestType))
-                return LoadFromJson(s);
-            if (new[] {ContentType.Xml, "application/xml", ContentType.Atom}.Contains(requestType))
-                return LoadFromXml(s);
-
-            return null;
+            var events = Parse(write.Events);
+            return new Tuple<int, Event[]>(write.ExpectedVersion, events);
         }
 
-        private static HttpClientMessageDto.WriteEventsText LoadFromJson(string json)
+        private static HttpClientMessageDto.WriteEventsDynamic Load(byte[] data, ICodec sourceCodec)
         {
-            return Codec.Json.From<HttpClientMessageDto.WriteEventsText>(json);
+            switch(sourceCodec.ContentType)
+            {
+                case ContentType.Json:
+                case ContentType.AtomJson:
+                    return LoadFromJson(data);
+
+                case ContentType.Xml:
+                case ContentType.ApplicationXml:
+                case ContentType.Atom:
+                    return LoadFromXml(data);
+
+                default:
+                    return null;
+            }
         }
 
-        private static HttpClientMessageDto.WriteEventsText LoadFromXml(string xml)
+        private static HttpClientMessageDto.WriteEventsDynamic LoadFromJson(byte[] json)
+        {
+            return Codec.Json.From<HttpClientMessageDto.WriteEventsDynamic>(Encoding.UTF8.GetString(json));
+        }
+
+        private static HttpClientMessageDto.WriteEventsDynamic LoadFromXml(byte[] xml)
         {
             try
             {
-                var doc = XDocument.Parse(xml);
+                XDocument doc;
+                using (var memStream = new MemoryStream(xml))
+                using (var xmlTextReader = new XmlTextReader(memStream))
+                {
+                    doc = XDocument.Load(xmlTextReader);
+                }
 
-                XNamespace jsonNs = "http://james.newtonking.com/projects/json";
-                XName jsonName = XNamespace.Xmlns + "json";
+                XNamespace jsonNsValue = "http://james.newtonking.com/projects/json";
+                XName jsonNsName = XNamespace.Xmlns + "json";
 
-                doc.Root.SetAttributeValue(jsonName, jsonNs);
+                doc.Root.SetAttributeValue(jsonNsName, jsonNsValue);
 
                 var expectedVersion = doc.Root.Element("ExpectedVersion");
                 var events = doc.Root.Descendants("event").ToArray();
@@ -114,17 +132,20 @@ namespace EventStore.Core.Services.Transport.Http
                 foreach (var @event in events)
                 {
                     @event.Name = "Events";
-                    @event.SetAttributeValue(jsonNs + "Array", "true");
+                    @event.SetAttributeValue(jsonNsValue + "Array", "true");
                 }
 
                 doc.Root.ReplaceNodes(events);
 
                 foreach (var element in doc.Root.Descendants("Data").Concat(doc.Root.Descendants("Metadata")))
+                {
                     element.RemoveAttributes();
+                }
 
                 var json = JsonConvert.SerializeXNode(doc, Formatting.None, false);
-                var textEvents = JsonConvert.DeserializeObject<JObject>(json)["write-events"]["Events"].ToObject<HttpClientMessageDto.ClientEventText[]>();
-                return new HttpClientMessageDto.WriteEventsText(int.Parse(expectedVersion.Value), textEvents.ToArray());
+                var root = JsonConvert.DeserializeObject<JObject>(json);
+                var dynamicEvents = root["write-events"]["Events"].ToObject<HttpClientMessageDto.ClientEventDynamic[]>();
+                return new HttpClientMessageDto.WriteEventsDynamic(int.Parse(expectedVersion.Value), dynamicEvents.ToArray());
             }
             catch (Exception e)
             {
@@ -133,41 +154,32 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        private static Event[] Parse(HttpClientMessageDto.ClientEventText[] textEvents)
+        private static Event[] Parse(HttpClientMessageDto.ClientEventDynamic[] dynamicEvents)
         {
-            var events = new List<Event>(textEvents.Length);
-            foreach (var textEvent in textEvents)
+            var events = new Event[dynamicEvents.Length];
+            for (int i = 0, n = dynamicEvents.Length; i < n; ++i)
             {
+                var textEvent = dynamicEvents[i];
                 bool dataIsJson;
                 bool metadataIsJson;
                 var data = AsBytes(textEvent.Data, out dataIsJson);
                 var metadata = AsBytes(textEvent.Metadata, out metadataIsJson);
 
-                events.Add(new Event(textEvent.EventId, textEvent.EventType, dataIsJson || metadataIsJson, data, metadata));
+                events[i] = new Event(textEvent.EventId, textEvent.EventType, dataIsJson || metadataIsJson, data, metadata);
             }
             return events.ToArray();
         }
 
         private static byte[] AsBytes(object obj, out bool isJson)
         {
-            isJson = true;
-            if (IsJObject(obj))
+            if (obj is JObject)
+            {
+                isJson = true;
                 return Encoding.UTF8.GetBytes(Codec.Json.To(obj));
+            }
 
             isJson = false;
-            return Encoding.UTF8.GetBytes(AsString(obj));
-        }
-
-        private static string AsString(object obj)
-        {
-            if(obj == null)
-                return string.Empty;
-            return (obj as string) ?? string.Empty;
-        }
-
-        private static bool IsJObject(object obj)
-        {
-            return obj is JObject;
+            return Encoding.UTF8.GetBytes((obj as string) ?? string.Empty);
         }
     }
 }

@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI
             return new MiniNode(externalTcpPort, externalHttpPort);
         }
 
-        private MiniNode(int externalTcpPort = 4222, int externalHttpPort = 5222)
+        private MiniNode(int externalTcpPort = 41111, int externalHttpPort = 41112)
         {
             _oneTimeDbPath = Path.Combine(Path.GetTempPath(), string.Format("mini-node-one-time-db-{0}-{1}", externalTcpPort, externalHttpPort));
             TryDeleteDirectory(_oneTimeDbPath);

@@ -37,19 +37,37 @@ namespace EventStore.ClientAPI
     {
         internal static readonly RecordedEvent[] EmptyEvents = new RecordedEvent[0];
 
+        public readonly SliceReadStatus Status;
         public readonly string Stream;
-        public readonly int StartIndex;
+
+        public readonly int Start;
         public readonly int Count;
         public readonly RecordedEvent[] Events;
 
-        internal EventStreamSlice(string stream, int startIndex, int count, IEnumerable<ClientMessage.EventLinkPair> events)
+        public readonly int NextEventNumber;
+        public readonly int LastEventNumber;
+
+        public readonly bool IsEndOfStream;
+
+        internal EventStreamSlice(SliceReadStatus status, 
+                                  string stream, 
+                                  int start, 
+                                  int count, 
+                                  IEnumerable<ClientMessage.EventLinkPair> events,
+                                  int nextEventNumber,
+                                  int lastEventNumber,
+                                  bool isEndOfStream)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
+            Status = status;
             Stream = stream;
-            StartIndex = startIndex;
+            Start = start;
             Count = count;
             Events = events == null ? EmptyEvents : events.Select(e => new RecordedEvent(e.Event)).ToArray();
+            NextEventNumber = nextEventNumber;
+            LastEventNumber = lastEventNumber;
+            IsEndOfStream = isEndOfStream;
         }
     }
 }

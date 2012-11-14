@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -51,14 +52,14 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             }
         }
 
-        public static string GetJsonWrite(string data, string metadata)
+        public static byte[] GetJsonWrite(string data, string metadata)
         {
-            return string.Format(JsonWriteFormat,
-                                 "-1",
-                                 String.Format("\"{0}\"", Guid.NewGuid()),
-                                 "\"type\"",
-                                 data,
-                                 metadata);
+            return Encoding.UTF8.GetBytes(string.Format(JsonWriteFormat,
+                                                        "-1",
+                                                        String.Format("\"{0}\"", Guid.NewGuid()),
+                                                        "\"type\"",
+                                                        data,
+                                                        metadata));
         }
 
         public static string GetJsonReadResult(ClientMessage.ReadEventCompleted completed, bool dataJson = true, bool metadataJson = true)
@@ -71,9 +72,14 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                  metadataJson ? JsonMetadata : WrapIntoQuotes(AsString(completed.Record.Metadata)));
         }
 
-        public static string GetXmlWrite(string data, string metadata)
+        public static byte[] GetXmlWrite(string data, string metadata, bool withBom = true)
         {
-            return string.Format(XmlWriteFormat, "-1", Guid.NewGuid(), "type", data, metadata);
+            IEnumerable<byte> result = Enumerable.Empty<byte>();
+            if (withBom)
+                result = result.Concat(Encoding.UTF8.GetPreamble());
+            result = result.Concat(Encoding.UTF8.GetBytes(
+                string.Format(XmlWriteFormat, "-1", Guid.NewGuid(), "type", data, metadata)));
+            return result.ToArray();
         }
 
         public static string GetXmlReadResult(ClientMessage.ReadEventCompleted completed, bool dataJson = true, bool metadataJson = true)

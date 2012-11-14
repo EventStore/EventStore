@@ -20,10 +20,10 @@
                 </div>
             </div>
             <div class="control-group">
-                <label class="control-label" for="raw_state">
+                <label class="control-label" for="projection-state">
                     <strong>State</strong></label>
                 <div class="controls">
-                    <div id="raw_state">
+                    <div id="projection-state">
                     </div>
                 </div>
             </div>
@@ -31,18 +31,17 @@
                 <label class="control-label" for="source">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <pre id="source" style="font-family: consolas, 'courier new'; width: 400px; height: 200px;"
-                        class="span5"></pre>
+                    <textarea disabled="disabled" id="source" ></textarea>
                 </div>
             </div>
             <div class="control-group">
                 <div class="controls" id="delete-container">
-                    <div>
+                    <label class="checkbox">
                         <input type="checkbox" id="delete-checkpoint-stream-checkbox" disabled="disabled">Delete Checkpoint Stream
-                    </div>
-                    <div>
+                    </label>
+                    <label class="checkbox">
                         <input type="checkbox" id="delete-state-stream-checkbox" disabled="disabled">Delete State Stream
-                    </div>
+                    </label>
                     <div>
                         <button id="delete-button" class="btn btn-success">
                             Confirm Delete</button>
@@ -58,59 +57,43 @@
 
     <script type="text/javascript">
 
-        (function () {
+        (function() {
 
             var projectionStatusUrl = "";
 
-            function success(data, status, xhr) {
-                var projection = data.projections[0];
-            }
+            $(function() {
+                $.templates("editSourceTemplate", "#editSourceTemplate");
+                projectionStatusUrl = location.hash.substr(1);
 
-            function successDeleteProjection(data, status, xhr) {
-                window.location = "view-projection.htm#" + projectionStatusUrl;
-            }
+                $('#delete-button').click(function() {
 
-            function error(xhr, status) {
-                delayedRequestProjection();
-            }
+                    var params = $.param({
+                        deleteCheckpointStream: $("#delete-checkpoint-stream-checkbox").attr("checked") ? "yes" : "no",
+                        deleteStateStream: $("#delete-state-stream-checkbox").attr("checked") ? "yes" : "no",
+                    });
+                    var url = projectionStatusUrl + "?" + params;
 
-            function successState(data, status, xhr) {
-                $("#raw_state").text(JSON.stringify(data));
-            }
-
-            function errorState(xhr, status) {
-                delayedRequestProjectionState();
-            }
-
-            function successSource(data, status, xhr) {
-                $("#source").text(data);
-            }
-
-            function errorSource(xhr, status) {
-                delayedRequestProjectionSource();
-            }
-
-            function delayedRequestProjection() {
-                setTimeout(requestProjection, 1000);
-            }
-
-            function delayedRequestProjectionState() {
-                setTimeout(requestProjectionState, 1000);
-            }
-
-            function delayedRequestProjectionSource() {
-                setTimeout(requestProjectionSource, 1000);
-            }
-
-            function requestProjection() {
-                $.ajax(projectionStatusUrl + "/statistics", {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    success: success,
-                    error: error
+                    $.ajax(url, {
+                        headers: {
+                            Accept: "application/json",
+                        },
+                        type: "DELETE",
+                        success: successDeleteProjection,
+                        error: function(xhr) {
+                            var msg = es.util.formatError("Couldn't delete projection", xhr);
+                            alert(msg);
+                        }
+                    });
                 });
-            }
+
+                requestProjectionState();
+                requestProjectionSource();
+
+                function successDeleteProjection(data, status, xhr) {
+                    window.document.location = "projections.htm";
+                }
+            });
+
 
             function requestProjectionState() {
                 $.ajax(projectionStatusUrl + "/state", {
@@ -120,6 +103,14 @@
                     success: successState,
                     error: errorState
                 });
+
+                function successState(data, status, xhr) {
+                    $("#projection-state").text(JSON.stringify(data));
+                }
+
+                function errorState(xhr, status) {
+                    setTimeout(requestProjectionState, 1000);
+                }
             }
 
             function requestProjectionSource() {
@@ -131,32 +122,16 @@
                     success: successSource,
                     error: errorSource
                 });
+
+                function successSource(data, status, xhr) {
+                    $("#source").text(data);
+                }
+
+                function errorSource(xhr, status) {
+                    setTimeout(requestProjectionSource, 1000);
+                }
             }
 
-            $(function () {
-                $.templates("editSourceTemplate", "#editSourceTemplate");
-                projectionStatusUrl = location.hash.substr(1);
-
-                $('#delete-button').click(function () {
-                    $.ajax(projectionStatusUrl + "?" + $.param({
-                        deleteCheckpointStream: $("#delete-checkpoint-stream-checkbox").attr("checked") ? "yes" : "no",
-                        deleteStateStream: $("#delete-state-stream-checkbox").attr("checked") ? "yes" : "no",
-                    }), {
-                        headers: {
-                            Accept: "application/json",
-                        },
-
-
-                        type: "DELETE",
-                        success: successDeleteProjection,
-                        error: function () { alert("Failed!"); }
-                    });
-                });
-
-                requestProjection();
-                requestProjectionState();
-                requestProjectionSource();
-            });
         })();
 
     </script>

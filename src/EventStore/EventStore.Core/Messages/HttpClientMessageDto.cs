@@ -38,20 +38,45 @@ namespace EventStore.Core.Messages
     {
         #region HTTP DTO
 
-        [XmlType(TypeName = "event")]
-        public class ClientEventText
+        public class ClientEventDynamic
         {
             public Guid EventId { get; set; }
             public string EventType { get; set; }
 
             public object Data { get; set; }
             public object Metadata { get; set; }
+        }
+
+        public class WriteEventsDynamic
+        {
+            public int ExpectedVersion { get; set; }
+            public ClientEventDynamic[] Events { get; set; }
+
+            public WriteEventsDynamic()
+            {
+            }
+
+            public WriteEventsDynamic(int expectedVersion, ClientEventDynamic[] events)
+            {
+                ExpectedVersion = expectedVersion;
+                Events = events;
+            }
+        }
+
+        [XmlType(TypeName = "event")]
+        public class ClientEventText
+        {
+            public Guid EventId { get; set; }
+            public string EventType { get; set; }
+
+            public string Data { get; set; }
+            public string Metadata { get; set; }
 
             public ClientEventText()
             {
             }
 
-            public ClientEventText(Guid eventId, string eventType, object data, object metadata)
+            public ClientEventText(Guid eventId, string eventType, string data, string metadata)
             {
                 Ensure.NotEmptyGuid(eventId, "eventId");
                 Ensure.NotNull(data, "data");
