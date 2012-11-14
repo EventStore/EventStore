@@ -105,15 +105,30 @@ namespace EventStore.Core.Util
                 }
                 else
                 {
+                    var config = GetWebPageConfig(contentType);
                     var content = File.ReadAllBytes(fullPath);
-                    http.Manager.Reply(content, 200, "OK", contentType, null, 
-                        ex => _logger.InfoException(ex, "Error while replying from MiniWeb"));
+
+                    http.Manager.Reply(content,
+                                       config.Code,
+                                       config.Description,
+                                       config.Type,
+                                       config.Headers,
+                                       ex => _logger.InfoException(ex, "Error while replying from MiniWeb"));
                 }
             }
             catch (Exception ex)
             {
                 http.Manager.Reply(ex.ToString(), 500, "Internal Server Error", "text/plain", null, Console.WriteLine);
             }
+        }
+
+        private static ResponseConfiguration GetWebPageConfig(string contentType)
+        {
+#if RELEASE || CACHE_WEB_CONTENT
+            return Configure.OkCache(contentType, 60 * 60); //1 hour
+#else
+            return Configure.OkNoCache(contentType);
+#endif
         }
 
         public static string GetWebRootFileSystemDirectory(string debugPath = null)

@@ -10,6 +10,10 @@ es.tmpl = (function () {
 
     registerOnLoad();
 
+    $.ajaxSetup({
+        cache: 'default' // prevent adding ?_=timestamp by jquery
+    });
+
     return {
         renderHead: renderHead,
         renderBody: renderBody,
