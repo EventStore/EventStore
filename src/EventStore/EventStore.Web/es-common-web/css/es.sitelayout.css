@@ -77,6 +77,9 @@ h6 { font-size: 1em; font-weight: bold; }
 #mode {
     min-width: 515px; /*width of #source + 15px - todo: find out why*/
 }
+.es-proj-stats-table td {
+    width: 33%;
+}
 .error {
 	min-width: 40%;
 	margin: 10px auto;

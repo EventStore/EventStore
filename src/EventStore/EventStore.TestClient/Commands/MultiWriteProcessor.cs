@@ -66,6 +66,7 @@ namespace EventStore.TestClient.Commands
                 Enumerable.Range(0, writeCount).Select(x =>
                                                        new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
                                                                                   "type",
+                                                                                  false,
                                                                                   Encoding.UTF8.GetBytes(data),
                                                                                   new byte[0])).ToArray(),
                 true);

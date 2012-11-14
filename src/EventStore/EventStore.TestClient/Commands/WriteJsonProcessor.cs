@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -31,21 +31,23 @@ using System.Net.Sockets;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.TestClient.Commands
 {
-    internal class WriteProcessor : ICmdProcessor
+    internal class WriteJsonProcessor : ICmdProcessor
     {
-        public string Usage { get { return "WR [<stream-id> <expected-version> <data> [<metadata>]]"; } }
-        public string Keyword { get { return "WR"; } }
-        //private static readonly Guid _eventId = Guid.NewGuid();
-        
+        public string Usage { get { return "WRJ [<stream-id> <expected-version> <data> [<metadata>]]"; } }
+        public string Keyword { get { return "WRJ"; } }
+
+        private readonly Random _random = new Random();
+
         public bool Execute(CommandProcessorContext context, string[] args)
         {
             var eventStreamId = "test-stream";
             var expectedVersion = ExpectedVersion.Any;
-            var data = "test-data";
+            var data = GenerateTestData();
             string metadata = null;
 
             if (args.Length > 0)
@@ -66,8 +68,8 @@ namespace EventStore.TestClient.Commands
                 new[]
                     {
                         new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
-                                                            "TakeSomeSpaceEvent",
-                                                            false,
+                                                            "JsonDataEvent",
+                                                            true,
                                                             Encoding.UTF8.GetBytes(data),
                                                             Encoding.UTF8.GetBytes(metadata ?? string.Empty))
                     },
@@ -104,7 +106,7 @@ namespace EventStore.TestClient.Commands
                     }
                     else
                     {
-                        context.Log.Info("Error while writing: {0} ({1}).", dto.Error, (OperationErrorCode) dto.ErrorCode);
+                        context.Log.Info("Error while writing: {0} ({1}).", dto.Error, (OperationErrorCode)dto.ErrorCode);
                     }
 
                     context.Log.Info("Write request took: {0}.", sw.Elapsed);
@@ -121,6 +123,27 @@ namespace EventStore.TestClient.Commands
 
             context.WaitForCompletion();
             return true;
+        }
+
+        private string GenerateTestData()
+        {
+            return Codec.Json.To(new TestData(Guid.NewGuid().ToString(), _random.Next(1, 101)));
+        }
+    }
+
+    internal class TestData
+    {
+        public string Name { get; set; }
+        public int Version { get; set; }
+
+        public TestData()
+        {
+        }
+
+        public TestData(string name, int version)
+        {
+            Name = name;
+            Version = version;
         }
     }
 }

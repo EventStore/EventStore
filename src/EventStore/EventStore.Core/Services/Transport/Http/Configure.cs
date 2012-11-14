@@ -49,9 +49,15 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration OkCache(HttpEntity entity, Message message, int seconds)
         {
+            return OkCache(entity.ResponseCodec.ContentType, seconds);
+        }
+
+        public static ResponseConfiguration OkCache(string contentType, int seconds)
+        {
+            // note MM: in old browsers Expires header maybe be required
             return new ResponseConfiguration(HttpStatusCode.OK,
                                              "OK",
-                                             entity.ResponseCodec.ContentType,
+                                             contentType,
                                              new KeyValuePair<string, string>("Cache-Control", string.Format("max-age={0}", seconds)));
         }
 

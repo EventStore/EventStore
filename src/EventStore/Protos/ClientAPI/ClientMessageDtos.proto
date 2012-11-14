@@ -8,8 +8,9 @@ message EventLinkPair {
 message ClientEvent {
 	required bytes event_id = 1;
 	optional string event_type = 2;
-	required bytes data = 3;
-	optional bytes metadata = 4;
+	required bool is_json = 3;
+	required bytes data = 4;
+	optional bytes metadata = 5;
 }
 
 message EventRecord {
@@ -32,6 +33,7 @@ message CreateStream {
 	required string event_stream_id = 1;
 	optional bytes metadata = 2;
 	required bool allow_forwarding = 3;
+	required bool is_json = 4;
 }
 
 message CreateStreamCompleted {

@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System.Diagnostics;
-using EventStore.Transport.Http;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.Client;
 
@@ -56,7 +55,7 @@ namespace EventStore.TestClient.Commands
             context.IsAsync();
 
             var client = new HttpAsyncClient();
-            var readUrl = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}/event/{1}", eventStreamId, version);
+            var readUrl = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}/event/{1}?format=json", eventStreamId, version);
 
             context.Log.Info("[{0}]: Reading...", context.Client.HttpEndpoint);
 
@@ -65,7 +64,7 @@ namespace EventStore.TestClient.Commands
                        response =>
                        {
                            sw.Stop();
-                           context.Log.Info("READ events from <{0}>: {1}", eventStreamId, response.Body);
+                           context.Log.Info("READ events from <{0}>: \n{1}", eventStreamId, response.Body);
                            context.Log.Info("Read request took: {0}.", sw.Elapsed);
                            context.Success();
                        },

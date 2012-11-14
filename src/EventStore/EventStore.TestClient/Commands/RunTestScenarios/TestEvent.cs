@@ -37,6 +37,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         public Guid EventId { get; private set; }
         public string Type { get; private set; }
 
+        public bool IsJson { get; private set; }
+
         public byte[] Data { get; private set; }
         public byte[] Metadata { get; private set; }
 
@@ -49,6 +51,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var body = new string('#', 1 + 17 * subIndex * subIndex);
 
+            IsJson = false;
             Data = Encoding.UTF8.GetBytes(string.Format("{0}-{1}-{2}", index, body.Length, body));
             Metadata = new byte[0];
         }

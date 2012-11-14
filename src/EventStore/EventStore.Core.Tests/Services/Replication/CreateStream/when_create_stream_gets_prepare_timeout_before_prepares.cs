@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new StorageMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Metadata);
+            yield return new StorageMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", false, Metadata);
         }
 
         protected override Message When()

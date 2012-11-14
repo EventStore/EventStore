@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
@@ -110,7 +110,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
@@ -148,7 +148,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] { new TestEvent() });
@@ -164,7 +164,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { new TestEvent() });
@@ -180,7 +180,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var append = store.AppendToStreamAsync(stream, 1, new[] { new TestEvent() });
@@ -196,7 +196,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(0, 100).Select(i => new TestEvent(i.ToString(), i.ToString()));

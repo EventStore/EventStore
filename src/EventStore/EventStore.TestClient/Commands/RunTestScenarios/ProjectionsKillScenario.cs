@@ -35,6 +35,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.TestClient.Commands.DvuBasic;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios

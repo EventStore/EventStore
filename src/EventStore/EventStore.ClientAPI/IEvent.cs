@@ -33,6 +33,7 @@ namespace EventStore.ClientAPI
     {
         Guid EventId { get; }
         string Type { get; }
+        bool IsJson { get; }
 
         byte[] Data { get; }
         byte[] Metadata { get; }

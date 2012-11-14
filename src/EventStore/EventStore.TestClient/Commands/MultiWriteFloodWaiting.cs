@@ -138,6 +138,7 @@ namespace EventStore.TestClient.Commands
                                                                  new TcpClientMessageDto.ClientEvent(
                                                                      Guid.NewGuid().ToByteArray(),
                                                                      "type",
+                                                                     false,
                                                                      Encoding.UTF8.GetBytes(data),
                                                                      new byte[0])).ToArray(),
                             true);

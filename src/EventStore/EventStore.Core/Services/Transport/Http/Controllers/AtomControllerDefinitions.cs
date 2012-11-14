@@ -26,12 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Linq;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.EntityManagement;
@@ -331,6 +331,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                      envelope,
                                                      true, 
                                                      create.EventStreamId,
+                                                     false,//TODO TR discover
                                                      Encoding.UTF8.GetBytes(create.Metadata ?? string.Empty));
             Publish(msg);
         }
@@ -387,7 +388,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                             e => Log.ErrorException(e, "Error while reading request (POST entry)"));
         }
 
-        private void OnPostEntryRequestRead(HttpEntityManager manager, byte[] body)
+        private void OnPostEntryRequestRead(HttpEntityManager manager, string body)
         {
             var entity = manager.HttpEntity;
             var stream = (string)manager.AsyncState;

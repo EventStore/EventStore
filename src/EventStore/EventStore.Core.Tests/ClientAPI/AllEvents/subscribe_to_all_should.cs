@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
 
                 Assert.That(appeared.Wait(Timeout));
@@ -109,7 +109,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
 
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.That(delete.Wait(Timeout));

@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, new byte[0]);
+                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
             }
         }
@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, new byte[0]);
+                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
             }
         }
@@ -69,10 +69,10 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var initialCreate = connection.CreateStreamAsync(stream, new byte[0]);
+                var initialCreate = connection.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(initialCreate.Wait);
 
-                var secondCreate = connection.CreateStreamAsync(stream, new byte[0]);
+                var secondCreate = connection.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.Inconclusive();
                 //Assert.That(() => secondCreate.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
@@ -86,13 +86,13 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, new byte[0]);
+                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.DoesNotThrow(delete.Wait);
 
-                var secondCreate = connection.CreateStreamAsync(stream, new byte[0]);
+                var secondCreate = connection.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.That(() => secondCreate.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
             }
         }
