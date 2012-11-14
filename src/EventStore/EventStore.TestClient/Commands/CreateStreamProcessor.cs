@@ -58,7 +58,8 @@ namespace EventStore.TestClient.Commands
             var createStreamDto = new TcpClientMessageDto.CreateStream(
                     eventStreamId,
                     Encoding.UTF8.GetBytes(metadata ?? string.Format("{{\"StreamName\": \"{0}\"}}", eventStreamId)),
-                    true);
+                    true,
+                    metadata == null);
             var package = new TcpPackage(TcpCommand.CreateStream, Guid.NewGuid(), createStreamDto.Serialize());
 
             var sw = new Stopwatch();

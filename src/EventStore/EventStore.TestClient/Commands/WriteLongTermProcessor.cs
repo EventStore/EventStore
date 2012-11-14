@@ -196,6 +196,7 @@ namespace EventStore.TestClient.Commands
                                     new TcpClientMessageDto.ClientEvent(
                                         Guid.NewGuid().ToByteArray(),
                                         "TakeSomeSpaceEvent",
+                                        false,
                                         Encoding.UTF8.GetBytes("DATA" + dataSize.ToString(" 00000 ") + new string('*', dataSize)),
                                         Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
                                 },

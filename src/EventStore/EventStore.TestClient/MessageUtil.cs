@@ -6,7 +6,7 @@ namespace EventStore.TestClient
     {
         public static TcpClientMessageDto.ClientEvent FromDataEvent(Core.Data.Event evnt)
         {
-            return new TcpClientMessageDto.ClientEvent(evnt.EventId.ToByteArray(), evnt.EventType, evnt.Data,
+            return new TcpClientMessageDto.ClientEvent(evnt.EventId.ToByteArray(), evnt.EventType, evnt.IsJson, evnt.Data,
                                                        evnt.Metadata);
         }
     }

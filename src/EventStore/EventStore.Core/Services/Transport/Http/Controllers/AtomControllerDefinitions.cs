@@ -331,6 +331,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                      envelope,
                                                      true, 
                                                      create.EventStreamId,
+                                                     false,//TODO TR discover
                                                      Encoding.UTF8.GetBytes(create.Metadata ?? string.Empty));
             Publish(msg);
         }

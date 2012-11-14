@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.Services.Replication
 
         protected Event DummyEvent()
         {
-            return new Event(Guid.NewGuid(), "test", true, EventData, Metadata);
+            return new Event(Guid.NewGuid(), "test", false, EventData, Metadata);
         }
 
         [SetUp]

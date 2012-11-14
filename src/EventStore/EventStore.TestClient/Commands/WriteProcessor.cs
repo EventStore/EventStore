@@ -67,6 +67,7 @@ namespace EventStore.TestClient.Commands
                     {
                         new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
                                                             "TakeSomeSpaceEvent",
+                                                            false,
                                                             Encoding.UTF8.GetBytes(data),
                                                             Encoding.UTF8.GetBytes(metadata ?? string.Empty))
                     },

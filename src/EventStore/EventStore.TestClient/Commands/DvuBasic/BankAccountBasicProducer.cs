@@ -50,7 +50,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             var accountObject = BankAccountEventFactory.CreateAccountObject(version);
 
             var serializedObject = Codec.Json.To(accountObject);
-            var @event = new Event(Guid.NewGuid(), accountObject.GetType().FullName, false,  Encoding.UTF8.GetBytes(serializedObject), new byte[0]);
+            var @event = new Event(Guid.NewGuid(), accountObject.GetType().FullName, true,  Encoding.UTF8.GetBytes(serializedObject), new byte[0]);
 
             return @event;
         }

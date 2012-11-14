@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
 
         protected override Message When()
         {
-            return new StorageMessage.CreateStreamRequestCreated(CorrelationId, new NoopEnvelope(), "test123", Metadata);
+            return new StorageMessage.CreateStreamRequestCreated(CorrelationId, new NoopEnvelope(), "test123", false, Metadata);
         }
 
         [Test]

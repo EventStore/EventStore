@@ -36,6 +36,8 @@ namespace EventStore.Core.Tests.ClientAPI
         public Guid EventId { get; private set; }
         public string Type { get; private set; }
 
+        public bool IsJson { get; private set; }
+
         public byte[] Data { get; private set; }
         public byte[] Metadata { get; private set; }
 
@@ -44,6 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI
             EventId = Guid.NewGuid();
             Type = GetType().FullName;
 
+            IsJson = false;
             Data = Encoding.UTF8.GetBytes(data ?? EventId.ToString());
             Metadata = Encoding.UTF8.GetBytes(metadata ?? "metadata");
         }

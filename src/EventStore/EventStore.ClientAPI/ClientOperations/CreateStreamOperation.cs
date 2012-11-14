@@ -47,6 +47,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         private readonly bool _forward;
         private readonly string _stream;
+        private readonly bool _isJson;
         private readonly byte[] _metadata;
 
         public Guid CorrelationId
@@ -62,6 +63,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                      Guid correlationId,
                                      bool forward,
                                      string stream,
+                                     bool isJson,
                                      byte[] metadata)
         {
             _source = source;
@@ -69,6 +71,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _correlationId = correlationId;
             _forward = forward;
             _stream = stream;
+            _isJson = isJson;
             _metadata = metadata;
         }
 
@@ -82,7 +85,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessage.CreateStream(_stream, _metadata, _forward);
+                var dto = new ClientMessage.CreateStream(_stream, _metadata, _forward, _isJson);
                 return new TcpPackage(TcpCommand.CreateStream, _correlationId, dto.Serialize());
             }
         }

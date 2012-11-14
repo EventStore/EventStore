@@ -38,6 +38,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
     {
         public Guid EventId { get; private set; }
         public string Type { get; private set; }
+
+        public bool IsJson { get; private set; }
+
         public byte[] Data { get; private set; }
         public byte[] Metadata { get; private set; }
 
@@ -49,6 +52,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             EventId = Guid.NewGuid();
             Type = accountObject.GetType().Name;
 
+            IsJson = true;
             Data = Encoding.UTF8.GetBytes(Codec.Json.To(accountObject));
             Metadata = Encoding.UTF8.GetBytes(Codec.Json.To(new Dictionary<string, object> { { "IsEmpty", true } }));
         }
