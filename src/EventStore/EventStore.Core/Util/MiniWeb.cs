@@ -32,6 +32,7 @@ using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
 

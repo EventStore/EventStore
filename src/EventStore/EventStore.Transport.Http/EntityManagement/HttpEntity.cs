@@ -89,7 +89,7 @@ namespace EventStore.Transport.Http.EntityManagement
             Request = request;
             Response = response;
 
-            Manager = HttpEntityManager.Create(this, allowedMethods, onRequestSatisfied);
+            Manager = new HttpEntityManager(this, allowedMethods, onRequestSatisfied);
         }
     }
 }

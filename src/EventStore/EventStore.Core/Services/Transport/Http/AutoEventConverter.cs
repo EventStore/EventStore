@@ -34,6 +34,7 @@ using System.Xml.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Transport.Http;
 using Newtonsoft.Json;
@@ -77,7 +78,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public static Tuple<int, Event[]> SmartParse(byte[] request, ICodec sourceCodec)
+        public static Tuple<int, Event[]> SmartParse(string request, ICodec sourceCodec)
         {
             var write = Load(request, sourceCodec);
             if (write == null || write.Events == null || write.Events.Length == 0)
@@ -87,7 +88,7 @@ namespace EventStore.Core.Services.Transport.Http
             return new Tuple<int, Event[]>(write.ExpectedVersion, events);
         }
 
-        private static HttpClientMessageDto.WriteEventsDynamic Load(byte[] data, ICodec sourceCodec)
+        private static HttpClientMessageDto.WriteEventsDynamic Load(string data, ICodec sourceCodec)
         {
             switch(sourceCodec.ContentType)
             {
@@ -105,21 +106,16 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        private static HttpClientMessageDto.WriteEventsDynamic LoadFromJson(byte[] json)
+        private static HttpClientMessageDto.WriteEventsDynamic LoadFromJson(string json)
         {
-            return Codec.Json.From<HttpClientMessageDto.WriteEventsDynamic>(Encoding.UTF8.GetString(json));
+            return Codec.Json.From<HttpClientMessageDto.WriteEventsDynamic>(json);
         }
 
-        private static HttpClientMessageDto.WriteEventsDynamic LoadFromXml(byte[] xml)
+        private static HttpClientMessageDto.WriteEventsDynamic LoadFromXml(string xml)
         {
             try
             {
-                XDocument doc;
-                using (var memStream = new MemoryStream(xml))
-                using (var xmlTextReader = new XmlTextReader(memStream))
-                {
-                    doc = XDocument.Load(xmlTextReader);
-                }
+                XDocument doc = XDocument.Parse(xml);
 
                 XNamespace jsonNsValue = "http://james.newtonking.com/projects/json";
                 XName jsonNsName = XNamespace.Xmlns + "json";
