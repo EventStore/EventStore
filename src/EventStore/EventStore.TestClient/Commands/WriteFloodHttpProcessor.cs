@@ -123,14 +123,15 @@ namespace EventStore.TestClient.Commands
                         var url = context.Client.HttpEndpoint.ToHttpUrl("/streams/{0}", esId);
                         var write = new HttpClientMessageDto.WriteEventsText(
                             ExpectedVersion.Any,
-                            new[] { 
+                            new[] 
+                            { 
                                 new HttpClientMessageDto.ClientEventText(Guid.NewGuid(), 
-                                                               "type",
-                                                               "DATA" + new string('*', 256),
-                                                               "METADATA" + new string('$', 100))
+                                                                         "type",
+                                                                         "DATA" + new string('*', 256),
+                                                                         "METADATA" + new string('$', 100))
                             });
-                        var requestString = Codec.Xml.To(write);
-                        client.Post(url, requestString, Codec.Xml.ContentType, succHandler, exc => 
+                        var requestString = Codec.Json.To(write);
+                        client.Post(url, requestString, Codec.Json.ContentType, succHandler, exc => 
                         {
                             context.Log.ErrorException(exc, "Error during POST.");
                             Interlocked.Increment(ref fail);
@@ -141,7 +142,9 @@ namespace EventStore.TestClient.Commands
                         Interlocked.Increment(ref sent);
 
                         while (sent - received > context.Client.Options.WriteWindow)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }
