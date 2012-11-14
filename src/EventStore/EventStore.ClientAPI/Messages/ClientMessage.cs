@@ -44,18 +44,22 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(2, IsRequired = false, Name=@"event_type", DataFormat = DataFormat.Default)]
     public readonly string EventType;
   
-    [ProtoMember(3, IsRequired = true, Name=@"data", DataFormat = DataFormat.Default)]
+    [ProtoMember(3, IsRequired = true, Name=@"is_json", DataFormat = DataFormat.Default)]
+    public readonly bool IsJson;
+  
+    [ProtoMember(4, IsRequired = true, Name=@"data", DataFormat = DataFormat.Default)]
     public readonly byte[] Data;
   
-    [ProtoMember(4, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
+    [ProtoMember(5, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
     public readonly byte[] Metadata;
   
     private ClientEvent() {}
   
-    public ClientEvent(byte[] eventId, string eventType, byte[] data, byte[] metadata)
+    public ClientEvent(byte[] eventId, string eventType, bool isJson, byte[] data, byte[] metadata)
     {
         EventId = eventId;
         EventType = eventType;
+        IsJson = isJson;
         Data = data;
         Metadata = metadata;
     }
@@ -132,14 +136,18 @@ namespace EventStore.ClientAPI.Messages
   
     [ProtoMember(3, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
     public readonly bool AllowForwarding;
+
+    [ProtoMember(4, IsRequired = true, Name = @"is_json", DataFormat = DataFormat.Default)]
+    public readonly bool IsJson;
   
     private CreateStream() {}
-  
-    public CreateStream(string eventStreamId, byte[] metadata, bool allowForwarding)
+
+    public CreateStream(string eventStreamId, byte[] metadata, bool allowForwarding, bool isJson)
     {
         EventStreamId = eventStreamId;
         Metadata = metadata;
         AllowForwarding = allowForwarding;
+        IsJson = isJson;
     }
   }
   

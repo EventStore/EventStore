@@ -91,6 +91,7 @@
     <Compile Include="Commands\UsageProcessor.cs" />
     <Compile Include="Commands\WriteFloodProcessor.cs" />
     <Compile Include="Commands\PingHttpLongTermProcessor.cs" />
+    <Compile Include="Commands\WriteJsonProcessor.cs" />
     <Compile Include="Commands\WriteLongTermHttpProcessor.cs" />
     <Compile Include="Commands\ReadFloodHttpProcessor.cs" />
     <Compile Include="Commands\ReadFloodProcessor.cs" />

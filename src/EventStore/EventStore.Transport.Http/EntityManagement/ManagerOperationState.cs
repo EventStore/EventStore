@@ -31,16 +31,16 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http.EntityManagement
 {
-    public class ManagerOperationState
+    internal class ManagerOperationState
     {
         public readonly HttpEntity Entity;
-        public readonly Action<HttpEntityManager, string> OnSuccess;
+        public readonly Action<HttpEntityManager, byte[]> OnSuccess;
         public readonly Action<Exception> OnError;
 
         public Stream InputStream { get; set; }
         public Stream OutputStream { get; set; }
 
-        public ManagerOperationState(HttpEntity entity, Action<HttpEntityManager, string> onSuccess, Action<Exception> onError)
+        public ManagerOperationState(HttpEntity entity, Action<HttpEntityManager, byte[]> onSuccess, Action<Exception> onError)
         {
             Ensure.NotNull(entity, "entity");
             Ensure.NotNull(onSuccess, "onSuccess");

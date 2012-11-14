@@ -230,22 +230,22 @@ namespace EventStore.ClientAPI
             Close();
         }
 
-        public void CreateStream(string stream, byte[] metadata)
+        public void CreateStream(string stream, bool isJson, byte[] metadata)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             EnsureActive();
 
-            var task = CreateStreamAsync(stream, metadata);
+            var task = CreateStreamAsync(stream, isJson, metadata);
             task.Wait();
         }
 
-        public Task CreateStreamAsync(string stream, byte[] metadata)
+        public Task CreateStreamAsync(string stream, bool isJson, byte[] metadata)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new CreateStreamOperation(source, Guid.NewGuid(), _allowForwarding, stream, metadata);
+            var operation = new CreateStreamOperation(source, Guid.NewGuid(), _allowForwarding, stream, isJson, metadata);
 
             EnqueueOperation(operation);
             return source.Task;

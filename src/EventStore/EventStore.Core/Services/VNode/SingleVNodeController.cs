@@ -187,51 +187,52 @@ namespace EventStore.Core.Services.VNode
         private void Handle(ClientMessage.CreateStream message)
         {
             _outputBus.Publish(new StorageMessage.CreateStreamRequestCreated(message.CorrelationId,
-                                                                                 message.Envelope,
-                                                                                 message.EventStreamId,
-                                                                                 message.Metadata));
+                                                                             message.Envelope,
+                                                                             message.EventStreamId,
+                                                                             message.IsJson,
+                                                                             message.Metadata));
         }
 
         private void Handle(ClientMessage.WriteEvents message)
         {
             _outputBus.Publish(new StorageMessage.WriteRequestCreated(message.CorrelationId,
-                                                                          message.Envelope,
-                                                                          message.EventStreamId,
-                                                                          message.ExpectedVersion,
-                                                                          message.Events));
+                                                                      message.Envelope,
+                                                                      message.EventStreamId,
+                                                                      message.ExpectedVersion,
+                                                                      message.Events));
         }
 
         private void Handle(ClientMessage.TransactionStart message)
         {
             _outputBus.Publish(new StorageMessage.TransactionStartRequestCreated(message.CorrelationId,
-                                                                                     message.Envelope,
-                                                                                     message.EventStreamId,
-                                                                                     message.ExpectedVersion));
+                                                                                 message.Envelope,
+                                                                                 message.EventStreamId,
+                                                                                 message.ExpectedVersion));
         }
 
         private void Handle(ClientMessage.TransactionWrite message)
         {
             _outputBus.Publish(new StorageMessage.TransactionWriteRequestCreated(message.CorrelationId,
-                                                                                     message.Envelope,
-                                                                                     message.TransactionId,
-                                                                                     message.EventStreamId,
-                                                                                     message.Events));
+                                                                                 message.Envelope,
+                                                                                 message.TransactionId,
+                                                                                 message.EventStreamId,
+                                                                                 message.Events));
         }
 
         private void Handle(ClientMessage.TransactionCommit message)
         {
             _outputBus.Publish(new StorageMessage.TransactionCommitRequestCreated(message.CorrelationId,
-                                                                                      message.Envelope,
-                                                                                      message.TransactionId,
-                                                                                      message.EventStreamId));
+                                                                                  message.Envelope,
+                                                                                  message.TransactionId,
+                                                                                  message.EventStreamId));
         }
 
         private void Handle(ClientMessage.DeleteStream message)
         {
             _outputBus.Publish(new StorageMessage.DeleteStreamRequestCreated(message.CorrelationId,
-                                                                                 message.Envelope,
-                                                                                 message.EventStreamId,
-                                                                                 message.ExpectedVersion));
+                                                                             message.Envelope,
+                                                                             message.EventStreamId,
+                                                                             message.ExpectedVersion));
         }
 
         private void Handle(ClientMessage.RequestShutdown message)

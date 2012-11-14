@@ -144,7 +144,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
-                store.CreateStream(stream, new byte[0]);
+                store.CreateStream(stream, false, new byte[0]);
             }
 
             //500 events during transaction
@@ -218,7 +218,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
-                store.CreateStream(stream, new byte[0]);
+                store.CreateStream(stream, false, new byte[0]);
             }
 
             using (var store = EventStoreConnection.Create())
@@ -246,7 +246,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
-                store.CreateStream(stream, new byte[0]);
+                store.CreateStream(stream, false, new byte[0]);
             }
 
             using (var store = EventStoreConnection.Create())
@@ -274,7 +274,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(MiniNode.Instance.TcpEndPoint);
-                store.CreateStream(stream, new byte[0]);
+                store.CreateStream(stream, false, new byte[0]);
             }
 
             using (var store = EventStoreConnection.Create())

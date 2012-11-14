@@ -114,12 +114,12 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = package.Data.Deserialize<TcpClientMessageDto.CreateStream>();
             if (dto == null) return null;
-            return new ClientMessage.CreateStream(package.CorrelationId, envelope, dto.AllowForwarding, dto.EventStreamId, dto.Metadata);
+            return new ClientMessage.CreateStream(package.CorrelationId, envelope, dto.AllowForwarding, dto.EventStreamId, dto.IsJson, dto.Metadata);
         }
 
         private static TcpPackage WrapCreateStream(ClientMessage.CreateStream msg)
         {
-            var dto = new TcpClientMessageDto.CreateStream(msg.EventStreamId, msg.Metadata, msg.AllowForwarding);
+            var dto = new TcpClientMessageDto.CreateStream(msg.EventStreamId, msg.Metadata, msg.AllowForwarding, msg.IsJson);
             return new TcpPackage(TcpCommand.CreateStream, msg.CorrelationId, dto.Serialize());
         }
 
@@ -146,7 +146,7 @@ namespace EventStore.Core.Services.Transport.Tcp
                     dto.AllowForwarding,
                     dto.EventStreamId,
                     dto.ExpectedVersion,
-                    dto.Events.Select(x => new Event(new Guid(x.EventId), x.EventType, false,  x.Data, x.Metadata)).ToArray());
+                    dto.Events.Select(x => new Event(new Guid(x.EventId), x.EventType, x.IsJson,  x.Data, x.Metadata)).ToArray());
         }
 
         private static TcpPackage WrapWriteEvents(ClientMessage.WriteEvents msg)
@@ -154,7 +154,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             var dto = new TcpClientMessageDto.WriteEvents(
                 msg.EventStreamId,
                 msg.ExpectedVersion,
-                msg.Events.Select(x => new TcpClientMessageDto.ClientEvent(x.EventId.ToByteArray(), x.EventType, x.Data, x.Metadata)).ToArray(),
+                msg.Events.Select(x => new TcpClientMessageDto.ClientEvent(x.EventId.ToByteArray(), x.EventType, x.IsJson, x.Data, x.Metadata)).ToArray(),
                 msg.AllowForwarding);
             return new TcpPackage(TcpCommand.WriteEvents, msg.CorrelationId, dto.Serialize());
         }
@@ -221,14 +221,14 @@ namespace EventStore.Core.Services.Transport.Tcp
                 dto.AllowForwarding, 
                 dto.TransactionId,
                 dto.EventStreamId,
-                dto.Events.Select(x => new Event(new Guid(x.EventId), x.EventType, false,  x.Data, x.Metadata)).ToArray());
+                dto.Events.Select(x => new Event(new Guid(x.EventId), x.EventType, x.IsJson,  x.Data, x.Metadata)).ToArray());
         }
 
         private static TcpPackage WrapTransactionWrite(ClientMessage.TransactionWrite msg)
         {
             var dto = new TcpClientMessageDto.TransactionWrite(msg.TransactionId,
                     msg.EventStreamId,
-                    msg.Events.Select(x => new TcpClientMessageDto.ClientEvent(x.EventId.ToByteArray(), x.EventType, x.Data, x.Metadata)).ToArray(),
+                    msg.Events.Select(x => new TcpClientMessageDto.ClientEvent(x.EventId.ToByteArray(), x.EventType, x.IsJson, x.Data, x.Metadata)).ToArray(),
                     msg.AllowForwarding);
             return new TcpPackage(TcpCommand.TransactionWrite, msg.CorrelationId, dto.Serialize());
         }

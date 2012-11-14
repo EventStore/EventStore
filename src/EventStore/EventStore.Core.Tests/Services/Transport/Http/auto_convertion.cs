@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using System.Linq;

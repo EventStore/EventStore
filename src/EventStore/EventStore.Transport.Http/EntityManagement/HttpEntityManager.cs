@@ -27,7 +27,9 @@
 // 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -40,24 +42,14 @@ namespace EventStore.Transport.Http.EntityManagement
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<HttpEntityManager>();
 
-        internal static HttpEntityManager Create(HttpEntity httpEntity, 
-                                                 string[] allowedMethods, 
-                                                 Action<HttpEntity> onRequestSatisfied)
-        {
-            return new HttpEntityManager(httpEntity, allowedMethods, onRequestSatisfied);
-        }
-
         public object AsyncState { get; set; }
-
         public readonly HttpEntity HttpEntity;
 
         private int _processing;
         private readonly string[] _allowedMethods;
         private readonly Action<HttpEntity> _onRequestSatisfied;
 
-        private HttpEntityManager(HttpEntity httpEntity,
-                                  string[] allowedMethods,
-                                  Action<HttpEntity> onRequestSatisfied)
+        internal HttpEntityManager(HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
         {
             Ensure.NotNull(httpEntity, "httpEntity");
             Ensure.NotNull(allowedMethods, "allowedMethods");
@@ -157,7 +149,9 @@ namespace EventStore.Transport.Http.EntityManagement
             try
             {
                 foreach (var kvp in headers)
+                {
                     HttpEntity.Response.AddHeader(kvp.Key, kvp.Value);
+                }
             }
             catch (Exception e)
             {
@@ -197,7 +191,7 @@ namespace EventStore.Transport.Http.EntityManagement
             SetResponseDescription(description);
             SetResponseType(type);
             SetRequiredHeaders();
-            SetAdditionalHeaders(headers ?? new KeyValuePair<string, string>[0]);
+            SetAdditionalHeaders(headers ?? Enumerable.Empty<KeyValuePair<string, string>>());
 
             if (response == null || response.Length == 0)
             {
@@ -213,10 +207,10 @@ namespace EventStore.Transport.Http.EntityManagement
             SetResponseLength(response.Length);
 
             var state = new ManagerOperationState(HttpEntity, (sender, e) => {}, onError)
-                            {
-                                InputStream = new MemoryStream(response),
-                                OutputStream = HttpEntity.Response.OutputStream
-                            };
+            {
+                InputStream = new MemoryStream(response),
+                OutputStream = HttpEntity.Response.OutputStream
+            };
             var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
             copier.Completed += ResponseWritten;
             copier.Start();
@@ -242,14 +236,28 @@ namespace EventStore.Transport.Http.EntityManagement
 
         public void ReadRequestAsync(Action<HttpEntityManager, string> onSuccess, Action<Exception> onError)
         {
+            ReadRequestAsync((manager, bytes) =>
+            {
+                int offset = 0;
+                        
+                // check for UTF-8 BOM (0xEF, 0xBB, 0xBF) and skip it safely, if any
+                if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+                    offset = 3;
+
+                onSuccess(manager, Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset));
+            }, onError);
+        }
+        
+        public void ReadRequestAsync(Action<HttpEntityManager, byte[]> onSuccess, Action<Exception> onError)
+        {
             Ensure.NotNull(onSuccess, "onSuccess");
             Ensure.NotNull(onError, "onError");
 
             var state = new ManagerOperationState(HttpEntity, onSuccess, onError)
-                            {
-                                InputStream = HttpEntity.Request.InputStream,
-                                OutputStream = new MemoryStream()
-                            };
+            {
+                InputStream = HttpEntity.Request.InputStream,
+                OutputStream = new MemoryStream()
+            };
 
             var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
             copier.Completed += RequestRead;
@@ -273,7 +281,12 @@ namespace EventStore.Transport.Http.EntityManagement
             state.OutputStream.Seek(0, SeekOrigin.Begin);
             var memory = (MemoryStream)state.OutputStream;
 
-            var request = Encoding.UTF8.GetString(memory.GetBuffer(), 0, (int)memory.Length);
+            var request = memory.GetBuffer();
+            if (memory.Length != memory.GetBuffer().Length)
+            {
+                request = new byte[memory.Length];
+                Buffer.BlockCopy(memory.GetBuffer(), 0, request, 0, (int)memory.Length);
+            }
             state.OnSuccess(this, request);
         }
 

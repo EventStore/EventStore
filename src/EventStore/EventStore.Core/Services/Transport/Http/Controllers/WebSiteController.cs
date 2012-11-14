@@ -31,6 +31,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using EventStore.Core.Bus;
+using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Core.Util;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;

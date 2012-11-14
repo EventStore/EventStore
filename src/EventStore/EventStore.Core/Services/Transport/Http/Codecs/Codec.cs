@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,48 +26,24 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using System.Collections.Generic;
-using EventStore.Core.Data;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.Helper;
-using NUnit.Framework;
+using EventStore.Transport.Http;
 
-namespace EventStore.Core.Tests.Services.Replication
+namespace EventStore.Core.Services.Transport.Http.Codecs
 {
-    public abstract class RequestManagerSpecification
+    public static class Codec
     {
-        protected TwoPhaseRequestManagerBase manager;
-        protected abstract TwoPhaseRequestManagerBase OnManager(FakePublisher publisher);
-        protected List<Message> produced;
-        protected abstract IEnumerable<Message> WithInitialMessages();
-        protected FakePublisher _publisher;
-        protected Guid CorrelationId = Guid.NewGuid();
-        protected byte[] Metadata = new byte[255];
-        protected byte[] EventData = new byte[255];
-        protected FakeEnvelope Envelope;
-        protected abstract Message When();
+        public static readonly NoCodec NoCodec = new NoCodec();
+        public static readonly ICodec[] NoCodecs = new ICodec[0];
+        public static readonly ManualEncoding ManualEncoding = new ManualEncoding();
 
-        protected Event DummyEvent()
-        {
-            return new Event(Guid.NewGuid(), "test", false, EventData, Metadata);
-        }
+        public static readonly JsonCodec Json = new JsonCodec();
+        public static readonly XmlCodec Xml = new XmlCodec();
+        public static readonly CustomCodec ApplicationXml = new CustomCodec(Xml, ContentType.ApplicationXml);
+        public static readonly TextCodec Text = new TextCodec();
 
-        [SetUp]
-        public void Setup()
+        public static ICodec CreateCustom(ICodec codec, string contentType)
         {
-            _publisher = new FakePublisher();
-            Envelope = new FakeEnvelope();
-            manager = OnManager(_publisher);
-            foreach(var m in WithInitialMessages())
-            {
-                manager.AsDynamic().Handle(m);
-            }
-            _publisher.Messages.Clear();
-            manager.AsDynamic().Handle(When());
-            produced = new List<Message>(_publisher.Messages);
+            return new CustomCodec(codec, contentType);
         }
     }
 }

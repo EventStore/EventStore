@@ -261,11 +261,13 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly string EventStreamId;
+            public readonly bool IsJson;
             public readonly byte[] Metadata;
 
             public CreateStreamRequestCreated(Guid correlationId,
                                               IEnvelope envelope,
                                               string eventStreamId,
+                                              bool isJson,
                                               byte[] metadata)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
@@ -276,6 +278,7 @@ namespace EventStore.Core.Messages
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 EventStreamId = eventStreamId;
+                IsJson = isJson;
                 Metadata = metadata;
             }
         }

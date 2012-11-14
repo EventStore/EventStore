@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         [SetUp]
         public void SetUp()
         {
-            Node = MiniNode.Create(8111, 9111);
+            Node = MiniNode.Create(40111, 40112);
             Node.Start();
         }
 
@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(Node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var testEvents = Enumerable.Range(0, 5).Select(x => new TestEvent((x + 1).ToString())).ToArray();
@@ -104,13 +104,13 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 store.Connect(Node.TcpEndPoint);
                 var testEvents = Enumerable.Range(0, 5).Select(x => new TestEvent((x + 1).ToString())).ToArray();
 
-                var create1 = store.CreateStreamAsync(stream + 1, new byte[0]);
+                var create1 = store.CreateStreamAsync(stream + 1, false, new byte[0]);
                 Assert.DoesNotThrow(create1.Wait);
 
                 var write5to1 = store.AppendToStreamAsync(stream + 1, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write5to1.Wait);
 
-                var create2 = store.CreateStreamAsync(stream + 2, new byte[0]);
+                var create2 = store.CreateStreamAsync(stream + 2, false, new byte[0]);
                 Assert.DoesNotThrow(create2.Wait);
 
                 var write5to2 = store.AppendToStreamAsync(stream + 2, ExpectedVersion.EmptyStream, testEvents);
@@ -131,10 +131,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(Node.TcpEndPoint);
-                var create1 = store.CreateStreamAsync(stream + 1, new byte[0]);
+                var create1 = store.CreateStreamAsync(stream + 1, false, new byte[0]);
                 Assert.DoesNotThrow(create1.Wait);
 
-                var create2 = store.CreateStreamAsync(stream + 2, new byte[0]);
+                var create2 = store.CreateStreamAsync(stream + 2, false, new byte[0]);
                 Assert.DoesNotThrow(create2.Wait);
 
                 var read = store.ReadAllEventsForwardAsync(Position.Start, 2);
@@ -152,7 +152,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(Node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var testEvents = Enumerable.Range(0, 5).Select(x => new TestEvent((x + 1).ToString())).ToArray();
@@ -181,7 +181,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(Node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var testEvents = Enumerable.Range(0, 20).Select(x => new TestEvent((x + 1).ToString())).ToArray();
@@ -210,7 +210,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(Node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var testEvents = Enumerable.Range(0, 20).Select(x => new TestEvent((x + 1).ToString())).ToArray();
@@ -232,10 +232,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(Node.TcpEndPoint);
-                var create1 = store.CreateStreamAsync(stream + 1, new byte[0]);
+                var create1 = store.CreateStreamAsync(stream + 1, false, new byte[0]);
                 Assert.DoesNotThrow(create1.Wait);
 
-                var create2 = store.CreateStreamAsync(stream + 2, new byte[0]);
+                var create2 = store.CreateStreamAsync(stream + 2, false, new byte[0]);
                 Assert.DoesNotThrow(create2.Wait);
 
                 var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())).ToArray();
@@ -271,10 +271,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(Node.TcpEndPoint);
-                var create1 = store.CreateStreamAsync(stream + 1, new byte[0]);
+                var create1 = store.CreateStreamAsync(stream + 1, false, new byte[0]);
                 Assert.DoesNotThrow(create1.Wait);
 
-                var create2 = store.CreateStreamAsync(stream + 2, new byte[0]);
+                var create2 = store.CreateStreamAsync(stream + 2, false, new byte[0]);
                 Assert.DoesNotThrow(create2.Wait);
 
                 var delete1 = store.DeleteStreamAsync(stream + 1, ExpectedVersion.EmptyStream);
@@ -295,10 +295,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(Node.TcpEndPoint);
-                var create1 = store.CreateStreamAsync(stream + 1, new byte[0]);
+                var create1 = store.CreateStreamAsync(stream + 1, false, new byte[0]);
                 Assert.DoesNotThrow(create1.Wait);
 
-                var create2 = store.CreateStreamAsync(stream + 2, new byte[0]);
+                var create2 = store.CreateStreamAsync(stream + 2, false, new byte[0]);
                 Assert.DoesNotThrow(create2.Wait);
 
                 var delete1 = store.DeleteStreamAsync(stream + 1, ExpectedVersion.EmptyStream);
@@ -326,7 +326,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 Position lastKnonwPosition = null;
                 var dropped = new AutoResetEvent(false);
 
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 store.SubscribeAsync(stream, 

@@ -35,6 +35,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Transport.Http;
 using System.Linq;
 using EventStore.Transport.Http.EntityManagement;

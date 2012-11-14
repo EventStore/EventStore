@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
 
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
 
                 Assert.That(appeared.Wait(Timeout));
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
 
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
 
                 Assert.That(appeared.Wait(Timeout));
@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 Action<RecordedEvent, Position> eventAppeared = (x, p) => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.That(delete.Wait(Timeout));
@@ -140,7 +140,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 Action<RecordedEvent, Position> eventAppeared = (x, p) => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
 
                 var subscribe = store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
@@ -170,7 +170,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
 
-                var create = store.CreateStreamAsync(stream, new byte[0]);
+                var create = store.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.That(delete.Wait(Timeout));
