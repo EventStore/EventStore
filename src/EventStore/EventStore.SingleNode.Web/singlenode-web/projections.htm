@@ -19,14 +19,15 @@
 		.content table .status { width: 125px; }
 		.content table .mode { width: 70px; }
 		.content table .progress { width: 50px; }
-		.content table .position { width: 175px; }
-		.content table .checkpoint { width: 175px; }
+		.content table .position { width: 165px; }
+		.content table .checkpoint { width: 165px; }
 		.content table .checkpoint-status { width: 75px; }
 		.content table .read-writes { width: 75px; }
-		.content table .writes { width: 50px; }
-		.content table .partitions { width: 50px; }
+		.content table .writes { width: 60px; }
+		.content table .partitions { width: 65px; }
 		.content table .processed { width: 75px; }
-		.content table .buffered { width: 50px; }
+		.content table .buffered { width: 60px; }
+		.content table td {vertical-align: middle;}
     </style>
 </head>
 <body>
@@ -50,42 +51,18 @@
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>
-                    <th class="c name">
-                        Name
-                    </th>
-                    <th class="c status">
-                        Status
-                    </th>
-                    <th class="c mode">
-                        Mode
-                    </th>
-                    <th class="c progress">
-                        % Done
-                    </th>
-                    <th class="c position">
-                        Position
-                    </th>
-                    <th class="c checkpoint">
-                        Last Checkpoint
-                    </th>
-                    <th class="c checkpoint-status">
-                        Checkpoint Status
-                    </th>
-                    <th class="c read-writes">
-                        Reads / Writes In-Progress
-                    </th>
-                    <th class="c writes">
-                        Writes Pending
-                    </th>
-                    <th class="c partitions">
-                        Partitions Cached
-                    </th>
-                    <th class="c processed">
-                        Processed (since restart)
-                    </th>
-                    <th class="c buffered">
-                        Buffered Events
-                    </th>
+                    <th class="c name">Name</th>
+                    <th class="c status">Status</th>
+                    <th class="c mode">Mode</th>
+                    <th class="c progress">% Done</th>
+                    <th class="c position">Position</th>
+                    <th class="c checkpoint">Last Checkpoint</th>
+                    <th class="c checkpoint-status">Checkpoint Status</th>
+                    <th class="c read-writes">Reads / Writes In-Progress</th>
+                    <th class="c writes">Writes Pending</th>
+                    <th class="c partitions">Partitions Cached</th>
+                    <th class="c processed">Processed (since restart)</th>
+                    <th class="c buffered">Buffered Events</th>
                 </tr>
             </thead>
             <tbody id="projections">
@@ -97,11 +74,11 @@
           <td>{{>status}}</td>
           <td>{{>mode}}</td>
           <td class="r">{{>progress.toFixed(1)}}%</td>
-          <td class="r">{{>position}}</td>
-          <td class="r">{{>lastCheckpoint}}</td>
+          <td class="r">{{>~addSpace(position)}}</td>
+          <td class="r">{{>~addSpace(lastCheckpoint)}}</td>
           <td>{{>checkpointStatus}}</td>
-          <td class="r">{{>readsInProgress}}/{{>writesInProgress}}</td>
-          <td class="r">{{>writePendingEventsBeforeCheckpoint}}/{{>writePendingEventsAfterCheckpoint}}</td>
+          <td class="r">{{>readsInProgress}} / {{>writesInProgress}}</td>
+          <td class="r">{{>writePendingEventsBeforeCheckpoint}} / {{>writePendingEventsAfterCheckpoint}}</td>
           <td class="r">{{>partitionsCached}}</td>
           <td class="r">{{>eventsProcessedAfterRestart}}</td>
           <td class="r">{{>bufferedEvents}}</td>
@@ -129,17 +106,13 @@
                     
                 function onDisableAll(ev) {
                     ev.preventDefault();
-
                     postToEachProjection("/command/disable");
-
                     return false;
                 }
                 
                 function onEnableAll(ev) {
                     ev.preventDefault();
-
                     postToEachProjection("/command/enable");
-
                     return false;
                 }
 
@@ -217,7 +190,9 @@
 
                     $("#projections").html(
                         $.render.projectionTemplate(data.projections, {
-                            encode: window.encodeURIComponent
+                            addSpace: function (str) {
+                                return str ? str.replace('/', ' / ') : '';
+                            }
                         })
                     );
 
