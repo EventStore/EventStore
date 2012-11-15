@@ -282,6 +282,31 @@ namespace EventStore.Core.Tests.Services.Storage
             return prepare;
         }
 
+        protected PrepareLogRecord WritePrepare(string streamId, int expectedVersion, string eventType = null, string data = null)
+        {
+            long pos;
+            var prepare = LogRecord.SingleWrite(WriterChecksum.ReadNonFlushed(),
+                                                Guid.NewGuid(),
+                                                Guid.NewGuid(),
+                                                streamId,
+                                                expectedVersion,
+                                                eventType.IsEmptyString() ? "some-type" : eventType,
+                                                data.IsEmptyString() ? LogRecord.NoData : Encoding.UTF8.GetBytes(data),
+                                                LogRecord.NoData,
+                                                DateTime.UtcNow);
+            Assert.IsTrue(Writer.Write(prepare, out pos));
+
+            return prepare;
+        }
+
+        protected CommitLogRecord WriteCommit(long preparePos, string eventStreamId, int eventNumber)
+        {
+            var commit = LogRecord.Commit(WriterChecksum.ReadNonFlushed(), Guid.NewGuid(), preparePos, eventNumber);
+            long pos;
+            Assert.IsTrue(Writer.Write(commit, out pos));
+            return commit;
+        }
+
         protected long WriteCommit(Guid correlationId, long transactionId, string eventStreamId, int eventNumber)
         {
             var commit = LogRecord.Commit(WriterChecksum.ReadNonFlushed(), correlationId, transactionId, eventNumber);
