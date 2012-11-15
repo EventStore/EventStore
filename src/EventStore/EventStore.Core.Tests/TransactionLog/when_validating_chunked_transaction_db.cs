@@ -43,6 +43,8 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void with_file_of_wrong_size_database_corruption_is_detected()
         {
+            Assert.Inconclusive();
+
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
