@@ -74,6 +74,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var isWatchStarted = false;
             var store = GetConnection();
+            var manager = GetProjectionsManager();
             
             var stopWatch = new Stopwatch();
             while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(1000 + 5 * Streams * EventsPerStream))
@@ -87,8 +88,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     isWatchStarted = true;
                 }
 
-                success = CheckProjectionState(store, countItem, "count", x => x == expectedAllEventsCount)
-                       && CheckProjectionState(store, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
+                success = CheckProjectionState(manager, countItem, "count", x => x == expectedAllEventsCount)
+                       && CheckProjectionState(manager, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
 
                 if (success)
                     break;
@@ -131,18 +132,18 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return task;
         }
 
-        protected bool CheckProjectionState(EventStoreConnection store, string projectionName, string key, Func<string, bool> checkValue)
+        protected bool CheckProjectionState(ProjectionsManager manager, string projectionName, string key, Func<string, bool> checkValue)
         {
-            var state = GetProjectionState(store, projectionName);
+            var state = GetProjectionState(manager, projectionName);
             string value;
             return state != null && state.Count > 0 && state.TryGetValue(key, out value) && checkValue(value);
         }
 
-        protected T GetProjectionStateValue<T>(EventStoreConnection store, string projectionName, string key, Func<string, T> convert, T defaultValue)
+        protected T GetProjectionStateValue<T>(ProjectionsManager manager, string projectionName, string key, Func<string, T> convert, T defaultValue)
         {
             var result = defaultValue;
 
-            var state = GetProjectionState(store, projectionName);
+            var state = GetProjectionState(manager, projectionName);
             string value;
             if (state != null && state.Count > 0 && state.TryGetValue(key, out value))
             {
@@ -151,9 +152,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return result;
         }
 
-        protected static Dictionary<string, string> GetProjectionState(EventStoreConnection store, string projectionName)
+        protected static Dictionary<string, string> GetProjectionState(ProjectionsManager manager, string projectionName)
         {
-            var rawState = GetProjectionStateSafe(store, projectionName);
+            var rawState = GetProjectionStateSafe(manager, projectionName);
 
             Log.Info("Raw {0} state: {1}", projectionName, rawState);
 
@@ -164,12 +165,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return state;
         }
 
-        protected static string GetProjectionStateSafe(EventStoreConnection store, string projectionName)
+        protected static string GetProjectionStateSafe(ProjectionsManager manager, string projectionName)
         {
             string rawState;
             try
             {
-                rawState = store.Projections.GetState(projectionName);
+                rawState = manager.GetState(projectionName);
             }
             catch (Exception ex)
             {
@@ -191,7 +192,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         return state;
                     });
 ";
-            GetConnection().Projections.CreatePersistent(countItemsProjectionName, countItemsProjection);
+            GetProjectionsManager().CreatePersistent(countItemsProjectionName, countItemsProjection);
             return countItemsProjectionName;
         }
 
@@ -231,7 +232,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     }});
 ", GetIterationCode());
             
-            GetConnection().Projections.CreatePersistent(countItemsProjectionName, countItemsProjection);
+            GetProjectionsManager().CreatePersistent(countItemsProjectionName, countItemsProjection);
 
             return countItemsProjectionName;
         }

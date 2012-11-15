@@ -9,8 +9,8 @@ namespace EventStore.Padmin
 {
     public class Program
     {
-        private static readonly Dictionary<string, Action<EventStoreConnection, string[]>> Commands =
-            new Dictionary<string, Action<EventStoreConnection, string[]>>();
+        private static readonly Dictionary<string, Action<ProjectionsManager, string[]>> Commands =
+            new Dictionary<string, Action<ProjectionsManager, string[]>>();
   
         public static int Main(string[] args)
         {
@@ -73,15 +73,12 @@ namespace EventStore.Padmin
                 Log("Loading config values...");
 
                 var ip = IPAddress.Parse(config["ip"]);
-                var port = int.Parse(config["tcp-port"]);
-                var tcpEndPoint = new IPEndPoint(ip, port);
+                var port = int.Parse(config["http-port"]);
+                var endPoint = new IPEndPoint(ip, port);
 
-                using (var store = EventStoreConnection.Create())
-                {
-                    store.Connect(tcpEndPoint);
-                    Execute(store, args);
-                    return true;
-                }
+                var manager = new ProjectionsManager(endPoint);
+                Execute(manager, args);
+                return true;
             }
             catch (Exception e)
             {
@@ -90,15 +87,15 @@ namespace EventStore.Padmin
             }
         }
 
-        private static void Execute(EventStoreConnection store, string[] args)
+        private static void Execute(ProjectionsManager manager, string[] args)
         {
             var command = args[0].Trim().ToLower();
             var commandArgs = args.Skip(1).ToArray();
 
-            Action<EventStoreConnection, string[]> executor;
+            Action<ProjectionsManager, string[]> executor;
 
             if(Commands.TryGetValue(command, out executor))
-                executor(store, commandArgs);
+                executor(manager, commandArgs);
             else
                 Log("{0} is not a recognized command", args[0]);
         }
@@ -138,8 +135,8 @@ namespace EventStore.Padmin
         {
             if (!config.ContainsKey("ip"))
                 config["ip"] = "127.0.0.1";
-            if (!config.ContainsKey("tcp-port"))
-                config["tcp-port"] = "1113";
+            if (!config.ContainsKey("http-port"))
+                config["http-port"] = "2113";
         }
 
         private static void Log(string format, params object[] args)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -28,19 +28,240 @@
 
 using System.Net;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Transport.Http;
 using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
-namespace EventStore.ClientAPI.Connection
+namespace EventStore.ClientAPI
 {
-    internal class ProjectionsManager
+    public class ProjectionsManager
+    {
+        private readonly ProjectionsClient _client;
+        private readonly IPEndPoint _httpEndPoint;
+
+        public ProjectionsManager(IPEndPoint httpEndPoint)
+        {
+            Ensure.NotNull(httpEndPoint, "httpEndPoint");
+
+            _client = new ProjectionsClient();
+            _httpEndPoint = httpEndPoint;
+        }
+
+        public void Enable(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            EnableAsync(name).Wait();
+        }
+
+        public Task EnableAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.Enable(_httpEndPoint, name);
+        }
+
+        public void Disable(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            DisableAsync(name).Wait();
+        }
+
+        public Task DisableAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.Disable(_httpEndPoint, name);
+        }
+
+        public void CreateOneTime(string query)
+        {
+            Ensure.NotNullOrEmpty(query, "query");
+            CreateOneTimeAsync(query).Wait();
+        }
+
+        public Task CreateOneTimeAsync(string query)
+        {
+            Ensure.NotNullOrEmpty(query, "query");
+            return _client.CreateOneTime(_httpEndPoint, query);
+        }
+
+        public void CreateAdHoc(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            CreateAdHocAsync(name, query).Wait();
+        }
+
+        public Task CreateAdHocAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _client.CreateAdHoc(_httpEndPoint, name, query);
+        }
+
+        public void CreateContinuous(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            CreateContinuousAsync(name, query).Wait();
+        }
+
+        public Task CreateContinuousAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _client.CreateContinious(_httpEndPoint, name, query);
+        }
+
+        public void CreatePersistent(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            CreatePersistentAsync(name, query).Wait();
+        }
+
+        public Task CreatePersistentAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _client.CreatePersistent(_httpEndPoint, name, query);
+        }
+
+        public string ListAll()
+        {
+            return ListAllAsync().Result;
+        }
+
+        public Task<string> ListAllAsync()
+        {
+            return _client.ListAll(_httpEndPoint);
+        }
+
+        public string ListOneTime()
+        {
+            return ListOneTimeAsync().Result;
+        }
+
+        public Task<string> ListOneTimeAsync()
+        {
+            return _client.ListOneTime(_httpEndPoint);
+        }
+
+        public string ListAdHoc()
+        {
+            return ListAdHocAsync().Result;
+        }
+
+        public Task<string> ListAdHocAsync()
+        {
+            return _client.ListAdHoc(_httpEndPoint);
+        }
+
+        public string ListContinuous()
+        {
+            return ListContinuousAsync().Result;
+        }
+
+        public Task<string> ListContinuousAsync()
+        {
+            return _client.ListContinuous(_httpEndPoint);
+        }
+
+        public string ListPersistent()
+        {
+            return ListPersistentAsync().Result;
+        }
+
+        public Task<string> ListPersistentAsync()
+        {
+            return _client.ListPersistent(_httpEndPoint);
+        }
+
+        public string GetStatus(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return GetStatusAsync(name).Result;
+        }
+
+        public Task<string> GetStatusAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.GetStatus(_httpEndPoint, name);
+        }
+
+        public string GetState(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return GetStateAsync(name).Result;
+        }
+
+        public Task<string> GetStateAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.GetState(_httpEndPoint, name);
+        }
+
+        public string GetStatistics(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return GetStatisticsAsync(name).Result;
+        }
+
+        public Task<string> GetStatisticsAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.GetStatistics(_httpEndPoint, name);
+        }
+
+        public string GetQuery(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return GetQueryAsync(name).Result;
+        }
+
+        public Task<string> GetQueryAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.GetQuery(_httpEndPoint, name);
+        }
+
+        public void UpdateQuery(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            UpdateQueryAsync(name, query).Wait();
+        }
+
+        public Task UpdateQueryAsync(string name, string query)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            Ensure.NotNullOrEmpty(query, "query");
+
+            return _client.UpdateQuery(_httpEndPoint, name, query);
+        }
+
+        public void Delete(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            DeleteAsync(name).Wait();
+        }
+
+        public Task DeleteAsync(string name)
+        {
+            Ensure.NotNullOrEmpty(name, "name");
+            return _client.Delete(_httpEndPoint, name);
+        }
+    }
+
+    internal class ProjectionsClient
     {
         private readonly HttpAsyncClient _client = new HttpAsyncClient();
-
-        public ProjectionsManager()
-        {
-        }
 
         public Task Enable(IPEndPoint endPoint, string name)
         {

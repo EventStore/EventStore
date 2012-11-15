@@ -97,9 +97,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 if (package.Command == TcpCommand.DeniedToRoute)
                 {
                     var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
-                    return new InspectionResult(InspectionDecision.Reconnect,
-                                                data: new EndpointsPair(route.ExternalTcpEndPoint,
-                                                                        route.ExternalHttpEndPoint));
+                    return new InspectionResult(InspectionDecision.Reconnect, data: route.ExternalTcpEndPoint);
                 }
                 if (package.Command != TcpCommand.CreateStreamCompleted)
                     return new InspectionResult(InspectionDecision.NotifyError, 

@@ -86,8 +86,8 @@
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
     <Compile Include="Common\Log\DefaultLogger.cs" />
     <Compile Include="Common\Utils\Tasks.cs" />
+    <Compile Include="ConnectionSettings.cs" />
     <Compile Include="Connection\ClusterExplorer.cs" />
-    <Compile Include="Connection\ProjectionsManager.cs" />
     <Compile Include="Connection\Subscription.cs" />
     <Compile Include="Connection\SubscriptionsChannel.cs" />
     <Compile Include="Connection\WorkItem.cs" />
@@ -113,16 +113,15 @@
     <Compile Include="ClientOperations\ReadStreamEventsForwardOperation.cs" />
     <Compile Include="Common\Utils\Ensure.cs" />
     <Compile Include="ILogger.cs" />
-    <Compile Include="IProjectionsManagement.cs" />
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="Messages\ClientMessagesExtensions.cs" />
     <Compile Include="Messages\ClusterMessages.cs" />
     <Compile Include="Position.cs" />
+    <Compile Include="ProjectionsManager.cs" />
     <Compile Include="RecordedEvent.cs" />
     <Compile Include="SliceReadStatus.cs" />
     <Compile Include="StreamPosition.cs" />
     <Compile Include="SystemData\StatusCode.cs" />
-    <Compile Include="SystemData\EndpointsPair.cs" />
     <Compile Include="ExpectedVersion.cs" />
     <Compile Include="SystemData\InspectionResult.cs" />
     <Compile Include="SystemData\OperationErrorCode.cs" />
