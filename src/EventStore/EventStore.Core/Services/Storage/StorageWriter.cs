@@ -156,7 +156,8 @@ namespace EventStore.Core.Services.Storage
                                                                             message.CorrelationId,
                                                                             transactionPosition,
                                                                             message.EventStreamId,
-                                                                            LogRecord.NoData));
+                                                                            LogRecord.NoData,
+                                                                            isImplicit: true));
                     transactionPosition = res.WrittenPos; // transaction position could be changed due to switching to new chunk
                     logPosition = res.NewPos;
                 }
@@ -207,7 +208,7 @@ namespace EventStore.Core.Services.Storage
 
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
                 var record = ShouldCreateStreamFor(message)
-                    ? LogRecord.StreamCreated(logPosition, message.CorrelationId, logPosition, message.EventStreamId, LogRecord.NoData)
+                    ? LogRecord.StreamCreated(logPosition, message.CorrelationId, logPosition, message.EventStreamId, LogRecord.NoData, isImplicit: true)
                     : LogRecord.TransactionBegin(logPosition, message.CorrelationId, message.EventStreamId, message.ExpectedVersion);
                 WritePrepareWithRetry(record);
             }
@@ -281,14 +282,15 @@ namespace EventStore.Core.Services.Storage
             Interlocked.Decrement(ref FlushMessagesInQueue);
             try
             {
-                var result = ReadIndex.CheckCommitStartingAt(message.PrepareStartPosition);
+                var commitPos = Writer.Checkpoint.ReadNonFlushed();
+                var result = ReadIndex.CheckCommitStartingAt(message.TransactionPosition, commitPos);
                 switch (result.Decision)
                 {
                     case CommitDecision.Ok:
                     {
-                        var commit = WriteCommitWithRetry(LogRecord.Commit(Writer.Checkpoint.ReadNonFlushed(),
+                        var commit = WriteCommitWithRetry(LogRecord.Commit(commitPos,
                                                                            message.CorrelationId,
-                                                                           message.PrepareStartPosition,
+                                                                           message.TransactionPosition,
                                                                            result.CurrentVersion + 1));
                         ReadIndex.Commit(commit);
                         break;
@@ -336,7 +338,8 @@ namespace EventStore.Core.Services.Storage
                                                                             message.CorrelationId,
                                                                             transactionPos,
                                                                             message.EventStreamId,
-                                                                            LogRecord.NoData));
+                                                                            LogRecord.NoData,
+                                                                            isImplicit: true));
                     transactionPos = res.WrittenPos;
 
                     WritePrepareWithRetry(LogRecord.Prepare(res.NewPos,

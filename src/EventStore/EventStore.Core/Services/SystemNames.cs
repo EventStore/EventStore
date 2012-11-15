@@ -42,6 +42,7 @@ namespace EventStore.Core.Services
     public static class SystemEventTypes
     {
         public const string StreamCreated = "$stream-created";
+        public const string StreamCreatedImplicit = "$stream-created-implicit";
         public const string StreamDeleted = "$stream-deleted";
         public const string LinkTo = "$>";
     }

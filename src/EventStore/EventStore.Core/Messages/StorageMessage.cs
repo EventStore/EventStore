@@ -124,13 +124,13 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
-            public readonly long PrepareStartPosition;
+            public readonly long TransactionPosition;
 
-            public WriteCommit(Guid correlationId, IEnvelope envelope, long prepareStartPosition)
+            public WriteCommit(Guid correlationId, IEnvelope envelope, long transactionPosition)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
-                PrepareStartPosition = prepareStartPosition;
+                TransactionPosition = transactionPosition;
             }
         }
 
