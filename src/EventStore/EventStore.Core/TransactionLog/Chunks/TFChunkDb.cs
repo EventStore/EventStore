@@ -196,6 +196,17 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             var pos = Config.WriterCheckpoint.Read();
             var writerPosition = (int)(pos % Config.ChunkSize);
+
+            ChunkFooter chunkFooter;
+            using (var fs = File.OpenRead(chunkFileName))
+            {
+                fs.Seek(-ChunkFooter.Size, SeekOrigin.End);
+                chunkFooter = ChunkFooter.FromStream(fs);
+            }
+            
+            if (chunkFooter.Completed && chunkFooter.MapSize > 0)
+                return TFChunk.FromCompletedFile(chunkFileName, verifyHash);
+            
             if (writerPosition == 0 && pos > 0)
                 writerPosition = Config.ChunkSize;
 

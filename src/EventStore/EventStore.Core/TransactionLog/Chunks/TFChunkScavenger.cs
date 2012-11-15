@@ -31,6 +31,7 @@ using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -115,8 +116,11 @@ namespace EventStore.Core.TransactionLog.Chunks
                     {
                         var prepare = (PrepareLogRecord) record;
 
-                        if (!_readIndex.IsStreamDeleted(prepare.EventStreamId)
-                            || (prepare.Flags & PrepareFlags.StreamDelete) != 0) // delete tombstone should be left
+                        bool keepRecord = prepare.EventType.StartsWith(SystemEventTypes.StreamCreated)    // we keep $stream-created
+                                          || (prepare.Flags & PrepareFlags.StreamDelete) != 0             // we keep delete tombstone
+                                          || !_readIndex.IsStreamDeleted(prepare.EventStreamId);
+
+                        if (keepRecord) 
                         {
                             var posMap = WriteRecord(newChunk, record);
                             positionMapping.Add(posMap);

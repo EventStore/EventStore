@@ -147,6 +147,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 seqRdr.Open();
             }
 
+            _indexRebuild = true;
+
             var seqReader = GetSeqReader();
             try
             {
@@ -183,7 +185,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             uint streamHash = 0;
             string streamId = null;
 
-            foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition))
+            foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition))
             {
                 if (first)
                 {
@@ -200,14 +202,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     eventNumber = EventNumber.DeletedStream;
                     _committedEvents.PutRecord(prepare.EventId, Tuple.Create(streamId, eventNumber), throwOnDuplicate: false);
                     addToIndex = commit.LogPosition > _persistedCommitCheckpoint
-                                    || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
+                                 || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
                 }
                 else if ((prepare.Flags & PrepareFlags.Data) != 0)
                 {
                     eventNumber = commit.EventNumber + prepare.TransactionOffset;
                     _committedEvents.PutRecord(prepare.EventId, Tuple.Create(streamId, eventNumber), throwOnDuplicate: false);
                     addToIndex = commit.LogPosition > _persistedCommitCheckpoint
-                                    || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
+                                 || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
                 }
 
                 // could be just empty prepares for TransactionBegin and TransactionEnd, for instance
@@ -238,43 +240,44 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 }
             }
 
-            if (first)
-                throw new Exception("No prepares for commit found!");
-
             var newLastCommitPosition = commit.LogPosition > lastCommitPosition ? commit.LogPosition : lastCommitPosition;
             if (Interlocked.CompareExchange(ref _lastCommitPosition, newLastCommitPosition, lastCommitPosition) != lastCommitPosition)
                 throw new Exception("Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
 
+            if (first)
+            {
+                // we got here because all prepares of this commit was scavenged, 
+                // so we don't add anything to cache, to table index, anywhere
+                // we just pretend this commit was already processed and scavenged :)
+                return;
+            }
+
             _streamInfoCache.Put(streamId,
-                         key => new StreamCacheInfo(eventNumber, null),
-                         (key, old) => new StreamCacheInfo(eventNumber, old.Metadata));
+                                 key => new StreamCacheInfo(eventNumber, null),
+                                 (key, old) => new StreamCacheInfo(eventNumber, old.Metadata));
         }
 
-        private IEnumerable<PrepareLogRecord> GetTransactionPrepares(long transactionPos)
+        private IEnumerable<PrepareLogRecord> GetTransactionPrepares(long transactionPos, long commitPos)
         {
-            bool first = true;
             var seqReader = GetSeqReader();
             try
             {
                 seqReader.Reposition(transactionPos);
 
-                while (true)
+                // in case all prepares were scavenged, we should not read past Commit LogPosition
+                SeqReadResult result;
+                while ((result = seqReader.TryReadNext()).Success && result.RecordPrePosition <= commitPos)
                 {
-                    var result = seqReader.TryReadNext();
-                    if (!result.Success)
-                        throw new Exception("Couldn't read record which is supposed to be in file.");
+                    if (result.LogRecord.RecordType != LogRecordType.Prepare)
+                        continue;
 
-                    if (first && result.LogRecord.RecordType != LogRecordType.Prepare)
-                        throw new Exception(string.Format("The first transaction record is not prepare: {0}. ", result.LogRecord.RecordType));
-                    first = false;
+                    var prepare = (PrepareLogRecord) result.LogRecord;
+                    if (prepare.TransactionPosition != transactionPos)
+                        continue;
 
-                    var prepare = result.LogRecord as PrepareLogRecord;
-                    if (prepare != null && prepare.TransactionPosition == transactionPos)
-                    {
-                        yield return prepare;
-                        if ((prepare.Flags & PrepareFlags.TransactionEnd) != 0)
-                            yield break;
-                    }
+                    yield return prepare;
+                    if ((prepare.Flags & PrepareFlags.TransactionEnd) != 0)
+                        yield break;
                 }
             }
             finally
@@ -307,10 +310,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (lastEventNumber == ExpectedVersion.NoStream)
                 return new ReadEventResult(SingleReadResult.NoStream);
 
-            StreamMetadata metadata;
-            bool useMetadata = GetStreamMetadataCached(reader, streamId, out metadata);
-
-            if (useMetadata && metadata.MaxCount.HasValue)
+            var metadata = GetStreamMetadataCached(reader, streamId);
+            if (metadata.MaxCount.HasValue)
             {
                 var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
                 if (version < minEventNumber || version > lastEventNumber)
@@ -321,7 +322,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var success = GetStreamRecord(reader, streamId, version, out record);
             if (success)
             {
-                if (useMetadata && metadata.MaxAge.HasValue && record.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)
+                if (metadata.MaxAge.HasValue && record.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)
                     return new ReadEventResult(SingleReadResult.NotFound);
                 return new ReadEventResult(SingleReadResult.Success, record);
             }
@@ -345,13 +346,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (lastEventNumber == ExpectedVersion.NoStream)
                     return new ReadStreamResult(RangeReadResult.NoStream);
 
-                StreamMetadata metadata;
-                bool useMetadata = GetStreamMetadataCached(reader, streamId, out metadata);
-
                 int startEventNumber = fromEventNumber;
                 int endEventNumber = (int) Math.Min(int.MaxValue, (long) fromEventNumber + maxCount - 1);
 
-                if (useMetadata && metadata.MaxCount.HasValue)
+                var metadata = GetStreamMetadataCached(reader, streamId);
+                if (metadata.MaxCount.HasValue)
                 {
                     var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
                     if (endEventNumber < minEventNumber)
@@ -361,9 +360,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                 var recordsQuery = _tableIndex.GetRange(streamHash, startEventNumber, endEventNumber)
                                               .Select(x => GetEventRecord(reader, x))
-                                              .Where(x => x.EventStreamId == streamId);
+                                              .Where(x => x.Success && x.Record.EventStreamId == streamId)
+                                              .Select(x => x.Record);
 
-                if (useMetadata && metadata.MaxAge.HasValue)
+                if (metadata.MaxAge.HasValue)
                 {
                     var ageThreshold = DateTime.UtcNow - metadata.MaxAge.Value;
                     recordsQuery = recordsQuery.Where(x => x.TimeStamp >= ageThreshold);
@@ -398,14 +398,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (lastEventNumber == ExpectedVersion.NoStream)
                     return new ReadStreamResult(RangeReadResult.NoStream);
 
-                StreamMetadata metadata;
-                bool useMetadata = GetStreamMetadataCached(reader, streamId, out metadata);
-
                 int endEventNumber = fromEventNumber < 0 ? lastEventNumber : fromEventNumber;
                 int startEventNumber = (int)Math.Max(0L, (long)endEventNumber - maxCount + 1);
-
                 bool isEndOfStream = false;
-                if (useMetadata && metadata.MaxCount.HasValue)
+
+                var metadata = GetStreamMetadataCached(reader, streamId);
+                if (metadata.MaxCount.HasValue)
                 {
                     var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
                     if (endEventNumber < minEventNumber)
@@ -419,9 +417,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                 var recordsQuery = _tableIndex.GetRange(streamHash, startEventNumber, endEventNumber)
                                               .Select(x => GetEventRecord(reader, x))
-                                              .Where(x => x.EventStreamId == streamId);
+                                              .Where(x => x.Success && x.Record.EventStreamId == streamId)
+                                              .Select(x => x.Record);
 
-                if (useMetadata && metadata.MaxAge.HasValue)
+                if (metadata.MaxAge.HasValue)
                 {
                     var ageThreshold = DateTime.UtcNow - metadata.MaxAge.Value;
                     recordsQuery = recordsQuery.Where(x => x.TimeStamp >= ageThreshold);
@@ -453,25 +452,25 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             long position;
             if (_tableIndex.TryGetOneValue(streamHash, version, out position))
             {
-                EventRecord rec = GetEventRecord(reader, new IndexEntry(streamHash, version, position));
-                if (rec.EventStreamId == streamId)
+                var res = GetEventRecord(reader, new IndexEntry(streamHash, version, position));
+                if (res.Success && res.Record.EventStreamId == streamId)
                 {
                     _succReadCount += 1;
-                    record = rec;
+                    record = res.Record;
                     return true;
                 }
                 _failedReadCount += 1;
 
                 foreach (var indexEntry in _tableIndex.GetRange(streamHash, version, version))
                 {
-                    if (indexEntry.Position == rec.LogPosition) // already checked that
+                    if (indexEntry.Position == position) // already checked that
                         continue;
 
-                    rec = GetEventRecord(reader, indexEntry);
-                    if (rec.EventStreamId == streamId)
+                    res = GetEventRecord(reader, indexEntry);
+                    if (res.Success && res.Record.EventStreamId == streamId)
                     {
                         _succReadCount += 1;
-                        record = rec;
+                        record = res.Record;
                         return true;
                     }
                     _failedReadCount += 1;
@@ -481,22 +480,22 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return false;
         }
 
-        private static EventRecord GetEventRecord(ITransactionFileReader reader, IndexEntry indexEntry)
+        private static EventResult GetEventRecord(ITransactionFileReader reader, IndexEntry indexEntry)
         {
-            var prepare = ReadPrepareInternal(reader, indexEntry.Position);
-            var eventRecord = new EventRecord(indexEntry.Version, prepare);
-            return eventRecord;
+            var res = ReadPrepareInternal(reader, indexEntry.Position);
+            if (!res.Success)
+                return new EventResult(false, null);
+            var eventRecord = new EventRecord(indexEntry.Version, res.Record);
+            return new EventResult(true, eventRecord);
         }
 
-        private static PrepareLogRecord ReadPrepareInternal(ITransactionFileReader reader, long pos)
+        private static PrepareResult ReadPrepareInternal(ITransactionFileReader reader, long pos)
         {
-            var result = reader.TryReadAt(pos);
-            // TODO AN need to change this to account for possibly scavenged records, shouldn't throw exception,
-            // TODO AN rather return meaningful result
-            if (!result.Success) 
-                throw new InvalidOperationException("Couldn't read record which is supposed to be in file.");
+            RecordReadResult result = reader.TryReadAt(pos);
+            if (!result.Success)
+                return new PrepareResult(false, null);
             Debug.Assert(result.LogRecord.RecordType == LogRecordType.Prepare, "Incorrect type of log record, expected Prepare record.");
-            return (PrepareLogRecord)result.LogRecord;
+            return new PrepareResult(true, (PrepareLogRecord)result.LogRecord);
         }
 
         int IReadIndex.GetLastStreamEventNumber(string streamId)
@@ -518,9 +517,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
             StreamCacheInfo streamInfo;
             if (_streamInfoCache.TryGet(streamId, out streamInfo) && streamInfo.LastEventNumber.HasValue)
-            {
                 return streamInfo.LastEventNumber.Value;
-            }
 
             var lastEventNumber = GetLastStreamEventNumberUncached(reader, streamId);
             if (lastEventNumber != ExpectedVersion.NoStream)
@@ -542,15 +539,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (!_tableIndex.TryGetLatestEntry(streamHash, out latestEntry))
                 return ExpectedVersion.NoStream;
 
-            var prepare = ReadPrepareInternal(reader, latestEntry.Position);
-            if (prepare.EventStreamId == streamId) // LUCKY!!!
+            var res = ReadPrepareInternal(reader, latestEntry.Position);
+            if (!res.Success)
+                throw new Exception("Couldn't read latest stream's prepare! That shouldn't happen EVER!");
+            if (res.Record.EventStreamId == streamId) // LUCKY!!!
                 return latestEntry.Version;
 
-            // TODO AN here lie the problem of out of memory if the stream have A LOT of events in them
+            // TODO AN here lies the problem of out of memory if the stream has A LOT of events in them
             foreach (var indexEntry in _tableIndex.GetRange(streamHash, 0, int.MaxValue))
             {
-                var p = ReadPrepareInternal(reader, indexEntry.Position);
-                if (p.EventStreamId == streamId)
+                var r = ReadPrepareInternal(reader, indexEntry.Position);
+                if (r.Success && r.Record.EventStreamId == streamId)
                     return indexEntry.Version; // AT LAST!!!
             }
             return ExpectedVersion.NoStream; // no such event stream
@@ -750,19 +749,27 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return new IndexReadAllResult(records, maxCount, pos, nextPos, prevPos, lastCommitPosition);
         }
 
-        CommitCheckResult IReadIndex.CheckCommitStartingAt(long prepareStartPosition)
+        CommitCheckResult IReadIndex.CheckCommitStartingAt(long transactionPosition, long commitPosition)
         {
             var reader = GetReader();
             try
             {
-                // TODO AN: do it without exception catching
                 string streamId;
                 int expectedVersion;
                 try
                 {
-                    var firstPrepare = ReadPrepareInternal(reader, prepareStartPosition);
-                    streamId = firstPrepare.EventStreamId;
-                    expectedVersion = firstPrepare.ExpectedVersion;
+                    var firstPrepareRes = ReadPrepareInternal(reader, transactionPosition);
+                    if (!firstPrepareRes.Success)
+                    {
+                        var message = string.Format("Couldn't read first prepare of to-be-commited transaction. " 
+                                                    + "Transaction pos: {0}, commit pos: {1}.",
+                                                    transactionPosition,
+                                                    commitPosition);
+                        Log.Error(message);
+                        throw new InvalidOperationException(message);
+                    }
+                    streamId = firstPrepareRes.Record.EventStreamId;
+                    expectedVersion = firstPrepareRes.Record.ExpectedVersion;
                 }
                 catch (InvalidOperationException)
                 {
@@ -779,19 +786,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     var first = true;
                     int startEventNumber = -1;
                     int endEventNumber = -1;
-                    foreach (var prepare in GetTransactionPrepares(prepareStartPosition))
+                    foreach (var prepare in GetTransactionPrepares(transactionPosition, commitPosition))
                     {
-                        Tuple<string, int> commitedInfo;
-                        if (!_committedEvents.TryGetRecord(prepare.EventId, out commitedInfo)
-                            || commitedInfo.Item1 != prepare.EventStreamId)
+                        // we should skip prepares without data, as they don't mean anything for idempotency
+                        // though we have to check deletes, otherwise they always will be considered idempotent :)
+                        if ((prepare.Flags & PrepareFlags.Data) == 0 && (prepare.Flags & PrepareFlags.StreamDelete) == 0) 
+                            continue;
+
+                        Tuple<string, int> prepInfo;
+                        if (!_committedEvents.TryGetRecord(prepare.EventId, out prepInfo) || prepInfo.Item1 != prepare.EventStreamId)
                         {
                             return first
                                 ? new CommitCheckResult(CommitDecision.Ok, streamId, curVersion, -1, -1)
                                 : new CommitCheckResult(CommitDecision.CorruptedIdempotency, streamId, curVersion, -1, -1);
                         }
                         if (first)
-                            startEventNumber = commitedInfo.Item2;
-                        endEventNumber = commitedInfo.Item2;
+                            startEventNumber = prepInfo.Item2;
+                        endEventNumber = prepInfo.Item2;
                         first = false;
                     }
                     return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, startEventNumber, endEventNumber);
@@ -800,20 +811,36 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 {
                     var eventNumber = expectedVersion;
                     var first = true;
-                    foreach (var prepare in GetTransactionPrepares(prepareStartPosition))
+                    foreach (var prepare in GetTransactionPrepares(transactionPosition, commitPosition))
                     {
+                        // we should skip prepares without data, as they don't mean anything for idempotency
+                        // though we have to check deletes, otherwise they always will be considered idempotent :)
+                        if ((prepare.Flags & PrepareFlags.Data) == 0 && (prepare.Flags & PrepareFlags.StreamDelete) == 0)
+                            continue;
+
                         eventNumber += 1;
 
                         EventRecord record;
-                        // TODO AN need to discriminate implicit and explicit $stream-created event
-                        // TODO AN and avoid checking implicit as it has always different EventId
-                        if (!GetStreamRecord(reader, streamId, eventNumber, out record) 
-                            || (eventNumber > 0 && record.EventId != prepare.EventId)) 
+                        if (!GetStreamRecord(reader, streamId, eventNumber, out record) || record.EventId != prepare.EventId)
                         {
-                            return first || eventNumber == 1 // because right now $stream-created is always considered equal
+                            // if we are dealing with 0th event (stream created event)
+                            // and both events are $stream-created-implicit, then they always have different EventIDs,
+                            // but that doesn't matter and we should just skip them, as following prepares 
+                            // with actual data and EventIDs will allow us to arrive at idempotency decision
+                            if (eventNumber == 0
+                                && record.EventType == SystemEventTypes.StreamCreatedImplicit
+                                && prepare.EventType == SystemEventTypes.StreamCreatedImplicit)
+                            {
+                                // skip $stream-created-implicit prepares and don't set first=false, as 
+                                // essentially we pretend that we haven't checked anything yet :)
+                                continue;
+                            }
+                            
+                            return first
                                 ? new CommitCheckResult(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1)
                                 : new CommitCheckResult(CommitDecision.CorruptedIdempotency, streamId, curVersion, -1, -1);
                         }
+
                         first = false;
                     }
                     return new CommitCheckResult(CommitDecision.Idempotent, streamId, curVersion, expectedVersion + 1, eventNumber);
@@ -862,39 +889,28 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return new ReadIndexStats(Interlocked.Read(ref _succReadCount), Interlocked.Read(ref _failedReadCount));
         }
 
-        private bool GetStreamMetadataCached(ITransactionFileReader reader,
-                                             string streamId,
-                                             out StreamMetadata metadata)
+        private StreamMetadata GetStreamMetadataCached(ITransactionFileReader reader, string streamId)
         {
             StreamCacheInfo streamInfo;
             if (_streamInfoCache.TryGet(streamId, out streamInfo) && streamInfo.Metadata.HasValue)
-            {
-                metadata = streamInfo.Metadata.Value;
-                return true;
-            }
+                return streamInfo.Metadata.Value;
 
-            if (GetStreamMetadataUncached(reader, streamId, out metadata))
-            {
-                var meta = metadata;
-                _streamInfoCache.Put(streamId,
-                                     key => new StreamCacheInfo(null, meta),
-                                     (key, oldValue) => new StreamCacheInfo(oldValue.LastEventNumber, meta));
-                return true;
-            }
-            return false;
+            var metadata = GetStreamMetadataUncached(reader, streamId);
+            _streamInfoCache.Put(streamId,
+                                 key => new StreamCacheInfo(null, metadata),
+                                 (key, oldValue) => new StreamCacheInfo(oldValue.LastEventNumber, metadata));
+            return metadata;
         }
 
-        private bool GetStreamMetadataUncached(ITransactionFileReader reader, 
-                                               string streamId, 
-                                               out StreamMetadata metadata)
+        private StreamMetadata GetStreamMetadataUncached(ITransactionFileReader reader, string streamId)
         {
             EventRecord record;
             if (!GetStreamRecord(reader, streamId, 0, out record))
                 throw new Exception("GetStreamMetadata couldn't find 0th event on stream. That should never happen.");
 
-            metadata = new StreamMetadata(null, null);
-            if (record.Metadata == null || record.Metadata.Length == 0)
-                return false;
+            if (record.Metadata == null || record.Metadata.Length == 0 || (record.Flags & PrepareFlags.IsJson) == 0)
+                return new StreamMetadata(null, null);
+
             try
             {
                 var json = Encoding.UTF8.GetString(record.Metadata);
@@ -909,13 +925,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (jObj.TryGetValue(SystemMetadata.MaxCount, out prop) && prop.Type == JTokenType.Integer)
                     maxCount = prop.Value<int>();
 
-                metadata = new StreamMetadata(maxCount > 0 ? maxCount : (int?) null,
-                                              maxAge > 0 ? TimeSpan.FromSeconds(maxAge) : (TimeSpan?) null);
-                return true;
+                return new StreamMetadata(maxCount > 0 ? maxCount : (int?) null,
+                                          maxAge > 0 ? TimeSpan.FromSeconds(maxAge) : (TimeSpan?) null);
             }
             catch (Exception)
             {
-                return false;
+                return new StreamMetadata(null, null);
             }
         }
 
@@ -934,6 +949,30 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public void Dispose()
         {
             Close();
+        }
+
+        private struct PrepareResult
+        {
+            public readonly bool Success;
+            public readonly PrepareLogRecord Record;
+
+            public PrepareResult(bool success, PrepareLogRecord record)
+            {
+                Success = success;
+                Record = record;
+            }
+        }
+
+        private struct EventResult
+        {
+            public readonly bool Success;
+            public readonly EventRecord Record;
+
+            public EventResult(bool success, EventRecord record)
+            {
+                Success = success;
+                Record = record;
+            }
         }
     }
 }

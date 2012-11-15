@@ -35,7 +35,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 {
     public class TFChunkSequentialReader : ITransactionFileSequentialReader
     {
-        private const int MaxRetries = 100;
+        public const int MaxRetries = 20;
 
         private readonly TFChunkDb _db;
         private readonly ICheckpoint _writerCheckpoint;

@@ -38,8 +38,9 @@ namespace EventStore.Core.Services.RequestManager.Managers
     class CreateStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.CreateStreamRequestCreated>
     {
         public CreateStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
-            base(publisher, prepareCount, commitCount)
-        {}
+                base(publisher, prepareCount, commitCount)
+        {
+        }
 
         public void Handle(StorageMessage.CreateStreamRequestCreated request)
         {
@@ -51,14 +52,18 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _correlationId = request.CorrelationId;
             _eventStreamId = request.EventStreamId;
 
-            Publisher.Publish(new StorageMessage.WritePrepares(
-                             request.CorrelationId,
-                             _publishEnvelope,
-                             request.EventStreamId,
-                             ExpectedVersion.NoStream,
-                             new[] { new Event(Guid.NewGuid(), "StreamCreated", request.IsJson, LogRecord.NoData, request.Metadata) },
-                             allowImplicitStreamCreation: false,
-                             liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
+            Publisher.Publish(
+                new StorageMessage.WritePrepares(
+                    request.CorrelationId,
+                    _publishEnvelope,
+                    request.EventStreamId,
+                    ExpectedVersion.NoStream,
+                    new[]
+                    {
+                        new Event(Guid.NewGuid(), SystemEventTypes.StreamCreated, request.IsJson, LogRecord.NoData, request.Metadata)
+                    },
+                    allowImplicitStreamCreation: false,
+                    liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                       _publishEnvelope,
                                                       new StorageMessage.PreparePhaseTimeout(_correlationId)));

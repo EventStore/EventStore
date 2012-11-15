@@ -27,9 +27,7 @@
 // 
 
 using System;
-using System.IO;
 using System.Text;
-using System.Xml;
 using System.Xml.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
