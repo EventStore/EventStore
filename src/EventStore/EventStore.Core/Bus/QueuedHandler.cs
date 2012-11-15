@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Log;
@@ -55,12 +56,7 @@ namespace EventStore.Core.Bus
         private readonly Stopwatch _slowMsgWatch = new Stopwatch();
         private readonly TimeSpan _slowMsgThreshold;
 
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentQueue<Message> _queue = new Common.ConcurrentCollections.ConcurrentQueue<Message>();
-#else
-        private readonly System.Collections.Concurrent.ConcurrentQueue<Message> _queue = new System.Collections.Concurrent.ConcurrentQueue<Message>();
-#endif
-
+        private readonly ConcurrentQueue<Message> _queue = new ConcurrentQueue<Message>();
         private Thread _thread;
         private volatile bool _stop;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);

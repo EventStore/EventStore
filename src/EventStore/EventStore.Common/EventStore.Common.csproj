@@ -56,8 +56,6 @@
     <Compile Include="CommandLine\EventStoreCmdLineOptionsBase.cs" />
     <Compile Include="CommandLine\lib\CommandLine.cs" />
     <Compile Include="CommandLine\lib\CommandLineText.cs" />
-    <Compile Include="ConcurrentCollections\ConcurrentQueue.cs" />
-    <Compile Include="ConcurrentCollections\ConcurrentStack.cs" />
     <Compile Include="Configuration\Constants.cs" />
     <Compile Include="Exceptions\ApplicationInitializationException.cs" />
     <Compile Include="Log\LazyLogger.cs" />
