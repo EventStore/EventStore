@@ -31,7 +31,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream
 {
     [TestFixture]
-    public class when_deleting_stream_spanning_through_multiple_chunks_and_other_streams_on_scavenged_db_read_index_should : ReadIndexTestScenario
+    public class when_deleting_stream_spanning_through_multiple_chunks_in_db_with_other_streams_read_index_should : ReadIndexTestScenario
     {
 
         protected override void WriteTestScenario()
