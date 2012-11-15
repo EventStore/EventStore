@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.AllEvents
@@ -141,7 +142,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(2));
-                Assert.That(read.Result.Events.All(x => x.EventType == "StreamCreated"));
+                Assert.That(read.Result.Events.All(x => x.EventType == SystemEventTypes.StreamCreated));
             }
         }
 
