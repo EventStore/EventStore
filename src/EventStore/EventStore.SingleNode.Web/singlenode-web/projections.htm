@@ -38,11 +38,10 @@
             <div class="span12">
                 <div id="commands-container">
                     <ul style="display: inline;">
-                        <li><a id="command-disable-all">
-                            <img src="/web/es/img/stop_btn.png" title="Disable & Stop All" alt="Disable & Stop All" /> Disable & Stop All
-                        </a></li>
-                        <li><a id="command-enable-all">
-                            <img src="/web/es/img/start_btn.png" title="Enable & Start All" alt="Enable & Start All" /> Enable & Start All</a>
+                        <li><a id="command-disable-all" class='btn'>
+                            Disable All</a></li>
+                        <li><a id="command-enable-all" class='btn'>
+                            Enable All</a>
                         </li>
                     </ul>
                 </div>
@@ -86,7 +85,7 @@
         </script>
         <div>
             <header>
-                <a href="new-projection.htm">New Projection</a>
+                <a href="new-projection.htm" class='btn btn-success'>New Projection</a>
             </header>
         </div>
         <script id="r-body">
@@ -106,12 +105,16 @@
                     
                 function onDisableAll(ev) {
                     ev.preventDefault();
-                    postToEachProjection("/command/disable");
+					if (!confirm('Are you sure you want to disable & stop all projections?'))
+						return false;
+					postToEachProjection("/command/disable");
                     return false;
                 }
                 
                 function onEnableAll(ev) {
                     ev.preventDefault();
+					if (!confirm('Are you sure you want to enable & start all projections?'))
+						return false;
                     postToEachProjection("/command/enable");
                     return false;
                 }
@@ -149,9 +152,13 @@
                                     Accept: "application/json",
                                 },
                                 type: "POST",
-                                success: function() {
+                                success: function(a,b,c) {
+									var d = 5; // let it be here temporarily, debugging rare bug
                                 },
                                 error: function(xhr, status, error) {
+									var errorText = $.trim(xhr.responseText).toLowerCase();
+									if (errorText === 'not disabled' || errorText === 'not enabled')
+										return;
                                     var err = es.util.formatError("Error when posting to projection '" + projection.name + "'", xhr);
                                     errors.push(err);
                                 }

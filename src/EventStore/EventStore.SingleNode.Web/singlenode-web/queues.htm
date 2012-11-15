@@ -60,8 +60,8 @@
           <td class='queuename'>{{>queueName}}</td>
           <td>{{>length}}</td>
           <td>{{>avgItemsPerSecond}}</td>
-          <td>{{>~format(avgProcessingTime, 3)}}</td>
-          <td>{{>~format(idleTimePercent, 1)}}</td>
+          <td>{{>avgProcessingTime.toFixed(3)}}</td>
+          <td>{{>idleTimePercent.toFixed(1)}}</td>
           <td>{{>lengthCurrentTryPeak}}</td>
           <td>{{>lengthLifetimePeak}}</td>
           <td>{{>totalItemsProcessed}}</td>
@@ -102,13 +102,7 @@
 
             function buildTable(queues) {
                 $.templates("statsTemplate", "#statsTemplate");
-                $(".stats-body").html(
-                          $.render.statsTemplate(queues, {
-                              format: function (v, eps) {
-                                  return format(v, eps);
-                              }
-                          })
-                      );
+                $(".stats-body").html( $.render.statsTemplate(queues) );
             }
 
             function error(xhr, status) {
@@ -130,21 +124,6 @@
             function hideErrorMessage() {
                 $(".error").hide();
             }
-
-            function format(number, precision) {
-                if (precision < 1) {
-                    throw "precision must be positive number";
-                }
-
-                var divide = Math.pow(10, precision);
-
-                var temp = Math.floor(number * divide);
-                if (temp == Infinity) {
-                    return number;
-                }
-
-                return temp / divide;
-            };
         })();
     </script>
 </body>
