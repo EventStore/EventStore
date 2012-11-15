@@ -53,6 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<CoreProjectionManagementMessage.Stop>,
                                          IHandle<CoreProjectionManagementMessage.Kill>,
                                          IHandle<CoreProjectionManagementMessage.GetState>,
+                                         IHandle<CoreProjectionManagementMessage.GetDebugState>,
                                          IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
                                          IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
@@ -338,6 +339,12 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
+        {
+            var projection = _projections[message.CorrelationId];
+            projection.Handle(message);
+        }
+
+        public void Handle(CoreProjectionManagementMessage.GetDebugState message)
         {
             var projection = _projections[message.CorrelationId];
             projection.Handle(message);

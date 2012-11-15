@@ -43,6 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class CoreProjection : IDisposable,
                                   ICoreProjection,
                                   IHandle<CoreProjectionManagementMessage.GetState>,
+                                  IHandle<CoreProjectionManagementMessage.GetDebugState>,
                                   IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
                                   IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>,
                                   IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>,
@@ -274,6 +275,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        public void Handle(CoreProjectionManagementMessage.GetDebugState message)
+        {
+            EnsureState(State.Stopped | State.Faulted);
+            message.Envelope.ReplyWith(new CoreProjectionManagementMessage.DebugState(_projectionCorrelationId, _eventsForDebugging.ToArray()));
+        }
+
         public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
         {
             CheckpointCompleted(message.CheckpointTag);
@@ -376,6 +383,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStateCache.CacheAndLockPartitionState("", new PartitionStateCache.State("", null), null);
             _expectedSubscriptionMessageSequenceNumber = -1; // this is to be overridden when subscribing
             // NOTE: this is to workaround exception in GetState requests submitted by client
+            _eventsForDebugging.Clear();
         }
 
         private void EnterLoadStateRequested()
@@ -409,7 +417,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterStopping()
         {
-            EnsureUnsubscribed();
             // core projection may be stopped to change its configuration
             // it is important to checkpoint it so no writes pending remain when stopped
             _checkpointManager.RequestCheckpointToStop(); // should always report completed even if skipped
@@ -418,13 +425,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterStopped()
         {
             UpdateStatistics();
-            EnsureUnsubscribed();
             _publisher.Publish(new CoreProjectionManagementMessage.Stopped(_projectionCorrelationId));
         }
 
         private void EnterFaultedStopping()
         {
-            EnsureUnsubscribed();
             // checkpoint last known correct state on fault
             _checkpointManager.RequestCheckpointToStop(); // should always report completed even if skipped
         }
@@ -432,7 +437,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterFaulted()
         {
             UpdateStatistics();
-            EnsureUnsubscribed();
             _publisher.Publish(
                 new CoreProjectionManagementMessage.Faulted(_projectionCorrelationId, _faultedReason));
         }
@@ -479,10 +483,30 @@ namespace EventStore.Projections.Core.Services.Processing
             CommittedEventWorkItem committedEventWorkItem, ProjectionSubscriptionMessage.CommittedEventReceived message,
             string partition)
         {
-            if (_state == State.Running)
-                InternalProcessCommittedEvent(committedEventWorkItem, partition, message);
-            else // TODO: implement
-                ;
+            switch (_state)
+            {
+                case State.Running:
+                    InternalProcessCommittedEvent(committedEventWorkItem, partition, message);
+                    break;
+                case State.FaultedStopping:
+                case State.Stopping:
+                case State.Faulted:
+                case State.Stopped:
+                    InternalCollectEventForDebugging(committedEventWorkItem, partition, message);
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
+        private readonly List<CoreProjectionManagementMessage.DebugState.Event> _eventsForDebugging =
+            new List<CoreProjectionManagementMessage.DebugState.Event();
+
+        private void InternalCollectEventForDebugging(CommittedEventWorkItem committedEventWorkItem, string partition, ProjectionSubscriptionMessage.CommittedEventReceived message)
+        {
+            if (_eventsForDebugging.Count >= 10)
+                EnsureUnsubscribed();
+            _eventsForDebugging.Add(CoreProjectionManagementMessage.DebugState.Event.Create(message, partition));
         }
 
         private void InternalProcessCommittedEvent(

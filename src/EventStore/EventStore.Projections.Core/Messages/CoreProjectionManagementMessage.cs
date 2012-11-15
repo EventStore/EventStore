@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Text;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -136,6 +137,24 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class GetDebugState : CoreProjectionManagementMessage
+        {
+            private readonly IEnvelope _envelope;
+
+            public GetDebugState(IEnvelope envelope, Guid correlationId)
+                : base(correlationId)
+            {
+                if (envelope == null) throw new ArgumentNullException("envelope");
+                _envelope = envelope;
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+        }
+
         public class UpdateStatistics : CoreProjectionManagementMessage
         {
             public UpdateStatistics(Guid correlationId)
@@ -164,6 +183,53 @@ namespace EventStore.Projections.Core.Messages
             public string Partition
             {
                 get { return _partition; }
+            }
+        }
+
+        public class DebugState : CoreProjectionManagementMessage
+        {
+            private readonly Event[] _events;
+
+            public DebugState(Guid correlationId, Event[] events)
+                : base(correlationId)
+            {
+                _events = events;
+            }
+
+            public Event[] Events
+            {
+                get { return _events; }
+            }
+
+            public class Event
+            {
+                public static Event Create(ProjectionSubscriptionMessage.CommittedEventReceived source, string partition)
+                {
+                    return new Event 
+                        {
+                            Partition = partition,
+                            BodyRaw = Encoding.UTF8.GetString(source.Data.Data),
+                            MetadataRaw = Encoding.UTF8.GetString(source.Data.Metadata),
+                            EventType = source.Data.EventType,
+                            StreamId = source.EventStreamId,
+                            SequenceNumber = source.EventSequenceNumber,
+                            LogPosition = source.Position.PreparePosition,
+                        };
+                }
+
+                public string Partition { get; set; }
+
+                public long LogPosition { get; set; }
+
+                public int SequenceNumber { get; set; }
+
+                public string StreamId { get; set; }
+
+                public string EventType { get; set; }
+
+                public string MetadataRaw { get; set; }
+
+                public string BodyRaw { get; set; }
             }
         }
 

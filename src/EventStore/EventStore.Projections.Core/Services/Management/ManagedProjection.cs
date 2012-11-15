@@ -37,6 +37,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Utils;
+using System.Linq;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -77,6 +78,7 @@ namespace EventStore.Projections.Core.Services.Management
         private string _faultedReason;
         private Action _onStopped;
         private Dictionary<string, List<IEnvelope>> _stateRequests;
+        private List<IEnvelope> _debugStateRequests;
         private ProjectionStatistics _lastReceivedStatistics;
         private Action _onPrepared;
         private Action _onStarted;
@@ -202,6 +204,29 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
+        public void Handle(ProjectionManagementMessage.GetDebugState message)
+        {
+            if (_state >= ManagedProjectionState.Stopped)
+            {
+                var needRequest = false;
+                if (_debugStateRequests == null)
+                {
+                    _debugStateRequests = new List<IEnvelope>();
+                    needRequest = true;
+                }
+                _debugStateRequests.Add(message.Envelope);
+                if (needRequest)
+                    _coreQueue.Publish(
+                        new CoreProjectionManagementMessage.GetDebugState(new PublishEnvelope(_inputQueue), _id));
+            }
+            else
+            {
+                //TODO: report right state here
+                message.Envelope.ReplyWith(
+                    new ProjectionManagementMessage.ProjectionDebugState(message.Name, null));
+            }
+        }
+
         public void Handle(ProjectionManagementMessage.Disable message)
         {
             Stop(() => DoDisable(message));
@@ -270,6 +295,14 @@ namespace EventStore.Projections.Core.Services.Management
 
             foreach (var request in partitionRequests)
                 request.ReplyWith(new ProjectionManagementMessage.ProjectionState(_name, message.State));
+        }
+
+        public void Handle(CoreProjectionManagementMessage.DebugState message)
+        {
+            var debugStateRequests = _debugStateRequests;
+            _debugStateRequests = null;
+            foreach (var request in debugStateRequests)
+                request.ReplyWith(new ProjectionManagementMessage.ProjectionDebugState(_name, message.Events));
         }
 
         public void Handle(CoreProjectionManagementMessage.StatisticsReport message)

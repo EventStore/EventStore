@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
+using System.Text;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
 
@@ -296,6 +298,30 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class GetDebugState : Message
+        {
+            private readonly IEnvelope _envelope;
+            private readonly string _name;
+
+            public GetDebugState(IEnvelope envelope, string name)
+            {
+                if (envelope == null) throw new ArgumentNullException("envelope");
+                if (name == null) throw new ArgumentNullException("name");
+                _envelope = envelope;
+                _name = name;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+        }
         public class Statistics : Message
         {
             private readonly ProjectionStatistics[] _projections;
@@ -331,6 +357,28 @@ namespace EventStore.Projections.Core.Messages
             public string State
             {
                 get { return _state; }
+            }
+        }
+
+        public class ProjectionDebugState : Message
+        {
+            private readonly string _name;
+            private readonly CoreProjectionManagementMessage.DebugState.Event[] _events;
+
+            public ProjectionDebugState(string name, CoreProjectionManagementMessage.DebugState.Event[] events)
+            {
+                _name = name;
+                _events = events;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public CoreProjectionManagementMessage.DebugState.Event[] Events
+            {
+                get { return _events; }
             }
         }
 

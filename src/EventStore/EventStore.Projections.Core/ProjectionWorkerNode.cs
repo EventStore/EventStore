@@ -72,6 +72,7 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<CoreProjectionManagementMessage.Stop>(_projectionCoreService);
             coreInputBus.Subscribe<CoreProjectionManagementMessage.Kill>(_projectionCoreService);
             coreInputBus.Subscribe<CoreProjectionManagementMessage.GetState>(_projectionCoreService);
+            coreInputBus.Subscribe<CoreProjectionManagementMessage.GetDebugState>(_projectionCoreService);
             coreInputBus.Subscribe<CoreProjectionManagementMessage.UpdateStatistics>(_projectionCoreService);
             coreInputBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionCoreService);
             coreInputBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionCoreService);
