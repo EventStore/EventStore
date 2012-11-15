@@ -90,6 +90,7 @@
     <Compile Include="ClientAPI\append_to_stream.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
     <Compile Include="ClientAPI\creating_stream.cs" />
+    <Compile Include="ClientAPI\event_store_connection_should.cs" />
     <Compile Include="ClientAPI\MiniNode.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />

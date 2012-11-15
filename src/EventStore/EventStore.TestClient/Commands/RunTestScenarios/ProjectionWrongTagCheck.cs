@@ -95,6 +95,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var successTask = Task.Factory.StartNew<bool>(() =>
             {
                 var store = GetConnection();
+                var manager = GetProjectionsManager();
 
                 var success = true;
                 var stopWatch = new Stopwatch();
@@ -116,11 +117,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         stopWatch.Start();
                     }
 
-                    var count1 = GetProjectionStateValue(store, sumCheckForBankAccount0, "success", int.Parse, -1);
+                    var count1 = GetProjectionStateValue(manager, sumCheckForBankAccount0, "success", int.Parse, -1);
                     for (var i = 0; i < 5; ++i)
                     {
                         Thread.Sleep(TimeSpan.FromSeconds(1));
-                        var count2 = GetProjectionStateValue(store, sumCheckForBankAccount0, "success", int.Parse, -1);
+                        var count2 = GetProjectionStateValue(manager, sumCheckForBankAccount0, "success", int.Parse, -1);
 
                         if (count1 > count2)
                         {
@@ -138,7 +139,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     if (!success)
                         break;
 
-                    if (CheckProjectionState(store, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream))
+                    if (CheckProjectionState(manager, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream))
                         break;
                 }
 

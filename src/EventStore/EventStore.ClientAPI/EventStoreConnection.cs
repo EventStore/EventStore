@@ -46,33 +46,17 @@ using System.Linq;
 
 namespace EventStore.ClientAPI
 {
-    public class EventStoreConnection : IProjectionsManagement, IDisposable
+    public class EventStoreConnection : IDisposable
     {
-        public IProjectionsManagement Projections { get { return this; } }
-
         private readonly ILogger _log;
 
-        private const int MaxQueueSize = 5000;
-
-        private readonly int _maxConcurrentItems;
-        private readonly int _maxAttempts;
-        private readonly int _maxReconnections;
-
-        private static readonly TimeSpan ReconnectionDelay = TimeSpan.FromSeconds(3);
-        private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(7);
-        private static readonly TimeSpan OperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
-
         private IPEndPoint _tcpEndPoint;
-        private IPEndPoint _httpEndPoint;
-        private readonly bool _allowForwarding;
-
         private readonly TcpConnector _connector;
         private TcpTypedConnection _connection;
         private readonly object _connectionLock = new object();
-        private volatile bool _isActive;
+        private volatile bool _active;
 
         private readonly SubscriptionsChannel _subscriptionsChannel;
-        private readonly ProjectionsManager _projectionsManager;
 
         private readonly ConcurrentQueue<IClientOperation> _queue = new ConcurrentQueue<IClientOperation>();
         private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
@@ -86,102 +70,77 @@ namespace EventStore.ClientAPI
         private Thread _worker;
         private volatile bool _stopping;
 
-        private EventStoreConnection(bool allowForwarding,
-                                     int maxConcurrentRequests,
-                                     int maxAttemptsForOperation,
-                                     int maxReconnections,
-                                     ILogger logger)
-        {
-            _allowForwarding = allowForwarding;
-            _maxConcurrentItems = maxConcurrentRequests;
-            _maxAttempts = maxAttemptsForOperation;
-            _maxReconnections = maxReconnections;
+        private readonly ConnectionSettings _settings;
 
-            LogManager.RegisterLogger(logger);
+        private EventStoreConnection(ConnectionSettings settings)
+        {
+            _settings = settings;
+
+            LogManager.RegisterLogger(settings.Log);
             _log = LogManager.GetLogger();
 
             _connector = new TcpConnector();
             _subscriptionsChannel = new SubscriptionsChannel(_connector);
-            _projectionsManager = new ProjectionsManager();
         }
 
         public static EventStoreConnection Create()
         {
-            return new EventStoreConnection(allowForwarding: true,
-                                            maxConcurrentRequests: 5000,
-                                            maxAttemptsForOperation: 10,
-                                            maxReconnections: 10,
-                                            logger: null);
+            return new EventStoreConnection(ConnectionSettings.Default);
         }
 
-        public static EventStoreConnection Create(bool allowForwarding = true,
-                                                  int maxConcurrentRequests = 5000,
-                                                  int maxAttemptsForOperation = 10,
-                                                  int maxReconnections = 10,
-                                                  ILogger logger = null)
+        public static EventStoreConnection Create(ConnectionSettings settings)
         {
-            Ensure.Positive(maxConcurrentRequests, "maxConcurrentRequests");
-            Ensure.Positive(maxAttemptsForOperation, "maxAttemptsForOperation");
-            Ensure.Nonnegative(maxReconnections, "maxReconnections");
-
-            return new EventStoreConnection(allowForwarding,
-                                            maxConcurrentRequests,
-                                            maxAttemptsForOperation,
-                                            maxReconnections,
-                                            logger);
+            Ensure.NotNull(settings, "settings");
+            return new EventStoreConnection(settings);
         }
 
-        public void Connect(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint = null)
+        public void Connect(IPEndPoint tcpEndPoint)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
-            var task = ConnectAsync(tcpEndPoint, httpEndPoint);
-            task.Wait();
+            ConnectAsync(tcpEndPoint).Wait();
         }
 
-        public Task ConnectAsync(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint = null)
+        public Task ConnectAsync(IPEndPoint tcpEndPoint)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
-            return EstablishConnectionAsync(tcpEndPoint, httpEndPoint ?? new IPEndPoint(tcpEndPoint.Address, tcpEndPoint.Port + 1000));
+            return EstablishConnectionAsync(tcpEndPoint);
         }
 
-        public void Connect(string clusterDns, int maxAttempts = 10, int port = 30777)
+        public void Connect(string clusterDns, int maxDiscoverAttempts = 10, int port = 30777)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
-            Ensure.Positive(maxAttempts, "maxAttempts");
+            Ensure.Positive(maxDiscoverAttempts, "maxDiscoverAttempts");
             Ensure.Nonnegative(port, "port");
 
-            var task = ConnectAsync(clusterDns, maxAttempts, port);
-            task.Wait();
+            ConnectAsync(clusterDns, maxDiscoverAttempts, port).Wait();
         }
 
-        public Task ConnectAsync(string clusterDns, int maxAttempts = 10, int port = 30777)
+        public Task ConnectAsync(string clusterDns, int maxDiscoverAttempts = 10, int port = 30777)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
-            Ensure.Positive(maxAttempts, "maxAttempts");
+            Ensure.Positive(maxDiscoverAttempts, "maxDiscoverAttempts");
             Ensure.Nonnegative(port, "port");
 
-            var explorer = new ClusterExplorer(_allowForwarding, maxAttempts, port);
+            var explorer = new ClusterExplorer(_settings.AllowForwarding, maxDiscoverAttempts, port);
             return explorer.Resolve(clusterDns)
-                           .ContinueWith(t =>
+                           .ContinueWith(resolve =>
                                          {
-                                             var pair = t.Result;
-                                             if (!pair.HasValue)
+                                             var endPoint = resolve.Result;
+                                             if (endPoint == null)
                                                  throw new CannotEstablishConnectionException("Failed to find node to connect");
-
-                                             return EstablishConnectionAsync(pair.Value.TcpEndPoint, pair.Value.HttpEndPoint);
+                                             return EstablishConnectionAsync(endPoint);
                                          });
         }
 
-        private Task EstablishConnectionAsync(IPEndPoint tcpEndPoint, IPEndPoint httpEndPoint)
+        private Task EstablishConnectionAsync(IPEndPoint tcpEndPoint)
         {
             lock (_connectionLock)
             {
-                if (_isActive)
+                if (_active)
                     throw new InvalidOperationException("EventStoreConnection is already active");
-                _isActive = true;
+                _active = true;
 
                 _tcpEndPoint = tcpEndPoint;
-                _httpEndPoint = httpEndPoint;
 
                 _lastReconnectionTimestamp = DateTime.UtcNow;
                 _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
@@ -196,19 +155,21 @@ namespace EventStore.ClientAPI
 
         private void EnsureActive()
         {
-            if (!_isActive)
+            if (!_active)
                 throw new InvalidOperationException("EventStoreConnection is not active");
         }
 
         public void Close()
         {
-            _stopping = true;
+            if (!_active)
+                return;
 
+            _stopping = true;
             lock (_connectionLock)
             {
                 _connection.Close();
+                _subscriptionsChannel.Close();
             }
-            _subscriptionsChannel.Close();
 
             var items = _inProgress.Values;
             _inProgress.Clear();
@@ -231,8 +192,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
             EnsureActive();
 
-            var task = CreateStreamAsync(stream, isJson, metadata);
-            task.Wait();
+            CreateStreamAsync(stream, isJson, metadata).Wait();
         }
 
         public Task CreateStreamAsync(string stream, bool isJson, byte[] metadata)
@@ -241,7 +201,7 @@ namespace EventStore.ClientAPI
             EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new CreateStreamOperation(source, Guid.NewGuid(), _allowForwarding, stream, isJson, metadata);
+            var operation = new CreateStreamOperation(source, Guid.NewGuid(), _settings.AllowForwarding, stream, isJson, metadata);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -252,8 +212,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
             EnsureActive();
 
-            var task = DeleteStreamAsync(stream, expectedVersion);
-            task.Wait();
+            DeleteStreamAsync(stream, expectedVersion).Wait();
         }
 
         public Task DeleteStreamAsync(string stream, int expectedVersion)
@@ -262,7 +221,7 @@ namespace EventStore.ClientAPI
             EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new DeleteStreamOperation(source, Guid.NewGuid(), _allowForwarding, stream, expectedVersion);
+            var operation = new DeleteStreamOperation(source, Guid.NewGuid(), _settings.AllowForwarding, stream, expectedVersion);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -274,8 +233,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(events, "events");
             EnsureActive();
 
-            var task = AppendToStreamAsync(stream, expectedVersion, events);
-            task.Wait();
+            AppendToStreamAsync(stream, expectedVersion, events).Wait();
         }
 
         public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<IEvent> events)
@@ -285,7 +243,7 @@ namespace EventStore.ClientAPI
             EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new AppendToStreamOperation(source, Guid.NewGuid(), _allowForwarding, stream, expectedVersion, events);
+            var operation = new AppendToStreamOperation(source, Guid.NewGuid(), _settings.AllowForwarding, stream, expectedVersion, events);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -296,9 +254,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
             EnsureActive();
 
-            var task = StartTransactionAsync(stream, expectedVersion);
-            task.Wait();
-            return task.Result;
+            return StartTransactionAsync(stream, expectedVersion).Result;
         }
 
         public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion)
@@ -307,7 +263,7 @@ namespace EventStore.ClientAPI
             EnsureActive();
 
             var source = new TaskCompletionSource<EventStoreTransaction>();
-            var operation = new StartTransactionOperation(source, Guid.NewGuid(), _allowForwarding, stream, expectedVersion);
+            var operation = new StartTransactionOperation(source, Guid.NewGuid(), _settings.AllowForwarding, stream, expectedVersion);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -319,8 +275,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(events, "events");
             EnsureActive();
 
-            var task = TransactionalWriteAsync(transactionId, stream, events);
-            task.Wait();
+            TransactionalWriteAsync(transactionId, stream, events).Wait();
         }
 
         public Task TransactionalWriteAsync(long transactionId, string stream, IEnumerable<IEvent> events)
@@ -330,7 +285,7 @@ namespace EventStore.ClientAPI
             EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), _allowForwarding, transactionId, stream, events);
+            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transactionId, stream, events);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -341,8 +296,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
             EnsureActive();
 
-            var task = CommitTransactionAsync(transactionId, stream);
-            task.Wait();
+            CommitTransactionAsync(transactionId, stream).Wait();
         }
 
         public Task CommitTransactionAsync(long transactionId, string stream)
@@ -351,7 +305,7 @@ namespace EventStore.ClientAPI
             EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), _allowForwarding, transactionId, stream);
+            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transactionId, stream);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -364,10 +318,7 @@ namespace EventStore.ClientAPI
             Ensure.Positive(count, "count");
             EnsureActive();
 
-            var task = ReadEventStreamForwardAsync(stream, start, count);
-            task.Wait();
-
-            return task.Result;
+            return ReadEventStreamForwardAsync(stream, start, count).Result;
         }
 
         public Task<EventStreamSlice> ReadEventStreamForwardAsync(string stream, int start, int count)
@@ -390,10 +341,7 @@ namespace EventStore.ClientAPI
             Ensure.Positive(count, "count");
             EnsureActive();
 
-            var task = ReadEventStreamBackwardAsync(stream, start, count);
-            task.Wait();
-
-            return task.Result;
+            return ReadEventStreamBackwardAsync(stream, start, count).Result;
         }
 
         public Task<EventStreamSlice> ReadEventStreamBackwardAsync(string stream, int start, int count)
@@ -415,9 +363,7 @@ namespace EventStore.ClientAPI
             Ensure.Positive(maxCount, "maxCount");
             EnsureActive();
 
-            var task = ReadAllEventsForwardAsync(position, maxCount);
-            task.Wait();
-            return task.Result;
+            return ReadAllEventsForwardAsync(position, maxCount).Result;
         }
 
         public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount)
@@ -439,9 +385,7 @@ namespace EventStore.ClientAPI
             Ensure.Positive(maxCount, "maxCount");
             EnsureActive();
 
-            var task = ReadAllEventsBackwardAsync(position, maxCount);
-            task.Wait();
-            return task.Result;
+            return ReadAllEventsBackwardAsync(position, maxCount).Result;
         }
 
         public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount)
@@ -503,253 +447,9 @@ namespace EventStore.ClientAPI
             return Tasks.CreateCompleted();
         }
 
-        void IProjectionsManagement.Enable(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-
-            var task = ((IProjectionsManagement) this).EnableAsync(name);
-            task.Wait();
-        }
-
-        Task IProjectionsManagement.EnableAsync(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.Enable(_httpEndPoint, name);
-        }
-
-        void IProjectionsManagement.Disable(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-
-            var task = ((IProjectionsManagement) this).DisableAsync(name);
-            task.Wait();
-        }
-
-        Task IProjectionsManagement.DisableAsync(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.Disable(_httpEndPoint, name);
-        }
-
-        void IProjectionsManagement.CreateOneTime(string query)
-        {
-            Ensure.NotNullOrEmpty(query, "query");
-
-            var task = ((IProjectionsManagement) this).CreateOneTimeAsync(query);
-            task.Wait();
-        }
-
-        Task IProjectionsManagement.CreateOneTimeAsync(string query)
-        {
-            Ensure.NotNullOrEmpty(query, "query");
-            return _projectionsManager.CreateOneTime(_httpEndPoint, query);
-        }
-
-        void IProjectionsManagement.CreateAdHoc(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            var task = ((IProjectionsManagement) this).CreateAdHocAsync(name, query);
-            task.Wait();
-        }
-
-        Task IProjectionsManagement.CreateAdHocAsync(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            return _projectionsManager.CreateAdHoc(_httpEndPoint, name, query);
-        }
-
-        void IProjectionsManagement.CreateContinuous(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            var task = ((IProjectionsManagement) this).CreateContinuousAsync(name, query);
-            task.Wait();
-        }
-
-        Task IProjectionsManagement.CreateContinuousAsync(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            return _projectionsManager.CreateContinious(_httpEndPoint, name, query);
-        }
-
-        void IProjectionsManagement.CreatePersistent(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            var task = ((IProjectionsManagement) this).CreatePersistentAsync(name, query);
-            task.Wait();
-        }
-
-        Task IProjectionsManagement.CreatePersistentAsync(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            return _projectionsManager.CreatePersistent(_httpEndPoint, name, query);
-        }
-
-        string IProjectionsManagement.ListAll()
-        {
-            var task = ((IProjectionsManagement) this).ListAllAsync();
-            task.Wait();
-            return task.Result;
-        }
-
-        Task<string> IProjectionsManagement.ListAllAsync()
-        {
-            return _projectionsManager.ListAll(_httpEndPoint);
-        }
-
-        string IProjectionsManagement.ListOneTime()
-        {
-            var task = ((IProjectionsManagement) this).ListOneTimeAsync();
-            task.Wait();
-            return task.Result;
-        }
-
-        Task<string> IProjectionsManagement.ListOneTimeAsync()
-        {
-            return _projectionsManager.ListOneTime(_httpEndPoint);
-        }
-
-        string IProjectionsManagement.ListAdHoc()
-        {
-            var task = ((IProjectionsManagement) this).ListAdHocAsync();
-            task.Wait();
-            return task.Result;
-        }
-
-        Task<string> IProjectionsManagement.ListAdHocAsync()
-        {
-            return _projectionsManager.ListAdHoc(_httpEndPoint);
-        }
-
-        string IProjectionsManagement.ListContinuous()
-        {
-            var task = ((IProjectionsManagement) this).ListContinuousAsync();
-            task.Wait();
-            return task.Result;
-        }
-
-        Task<string> IProjectionsManagement.ListContinuousAsync()
-        {
-            return _projectionsManager.ListContinuous(_httpEndPoint);
-        }
-
-        string IProjectionsManagement.ListPersistent()
-        {
-            var task = ((IProjectionsManagement) this).ListPersistentAsync();
-            task.Wait();
-            return task.Result;
-        }
-
-        Task<string> IProjectionsManagement.ListPersistentAsync()
-        {
-            return _projectionsManager.ListPersistent(_httpEndPoint);
-        }
-
-        string IProjectionsManagement.GetStatus(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-
-            var task = ((IProjectionsManagement) this).GetStatusAsync(name);
-            task.Wait();
-            return task.Result;
-        }
-
-        Task<string> IProjectionsManagement.GetStatusAsync(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.GetStatus(_httpEndPoint, name);
-        }
-
-        string IProjectionsManagement.GetState(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-
-            var task = ((IProjectionsManagement) this).GetStateAsync(name);
-            task.Wait();
-            return task.Result;
-        }
-
-        Task<string> IProjectionsManagement.GetStateAsync(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.GetState(_httpEndPoint, name);
-        }
-
-        string IProjectionsManagement.GetStatistics(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-
-            var task = ((IProjectionsManagement) this).GetStatisticsAsync(name);
-            task.Wait();
-            return task.Result;
-        }
-
-        Task<string> IProjectionsManagement.GetStatisticsAsync(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.GetStatistics(_httpEndPoint, name);
-        }
-
-        string IProjectionsManagement.GetQuery(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-
-            var task = ((IProjectionsManagement) this).GetQueryAsync(name);
-            task.Wait();
-            return task.Result;
-        }
-
-        Task<string> IProjectionsManagement.GetQueryAsync(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.GetQuery(_httpEndPoint, name);
-        }
-
-        void IProjectionsManagement.UpdateQuery(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            var task = ((IProjectionsManagement) this).UpdateQueryAsync(name, query);
-            task.Wait();
-        }
-
-        Task IProjectionsManagement.UpdateQueryAsync(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            return _projectionsManager.UpdateQuery(_httpEndPoint, name, query);
-        }
-
-        void IProjectionsManagement.Delete(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-
-            var task = ((IProjectionsManagement) this).DeleteAsync(name);
-            task.Wait();
-        }
-
-        Task IProjectionsManagement.DeleteAsync(string name)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            return _projectionsManager.Delete(_httpEndPoint, name);
-        }
-
         private void EnqueueOperation(IClientOperation operation)
         {
-            while (_queue.Count >= MaxQueueSize)
+            while (_queue.Count >= _settings.MaxQueueSize)
             {
                 Thread.Sleep(1);
             }
@@ -761,7 +461,7 @@ namespace EventStore.ClientAPI
             while (!_stopping)
             {
                 IClientOperation operation;
-                if (_inProgressCount < _maxConcurrentItems && _queue.TryDequeue(out operation))
+                if (_inProgressCount < _settings.MaxConcurrentItems && _queue.TryDequeue(out operation))
                 {
                     Interlocked.Increment(ref _inProgressCount);
                     Send(new WorkItem(operation));
@@ -773,10 +473,10 @@ namespace EventStore.ClientAPI
 
                 lock (_connectionLock)
                 {
-                    if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= ReconnectionDelay)
+                    if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= _settings.ReconnectionDelay)
                     {
                         _reconnectionsCount += 1;
-                        if (_reconnectionsCount > _maxReconnections)
+                        if (_reconnectionsCount > _settings.MaxReconnections)
                             throw new CannotEstablishConnectionException();
 
                         _lastReconnectionTimestamp = DateTime.UtcNow;
@@ -785,14 +485,14 @@ namespace EventStore.ClientAPI
                     }
                 }
 
-                if (_timeoutCheckStopwatch.Elapsed > OperationTimeoutCheckPeriod)
+                if (_timeoutCheckStopwatch.Elapsed > _settings.OperationTimeoutCheckPeriod)
                 {
                     var now = DateTime.UtcNow;
                     var retriable = new List<WorkItem>();
                     foreach (var workerItem in _inProgress.Values)
                     {
                         var lastUpdated = new DateTime(Interlocked.Read(ref workerItem.LastUpdatedTicks));
-                        if (now - lastUpdated > OperationTimeout)
+                        if (now - lastUpdated > _settings.OperationTimeout)
                         {
                             if (lastUpdated >= _lastReconnectionTimestamp)
                             {
@@ -853,7 +553,7 @@ namespace EventStore.ClientAPI
                 if (_inProgress.TryRemove(workItem.Operation.CorrelationId, out inProgressItem))
                 {
                     inProgressItem.Attempt += 1;
-                    if (inProgressItem.Attempt > _maxAttempts)
+                    if (inProgressItem.Attempt > _settings.MaxAttempts)
                     {
                         _log.Error("Retries limit reached for : {0}", inProgressItem);
                         inProgressItem.Operation.Fail(new RetriesLimitReachedException(inProgressItem.ToString(),
@@ -873,20 +573,18 @@ namespace EventStore.ClientAPI
             }
         }
 
-        private void Reconnect(WorkItem workItem, EndpointsPair endpoints)
+        private void Reconnect(WorkItem workItem, IPEndPoint tcpEndpoint)
         {
             lock (_connectionLock)
             {
-                if (!_reconnectionStopwatch.IsRunning || (_reconnectionStopwatch.IsRunning && !_tcpEndPoint.Equals(endpoints.TcpEndPoint)))
+                if (!_reconnectionStopwatch.IsRunning || (_reconnectionStopwatch.IsRunning && !_tcpEndPoint.Equals(tcpEndpoint)))
                 {
                     _log.Info("Going to reconnect to [{0}]. Current state: {1}, Current endpoint: {2}",
-                              endpoints.TcpEndPoint,
+                              tcpEndpoint,
                               _reconnectionStopwatch.IsRunning ? "reconnecting" : "connected",
                               _tcpEndPoint);
 
-                    _tcpEndPoint = endpoints.TcpEndPoint;
-                    _httpEndPoint = endpoints.HttpEndPoint;
-
+                    _tcpEndPoint = tcpEndpoint;
                     _connection.Close();
                     _subscriptionsChannel.Close(false);
                 }
@@ -916,7 +614,7 @@ namespace EventStore.ClientAPI
                     Retry(workItem);
                     break;
                 case InspectionDecision.Reconnect:
-                    Reconnect(workItem, (EndpointsPair)result.Data);
+                    Reconnect(workItem, (IPEndPoint)result.Data);
                     break;
                 case InspectionDecision.NotifyError:
                     if (TryRemoveWorkItem(workItem))

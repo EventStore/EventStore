@@ -101,6 +101,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var expectedEventsPerStream = EventsPerStream.ToString();
 
             var store = GetConnection();
+            var manager = GetProjectionsManager();
 
             var successTask = Task.Factory.StartNew<bool>(() => 
                 {
@@ -116,8 +117,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                             stopWatch.Start();
                         }
 
-                        success = CheckProjectionState(store, countItem, "count", x => x == expectedAllEventsCount)
-                                  && CheckProjectionState(store, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
+                        success = CheckProjectionState(manager, countItem, "count", x => x == expectedAllEventsCount)
+                                  && CheckProjectionState(manager, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
 
                         if (success)
                             break;
