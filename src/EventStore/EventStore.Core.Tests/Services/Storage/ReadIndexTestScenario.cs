@@ -128,25 +128,32 @@ namespace EventStore.Core.Tests.Services.Storage
 
         protected abstract void WriteTestScenario();
 
-        protected EventRecord WriteStreamCreated(string eventStreamId, string metadata = null, DateTime? timestamp = null)
+        protected EventRecord WriteStreamCreated(string eventStreamId, 
+                                                 string metadata = null, 
+                                                 DateTime? timestamp = null, 
+                                                 bool isImplicit = false)
         {
-            var streamCreated = LogRecord.SingleWrite(WriterChecksum.ReadNonFlushed(),
-                                                      Guid.NewGuid(),
-                                                      Guid.NewGuid(),
-                                                      eventStreamId,
-                                                      ExpectedVersion.NoStream,
-                                                      SystemEventTypes.StreamCreated,
-                                                      LogRecord.NoData,
-                                                      metadata == null ? LogRecord.NoData : Encoding.UTF8.GetBytes(metadata),
-                                                      timestamp);
+            var logPosition = WriterChecksum.ReadNonFlushed();
+            var rec = LogRecord.Prepare(logPosition,
+                                        Guid.NewGuid(),
+                                        Guid.NewGuid(),
+                                        logPosition,
+                                        0,
+                                        eventStreamId,
+                                        ExpectedVersion.NoStream,
+                                        PrepareFlags.Data | PrepareFlags.IsJson | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                                        isImplicit ? SystemEventTypes.StreamCreatedImplicit : SystemEventTypes.StreamCreated,
+                                        LogRecord.NoData,
+                                        metadata == null ? LogRecord.NoData : Encoding.UTF8.GetBytes(metadata),
+                                        timestamp);
 
             long pos;
-            Assert.IsTrue(Writer.Write(streamCreated, out pos));
+            Assert.IsTrue(Writer.Write(rec, out pos));
 
-            var commit = LogRecord.Commit(WriterChecksum.ReadNonFlushed(), streamCreated.CorrelationId, streamCreated.LogPosition, 0);
+            var commit = LogRecord.Commit(WriterChecksum.ReadNonFlushed(), rec.CorrelationId, rec.LogPosition, 0);
             Assert.IsTrue(Writer.Write(commit, out pos));
 
-            var eventRecord = new EventRecord(0, streamCreated);
+            var eventRecord = new EventRecord(0, rec);
             return eventRecord;
         }
 

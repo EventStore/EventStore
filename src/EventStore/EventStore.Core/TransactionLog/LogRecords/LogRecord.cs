@@ -59,10 +59,11 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
         public static PrepareLogRecord Prepare(long logPosition, Guid correlationId, Guid eventId, long transactionPos, int transactionOffset,
                                                string eventStreamId, int expectedVersion, PrepareFlags flags, string eventType, 
-                                               byte[] data, byte[] metadata)
+                                               byte[] data, byte[] metadata, DateTime? timeStamp = null)
         {
             return new PrepareLogRecord(logPosition, correlationId, eventId, transactionPos, transactionOffset, 
-                                        eventStreamId, expectedVersion, DateTime.UtcNow, flags, eventType, data, metadata);
+                                        eventStreamId, expectedVersion, timeStamp ?? DateTime.UtcNow, flags, eventType,
+                                        data, metadata);
         }
 
         public static CommitLogRecord Commit(long logPosition, Guid correlationId, long startPosition, int eventNumber)
@@ -110,12 +111,13 @@ namespace EventStore.Core.TransactionLog.LogRecords
         }
 
         public static PrepareLogRecord StreamCreated(long logPosition, Guid correlationId, long transactionPos, 
-                                                     string eventStreamId, byte[] metadata, DateTime? timestamp = null)
+                                                     string eventStreamId, byte[] metadata, bool isImplicit, DateTime? timestamp = null)
         {
             return new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionPos, 0, eventStreamId, 
                                         ExpectedVersion.NoStream, timestamp ?? DateTime.UtcNow, 
                                         PrepareFlags.Data | PrepareFlags.TransactionBegin, 
-                                        SystemEventTypes.StreamCreated, NoData, metadata);
+                                        isImplicit ? SystemEventTypes.StreamCreatedImplicit : SystemEventTypes.StreamCreated, 
+                                        NoData, metadata);
         }
 
         protected LogRecord(LogRecordType recordType, byte version)

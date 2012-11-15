@@ -50,12 +50,12 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _eventStreamId = request.EventStreamId;
 
             Publisher.Publish(new StorageMessage.WritePrepares(request.CorrelationId,
-                                                                   _publishEnvelope,
-                                                                   request.EventStreamId,
-                                                                   request.ExpectedVersion,
-                                                                   request.Events,
-                                                                   allowImplicitStreamCreation: true,
-                                                                   liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
+                                                               _publishEnvelope,
+                                                               request.EventStreamId,
+                                                               request.ExpectedVersion,
+                                                               request.Events,
+                                                               allowImplicitStreamCreation: true,
+                                                               liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                            _publishEnvelope,
                                                            new StorageMessage.PreparePhaseTimeout(_correlationId)));
