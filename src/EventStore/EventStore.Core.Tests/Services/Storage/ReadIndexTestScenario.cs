@@ -70,6 +70,10 @@ namespace EventStore.Core.Tests.Services.Storage
 
             WriterChecksum = new InMemoryCheckpoint(0);
             ChaserChecksum = new InMemoryCheckpoint(0);
+
+            //WriterChecksum = new FileCheckpoint(Path.Combine(PathName, Checkpoint.Writer + ".chk"));
+            //ChaserChecksum = new FileCheckpoint(Path.Combine(PathName, Checkpoint.Chaser + ".chk"));
+
             Db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                    10000,

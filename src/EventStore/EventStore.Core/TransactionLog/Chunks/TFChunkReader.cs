@@ -93,7 +93,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             catch (FileBeingDeletedException)
             {
-                if (retries > 100) 
+                if (retries > TFChunkSequentialReader.MaxRetries) 
                     throw new InvalidOperationException("Been told the file was deleted > 100 times. Probably a problem in db");
                 return TryReadAtInternal(position, retries + 1);
             }
