@@ -90,6 +90,7 @@
     <Compile Include="ClientAPI\append_to_stream.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
     <Compile Include="ClientAPI\creating_stream.cs" />
+    <Compile Include="ClientAPI\event_store_connection_should.cs" />
     <Compile Include="ClientAPI\MiniNode.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
@@ -185,6 +186,11 @@
     <Compile Include="Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_commit_stage.cs" />
     <Compile Include="Services\Replication\WriteEvents\when_write_stream_gets_commit_timeout_before_final_commit.cs" />
     <Compile Include="Services\Replication\WriteEvents\when_write_stream_gets_prepare_timeout_before_prepares.cs" />
+    <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_few_prepares_with_same_expected_version_and_committing_one_of_them.cs" />
+    <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_few_prepares_with_same_expected_version_and_not_committing_them.cs" />
+    <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_prepares_in_wrong_order_and_committing_in_right_order.cs" />
+    <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_few_prepares_and_committing_one.cs" />
+    <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_single_prepare.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_writing_few_prepares_on_same_event_number_and_commiting_delete_on_this_version_read_index_should.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_writing_delete_prepare_but_no_commit_read_index_should.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_age_is_more_strict.cs" />
@@ -195,7 +201,7 @@
     <Compile Include="Services\Storage\Scavenge\when_writing_delete_prepare_without_commit_on_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_db_with_3_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />
-    <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_spanning_through_multiple_chunks_and_other_streams_on_scavenged_db_read_index_should.cs" />
+    <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_spanning_through_multiple_chunks_in_db_with_other_streams_read_index_should.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_deleting_streams_with_different_hashes_spanning_through_multiple_chunks_in_db_with_1_stream_with_same_hash_read_index_should.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_deleting_streams_with_same_hash_spanning_through_multiple_chunks_in_db_with_1_stream_with_different_hash_read_index_should.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_deleting_stream_spanning_through_multiple_chunks_and_1_stream_with_same_hash_and_1_stream_with_different_hash_read_index_should.cs" />

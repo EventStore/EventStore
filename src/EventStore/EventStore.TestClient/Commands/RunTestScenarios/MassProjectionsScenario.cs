@@ -96,7 +96,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 if (writeTask.IsFaulted)
                     throw new ApplicationException("Failed to write data", writeTask.Exception);
 
-                success = CheckProjectionState(GetConnection(), 
+                success = CheckProjectionState(GetProjectionsManager(), 
                                                         bankProjections[bankProjections.Count - 1], 
                                                         "success", 
                                                         x => x == EventsPerStream.ToString());
@@ -116,7 +116,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 Log.Info("Sleep 2 for {0} seconds", sleepTimeSeconds);
                 Thread.Sleep(TimeSpan.FromSeconds(sleepTimeSeconds));
 
-                success = CheckProjectionState(GetConnection(),
+                success = CheckProjectionState(GetProjectionsManager(),
                                                         bankProjections[bankProjections.Count - 1],
                                                         "success",
                                                         x => x == EventsPerStream.ToString());
@@ -130,7 +130,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         private Task StartOrStopProjection(IEnumerable<string> projections, bool enable)
         {
             var tasks = new List<Task>();
-            var store = GetConnection();
+            var anager = GetProjectionsManager();
 
             foreach (string projection in projections)
             {
@@ -138,8 +138,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 //var isRunning = store.Projections.GetStatus(projection) == "Enabled";
 
                 tasks.Add(enable
-                              ? store.Projections.EnableAsync(projection)
-                              : store.Projections.DisableAsync(projection));
+                              ? anager.EnableAsync(projection)
+                              : anager.DisableAsync(projection));
 
                 while (tasks.Count(x => !x.IsCompleted) > 4)
                     Thread.Sleep(50);

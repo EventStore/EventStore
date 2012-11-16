@@ -89,6 +89,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private readonly EventStoreConnection[] _connections;
         private int _nextConnectionNum = -1;
+        private readonly ProjectionsManager _projectionsManager;
 
         protected ScenarioBase(Action<IPEndPoint, byte[]> directSendOverTcp,
                                int maxConcurrentRequests,
@@ -111,6 +112,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             _tcpEndPoint = GetTcpEndPoint();
 
             _connections = new EventStoreConnection[connections];
+            _projectionsManager = new ProjectionsManager(new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000));
 
             _writeHandlers = new Dictionary<WriteMode, Func<string, int, Func<int, IEvent>, Task>>
             {
@@ -126,11 +128,16 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return _connections[connectionNum];
         }
 
+        protected ProjectionsManager GetProjectionsManager()
+        {
+            return _projectionsManager;
+        }
+
         public void Run()
         {
             for (int i = 0; i < Connections; ++i)
             {
-                _connections[i] = EventStoreConnection.Create(maxConcurrentRequests:MaxConcurrentRequests, logger: ApiLogger);
+                _connections[i] = EventStoreConnection.Create(ConnectionSettings.Create().UseLogger(ApiLogger).LimitConcurrentOperationsTo(MaxConcurrentRequests));
                 _connections[i].Connect(_tcpEndPoint);
             }
             RunInternal();   
@@ -428,9 +435,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected void Scavenge()
         {
-            Log.Error("!! Scavenge disabled due to not found prepare error");
-            return;
-
             Log.Info("Send scavenge command...");
             var package = new TcpPackage(TcpCommand.ScavengeDatabase, Guid.NewGuid(), null).AsByteArray();
             DirectSendOverTcp(GetTcpEndPoint(), package);

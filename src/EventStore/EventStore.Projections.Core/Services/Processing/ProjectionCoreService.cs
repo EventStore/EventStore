@@ -291,69 +291,69 @@ namespace EventStore.Projections.Core.Services.Processing
                 stateHandler.ConfigureSourceProcessingStrategy(sourceDefintionRecorder);
                 var sourceDefintion = sourceDefintionRecorder.Build();
                 var projection = new CoreProjection(
-                    message.Name, message.CorrelationId, _publisher, stateHandler, message.Config, _readDispatcher,
+                    message.Name, message.ProjectionId, _publisher, stateHandler, message.Config, _readDispatcher,
                     _writeDispatcher, _logger);
-                _projections.Add(message.CorrelationId, projection);
+                _projections.Add(message.ProjectionId, projection);
                 message.Envelope.ReplyWith(
-                    new CoreProjectionManagementMessage.Prepared(message.CorrelationId, sourceDefintion));
+                    new CoreProjectionManagementMessage.Prepared(message.ProjectionId, sourceDefintion));
             }
             catch (Exception ex)
             {
                 message.Envelope.ReplyWith(
-                    new CoreProjectionManagementMessage.Faulted(message.CorrelationId, ex.Message));
+                    new CoreProjectionManagementMessage.Faulted(message.ProjectionId, ex.Message));
             }
         }
 
         public void Handle(CoreProjectionManagementMessage.Dispose message)
         {
             CoreProjection projection;
-            if (_projections.TryGetValue(message.CorrelationId, out projection))
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
             {
-                _projections.Remove(message.CorrelationId);
+                _projections.Remove(message.ProjectionId);
                 projection.Dispose();
             }
         }
 
         public void Handle(CoreProjectionManagementMessage.Start message)
         {
-            var projection = _projections[message.CorrelationId];
+            var projection = _projections[message.ProjectionId];
             projection.Start();
         }
 
         public void Handle(CoreProjectionManagementMessage.LoadStopped message)
         {
-            var projection = _projections[message.CorrelationId];
+            var projection = _projections[message.ProjectionId];
             projection.LoadStopped();
         }
 
         public void Handle(CoreProjectionManagementMessage.Stop message)
         {
-            var projection = _projections[message.CorrelationId];
+            var projection = _projections[message.ProjectionId];
             projection.Stop();
         }
 
         public void Handle(CoreProjectionManagementMessage.Kill message)
         {
-            var projection = _projections[message.CorrelationId];
+            var projection = _projections[message.ProjectionId];
             projection.Kill();
         }
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
-            var projection = _projections[message.CorrelationId];
+            var projection = _projections[message.ProjectionId];
             projection.Handle(message);
         }
 
         public void Handle(CoreProjectionManagementMessage.GetDebugState message)
         {
-            var projection = _projections[message.CorrelationId];
+            var projection = _projections[message.ProjectionId];
             projection.Handle(message);
         }
 
         public void Handle(CoreProjectionManagementMessage.UpdateStatistics message)
         {
             CoreProjection projection;
-            if (_projections.TryGetValue(message.CorrelationId, out projection))
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
             {
                 projection.UpdateStatistics();
             }

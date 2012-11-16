@@ -36,30 +36,30 @@ namespace EventStore.Projections.Core.Messages
 {
     public abstract class CoreProjectionManagementMessage : Message
     {
-        private readonly Guid _correlationId;
+        private readonly Guid _projectionIdId;
 
-        protected CoreProjectionManagementMessage(Guid correlationId)
+        protected CoreProjectionManagementMessage(Guid projectionId)
         {
-            _correlationId = correlationId;
+            _projectionIdId = projectionId;
         }
 
-        public Guid CorrelationId
+        public Guid ProjectionId
         {
-            get { return _correlationId; }
+            get { return _projectionIdId; }
         }
 
         public class Stopped : CoreProjectionManagementMessage
         {
-            public Stopped(Guid correlationId)
-                : base(correlationId)
+            public Stopped(Guid projectionId)
+                : base(projectionId)
             {
             }
         }
 
         public class Started : CoreProjectionManagementMessage
         {
-            public Started(Guid correlationId)
-                : base(correlationId)
+            public Started(Guid projectionId)
+                : base(projectionId)
             {
             }
         }
@@ -68,8 +68,8 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly string _faultedReason;
 
-            public Faulted(Guid correlationId, string faultedReason)
-                : base(correlationId)
+            public Faulted(Guid projectionId, string faultedReason)
+                : base(projectionId)
             {
                 _faultedReason = faultedReason;
             }
@@ -82,8 +82,8 @@ namespace EventStore.Projections.Core.Messages
 
         public class Start : CoreProjectionManagementMessage
         {
-            public Start(Guid correlationId)
-                : base(correlationId)
+            public Start(Guid projectionId)
+                : base(projectionId)
             {
             }
         }
@@ -98,16 +98,16 @@ namespace EventStore.Projections.Core.Messages
 
         public class Stop : CoreProjectionManagementMessage
         {
-            public Stop(Guid correlationId)
-                : base(correlationId)
+            public Stop(Guid projectionId)
+                : base(projectionId)
             {
             }
         }
 
         public class Kill : CoreProjectionManagementMessage
         {
-            public Kill(Guid correlationId)
-                : base(correlationId)
+            public Kill(Guid projectionId)
+                : base(projectionId)
             {
             }
         }
@@ -115,14 +115,16 @@ namespace EventStore.Projections.Core.Messages
         public class GetState : CoreProjectionManagementMessage
         {
             private readonly IEnvelope _envelope;
+            private readonly Guid _correlationId;
             private readonly string _partition;
 
-            public GetState(IEnvelope envelope, Guid correlationId, string partition)
-                : base(correlationId)
+            public GetState(IEnvelope envelope, Guid correlationId, Guid projectionId, string partition)
+                : base(projectionId)
             {
                 if (envelope == null) throw new ArgumentNullException("envelope");
                 if (partition == null) throw new ArgumentNullException("partition");
                 _envelope = envelope;
+                _correlationId = correlationId;
                 _partition = partition;
             }
 
@@ -134,6 +136,11 @@ namespace EventStore.Projections.Core.Messages
             public string Partition
             {
                 get { return _partition; }
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
             }
         }
 
@@ -157,21 +164,23 @@ namespace EventStore.Projections.Core.Messages
 
         public class UpdateStatistics : CoreProjectionManagementMessage
         {
-            public UpdateStatistics(Guid correlationId)
-                : base(correlationId)
+            public UpdateStatistics(Guid projectionId)
+                : base(projectionId)
             {
             }
         }
 
         public class StateReport : CoreProjectionManagementMessage
         {
+            private readonly Guid _correlationId;
             private readonly string _state;
             private readonly Exception _exception;
             private readonly string _partition;
 
-            public StateReport(Guid correlationId, string partition, string state, Exception exception = null)
-                : base(correlationId)
+            public StateReport(Guid correlationId, Guid projectionId, string partition, string state, Exception exception = null)
+                : base(projectionId)
             {
+                _correlationId = correlationId;
                 _state = state;
                 _exception = exception;
                 _partition = partition;
@@ -191,14 +200,19 @@ namespace EventStore.Projections.Core.Messages
             {
                 get { return _exception; }
             }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
         }
 
         public class DebugState : CoreProjectionManagementMessage
         {
             private readonly Event[] _events;
 
-            public DebugState(Guid correlationId, Event[] events)
-                : base(correlationId)
+            public DebugState(Guid projectionId, Event[] events)
+                : base(projectionId)
             {
                 _events = events;
             }
@@ -247,8 +261,8 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly ProjectionStatistics _statistics;
 
-            public StatisticsReport(Guid correlationId, ProjectionStatistics statistics)
-                : base(correlationId)
+            public StatisticsReport(Guid projectionId, ProjectionStatistics statistics)
+                : base(projectionId)
             {
                 _statistics = statistics;
             }
@@ -263,8 +277,8 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly ProjectionSourceDefintion _sourceDefintion;
 
-            public Prepared(Guid correlationId, ProjectionSourceDefintion sourceDefintion)
-                : base(correlationId)
+            public Prepared(Guid projectionId, ProjectionSourceDefintion sourceDefintion)
+                : base(projectionId)
             {
                 _sourceDefintion = sourceDefintion;
             }
@@ -283,9 +297,9 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _name;
 
             public CreateAndPrepare(
-                IEnvelope envelope, Guid correlationId, string name, ProjectionConfig config,
+                IEnvelope envelope, Guid projectionId, string name, ProjectionConfig config,
                 Func<IProjectionStateHandler> handlerFactory)
-                : base(correlationId)
+                : base(projectionId)
             {
                 _envelope = envelope;
                 _name = name;
@@ -316,8 +330,8 @@ namespace EventStore.Projections.Core.Messages
 
         public class Dispose : CoreProjectionManagementMessage
         {
-            public Dispose(Guid correlationId)
-                : base(correlationId)
+            public Dispose(Guid projectionId)
+                : base(projectionId)
             {
             }
         }

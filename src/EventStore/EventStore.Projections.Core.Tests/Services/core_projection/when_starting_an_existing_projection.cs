@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
             var startedMessage = _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Single();
-            Assert.AreEqual(_projectionCorrelationId, startedMessage.CorrelationId);
+            Assert.AreEqual(_projectionCorrelationId, startedMessage.ProjectionId);
         }
 
     }

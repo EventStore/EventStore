@@ -73,7 +73,6 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 
             _r25 = WriteSingleEvent("ES2", 4, "bla1", now.AddSeconds(-1));
             _r26 = WriteSingleEvent("ES2", 5, "bla1", now.AddSeconds(-1));
-
         }
 
         [Test]

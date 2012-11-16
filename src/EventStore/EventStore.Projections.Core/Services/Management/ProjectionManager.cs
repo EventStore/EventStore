@@ -249,7 +249,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.Started message)
         {
             string name;
-            if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
+            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
             {
                 var projection = _projections[name];
                 projection.Handle(message);
@@ -259,7 +259,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.Stopped message)
         {
             string name;
-            if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
+            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
             {
                 var projection = _projections[name];
                 projection.Handle(message);
@@ -269,7 +269,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.Faulted message)
         {
             string name;
-            if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
+            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
             {
                 var projection = _projections[name];
                 projection.Handle(message);
@@ -279,7 +279,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.Prepared message)
         {
             string name;
-            if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
+            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
             {
                 var projection = _projections[name];
                 projection.Handle(message);
@@ -289,7 +289,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.StateReport message)
         {
             string name;
-            if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
+            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
             {
                 var projection = _projections[name];
                 projection.Handle(message);
@@ -299,7 +299,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.DebugState message)
         {
             string name;
-            if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
+            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
             {
                 var projection = _projections[name];
                 projection.Handle(message);
@@ -309,7 +309,7 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.StatisticsReport message)
         {
             string name;
-            if (_projectionsMap.TryGetValue(message.CorrelationId, out name))
+            if (_projectionsMap.TryGetValue(message.ProjectionId, out name))
             {
                 var projection = _projections[name];
                 projection.Handle(message);

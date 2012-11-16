@@ -265,13 +265,13 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 var getStateWorkItem = new GetStateWorkItem(
-                    message.Envelope, message.CorrelationId, this, _partitionStateCache, message.Partition);
+                    message.Envelope, message.CorrelationId, message.ProjectionId, this, _partitionStateCache, message.Partition);
                 _processingQueue.EnqueueOutOfOrderTask(getStateWorkItem);
                 _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
-                message.Envelope.ReplyWith(new CoreProjectionManagementMessage.StateReport(_projectionCorrelationId, message.Partition, null, ex));
+                message.Envelope.ReplyWith(new CoreProjectionManagementMessage.StateReport(message.CorrelationId, _projectionCorrelationId, message.Partition, null, ex));
                 SetFaulted(ex);
             }
         }

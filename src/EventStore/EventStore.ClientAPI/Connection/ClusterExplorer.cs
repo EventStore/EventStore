@@ -35,7 +35,6 @@ using System.Xml.Serialization;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
-using EventStore.ClientAPI.SystemData;
 using EventStore.ClientAPI.Transport.Http;
 using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 using System.Linq;
@@ -48,25 +47,25 @@ namespace EventStore.ClientAPI.Connection
         private readonly HttpAsyncClient _client = new HttpAsyncClient();
 
         private readonly bool _allowForwarding;
-        private readonly int _maxAttempts;
+        private readonly int _maxDiscoverAttempts;
         private readonly int _port;
 
-        public ClusterExplorer(bool allowForwarding, int maxAttempts, int port)
+        public ClusterExplorer(bool allowForwarding, int maxDiscoverAttempts, int port)
         {
             _log = LogManager.GetLogger();
 
             _allowForwarding = allowForwarding;
-            _maxAttempts = maxAttempts;
+            _maxDiscoverAttempts = maxDiscoverAttempts;
             _port = port;
         }
 
-        public Task<EndpointsPair?> Resolve(string dns)
+        public Task<IPEndPoint> Resolve(string dns)
         {
-            var resolve = Task.Factory.StartNew(() => Dns.GetHostAddresses(dns));
-            return resolve.ContinueWith(addresses => DiscoverCLuster(addresses.Result, _maxAttempts));
+            return Task.Factory.StartNew(() => Dns.GetHostAddresses(dns))
+                               .ContinueWith(addresses => DiscoverCLuster(addresses.Result, _maxDiscoverAttempts));
         }
 
-        private EndpointsPair? DiscoverCLuster(IPAddress[] managers, int maxAttempts)
+        private IPEndPoint DiscoverCLuster(IPAddress[] managers, int maxAttempts)
         {
             if (managers == null || managers.Length == 0)
                 throw new CannotEstablishConnectionException("DNS entry resolved in empty ip addresses list");
@@ -84,9 +83,8 @@ namespace EventStore.ClientAPI.Connection
                         _log.Info("Master not found");
                         return null;
                     }
-                    _log.Info("Master found on [{0}:{1}, {2}:{3}]", master.ExternalTcpIp, master.ExternalTcpPort, master.ExternalHttpIp, master.ExternalHttpPort);
-                    return new EndpointsPair(new IPEndPoint(IPAddress.Parse(master.ExternalTcpIp), master.ExternalTcpPort),
-                                             new IPEndPoint(IPAddress.Parse(master.ExternalHttpIp), master.ExternalHttpPort));
+                    _log.Info("Master found on [{0}:{1}]", master.ExternalTcpIp, master.ExternalTcpPort);
+                    return new IPEndPoint(IPAddress.Parse(master.ExternalTcpIp), master.ExternalTcpPort);
                 }
 
                 var node = alive.FirstOrDefault(m => m.State == ClusterMessages.VNodeState.Master) ??
@@ -98,14 +96,11 @@ namespace EventStore.ClientAPI.Connection
                     _log.Info("Unable to locate master, slave or clone node");
                     return null;
                 }
-                _log.Info("Best choise found, it's {0} on [{1}:{2}, {3}:{4}]", 
+                _log.Info("Best choise found, it's {0} on [{1}:{2}]", 
                           node.State, 
                           node.ExternalTcpIp,
-                          node.ExternalTcpPort, 
-                          node.ExternalHttpIp, 
-                          node.ExternalHttpPort);
-                return new EndpointsPair(new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalTcpPort),
-                                         new IPEndPoint(IPAddress.Parse(node.ExternalHttpIp), node.ExternalHttpPort));
+                          node.ExternalTcpPort);
+                return new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalTcpPort);
             }
 
             _log.Info("Failed to discover cluster. No information available");
@@ -118,7 +113,7 @@ namespace EventStore.ClientAPI.Connection
             var random = new Random();
             while (attempt < maxAttempts)
             {
-                _log.Info("Discovering cluster. Attempt {0}...", attempt + 1);
+                _log.Info("Discovering cluster. Attempt {0} of {1}...", attempt + 1, maxAttempts);
                 var i = random.Next(0, managers.Length);
                 _log.Info("Picked [{0}]", managers[i]);
                 var info = ClusterInfoOrDefault(managers[i]);
@@ -128,8 +123,9 @@ namespace EventStore.ClientAPI.Connection
                     return info;
                 }
 
-                _log.Info("Failed to get cluster info from [{0}]. Attempt {1} of {2}", attempt + 1, maxAttempts);
+                _log.Info("Failed to get cluster info from [{0}].", managers[i]);
                 attempt++;
+
                 Thread.Sleep(TimeSpan.FromSeconds(1));
             }
             return null;
@@ -163,7 +159,7 @@ namespace EventStore.ClientAPI.Connection
 
             Action<Exception> error = e =>
             {
-                _log.Info(e, "Failed to get cluster info from manager on [{0}]. Request failed");
+                _log.Info(e, "Failed to get cluster info from manager on [{0}]. Request failed", manager);
                 completed.Set();
             };
 
