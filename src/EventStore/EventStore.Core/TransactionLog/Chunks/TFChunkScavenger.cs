@@ -80,6 +80,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var sw = Stopwatch.StartNew();
 
             var chunkNumber = oldChunk.ChunkHeader.ChunkStartNumber;
+            long chunkStartPosition = chunkNumber * (long)oldChunk.ChunkHeader.ChunkSize;
             var newScavengeVersion = oldChunk.ChunkHeader.ChunkScavengeVersion + 1;
             var chunkSize = oldChunk.ChunkHeader.ChunkSize;
 
@@ -102,49 +103,44 @@ namespace EventStore.Core.TransactionLog.Chunks
                 return;
             }
 
-            var positionMapping = new List<PosMap>();
-            var positioningNeeded = false;
-            var result = oldChunk.TryReadFirst();
-            int cnt = 0;
-            while (result.Success)
-            {
-                cnt += 1;
-                var record = result.LogRecord;
-                switch (record.RecordType)
+            var commits = new Dictionary<long, CommitInfo>();
+
+            TraverseChunk(
+                oldChunk,
+                prepare =>
                 {
-                    case LogRecordType.Prepare:
-                    {
-                        var prepare = (PrepareLogRecord) record;
+                    // NOOP
+                },
+                commit =>
+                {
+                    if (commit.TransactionPosition < chunkStartPosition)
+                        return;
+                    commits.Add(commit.TransactionPosition, new CommitInfo(commit));
+                });
 
-                        bool keepRecord = prepare.EventType.StartsWith(SystemEventTypes.StreamCreated)    // we keep $stream-created
-                                          || (prepare.Flags & PrepareFlags.StreamDelete) != 0             // we keep delete tombstone
-                                          || !_readIndex.IsStreamDeleted(prepare.EventStreamId);
-
-                        if (keepRecord) 
-                        {
-                            var posMap = WriteRecord(newChunk, record);
-                            positionMapping.Add(posMap);
-                            positioningNeeded = posMap.LogPos != posMap.ActualPos;
-                        }
-                        break;
-                    }
-                    case LogRecordType.Commit:
+            var positionMapping = new List<PosMap>();
+            TraverseChunk(
+                oldChunk,
+                prepare =>
+                {
+                    if (ShouldKeepPrepare(prepare, commits)) 
                     {
-                        //TODO AN scavenge commits that belong to deleted stream, except if this is commit of delete tombstone
-                        var posMap = WriteRecord(newChunk, record);
+                        var posMap = WriteRecord(newChunk, prepare);
                         positionMapping.Add(posMap);
-                        positioningNeeded = posMap.LogPos != posMap.ActualPos;
-                        break;
                     }
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-                result = oldChunk.TryReadClosestForward((int)result.NextPosition);
-            }
+                },
+                commit =>
+                {
+                    if (ShouldKeepCommit(commit, commits))
+                    {
+                        var posMap = WriteRecord(newChunk, commit);
+                        positionMapping.Add(posMap);
+                    }
+                });
 
             var oldSize = oldChunk.ChunkFooter.ActualChunkSize + oldChunk.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
             var newSize = newChunk.ActualDataSize 
-                          + (positioningNeeded ? sizeof(ulong) * positionMapping.Count : 0) 
+                          + sizeof(ulong) * positionMapping.Count 
                           + ChunkHeader.Size 
                           + ChunkFooter.Size;
 
@@ -160,12 +156,11 @@ namespace EventStore.Core.TransactionLog.Chunks
                           oldSize,
                           newSize);
 
-                newChunk.Dispose();
-                File.Delete(newChunk.FileName);
+                newChunk.MarkForDeletion();
             }
             else
             {
-                newChunk.CompleteScavenge(positioningNeeded ? positionMapping : null);
+                newChunk.CompleteScavenge(positionMapping);
                 newChunk.Dispose();
 
                 File.Move(tmpChunkPath, newChunkPath);
@@ -188,6 +183,166 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
+        private bool ShouldKeepPrepare(PrepareLogRecord prepare, Dictionary<long, CommitInfo> commits)
+        {
+            CommitInfo commitInfo;
+            if (commits.TryGetValue(prepare.TransactionPosition, out commitInfo))
+            {
+                commitInfo.StreamId = prepare.EventStreamId;
+
+                if ((prepare.Flags & PrepareFlags.StreamDelete) != 0                   // we always keep delete tombstones
+                    || prepare.EventType.StartsWith(SystemEventTypes.StreamCreated))   // we keep $stream-created
+                {
+                    commitInfo.KeepCommit = true; // see notes below
+                    return true;
+                }
+                
+                if (_readIndex.IsStreamDeleted(prepare.EventStreamId))
+                {
+                    // When all prepares and commit of transaction belong to single chunk and the stream is deleted,
+                    // we can safely delete both prepares and commit.
+
+                    // If someone decided definitely to keep corresponding commit then we shouldn't interfere.
+                    // Otherwise we should point that yes, you can remove commit for this prepare.
+                    commitInfo.KeepCommit = commitInfo.KeepCommit ?? false; 
+                    return false;
+                }
+
+                var lastEventNumber = _readIndex.GetLastStreamEventNumber(prepare.EventStreamId);
+                var streamMetadata = _readIndex.GetStreamMetadata(prepare.EventStreamId);
+                var eventNumber = commitInfo.EventNumber + prepare.TransactionOffset;
+
+                // We should always physically keep the very last prepare in the stream.
+                // Otherwise we get into trouble when trying to resolve LastStreamEventNumber, for instance.
+                // That is because our TableIndex doesn't keep EventStreamId, only hash of it, so on doing some operations
+                // that needs TableIndex, we have to make sure we have prepare records in TFChunks when we need them.
+                if (eventNumber >= lastEventNumber)
+                {
+                    // Definitely keep commit, otherwise current prepare wouldn't be discoverable.
+                    // TODO AN I should think more carefully about this stuff with prepare/commits relations
+                    // TODO AN and whether we can keep prepare without keeping commit (problems on index rebuild).
+                    // TODO AN What can save us -- some effective and clever way to mark prepare as committed, but 
+                    // TODO AN but place updated prepares in the place of commit, so they are discoverable during 
+                    // TODO AN index rebuild or ReadAllForward/Backward queries EXACTLY in the same order as they 
+                    // TODO AN were originally written to TF
+                    commitInfo.KeepCommit = true; 
+                    return true;
+                }
+
+                if (streamMetadata.MaxCount.HasValue)
+                {
+                    int maxKeptEventNumber = lastEventNumber - streamMetadata.MaxCount.Value + 1;
+                    if (eventNumber < maxKeptEventNumber)
+                    {
+                        commitInfo.KeepCommit = commitInfo.KeepCommit ?? false;
+                        return false;
+                    }
+                    else
+                    {
+                        commitInfo.KeepCommit = true;
+                        return true;
+                    }
+                }
+
+                if (streamMetadata.MaxAge.HasValue)
+                {
+                    if (prepare.TimeStamp < DateTime.UtcNow - streamMetadata.MaxAge.Value)
+                    {
+                        commitInfo.KeepCommit = commitInfo.KeepCommit ?? false;
+                        return false;
+                    }
+                    else
+                    {
+                        commitInfo.KeepCommit = true;
+                        return true;
+                    }
+                }
+
+                commitInfo.KeepCommit = true;
+                return true;
+            }
+            else
+            {
+                if ((prepare.Flags & PrepareFlags.StreamDelete) != 0 // we always keep delete tombstones
+                    || prepare.EventType.StartsWith(SystemEventTypes.StreamCreated)) // we keep $stream-created
+                {
+                    return true;
+                }
+
+                // So here we have prepare which commit is in the following chunks or prepare is not committed at all.
+                // Now, whatever heuristic on prepare scavenge we use, we should never delete the very first prepare
+                // in transaction, as in some circumstances we need it.
+                // For instance, this prepare could be part of ongoing transaction and though we sometimes can determine
+                // that prepare wouldn't ever be needed (e.g., stream was deleted, $maxAge or $maxCount rule it out)
+                // we still need the first prepare to find out StreamId for possible commit in StorageWriter.WriteCommit method. 
+                // There could be other reasons where it is needed, so we just safely filter it out to not bother further.
+                if ((prepare.Flags & PrepareFlags.TransactionBegin) != 0)
+                    return true;
+
+                // If stream of this prepare is deleted, then we can safely delete this prepare.
+                if (_readIndex.IsStreamDeleted(prepare.EventStreamId))
+                    return prepare.TransactionOffset == 0;
+
+                // TODO AN we can try to figure out if this prepare is committed, and if yes, what is its event number.
+                // TODO AN only then we can actually do something here, unfortunately.
+                return true;
+
+                // We should always physically keep the very last prepare in the stream.
+                // Otherwise we get into trouble when trying to resolve LastStreamEventNumber, for instance.
+                // That is because our TableIndex doesn't keep EventStreamId, only hash of it, so on doing some operations
+                // that needs TableIndex, we have to make sure we have prepare records in TFChunks when we need them.
+
+                /*
+                var lastEventNumber = _readIndex.GetLastStreamEventNumber(prepare.EventStreamId);
+                var streamMetadata = _readIndex.GetStreamMetadata(prepare.EventStreamId);
+                if (streamMetadata.MaxCount.HasValue)
+                {
+                    // nothing to do here until we know prepare's event number
+                }
+                if (streamMetadata.MaxAge.HasValue)
+                {
+                    // nothing to do here until we know prepare's event number
+                }
+                return false;
+                */
+            }
+        }
+
+        private bool ShouldKeepCommit(CommitLogRecord commit, Dictionary<long, CommitInfo> commits)
+        {
+            CommitInfo commitInfo;
+            if (commits.TryGetValue(commit.TransactionPosition, out commitInfo))
+                return commitInfo.KeepCommit != false;
+            return true;
+        }
+
+        private void TraverseChunk(TFChunk chunk, Action<PrepareLogRecord> processPrepare, Action<CommitLogRecord> processCommit)
+        {
+            var result = chunk.TryReadFirst();
+            while (result.Success)
+            {
+                var record = result.LogRecord;
+                switch (record.RecordType)
+                {
+                    case LogRecordType.Prepare:
+                    {
+                        var prepare = (PrepareLogRecord)record;
+                        processPrepare(prepare);
+                        break;
+                    }
+                    case LogRecordType.Commit:
+                    {
+                        var commit = (CommitLogRecord)record;
+                        processCommit(commit);
+                        break;
+                    }
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+                result = chunk.TryReadClosestForward((int)result.NextPosition);
+            }
+        }
+
         private static PosMap WriteRecord(TFChunk newChunk, LogRecord record)
         {
             var writeResult = newChunk.TryAppend(record);
@@ -201,6 +356,19 @@ namespace EventStore.Core.TransactionLog.Chunks
             int logPos = (int) (record.Position%newChunk.ChunkHeader.ChunkSize);
             int actualPos = (int) writeResult.OldPosition;
             return new PosMap(logPos, actualPos);
+        }
+
+        private class CommitInfo
+        {
+            public readonly int EventNumber;
+
+            public string StreamId;
+            public bool? KeepCommit;
+
+            public CommitInfo(CommitLogRecord commitRecord)
+            {
+                EventNumber = commitRecord.EventNumber;
+            }
         }
     }
 }
