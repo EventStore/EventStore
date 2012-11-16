@@ -57,29 +57,19 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         private ICheckpoint _chaserChk;
         private readonly string _dbPath;
 
-        public static MiniNode Create(int? externalTcpPort = null, int? externalHttpPort = null)
+        public static MiniNode Create()
         {
-            return new MiniNode(externalTcpPort, externalHttpPort);
+            return new MiniNode();
         }
 
-        private MiniNode(int? externalTcpPort = null, int? externalHttpPort = null)
+        private MiniNode()
         {
             int extTcpPort;
             int extHttpPort;
-            if (externalTcpPort.HasValue)
-                extTcpPort = externalTcpPort.Value;
-            else
-            {
-                if (!AvailablePorts.TryPop(out extTcpPort))
-                    throw new Exception("Couldn't get free external TCP port for MiniNode.");
-            }
-            if (externalHttpPort.HasValue)
-                extHttpPort = externalHttpPort.Value;
-            else
-            {
-                if (!AvailablePorts.TryPop(out extHttpPort))
-                    throw new Exception("Couldn't get free external HTTP port for MiniNode.");
-            }
+            if (!AvailablePorts.TryPop(out extTcpPort))
+                throw new Exception("Couldn't get free external TCP port for MiniNode.");
+            if (!AvailablePorts.TryPop(out extHttpPort))
+                throw new Exception("Couldn't get free external HTTP port for MiniNode.");
 
             _dbPath = Path.Combine(Path.GetTempPath(),
                                    Guid.NewGuid().ToString(),
@@ -117,6 +107,9 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
             if (!shutdownEvent.Wait(20000))
                 throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
+
+            AvailablePorts.Push(TcpEndPoint.Port);
+            AvailablePorts.Push(HttpEndPoint.Port);
 
             _chaserChk.Dispose();
             _writerChk.Dispose();
