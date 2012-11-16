@@ -342,11 +342,13 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly string _name;
             private readonly string _state;
+            private readonly Exception _exception;
 
-            public ProjectionState(string name, string state)
+            public ProjectionState(string name, string state, Exception exception = null)
             {
                 _name = name;
                 _state = state;
+                _exception = exception;
             }
 
             public string Name
@@ -357,6 +359,11 @@ namespace EventStore.Projections.Core.Messages
             public string State
             {
                 get { return _state; }
+            }
+
+            public Exception Exception
+            {
+                get { return _exception; }
             }
         }
 

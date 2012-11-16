@@ -72,6 +72,9 @@
     <Content Include="singlenode-web\home.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="singlenode-web\js\es.debug.projection.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="singlenode-web\js\es.menu.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

@@ -324,7 +324,10 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration StateConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionState state)
         {
-            return Configure.OkNoCache("application/json");
+            if (state.Exception != null)
+                return Configure.InternalServerEror();
+            else
+                return Configure.OkNoCache("application/json");
         }
 
         private ResponseConfiguration DebugStateConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionDebugState state)
@@ -334,7 +337,10 @@ namespace EventStore.Projections.Core.Services.Http
 
         private string StateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionState state)
         {
-            return state.State;
+            if (state.Exception != null)
+                return state.Exception.ToString();
+            else
+                return state.State;
         }
 
         private string DebugStateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionDebugState state)

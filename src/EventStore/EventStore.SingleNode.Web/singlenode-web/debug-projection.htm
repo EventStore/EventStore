@@ -7,12 +7,6 @@
     <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
     
     
-    <script src="/web/es/js/projections/v8/Prelude/Modules.js"> </script>
-    <script src="/web/es/js/projections/v8/Prelude/Projections.js"> </script>
-    <script src="/web/es/js/projections/es.projections.environment.js"> </script>
-    <script src="/web/es/js/projections/v8/Prelude/1Prelude.js"> </script>
-    <script src="/web/es/js/projections/es.projection.js"> </script>
-    <script src="/web/es/js/projections/es.api.js"> </script>
 
     <script id="r-head">
         es.tmpl.renderHead();
@@ -42,7 +36,7 @@
                 <div class="controls" id="update-source-container">
                     <button id="update-button" class="btn">
                         Update</button>
-                    <button id="run-button" class="btn">
+                    <button id="run-button" class="btn" disabled="disabled">
                         Run</button>
                 </div>
             </div>
@@ -78,7 +72,7 @@
                         data: $("#source").val(),
                         success: successUpdateSource,
                         error: function(xhr) {
-                             var msg = es.util.formatError("Couldn't delete projection", xhr);
+                            var msg = es.util.formatError("Couldn't delete projection", xhr);
                             alert(msg);
                         }
                     });
@@ -142,24 +136,55 @@
             }
 
             function readyForDebugging() {
-                var processor = $initialize_hosted_projections();
-                processor.set_debugging();
-                $.getScript(projectionStatusUrl + "/query", function (script, textStatus, jsXHR) {
-                    // json, streamId, eventType, category, sequenceNumber, metadata, log_position
+
+                $('#run-button').removeAttr("disabled");
+                $('#run-button').click(function() {
+                    document.getElementById('script-placeholder').contentDocument.write(
+                        '<div id="text"></div>' +
+                            '<script src="/web/es/js/projections/v8/Prelude/Modules.js"><' + '/script>' +
+                            '<script src="/web/es/js/projections/v8/Prelude/Projections.js"><' + '/script>' +
+                            '<script src="/web/es/js/projections/es.projections.environment.js"><' + '/script>' +
+                            '<script src="/web/es/js/projections/v8/Prelude/1Prelude.js"><' + '/script>' +
+                            '<script src="/web/es/js/projections/es.projection.js"><' + '/script>' +
+                            '<script src="/web/es/js/projections/es.api.js"><' + '/script>' +
+                            '<script>window.processor = $initialize_hosted_projections(); processor.set_debugging();<' + '/script>' +
+                            '<script src="' + projectionStatusUrl + '/query?1"><' + '/' + 'script>');
+
+
                     var first = JSON.parse(eventsRaw)[0];
-                    processor.process_event(
-                        first.BodyRaw,
-                        first.StreamId,
-                        first.EventType,
-                        first.Category,
-                        first.SequenceNumber,
-                        first.MetadataRaw,
-                        first.LogPposition);
+
+
+                    $.ajax(projectionStatusUrl + "/state?partition=" + first.Partition, {
+                        headers: {
+                            Accept: "application/json",
+                        },
+                        dataType: "text",
+                        success: successPartitionState,
+                        error: errorPartitionState
+                    });
+
+                    function successPartitionState(data, status, xhr) {
+                        document.getElementById('script-placeholder').contentWindow.processor.set_state(data);
+                        document.getElementById('script-placeholder').contentWindow.processor.process_event(
+                            first.BodyRaw,
+                            first.StreamId,
+                            first.EventType,
+                            first.Category,
+                            first.SequenceNumber,
+                            first.MetadataRaw,
+                            first.LogPposition);
+                    }
+
+                    function errorPartitionState(xhr, status) {
+                        alert("Failed to get state for partition: " + first.Partition);
+                    }
                 });
+
             }
 
         })();
 
     </script>
+    <iframe id="script-placeholder"></iframe>
 </body>
 </html>

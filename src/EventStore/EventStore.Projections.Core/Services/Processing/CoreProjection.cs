@@ -271,6 +271,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             catch (Exception ex)
             {
+                message.Envelope.ReplyWith(new CoreProjectionManagementMessage.StateReport(_projectionCorrelationId, message.Partition, null, ex));
                 SetFaulted(ex);
             }
         }

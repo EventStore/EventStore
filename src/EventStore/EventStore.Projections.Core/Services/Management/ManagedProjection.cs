@@ -199,6 +199,7 @@ namespace EventStore.Projections.Core.Services.Management
             else
             {
                 //TODO: report right state here
+                _stateRequests.Clear();
                 message.Envelope.ReplyWith(
                     new ProjectionManagementMessage.ProjectionState(message.Name, "*** UNKNOWN ***"));
             }
@@ -294,7 +295,7 @@ namespace EventStore.Projections.Core.Services.Management
             _stateRequests.Remove(message.Partition);
 
             foreach (var request in partitionRequests)
-                request.ReplyWith(new ProjectionManagementMessage.ProjectionState(_name, message.State));
+                request.ReplyWith(new ProjectionManagementMessage.ProjectionState(_name, message.State, message.Exception));
         }
 
         public void Handle(CoreProjectionManagementMessage.DebugState message)

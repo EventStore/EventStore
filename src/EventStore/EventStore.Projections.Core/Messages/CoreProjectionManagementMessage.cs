@@ -166,12 +166,14 @@ namespace EventStore.Projections.Core.Messages
         public class StateReport : CoreProjectionManagementMessage
         {
             private readonly string _state;
+            private readonly Exception _exception;
             private readonly string _partition;
 
-            public StateReport(Guid correlationId, string partition, string state)
+            public StateReport(Guid correlationId, string partition, string state, Exception exception = null)
                 : base(correlationId)
             {
                 _state = state;
+                _exception = exception;
                 _partition = partition;
             }
 
@@ -183,6 +185,11 @@ namespace EventStore.Projections.Core.Messages
             public string Partition
             {
                 get { return _partition; }
+            }
+
+            public Exception Exception
+            {
+                get { return _exception; }
             }
         }
 
