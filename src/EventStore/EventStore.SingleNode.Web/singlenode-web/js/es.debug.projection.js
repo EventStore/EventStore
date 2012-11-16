@@ -114,9 +114,12 @@
             $('#run-button').removeAttr("disabled");
 
             $('#run-button').click(function () {
-
-                document.getElementById('script-placeholder').contentWindow.processor.set_state(data);
-                document.getElementById('script-placeholder').contentWindow.processor.process_event(
+                var processor = document.getElementById('script-placeholder').contentWindow.processor;
+                if (data == "")
+                    processor.initialize();
+                else
+                    processor.set_state(data);
+                processor.process_event(
                     first.BodyRaw,
                     first.StreamId,
                     first.EventType,

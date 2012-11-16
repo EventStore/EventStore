@@ -311,7 +311,7 @@ namespace EventStore.Projections.Core.Services.Management
                         Query = message.Query,
                         Mode = message.Mode
                     });
-            PrepareAndBeginWrite(forcePrepare: true, completed: () => StartNew(completed));
+            PrepareAndBeginWrite(forcePrepare: true, completed: () => StartOrLoadNew(completed));
         }
 
         public void InitializeExisting(string name)
@@ -335,7 +335,7 @@ namespace EventStore.Projections.Core.Services.Management
                 byte[] state = completed.Events[0].Event.Data;
                 LoadPersistedState(state.ParseJson<PersistedState>());
                 //TODO: encapsulate this into managed projection
-                _state = ManagedProjectionState.Stopped;
+                _state = ManagedProjectionState.Loaded;
                 if (Enabled)
                     Prepare(() => Start(() => { }));
                 else
@@ -489,7 +489,10 @@ namespace EventStore.Projections.Core.Services.Management
 
             //TODO: which states are allowed here?
             if (_state >= ManagedProjectionState.Preparing)
-                throw new InvalidOperationException("Already preparing or has been prepared");
+            {
+                DisposeCoreProjection();
+                _state = ManagedProjectionState.Loaded;
+            }
 
             //TODO: load configuration from the definition
 
@@ -574,11 +577,12 @@ namespace EventStore.Projections.Core.Services.Management
             return projectionConfig;
         }
 
-        private void StartNew(Action completed)
+        private void StartOrLoadNew(Action completed)
         {
             if (Enabled)
-                Start(() => { if (completed != null) completed(); });
-            else if (completed != null) completed();
+                Start(completed);
+            else
+                LoadStopped(completed);
         }
 
         private void DoUpdateQuery(ProjectionManagementMessage.UpdateQuery message)
@@ -589,6 +593,8 @@ namespace EventStore.Projections.Core.Services.Management
                     {
                         if (Enabled)
                             Start(() => { });
+                        else
+                            LoadStopped(() => { });
                         message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name));
                     });
         }
