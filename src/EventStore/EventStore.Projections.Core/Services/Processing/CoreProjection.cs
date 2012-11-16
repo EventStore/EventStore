@@ -270,7 +270,9 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (_state == State.Running || _state == State.Paused)
                 {
-                    var getStateWorkItem = new GetStateWorkItem(message.Envelope, message.CorrelationId, this, _partitionStateCache, message.Partition);
+                    var getStateWorkItem = new GetStateWorkItem(
+                        message.Envelope, message.CorrelationId, message.ProjectionId, this, _partitionStateCache,
+                        message.Partition);
                     _processingQueue.EnqueueOutOfOrderTask(getStateWorkItem);
                 }
                 _processingQueue.ProcessEvent();
