@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt
         [Test]
         public void other_prepares_cannot_be_committed()
         {
-            var res = ReadIndex.CheckCommitStartingAt(_prepare0.LogPosition, WriterChecksum.ReadNonFlushed());;
+            var res = ReadIndex.CheckCommitStartingAt(_prepare0.LogPosition, WriterChecksum.ReadNonFlushed());
 
             Assert.AreEqual(CommitDecision.WrongExpectedVersion, res.Decision);
             Assert.AreEqual("ES", res.EventStreamId);
@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt
             Assert.AreEqual(-1, res.StartEventNumber);
             Assert.AreEqual(-1, res.EndEventNumber);
 
-            res = ReadIndex.CheckCommitStartingAt(_prepare2.LogPosition, WriterChecksum.ReadNonFlushed()); ; ;
+            res = ReadIndex.CheckCommitStartingAt(_prepare2.LogPosition, WriterChecksum.ReadNonFlushed());
 
             Assert.AreEqual(CommitDecision.WrongExpectedVersion, res.Decision);
             Assert.AreEqual("ES", res.EventStreamId);
