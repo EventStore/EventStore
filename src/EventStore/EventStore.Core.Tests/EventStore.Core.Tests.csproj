@@ -86,16 +86,16 @@
     <Compile Include="ClientAPI\AllEvents\read_all_events_backward_should.cs" />
     <Compile Include="ClientAPI\AllEvents\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\AllEvents\subscribe_to_all_should.cs" />
-    <Compile Include="ClientAPI\api_tests_nunit_setup.cs" />
     <Compile Include="ClientAPI\append_to_stream.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
     <Compile Include="ClientAPI\creating_stream.cs" />
     <Compile Include="ClientAPI\event_store_connection_should.cs" />
-    <Compile Include="ClientAPI\MiniNode.cs" />
+    <Compile Include="ClientAPI\Helpers\MiniNode.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
     <Compile Include="ClientAPI\subscribe_should.cs" />
-    <Compile Include="ClientAPI\TestEvent.cs" />
+    <Compile Include="ClientAPI\Helpers\TestEvent.cs" />
+    <Compile Include="ClientAPI\Helpers\TestEventsComparer.cs" />
     <Compile Include="ClientAPI\transaction.cs" />
     <Compile Include="Common\CollectionsExtensions.cs" />
     <Compile Include="Common\HelperExtensions.cs" />
@@ -193,11 +193,16 @@
     <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_single_prepare.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_writing_few_prepares_on_same_event_number_and_commiting_delete_on_this_version_read_index_should.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_writing_delete_prepare_but_no_commit_read_index_should.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_both_maxage_and_maxcount_specified_with_maxage_more_strict.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_both_maxage_and_maxcount_specified_with_maxcount_more_strict.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_with_maxage_specified.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_with_maxcount_specified.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_age_is_more_strict.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_count_is_more_strict.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_count.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_no_max_age_max_count.cs" />
+    <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_2nd_chunk__in_db_with_3_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_writing_delete_prepare_without_commit_on_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_db_with_3_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />
@@ -337,6 +342,10 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <None Include="..\EventStore.SingleNode\NLog.config">
+      <Link>NLog.config</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>

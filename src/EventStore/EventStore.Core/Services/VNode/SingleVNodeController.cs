@@ -56,7 +56,7 @@ namespace EventStore.Core.Services.VNode
 
         private bool _storageReaderInitialized;
         private bool _storageWriterInitialized;
-        private int _serviceShutdownsToExpect = 4;
+        private int _serviceShutdownsToExpect = 3;
 
         public SingleVNodeController(IPublisher outputBus, IPEndPoint httpEndPoint)
         {
