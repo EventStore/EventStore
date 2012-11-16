@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
             _cache = new PartitionStateCache();
             _cachedAtCheckpointTag = CheckpointTag.FromPosition(1000, 900);
             _cache.CacheAndLockPartitionState("partition", new PartitionStateCache.State("data", _cachedAtCheckpointTag), _cachedAtCheckpointTag);
-            _relockedData = _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(2000, 1900));
+            _relockedData = _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(2000, 1900), allowRelockAtTheSamePosition: false);
         }
 
         [Test]
@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cannot_be_relocked_at_the_previous_position()
         {
-            _cache.TryGetAndLockPartitionState("partition", _cachedAtCheckpointTag);
+            _cache.TryGetAndLockPartitionState("partition", _cachedAtCheckpointTag, allowRelockAtTheSamePosition: false);
         }
     }
 }

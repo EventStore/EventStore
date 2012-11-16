@@ -48,7 +48,8 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override void Load(CheckpointTag checkpointTag)
         {
             // we load partition state even if stopping etc.  should we skip?
-            Projection.BeginStatePartitionLoad(_partition, _message.CheckpointTag, LoadCompleted);
+            Projection.BeginStatePartitionLoad(
+                _partition, _message.CheckpointTag, LoadCompleted, allowRelockAtTheSamePosition: false);
         }
 
         private void LoadCompleted()

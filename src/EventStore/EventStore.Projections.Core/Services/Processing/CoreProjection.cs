@@ -671,21 +671,29 @@ namespace EventStore.Projections.Core.Services.Processing
                     _projectionConfig.CheckpointUnhandledBytesThreshold));
         }
 
-        internal void BeginStatePartitionLoad(string statePartition, CheckpointTag eventCheckpointTag, Action loadCompleted)
+        internal void BeginStatePartitionLoad(
+            string statePartition, CheckpointTag eventCheckpointTag, Action loadCompleted,
+            bool allowRelockAtTheSamePosition)
         {
             if (statePartition == "") // root is always cached
             {
                 loadCompleted();
                 return;
             }
-            var state = _partitionStateCache.TryGetAndLockPartitionState(statePartition, eventCheckpointTag);
+            var state = _partitionStateCache.TryGetAndLockPartitionState(
+                statePartition, eventCheckpointTag, allowRelockAtTheSamePosition);
             if (state != null)
                 loadCompleted();
             else
             {
                 string partitionStateStreamName = MakePartitionStateStreamName(statePartition);
                 _readRequestsInProgress++;
-                var requestId = _readDispatcher.Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, -1, 1, resolveLinks: false), m => OnLoadStatePartitionCompleted(statePartition, m, loadCompleted, eventCheckpointTag));
+                var requestId =
+                    _readDispatcher.Publish(
+                        new ClientMessage.ReadStreamEventsBackward(
+                            Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, -1, 1,
+                            resolveLinks: false),
+                        m => OnLoadStatePartitionCompleted(statePartition, m, loadCompleted, eventCheckpointTag));
                 if (requestId != Guid.Empty)
                     _loadStateRequests.Add(requestId);
             }
