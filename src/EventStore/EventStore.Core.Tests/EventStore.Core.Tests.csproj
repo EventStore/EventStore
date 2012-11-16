@@ -193,6 +193,10 @@
     <Compile Include="Services\Storage\CheckCommitStartingAt\when_writing_single_prepare.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_writing_few_prepares_on_same_event_number_and_commiting_delete_on_this_version_read_index_should.cs" />
     <Compile Include="Services\Storage\DeletingStream\when_writing_delete_prepare_but_no_commit_read_index_should.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_both_maxage_and_maxcount_specified_with_maxage_more_strict.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_both_maxage_and_maxcount_specified_with_maxcount_more_strict.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_with_maxage_specified.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_with_maxcount_specified.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_age_is_more_strict.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_count_is_more_strict.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age.cs" />
