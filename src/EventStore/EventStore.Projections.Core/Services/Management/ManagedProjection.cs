@@ -65,6 +65,11 @@ namespace EventStore.Projections.Core.Services.Management
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
             _readDispatcher;
 
+        private readonly
+            RequestResponseDispatcher
+                <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>
+            _getStateDispatcher;
+
 
         private readonly ILogger _logger;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
@@ -76,7 +81,6 @@ namespace EventStore.Projections.Core.Services.Management
 
         private string _faultedReason;
         private Action _stopCompleted;
-        private Dictionary<string, List<IEnvelope>> _stateRequests;
         private ProjectionStatistics _lastReceivedStatistics;
         private Action _onPrepared;
         private Action _onStarted;
@@ -99,6 +103,10 @@ namespace EventStore.Projections.Core.Services.Management
             _readDispatcher = readDispatcher;
             _inputQueue = inputQueue;
             _projectionStateHandlerFactory = projectionStateHandlerFactory;
+            _getStateDispatcher =
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>(
+                    coreQueue, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
         }
 
         private string HandlerType
@@ -176,23 +184,11 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (_state == ManagedProjectionState.Running)
             {
-                var needRequest = false;
-                if (_stateRequests == null)
-                {
-                    _stateRequests = new Dictionary<string, List<IEnvelope>>();
-                }
-                List<IEnvelope> partitionRequests;
-                if (!_stateRequests.TryGetValue(message.Partition, out partitionRequests))
-                {
-                    partitionRequests = new List<IEnvelope>();
-                    _stateRequests.Add(message.Partition, partitionRequests);
-                    needRequest = true;
-                }
-                partitionRequests.Add(message.Envelope);
-                if (needRequest)
-                    _coreQueue.Publish(
-                        new CoreProjectionManagementMessage.GetState(
-                            new PublishEnvelope(_inputQueue), _id, message.Partition));
+                _getStateDispatcher.Publish(
+                    new CoreProjectionManagementMessage.GetState(
+                        new PublishEnvelope(_inputQueue), Guid.NewGuid(), _id, message.Partition),
+                    m => message.Envelope.ReplyWith(
+                        new ProjectionManagementMessage.ProjectionState(_name, m.State)));
             }
             else
             {
@@ -269,11 +265,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.StateReport message)
         {
-            var partitionRequests = _stateRequests[message.Partition];
-            _stateRequests.Remove(message.Partition);
-
-            foreach (var request in partitionRequests)
-                request.ReplyWith(new ProjectionManagementMessage.ProjectionState(_name, message.State));
+            _getStateDispatcher.Handle(message);
         }
 
         public void Handle(CoreProjectionManagementMessage.StatisticsReport message)
