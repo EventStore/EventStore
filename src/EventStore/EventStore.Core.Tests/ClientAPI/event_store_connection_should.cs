@@ -33,7 +33,8 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    internal class event_store_connection_should
+    [TestFixture, Category("LongRunning")]
+    public class event_store_connection_should
     {
         private MiniNode _node;
 

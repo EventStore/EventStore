@@ -33,8 +33,8 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
-    internal class creating_stream
+    [TestFixture, Category("LongRunning")]
+    public class creating_stream
     {
         private MiniNode _node;
 

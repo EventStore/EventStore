@@ -32,8 +32,8 @@ using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
-    internal class read_event_stream_forward_should
+    [TestFixture, Category("LongRunning")]
+    public class read_event_stream_forward_should
     {
         private MiniNode _node;
 

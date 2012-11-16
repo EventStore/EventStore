@@ -33,8 +33,8 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
-    internal class deleting_stream
+    [TestFixture, Category("LongRunning")]
+    public class deleting_stream
     {
         private MiniNode _node;
 

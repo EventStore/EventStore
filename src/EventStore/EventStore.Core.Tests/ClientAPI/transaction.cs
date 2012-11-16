@@ -37,8 +37,8 @@ using System.Linq;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
-    internal class transaction
+    [TestFixture, Category("LongRunning")]
+    public class transaction
     {
         private MiniNode _node;
 

@@ -34,8 +34,8 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
-    internal class append_to_stream
+    [TestFixture, Category("LongRunning")]
+    public class append_to_stream
     {
         private MiniNode _node;
 

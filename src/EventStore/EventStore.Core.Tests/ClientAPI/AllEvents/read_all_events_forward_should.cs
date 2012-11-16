@@ -36,8 +36,8 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.AllEvents
 {
-    [TestFixture]
-    internal class read_all_events_forward_should
+    [TestFixture, Category("LongRunning")]
+    public class read_all_events_forward_should
     {
         private const int Timeout = 1000;
 
