@@ -46,13 +46,17 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Services.VNode;
 using EventStore.Common.Utils;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core
 {
     public class SingleVNode
     {
+        public QueuedHandler MainQueue { get { return _mainQueue; } }
+        public InMemoryBus Bus { get { return _outputBus; } } 
+        public HttpService HttpService { get { return _httpService; } }
+        public TimerService TimerService { get { return _timerService; } }
+
         private readonly IPEndPoint _tcpEndPoint;
         private readonly IPEndPoint _httpEndPoint;
 
@@ -60,8 +64,8 @@ namespace EventStore.Core
         private readonly InMemoryBus _outputBus;
 
         private readonly SingleVNodeController _controller;
-        private HttpService _httpService;
-        private TimerService _timerService;
+        private readonly HttpService _httpService;
+        private readonly TimerService _timerService;
 
         public SingleVNode(TFChunkDb db, SingleVNodeSettings vNodeSettings, SingleVNodeAppSettings appSettings, bool dbVerifyHashes)
         {
@@ -169,26 +173,6 @@ namespace EventStore.Core
 
             MainQueue.Start();
             monitoringQueue.Start();
-        }
-
-        public QueuedHandler MainQueue
-        {
-            get { return _mainQueue; }
-        }
-
-        public InMemoryBus Bus
-        {
-            get { return _outputBus; }
-        }
-
-        public HttpService HttpService
-        {
-            get { return _httpService; }
-        }
-
-        public TimerService TimerService
-        {
-            get { return _timerService; }
         }
 
         public void Start()

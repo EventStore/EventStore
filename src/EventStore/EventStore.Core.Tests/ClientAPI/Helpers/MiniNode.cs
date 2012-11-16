@@ -25,7 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -34,59 +36,60 @@ using System.Net.Sockets;
 using System.Threading;
 using EventStore.Common.Settings;
 using EventStore.Common.Utils;
-using EventStore.Core.TransactionLog;
+using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
-namespace EventStore.Core.Tests.ClientAPI
+namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
     internal class MiniNode
     {
-        private static volatile MiniNode _instance;
-        private static readonly object InstanceLock = new object();
+        private static readonly ConcurrentStack<int> AvailablePorts = new ConcurrentStack<int>(Enumerable.Range(10000, 50000));
+
+        public IPEndPoint TcpEndPoint { get; private set; }
+        public IPEndPoint HttpEndPoint { get; private set; }
 
         private readonly SingleVNode _node;
         private readonly TFChunkDb _tfChunkDb;
         private ICheckpoint _writerChk;
         private ICheckpoint _chaserChk;
+        private readonly string _dbPath;
 
-        private readonly string _oneTimeDbPath;
-
-        public IPEndPoint TcpEndPoint { get; private set; }
-        public IPEndPoint HttpEndPoint { get; private set; }
-
-        public static MiniNode Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    lock (InstanceLock)
-                    {
-                        if (_instance == null)
-                            _instance = new MiniNode();
-                    }
-                }
-                return _instance;
-            }
-        }
-
-        public static MiniNode Create(int externalTcpPort, int externalHttpPort)
+        public static MiniNode Create(int? externalTcpPort = null, int? externalHttpPort = null)
         {
             return new MiniNode(externalTcpPort, externalHttpPort);
         }
 
-        private MiniNode(int externalTcpPort = 41111, int externalHttpPort = 41112)
+        private MiniNode(int? externalTcpPort = null, int? externalHttpPort = null)
         {
-            _oneTimeDbPath = Path.Combine(Path.GetTempPath(), string.Format("mini-node-one-time-db-{0}-{1}", externalTcpPort, externalHttpPort));
-            TryDeleteDirectory(_oneTimeDbPath);
-            Directory.CreateDirectory(_oneTimeDbPath);
-            _tfChunkDb = new TFChunkDb(CreateOneTimeDbConfig(256*1024*1024, _oneTimeDbPath, 2));
+            int extTcpPort;
+            int extHttpPort;
+            if (externalTcpPort.HasValue)
+                extTcpPort = externalTcpPort.Value;
+            else
+            {
+                if (!AvailablePorts.TryPop(out extTcpPort))
+                    throw new Exception("Couldn't get free external TCP port for MiniNode.");
+            }
+            if (externalHttpPort.HasValue)
+                extHttpPort = externalHttpPort.Value;
+            else
+            {
+                if (!AvailablePorts.TryPop(out extHttpPort))
+                    throw new Exception("Couldn't get free external HTTP port for MiniNode.");
+            }
+
+            _dbPath = Path.Combine(Path.GetTempPath(),
+                                   Guid.NewGuid().ToString(),
+                                   string.Format("mini-node-db-{0}-{1}", extTcpPort, extHttpPort));
+            Directory.CreateDirectory(_dbPath);
+            _tfChunkDb = new TFChunkDb(CreateOneTimeDbConfig(1*1024*1024, _dbPath, 2));
 
             var ip = GetLocalIp();
-            TcpEndPoint = new IPEndPoint(ip, externalTcpPort);
-            HttpEndPoint = new IPEndPoint(ip, externalHttpPort);
+            TcpEndPoint = new IPEndPoint(ip, extTcpPort);
+            HttpEndPoint = new IPEndPoint(ip, extHttpPort);
 
             var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint, HttpEndPoint, new[] {HttpEndPoint.ToHttpUrl()});
             var appSettings = new SingleVNodeAppSettings(TimeSpan.FromHours(1));
@@ -96,20 +99,30 @@ namespace EventStore.Core.Tests.ClientAPI
 
         public void Start()
         {
+            var startedEvent = new ManualResetEventSlim(false);
+            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.SystemInit>(m => startedEvent.Set()));
+
             _node.Start();
-            Thread.Sleep(750);
+
+            if (!startedEvent.Wait(20000))
+                throw new TimeoutException("MiniNode haven't started in 20 seconds.");
         }
 
         public void Shutdown()
         {
+            var shutdownEvent = new ManualResetEventSlim(false);
+            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(m => shutdownEvent.Set()));
+
             _node.Stop();
-            Thread.Sleep(750);
+
+            if (!shutdownEvent.Wait(20000))
+                throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
 
             _chaserChk.Dispose();
             _writerChk.Dispose();
             _tfChunkDb.Dispose();
 
-            TryDeleteDirectory(_oneTimeDbPath);
+            TryDeleteDirectory(_dbPath);
         }
 
         private void TryDeleteDirectory(string directory)
@@ -135,17 +148,13 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             if (Runtime.IsMono)
             {
-                _writerChk = new FileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"), Checkpoint.Writer,
-                                                cached: true);
-                _chaserChk = new FileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"), Checkpoint.Chaser,
-                                                cached: true);
+                _writerChk = new FileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"), Checkpoint.Writer, cached: true);
+                _chaserChk = new FileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"), Checkpoint.Chaser, cached: true);
             }
             else
             {
-                _writerChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"),
-                                                            Checkpoint.Writer, cached: true);
-                _chaserChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"),
-                                                            Checkpoint.Chaser, cached: true);
+                _writerChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"), Checkpoint.Writer, cached: true);
+                _chaserChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"), Checkpoint.Chaser, cached: true);
             }
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),

@@ -28,6 +28,7 @@
 using System;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
@@ -35,6 +36,22 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture]
     internal class creating_stream
     {
+        private MiniNode _node;
+
+        [TestFixtureSetUp]
+        public void SetUp()
+        {
+            _node = MiniNode.Create();
+            _node.Start();
+        }
+
+        [TestFixtureTearDown]
+        public void TearDown()
+        {
+            _node.Shutdown();
+        }
+
+
         [Test]
         [Category("Network")]
         public void which_does_not_exist_should_be_successfull()
@@ -42,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "which_does_not_exist_should_be_successfull";
             using (var connection = EventStoreConnection.Create())
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
+                connection.Connect(_node.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
             }
@@ -55,7 +72,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "$which_supposed_to_be_system_should_succees__but_on_your_own_risk";
             using (var connection = EventStoreConnection.Create())
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
+                connection.Connect(_node.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
             }
@@ -68,7 +85,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "which_already_exists_should_fail";
             using (var connection = EventStoreConnection.Create())
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
+                connection.Connect(_node.TcpEndPoint);
                 var initialCreate = connection.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(initialCreate.Wait);
 
@@ -85,7 +102,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "which_was_deleted_should_fail";
             using (var connection = EventStoreConnection.Create())
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
+                connection.Connect(_node.TcpEndPoint);
                 var create = connection.CreateStreamAsync(stream, false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 

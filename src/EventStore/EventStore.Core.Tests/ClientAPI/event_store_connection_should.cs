@@ -28,12 +28,28 @@
 
 using System;
 using EventStore.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
     internal class event_store_connection_should
     {
+        private MiniNode _node;
+
+        [TestFixtureSetUp]
+        public void SetUp()
+        {
+            _node = MiniNode.Create();
+            _node.Start();
+        }
+
+        [TestFixtureTearDown]
+        public void TearDown()
+        {
+            _node.Shutdown();
+        }
+
         [Test]
         [Category("Network")]
         public void not_throw_on_close_if_connect_was_not_called()
@@ -47,7 +63,7 @@ namespace EventStore.Core.Tests.ClientAPI
         public void not_throw_on_close_if_called_multiple_times()
         {
             var connection = EventStoreConnection.Create();
-            connection.Connect(MiniNode.Instance.TcpEndPoint);
+            connection.Connect(_node.TcpEndPoint);
             connection.Close();
             Assert.DoesNotThrow(connection.Close);
         }
@@ -57,9 +73,9 @@ namespace EventStore.Core.Tests.ClientAPI
         public void throw_on_connect_called_more_than_once()
         {
             var connection = EventStoreConnection.Create();
-            Assert.DoesNotThrow(() => connection.Connect(MiniNode.Instance.TcpEndPoint));
+            Assert.DoesNotThrow(() => connection.Connect(_node.TcpEndPoint));
 
-            Assert.Throws<InvalidOperationException>(() => connection.Connect(MiniNode.Instance.TcpEndPoint));
+            Assert.Throws<InvalidOperationException>(() => connection.Connect(_node.TcpEndPoint));
         }
 
         [Test]
@@ -67,10 +83,10 @@ namespace EventStore.Core.Tests.ClientAPI
         public void throw_on_connect_called_after_close()
         {
             var connection = EventStoreConnection.Create();
-            connection.Connect(MiniNode.Instance.TcpEndPoint);
+            connection.Connect(_node.TcpEndPoint);
             connection.Close();
 
-            Assert.Throws<InvalidOperationException>(() => connection.Connect(MiniNode.Instance.TcpEndPoint));
+            Assert.Throws<InvalidOperationException>(() => connection.Connect(_node.TcpEndPoint));
         }
 
         [Test]
