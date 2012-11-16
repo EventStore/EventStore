@@ -51,6 +51,16 @@ namespace EventStore.Core.Tests.ClientAPI
             Metadata = Encoding.UTF8.GetBytes(metadata ?? "metadata");
         }
 
+        public TestEvent(Guid id, string data = null, string metadata = null)
+        {
+            EventId = id;
+            Type = GetType().FullName;
+
+            IsJson = false;
+            Data = Encoding.UTF8.GetBytes(data ?? EventId.ToString());
+            Metadata = Encoding.UTF8.GetBytes(metadata ?? "metadata");
+        }
+
         public override string ToString()
         {
             return string.Format("EventId: {0}, Type: {1}, Data: {2}, Metadata: {3}",
