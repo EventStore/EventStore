@@ -132,21 +132,21 @@ namespace EventStore.Core.Tests.Services.Storage
 
         protected abstract void WriteTestScenario();
 
-        protected EventRecord WriteStreamCreated(string eventStreamId, 
+        protected EventRecord WriteStreamCreated(string eventStreamId,
                                                  string metadata = null, 
-                                                 DateTime? timestamp = null, 
-                                                 bool isImplicit = false)
+                                                 DateTime? timestamp = null,
+                                                 Guid eventId = default(Guid))
         {
             var logPosition = WriterChecksum.ReadNonFlushed();
             var rec = LogRecord.Prepare(logPosition,
-                                        Guid.NewGuid(),
+                                        eventId == default(Guid) ? Guid.NewGuid() : eventId,
                                         Guid.NewGuid(),
                                         logPosition,
                                         0,
                                         eventStreamId,
                                         ExpectedVersion.NoStream,
                                         PrepareFlags.Data | PrepareFlags.IsJson | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                        isImplicit ? SystemEventTypes.StreamCreatedImplicit : SystemEventTypes.StreamCreated,
+                                        SystemEventTypes.StreamCreated,
                                         LogRecord.NoData,
                                         metadata == null ? LogRecord.NoData : Encoding.UTF8.GetBytes(metadata),
                                         timestamp);
@@ -161,10 +161,15 @@ namespace EventStore.Core.Tests.Services.Storage
             return eventRecord;
         }
 
-        protected EventRecord WriteSingleEvent(string eventStreamId, int eventNumber, string data, DateTime? timestamp = null, bool retryOnFail = false)
+        protected EventRecord WriteSingleEvent(string eventStreamId, 
+                                               int eventNumber, 
+                                               string data,
+                                               DateTime? timestamp = null,
+                                               Guid eventId = default(Guid),
+                                               bool retryOnFail = false)
         {
             var prepare = LogRecord.SingleWrite(WriterChecksum.ReadNonFlushed(),
-                                                Guid.NewGuid(),
+                                                eventId == default(Guid) ? Guid.NewGuid() : eventId,
                                                 Guid.NewGuid(),
                                                 eventStreamId,
                                                 eventNumber - 1,
@@ -293,11 +298,15 @@ namespace EventStore.Core.Tests.Services.Storage
             return prepare;
         }
 
-        protected PrepareLogRecord WritePrepare(string streamId, int expectedVersion, string eventType = null, string data = null)
+        protected PrepareLogRecord WritePrepare(string streamId, 
+                                                int expectedVersion, 
+                                                Guid eventId = default(Guid), 
+                                                string eventType = null, 
+                                                string data = null)
         {
             long pos;
             var prepare = LogRecord.SingleWrite(WriterChecksum.ReadNonFlushed(),
-                                                Guid.NewGuid(),
+                                                eventId == default(Guid) ? Guid.NewGuid() : eventId,
                                                 Guid.NewGuid(),
                                                 streamId,
                                                 expectedVersion,
