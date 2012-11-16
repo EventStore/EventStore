@@ -213,9 +213,12 @@ namespace EventStore.Projections.Core.Messages
                             EventType = source.Data.EventType,
                             StreamId = source.EventStreamId,
                             SequenceNumber = source.EventSequenceNumber,
+                            Category = source.EventCategory,
                             LogPosition = source.Position.PreparePosition,
                         };
                 }
+
+                public string Category { get; set; }
 
                 public string Partition { get; set; }
 

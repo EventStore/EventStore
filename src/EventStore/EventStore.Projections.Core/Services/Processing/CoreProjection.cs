@@ -500,7 +500,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private readonly List<CoreProjectionManagementMessage.DebugState.Event> _eventsForDebugging =
-            new List<CoreProjectionManagementMessage.DebugState.Event();
+            new List<CoreProjectionManagementMessage.DebugState.Event>();
 
         private void InternalCollectEventForDebugging(CommittedEventWorkItem committedEventWorkItem, string partition, ProjectionSubscriptionMessage.CommittedEventReceived message)
         {

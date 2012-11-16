@@ -1,0 +1,165 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Edit Projection Source</title>
+    <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
+    
+    
+    <script src="/web/es/js/projections/v8/Prelude/Modules.js"> </script>
+    <script src="/web/es/js/projections/v8/Prelude/Projections.js"> </script>
+    <script src="/web/es/js/projections/es.projections.environment.js"> </script>
+    <script src="/web/es/js/projections/v8/Prelude/1Prelude.js"> </script>
+    <script src="/web/es/js/projections/es.projection.js"> </script>
+    <script src="/web/es/js/projections/es.api.js"> </script>
+
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>
+</head>
+<body>
+    <div id="content">
+        <h1>
+            Debug Projection</h1>
+        <div class="form-horizontal">
+            <div class="control-group">
+                <label class="control-label" for="projection-debug-state">
+                    <strong>State</strong></label>
+                <div class="controls">
+                    <textarea id="projection-debug-state" class="source-code">
+                    </textarea>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="source">
+                    <strong>Source</strong></label>
+                <div class="controls">
+                    <textarea id="source" ></textarea>
+                </div>
+            </div>
+            <div class="control-group">
+                <div class="controls" id="update-source-container">
+                    <button id="update-button" class="btn">
+                        Update</button>
+                    <button id="run-button" class="btn">
+                        Run</button>
+                </div>
+            </div>
+        </div> 
+
+        <script id="r-body">
+            es.tmpl.renderBody();
+        </script>
+    </div>
+
+    <script type="text/javascript">
+
+        (function() {
+
+            var projectionStatusUrl = "";
+
+            var sourceLoaded = false;
+            var eventsLoaded = false;
+            var eventsRaw = null;
+
+            $(function () {
+
+                $.templates("editSourceTemplate", "#editSourceTemplate");
+                projectionStatusUrl = location.hash.substr(1);
+
+                $('#update-button').click(function(ev) {
+                    $.ajax(projectionStatusUrl + "/query", {
+                        headers: {
+                            Accept: "application/json",
+                        },
+
+                        type: "PUT",
+                        data: $("#source").val(),
+                        success: successUpdateSource,
+                        error: function(xhr) {
+                             var msg = es.util.formatError("Couldn't delete projection", xhr);
+                            alert(msg);
+                        }
+                    });
+                });
+
+                requestProjectionDebugState();
+                requestProjectionSource();
+            });
+
+            function requestProjectionDebugState() {
+                $.ajax(projectionStatusUrl + "/debug", {
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    dataType: "text",
+                    success: successDebugState,
+                    error: errorDebugState
+                });
+
+                function successDebugState(data, status, xhr) {
+                    $("#projection-debug-state").text(data);
+                    eventsRaw = data;
+                    eventsLoaded = true;
+                    checkLoaded();
+                }
+
+                function errorDebugState(xhr, status) {
+                    setTimeout(requestProjectionDebugState, 1000);
+                }
+            }
+
+            function requestProjectionSource() {
+                $.ajax(projectionStatusUrl + "/query", {
+                    headers: {
+                        Accept: "text/plain",
+                    },
+                    dataType: "text",
+                    success: successSource,
+                    error: errorSource
+                });
+
+                function successSource(data, status, xhr) {
+                    $("#source").text(data);
+                    sourceLoaded = true;
+                    checkLoaded();
+                }
+
+                function errorSource(xhr, status) {
+                    setTimeout(requestProjectionSource, 1000);
+                }
+            }
+
+            function successUpdateSource(data, status, xhr) {
+                window.location = "view-projection.htm#" + projectionStatusUrl;
+            }
+
+            function checkLoaded() {
+                if (sourceLoaded && eventsLoaded) {
+                    readyForDebugging();
+                }
+            }
+
+            function readyForDebugging() {
+                var processor = $initialize_hosted_projections();
+                processor.set_debugging();
+                $.getScript(projectionStatusUrl + "/query", function (script, textStatus, jsXHR) {
+                    // json, streamId, eventType, category, sequenceNumber, metadata, log_position
+                    var first = JSON.parse(eventsRaw)[0];
+                    processor.process_event(
+                        first.BodyRaw,
+                        first.StreamId,
+                        first.EventType,
+                        first.Category,
+                        first.SequenceNumber,
+                        first.MetadataRaw,
+                        first.LogPposition);
+                });
+            }
+
+        })();
+
+    </script>
+</body>
+</html>
