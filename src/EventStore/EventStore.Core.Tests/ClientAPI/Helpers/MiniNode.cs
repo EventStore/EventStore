@@ -103,12 +103,14 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         public void Start()
         {
             var startedEvent = new ManualResetEventSlim(false);
-            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.SystemInit>(m => startedEvent.Set()));
+            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.SystemStart>(m => startedEvent.Set()));
 
             _node.Start();
 
             if (!startedEvent.Wait(20000))
                 throw new TimeoutException("MiniNode haven't started in 20 seconds.");
+
+            Thread.Sleep(100);
         }
 
         public void Shutdown()
@@ -120,6 +122,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
             if (!shutdownEvent.Wait(20000))
                 throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
+
+            Thread.Sleep(100);
 
             AvailablePorts.Enqueue(TcpEndPoint.Port);
             AvailablePorts.Enqueue(HttpEndPoint.Port);
