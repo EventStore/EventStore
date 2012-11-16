@@ -67,7 +67,7 @@ namespace EventStore.Core.Index
         private readonly ConcurrentQueue<FileStream> _streams = new ConcurrentQueue<FileStream>();
 
         private readonly Midpoint[] _midpoints;
-        private readonly ManualResetEvent _destroyEvent = new ManualResetEvent(false);
+        private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
         private readonly Guid _id;
 
         private volatile bool _selfdestructin54321;
@@ -630,7 +630,7 @@ namespace EventStore.Core.Index
 
         public void WaitForDestroy(int timeout)
         {
-            if (!_destroyEvent.WaitOne(timeout))
+            if (!_destroyEvent.Wait(timeout))
                 throw new TimeoutException();
         }
 

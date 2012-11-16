@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [TestFixtureSetUp]
         public void SetUp()
         {
-            _node = MiniNode.Create();
+            _node = new MiniNode();
             _node.Start();
         }
 

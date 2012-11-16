@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
     internal class MiniNode
     {
-        private static readonly ConcurrentStack<int> AvailablePorts = new ConcurrentStack<int>(Enumerable.Range(10000, 50000));
+        private static readonly ConcurrentQueue<int> AvailablePorts = new ConcurrentQueue<int>(GetRandomPorts(10000, 10000));
 
         public IPEndPoint TcpEndPoint { get; private set; }
         public IPEndPoint HttpEndPoint { get; private set; }
@@ -57,18 +57,13 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         private ICheckpoint _chaserChk;
         private readonly string _dbPath;
 
-        public static MiniNode Create()
-        {
-            return new MiniNode();
-        }
-
-        private MiniNode()
+        public MiniNode()
         {
             int extTcpPort;
             int extHttpPort;
-            if (!AvailablePorts.TryPop(out extTcpPort))
+            if (!AvailablePorts.TryDequeue(out extTcpPort))
                 throw new Exception("Couldn't get free external TCP port for MiniNode.");
-            if (!AvailablePorts.TryPop(out extHttpPort))
+            if (!AvailablePorts.TryDequeue(out extHttpPort))
                 throw new Exception("Couldn't get free external HTTP port for MiniNode.");
 
             _dbPath = Path.Combine(Path.GetTempPath(),
@@ -85,6 +80,24 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             var appSettings = new SingleVNodeAppSettings(TimeSpan.FromHours(1));
 
             _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, appSettings, dbVerifyHashes: true);
+        }
+
+        private static int[] GetRandomPorts(int from, int portCount)
+        {
+            var res = new int[portCount];
+            var rnd = new Random(Guid.NewGuid().GetHashCode());
+            for (int i = 0; i < portCount; ++i)
+            {
+                res[i] = from + i;
+            }
+            for (int i = 0; i < portCount; ++i)
+            {
+                int index = rnd.Next(portCount - i);
+                int tmp = res[i];
+                res[i] = res[i + index];
+                res[i + index] = tmp;
+            }
+            return res;
         }
 
         public void Start()
@@ -108,8 +121,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             if (!shutdownEvent.Wait(20000))
                 throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
 
-            AvailablePorts.Push(TcpEndPoint.Port);
-            AvailablePorts.Push(HttpEndPoint.Port);
+            AvailablePorts.Enqueue(TcpEndPoint.Port);
+            AvailablePorts.Enqueue(HttpEndPoint.Port);
 
             _chaserChk.Dispose();
             _writerChk.Dispose();
