@@ -208,6 +208,21 @@ namespace EventStore.Core.TransactionLog.Chunks
                     return false;
                 }
 
+                if ((prepare.Flags & PrepareFlags.Data) == 0)
+                {
+                    // We encountered system prepare with no data. As of now it can appear only in explicit
+                    // transactions so we can safely remove it. The performance shouldn't hurt, because
+                    // TransactionBegin prepare is never needed either way and TransactionEnd should be in most
+                    // circumstances close to commit, so shouldn't hurt performance too much.
+                    // The advantage of getting rid of system prepares is ability to completely eliminate transaction 
+                    // prepares and commit, if transaction events are completely ruled out by $maxAge/$maxCount.
+                    // Otherwise we'd have to either keep prepare not requiring to keep commit, which could leave 
+                    // this prepare as never discoverable garbage, or we could insist on keeping commit forever
+                    // even if all events in transaction are scavenged.
+                    commitInfo.KeepCommit = commitInfo.KeepCommit ?? false;
+                    return false;
+                }
+
                 var lastEventNumber = _readIndex.GetLastStreamEventNumber(prepare.EventStreamId);
                 var streamMetadata = _readIndex.GetStreamMetadata(prepare.EventStreamId);
                 var eventNumber = commitInfo.EventNumber + prepare.TransactionOffset;
@@ -221,7 +236,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     // Definitely keep commit, otherwise current prepare wouldn't be discoverable.
                     // TODO AN I should think more carefully about this stuff with prepare/commits relations
                     // TODO AN and whether we can keep prepare without keeping commit (problems on index rebuild).
-                    // TODO AN What can save us -- some effective and clever way to mark prepare as committed, but 
+                    // TODO AN What can save us -- some effective and clever way to mark prepare as committed, 
                     // TODO AN but place updated prepares in the place of commit, so they are discoverable during 
                     // TODO AN index rebuild or ReadAllForward/Backward queries EXACTLY in the same order as they 
                     // TODO AN were originally written to TF
@@ -263,7 +278,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             else
             {
-                if ((prepare.Flags & PrepareFlags.StreamDelete) != 0 // we always keep delete tombstones
+                if ((prepare.Flags & PrepareFlags.StreamDelete) != 0                 // we always keep delete tombstones
                     || prepare.EventType.StartsWith(SystemEventTypes.StreamCreated)) // we keep $stream-created
                 {
                     return true;
@@ -281,7 +296,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
                 // If stream of this prepare is deleted, then we can safely delete this prepare.
                 if (_readIndex.IsStreamDeleted(prepare.EventStreamId))
-                    return prepare.TransactionOffset == 0;
+                    return false;
 
                 // TODO AN we can try to figure out if this prepare is committed, and if yes, what is its event number.
                 // TODO AN only then we can actually do something here, unfortunately.
