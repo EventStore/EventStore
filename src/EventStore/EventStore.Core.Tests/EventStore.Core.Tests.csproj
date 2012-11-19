@@ -86,13 +86,15 @@
     <Compile Include="ClientAPI\AllEvents\read_all_events_backward_should.cs" />
     <Compile Include="ClientAPI\AllEvents\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\AllEvents\subscribe_to_all_should.cs" />
+    <Compile Include="ClientAPI\appending_to_explicitly_created_stream_using_transaction.cs" />
+    <Compile Include="ClientAPI\appending_to_implicitly_created_stream_using_transaction.cs" />
     <Compile Include="ClientAPI\append_to_stream.cs" />
     <Compile Include="ClientAPI\appending_to_explicitly_created_stream.cs" />
     <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
     <Compile Include="ClientAPI\creating_stream.cs" />
     <Compile Include="ClientAPI\event_store_connection_should.cs" />
-    <Compile Include="ClientAPI\Helpers\StreamWriter.cs" />
+    <Compile Include="ClientAPI\Helpers\Writer.cs" />
     <Compile Include="ClientAPI\Helpers\EventsStream.cs" />
     <Compile Include="ClientAPI\Helpers\MiniNode.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
