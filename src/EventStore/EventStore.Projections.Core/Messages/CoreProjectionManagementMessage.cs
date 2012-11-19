@@ -328,6 +328,47 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class CreatePrepared : CoreProjectionManagementMessage
+        {
+            private readonly IEnvelope _envelope;
+            private readonly ProjectionConfig _config;
+            private readonly ISourceDefinitionConfigurator _sourceDefintion;
+            private readonly string _name;
+
+            public CreatePrepared(
+                IEnvelope envelope, Guid projectionId, string name, ProjectionConfig config, ISourceDefinitionConfigurator sourceDefintion)
+                : base(projectionId)
+            {
+                if (name == null) throw new ArgumentNullException("name");
+                if (config == null) throw new ArgumentNullException("config");
+                if (sourceDefintion == null) throw new ArgumentNullException("sourceDefintion");
+                _envelope = envelope;
+                _name = name;
+                _config = config;
+                _sourceDefintion = sourceDefintion;
+            }
+
+            public ProjectionConfig Config
+            {
+                get { return _config; }
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+            public ISourceDefinitionConfigurator SourceDefintion
+            {
+                get { return _sourceDefintion; }
+            }
+        }
+
         public class Dispose : CoreProjectionManagementMessage
         {
             public Dispose(Guid projectionId)

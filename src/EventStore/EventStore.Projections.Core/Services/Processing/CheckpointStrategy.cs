@@ -235,8 +235,8 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                string projectionCheckpointStreamId = CoreProjection.ProjectionsStreamPrefix + name
-                                                      + CoreProjection.ProjectionCheckpointStreamSuffix;
+                string projectionCheckpointStreamId = ProjectionNamesBuilder.ProjectionsStreamPrefix + name
+                                                      + ProjectionNamesBuilder.ProjectionCheckpointStreamSuffix;
 
                 return new DefaultCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,

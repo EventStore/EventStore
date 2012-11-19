@@ -49,9 +49,65 @@ namespace EventStore.Projections.Core.Services.Processing
                                   IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>,
                                   IHandle<ProjectionSubscriptionMessage.ProgressChanged>
     {
-        internal const string ProjectionsStreamPrefix = "$projections-";
-        private const string ProjectionsStateStreamSuffix = "-state";
-        internal const string ProjectionCheckpointStreamSuffix = "-checkpoint";
+        public static CoreProjection CreateAndPrepapre(
+            string name, Guid projectionCorrelationId, IPublisher publisher,
+            IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig,
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+            ILogger logger)
+        {
+            if (name == null) throw new ArgumentNullException("name");
+            if (name == "") throw new ArgumentException("name");
+            if (publisher == null) throw new ArgumentNullException("publisher");
+            if (projectionStateHandler == null) throw new ArgumentNullException("projectionStateHandler");
+            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
+            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
+
+            return InternalCreate(
+                name, projectionCorrelationId, publisher, projectionStateHandler, projectionConfig, readDispatcher,
+                writeDispatcher, logger, projectionStateHandler);
+        }
+
+        public static CoreProjection CreatePrepapred(
+            string name, Guid projectionCorrelationId, IPublisher publisher,
+            ISourceDefinitionConfigurator sourceDefintion, ProjectionConfig projectionConfig,
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+            ILogger logger)
+        {
+            if (name == null) throw new ArgumentNullException("name");
+            if (name == "") throw new ArgumentException("name");
+            if (publisher == null) throw new ArgumentNullException("publisher");
+            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
+            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
+
+            return InternalCreate(
+                name, projectionCorrelationId, publisher, null, projectionConfig, readDispatcher, writeDispatcher,
+                logger, sourceDefintion);
+        }
+
+        private static CoreProjection InternalCreate(
+            string name, Guid projectionCorrelationId, IPublisher publisher,
+            IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig,
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+            ILogger logger, ISourceDefinitionConfigurator sourceDefintion)
+        {
+            var builder = new CheckpointStrategy.Builder();
+            var namingBuilder = new ProjectionNamesBuilder();
+            sourceDefintion.ConfigureSourceProcessingStrategy(builder);
+            sourceDefintion.ConfigureSourceProcessingStrategy(namingBuilder);
+            name = namingBuilder.ForceProjectionName ?? name;
+            var stateStreamNamePattern = namingBuilder.GetStateStreamNamePattern(name);
+            var stateStreamName = namingBuilder.GetStateStreamName(name);
+            var checkpointStrategy = builder.Build(projectionConfig.Mode);
+            return new CoreProjection(
+                name, projectionCorrelationId, publisher, projectionStateHandler, projectionConfig, readDispatcher,
+                writeDispatcher, logger, checkpointStrategy, stateStreamNamePattern, stateStreamName);
+        }
 
         [Flags]
         private enum State : uint
@@ -102,42 +158,39 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _subscribed;
         private bool _startOnLoad;
 
-        public CoreProjection(
+        private CoreProjection(
             string name, Guid projectionCorrelationId, IPublisher publisher,
             IProjectionStateHandler projectionStateHandler, ProjectionConfig projectionConfig,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ILogger logger = null)
+            ILogger logger, CheckpointStrategy checkpointStrategy, string stateStreamNamePattern, string stateStreamName)
         {
             if (name == null) throw new ArgumentNullException("name");
             if (name == "") throw new ArgumentException("name");
             if (publisher == null) throw new ArgumentNullException("publisher");
-            if (projectionStateHandler == null) throw new ArgumentNullException("projectionStateHandler");
-            _projectionStateHandler = projectionStateHandler;
+            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
+            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
+            var coreProjectionCheckpointManager = checkpointStrategy.CreateCheckpointManager(
+                this, projectionCorrelationId, publisher, readDispatcher, writeDispatcher, projectionConfig, name,
+                stateStreamName);
+            var projectionQueue = new CoreProjectionQueue(
+                projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
+
             _projectionCorrelationId = projectionCorrelationId;
-
-            var namingBuilder = new ProjectionNamesBuilder();
-            _projectionStateHandler.ConfigureSourceProcessingStrategy(namingBuilder);
-
-            _name = namingBuilder.ForceProjectionName ?? name;
-            //TODO: move into name builder
-            _stateStreamNamePattern = namingBuilder.StateStreamName ?? ProjectionsStreamPrefix + _name + "-{0}" + ProjectionsStateStreamSuffix;
-            _stateStreamName = namingBuilder.StateStreamName ?? ProjectionsStreamPrefix + _name + ProjectionsStateStreamSuffix; 
+            _name = name;
+            _stateStreamNamePattern = stateStreamNamePattern;
+            _stateStreamName = stateStreamName;
             _projectionConfig = projectionConfig;
             _logger = logger;
             _publisher = publisher;
             _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
-            var builder = new CheckpointStrategy.Builder();
-            _projectionStateHandler.ConfigureSourceProcessingStrategy(builder);
-            _checkpointStrategy = builder.Build(_projectionConfig.Mode);
+            _checkpointStrategy = checkpointStrategy;
             _partitionStateCache = new PartitionStateCache();
-            _processingQueue = new CoreProjectionQueue(
-                projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
-            _checkpointManager = this._checkpointStrategy.CreateCheckpointManager(
-                this, projectionCorrelationId, this._publisher, this._readDispatcher,
-                this._writeDispatcher, this._projectionConfig, this._name, _stateStreamName);
+            _processingQueue = projectionQueue;
+            _checkpointManager = coreProjectionCheckpointManager;
+            _projectionStateHandler = projectionStateHandler;
             GoToState(State.Initial);
         }
 
