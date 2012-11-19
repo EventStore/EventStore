@@ -67,6 +67,29 @@ namespace EventStore.Core.Tests.ClientAPI
 
         [Test]
         [Category("Network")]
+        public void many_times_with_same_id_should_succeed()
+        {
+            const string stream = "many_times_with_same_id_should_succeed";
+            using (var connection = EventStoreConnection.Create())
+            {
+                connection.Connect(_node.TcpEndPoint);
+                var id = Guid.NewGuid();
+
+                var create1 = connection.CreateStreamAsync(stream, id, false, new byte[0]);
+                Assert.DoesNotThrow(create1.Wait);
+
+                var create2 = connection.CreateStreamAsync(stream, id, false, new byte[0]);
+                Assert.DoesNotThrow(create2.Wait);
+
+                var read = connection.ReadEventStreamForwardAsync(stream, 0, 10);
+                Assert.DoesNotThrow(read.Wait);
+
+                Assert.That(read.Result.Events.Length, Is.EqualTo(1));
+            }
+        }
+
+        [Test]
+        [Category("Network")]
         public void which_supposed_to_be_system_should_succees__but_on_your_own_risk()
         {
             const string stream = "$which_supposed_to_be_system_should_succees__but_on_your_own_risk";
