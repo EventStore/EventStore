@@ -27,12 +27,17 @@
 // 
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages
 {
     public static class MonitoringMessage
     {
+        public class RegularStatsCollection : Message
+        {
+        }
+
         public class GetFreshStats : Message
         {
             public readonly IEnvelope Envelope;
@@ -40,11 +45,14 @@ namespace EventStore.Core.Messages
             public readonly bool UseMetadata;
             public readonly bool UseGrouping;
 
-            public GetFreshStats(IEnvelope envelope, 
-                Func<Dictionary<string, object>, Dictionary<string, object>> statsSelector, 
+            public GetFreshStats(IEnvelope envelope,
+                Func<Dictionary<string, object>, Dictionary<string, object>> statsSelector,
                 bool useMetadata,
                 bool useGrouping)
             {
+                Ensure.NotNull(envelope, "envelope");
+                Ensure.NotNull(statsSelector, "statsSelector");
+
                 Envelope = envelope;
                 StatsSelector = statsSelector;
                 UseMetadata = useMetadata;
@@ -55,9 +63,9 @@ namespace EventStore.Core.Messages
         public class GetFreshStatsCompleted : Message
         {
             public readonly bool Success;
-            public readonly Dictionary<string,object> Stats;
+            public readonly Dictionary<string, object> Stats;
 
-            public GetFreshStatsCompleted(bool success, Dictionary<string,object> stats)
+            public GetFreshStatsCompleted(bool success, Dictionary<string, object> stats)
             {
                 Success = success;
                 Stats = stats;
@@ -70,6 +78,8 @@ namespace EventStore.Core.Messages
 
             public InternalStatsRequest(IEnvelope envelope)
             {
+                Ensure.NotNull(envelope, "envelope");
+
                 Envelope = envelope;
             }
         }
@@ -78,8 +88,10 @@ namespace EventStore.Core.Messages
         {
             public readonly Dictionary<string, object> Stats;
 
-            public InternalStatsRequestResponse(Dictionary<string,object> stats)
+            public InternalStatsRequestResponse(Dictionary<string, object> stats)
             {
+                Ensure.NotNull(stats, "stats");
+
                 Stats = stats;
             }
         }

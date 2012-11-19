@@ -84,14 +84,15 @@ namespace EventStore.Core
             var monitoringQueue = new QueuedHandler(monitoringInnerBus, "MonitoringQueue", watchSlowMsg: true, slowMsgThresholdMs: 100);
             var monitoring = new MonitoringService(monitoringQueue, monitoringRequestBus, MainQueue, db.Config.WriterCheckpoint, db.Config.Path, appSettings.StatsPeriod, _httpEndPoint);
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
-            Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemStart, Message>());
+            Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.CreateStreamCompleted, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.WriteEventsCompleted, Message>());
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
-            monitoringInnerBus.Subscribe<SystemMessage.SystemStart>(monitoring);
+            monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
+            monitoringInnerBus.Subscribe<MonitoringMessage.RegularStatsCollection>(monitoring);
             monitoringInnerBus.Subscribe<ClientMessage.CreateStreamCompleted>(monitoring);
             monitoringInnerBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoring);
 
@@ -172,6 +173,7 @@ namespace EventStore.Core
             //var timer = new TimerService(new TimerBasedScheduler(new RealTimer(), new RealTimeProvider()));
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
             Bus.Subscribe<TimerMessage.Schedule>(TimerService);
+            monitoringInnerBus.Subscribe<TimerMessage.Schedule>(TimerService);
 
             MainQueue.Start();
             monitoringQueue.Start();
