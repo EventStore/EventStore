@@ -34,10 +34,6 @@ namespace EventStore.Core.Messages
 {
     public static class MonitoringMessage
     {
-        public class RegularStatsCollection : Message
-        {
-        }
-
         public class GetFreshStats : Message
         {
             public readonly IEnvelope Envelope;

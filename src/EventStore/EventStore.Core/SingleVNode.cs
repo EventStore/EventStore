@@ -87,14 +87,11 @@ namespace EventStore.Core
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.CreateStreamCompleted, Message>());
-            Bus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.WriteEventsCompleted, Message>());
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
-            monitoringInnerBus.Subscribe<MonitoringMessage.RegularStatsCollection>(monitoring);
             monitoringInnerBus.Subscribe<ClientMessage.CreateStreamCompleted>(monitoring);
-            monitoringInnerBus.Subscribe<ClientMessage.WriteEventsCompleted>(monitoring);
 
             //STORAGE SUBSYSTEM
             var indexPath = Path.Combine(db.Config.Path, "index");
@@ -173,7 +170,6 @@ namespace EventStore.Core
             //var timer = new TimerService(new TimerBasedScheduler(new RealTimer(), new RealTimeProvider()));
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
             Bus.Subscribe<TimerMessage.Schedule>(TimerService);
-            monitoringInnerBus.Subscribe<TimerMessage.Schedule>(TimerService);
 
             MainQueue.Start();
             monitoringQueue.Start();

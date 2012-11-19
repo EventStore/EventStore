@@ -50,9 +50,7 @@ namespace EventStore.Core.Services.Monitoring
                                      IHandle<SystemMessage.StateChangeMessage>,
                                      IHandle<SystemMessage.BecomeShuttingDown>,
                                      IHandle<MonitoringMessage.GetFreshStats>,
-                                     IHandle<MonitoringMessage.RegularStatsCollection>,
-                                     IHandle<ClientMessage.CreateStreamCompleted>,
-                                     IHandle<ClientMessage.WriteEventsCompleted>
+                                     IHandle<ClientMessage.CreateStreamCompleted>
     {
         private static readonly ILogger RegularLog = LogManager.GetLogger("REGULAR-STATS-LOGGER");
         private static readonly ILogger Log = LogManager.GetLoggerFor<MonitoringService>();
@@ -68,6 +66,8 @@ namespace EventStore.Core.Services.Monitoring
         private DateTime _lastStatsRequestTime = DateTime.UtcNow;
         private StatsContainer _memoizedStats;
         private const int MemoizedSeconds = 1;
+
+        private readonly Timer _timer;
 
         private readonly string _nodeStatsStream;
         private readonly JsonCodec _jsonCodec;
@@ -93,35 +93,31 @@ namespace EventStore.Core.Services.Monitoring
             _nodeStatsStream = string.Format("{0}-{1}", SystemStreams.StatsStreamPrefix, nodeEndpoint);
             _jsonCodec = new JsonCodec();
             _publishEnvelope = new PublishEnvelope(_inputBus);
+            _timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
         }
 
         public void Handle(SystemMessage.SystemInit message)
         {
-            _inputBus.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(_statsCollectionPeriodMs),
-                                                           _publishEnvelope,
-                                                           new MonitoringMessage.RegularStatsCollection()));
+            _timer.Change(_statsCollectionPeriodMs, Timeout.Infinite);
         }
 
-        public void Handle(MonitoringMessage.RegularStatsCollection message)
+        public void OnTimerTick(object state)
         {
             CollectRegularStats();
-            _inputBus.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(_statsCollectionPeriodMs),
-                                                           _publishEnvelope,
-                                                           new MonitoringMessage.RegularStatsCollection()));
-        }
+            _timer.Change(_statsCollectionPeriodMs, Timeout.Infinite);
+        }                                                                                                        
 
         private void CollectRegularStats()
         {
             try
             {
-                var stats = GetStats();
+                var stats = CollectStats();
                 if (stats != null)
                 {
                     var rawStats = stats.GetStats(useGrouping: false, useMetadata: false);
+                    SaveStatsToCsvFile(rawStats);
                     if (_statsStreamCreated)
-                    {
                         SaveStatsToStream(rawStats);
-                    }
                 }
             }
             catch (Exception ex)
@@ -130,7 +126,7 @@ namespace EventStore.Core.Services.Monitoring
             }
         }
 
-        private StatsContainer GetStats()
+        private StatsContainer CollectStats()
         {
             var statsContainer = new StatsContainer();
             try
@@ -145,6 +141,20 @@ namespace EventStore.Core.Services.Monitoring
             }
 
             return statsContainer;
+        }
+
+        private void SaveStatsToCsvFile(Dictionary<string, object> rawStats)
+        {
+            var header = StatsCsvEncoder.GetHeader(rawStats);
+            if (header != _lastWrittenCsvHeader)
+            {
+                _lastWrittenCsvHeader = header;
+                RegularLog.Info(Environment.NewLine);
+                RegularLog.Info(header);
+            }
+
+            var line = StatsCsvEncoder.GetLine(rawStats);
+            RegularLog.Info(line);
         }
 
         private void SaveStatsToStream(Dictionary<string, object> rawStats)
@@ -197,11 +207,13 @@ namespace EventStore.Core.Services.Monitoring
             {
                 case OperationErrorCode.Success:
                 case OperationErrorCode.WrongExpectedVersion: // already created
+                    Log.Trace("Created stats stream '{0}', code = {1}", _nodeStatsStream, message.ErrorCode);
                     _statsStreamCreated = true;
                     break;
                 case OperationErrorCode.PrepareTimeout:
                 case OperationErrorCode.CommitTimeout:
                 case OperationErrorCode.ForwardTimeout:
+                    Log.Debug("Failed to create stats stream '{0}'. Reason : {1}({2}). Retrying...", _nodeStatsStream, message.ErrorCode, message.Error);
                     CreateStatsStream();
                     break;
                 case OperationErrorCode.StreamDeleted:
@@ -213,17 +225,10 @@ namespace EventStore.Core.Services.Monitoring
             }
         }
 
-        public void Handle(ClientMessage.WriteEventsCompleted message)
-        {
-            if (message.ErrorCode == OperationErrorCode.Success)
-                return;
-
-            //todo MM : save stats to file
-            //SaveStatsToCsvFile(???);
-        }
-
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
+            _timer.Change(Timeout.Infinite, Timeout.Infinite);
+            _timer.Dispose();
             _systemStats.Dispose();
         }
 
@@ -235,7 +240,7 @@ namespace EventStore.Core.Services.Monitoring
                 StatsContainer stats;
                 if (!TryGetMemoizedStats(out stats))
                 {
-                    stats = GetStats();
+                    stats = CollectStats();
                     if (stats != null)
                         MemoizeStats(stats);
                 }
@@ -277,20 +282,6 @@ namespace EventStore.Core.Services.Monitoring
 
             _memoizedStats = stats;
             _lastStatsRequestTime = DateTime.UtcNow;
-        }
-
-        private void SaveStatsToCsvFile(Dictionary<string, object> rawStats)
-        {
-            var header = StatsCsvEncoder.GetHeader(rawStats);
-            if (header != _lastWrittenCsvHeader)
-            {
-                _lastWrittenCsvHeader = header;
-                RegularLog.Info(Environment.NewLine);
-                RegularLog.Info(header);
-            }
-
-            var line = StatsCsvEncoder.GetLine(rawStats);
-            RegularLog.Info(line);
         }
     }
 }
