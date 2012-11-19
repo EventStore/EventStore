@@ -26,12 +26,14 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
+using System.Linq;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_starting_a_new_projection : TestFixtureWithCoreProjection
+    public class when_starting_a_new_projection : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {
@@ -58,9 +60,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         [Test]
-        public void should_initialize_projection_state_handler()
+        public void should_publish_started_message()
         {
-            Assert.AreEqual(1, _stateHandler._initializeCalled);
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
+            var startedMessage = _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Single();
+            Assert.AreEqual(_projectionCorrelationId, startedMessage.ProjectionId);
         }
     }
 }

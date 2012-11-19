@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
     public class when_starting_an_existing_projection_missing_last_emitted_event_and_state_snapshot :
-        TestFixtureWithCoreProjection
+        TestFixtureWithCoreProjectionStarted
     {
         private readonly Guid _causedByEventId = Guid.NewGuid();
 

@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_receiving_a_committed_event_the_projection_should : TestFixtureWithCoreProjection
+    public class when_receiving_a_committed_event_the_projection_should : TestFixtureWithCoreProjectionStarted
     {
         private Guid _eventId;
 

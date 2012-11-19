@@ -116,7 +116,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (message.Result)
             {
                 case RangeReadResult.NoStream:
-                    UpdateSafePositionToJoin(message.EventStreamId, message.LastCommitPosition.Value);
+                    UpdateSafePositionToJoin(message.EventStreamId, message.LastCommitPosition);
                     ProcessBuffers();
                     if (_pauseRequested)
                         _paused = true;
@@ -128,7 +128,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (message.Events.Length == 0)
                     {
                         // the end
-                        UpdateSafePositionToJoin(message.EventStreamId, message.LastCommitPosition.Value);
+                        UpdateSafePositionToJoin(message.EventStreamId, message.LastCommitPosition);
                     }
                     else
                     {
@@ -246,7 +246,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _safePositionToJoin, 100.0f));
         }
 
-        private void UpdateSafePositionToJoin(string streamId, long preparePosition)
+        private void UpdateSafePositionToJoin(string streamId, long? preparePosition)
         {
             _preparePositions[streamId] = preparePosition;
             if (_preparePositions.All(v => v.Value != null))
