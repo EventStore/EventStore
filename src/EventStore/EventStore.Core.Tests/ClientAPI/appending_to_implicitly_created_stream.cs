@@ -32,6 +32,13 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture]
     internal class appending_to_implicitly_created_stream
     {
+        /*
+         * sequence - events written so stream
+         * 0 - streamcreated, 1e0 - event number 1 written with exp version 0
+         * 1any - event number 1 written with exp version any
+         * S_1e0_2e0_E - START bucket, two events in bucket, END bucket
+        */
+
         public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1em1_idempotent()
         {
         }
