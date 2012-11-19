@@ -8,6 +8,12 @@
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=D39A895EF9912F4BA95DF15ED1B916CE/@KeyIndexDefined">True</s:Boolean>
 	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=D39A895EF9912F4BA95DF15ED1B916CE/AbsolutePath/@EntryValue">Y:\retrospective\src\License.DotSettings</s:String>
 	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=D39A895EF9912F4BA95DF15ED1B916CE/RelativePath/@EntryValue">..\..\License.DotSettings</s:String>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File662A72B1EC4426469993EBFCB33DA15A/@KeyIndexDefined">True</s:Boolean>
+	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File662A72B1EC4426469993EBFCB33DA15A/RelativePriority/@EntryValue">19</s:Double>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File70CC60A08AB9CE4C8AD5B049E73BAFBE/@KeyIndexDefined">True</s:Boolean>
+	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File70CC60A08AB9CE4C8AD5B049E73BAFBE/RelativePriority/@EntryValue">20</s:Double>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=FileD39A895EF9912F4BA95DF15ED1B916CE/@KeyIndexDefined">True</s:Boolean>
+	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=FileD39A895EF9912F4BA95DF15ED1B916CE/RelativePriority/@EntryValue">21</s:Double>
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AC_003A_005Cprojects_005Cretrospective_005CEventStore_005Csrc_005CLicense_002EDotSettings/@KeyIndexDefined">True</s:Boolean>
 	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AC_003A_005Cprojects_005Cretrospective_005CEventStore_005Csrc_005CLicense_002EDotSettings/RelativePriority/@EntryValue">18</s:Double>
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AC_003A_005Cprojects_005Cretrospective_005CEventStore_005Csrc_005CReformatOptions_002EDotSettings/@KeyIndexDefined">True</s:Boolean>

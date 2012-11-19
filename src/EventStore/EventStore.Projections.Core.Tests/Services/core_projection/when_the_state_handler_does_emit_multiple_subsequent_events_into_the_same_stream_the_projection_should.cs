@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
     public class when_the_state_handler_does_emit_multiple_subsequent_events_into_the_same_stream_the_projection_should :
-        TestFixtureWithCoreProjection
+        TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {

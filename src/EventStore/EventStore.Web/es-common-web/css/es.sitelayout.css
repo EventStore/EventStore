@@ -66,12 +66,12 @@ h6 { font-size: 1em; font-weight: bold; }
     height: 250px;
     overflow-y: auto;
 }
-#source {
+.source-code, #source {
     height: 250px;
     overflow-y: auto;
     font-family: consolas, 'courier new'; 
 }
-#source, #name {
+.source-code, #source, #name {
     min-width: 500px;
 }
 #mode {

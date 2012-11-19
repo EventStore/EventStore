@@ -35,7 +35,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_starting_an_existing_projection_missing_last_state_snapshot : TestFixtureWithCoreProjection
+    public class when_starting_an_existing_projection_missing_last_state_snapshot : TestFixtureWithCoreProjectionStarted
     {
         private readonly Guid _causedByEventId = Guid.NewGuid();
 

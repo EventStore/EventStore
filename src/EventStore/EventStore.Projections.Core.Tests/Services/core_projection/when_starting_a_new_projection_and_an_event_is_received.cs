@@ -27,52 +27,37 @@
 // 
 
 using System;
-using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_state_handler_does_emit_an_event_the_projection_should : TestFixtureWithCoreProjectionStarted
+    public class when_starting_a_new_projection_and_an_event_is_received : TestFixtureWithCoreProjectionStarted
     {
-        private Guid _causingEventId;
-
         protected override void Given()
         {
             NoStream("$projections-projection-state");
             NoStream("$projections-projection-checkpoint");
-            NoStream(FakeProjectionStateHandler._emit1StreamId);
         }
 
         protected override void When()
         {
-            //projection subscribes here
-            _causingEventId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                       new Event(
-                           _causingEventId, "no_state_emit1_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata")), 0));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    new Event(
+                        eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]
-        public void write_the_emitted_event()
+        public void should_initialize_projection_state_handler()
         {
-            Assert.IsTrue(
-                _writeEventHandler.HandledMessages.Any(
-                    v => Encoding.UTF8.GetString(v.Events[0].Data) == FakeProjectionStateHandler._emit1Data));
-        }
-
-        [Test]
-        public void set_a_caused_by_position_attributes()
-        {
-            var metadata = _writeEventHandler.HandledMessages[0].Events[0].Metadata.ParseJson<CheckpointTag>();
-            Assert.AreEqual(120, metadata.CommitPosition);
-            Assert.AreEqual(110, metadata.PreparePosition);
+            Assert.AreEqual(1, _stateHandler._initializeCalled);
         }
     }
 }

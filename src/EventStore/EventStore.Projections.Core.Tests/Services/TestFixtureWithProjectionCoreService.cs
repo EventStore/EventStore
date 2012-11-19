@@ -68,11 +68,6 @@ namespace EventStore.Projections.Core.Tests.Services
                 throw new NotImplementedException();
             }
 
-            public void Handle(CoreProjectionProcessingMessage.PauseRequested message)
-            {
-                throw new NotImplementedException();
-            }
-
             public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
             {
                 throw new NotImplementedException();

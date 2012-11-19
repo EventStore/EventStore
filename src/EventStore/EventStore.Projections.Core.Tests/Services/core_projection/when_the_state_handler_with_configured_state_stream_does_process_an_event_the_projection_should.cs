@@ -7,7 +7,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_state_handler_with_configured_state_stream_does_process_an_event_the_projection_should : TestFixtureWithCoreProjection
+    public class when_the_state_handler_with_configured_state_stream_does_process_an_event_the_projection_should : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {

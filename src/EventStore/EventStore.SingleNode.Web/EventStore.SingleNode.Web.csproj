@@ -54,6 +54,9 @@
     <Content Include="singlenode-web\chat.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="singlenode-web\debug-projection.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="singlenode-web\delete-projection.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -67,6 +70,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="singlenode-web\home.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="singlenode-web\js\es.debug.projection.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="singlenode-web\js\es.menu.js">

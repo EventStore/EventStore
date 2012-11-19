@@ -26,46 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
-
-namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
+namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
-    [TestFixture]
-    public class when_relocking_the_state_at_later_position
+    public abstract class TestFixtureWithCoreProjectionLoaded : TestFixtureWithCoreProjection
     {
-        private PartitionStateCache _cache;
-        private CheckpointTag _cachedAtCheckpointTag;
-        private PartitionStateCache.State _relockedData;
-
-        [SetUp]
-        public void given()
+        protected override void PreWhen()
         {
-            //given
-            _cache = new PartitionStateCache();
-            _cachedAtCheckpointTag = CheckpointTag.FromPosition(1000, 900);
-            _cache.CacheAndLockPartitionState("partition", new PartitionStateCache.State("data", _cachedAtCheckpointTag), _cachedAtCheckpointTag);
-            _relockedData = _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(2000, 1900), allowRelockAtTheSamePosition: false);
-        }
-
-        [Test]
-        public void returns_correct_cached_data()
-        {
-            Assert.AreEqual("data", _relockedData.Data);
-        }
-
-        [Test]
-        public void relocked_state_can_be_retrieved_as_locked()
-        {
-            var state = _cache.GetLockedPartitionState("partition");
-            Assert.AreEqual("data", state.Data);
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void cannot_be_relocked_at_the_previous_position()
-        {
-            _cache.TryGetAndLockPartitionState("partition", _cachedAtCheckpointTag, allowRelockAtTheSamePosition: false);
+            _coreProjection.LoadStopped();
         }
     }
 }
