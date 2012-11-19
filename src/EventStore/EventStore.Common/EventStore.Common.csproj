@@ -52,7 +52,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandLine\ConfigurationManager.cs" />
     <Compile Include="CommandLine\EventStoreCmdLineOptionsBase.cs" />
     <Compile Include="CommandLine\lib\CommandLine.cs" />
     <Compile Include="CommandLine\lib\CommandLineText.cs" />
