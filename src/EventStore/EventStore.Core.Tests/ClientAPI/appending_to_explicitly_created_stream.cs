@@ -293,10 +293,9 @@ namespace EventStore.Core.Tests.ClientAPI
 
         [Test]
         [Category("Network")]
-        public void sequence_0_S_1e0_2e0_E_S_2e0_E_idempotent()
+        public void sequence_0_S_1e0_2e0_E_S_2e1_E_idempotent()
         {
-            Assert.Inconclusive("Appending event 2 with EV 0 on second write fails, but should succeed due to idempotency");
-            const string stream = "appending_to_explicitly_created_stream_sequence_0_S_1e0_2e0_E_S_2e0_E_idempotent";
+            const string stream = "appending_to_explicitly_created_stream_sequence_0_S_1e0_2e0_E_S_2e1_E_idempotent";
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
@@ -307,7 +306,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var append = store.AppendToStreamAsync(stream, 0, events);
                 Assert.DoesNotThrow(append.Wait);
 
-                var app2 = store.AppendToStreamAsync(stream, 0, new[] { events[1] });
+                var app2 = store.AppendToStreamAsync(stream, 1, new[] { events[1] });
                 Assert.DoesNotThrow(app2.Wait);
 
                 var total = EventsStream.Count(store, stream);
