@@ -100,8 +100,8 @@ namespace EventStore.Core.Tests.ClientAPI
             var events = new[] { new TestEvent() };
             var bytes = new byte[0];
 
-            Assert.Throws<InvalidOperationException>(() => connection.CreateStream(s, false, bytes));
-            Assert.Throws<InvalidOperationException>(() => connection.CreateStreamAsync(s, false, bytes));
+            Assert.Throws<InvalidOperationException>(() => connection.CreateStream(s, Guid.NewGuid(), false, bytes));
+            Assert.Throws<InvalidOperationException>(() => connection.CreateStreamAsync(s, Guid.NewGuid(), false, bytes));
 
             Assert.Throws<InvalidOperationException>(() => connection.DeleteStream(s, 0));
             Assert.Throws<InvalidOperationException>(() => connection.DeleteStreamAsync(s, 0));

@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -110,7 +110,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -131,7 +131,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -150,7 +150,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -169,7 +169,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 1).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -190,7 +190,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 1).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -211,7 +211,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 1).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -232,7 +232,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 3).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -253,7 +253,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 2).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -276,7 +276,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 2).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -299,7 +299,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 2).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -322,7 +322,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 2).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
@@ -345,7 +345,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var events = Enumerable.Range(1, 2).Select(x => new TestEvent(Guid.NewGuid())).ToArray();

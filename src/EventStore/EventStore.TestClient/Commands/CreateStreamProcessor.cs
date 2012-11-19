@@ -57,6 +57,7 @@ namespace EventStore.TestClient.Commands
             context.IsAsync();
             var createStreamDto = new TcpClientMessageDto.CreateStream(
                     eventStreamId,
+                    Guid.NewGuid().ToByteArray(), 
                     Encoding.UTF8.GetBytes(metadata ?? string.Format("{{\"StreamName\": \"{0}\"}}", eventStreamId)),
                     true,
                     metadata == null);

@@ -103,18 +103,21 @@ namespace EventStore.Core.Messages
             public readonly bool AllowForwarding;
 
             public readonly string EventStreamId;
+            public readonly Guid CreateStreamId;
             public readonly bool IsJson;
             public readonly byte[] Metadata;
 
-            public CreateStream(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, bool isJson, byte[] metadata)
+            public CreateStream(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, Guid createStreamId, bool isJson, byte[] metadata)
             {
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNull(eventStreamId, "eventStreamId");
+                Ensure.NotEmptyGuid(createStreamId, "createStreamId");
                 
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
                 AllowForwarding = allowForwarding;
                 EventStreamId = eventStreamId;
+                CreateStreamId = createStreamId;
                 IsJson = isJson;
                 Metadata = metadata;
             }

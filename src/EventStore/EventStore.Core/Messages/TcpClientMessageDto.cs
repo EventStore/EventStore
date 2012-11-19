@@ -131,21 +131,24 @@ namespace EventStore.Core.Messages
     [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
   
-    [ProtoMember(2, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
+    [ProtoMember(2, IsRequired = true, Name=@"create_stream_id", DataFormat = DataFormat.Default)]
+    public readonly byte[] CreateStreamId;
+  
+    [ProtoMember(3, IsRequired = false, Name=@"metadata", DataFormat = DataFormat.Default)]
     public readonly byte[] Metadata;
   
-    [ProtoMember(3, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
+    [ProtoMember(4, IsRequired = true, Name=@"allow_forwarding", DataFormat = DataFormat.Default)]
     public readonly bool AllowForwarding;
-
-    [ProtoMember(4, IsRequired = true, Name = @"is_json", DataFormat = DataFormat.Default)]
+  
+    [ProtoMember(5, IsRequired = true, Name=@"is_json", DataFormat = DataFormat.Default)]
     public readonly bool IsJson;
-
   
     private CreateStream() {}
   
-    public CreateStream(string eventStreamId, byte[] metadata, bool allowForwarding, bool isJson)
+    public CreateStream(string eventStreamId, byte[] createStreamId, byte[] metadata, bool allowForwarding, bool isJson)
     {
         EventStreamId = eventStreamId;
+        CreateStreamId = createStreamId;
         Metadata = metadata;
         AllowForwarding = allowForwarding;
         IsJson = isJson;
