@@ -36,6 +36,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
@@ -45,6 +46,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
+    [MightyMooseIgnore]
     public abstract class TestFixtureWithExistingEvents : TestFixtureWithReadWriteDisaptchers,
                                                           IHandle<ClientMessage.ReadStreamEventsBackward>,
                                                           IHandle<ClientMessage.WriteEvents>,

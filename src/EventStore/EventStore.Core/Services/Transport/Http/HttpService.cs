@@ -128,7 +128,6 @@ namespace EventStore.Core.Services.Transport.Http
                                                                new HttpMessage.UpdatePendingRequests(_accessibility)));
             else
                 Application.Exit(ExitCode.Error, "http async server failed to start");
-
         }
 
         public void Handle(SystemMessage.BecomeShuttingDown message)

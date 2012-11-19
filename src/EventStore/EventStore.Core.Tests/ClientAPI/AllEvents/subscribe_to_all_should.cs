@@ -28,27 +28,29 @@
 using System;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.AllEvents
 {
-    [TestFixture, Category("LongRunning"), Explicit]
-    internal class subscribe_to_all_should
+    [TestFixture, Category("LongRunning")]
+    public class subscribe_to_all_should
     {
-        public int Timeout = 1000;
-        public MiniNode Node;
+        private const int Timeout = 1000;
+        
+        private MiniNode _node;
 
         [SetUp]
         public void SetUp()
         {
-            Node = MiniNode.Create(40111, 40112);
-            Node.Start();
+            _node = new MiniNode();
+            _node.Start();
         }
 
         [TearDown]
         public void TearDown()
         {
-            Node.Shutdown();
+            _node.Shutdown();
         }
 
         [Test]
@@ -57,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             const string stream = "subscribe_to_all_should_allow_multiple_subscriptions";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(Node.TcpEndPoint);
+                store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
@@ -79,7 +81,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         {
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(Node.TcpEndPoint);
+                store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(2);
 
@@ -100,7 +102,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             const string stream = "subscribe_to_all_should_catch_created_and_deleted_events_as_well";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(Node.TcpEndPoint);
+                store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(1);
 

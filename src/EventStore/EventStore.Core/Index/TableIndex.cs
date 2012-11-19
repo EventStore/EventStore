@@ -99,9 +99,7 @@ namespace EventStore.Core.Index
 
             try
             {
-                _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename),
-                                              IsHashCollision,
-                                              _maxTablesPerLevel);
+                _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename), IsHashCollision, _maxTablesPerLevel);
                 if (_indexMap.IsCorrupt(_directory))
                 {
                     foreach (var ptable in _indexMap.InOrder())
@@ -447,8 +445,7 @@ namespace EventStore.Core.Index
         public void ClearAll(bool removeFiles = true)
         {
             //this should also make sure that no background tasks are running anymore
-
-            if (!_backgroundRunningEvent.Wait(1000))
+            if (!_backgroundRunningEvent.Wait(7000))
                 throw new TimeoutException("Could not finish background thread in reasonable time.");
 
             if (_indexMap != null)
