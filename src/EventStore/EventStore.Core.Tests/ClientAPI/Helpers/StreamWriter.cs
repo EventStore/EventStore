@@ -19,8 +19,22 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         public TailWriter Append(params TestEvent[] events)
         {
             var appends = new Task[events.Length];
-            for (var i = 0; i < events.Length; i++)
-                appends[i] = _store.AppendToStreamAsync(_stream, _version + i, new[] {events[i]});
+
+            switch (_version)
+            {
+                case ExpectedVersion.Any:
+                    for (var i = 0; i < events.Length; i++)
+                        appends[i] = _store.AppendToStreamAsync(_stream, ExpectedVersion.Any, new[] { events[i] });
+                    break;
+                case -1:
+                    for (var i = 0; i < events.Length; i++)
+                        appends[i] = _store.AppendToStreamAsync(_stream, i == 0 ? -1 : i, new[] {events[i]});
+                    break;
+                default:
+                    for (var i = 0; i < events.Length; i++)
+                        appends[i] = _store.AppendToStreamAsync(_stream, _version + i, new[] {events[i]});
+                    break;
+            }
 
             Task.WaitAll(appends);
             return new TailWriter(_store, _stream);
