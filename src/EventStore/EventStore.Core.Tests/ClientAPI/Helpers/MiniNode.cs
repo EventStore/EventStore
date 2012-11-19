@@ -34,10 +34,11 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using EventStore.Common.Settings;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -77,7 +78,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             HttpEndPoint = new IPEndPoint(ip, extHttpPort);
 
             var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint, HttpEndPoint, new[] {HttpEndPoint.ToHttpUrl()});
-            var appSettings = new SingleVNodeAppSettings(TimeSpan.FromHours(1));
+            var appSettings = new SingleVNodeAppSettings(TimeSpan.FromHours(1), StatsStorage.Stream);
 
             _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, appSettings, dbVerifyHashes: true);
         }

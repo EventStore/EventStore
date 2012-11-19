@@ -25,35 +25,23 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.Net;
-using EventStore.Common.Utils;
 
-namespace EventStore.Common.Settings
+using System;
+using EventStore.Core.Services.Monitoring;
+
+namespace EventStore.Core.Settings
 {
-    public class SingleVNodeSettings
+
+
+    public class SingleVNodeAppSettings
     {
-        public readonly IPEndPoint ExternalTcpEndPoint;
-        public readonly IPEndPoint ExternalHttpEndPoint;
-        public readonly string[] HttpPrefixes;
+        public readonly TimeSpan StatsPeriod;
+        public readonly StatsStorage StatsStorage;
 
-        public SingleVNodeSettings(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint, string[] httpPrefixes)
+        public SingleVNodeAppSettings(TimeSpan statsPeriod, StatsStorage statsStorage = StatsStorage.StreamAndCsv)
         {
-            Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
-            Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
-            Ensure.NotNull(httpPrefixes, "httpPrefixes");
-
-            ExternalTcpEndPoint = externalTcpEndPoint;
-            ExternalHttpEndPoint = externalHttpEndPoint;
-            HttpPrefixes = httpPrefixes;
-        }
-
-        public override string ToString()
-        {
-            return string.Format("#{0}[tcp-{1}, http-{2}, http-prefixes-{3}], ",
-                                 ExternalTcpEndPoint.Address,
-                                 ExternalTcpEndPoint.Port,
-                                 ExternalHttpEndPoint.Port,
-                                 string.Join(",", HttpPrefixes));
+            StatsPeriod = statsPeriod;
+            StatsStorage = statsStorage;
         }
     }
 

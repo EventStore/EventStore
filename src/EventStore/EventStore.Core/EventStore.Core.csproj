@@ -154,6 +154,8 @@
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
+    <Compile Include="Settings\ApplicationSettings.cs" />
+    <Compile Include="Settings\VNodeSettings.cs" />
     <Compile Include="TransactionLog\Checkpoint\Checkpoint.cs" />
     <Compile Include="TransactionLog\Checkpoint\FileMultiCheckpoint.cs" />
     <Compile Include="TransactionLog\Checkpoint\IMultiCheckpoint.cs" />

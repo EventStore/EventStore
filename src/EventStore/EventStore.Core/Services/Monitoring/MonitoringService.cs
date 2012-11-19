@@ -46,6 +46,15 @@ using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Services.Monitoring
 {
+    [Flags]
+    public enum StatsStorage
+    {
+        None = 0x0,       // only for tests
+        Stream = 0x1,
+        Csv = 0x2,
+        StreamAndCsv = Stream | Csv
+    }
+
     public class MonitoringService : IHandle<SystemMessage.SystemInit>,
                                      IHandle<SystemMessage.StateChangeMessage>,
                                      IHandle<SystemMessage.BecomeShuttingDown>,
@@ -58,6 +67,7 @@ namespace EventStore.Core.Services.Monitoring
         private readonly IPublisher _inputBus;
         private readonly IPublisher _internalStatsCollectionBus;
         private readonly IPublisher _outputBus;
+        private readonly StatsStorage _statsStorage;
         private readonly int _statsCollectionPeriodMs;
         private readonly SystemStatsHelper _systemStats;
 
@@ -76,7 +86,14 @@ namespace EventStore.Core.Services.Monitoring
 
         private readonly PublishEnvelope _publishEnvelope;
 
-        public MonitoringService(IPublisher inputBus, IPublisher internalStatsCollectionBus, IPublisher outputBus, ICheckpoint writerCheckpoint, string dbPath, TimeSpan statsCollectionPeriod, IPEndPoint nodeEndpoint)
+        public MonitoringService(IPublisher inputBus,
+            IPublisher internalStatsCollectionBus,
+            IPublisher outputBus,
+            ICheckpoint writerCheckpoint,
+            string dbPath,
+            TimeSpan statsCollectionPeriod,
+            IPEndPoint nodeEndpoint,
+            StatsStorage statsStorage)
         {
             Ensure.NotNull(inputBus, "inputBus");
             Ensure.NotNull(internalStatsCollectionBus, "internalStatsCollectionBus");
@@ -88,6 +105,7 @@ namespace EventStore.Core.Services.Monitoring
             _inputBus = inputBus;
             _internalStatsCollectionBus = internalStatsCollectionBus;
             _outputBus = outputBus;
+            _statsStorage = statsStorage;
             _statsCollectionPeriodMs = (int)statsCollectionPeriod.TotalMilliseconds;
             _systemStats = new SystemStatsHelper(Log, writerCheckpoint, dbPath);
             _nodeStatsStream = string.Format("{0}-{1}", SystemStreams.StatsStreamPrefix, nodeEndpoint);
@@ -105,7 +123,7 @@ namespace EventStore.Core.Services.Monitoring
         {
             CollectRegularStats();
             _timer.Change(_statsCollectionPeriodMs, Timeout.Infinite);
-        }                                                                                                        
+        }
 
         private void CollectRegularStats()
         {
@@ -115,9 +133,15 @@ namespace EventStore.Core.Services.Monitoring
                 if (stats != null)
                 {
                     var rawStats = stats.GetStats(useGrouping: false, useMetadata: false);
-                    SaveStatsToCsvFile(rawStats);
-                    if (_statsStreamCreated)
-                        SaveStatsToStream(rawStats);
+
+                    if ((_statsStorage & StatsStorage.Csv) != 0)
+                        SaveStatsToCsvFile(rawStats);
+
+                    if ((_statsStorage & StatsStorage.Stream) != 0)
+                    {
+                        if (_statsStreamCreated)
+                            SaveStatsToStream(rawStats);
+                    }
                 }
             }
             catch (Exception ex)
@@ -173,6 +197,9 @@ namespace EventStore.Core.Services.Monitoring
 
         public void Handle(SystemMessage.StateChangeMessage message)
         {
+            if ((_statsStorage & StatsStorage.Stream) == 0)
+                return;
+
             if (_statsStreamCreated)
                 return;
 
@@ -198,7 +225,7 @@ namespace EventStore.Core.Services.Monitoring
         private void CreateStatsStream()
         {
             var metadata = Encoding.UTF8.GetBytes(StreamMetadata);
-            _outputBus.Publish(new ClientMessage.CreateStream(Guid.NewGuid(), _publishEnvelope, true, _nodeStatsStream, true, metadata));
+            _outputBus.Publish(new ClientMessage.CreateStream(Guid.NewGuid(), _publishEnvelope, true, _nodeStatsStream, Guid.NewGuid(), true, metadata));
         }
 
         public void Handle(ClientMessage.CreateStreamCompleted message)
