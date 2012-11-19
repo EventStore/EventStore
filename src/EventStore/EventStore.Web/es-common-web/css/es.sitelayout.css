@@ -300,3 +300,6 @@ a.button-link:hover {
 #content {
     display: none;
 }
+.es-selector {
+    min-width: 250px;
+}
