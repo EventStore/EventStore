@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_checkpoint_handled_threshold_is_reached : TestFixtureWithCoreProjection
+    public class when_the_checkpoint_handled_threshold_is_reached : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {

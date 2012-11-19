@@ -53,9 +53,12 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
 
             _cachedAtCheckpointTag2 = CheckpointTag.FromPosition(20100, 20050);
             _cachedAtCheckpointTag3 = CheckpointTag.FromPosition(20200, 20150);
-            _cache.CacheAndLockPartitionState("partition1", new PartitionStateCache.State("data1", _cachedAtCheckpointTag1), _cachedAtCheckpointTag1);
-            _cache.CacheAndLockPartitionState("partition2", new PartitionStateCache.State("data2", _cachedAtCheckpointTag2), _cachedAtCheckpointTag2);
-            _cache.CacheAndLockPartitionState("partition3", new PartitionStateCache.State("data3", _cachedAtCheckpointTag3), _cachedAtCheckpointTag3);
+            _cache.CacheAndLockPartitionState(
+                "partition1", new PartitionStateCache.State("data1", _cachedAtCheckpointTag1), _cachedAtCheckpointTag1);
+            _cache.CacheAndLockPartitionState(
+                "partition2", new PartitionStateCache.State("data2", _cachedAtCheckpointTag2), _cachedAtCheckpointTag2);
+            _cache.CacheAndLockPartitionState(
+                "partition3", new PartitionStateCache.State("data3", _cachedAtCheckpointTag3), _cachedAtCheckpointTag3);
             _cache.Unlock(_cachedAtCheckpointTag2);
             // when
             _cache.Initialize();
@@ -78,7 +81,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void random_item_cannot_be_retrieved()
         {
             Assert.IsNull(
-                _cache.TryGetAndLockPartitionState("random", CheckpointTag.FromPosition(200, 190)),
+                _cache.TryGetAndLockPartitionState(
+                    "random", CheckpointTag.FromPosition(200, 190), allowRelockAtTheSamePosition: false),
                 "Cache should be empty");
         }
 
@@ -86,7 +90,9 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void root_partition_state_cannot_be_retrieved()
         {
             Assert.IsNull(
-                _cache.TryGetAndLockPartitionState("", CheckpointTag.FromPosition(200, 190)), "Cache should be empty");
+                _cache.TryGetAndLockPartitionState(
+                    "", CheckpointTag.FromPosition(200, 190), allowRelockAtTheSamePosition: false),
+                "Cache should be empty");
         }
 
         [Test]

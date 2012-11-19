@@ -56,7 +56,7 @@ namespace EventStore.Core.Services.VNode
 
         private bool _storageReaderInitialized;
         private bool _storageWriterInitialized;
-        private int _serviceShutdownsToExpect = 4;
+        private int _serviceShutdownsToExpect = 3;
 
         public SingleVNodeController(IPublisher outputBus, IPEndPoint httpEndPoint)
         {
@@ -189,6 +189,7 @@ namespace EventStore.Core.Services.VNode
             _outputBus.Publish(new StorageMessage.CreateStreamRequestCreated(message.CorrelationId,
                                                                              message.Envelope,
                                                                              message.EventStreamId,
+                                                                             message.CreateStreamId,
                                                                              message.IsJson,
                                                                              message.Metadata));
         }

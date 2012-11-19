@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,24 +24,15 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
-using NUnit.Framework;
+// 
 
-namespace EventStore.Core.Tests.ClientAPI
+namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
-    [SetUpFixture]
-    internal class api_tests_nunit_setup
+    public abstract class TestFixtureWithCoreProjectionLoaded : TestFixtureWithCoreProjection
     {
-        [SetUp]
-        public void SetUp()
+        protected override void PreWhen()
         {
-            MiniNode.Instance.Start();
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            MiniNode.Instance.Shutdown();
+            _coreProjection.LoadStopped();
         }
     }
 }

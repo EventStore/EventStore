@@ -25,17 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.IO;
+
 using System.Linq;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class table_index_on_try_get_one_value_query  :SpecificationWithDirectory
+    public class table_index_on_try_get_one_value_query: SpecificationWithDirectory
     {
         private TableIndex _tableIndex;
         private string _indexDir;
@@ -45,7 +43,7 @@ namespace EventStore.Core.Tests.Index
         {
             base.SetUp();
 
-            _indexDir = base.PathName;
+            _indexDir = PathName;
             _tableIndex = new TableIndex(_indexDir, () => new HashListMemTable(), maxSizeForMemory: 5);
             _tableIndex.Initialize();
 

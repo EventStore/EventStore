@@ -114,12 +114,12 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = package.Data.Deserialize<TcpClientMessageDto.CreateStream>();
             if (dto == null) return null;
-            return new ClientMessage.CreateStream(package.CorrelationId, envelope, dto.AllowForwarding, dto.EventStreamId, dto.IsJson, dto.Metadata);
+            return new ClientMessage.CreateStream(package.CorrelationId, envelope, dto.AllowForwarding, dto.EventStreamId, new Guid(dto.CreateStreamId), dto.IsJson, dto.Metadata);
         }
 
         private static TcpPackage WrapCreateStream(ClientMessage.CreateStream msg)
         {
-            var dto = new TcpClientMessageDto.CreateStream(msg.EventStreamId, msg.Metadata, msg.AllowForwarding, msg.IsJson);
+            var dto = new TcpClientMessageDto.CreateStream(msg.EventStreamId, msg.CreateStreamId.ToByteArray(), msg.Metadata, msg.AllowForwarding, msg.IsJson);
             return new TcpPackage(TcpCommand.CreateStream, msg.CorrelationId, dto.Serialize());
         }
 

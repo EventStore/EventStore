@@ -31,9 +31,10 @@ message DeniedToRoute {
 
 message CreateStream {
 	required string event_stream_id = 1;
-	optional bytes metadata = 2;
-	required bool allow_forwarding = 3;
-	required bool is_json = 4;
+	required bytes create_stream_id = 2;
+	optional bytes metadata = 3;
+	required bool allow_forwarding = 4;
+	required bool is_json = 5;
 }
 
 message CreateStreamCompleted {

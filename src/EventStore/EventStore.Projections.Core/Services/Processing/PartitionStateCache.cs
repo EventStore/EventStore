@@ -92,7 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (partition == null) throw new ArgumentNullException("partition");
             if (data == null) throw new ArgumentNullException("data");
-            EnsureCanLockPartitionAt(partition, at);
+            EnsureCanLockPartitionAt(partition, at, false);
             lock (_partitionStates)
                 _partitionStates[partition] = Tuple.Create(data, at);
             if (!string.IsNullOrEmpty(partition)) // cached forever - for root state
@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.Services.Processing
             CleanUp();
         }
 
-        public State TryGetAndLockPartitionState(string partition, CheckpointTag at)
+        public State TryGetAndLockPartitionState(string partition, CheckpointTag at, bool allowRelockAtTheSamePosition)
         {
             if (partition == null) throw new ArgumentNullException("partition");
             Tuple<State, CheckpointTag> stateData;
@@ -108,8 +108,9 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (!_partitionStates.TryGetValue(partition, out stateData))
                     return null;
-                EnsureCanLockPartitionAt(partition, at);
-                if (at != null && at <= stateData.Item2)
+                EnsureCanLockPartitionAt(partition, at, allowRelockAtTheSamePosition);
+                if (at != null && at < stateData.Item2
+                    || (!allowRelockAtTheSamePosition && at != null && at <= stateData.Item2))
                     throw new InvalidOperationException(
                         string.Format(
                             "Attempt to relock the '{0}' partition state locked at the '{1}' position at the earlier position '{2}'",
@@ -166,14 +167,15 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void EnsureCanLockPartitionAt(string partition, CheckpointTag at)
+        private void EnsureCanLockPartitionAt(string partition, CheckpointTag at, bool allowRelockAtTheSamePosition)
         {
             if (partition == null) throw new ArgumentNullException("partition");
             if (at == null && partition != "")
                 throw new InvalidOperationException("Only the root partition can be locked forever");
             if (partition == "" && at != null)
                 throw new InvalidOperationException("Root partition must be locked forever");
-            if (at != null && at <= _unlockedBefore)
+            if (at != null && at < _unlockedBefore
+                || (!allowRelockAtTheSamePosition && at != null && at <= _unlockedBefore))
                 throw new InvalidOperationException(
                     string.Format(
                         "Attempt to lock the '{0}' partition state at the position '{1}' before the unlocked position '{2}'",

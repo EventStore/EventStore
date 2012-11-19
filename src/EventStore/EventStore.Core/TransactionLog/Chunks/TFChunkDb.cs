@@ -200,6 +200,14 @@ namespace EventStore.Core.TransactionLog.Chunks
             ChunkFooter chunkFooter;
             using (var fs = File.OpenRead(chunkFileName))
             {
+                if (fs.Length < ChunkFooter.Size + ChunkHeader.Size)
+                {
+                    throw new CorruptDatabaseException(new BadChunkInDatabaseException(
+                        string.Format("Chunk file '{0}' is bad. It even doesn't have enough size" 
+                                      + " for header and footer, file size is {1} bytes.",
+                                      chunkFileName,
+                                      fs.Length)));
+                }
                 fs.Seek(-ChunkFooter.Size, SeekOrigin.End);
                 chunkFooter = ChunkFooter.FromStream(fs);
             }

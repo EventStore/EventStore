@@ -28,14 +28,30 @@
 using System;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning"), Explicit]
-    internal class subscribe_should
+    [TestFixture, Category("LongRunning")]
+    public class subscribe_should
     {
-        public int Timeout = 1000;
+        private const int Timeout = 1000;
+
+        private MiniNode _node;
+
+        [TestFixtureSetUp]
+        public void SetUp()
+        {
+            _node = new MiniNode();
+            _node.Start();
+        }
+
+        [TestFixtureTearDown]
+        public void TearDown()
+        {
+            _node.Shutdown();
+        }
 
         [Test]
         public void be_able_to_subscribe_to_non_existing_stream_and_then_catch_created_event()
@@ -43,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_should_be_able_to_subscribe_to_non_existing_stream_and_then_catch_created_event";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
+                store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
@@ -52,7 +68,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
 
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
 
                 Assert.That(appeared.Wait(Timeout));
@@ -65,7 +81,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_should_allow_multiple_subscriptions_to_same_stream";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
+                store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
@@ -75,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
 
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
 
                 Assert.That(appeared.Wait(Timeout));
@@ -88,7 +104,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_should_call_dropped_callback_after_unsubscribe_method_call";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
+                store.Connect(_node.TcpEndPoint);
                 var appeared =  new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
@@ -109,14 +125,14 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_should_subscribe_to_deleted_stream_as_well_but_never_invoke_user_callbacks";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
+                store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
                 Action<RecordedEvent, Position> eventAppeared = (x, p) => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.That(delete.Wait(Timeout));
@@ -133,14 +149,14 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_should_not_call_dropped_if_stream_was_deleted";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
+                store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
                 Action<RecordedEvent, Position> eventAppeared = (x, p) => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
 
                 var subscribe = store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
@@ -161,7 +177,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "subscribe_should_catch_created_and_deleted_events_as_well";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
+                store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(1);
 
@@ -170,7 +186,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
 
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
+                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.That(create.Wait(Timeout));
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.That(delete.Wait(Timeout));

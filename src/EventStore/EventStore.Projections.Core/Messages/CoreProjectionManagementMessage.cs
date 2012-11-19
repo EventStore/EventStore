@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Text;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -87,6 +88,14 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class LoadStopped : CoreProjectionManagementMessage
+        {
+            public LoadStopped(Guid correlationId)
+                : base(correlationId)
+            {
+            }
+        }
+
         public class Stop : CoreProjectionManagementMessage
         {
             public Stop(Guid projectionId)
@@ -135,6 +144,24 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class GetDebugState : CoreProjectionManagementMessage
+        {
+            private readonly IEnvelope _envelope;
+
+            public GetDebugState(IEnvelope envelope, Guid correlationId)
+                : base(correlationId)
+            {
+                if (envelope == null) throw new ArgumentNullException("envelope");
+                _envelope = envelope;
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+        }
+
         public class UpdateStatistics : CoreProjectionManagementMessage
         {
             public UpdateStatistics(Guid projectionId)
@@ -147,13 +174,15 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly Guid _correlationId;
             private readonly string _state;
+            private readonly Exception _exception;
             private readonly string _partition;
 
-            public StateReport(Guid correlationId, Guid projectionId, string partition, string state)
+            public StateReport(Guid correlationId, Guid projectionId, string partition, string state, Exception exception = null)
                 : base(projectionId)
             {
                 _correlationId = correlationId;
                 _state = state;
+                _exception = exception;
                 _partition = partition;
             }
 
@@ -167,9 +196,64 @@ namespace EventStore.Projections.Core.Messages
                 get { return _partition; }
             }
 
+            public Exception Exception
+            {
+                get { return _exception; }
+            }
+
             public Guid CorrelationId
             {
                 get { return _correlationId; }
+            }
+        }
+
+        public class DebugState : CoreProjectionManagementMessage
+        {
+            private readonly Event[] _events;
+
+            public DebugState(Guid projectionId, Event[] events)
+                : base(projectionId)
+            {
+                _events = events;
+            }
+
+            public Event[] Events
+            {
+                get { return _events; }
+            }
+
+            public class Event
+            {
+                public static Event Create(ProjectionSubscriptionMessage.CommittedEventReceived source, string partition)
+                {
+                    return new Event 
+                        {
+                            Partition = partition,
+                            BodyRaw = Encoding.UTF8.GetString(source.Data.Data),
+                            MetadataRaw = Encoding.UTF8.GetString(source.Data.Metadata),
+                            EventType = source.Data.EventType,
+                            StreamId = source.EventStreamId,
+                            SequenceNumber = source.EventSequenceNumber,
+                            Category = source.EventCategory,
+                            LogPosition = source.Position.PreparePosition,
+                        };
+                }
+
+                public string Category { get; set; }
+
+                public string Partition { get; set; }
+
+                public long LogPosition { get; set; }
+
+                public int SequenceNumber { get; set; }
+
+                public string StreamId { get; set; }
+
+                public string EventType { get; set; }
+
+                public string MetadataRaw { get; set; }
+
+                public string BodyRaw { get; set; }
             }
         }
 
