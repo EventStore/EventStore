@@ -89,7 +89,7 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.Gone, "Deleted", null);
         }
 
-        public static ResponseConfiguration InternalServerEror(HttpEntity entity, Message message)
+        public static ResponseConfiguration InternalServerEror()
         {
             return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Internal Server Error", null);
         }
@@ -100,7 +100,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.ReadEventCompleted;
             if (completed == null)
-                return InternalServerEror(entity, message);
+                return InternalServerEror();
 
             switch (completed.Result)
             {
@@ -122,7 +122,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.ReadStreamEventsBackwardCompleted;
             if (completed == null)
-                return InternalServerEror(entity, message);
+                return InternalServerEror();
 
             switch (completed.Result)
             {
@@ -143,7 +143,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.WriteEventsCompleted;
             if (completed == null)
-                return InternalServerEror(entity, message);
+                return InternalServerEror();
 
             switch (completed.ErrorCode)
             {
@@ -177,7 +177,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as MonitoringMessage.GetFreshStatsCompleted;
             if (completed == null)
-                return InternalServerEror(entity, message);
+                return InternalServerEror();
 
             return completed.Success ? OkNoCache(entity, message) : NotFound(entity, message);
         }
@@ -188,7 +188,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.CreateStreamCompleted;
             if (completed == null)
-                return InternalServerEror(entity, message);
+                return InternalServerEror();
 
             switch (completed.ErrorCode)
             {
@@ -221,7 +221,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.DeleteStreamCompleted;
             if (completed == null)
-                return InternalServerEror(entity, message);
+                return InternalServerEror();
 
             switch (completed.ErrorCode)
             {

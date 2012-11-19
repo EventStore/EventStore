@@ -28,62 +28,50 @@
 
 using System;
 using System.Linq;
+using System.Text;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_starting_an_existing_projection : TestFixtureWithCoreProjectionStarted
+    public class when_the_state_handler_fails_to_load_state_the_projection_should : TestFixtureWithCoreProjectionStarted
     {
-        private string _testProjectionState = @"{""test"":1}";
-
         protected override void Given()
         {
             ExistingEvent(
                 "$projections-projection-state", "StateUpdated",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
+                + Guid.NewGuid().ToString("D") + @"""}", "{}");
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
-            ExistingEvent(
-                "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 200, ""PreparePosition"": 150, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
-            ExistingEvent(
-                "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 300, ""PreparePosition"": 250, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
+                + Guid.NewGuid().ToString("D") + @"""}", "{}");
+            _stateHandler = new FakeProjectionStateHandler(failOnLoad: true);
         }
 
         protected override void When()
         {
-        }
-
-
-        [Test]
-        public void should_subscribe_from_the_last_known_checkpoint_position()
-        {
-            Assert.AreEqual(1, _subscribeProjectionHandler.HandledMessages.Count);
-            Assert.AreEqual(100, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.CommitPosition);
-            Assert.AreEqual(50, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.PreparePosition);
-        }
-
-        [Test]
-        public void should_subscribe_non_null_subscriber()
-        {
-            Assert.NotNull(_subscribeProjectionHandler.HandledMessages[0].Subscriber);
+            //projection subscribes here
+            _coreProjection.Handle(
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    new Event(
+                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]
-        public void should_publish_started_message()
+        public void should_publish_faulted_message()
         {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
-            var startedMessage = _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Single();
-            Assert.AreEqual(_projectionCorrelationId, startedMessage.ProjectionId);
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Faulted>().Count());
         }
 
+        [Test]
+        public void not_emit_a_state_updated_event()
+        {
+            Assert.AreEqual(0, _writeEventHandler.HandledMessages.Count);
+        }
     }
 }

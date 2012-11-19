@@ -130,6 +130,10 @@ namespace EventStore.Projections.Core.Services.Http
                     DefaultResponseCodec), OnProjectionStatisticsGet);
             service.RegisterControllerAction(
                 new ControllerAction(
+                    "/projection/{name}/debug", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
+                OnProjectionDebugGet);
+            service.RegisterControllerAction(
+                new ControllerAction(
                     "/projection/{name}/state", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
                 OnProjectionStateGet);
             service.RegisterControllerAction(
@@ -272,6 +276,15 @@ namespace EventStore.Projections.Core.Services.Http
                     envelope, match.BoundVariables["name"], match.BoundVariables["partition"] ?? ""));
         }
 
+        private void OnProjectionDebugGet(HttpEntity http, UriTemplateMatch match)
+        {
+            var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionDebugState>(
+                http, DebugStateFormatter, DebugStateConfigurator, ErrorsEnvelope(http));
+            Publish(
+                new ProjectionManagementMessage.GetDebugState(
+                    envelope, match.BoundVariables["name"]));
+        }
+
         private void ProjectionsGet(HttpEntity http, UriTemplateMatch match, ProjectionMode? mode)
         {
             var envelope =
@@ -311,12 +324,28 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration StateConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionState state)
         {
+            if (state.Exception != null)
+                return Configure.InternalServerEror();
+            else
+                return Configure.OkNoCache("application/json");
+        }
+
+        private ResponseConfiguration DebugStateConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionDebugState state)
+        {
             return Configure.OkNoCache("application/json");
         }
 
         private string StateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionState state)
         {
-            return state.State;
+            if (state.Exception != null)
+                return state.Exception.ToString();
+            else
+                return state.State;
+        }
+
+        private string DebugStateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionDebugState state)
+        {
+            return state.Events.ToJson();
         }
 
         private ResponseConfiguration QueryConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)

@@ -129,6 +129,9 @@ namespace EventStore.Projections.Core.v8
                 case "get_sources":
                     _getSources = () => ExecuteHandler(handlerHandle, "");
                     break;
+                case "set_debugging":
+                    // ignore - browser based debugging only
+                    break;
                 default:
                     Console.WriteLine(
                         string.Format("Unknown command handler registered. Command name: {0}", commandName));

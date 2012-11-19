@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
     public class when_receiving_a_committed_event_the_projection_with_partitioned_state_should :
-        TestFixtureWithCoreProjection
+        TestFixtureWithCoreProjectionStarted
     {
         private Guid _eventId;
 

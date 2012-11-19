@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void thorws_invalid_operation_exception()
         {
-            _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(500, 400));
+            _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(500, 400), allowRelockAtTheSamePosition: false);
         }
     }
 }

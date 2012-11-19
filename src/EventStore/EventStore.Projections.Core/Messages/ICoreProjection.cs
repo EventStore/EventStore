@@ -7,7 +7,6 @@ namespace EventStore.Projections.Core.Messages
                                        IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>,
                                        IHandle<ProjectionSubscriptionMessage.ProgressChanged>,
                                        IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
-                                       IHandle<CoreProjectionProcessingMessage.PauseRequested>,
                                        IHandle<CoreProjectionProcessingMessage.RestartRequested>
     {
     }

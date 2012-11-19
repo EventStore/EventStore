@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_state_handler_fails_to_process_an_event_the_projection_should : TestFixtureWithCoreProjection
+    public class when_the_state_handler_fails_to_process_an_event_the_projection_should : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         [Test]
-        public void should_publiseh_faulted_message()
+        public void should_publish_faulted_message()
         {
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Faulted>().Count());
         }
