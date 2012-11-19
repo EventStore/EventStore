@@ -25,50 +25,74 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+using NUnit.Framework;
 
-using System;
-using System.Text;
-using EventStore.ClientAPI;
-
-namespace EventStore.Core.Tests.ClientAPI.Helpers
+namespace EventStore.Core.Tests.ClientAPI
 {
-    internal class TestEvent : IEvent
+    [TestFixture]
+    internal class appending_to_implicitly_created_stream
     {
-        public Guid EventId { get; private set; }
-        public string Type { get; private set; }
+        /*
+         * sequence - events written so stream
+         * 0 - streamcreated, 1e0 - event number 1 written with exp version 0
+         * 1any - event number 1 written with exp version any
+         * S_1e0_2e0_E - START bucket, two events in bucket, END bucket
+        */
 
-        public bool IsJson { get; private set; }
-
-        public byte[] Data { get; private set; }
-        public byte[] Metadata { get; private set; }
-
-        public TestEvent(string data = null, string metadata = null)
+        public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1em1_idempotent()
         {
-            EventId = Guid.NewGuid();
-            Type = GetType().FullName;
-
-            IsJson = false;
-            Data = Encoding.UTF8.GetBytes(data ?? EventId.ToString());
-            Metadata = Encoding.UTF8.GetBytes(metadata ?? "metadata");
         }
 
-        public TestEvent(Guid id, string data = null, string metadata = null)
+        public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1any_idempotent()
         {
-            EventId = id;
-            Type = GetType().FullName;
-
-            IsJson = false;
-            Data = Encoding.UTF8.GetBytes(data ?? EventId.ToString());
-            Metadata = Encoding.UTF8.GetBytes(metadata ?? "metadata");
         }
 
-        public override string ToString()
+        public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e6_non_idempotent()
         {
-            return string.Format("EventId: {0}, Type: {1}, Data: {2}, Metadata: {3}",
-                                 EventId,
-                                 Type,
-                                 Encoding.UTF8.GetString(Data ?? new byte[0]),
-                                 Encoding.UTF8.GetString(Metadata ?? new byte[0]));
+        }
+
+        public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e7_wev()
+        {
+        }
+
+        public void sequence_1em1_2e1_3e2_4e3_5e4_6e5_1e5_wev()
+        {
+        }
+
+        public void sequence_1em1_1e1_non_idempotent()
+        {
+        }
+
+        public void sequence_1em1_1any_idempotent()
+        {
+        }
+
+        public void sequence_1em1_1em1_idempotent()
+        {
+        }
+
+        public void sequence_1em1_2e1_3e2_2any_2any_idempotent()
+        {
+        }
+
+        public void sequence_S_1em1_2em1_E_S_1em1_E_idempotent()
+        {
+        }
+
+        public void sequence_S_1em1_2em1_E_S_1any_E_idempotent()
+        {
+        }
+
+        public void sequence_S_1em1_2em1_E_S_2em1_E_idempotent()
+        {
+        }
+
+        public void sequence_S_1em1_2em1_E_S_2any_E_idempotent()
+        {
+        }
+
+        public void sequence_S_1em1_2em1_E_S_1em1_2em1_3em1_E_idempotancy_fail()
+        {
         }
     }
 }

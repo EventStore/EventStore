@@ -87,6 +87,8 @@
     <Compile Include="ClientAPI\AllEvents\read_all_events_forward_should.cs" />
     <Compile Include="ClientAPI\AllEvents\subscribe_to_all_should.cs" />
     <Compile Include="ClientAPI\append_to_stream.cs" />
+    <Compile Include="ClientAPI\appending_to_explicitly_created_stream.cs" />
+    <Compile Include="ClientAPI\appending_to_implicitly_created_stream.cs" />
     <Compile Include="ClientAPI\deleting_stream.cs" />
     <Compile Include="ClientAPI\creating_stream.cs" />
     <Compile Include="ClientAPI\event_store_connection_should.cs" />
