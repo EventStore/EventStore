@@ -96,7 +96,6 @@ namespace EventStore.ClientAPI
 
         public void Connect(IPEndPoint tcpEndPoint)
         {
-            Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
             ConnectAsync(tcpEndPoint).Wait();
         }
 
@@ -108,10 +107,6 @@ namespace EventStore.ClientAPI
 
         public void Connect(string clusterDns, int maxDiscoverAttempts = 10, int port = 30777)
         {
-            Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
-            Ensure.Positive(maxDiscoverAttempts, "maxDiscoverAttempts");
-            Ensure.Nonnegative(port, "port");
-
             ConnectAsync(clusterDns, maxDiscoverAttempts, port).Wait();
         }
 
@@ -125,9 +120,9 @@ namespace EventStore.ClientAPI
             return explorer.Resolve(clusterDns)
                            .ContinueWith(resolve =>
                                          {
+                                             if (resolve.IsFaulted || resolve.Result == null)
+                                                 throw new CannotEstablishConnectionException("Failed to find node to connect", resolve.Exception);
                                              var endPoint = resolve.Result;
-                                             if (endPoint == null)
-                                                 throw new CannotEstablishConnectionException("Failed to find node to connect");
                                              return EstablishConnectionAsync(endPoint);
                                          });
         }
@@ -156,35 +151,35 @@ namespace EventStore.ClientAPI
         private void EnsureActive()
         {
             if (!_active)
-                throw new InvalidOperationException("EventStoreConnection is not active");
-        }
-
-        public void Close()
-        {
-            if (!_active)
-                return;
-
-            _stopping = true;
-            lock (_connectionLock)
-            {
-                _connection.Close();
-                _subscriptionsChannel.Close();
-            }
-
-            var items = _inProgress.Values;
-            _inProgress.Clear();
-            foreach (var workItem in items)
-            {
-                workItem.Operation.Fail(new ConnectionClosingException(
-                    "Work item was still in progress at the moment of manual connection closing"));
-            }
-
-            _log.Info("EventStoreConnection closed.");
+                throw new InvalidOperationException(string.Format("EventStoreConnection [{0}] is not active.", _tcpEndPoint));
         }
 
         void IDisposable.Dispose()
         {
             Close();
+        }
+
+        public void Close()
+        {
+            lock (_connectionLock)
+            {
+                if (!_active)
+                    return;
+
+                _stopping = true;
+
+                _connection.Close();
+                _subscriptionsChannel.Close();
+            }
+
+            foreach (var workItem in _inProgress.Values)
+            {
+                workItem.Operation.Fail(
+                    new ConnectionClosingException("Work item was still in progress at the moment of manual connection closing."));
+            }
+            _inProgress.Clear();
+
+            _log.Info("EventStoreConnection closed.");
         }
 
         public void CreateStream(string stream, bool isJson, byte[] metadata)
@@ -401,6 +396,15 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        private void EnqueueOperation(IClientOperation operation)
+        {
+            while (_queue.Count >= _settings.MaxQueueSize)
+            {
+                Thread.Sleep(1);
+            }
+            _queue.Enqueue(operation);
+        }
+
         public Task SubscribeAsync(string stream, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -408,8 +412,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
             EnsureActive();
 
-            lock(_connectionLock)
-                _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
+            _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             return _subscriptionsChannel.Subscribe(stream, eventAppeared, subscriptionDropped);
         }
 
@@ -418,10 +421,8 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(stream, "stream");
             EnsureActive();
 
-            lock (_connectionLock)
-                _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
+            _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             _subscriptionsChannel.Unsubscribe(stream);
-
             return Tasks.CreateCompleted();
         }
 
@@ -431,8 +432,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
             EnsureActive();
 
-            lock (_connectionLock)
-                _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
+            _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             return _subscriptionsChannel.SubscribeToAllStreams(eventAppeared, subscriptionDropped);
         }
 
@@ -440,20 +440,9 @@ namespace EventStore.ClientAPI
         {
             EnsureActive();
 
-            lock (_connectionLock)
-                _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
+            _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             _subscriptionsChannel.UnsubscribeFromAllStreams();
-
             return Tasks.CreateCompleted();
-        }
-
-        private void EnqueueOperation(IClientOperation operation)
-        {
-            while (_queue.Count >= _settings.MaxQueueSize)
-            {
-                Thread.Sleep(1);
-            }
-            _queue.Enqueue(operation);
         }
 
         private void MainLoop()
@@ -599,7 +588,7 @@ namespace EventStore.ClientAPI
 
             if (!_inProgress.TryGetValue(corrId, out workItem))
             {
-                _log.Error("Unexpected corrid received {0}", corrId);
+                _log.Error("Unexpected CorrelationId received {{{0}}}", corrId);
                 return;
             }
 
@@ -607,19 +596,27 @@ namespace EventStore.ClientAPI
             switch (result.Decision)
             {
                 case InspectionDecision.Succeed:
+                {
                     if (TryRemoveWorkItem(workItem))
                         workItem.Operation.Complete();
                     break;
+                }
                 case InspectionDecision.Retry:
+                {
                     Retry(workItem);
                     break;
+                }
                 case InspectionDecision.Reconnect:
-                    Reconnect(workItem, (IPEndPoint)result.Data);
+                {
+                    Reconnect(workItem, (IPEndPoint) result.Data);
                     break;
+                }
                 case InspectionDecision.NotifyError:
+                {
                     if (TryRemoveWorkItem(workItem))
                         workItem.Operation.Fail(result.Error);
                     break;
+                }
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -627,14 +624,18 @@ namespace EventStore.ClientAPI
 
         private void OnConnectionEstablished(TcpTypedConnection tcpTypedConnection)
         {
-            lock(_connectionLock)
+            lock (_connectionLock)
+            {
                 _reconnectionsCount = 0;
+            }
         }
 
         private void OnConnectionClosed(TcpTypedConnection connection, IPEndPoint endPoint, SocketError error)
         {
             lock (_connectionLock)
+            {
                 _reconnectionStopwatch.Restart();
+            }
         }
     }
 }

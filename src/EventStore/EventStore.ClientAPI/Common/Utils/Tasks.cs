@@ -26,17 +26,23 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
+using System;
 using System.Threading.Tasks;
 
 namespace EventStore.ClientAPI.Common.Utils
 {
     internal static class Tasks
     {
-        public static Task CreateCompleted()
+        private static readonly Lazy<Task> CompletedTask = new Lazy<Task>(() =>
         {
             var source = new TaskCompletionSource<object>();
             source.SetResult(null);
             return source.Task;
+        });
+
+        public static Task CreateCompleted()
+        {
+            return CompletedTask.Value;
         }
 
         public static Task<TResult> CreateCompleted<TResult>(TResult result)
