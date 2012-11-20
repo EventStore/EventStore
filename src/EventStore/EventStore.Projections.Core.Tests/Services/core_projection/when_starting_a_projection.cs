@@ -63,9 +63,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 _bus, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_bus));
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
-            _coreProjection = new CoreProjection(
-                "projection", Guid.NewGuid(), _bus, new FakeProjectionStateHandler(),
-                new ProjectionConfig(ProjectionMode.AdHoc, 5, 10, 1000, 250, true, true, true), _readDispatcher, _writeDispatcher);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            _coreProjection = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), _bus, projectionStateHandler,
+                                                   new ProjectionConfig(ProjectionMode.AdHoc, 5, 10, 1000, 250, true, true, true), _readDispatcher, _writeDispatcher, null);
             _coreProjection.Start();
         }
 

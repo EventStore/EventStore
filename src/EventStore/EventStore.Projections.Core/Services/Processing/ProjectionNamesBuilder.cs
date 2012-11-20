@@ -30,7 +30,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class ProjectionNamesBuilder : QuerySourceProcessingStrategyBuilder
     {
-        public string StateStreamName
+        private string StateStreamName
         {
             get { return _options.StateStreamName; }
         }
@@ -40,5 +40,19 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             get { return _options.ForceProjectionName; }
         }
+
+        public string GetStateStreamNamePattern(string name)
+        {
+            return StateStreamName ?? ProjectionsStreamPrefix + name + "-{0}" + ProjectionsStateStreamSuffix;
+        }
+
+        public string GetStateStreamName(string name)
+        {
+            return StateStreamName ?? ProjectionsStreamPrefix + name + ProjectionsStateStreamSuffix;
+        }
+
+        internal const string ProjectionsStreamPrefix = "$projections-";
+        private const string ProjectionsStateStreamSuffix = "-state";
+        internal const string ProjectionCheckpointStreamSuffix = "-checkpoint";
     }
 }

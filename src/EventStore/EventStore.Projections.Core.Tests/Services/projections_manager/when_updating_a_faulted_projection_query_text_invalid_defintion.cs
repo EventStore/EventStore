@@ -27,44 +27,48 @@
 // 
 
 using System.Linq;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_a_disabled_projection_has_been_loaded : TestFixtureWithProjectionCoreAndManagementServices
+    public class when_updating_a_faulted_projection_query_text_invalid_defintion :
+        TestFixtureWithProjectionCoreAndManagementServices
     {
         protected override void Given()
         {
-            base.Given();
+            NoStream("$projections-$all");
+            NoStream("$projections-test-projection");
             NoStream("$projections-test-projection-state");
             NoStream("$projections-test-projection-checkpoint");
-            ExistingEvent("$projections-$all", "ProjectionCreated", null, "test-projection");
-            ExistingEvent(
-                "$projections-test-projection", "ProjectionUpdated", null,
-                @"{
-                    ""Query"":""fromAll(); on_any(function(){});log('hello-from-projection-definition');"", 
-                    ""Mode"":""3"", 
-                    ""Enabled"":false, 
-                    ""HandlerType"":""JS"",
-                    ""SourceDefintion"":{
-                        ""AllEvents"":true,
-                        ""AllStreams"":true,
-                    }
-                }");
             AllWritesSucceed();
         }
 
         private string _projectionName;
+        private string _newProjectionSource;
 
         protected override void When()
         {
             _projectionName = "test-projection";
-            _manager.Handle(new SystemMessage.BecomeWorking());
+            _manager.Handle(
+                new ProjectionManagementMessage.Post(
+                    new PublishEnvelope(_bus), ProjectionMode.Persistent, _projectionName, "JS",
+                    @"fromAll(); on_any(function(){});log(1****);", enabled: false));
+            // when
+            _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
+            _manager.Handle(
+                new ProjectionManagementMessage.UpdateQuery(
+                    new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource));
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _manager.Dispose();
         }
 
         [Test]
@@ -75,6 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             var projectionQuery =
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionQuery>().Single();
             Assert.AreEqual(_projectionName, projectionQuery.Name);
+            Assert.AreEqual(_newProjectionSource, projectionQuery.Query);
         }
 
         [Test]
@@ -89,12 +94,16 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Length);
             Assert.AreEqual(
                 _projectionName,
-                _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Single()
-                    .Name);
+                _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                         .Single()
+                         .Projections.Single()
+                         .Name);
             Assert.AreEqual(
                 ManagedProjectionState.Stopped,
-                _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Single()
-                    .MasterStatus);
+                _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                         .Single()
+                         .Projections.Single()
+                         .MasterStatus);
         }
 
         [Test]

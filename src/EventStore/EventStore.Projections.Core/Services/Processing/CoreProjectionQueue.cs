@@ -44,6 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Action _updateStatistics;
 
         private CheckpointTag _lastEnqueuedEventTag;
+        private bool _justInitialized;
         private bool _subscriptionPaused;
 
         public CoreProjectionQueue(
@@ -91,6 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public void InitializeQueue(CheckpointTag zeroCheckpointTag)
         {
             _lastEnqueuedEventTag = zeroCheckpointTag;
+            _justInitialized = true;
         }
 
         public string GetStatus()
@@ -100,11 +102,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ValidateQueueingOrder(CheckpointTag eventTag, bool allowCurrentPosition = false)
         {
-            if (eventTag < _lastEnqueuedEventTag || (!allowCurrentPosition && eventTag <= _lastEnqueuedEventTag))
+            if (eventTag < _lastEnqueuedEventTag || (!(allowCurrentPosition || _justInitialized) && eventTag <= _lastEnqueuedEventTag))
                 throw new InvalidOperationException(
                     string.Format(
                         "Invalid order.  Last known tag is: '{0}'.  Current tag is: '{1}'", _lastEnqueuedEventTag,
                         eventTag));
+            _justInitialized = _justInitialized && (eventTag == _lastEnqueuedEventTag);
             _lastEnqueuedEventTag = eventTag;
         }
 
