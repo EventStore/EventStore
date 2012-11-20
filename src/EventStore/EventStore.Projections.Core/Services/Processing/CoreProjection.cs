@@ -715,7 +715,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 LoadProjectionStateFaulted(state, ex);
                 return;
             }
-            _processingQueue.InitializeQueue(_checkpointStrategy.PositionTagger.MakeZeroCheckpointTag());
+            _processingQueue.InitializeQueue(checkpointTag);
             _expectedSubscriptionMessageSequenceNumber = 0;
             _subscribed = true;
             _publisher.Publish(

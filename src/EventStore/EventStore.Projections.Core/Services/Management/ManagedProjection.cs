@@ -189,13 +189,14 @@ namespace EventStore.Projections.Core.Services.Management
                 _getStateDispatcher.Publish(
                     new CoreProjectionManagementMessage.GetState(
                         new PublishEnvelope(_inputQueue), Guid.NewGuid(), _id, message.Partition),
-                    m => message.Envelope.ReplyWith(
-                        new ProjectionManagementMessage.ProjectionState(_name, m.State)));
+                    m =>
+                    message.Envelope.ReplyWith(
+                        new ProjectionManagementMessage.ProjectionState(_name, m.Partition, m.State)));
             }
             else
             {
                 message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.ProjectionState(message.Name, "*** UNKNOWN ***"));
+                    new ProjectionManagementMessage.ProjectionState(message.Name, message.Partition, "*** UNKNOWN ***"));
             }
         }
 
@@ -542,8 +543,7 @@ namespace EventStore.Projections.Core.Services.Management
             //TODO: load configuration from the definition
 
             if (_persistedState.SourceDefintion == null)
-                //TODO: waiting???
-                return;
+                throw new Exception("The projection cannot be loaded as stopped as it was stored in the old format.  Update the projection query text to force prepare");
 
             var createProjectionMessage =
                 new CoreProjectionManagementMessage.CreatePrepared(
