@@ -74,7 +74,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void random_item_cannot_be_retrieved()
         {
             Assert.IsNull(
-                _cache.TryGetAndLockPartitionState("random", CheckpointTag.FromPosition(200, 190)),
+                _cache.TryGetAndLockPartitionState(
+                    "random", CheckpointTag.FromPosition(200, 190), allowRelockAtTheSamePosition: false),
                 "Cache should be empty");
         }
 
@@ -82,7 +83,9 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void root_partition_state_cannot_be_retrieved()
         {
             Assert.IsNull(
-                _cache.TryGetAndLockPartitionState("", CheckpointTag.FromPosition(200, 190)), "Cache should be empty");
+                _cache.TryGetAndLockPartitionState(
+                    "", CheckpointTag.FromPosition(200, 190), allowRelockAtTheSamePosition: false),
+                "Cache should be empty");
         }
 
         [Test]

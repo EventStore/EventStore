@@ -47,6 +47,7 @@
                     Source: <span id="edit-source-container"></span>
                 </h4>
                 <pre id="source" style="font-family: consolas, 'courier new';"></pre>
+                <div id="debug-container"></div>
             </div>
         </div>
         <div class="row">
@@ -96,6 +97,9 @@
         <script id="editSourceTemplate" type="text/x-jsrender">
                 <a href="{{>'edit-projection-source.htm#'+statusUrl}}" class="btn btn-success"><i class="icon-pencil"></i> Edit</a>
         </script>
+        <script id="debugTemplate" type="text/x-jsrender">
+                <a href="{{>'debug-projection.htm#'+statusUrl}}" class="btn btn-success"><i class="icon-pencil"></i> Debug</a>
+        </script>
         <script id="deleteProjectionTemplate" type="text/x-jsrender">
                <a href="{{>'delete-projection.htm#'+statusUrl}}" class="btn btn-danger"><i class="icon-remove"></i> Delete</a> 
         </script>
@@ -114,6 +118,7 @@
                 $.templates("statisticsTemplate", "#statisticsTemplate");
                 $.templates("reasonTemplate", "#reasonTemplate");
                 $.templates("editSourceTemplate", "#editSourceTemplate");
+                $.templates("debugTemplate", "#debugTemplate");
                 $.templates("deleteProjectionTemplate", "#deleteProjectionTemplate");
 
                 projectionStatusUrl = document.location.hash.substring(1);
@@ -229,6 +234,9 @@
 
                     $("#edit-source-container").html(
                         $.render.editSourceTemplate(projection)
+                    );
+                    $("#debug-container").html(
+                        $.render.debugTemplate(projection)
                     );
                     delayedRequestProjection();
                 }

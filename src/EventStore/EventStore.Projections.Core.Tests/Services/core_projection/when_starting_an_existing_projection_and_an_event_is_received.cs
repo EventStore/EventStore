@@ -27,14 +27,15 @@
 // 
 
 using System;
-using System.Linq;
+using System.Text;
+using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_starting_an_existing_projection : TestFixtureWithCoreProjectionStarted
+    public class when_starting_an_existing_projection_and_an_event_is_received : TestFixtureWithCoreProjectionStarted
     {
         private string _testProjectionState = @"{""test"":1}";
 
@@ -60,30 +61,20 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         protected override void When()
         {
+            var eventId = Guid.NewGuid();
+            _coreProjection.Handle(
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    new Event(
+                        eventId, "append", false, Encoding.UTF8.GetBytes("data"), Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
 
         [Test]
-        public void should_subscribe_from_the_last_known_checkpoint_position()
+        public void should_load_projection_state_handler()
         {
-            Assert.AreEqual(1, _subscribeProjectionHandler.HandledMessages.Count);
-            Assert.AreEqual(100, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.CommitPosition);
-            Assert.AreEqual(50, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.PreparePosition);
+            Assert.AreEqual(1, _stateHandler._loadCalled);
+            Assert.AreEqual(_testProjectionState + "data", _stateHandler._loadedState);
         }
-
-        [Test]
-        public void should_subscribe_non_null_subscriber()
-        {
-            Assert.NotNull(_subscribeProjectionHandler.HandledMessages[0].Subscriber);
-        }
-
-        [Test]
-        public void should_publish_started_message()
-        {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
-            var startedMessage = _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Single();
-            Assert.AreEqual(_projectionCorrelationId, startedMessage.ProjectionId);
-        }
-
     }
 }

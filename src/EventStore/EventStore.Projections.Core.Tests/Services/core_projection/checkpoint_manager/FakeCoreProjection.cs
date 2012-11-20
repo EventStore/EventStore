@@ -42,9 +42,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public readonly List<CoreProjectionProcessingMessage.CheckpointCompleted> _checkpointCompletedMessages =
             new List<CoreProjectionProcessingMessage.CheckpointCompleted>();
 
-        public readonly List<CoreProjectionProcessingMessage.PauseRequested> _pauseRequestedMessages =
-            new List<CoreProjectionProcessingMessage.PauseRequested>();
-
         public readonly List<CoreProjectionProcessingMessage.CheckpointLoaded> _checkpointLoadedMessages =
             new List<CoreProjectionProcessingMessage.CheckpointLoaded>();
 
@@ -64,11 +61,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
         {
             _checkpointCompletedMessages.Add(message);
-        }
-
-        public void Handle(CoreProjectionProcessingMessage.PauseRequested message)
-        {
-            _pauseRequestedMessages.Add(message);
         }
 
         public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)

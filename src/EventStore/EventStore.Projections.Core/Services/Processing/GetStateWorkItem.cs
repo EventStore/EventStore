@@ -57,7 +57,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void Load(CheckpointTag checkpointTag)
         {
-            Projection.BeginStatePartitionLoad(_partition, checkpointTag, LoadCompleted);
+            Projection.BeginStatePartitionLoad(
+                _partition, checkpointTag, LoadCompleted, allowRelockAtTheSamePosition: true);
         }
 
         private void LoadCompleted()

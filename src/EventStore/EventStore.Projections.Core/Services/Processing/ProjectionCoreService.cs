@@ -49,9 +49,11 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
                                          IHandle<CoreProjectionManagementMessage.Dispose>,
                                          IHandle<CoreProjectionManagementMessage.Start>,
+                                         IHandle<CoreProjectionManagementMessage.LoadStopped>,
                                          IHandle<CoreProjectionManagementMessage.Stop>,
                                          IHandle<CoreProjectionManagementMessage.Kill>,
                                          IHandle<CoreProjectionManagementMessage.GetState>,
+                                         IHandle<CoreProjectionManagementMessage.GetDebugState>,
                                          IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
                                          IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
@@ -318,6 +320,12 @@ namespace EventStore.Projections.Core.Services.Processing
             projection.Start();
         }
 
+        public void Handle(CoreProjectionManagementMessage.LoadStopped message)
+        {
+            var projection = _projections[message.ProjectionId];
+            projection.LoadStopped();
+        }
+
         public void Handle(CoreProjectionManagementMessage.Stop message)
         {
             var projection = _projections[message.ProjectionId];
@@ -331,6 +339,12 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
+        {
+            var projection = _projections[message.ProjectionId];
+            projection.Handle(message);
+        }
+
+        public void Handle(CoreProjectionManagementMessage.GetDebugState message)
         {
             var projection = _projections[message.ProjectionId];
             projection.Handle(message);
