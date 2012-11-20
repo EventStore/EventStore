@@ -364,23 +364,23 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
-            var projection = _projections[message.ProjectionId];
-            projection.Handle(message);
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
         }
 
         public void Handle(CoreProjectionManagementMessage.GetDebugState message)
         {
-            var projection = _projections[message.ProjectionId];
-            projection.Handle(message);
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
         }
 
         public void Handle(CoreProjectionManagementMessage.UpdateStatistics message)
         {
             CoreProjection projection;
             if (_projections.TryGetValue(message.ProjectionId, out projection))
-            {
                 projection.UpdateStatistics();
-            }
         }
 
         public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
