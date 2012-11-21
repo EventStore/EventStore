@@ -81,7 +81,7 @@ namespace EventStore.Core.Services.Monitoring
 
         private readonly string _nodeStatsStream;
         private readonly JsonCodec _jsonCodec;
-        private const string StreamMetadata = @"{""$maxAge"": 864000 }";  // 10 days
+        private const string StreamMetadata = @"{""$maxAge"": 10 }";  // 10 days
         private bool _statsStreamCreated;
 
         private readonly PublishEnvelope _publishEnvelope;

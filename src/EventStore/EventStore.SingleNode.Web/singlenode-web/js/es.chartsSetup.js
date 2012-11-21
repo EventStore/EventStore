@@ -4,25 +4,31 @@ $(function () {
     var timeSeriesClass = "es-time-series";
     var chartTitleClass = "es-chart-title-js";
     var appendToSelector = ".wrap";
+    var statsStream = '$stats-127.0.0.1:2113'; //todo : calculate properly
 
     buildCharts();
 
     function buildCharts() {
 
-        $.ajax("/stats?metadata=true&group=false", {
-            headers: {
-                Accept: "application/json"
-            },
-            success: success,
-            error: error
-        });
+        requestStatsMetadata();
+
+        function requestStatsMetadata() {
+            $.ajax("/stats?metadata=true&group=false", {    
+                headers: {
+                    Accept: "application/json"
+                },
+                success: success,
+                error: error
+            });
+        }
 
         function success(stats) {
+            $(".error").hide().text('');
             var zoomer = prepareZoomer();
             setUpTimeSeries({ zoomer: zoomer });
             bindCharts(stats);
             prepareSelector();
-            poll();
+            turnOnProjection();
         }
 
         function error(xhr, status, err) {
@@ -30,6 +36,7 @@ $(function () {
                 return;
             var msg = es.util.formatError("Couldn't build charts.", xhr);
             $(".error").text(msg).show();
+            setTimeout(requestStatsMetadata, 1000);
         };
 
         function prepareZoomer() {
@@ -106,6 +113,30 @@ $(function () {
             }
         }
 
+        function turnOnProjection() {
+            var projection = es.projection({
+                body: function () {
+                    fromStream(statsStream).when({
+                        '$stats-collection': function (state, event) {
+                            return event.body;
+                        }
+                    });
+                },
+                onStateUpdate: function (state) {
+                    var newStats = state;
+                    $(document).trigger(newDataEvent, [newStats]);
+                },
+                showError: function (err) {
+//                    alert(err);
+                                        if (unloading)
+                                            return;
+                                        var msg = es.util.formatError("Couldn't update charts.", xhr);
+                                        $(".error").text(msg).show();
+                }
+            });
+            projection.start();
+        }
+
         function poll() {
 
             // no matter what - repoll after a while
@@ -125,12 +156,9 @@ $(function () {
                 $(".error").hide();
                 publishNewStat(data);
             }
-            
+
             function error(xhr, status, err) {
-                if (unloading)
-                    return;
-                var msg = es.util.formatError("Couldn't update charts.", xhr);
-                $(".error").text(msg).show();
+
             }
 
             function publishNewStat(stat) {

@@ -62,21 +62,15 @@
            
         </div>
         <script>
-            $(function() {
-                es.projection({
+            $(function () {
+                var projection = es.projection({
                     body: function () {
                         var query_text = $('#query').val();
                         eval(query_text);
                     },
-                    runTrigger: function (runAction) {
-                        $('#run').click(function() {
-                            $('#state').text("");
-                            runAction();
-                        });
-                    },
-                    onStateChange: function (state) {
+                    onStateUpdate: function (state, stateStr) {
                         var text = $('#state').text();
-                        $('#state').text(text + "\r\n" + state);
+                        $('#state').text(text + "\r\n" + stateStr);
                     },
                     startFrom: 0,
                     showError: function (err) {
@@ -85,6 +79,10 @@
                     hideError: function () {
                         $('#error').hide().text('');
                     }
+                });
+                $('#run').click(function () {
+                    $('#state').text("");
+                    projection.start();
                 });
             });
         </script> 
