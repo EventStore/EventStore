@@ -448,7 +448,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Log.Info("Starting to write {0} events to [{1}]", events, stream);
             var store = GetConnection();
             int eventVersion = 0;
-            var createTask = store.CreateStreamAsync(stream, false, Encoding.UTF8.GetBytes("metadata"));
+            var createTask = store.CreateStreamAsync(stream, Guid.NewGuid(), false, Encoding.UTF8.GetBytes("metadata"));
 
             Action<Task> fail = prevTask =>
             {
@@ -488,7 +488,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var resSource = new TaskCompletionSource<object>();
             var store = GetConnection();
             int writtenCount = 0;
-            var createTask = store.CreateStreamAsync(stream, false, Encoding.UTF8.GetBytes("metadata"));
+            var createTask = store.CreateStreamAsync(stream, Guid.NewGuid(), false, Encoding.UTF8.GetBytes("metadata"));
 
             Action<Task> fail = prevTask =>
             {
@@ -538,7 +538,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             int writtenCount = 0;
             long transactionId = -1;
-            var createTask = store.CreateStreamAsync(stream, false, Encoding.UTF8.GetBytes("metadata"));
+            var createTask = store.CreateStreamAsync(stream, Guid.NewGuid(), false, Encoding.UTF8.GetBytes("metadata"));
             createTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
 
             Action<Task> writeTransactionEvent = null;

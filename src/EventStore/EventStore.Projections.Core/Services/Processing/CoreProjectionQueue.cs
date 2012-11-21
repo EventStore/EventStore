@@ -43,8 +43,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly int _pendingEventsThreshold;
         private readonly Action _updateStatistics;
 
-        private QueueState _queueState;
         private CheckpointTag _lastEnqueuedEventTag;
+        private bool _justInitialized;
         private bool _subscriptionPaused;
 
         public CoreProjectionQueue(
@@ -59,7 +59,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Initialize()
         {
-            _queueState = default(QueueState);
             _lastEnqueuedEventTag = default(CheckpointTag);
             _subscriptionPaused = false;
 
@@ -68,9 +67,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void ProcessEvent()
         {
-            if (_queueState == QueueState.Running)
-                if (_queuePendingEvents.Count > 0)
-                    ProcessOneEvent();
+            if (_queuePendingEvents.Count > 0)
+                ProcessOneEvent();
         }
 
         public int GetBufferedEventCount()
@@ -78,28 +76,8 @@ namespace EventStore.Projections.Core.Services.Processing
             return _queuePendingEvents.Count;
         }
 
-        public void SetRunning()
-        {
-            _queueState = QueueState.Running;
-            ResumeSubscription();
-        }
-
-        public void SetPaused()
-        {
-            _queueState = QueueState.Paused;
-            PauseSubscription();
-        }
-
-        public void SetStopped()
-        {
-            _queueState = QueueState.Stopped;
-            // unsubscribe?
-        }
-
         public void EnqueueTask(WorkItem workItem, CheckpointTag workItemCheckpointTag, bool allowCurrentPosition = false)
         {
-            if (_queueState == QueueState.Stopped)
-                throw new InvalidOperationException("Queue is Stopped");
             ValidateQueueingOrder(workItemCheckpointTag, allowCurrentPosition);
             workItem.SetCheckpointTag(workItemCheckpointTag);
             _queuePendingEvents.Enqueue(workItem);
@@ -114,20 +92,22 @@ namespace EventStore.Projections.Core.Services.Processing
         public void InitializeQueue(CheckpointTag zeroCheckpointTag)
         {
             _lastEnqueuedEventTag = zeroCheckpointTag;
+            _justInitialized = true;
         }
 
         public string GetStatus()
         {
-            return (_subscriptionPaused && _queueState != QueueState.Paused ? "/Subscription Paused" : "");
+            return (_subscriptionPaused ? "/Subscription Paused" : "");
         }
 
         private void ValidateQueueingOrder(CheckpointTag eventTag, bool allowCurrentPosition = false)
         {
-            if (eventTag < _lastEnqueuedEventTag || (!allowCurrentPosition && eventTag <= _lastEnqueuedEventTag))
+            if (eventTag < _lastEnqueuedEventTag || (!(allowCurrentPosition || _justInitialized) && eventTag <= _lastEnqueuedEventTag))
                 throw new InvalidOperationException(
                     string.Format(
                         "Invalid order.  Last known tag is: '{0}'.  Current tag is: '{1}'", _lastEnqueuedEventTag,
                         eventTag));
+            _justInitialized = _justInitialized && (eventTag == _lastEnqueuedEventTag);
             _lastEnqueuedEventTag = eventTag;
         }
 
@@ -143,7 +123,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ResumeSubscription()
         {
-            if (_subscriptionPaused && _queueState == QueueState.Running)
+            if (_subscriptionPaused)
             {
                 _subscriptionPaused = false;
                 _publisher.Publish(
@@ -169,11 +149,5 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastReportedStatisticsTimeStamp = DateTime.UtcNow;
         }
 
-        private enum QueueState
-        {
-            Stopped,
-            Paused,
-            Running
-        }
     }
 }

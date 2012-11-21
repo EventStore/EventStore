@@ -35,7 +35,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_checkpoint_is_suggested : TestFixtureWithCoreProjection
+    public class when_the_checkpoint_is_suggested : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {

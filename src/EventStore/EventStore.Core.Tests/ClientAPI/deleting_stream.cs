@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
+                var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
+                var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any);
@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
+                var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var delete = connection.DeleteStreamAsync(stream, 1);
@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
+                var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);

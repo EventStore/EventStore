@@ -28,8 +28,8 @@
 using System;
 using System.IO;
 using System.Net;
-using EventStore.Common.Settings;
 using EventStore.Core;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Common.Utils;
 using System.Linq;

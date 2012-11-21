@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Text;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
@@ -87,6 +88,14 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class LoadStopped : CoreProjectionManagementMessage
+        {
+            public LoadStopped(Guid correlationId)
+                : base(correlationId)
+            {
+            }
+        }
+
         public class Stop : CoreProjectionManagementMessage
         {
             public Stop(Guid projectionId)
@@ -135,6 +144,24 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class GetDebugState : CoreProjectionManagementMessage
+        {
+            private readonly IEnvelope _envelope;
+
+            public GetDebugState(IEnvelope envelope, Guid correlationId)
+                : base(correlationId)
+            {
+                if (envelope == null) throw new ArgumentNullException("envelope");
+                _envelope = envelope;
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+        }
+
         public class UpdateStatistics : CoreProjectionManagementMessage
         {
             public UpdateStatistics(Guid projectionId)
@@ -147,13 +174,15 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly Guid _correlationId;
             private readonly string _state;
+            private readonly Exception _exception;
             private readonly string _partition;
 
-            public StateReport(Guid correlationId, Guid projectionId, string partition, string state)
+            public StateReport(Guid correlationId, Guid projectionId, string partition, string state, Exception exception = null)
                 : base(projectionId)
             {
                 _correlationId = correlationId;
                 _state = state;
+                _exception = exception;
                 _partition = partition;
             }
 
@@ -167,9 +196,64 @@ namespace EventStore.Projections.Core.Messages
                 get { return _partition; }
             }
 
+            public Exception Exception
+            {
+                get { return _exception; }
+            }
+
             public Guid CorrelationId
             {
                 get { return _correlationId; }
+            }
+        }
+
+        public class DebugState : CoreProjectionManagementMessage
+        {
+            private readonly Event[] _events;
+
+            public DebugState(Guid projectionId, Event[] events)
+                : base(projectionId)
+            {
+                _events = events;
+            }
+
+            public Event[] Events
+            {
+                get { return _events; }
+            }
+
+            public class Event
+            {
+                public static Event Create(ProjectionSubscriptionMessage.CommittedEventReceived source, string partition)
+                {
+                    return new Event 
+                        {
+                            Partition = partition,
+                            BodyRaw = Encoding.UTF8.GetString(source.Data.Data),
+                            MetadataRaw = Encoding.UTF8.GetString(source.Data.Metadata),
+                            EventType = source.Data.EventType,
+                            StreamId = source.EventStreamId,
+                            SequenceNumber = source.EventSequenceNumber,
+                            Category = source.EventCategory,
+                            LogPosition = source.Position.PreparePosition,
+                        };
+                }
+
+                public string Category { get; set; }
+
+                public string Partition { get; set; }
+
+                public long LogPosition { get; set; }
+
+                public int SequenceNumber { get; set; }
+
+                public string StreamId { get; set; }
+
+                public string EventType { get; set; }
+
+                public string MetadataRaw { get; set; }
+
+                public string BodyRaw { get; set; }
             }
         }
 
@@ -241,6 +325,47 @@ namespace EventStore.Projections.Core.Messages
             public IEnvelope Envelope
             {
                 get { return _envelope; }
+            }
+        }
+
+        public class CreatePrepared : CoreProjectionManagementMessage
+        {
+            private readonly IEnvelope _envelope;
+            private readonly ProjectionConfig _config;
+            private readonly ISourceDefinitionConfigurator _sourceDefintion;
+            private readonly string _name;
+
+            public CreatePrepared(
+                IEnvelope envelope, Guid projectionId, string name, ProjectionConfig config, ISourceDefinitionConfigurator sourceDefintion)
+                : base(projectionId)
+            {
+                if (name == null) throw new ArgumentNullException("name");
+                if (config == null) throw new ArgumentNullException("config");
+                if (sourceDefintion == null) throw new ArgumentNullException("sourceDefintion");
+                _envelope = envelope;
+                _name = name;
+                _config = config;
+                _sourceDefintion = sourceDefintion;
+            }
+
+            public ProjectionConfig Config
+            {
+                get { return _config; }
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+            public ISourceDefinitionConfigurator SourceDefintion
+            {
+                get { return _sourceDefintion; }
             }
         }
 

@@ -31,6 +31,7 @@ namespace EventStore.Core.Services
     public static class SystemStreams
     {
         public const string StreamsStream = "$streams";
+        public const string StatsStreamPrefix = "$stats";
     }
 
     public static class SystemMetadata
@@ -44,6 +45,7 @@ namespace EventStore.Core.Services
         public const string StreamCreated = "$stream-created";
         public const string StreamCreatedImplicit = "$stream-created-implicit";
         public const string StreamDeleted = "$stream-deleted";
+        public const string StatsCollection = "$stats-collection";
         public const string LinkTo = "$>";
     }
 }

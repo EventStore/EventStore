@@ -93,10 +93,6 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class PauseRequested : Message
-        {
-        }
-
         public class RestartRequested : Message
         {
             private readonly string _reason;

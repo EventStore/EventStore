@@ -54,6 +54,10 @@ function scope($on, $notify) {
         
             get_sources: function() {
                 return JSON.stringify(eventProcessor.commandHandlers.get_sources_raw());
+            },
+             
+            set_debugging: function () {
+                return eventProcessor.commandHandlers.set_debugging();
             }
     };
 

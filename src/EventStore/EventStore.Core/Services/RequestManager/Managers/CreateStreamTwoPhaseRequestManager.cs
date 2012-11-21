@@ -60,7 +60,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     ExpectedVersion.NoStream,
                     new[]
                     {
-                        new Event(Guid.NewGuid(), SystemEventTypes.StreamCreated, request.IsJson, LogRecord.NoData, request.Metadata)
+                        new Event(request.CreateStreamId, SystemEventTypes.StreamCreated, request.IsJson, LogRecord.NoData, request.Metadata)
                     },
                     allowImplicitStreamCreation: false,
                     liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));

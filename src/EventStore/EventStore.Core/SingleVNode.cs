@@ -28,7 +28,6 @@
 
 using System.IO;
 using System.Net;
-using EventStore.Common.Settings;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -46,6 +45,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Services.VNode;
 using EventStore.Common.Utils;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core
@@ -86,12 +86,23 @@ namespace EventStore.Core
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
             var monitoringQueue = new QueuedHandler(monitoringInnerBus, "MonitoringQueue", watchSlowMsg: true, slowMsgThresholdMs: 100);
-            var monitoring = new MonitoringService(monitoringQueue, monitoringRequestBus, db.Config.WriterCheckpoint, db.Config.Path, appSettings.StatsPeriod);
+            var monitoring = new MonitoringService(monitoringQueue, 
+                                                   monitoringRequestBus, 
+                                                   MainQueue, 
+                                                   db.Config.WriterCheckpoint, 
+                                                   db.Config.Path, 
+                                                   appSettings.StatsPeriod, 
+                                                   _httpEndPoint,
+                                                   appSettings.StatsStorage);
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
+            Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
+            Bus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.CreateStreamCompleted, Message>());
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
+            monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
+            monitoringInnerBus.Subscribe<ClientMessage.CreateStreamCompleted>(monitoring);
 
             //STORAGE SUBSYSTEM
             var indexPath = Path.Combine(db.Config.Path, "index");

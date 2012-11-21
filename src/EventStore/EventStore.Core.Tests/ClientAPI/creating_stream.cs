@@ -60,8 +60,31 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
+                var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void many_times_with_same_id_should_succeed()
+        {
+            const string stream = "many_times_with_same_id_should_succeed";
+            using (var connection = EventStoreConnection.Create())
+            {
+                connection.Connect(_node.TcpEndPoint);
+                var id = Guid.NewGuid();
+
+                var create1 = connection.CreateStreamAsync(stream, id, false, new byte[0]);
+                Assert.DoesNotThrow(create1.Wait);
+
+                var create2 = connection.CreateStreamAsync(stream, id, false, new byte[0]);
+                Assert.DoesNotThrow(create2.Wait);
+
+                var read = connection.ReadEventStreamForwardAsync(stream, 0, 10);
+                Assert.DoesNotThrow(read.Wait);
+
+                Assert.That(read.Result.Events.Length, Is.EqualTo(1));
             }
         }
 
@@ -73,7 +96,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
+                var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
             }
         }
@@ -86,10 +109,10 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
-                var initialCreate = connection.CreateStreamAsync(stream, false, new byte[0]);
+                var initialCreate = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(initialCreate.Wait);
 
-                var secondCreate = connection.CreateStreamAsync(stream, false, new byte[0]);
+                var secondCreate = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.Inconclusive();
                 //Assert.That(() => secondCreate.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
@@ -103,13 +126,13 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
+                var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.DoesNotThrow(delete.Wait);
 
-                var secondCreate = connection.CreateStreamAsync(stream, false, new byte[0]);
+                var secondCreate = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.That(() => secondCreate.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
             }
         }

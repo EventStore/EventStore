@@ -52,14 +52,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandLine\ConfigurationManager.cs" />
     <Compile Include="CommandLine\EventStoreCmdLineOptionsBase.cs" />
     <Compile Include="CommandLine\lib\CommandLine.cs" />
     <Compile Include="CommandLine\lib\CommandLineText.cs" />
     <Compile Include="Configuration\Constants.cs" />
     <Compile Include="Exceptions\ApplicationInitializationException.cs" />
     <Compile Include="Log\LazyLogger.cs" />
-    <Compile Include="Settings\ApplicationSettings.cs" />
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\LogManager.cs" />
     <Compile Include="Log\NLogger.cs" />
@@ -73,7 +71,6 @@
     <Compile Include="Utils\EnumerableExtensions.cs" />
     <Compile Include="Utils\IPEndpointExtensions.cs" />
     <Compile Include="Utils\Ensure.cs" />
-    <Compile Include="Settings\VNodeSettings.cs" />
     <Compile Include="Utils\Runtime.cs" />
   </ItemGroup>
   <ItemGroup />

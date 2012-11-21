@@ -30,9 +30,13 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services
 {
-    public interface IProjectionStateHandler : IDisposable
+    public interface ISourceDefinitionConfigurator
     {
         void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder);
+    }
+
+    public interface IProjectionStateHandler : IDisposable, ISourceDefinitionConfigurator
+    {
         void Load(string state);
         void Initialize();
 

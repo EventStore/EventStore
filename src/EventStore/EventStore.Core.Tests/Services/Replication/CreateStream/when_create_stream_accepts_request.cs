@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -50,7 +51,7 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
 
         protected override Message When()
         {
-            return new StorageMessage.CreateStreamRequestCreated(CorrelationId, new NoopEnvelope(), "test123", false, Metadata);
+            return new StorageMessage.CreateStreamRequestCreated(CorrelationId, new NoopEnvelope(), "test123", Guid.NewGuid(), false, Metadata);
         }
 
         [Test]
