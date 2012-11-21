@@ -188,7 +188,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             CommitInfo commitInfo;
             if (commits.TryGetValue(prepare.TransactionPosition, out commitInfo))
             {
-                commitInfo.StreamId = prepare.EventStreamId;
+                //commitInfo.StreamId = prepare.EventStreamId;
 
                 if ((prepare.Flags & PrepareFlags.StreamDelete) != 0                   // we always keep delete tombstones
                     || prepare.EventType.StartsWith(SystemEventTypes.StreamCreated))   // we keep $stream-created
@@ -377,12 +377,17 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             public readonly int EventNumber;
 
-            public string StreamId;
+            //public string StreamId;
             public bool? KeepCommit;
 
             public CommitInfo(CommitLogRecord commitRecord)
             {
                 EventNumber = commitRecord.EventNumber;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("EventNumber: {0}, KeepCommit: {1}", EventNumber, KeepCommit);
             }
         }
     }

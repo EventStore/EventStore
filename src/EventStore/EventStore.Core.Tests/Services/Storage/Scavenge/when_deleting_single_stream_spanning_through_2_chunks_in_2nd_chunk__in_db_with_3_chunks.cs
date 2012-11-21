@@ -46,9 +46,9 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
         protected PrepareLogRecord WriteDeletePrepare(string eventStreamId)
         {
             var prepare = LogRecord.DeleteTombstone(WriterChecksum.ReadNonFlushed(),
-                                                           Guid.NewGuid(),
-                                                           eventStreamId,
-                                                           ExpectedVersion.Any);
+                                                    Guid.NewGuid(),
+                                                    eventStreamId,
+                                                    ExpectedVersion.Any);
             long pos;
             Assert.IsTrue(Writer.Write(prepare, out pos));
 
