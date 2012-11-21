@@ -1,3 +1,5 @@
 js1.*
 libjs1.*
 libv8.*
+/win32
+/x64
