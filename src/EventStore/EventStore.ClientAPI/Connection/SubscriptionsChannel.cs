@@ -43,6 +43,8 @@ namespace EventStore.ClientAPI.Connection
 {
     internal class SubscriptionsChannel
     {
+        private const int ConnectionTimeoutMs = 2000;
+
         private readonly ILogger _log;
 
         private readonly TcpConnector _connector;
@@ -95,10 +97,7 @@ namespace EventStore.ClientAPI.Connection
 
         public void Unsubscribe(string stream)
         {
-            var all = _subscriptions.Values;
-            var ids = all.Where(s => s.Stream == stream).Select(s => s.Id);
-
-            foreach (var id in ids)
+            foreach (var id in _subscriptions.Values.Where(s => s.Stream == stream).Select(s => s.Id))
             {
                 Subscription removed;
                 if(_subscriptions.TryRemove(id, out removed))
@@ -183,7 +182,7 @@ namespace EventStore.ClientAPI.Connection
         private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
         {
             Subscription subscription;
-            if(!_subscriptions.TryGetValue(package.CorrelationId, out subscription))
+            if (!_subscriptions.TryGetValue(package.CorrelationId, out subscription))
             {
                 _log.Error("Unexpected package received : {0} ({1})", package.CorrelationId, package.Command);
                 return;
@@ -194,21 +193,25 @@ namespace EventStore.ClientAPI.Connection
                 switch (package.Command)
                 {
                     case TcpCommand.StreamEventAppeared:
+                    {
                         var dto = package.Data.Deserialize<ClientMessage.StreamEventAppeared>();
                         var recordedEvent = new RecordedEvent(dto);
                         var commitPos = dto.CommitPosition;
                         var preparePos = dto.PreparePosition;
                         ExecuteUserCallbackAsync(() => subscription.EventAppeared(recordedEvent, new Position(commitPos, preparePos)));
                         break;
+                    }
                     case TcpCommand.SubscriptionDropped:
                     case TcpCommand.SubscriptionToAllDropped:
+                    {
                         Subscription removed;
-                        if(_subscriptions.TryRemove(subscription.Id, out removed))
+                        if (_subscriptions.TryRemove(subscription.Id, out removed))
                         {
                             removed.Source.SetResult(null);
                             ExecuteUserCallbackAsync(removed.SubscriptionDropped);
                         }
                         break;
+                    }
                     default:
                         throw new ArgumentOutOfRangeException(string.Format("Unexpected command : {0}", package.Command));
                 }
@@ -228,13 +231,28 @@ namespace EventStore.ClientAPI.Connection
         {
             _connectedEvent.Reset();
 
-            var subscriptions = _subscriptions.Values;
-            _subscriptions.Clear();
-
-            foreach (var subscription in subscriptions)
+            foreach (var subscription in _subscriptions.Values)
             {
                 subscription.Source.SetResult(null);
                 ExecuteUserCallbackAsync(subscription.SubscriptionDropped);
+            }
+            _subscriptions.Clear();
+        }
+
+        public void EnsureConnected(IPEndPoint endPoint)
+        {
+            lock (_subscriptionChannelLock)
+            {
+                if (!_connectedEvent.WaitOne(0))
+                {
+                    Connect(endPoint);
+                    if (!_connectedEvent.WaitOne(ConnectionTimeoutMs))
+                    {
+                        var message = string.Format("Couldn't connect to [{0}] in {1} ms.", _connection.EffectiveEndPoint, ConnectionTimeoutMs);
+                        _log.Error(message);
+                        throw new CannotEstablishConnectionException(message);
+                    }
+                }
             }
         }
 
@@ -246,31 +264,11 @@ namespace EventStore.ClientAPI.Connection
             {
                 _stopExecutionThread = false;
                 _executionThread = new Thread(ExecuteUserCallbacks)
-                {
-                    IsBackground = true,
-                    Name = "SubscriptionsChannel user callbacks thread"
-                };
+                                   {
+                                           IsBackground = true,
+                                           Name = "SubscriptionsChannel user callbacks thread"
+                                   };
                 _executionThread.Start();
-            }
-        }
-
-        public void EnsureConnected(IPEndPoint endPoint)
-        {
-            if (!_connectedEvent.WaitOne(0))
-            {
-                lock (_subscriptionChannelLock)
-                {
-                    if (!_connectedEvent.WaitOne(0))
-                    {
-                        Connect(endPoint);
-                        if (!_connectedEvent.WaitOne(500))
-                        {
-                            _log.Error("Cannot connect to {0}", _connection.EffectiveEndPoint);
-                            throw new CannotEstablishConnectionException(string.Format("Cannot connect to {0}.",
-                                                                                       _connection.EffectiveEndPoint));
-                        }
-                    }
-                }
             }
         }
     }

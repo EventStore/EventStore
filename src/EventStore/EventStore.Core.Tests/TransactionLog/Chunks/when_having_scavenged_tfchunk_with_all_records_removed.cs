@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -41,8 +42,10 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
     {
         private TFChunkDb _db;
         private TFChunk _scavengedChunk;
-        private LogRecord _rec1, _rec2, _rec3;
+        private PrepareLogRecord _p1, _p2, _p3;
+        private CommitLogRecord _c1, _c2, _c3;
         private RecordWriteResult _res1, _res2, _res3;
+        private RecordWriteResult _cres1, _cres2, _cres3;
 
         public override void TestFixtureSetUp()
         {
@@ -59,19 +62,28 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             
             var chunk = _db.Manager.GetChunk(0);
 
-            _rec1 = LogRecord.SingleWrite(0, Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
+            _p1 = LogRecord.SingleWrite(0, Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
                                           new byte[] { 0, 1, 2 }, new byte[] { 5, 7 });
-            _res1 = chunk.TryAppend(_rec1);
+            _res1 = chunk.TryAppend(_p1);
 
-            _rec2 = LogRecord.SingleWrite(_res1.NewPosition,
-                                          Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
-                                          new byte[] { 0, 1, 2 }, new byte[] { 5, 7 });
-            _res2 = chunk.TryAppend(_rec2);
+            _c1 = LogRecord.Commit(_res1.NewPosition, Guid.NewGuid(), _p1.LogPosition, 0);
+            _cres1 = chunk.TryAppend(_c1);
+
+            _p2 = LogRecord.SingleWrite(_cres1.NewPosition,
+                                        Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
+                                        new byte[] { 0, 1, 2 }, new byte[] { 5, 7 });
+            _res2 = chunk.TryAppend(_p2);
+
+            _c2 = LogRecord.Commit(_res2.NewPosition, Guid.NewGuid(), _p2.LogPosition, 1);
+            _cres2 = chunk.TryAppend(_c2);
             
-            _rec3 = LogRecord.SingleWrite(_res2.NewPosition,
-                                          Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
-                                          new byte[] { 0, 1, 2 }, new byte[] { 5, 7 });
-            _res3 = chunk.TryAppend(_rec3);
+            _p3 = LogRecord.SingleWrite(_cres2.NewPosition,
+                                        Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
+                                        new byte[] { 0, 1, 2 }, new byte[] { 5, 7 });
+            _res3 = chunk.TryAppend(_p3);
+
+            _c3 = LogRecord.Commit(_res3.NewPosition, Guid.NewGuid(), _p3.LogPosition, 2);
+            _cres3 = chunk.TryAppend(_c3);
 
             chunk.Complete();
 
@@ -92,59 +104,76 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public void first_record_was_written()
         {
             Assert.IsTrue(_res1.Success);
-            Assert.AreEqual(0, _res1.OldPosition);
-            Assert.AreEqual(_rec1.GetSizeWithLengthPrefixAndSuffix(), _res1.NewPosition);
+            Assert.IsTrue(_cres1.Success);
         }
 
         [Test]
         public void second_record_was_written()
         {
             Assert.IsTrue(_res2.Success);
-            Assert.AreEqual(_res1.NewPosition, _res2.OldPosition);
-            Assert.AreEqual(_res1.NewPosition + _rec2.GetSizeWithLengthPrefixAndSuffix(), _res2.NewPosition);
+            Assert.IsTrue(_cres2.Success);
         }
 
         [Test]
         public void third_record_was_written()
         {
             Assert.IsTrue(_res3.Success);
-            Assert.AreEqual(_res2.NewPosition, _res3.OldPosition);
-            Assert.AreEqual(_res2.NewPosition + _rec3.GetSizeWithLengthPrefixAndSuffix(), _res3.NewPosition);
+            Assert.IsTrue(_cres3.Success);
         }
 
         [Test]
-        public void original_record1_cant_be_read_at_position()
+        public void prepare1_cant_be_read_at_position()
         {
-            var res = _scavengedChunk.TryReadAt((int)_res1.OldPosition);
-            Assert.IsFalse(res.Success);
-        }
-
-        [Test]
-        public void original_record2_cant_be_read_at_position()
-        {
-            var res = _scavengedChunk.TryReadAt((int)_res2.OldPosition);
-            Assert.IsFalse(res.Success);
-        }
-        
-        [Test]
-        public void original_record3_cant_be_read_at_position()
-        {
-            var res = _scavengedChunk.TryReadAt((int)_res3.OldPosition);
+            var res = _scavengedChunk.TryReadAt((int)_p1.LogPosition);
             Assert.IsFalse(res.Success);
         }
 
         [Test]
-        public void the_first_record_cant_be_read()
+        public void commit1_cant_be_read_at_position()
         {
-            var res = _scavengedChunk.TryReadFirst();
+            var res = _scavengedChunk.TryReadAt((int)_c1.LogPosition);
             Assert.IsFalse(res.Success);
         }
 
         [Test]
-        public void the_last_record_cant_be_read()
+        public void prepare2_cant_be_read_at_position()
         {
-            var res = _scavengedChunk.TryReadLast();
+            var res = _scavengedChunk.TryReadAt((int)_p2.LogPosition);
             Assert.IsFalse(res.Success);
+        }
+
+        [Test]
+        public void commit2_cant_be_read_at_position()
+        {
+            var res = _scavengedChunk.TryReadAt((int)_c2.LogPosition);
+            Assert.IsFalse(res.Success);
+        }
+
+        [Test]
+        public void prepare3_cant_be_read_at_position()
+        {
+            var res = _scavengedChunk.TryReadAt((int)_p3.LogPosition);
+            Assert.IsFalse(res.Success);
+        }
+
+        [Test]
+        public void commit3_cant_be_read_at_position()
+        {
+            var res = _scavengedChunk.TryReadAt((int)_c3.LogPosition);
+            Assert.IsFalse(res.Success);
+        }
+
+        [Test]
+        public void sequencial_read_returns_no_records()
+        {
+            var records = new List<LogRecord>();
+            RecordReadResult res = _scavengedChunk.TryReadFirst();
+            while (res.Success)
+            {
+                records.Add(res.LogRecord);
+                res = _scavengedChunk.TryReadClosestForward((int)res.NextPosition);
+            }
+            Assert.AreEqual(0, records.Count);
         }
     }
 }
