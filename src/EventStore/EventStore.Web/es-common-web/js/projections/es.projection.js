@@ -2,7 +2,7 @@ if (!window.es) { window.es = {}; };
 es.projection = function (settings) {
 
     var projectionBody = settings.body;
-    var onStateUpdate = settings.onStateUpdate;
+    var onStateUpdate = settings.onStateUpdate || function () { };
     var showError = settings.showError || function () { };
     var hideError = settings.hideError || function () { };
 
@@ -72,6 +72,8 @@ es.projection = function (settings) {
         var lastProcessedPageUrl = null;
         var lastProcessedEntry = null;
 
+        // not used yet - when something fails we just retry
+        var defaultFail = function(a, b, c) { alert('Failed!'); };
 
         readAll(null, null);
 
@@ -82,10 +84,18 @@ es.projection = function (settings) {
 
             readLastPage({
                 pageRead: pageRead,
-                noEntries: noEntries
+                noEntries: noEntries,
+                fail: defaultFail
             });
 
             function pageRead(firstPageUrl, lastEntry) {
+
+                // check for end of stream
+                if (lastProcessedEntry !== null && Entry.isNewerOrSame(lastProcessedEntry, lastEntry)) {
+                    delayedReadAll(lastProcessedPageUrl, lastProcessedEntry);
+                    return;
+                }
+
                 readRange({
                     page: fromPageUrl || firstPageUrl,
                     from: fromEntry || null,
@@ -93,7 +103,7 @@ es.projection = function (settings) {
                     processEvent: callback,
                     endOfStream: delayedReadAll,
                     success: function (lastReadPageUrl, lastReadEntry) { readAll(lastReadPageUrl, lastReadEntry); },
-                    fail: function (a, b, c) { alert('Failed!' + a + b + c); }
+                    fail: defaultFail
                 });
             }
 
@@ -110,6 +120,7 @@ es.projection = function (settings) {
 
             var pageRead = sets.pageRead;
             var noEntries = sets.noEntries;
+            var fail = sets.fail;
 
             $.ajax(lastPageUrl, {
                 headers: {
@@ -122,9 +133,12 @@ es.projection = function (settings) {
                     var lastEntry = page.entries[0];
                     var firstPage = $.grep(page.links, function (link) { return link.relation === 'first'; })[0].uri;
                     pageRead(firstPage, lastEntry);
+                },
+                error: function (jqXhr, status, error) {
+                    setTimeout(function () { readLastPage(sets); }, 1000);
+                    //fail.apply(window, arguments);
                 }
             });
-
         }
 
         function readRange(sets) {
@@ -133,14 +147,8 @@ es.projection = function (settings) {
             var from = sets.from;
             var to = sets.to;
             var processEvent = sets.processEvent;
-            var endOfStream = sets.endOfStream;
             var success = sets.success;
             var fail = sets.fail;
-
-            if (from !== null && Entry.isNewerOrSame(from, to)) {
-                endOfStream(page, from);
-                return;
-            }
 
             readByPages(page);
 
@@ -184,9 +192,15 @@ es.projection = function (settings) {
                     var onEntriesRead = null;
 
                     if (Entry.isOnPage(pageUrl, toEntry)) {
-                        var lastEntry = entries.length === 0
-                            ? null // readAll will just continue reading from beginning of page. And as deleted events won't appear again - no duplicates will be processed
-                            : Entry.max(entries);
+
+                        // setting LastEntry as null is ok - readAll will just continue reading from beginning of page. And as deleted events won't appear again - no duplicates will be processed
+
+                        if (entries.length === 0) {
+                            onUpperBound(pageUrl, toEntry);
+                            return;
+                        }
+
+                        var lastEntry = Entry.max(entries);
                         onEntriesRead = function () { onUpperBound(pageUrl, lastEntry); };
                     } else {
                         onEntriesRead = function () { onPageRead(nextPage); };
@@ -199,7 +213,9 @@ es.projection = function (settings) {
 
                     getEvents(entries, processEvent, onEntriesRead);
                 },
-                fail: fail
+                error: function () {
+                    setTimeout(function () { readPage(sets); }, 1000);
+                }
             });
 
 
@@ -214,7 +230,7 @@ es.projection = function (settings) {
                 var eventsUrlsCount = eventsUrls.length;
                 var processedEventUrlsCount = 0;
                 var receivedEvents = [];
-                
+
                 currentAjaxes = [];
 
                 for (var i = 0; i < eventsUrlsCount; i++) {
@@ -223,7 +239,7 @@ es.projection = function (settings) {
                         headers: {
                             "Accept": "application/json"
                         },
-                        contentType: "application/json",
+                        dataType: 'json',
                         success: successFeed,
                         error: errorFeed
                     });

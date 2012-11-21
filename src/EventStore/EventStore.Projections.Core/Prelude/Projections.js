@@ -109,7 +109,9 @@ var $projections = {
                 try {
                     if (eventRaw == '')
                         eventEnvelope.body = {};
-                    else 
+                    else if (typeof eventRaw === "object")
+                        eventEnvelope.body = eventRaw;
+                    else
                         eventEnvelope.body = JSON.parse(eventRaw);
                 } catch (ex) {
                     eventEnvelope.jsonError = ex;
