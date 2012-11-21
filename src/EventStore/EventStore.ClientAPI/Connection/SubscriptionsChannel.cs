@@ -43,6 +43,7 @@ namespace EventStore.ClientAPI.Connection
 {
     internal class SubscriptionsChannel
     {
+        private const int degreeOfParaleism = 1;
         private readonly ILogger _log;
 
         private readonly TcpConnector _connector;
@@ -51,11 +52,10 @@ namespace EventStore.ClientAPI.Connection
         private readonly ManualResetEvent _connectedEvent = new ManualResetEvent(false);
         private readonly object _subscriptionChannelLock = new object();
 
-        private Thread _executionThread;
-        private volatile bool _stopExecutionThread;
-        private readonly ConcurrentQueue<Action> _executionQueue = new ConcurrentQueue<Action>(); 
+        private readonly BlockingCollection<Action> _executionQueue = new BlockingCollection<Action>(); 
 
         private readonly ConcurrentDictionary<Guid, Subscription> _subscriptions = new ConcurrentDictionary<Guid, Subscription>();
+        private readonly CancellationTokenSource _tokenSource = new CancellationTokenSource();
 
         public SubscriptionsChannel(TcpConnector connector)
         {
@@ -70,7 +70,7 @@ namespace EventStore.ClientAPI.Connection
                 if (_connection != null)
                     _connection.Close();
 
-                _stopExecutionThread = stopBackgroundThread;
+                _tokenSource.Cancel();
             }
         }
 
@@ -156,28 +156,27 @@ namespace EventStore.ClientAPI.Connection
 
         private void ExecuteUserCallbackAsync(Action callback)
         {
-            _executionQueue.Enqueue(callback);
+            _executionQueue.Add(callback);
         }
 
-        private void ExecuteUserCallbacks()
+        private void StartExecutingUserCallbacks()
         {
-            while (!_stopExecutionThread)
-            {
-                Action callback;
-                if (_executionQueue.TryDequeue(out callback))
-                {
-                    try
-                    {
-                        callback();
-                    }
-                    catch (Exception e)
-                    {
-                        _log.Error(e, "User callback thrown");
-                    }
-                }
-                else
-                    Thread.Sleep(1);
-            }
+            Enumerable.Range(0, degreeOfParaleism)
+                .Select(i => Task.Factory.StartNew(
+                    () =>
+                        {
+                            foreach (var callback in _executionQueue.GetConsumingEnumerable(_tokenSource.Token))
+                            {
+                                try
+                                {
+                                    callback();
+                                }
+                                catch (Exception e)
+                                {
+                                    _log.Error(e, "User callback thrown");
+                                }
+                            }
+                        })).ToList();
         }
 
         private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
@@ -242,16 +241,7 @@ namespace EventStore.ClientAPI.Connection
         {
             _connection = _connector.CreateTcpConnection(endPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
 
-            if (_executionThread == null)
-            {
-                _stopExecutionThread = false;
-                _executionThread = new Thread(ExecuteUserCallbacks)
-                {
-                    IsBackground = true,
-                    Name = "SubscriptionsChannel user callbacks thread"
-                };
-                _executionThread.Start();
-            }
+            StartExecutingUserCallbacks();
         }
 
         public void EnsureConnected(IPEndPoint endPoint)
