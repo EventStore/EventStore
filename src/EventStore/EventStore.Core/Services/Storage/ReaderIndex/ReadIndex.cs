@@ -498,8 +498,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return new PrepareResult(true, (PrepareLogRecord)result.LogRecord);
         }
 
+        bool IReadIndex.IsStreamDeleted(string streamId)
+        {
+            return ((IReadIndex) this).GetLastStreamEventNumber(streamId) == EventNumber.DeletedStream;
+        }
+
         int IReadIndex.GetLastStreamEventNumber(string streamId)
         {
+            Ensure.NotNullOrEmpty(streamId, "streamId");
+
             var reader = GetReader();
             try
             {
@@ -515,9 +522,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         {
             Ensure.NotNull(streamId, "streamId");
 
-            StreamCacheInfo streamInfo;
-            if (_streamInfoCache.TryGet(streamId, out streamInfo) && streamInfo.LastEventNumber.HasValue)
-                return streamInfo.LastEventNumber.Value;
+            StreamCacheInfo streamCacheInfo;
+            if (_streamInfoCache.TryGet(streamId, out streamCacheInfo) && streamCacheInfo.LastEventNumber.HasValue)
+                return streamCacheInfo.LastEventNumber.Value;
 
             var lastEventNumber = GetLastStreamEventNumberUncached(reader, streamId);
             if (lastEventNumber != ExpectedVersion.NoStream)
@@ -555,14 +562,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             return ExpectedVersion.NoStream; // no such event stream
         }
 
-        bool IReadIndex.IsStreamDeleted(string streamId)
+        StreamMetadata IReadIndex.GetStreamMetadata(string streamId)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
 
             var reader = GetReader();
             try
             {
-                return GetLastStreamEventNumberCached(reader, streamId) == EventNumber.DeletedStream;
+                return GetStreamMetadataCached(reader, streamId);
             }
             finally
             {
@@ -891,9 +898,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private StreamMetadata GetStreamMetadataCached(ITransactionFileReader reader, string streamId)
         {
-            StreamCacheInfo streamInfo;
-            if (_streamInfoCache.TryGet(streamId, out streamInfo) && streamInfo.Metadata.HasValue)
-                return streamInfo.Metadata.Value;
+            StreamCacheInfo streamCacheInfo;
+            if (_streamInfoCache.TryGet(streamId, out streamCacheInfo) && streamCacheInfo.Metadata.HasValue)
+                return streamCacheInfo.Metadata.Value;
 
             var metadata = GetStreamMetadataUncached(reader, streamId);
             _streamInfoCache.Put(streamId,

@@ -95,6 +95,11 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             throw new NotImplementedException();
         }
 
+        public StreamMetadata GetStreamMetadata(string streamId)
+        {
+            throw new NotImplementedException();
+        }
+
         public CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition)
         {
             throw new NotImplementedException();

@@ -174,7 +174,9 @@
     <Compile Include="Services\projections_manager\v8\when_not_returning_state_from_a_js_handler.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_emitting_v8_projection.cs" />
     <Compile Include="Services\projections_manager\when_a_dsiabled_projection_has_been_loaded.cs" />
+    <Compile Include="Services\projections_manager\when_requesting_partition_state_from_a_stopped_foreach_projection.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_disabled_projection_query_text.cs" />
+    <Compile Include="Services\projections_manager\when_updating_a_faulted_projection_query_text_invalid_defintion.cs" />
     <Compile Include="Services\projection_subscription\when_handling_multiple_committed_event_passing_the_filter.cs" />
     <Compile Include="Services\staged_processing_queue.cs" />
     <Compile Include="Services\stream_event_distribution_point\when_creating_stream_event_distribution_point.cs" />

@@ -39,8 +39,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
-using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Core.TransactionLog.Checkpoint;
 

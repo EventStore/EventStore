@@ -341,12 +341,14 @@ namespace EventStore.Projections.Core.Messages
         public class ProjectionState : Message
         {
             private readonly string _name;
+            private readonly string _partition;
             private readonly string _state;
             private readonly Exception _exception;
 
-            public ProjectionState(string name, string state, Exception exception = null)
+            public ProjectionState(string name, string partition, string state, Exception exception = null)
             {
                 _name = name;
+                _partition = partition;
                 _state = state;
                 _exception = exception;
             }
@@ -364,6 +366,11 @@ namespace EventStore.Projections.Core.Messages
             public Exception Exception
             {
                 get { return _exception; }
+            }
+
+            public string Partition
+            {
+                get { return _partition; }
             }
         }
 

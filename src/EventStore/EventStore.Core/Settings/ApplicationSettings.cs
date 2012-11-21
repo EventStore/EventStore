@@ -31,8 +31,6 @@ using EventStore.Core.Services.Monitoring;
 
 namespace EventStore.Core.Settings
 {
-
-
     public class SingleVNodeAppSettings
     {
         public readonly TimeSpan StatsPeriod;
@@ -44,6 +42,4 @@ namespace EventStore.Core.Settings
             StatsStorage = statsStorage;
         }
     }
-
-
 }

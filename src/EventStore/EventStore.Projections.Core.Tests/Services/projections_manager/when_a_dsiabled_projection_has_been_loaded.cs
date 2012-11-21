@@ -46,7 +46,16 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             ExistingEvent("$projections-$all", "ProjectionCreated", null, "test-projection");
             ExistingEvent(
                 "$projections-test-projection", "ProjectionUpdated", null,
-                @"{""Query"":""fromAll(); on_any(function(){});log('hello-from-projection-definition');"", ""Mode"":""3"", ""Enabled"":false, ""HandlerType"":""JS""}");
+                @"{
+                    ""Query"":""fromAll(); on_any(function(){});log('hello-from-projection-definition');"", 
+                    ""Mode"":""3"", 
+                    ""Enabled"":false, 
+                    ""HandlerType"":""JS"",
+                    ""SourceDefintion"":{
+                        ""AllEvents"":true,
+                        ""AllStreams"":true,
+                    }
+                }");
             AllWritesSucceed();
         }
 
@@ -69,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         }
 
         [Test]
-        public void the_projection_status_is_stoppd()
+        public void the_projection_status_is_stopped()
         {
             _manager.Handle(
                 new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, false));

@@ -38,6 +38,15 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class CreateStreamOperation : IClientOperation
     {
+        public Guid CorrelationId
+        {
+            get
+            {
+                lock (_corrIdLock)
+                    return _correlationId;
+            }
+        }
+
         private readonly TaskCompletionSource<object> _source;
         private ClientMessage.CreateStreamCompleted _result;
         private int _completed;
@@ -50,16 +59,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly Guid _id;
         private readonly bool _isJson;
         private readonly byte[] _metadata;
-
-        public Guid CorrelationId
-        {
-            get
-            {
-                lock (_corrIdLock)
-                    return _correlationId;
-            }
-        }
-
+        
         public CreateStreamOperation(TaskCompletionSource<object> source,
                                      Guid correlationId,
                                      bool forward,

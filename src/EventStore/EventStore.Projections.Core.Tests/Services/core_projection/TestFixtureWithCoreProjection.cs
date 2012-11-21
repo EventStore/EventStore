@@ -35,11 +35,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                             ?? new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource);
             _firstWriteCorrelationId = Guid.NewGuid();
             _projectionCorrelationId = Guid.NewGuid();
-            _coreProjection = new CoreProjection(
-                "projection", _projectionCorrelationId, _bus, _stateHandler,
-                new ProjectionConfig(
-                    _projectionMode, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
-                    true), _readDispatcher, _writeDispatcher);
+            _coreProjection = CoreProjection.CreateAndPrepapre("projection", _projectionCorrelationId, _bus, _stateHandler,
+                                                   new ProjectionConfig(
+                                                       _projectionMode, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
+                                                       true), _readDispatcher, _writeDispatcher, null);
             PreWhen();
             When();
         }
