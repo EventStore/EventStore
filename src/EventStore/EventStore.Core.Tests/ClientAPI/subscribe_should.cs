@@ -91,9 +91,9 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
 
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.That(create.Wait(Timeout));
+                Assert.IsTrue(create.Wait(Timeout), "CreateStreamAsync timed out.");
 
-                Assert.That(appeared.Wait(Timeout));
+                Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
             }
         }
 
@@ -111,10 +111,10 @@ namespace EventStore.Core.Tests.ClientAPI
                 Action subscriptionDropped = () => dropped.Signal();
 
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
-                Assert.That(!appeared.Wait(50));
+                Assert.IsFalse(appeared.Wait(100), "Some event appeared!");
 
                 store.UnsubscribeAsync(stream);
-                Assert.That(dropped.Wait(Timeout));
+                Assert.IsTrue(dropped.Wait(Timeout), "Dropped countdown event timed out.");
             }
         }
 
@@ -132,13 +132,13 @@ namespace EventStore.Core.Tests.ClientAPI
                 Action subscriptionDropped = () => dropped.Signal();
 
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.That(create.Wait(Timeout));
+                Assert.IsTrue(create.Wait(Timeout), "CreateStreamAsync timed out.");
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
-                Assert.That(delete.Wait(Timeout));
+                Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");
 
                 var subscribe = store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
-                Assert.That(!subscribe.Wait(50));
-                Assert.That(!dropped.Wait(50));
+                Assert.IsFalse(subscribe.Wait(100), "Something came on subscription!");
+                Assert.IsFalse(dropped.Wait(100), "Subscription drop came!");
             }
         }
 
@@ -156,17 +156,17 @@ namespace EventStore.Core.Tests.ClientAPI
                 Action subscriptionDropped = () => dropped.Signal();
 
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.That(create.Wait(Timeout));
+                Assert.True(create.Wait(Timeout), "CreateStreamAsync timed out.");
 
                 var subscribe = store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
 
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
-                Assert.That(delete.Wait(Timeout));
+                Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");
 
-                Assert.That(appeared.Wait(Timeout));
+                Assert.IsTrue(appeared.Wait(Timeout), "Nothing appeared on subscription.");
 
-                Assert.That(!dropped.Wait(50));
-                Assert.That(!subscribe.Wait(50));
+                Assert.IsFalse(dropped.Wait(100), "Subscription drop notification came.");
+                Assert.IsFalse(subscribe.Wait(100), "Subscription dropped.");
             }
         }
 
@@ -186,11 +186,11 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
 
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.That(create.Wait(Timeout));
+                Assert.IsTrue(create.Wait(Timeout), "CreateStreamAsync timed out.");
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
-                Assert.That(delete.Wait(Timeout));
+                Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");
 
-                Assert.That(appeared.Wait(Timeout));
+                Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
             }
         }
     }

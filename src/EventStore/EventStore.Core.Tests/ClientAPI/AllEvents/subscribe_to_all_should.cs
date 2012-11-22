@@ -70,9 +70,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.That(create.Wait(Timeout));
+                Assert.IsTrue(create.Wait(Timeout), "StreamCreateAsync timed out.");
 
-                Assert.That(appeared.Wait(Timeout));
+                Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
             }
         }
 
@@ -91,8 +91,11 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
+                Thread.Sleep(10);
+
                 store.UnsubscribeFromAllStreamsAsync();
-                Assert.That(dropped.Wait(Timeout));
+
+                Assert.IsTrue(dropped.Wait(Timeout), "Appeared countdown event timed out.");
             }
         }
 
