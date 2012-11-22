@@ -307,6 +307,11 @@
     <Compile Include="TransactionLog\Scavenging\when_deleting_stream_with_a_lot_of_data.cs" />
     <Compile Include="TransactionLog\Scavenging\when_deleting_stream_with_explicit_transaction.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_nothing_to_scavenge.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_both_max_age_and_max_count_with_stricted_max_age_specified.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_both_max_age_and_max_count_with_stricted_max_count_specified.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_max_age_specified.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_max_count_specified.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_strict_max_age_leaving_no_events_in_stream.cs" />
     <Compile Include="TransactionLog\Scavenging\when_stream_is_deleted.cs" />
     <Compile Include="TransactionLog\Scavenging\when_stream_is_deleted_and_bulk_transaction_spans_chunks_boundary.cs" />
     <Compile Include="TransactionLog\Scavenging\when_stream_is_deleted_and_explicit_transaction_spans_chunks_boundary.cs" />
