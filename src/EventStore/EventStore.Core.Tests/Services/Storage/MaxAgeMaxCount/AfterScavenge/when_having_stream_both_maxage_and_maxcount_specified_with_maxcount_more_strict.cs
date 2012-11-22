@@ -47,14 +47,14 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
         {
             var now = DateTime.UtcNow;
 
-            const string metadata = @"{""$maxAge"":60,""$maxCount"":3}";
+            var metadata = string.Format(@"{{""$maxAge"":{0},""$maxCount"":3}}", (int)TimeSpan.FromMinutes(60).TotalSeconds);
 
-            _r1 = WriteStreamCreated("ES", metadata, now.AddSeconds(-100));
-            _r2 = WriteSingleEvent("ES", 1, "bla1", now.AddSeconds(-50));
-            _r3 = WriteSingleEvent("ES", 2, "bla1", now.AddSeconds(-20));
-            _r4 = WriteSingleEvent("ES", 3, "bla1", now.AddSeconds(-11));
-            _r5 = WriteSingleEvent("ES", 4, "bla1", now.AddSeconds(-5));
-            _r6 = WriteSingleEvent("ES", 5, "bla1", now.AddSeconds(-1));
+            _r1 = WriteStreamCreated("ES", metadata, now.AddMinutes(-100));
+            _r2 = WriteSingleEvent("ES", 1, "bla1",  now.AddMinutes(-50));
+            _r3 = WriteSingleEvent("ES", 2, "bla1",  now.AddMinutes(-20));
+            _r4 = WriteSingleEvent("ES", 3, "bla1",  now.AddMinutes(-11));
+            _r5 = WriteSingleEvent("ES", 4, "bla1",  now.AddMinutes(-5));
+            _r6 = WriteSingleEvent("ES", 5, "bla1",  now.AddMinutes(-1));
 
             Scavenge(completeLast: true);
         }
