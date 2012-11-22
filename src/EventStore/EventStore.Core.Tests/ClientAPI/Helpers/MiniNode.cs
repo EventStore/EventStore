@@ -60,12 +60,10 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
         public MiniNode()
         {
-            int extTcpPort;
-            int extHttpPort;
-            if (!AvailablePorts.TryDequeue(out extTcpPort))
-                throw new Exception("Couldn't get free external TCP port for MiniNode.");
-            if (!AvailablePorts.TryDequeue(out extHttpPort))
-                throw new Exception("Couldn't get free external HTTP port for MiniNode.");
+            var ip = GetLocalIp();
+
+            int extTcpPort = GetAvailablePort(ip);
+            int extHttpPort = GetAvailablePort(ip);
 
             _dbPath = Path.Combine(Path.GetTempPath(),
                                    Guid.NewGuid().ToString(),
@@ -73,7 +71,6 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             Directory.CreateDirectory(_dbPath);
             _tfChunkDb = new TFChunkDb(CreateOneTimeDbConfig(1*1024*1024, _dbPath, 2));
 
-            var ip = GetLocalIp();
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             HttpEndPoint = new IPEndPoint(ip, extHttpPort);
 
@@ -81,6 +78,29 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             var appSettings = new SingleVNodeAppSettings(TimeSpan.FromHours(1), StatsStorage.None);
 
             _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, appSettings, dbVerifyHashes: true);
+        }
+
+        private int GetAvailablePort(IPAddress ip)
+        {
+            for (int i = 0; i < 10; ++i)
+            {
+                int port;
+                if (!AvailablePorts.TryDequeue(out port))
+                    throw new Exception("Couldn't get free TCP port for MiniNode.");
+                try
+                {
+                    var listener = new TcpListener(ip, port);
+                    listener.Start();
+
+                    listener.Stop();
+                    return port;
+                }
+                catch (Exception)
+                {
+                    AvailablePorts.Enqueue(port);
+                }
+            }
+            throw new Exception("Reached trials limit while trying to get free port for MiniNode");
         }
 
         private static int[] GetRandomPorts(int from, int portCount)
