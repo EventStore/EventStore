@@ -42,9 +42,9 @@ namespace EventStore.Core.Messages
             public readonly bool UseGrouping;
 
             public GetFreshStats(IEnvelope envelope,
-                Func<Dictionary<string, object>, Dictionary<string, object>> statsSelector,
-                bool useMetadata,
-                bool useGrouping)
+                                 Func<Dictionary<string, object>, Dictionary<string, object>> statsSelector,
+                                 bool useMetadata,
+                                 bool useGrouping)
             {
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNull(statsSelector, "statsSelector");

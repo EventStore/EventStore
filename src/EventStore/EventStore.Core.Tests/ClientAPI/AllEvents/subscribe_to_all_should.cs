@@ -112,11 +112,11 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.That(create.Wait(Timeout));
+                Assert.IsTrue(create.Wait(Timeout), "CreateStreamAsync timed out.");
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
-                Assert.That(delete.Wait(Timeout));
+                Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");
 
-                Assert.That(appeared.Wait(Timeout));
+                Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event didn't fire in time.");
             }
         }
     }

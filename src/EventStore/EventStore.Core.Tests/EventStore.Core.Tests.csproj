@@ -352,7 +352,7 @@
   <ItemGroup>
     <None Include="..\EventStore.SingleNode\NLog.config">
       <Link>NLog.config</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="app.config">
       <SubType>Designer</SubType>

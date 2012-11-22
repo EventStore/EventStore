@@ -29,6 +29,7 @@
 using System;
 using System.Net;
 using System.Threading;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -92,8 +93,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         }
 
         public Tuple<bool, string> StartServiceAndSendRequest(Action<HttpService> bootstrap,
-                                                       string requestUrl,
-                                                       Func<HttpResponse, bool> verifyResponse)
+                                                              string requestUrl,
+                                                              Func<HttpResponse, bool> verifyResponse)
         {
             _bus.Publish(new SystemMessage.SystemInit());
 

@@ -69,9 +69,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.SubscribeAsync(stream, eventAppeared, subscriptionDropped);
 
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.That(create.Wait(Timeout));
-
-                Assert.That(appeared.Wait(Timeout));
+                Assert.IsTrue(create.Wait(Timeout), "CreateStreamAsync timed out.");
+                Assert.IsTrue(appeared.Wait(Timeout), "Event appeared countdown event timed out.");
             }
         }
 
