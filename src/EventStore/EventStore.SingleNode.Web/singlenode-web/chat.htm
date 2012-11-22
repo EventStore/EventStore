@@ -52,51 +52,52 @@
 
             tryLoadUserData();
 
-            $(".input-dialog").dialog({
-                modal: true,
-                closeOnEscape: false,
-                open: function (event, ui) {
-                    $(this).closest('.ui-dialog').find('.ui-dialog-titlebar-close').hide();
-                }
-            })
-                    .submit(onUserDataInput)
-                    .show();
+            $(".input-dialog")
+                .dialog({
+                    modal: true,
+                    closeOnEscape: false,
+                    open: function(event, ui) {
+                        $(this).closest('.ui-dialog').find('.ui-dialog-titlebar-close').hide();
+                    }
+                })
+                .submit(onUserDataInput)
+                .show();
 
             $(".input-window").submit(onMessageInput);
 
-            es.projection({
-                body: function () {
-                    fromStream('chat-' + chatRoomName).when({
-                        'ChatMessage': function (state, event) {
-                            var body = event.body;
-                            return { "text": (body.time + "> " + body.sender + ": " + body.message) };
-                        },
-                        'UserJoinedChat': function (state, event) {
-                            var body = event.body;
-                            return { "text": (body.time + "> user " + body.user + " has joined the chat!") };
-                        }
-                    });
-                },
-                runTrigger: function (runAction) {
-                    $(".input-dialog").bind("dialogclose", function (event, ui) {
-                        runAction();
-                    });
-                },
-                onStateChange: function (stateStr) {
-                    var stateObj = JSON.parse(stateStr);
-                    var currentText = $('.chat-window').val();
-
-                    var chatWindow = $('.chat-window').val(currentText + (stateObj.text || "") + "\r\n")[0];
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
-                },
-                startFrom: 0,
-                showError: function (err) {
-                    $('.error').text(err);
-                },
-                hideError: function () {
-                    $('.error').hide().text("");
-                }
+            $(".input-dialog").bind("dialogclose", function (event, ui) {
+                var projection = initProjection(userName, chatRoomName);
+                projection.start();
             });
+
+            function initProjection(userName, chatRoomName) {
+                return es.projection({
+                    body: function () {
+                        fromStream('chat-' + chatRoomName).when({
+                            'ChatMessage': function (state, event) {
+                                var body = event.body;
+                                return { "text": (body.time + "> " + body.sender + ": " + body.message) };
+                            },
+                            'UserJoinedChat': function (state, event) {
+                                var body = event.body;
+                                return { "text": (body.time + "> user " + body.user + " has joined the chat!") };
+                            }
+                        });
+                    },
+                    onStateUpdate: function (state) {
+                        var currentText = $('.chat-window').val();
+
+                        var chatWindow = $('.chat-window').val(currentText + (state.text || "") + "\r\n")[0];
+                        chatWindow.scrollTop = chatWindow.scrollHeight;
+                    },
+                    showError: function (err) {
+                        $('.error').text(err);
+                    },
+                    hideError: function () {
+                        $('.error').hide().text("");
+                    }
+                });
+            }
 
             function onUserDataInput(event) {
                 event.preventDefault();
