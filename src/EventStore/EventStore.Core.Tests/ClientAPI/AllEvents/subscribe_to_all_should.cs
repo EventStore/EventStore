@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
     [TestFixture, Category("LongRunning")]
     public class subscribe_to_all_should
     {
-        private const int Timeout = 1000;
+        private const int Timeout = 10000;
         
         private MiniNode _node;
 
