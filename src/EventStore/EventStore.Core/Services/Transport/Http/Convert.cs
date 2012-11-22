@@ -243,6 +243,8 @@ namespace EventStore.Core.Services.Transport.Http
 
         private static int GetActualStart(EventRecord[] items)
         {
+            if (items.IsEmpty())
+                return AtomSpecs.FeedPageSize - 1;
             return items.Max(e => e.EventNumber);
         }
 
