@@ -43,6 +43,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="es-common-web\css\es.charts.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="es-common-web\js\controls\es.Zoomer.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

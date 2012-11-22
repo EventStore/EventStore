@@ -2,13 +2,13 @@
 <html>
     <head>
         <title>Simple Chat</title>        
-        <script src="lib/jquery/jquery-1.8.0.min.js"></script>   
-        <script src="js/projections/v8/Prelude/Modules.js"> </script>
-        <script src="js/projections/v8/Prelude/Projections.js"> </script>
-        <script src="js/projections/es.projections.environment.js"> </script>
-        <script src="js/projections/v8/Prelude/1Prelude.js"> </script>
-        <script src="js/projections/es.projection.js"> </script>
-        <script src="js/projections/es.api.js"> </script>
+        <script src="/web/es/lib/jquery/jquery-1.8.0.min.js"></script>   
+        <script src="/web/es/js/projections/v8/Prelude/Modules.js"> </script>
+        <script src="/web/es/js/projections/v8/Prelude/Projections.js"> </script>
+        <script src="/web/es/js/projections/es.projections.environment.js"> </script>
+        <script src="/web/es/js/projections/v8/Prelude/1Prelude.js"> </script>
+        <script src="/web/es/js/projections/es.projection.js"> </script>
+        <script src="/web/es/js/projections/es.api.js"> </script>
     </head> 
     <body>
         
@@ -19,8 +19,8 @@
         <script>
             $(function () {
                 $(".username").focus();
-                
-                es.projection({
+
+                var projection = es.projection({
                     body: function () {
                         fromStream('simplest-chat').when({
                             'ChatMessage': function (state, event) {
@@ -28,11 +28,13 @@
                             }
                         });
                     },
-                    onStateChange: function (stateStr) {
-                        var stateObj = JSON.parse(stateStr);
+                    onStateUpdate: function (stateObj, stateStr) {
+                        if (!stateObj || !stateObj.chatEntry)
+                            return; // stream created
                         $("<div>").text(stateObj.chatEntry).prependTo(".chat-window");
                     }
                 });
+                projection.start();
 
                 $(".message-input").keypress(function (e) {
                     if (e.which !== 13) return;
