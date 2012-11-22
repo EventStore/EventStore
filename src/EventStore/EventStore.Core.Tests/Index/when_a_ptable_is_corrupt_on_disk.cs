@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using System.IO;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
@@ -33,17 +35,19 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class when_a_ptable_is_corrupt_on_disk
+    public class when_a_ptable_is_corrupt_on_disk: SpecificationWithDirectory
     {
         private string _filename;
         private PTable _table;
         private string _copiedfilename;
 
         [SetUp]
-        public void setup()
+        public override void SetUp()
         {
-            _filename = Path.GetRandomFileName();
-            _copiedfilename = Path.GetRandomFileName();
+            base.SetUp();
+
+            _filename = Path.Combine(PathName, Guid.NewGuid().ToString());
+            _copiedfilename = Path.Combine(PathName, Guid.NewGuid().ToString());
             var mtable = new HashListMemTable(maxSize: 2000);
             mtable.Add(0x0101, 0x0001, 0x0001);
             mtable.Add(0x0105, 0x0001, 0x0002);
@@ -66,12 +70,12 @@ namespace EventStore.Core.Tests.Index
         }
 
         [TearDown]
-        public void Teardown()
+        public override void TearDown()
         {
             _table.MarkForDestruction();
             _table.WaitForDestroy(1000);
-            File.Delete(_filename);
-            File.Delete(_copiedfilename);
+
+            base.TearDown();
         }
     }
 }

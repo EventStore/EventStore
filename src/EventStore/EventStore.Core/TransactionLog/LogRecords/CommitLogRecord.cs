@@ -137,7 +137,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
         {
             return string.Format("LogPosition: {0}, "
                                  + "TransactionPosition: {1}, "
-                                 + "EventNumber: {2}"
+                                 + "EventNumber: {2}, "
                                  + "SortKey: {3}, "
                                  + "CorrelationId: {4}, " 
                                  + "TimeStamp: {5}",

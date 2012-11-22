@@ -101,8 +101,8 @@ namespace EventStore.Core
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
-            monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
             monitoringInnerBus.Subscribe<ClientMessage.CreateStreamCompleted>(monitoring);
+            monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 
             //STORAGE SUBSYSTEM
             var indexPath = Path.Combine(db.Config.Path, "index");

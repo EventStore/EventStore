@@ -123,11 +123,13 @@ namespace EventStore.Core.Services.Transport.Http
         public void Handle(SystemMessage.SystemInit message)
         {
             if (_server.TryStart())
+            {
                 _inputBus.Publish(TimerMessage.Schedule.Create(UpdateInterval,
                                                                _publishEnvelope,
                                                                new HttpMessage.UpdatePendingRequests(_accessibility)));
+            }
             else
-                Application.Exit(ExitCode.Error, "http async server failed to start");
+                Application.Exit(ExitCode.Error, "Http async server failed to start.");
         }
 
         public void Handle(SystemMessage.BecomeShuttingDown message)

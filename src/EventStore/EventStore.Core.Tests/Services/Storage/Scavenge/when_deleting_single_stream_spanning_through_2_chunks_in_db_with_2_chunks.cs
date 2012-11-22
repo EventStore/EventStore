@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             _event6 = WriteSingleEvent("ES", 5, new string('.', 3000));
 
             WriteDelete("ES");
-            Scavenge();
+            Scavenge(completeLast: false);
         }
 
         [Test]
