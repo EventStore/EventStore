@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
     internal class MiniNode
     {
-        private static readonly ConcurrentQueue<int> AvailablePorts = new ConcurrentQueue<int>(GetRandomPorts(10000, 10000));
+        private static readonly ConcurrentQueue<int> AvailablePorts = new ConcurrentQueue<int>(GetRandomPorts(49200, 5000));
 
         public IPEndPoint TcpEndPoint { get; private set; }
         public IPEndPoint HttpEndPoint { get; private set; }
