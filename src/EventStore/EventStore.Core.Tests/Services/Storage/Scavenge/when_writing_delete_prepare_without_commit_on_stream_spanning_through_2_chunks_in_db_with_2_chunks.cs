@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             Assert.IsTrue(Writer.Write(prepare, out pos));
 
             _event3 = WriteSingleEvent("ES", 2, "bla1");
-            Scavenge();
+            Scavenge(completeLast: false);
         }
 
         [Test]

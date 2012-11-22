@@ -9,7 +9,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Storage.Scavenge
 {
     [TestFixture]
-    public class when_deleting_single_stream_spanning_through_2_chunks_in_2nd_chunk__in_db_with_3_chunks : ReadIndexTestScenario
+    public class when_deleting_single_stream_spanning_through_2_chunks_in_2nd_chunk_in_db_with_3_chunks : ReadIndexTestScenario
     {
         private EventRecord _event1;
         private EventRecord _event2;
@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
             _event8 = WriteStreamCreated("ES2");
             _event9 = WriteSingleEvent("ES2", 1, new string('.', 5000), retryOnFail: true); //chunk 3
 
-            Scavenge();
+            Scavenge(completeLast: false);
         }
 
         private PrepareLogRecord WriteDeletePrepare(string eventStreamId)

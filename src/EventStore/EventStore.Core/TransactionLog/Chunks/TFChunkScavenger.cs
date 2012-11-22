@@ -244,37 +244,25 @@ namespace EventStore.Core.TransactionLog.Chunks
                     return true;
                 }
 
+                bool keep = true;
                 if (streamMetadata.MaxCount.HasValue)
                 {
                     int maxKeptEventNumber = lastEventNumber - streamMetadata.MaxCount.Value + 1;
                     if (eventNumber < maxKeptEventNumber)
-                    {
-                        commitInfo.KeepCommit = commitInfo.KeepCommit ?? false;
-                        return false;
-                    }
-                    else
-                    {
-                        commitInfo.KeepCommit = true;
-                        return true;
-                    }
+                        keep = false;
                 }
 
                 if (streamMetadata.MaxAge.HasValue)
                 {
                     if (prepare.TimeStamp < DateTime.UtcNow - streamMetadata.MaxAge.Value)
-                    {
-                        commitInfo.KeepCommit = commitInfo.KeepCommit ?? false;
-                        return false;
-                    }
-                    else
-                    {
-                        commitInfo.KeepCommit = true;
-                        return true;
-                    }
+                        keep = false;
                 }
 
-                commitInfo.KeepCommit = true;
-                return true;
+                if (keep)
+                    commitInfo.KeepCommit = true;
+                else
+                    commitInfo.KeepCommit = commitInfo.KeepCommit ?? false;
+                return keep;
             }
             else
             {

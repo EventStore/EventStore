@@ -57,6 +57,7 @@ namespace EventStore.Core.Tests.Services.Storage
 
         private TFChunkScavenger _scavenger;
         private bool _scavenge;
+        private bool _completeLastChunkOnScavenge;
 
         protected ReadIndexTestScenario(int maxEntriesInMemTable = 1000000)
         {
@@ -112,6 +113,8 @@ namespace EventStore.Core.Tests.Services.Storage
             // scavenge must run after readIndex is built
             if (_scavenge)
             {
+                if (_completeLastChunkOnScavenge)
+                    Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
                 _scavenger = new TFChunkScavenger(Db, ReadIndex);
                 _scavenger.Scavenge(alwaysKeepScavenged: true);
             }
@@ -358,11 +361,12 @@ namespace EventStore.Core.Tests.Services.Storage
             return pos;
         }
 
-        protected void Scavenge()
+        protected void Scavenge(bool completeLast)
         {
             if (_scavenge)
                 throw new InvalidOperationException("Scavenge can be executed only once in ReadIndexTestScenario");
             _scavenge = true;
+            _completeLastChunkOnScavenge = completeLast;
         }
     }
 }
