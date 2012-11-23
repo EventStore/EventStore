@@ -98,7 +98,7 @@ namespace EventStore.TestClient
             }
 
             // ##teamcity[buildStatisticValue key='<valueTypeKey>' value='<value>']
-            const string teamCityFormat = "##teamcity[buildStatisticValue key='{0}' value='{1}']";
+            var teamCityFormat = Environment.NewLine + "##teamcity[buildStatisticValue key='{0}' value='{1}']";
             Log.Value.Debug(teamCityFormat, key, value);
         }
     }
