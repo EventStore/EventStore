@@ -197,7 +197,7 @@ namespace EventStore.Core
 
         public void Stop()
         {
-            MainQueue.Publish(new SystemMessage.BecomeShuttingDown());
+            MainQueue.Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: false));
         }
 
         public override string ToString()
