@@ -437,7 +437,8 @@ namespace EventStore.Core.Services.Storage
             var start = _watch.ElapsedTicks;
             if (start - _lastFlush >= _flushDelay + 2 * TicksPerMs || FlushMessagesInQueue == 0)
             {
-                Writer.Flush();
+                FlushInternal();
+
                 var end = _watch.ElapsedTicks;
                 _flushDelay = end - start;
                 _lastFlush = end;
@@ -445,6 +446,11 @@ namespace EventStore.Core.Services.Storage
                 return true;
             }
             return false;
+        }
+
+        protected virtual void FlushInternal()
+        {
+            Writer.Flush();
         }
 
         public void Dispose()

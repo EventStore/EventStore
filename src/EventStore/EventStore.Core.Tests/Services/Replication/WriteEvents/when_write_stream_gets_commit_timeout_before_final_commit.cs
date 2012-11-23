@@ -48,10 +48,10 @@ namespace EventStore.Core.Tests.Services.Replication.WriteEvents
         protected override IEnumerable<Message> WithInitialMessages()
         {
             yield return new StorageMessage.WriteRequestCreated(CorrelationId, Envelope, "test123", ExpectedVersion.Any, new[] {DummyEvent()});
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.CommitAck(CorrelationId, 2, 3);
+            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.CommitAck(CorrelationId, SomeEndPoint, 100, 2, 3);
         }
 
         protected override Message When()

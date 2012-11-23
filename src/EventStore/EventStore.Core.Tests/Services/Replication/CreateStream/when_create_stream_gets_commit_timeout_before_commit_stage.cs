@@ -47,8 +47,8 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
         protected override IEnumerable<Message> WithInitialMessages()
         {
             yield return new StorageMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Guid.NewGuid(), false, Metadata);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
         }
 
         protected override Message When()
