@@ -60,7 +60,6 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [Test]
         public void the_record_is_not_appended()
         {
-            Assert.Fail("Temporary fail to test TeamCity debugging info in NUnit tests.");
             Assert.IsFalse(_written);
         }
     }
