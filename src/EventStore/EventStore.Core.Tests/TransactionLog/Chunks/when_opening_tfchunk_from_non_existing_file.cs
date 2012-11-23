@@ -33,14 +33,12 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_opening_tfchunk_from_non_existing_file
+    public class when_opening_tfchunk_from_non_existing_file: SpecificationWithFile
     {
-        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
-        
         [Test]
         public void it_should_throw_a_file_not_found_exception()
         {
-            Assert.Throws<CorruptDatabaseException>(() => TFChunk.FromCompletedFile(_filename, verifyHash: true));
+            Assert.Throws<CorruptDatabaseException>(() => TFChunk.FromCompletedFile(Filename, verifyHash: true));
         }
     }
 }

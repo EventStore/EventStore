@@ -50,7 +50,7 @@ namespace EventStore.Core.Index
 
         private int _isConverting;
 
-        public HashListMemTable(int maxSize = 2000000)
+        public HashListMemTable(int maxSize)
         {
             _hash = new Dictionary<uint, SortedList<Tuple<int, long>, byte>>(maxSize);
         }

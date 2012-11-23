@@ -32,24 +32,24 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_unlocking_a_tfchunk_that_has_been_marked_for_deletion
+    public class when_unlocking_a_tfchunk_that_has_been_marked_for_deletion: SpecificationWithFile
     {
-        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
-        private TFChunk chunk;
+        private TFChunk _chunk;
 
         [SetUp]
-        public void setup()
+        public override void SetUp()
         {
-            chunk = TFChunk.CreateNew(_filename, 1000, 0, 0);
-            var reader = chunk.AcquireReader();
-            chunk.MarkForDeletion();
+            base.SetUp();
+            _chunk = TFChunk.CreateNew(Filename, 1000, 0, 0);
+            var reader = _chunk.AcquireReader();
+            _chunk.MarkForDeletion();
             reader.Release();
         }
 
         [Test]
         public void the_file_is_deleted()
         {
-            Assert.IsFalse(File.Exists(_filename));
+            Assert.IsFalse(File.Exists(Filename));
         }
     }
 }

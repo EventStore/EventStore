@@ -46,27 +46,20 @@ namespace EventStore.Core.Tests.Index
         {
             base.SetUp();
 
-            _filename = Path.Combine(PathName, Guid.NewGuid().ToString());
-            _copiedfilename = Path.Combine(PathName, Guid.NewGuid().ToString());
-            var mtable = new HashListMemTable(maxSize: 2000);
+            _filename = GetTempFilePath();
+            _copiedfilename = GetTempFilePath();
+            var mtable = new HashListMemTable(maxSize: 10);
             mtable.Add(0x0101, 0x0001, 0x0001);
             mtable.Add(0x0105, 0x0001, 0x0002);
             _table = PTable.FromMemtable(mtable, _filename);
             File.Copy(_filename, _copiedfilename);
             _table.MarkForDestruction();
-            using(var f = new FileStream(_copiedfilename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+            using (var f = new FileStream(_copiedfilename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 f.Seek(130, SeekOrigin.Begin);
                 f.WriteByte(0x22);
             }
             _table = PTable.FromFile(_copiedfilename);
-        }
-
-        [Test]
-        public void the_hash_is_invalid()
-        {
-            var exc = Assert.Throws<CorruptIndexException>(() => _table.VerifyFileHash());
-            Assert.IsInstanceOf<HashValidationException>(exc.InnerException);
         }
 
         [TearDown]
@@ -76,6 +69,13 @@ namespace EventStore.Core.Tests.Index
             _table.WaitForDestroy(1000);
 
             base.TearDown();
+        }
+
+        [Test]
+        public void the_hash_is_invalid()
+        {
+            var exc = Assert.Throws<CorruptIndexException>(() => _table.VerifyFileHash());
+            Assert.IsInstanceOf<HashValidationException>(exc.InnerException);
         }
     }
 }

@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Storage
         private bool _scavenge;
         private bool _completeLastChunkOnScavenge;
 
-        protected ReadIndexTestScenario(int maxEntriesInMemTable = 1000000)
+        protected ReadIndexTestScenario(int maxEntriesInMemTable = 20)
         {
             Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
             MaxEntriesInMemTable = maxEntriesInMemTable;
@@ -71,9 +71,6 @@ namespace EventStore.Core.Tests.Services.Storage
 
             WriterChecksum = new InMemoryCheckpoint(0);
             ChaserChecksum = new InMemoryCheckpoint(0);
-
-            //WriterChecksum = new FileCheckpoint(Path.Combine(PathName, Checkpoint.Writer + ".chk"));
-            //ChaserChecksum = new FileCheckpoint(Path.Combine(PathName, Checkpoint.Chaser + ".chk"));
 
             Db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
@@ -95,7 +92,7 @@ namespace EventStore.Core.Tests.Services.Storage
             ChaserChecksum.Write(WriterChecksum.Read());
             ChaserChecksum.Flush();
 
-            TableIndex = new TableIndex(Path.Combine(PathName, "index"),
+            TableIndex = new TableIndex(GetFilePathFor("index"),
                                         () => new HashListMemTable(MaxEntriesInMemTable * 2),
                                         MaxEntriesInMemTable);
 
@@ -125,7 +122,7 @@ namespace EventStore.Core.Tests.Services.Storage
             ReadIndex.Close();
             ReadIndex.Dispose();
 
-            TableIndex.ClearAll();
+            TableIndex.Close();
 
             Db.Close();
             Db.Dispose();

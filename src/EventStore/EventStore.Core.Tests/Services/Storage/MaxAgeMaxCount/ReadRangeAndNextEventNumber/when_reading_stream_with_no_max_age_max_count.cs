@@ -4,7 +4,8 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNextEventNumber
 {
-    class when_reading_stream_with_no_max_age_max_count : ReadIndexTestScenario
+    [TestFixture]
+    public class when_reading_stream_with_no_max_age_max_count : ReadIndexTestScenario
     {
         private EventRecord _event0;
         private EventRecord _event1;
@@ -12,7 +13,6 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         private EventRecord _event3;
         private EventRecord _event4;
         private EventRecord _event5;
-
 
         protected override void WriteTestScenario()
         {

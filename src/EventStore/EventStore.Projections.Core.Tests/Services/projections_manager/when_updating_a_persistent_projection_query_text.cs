@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _manager.Dispose();
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void the_projection_source_can_be_retrieved()
         {
             _manager.Handle(new ProjectionManagementMessage.GetQuery(new PublishEnvelope(_bus), _projectionName));
@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             Assert.AreEqual(_newProjectionSource, projectionQuery.Query);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void the_projection_status_is_still_running()
         {
             _manager.Handle(
@@ -101,7 +101,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     .MasterStatus);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void the_projection_state_can_be_retrieved()
         {
             _manager.Handle(new ProjectionManagementMessage.GetState(new PublishEnvelope(_bus), _projectionName, ""));

@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected SourceRecorder _source;
 
         [SetUp]
-        public void setup()
+        public void Setup()
         {
             _state = null;
             _projection = null;
@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected abstract void Given();
 
         [TearDown]
-        public void teardown()
+        public void Teardown()
         {
             if (_stateHandler != null)
                 _stateHandler.Dispose();

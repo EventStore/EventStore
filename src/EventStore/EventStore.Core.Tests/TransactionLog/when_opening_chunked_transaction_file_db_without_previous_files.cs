@@ -52,8 +52,8 @@ namespace EventStore.Core.Tests.TransactionLog
             db.Dispose();
 
             Assert.AreEqual(1, Directory.GetFiles(PathName).Length);
-            Assert.IsTrue(File.Exists(Path.Combine(PathName, "prefix.tf0")));
-            var fileInfo = new FileInfo(Path.Combine(PathName, "prefix.tf0"));
+            Assert.IsTrue(File.Exists(GetFilePathFor("prefix.tf0")));
+            var fileInfo = new FileInfo(GetFilePathFor("prefix.tf0"));
             Assert.AreEqual(10000 + ChunkHeader.Size + ChunkFooter.Size, fileInfo.Length);
         }
     }

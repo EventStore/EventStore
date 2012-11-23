@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             ";
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_returns_true()
         {
             string state;
@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.IsTrue(result);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_returns_emitted_event()
         {
             string state;
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.AreEqual(@"{""a"":""b""}", Encoding.UTF8.GetString(emittedEvents[0].Data));
         }
 
-        [Test, Ignore]
+        [Test, Category("v8"), Ignore]
         public void can_pass_though_millions_of_events()
         {
             for (var i = 0; i < 100000000; i++)
@@ -94,8 +94,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
 
                 if (i%10000 == 0)
                 {
-                    teardown();
-                    setup(); // recompile..
+                    Teardown();
+                    Setup(); // recompile..
                     Console.Write(".");
                 }
             }

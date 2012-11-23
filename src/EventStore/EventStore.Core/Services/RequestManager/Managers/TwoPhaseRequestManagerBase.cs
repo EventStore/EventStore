@@ -63,13 +63,12 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (publisher == null) 
                 throw new ArgumentNullException();
             if (prepareCount <= 0 || commitCount <= 0) 
-                throw new ArgumentOutOfRangeException("counts for prepare and commit acks must be a positive number");
+                throw new ArgumentOutOfRangeException("Counts for prepare and commit acks must be a positive number.");
             Publisher = publisher;
             _awaitingCommit = commitCount;
             _awaitingPrepare = prepareCount;
             _publishEnvelope = new PublishEnvelope(publisher);
         }
-
 
         public void Handle(StorageMessage.WrongExpectedVersion message)
         {

@@ -39,7 +39,8 @@ namespace EventStore.Core.Tests
         [SetUp]
         public virtual void SetUp()
         {
-            Filename = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            var typeName = GetType().Name.Length > 30 ? GetType().Name.Substring(0, 30) : GetType().Name;
+            Filename = Path.Combine(Path.GetTempPath(), string.Format("{0}-{1}", Guid.NewGuid(), typeName));
         }
 
         [TearDown]

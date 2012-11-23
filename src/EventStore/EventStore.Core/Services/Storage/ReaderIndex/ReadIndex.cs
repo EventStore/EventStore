@@ -951,6 +951,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 seqReader.Close();
             }
+            try
+            {
+                _tableIndex.Close(removeFiles: false);
+            }
+            catch (TimeoutException exc)
+            {
+                Log.ErrorException(exc, "Timeout exception when trying to close TableIndex.");
+            }
         }
 
         public void Dispose()

@@ -34,20 +34,21 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class when_merging_four_ptables_with_deletes
+    public class when_merging_four_ptables_with_deletes: SpecificationWithDirectoryPerTestFixture
     {
         private readonly List<string> _files = new List<string>();
         private readonly List<PTable> _tables = new List<PTable>();
         private PTable _newtable;
 
         [TestFixtureSetUp]
-        public void Setup()
+        public override void TestFixtureSetUp()
         {
+            base.TestFixtureSetUp();
             for (int i = 0; i < 4; i++)
             {
-                _files.Add(Path.GetRandomFileName());
+                _files.Add(GetTempFilePath());
 
-                var table = new HashListMemTable(maxSize: 2000);
+                var table = new HashListMemTable(maxSize: 20);
                 for (int j = 0; j < 10; j++)
                 {
                     table.Add((UInt32)j + 1, i + 1, i * j);
@@ -61,8 +62,19 @@ namespace EventStore.Core.Tests.Index
                 }
                 _tables.Add(PTable.FromMemtable(table, _files[i]));
             }
-            _files.Add(Path.GetRandomFileName());
+            _files.Add(GetTempFilePath());
             _newtable = PTable.MergeTo(_tables, _files[4], x => false);
+        }
+
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
+        {
+            _newtable.Dispose();
+            foreach (var ssTable in _tables)
+            {
+                ssTable.Dispose();
+            }
+            base.TestFixtureTearDown();
         }
 
         [Test]
@@ -96,20 +108,6 @@ namespace EventStore.Core.Tests.Index
             for (uint i=1; i<5; i++)
             {
                 Assert.IsFalse(_newtable.TryGetOneValue(i, 2, out position));
-            }
-        }
-
-        [TestFixtureTearDown]
-        public void Teardown()
-        {
-            _newtable.Dispose();
-            foreach (var ssTable in _tables)
-            {
-                ssTable.Dispose();
-            }
-            foreach (var f in _files)
-            {
-                File.Delete(f);
             }
         }
     }

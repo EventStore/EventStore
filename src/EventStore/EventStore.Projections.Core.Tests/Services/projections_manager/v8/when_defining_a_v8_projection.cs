@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 _state = @"{""count"": 0}";
             }
 
-            [Test]
+            [Test, Category("v8")]
             public void source_definition_is_correct()
             {
                 Assert.AreEqual(true, _source.AllStreams);
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 _state = @"{""count"": 0}";
             }
 
-            [Test]
+            [Test, Category("v8")]
             public void source_definition_is_correct()
             {
                 Assert.AreEqual(false, _source.AllStreams);
@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 _state = @"{""count"": 0}";
             }
 
-            [Test]
+            [Test, Category("v8")]
             public void source_definition_is_correct()
             {
                 Assert.AreEqual(false, _source.AllStreams);
@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 _state = @"{""count"": 0}";
             }
 
-            [Test]
+            [Test, Category("v8")]
             public void source_definition_is_correct()
             {
                 Assert.AreEqual(false, _source.AllStreams);
@@ -150,7 +150,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 _state = @"{""count"": 0}";
             }
 
-            [Test]
+            [Test, Category("v8")]
             public void source_definition_is_correct()
             {
                 Assert.AreEqual(false, _source.AllStreams);
@@ -179,7 +179,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 _state = @"{""count"": 0}";
             }
 
-            [Test]
+            [Test, Category("v8")]
             public void source_definition_is_correct()
             {
                 Assert.AreEqual("state-stream", _source.Options.StateStreamName);

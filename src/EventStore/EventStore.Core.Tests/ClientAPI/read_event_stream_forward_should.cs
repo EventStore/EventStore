@@ -33,21 +33,23 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class read_event_stream_forward_should
+    public class read_event_stream_forward_should: SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
 
         [TestFixtureSetUp]
-        public void SetUp()
+        public override void TestFixtureSetUp()
         {
-            _node = new MiniNode();
+            base.TestFixtureSetUp();
+            _node = new MiniNode(PathName);
             _node.Start();
         }
 
         [TestFixtureTearDown]
-        public void TearDown()
+        public override void TestFixtureTearDown()
         {
             _node.Shutdown();
+            base.TestFixtureTearDown();
         }
 
         [Test]

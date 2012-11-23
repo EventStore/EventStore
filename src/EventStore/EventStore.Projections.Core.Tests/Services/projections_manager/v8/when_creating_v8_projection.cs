@@ -39,19 +39,19 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         private ProjectionStateHandlerFactory _stateHandlerFactory;
 
         [SetUp]
-        public void setup()
+        public void Setup()
         {
             _stateHandlerFactory = new ProjectionStateHandlerFactory();
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void api_can_be_used()
         {
             var ver = Js1.ApiVersion();
             Console.WriteLine(ver);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void it_can_be_created()
         {
             using (_stateHandlerFactory.Create("JS", @""))
@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             }
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void it_can_log_messages()
         {
             string m = null;
@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.AreEqual("Message1", m);
         }
 
-        [Test, ExpectedException(typeof (Js1Exception))]
+        [Test, Category("v8"), ExpectedException(typeof(Js1Exception))]
         public void js_syntax_errors_are_reported()
         {
             string m = null;
@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             }
         }
 
-        [Test, ExpectedException(typeof (Js1Exception), ExpectedMessage = "123")]
+        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "123")]
         public void js_exceptions_errors_are_reported()
         {
             string m = null;
@@ -87,7 +87,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             }
         }
 
-        [Test, ExpectedException(typeof (Js1Exception))]
+        [Test, Category("v8"), ExpectedException(typeof(Js1Exception))]
         public void js_cannot_load_module_throws_exception()
         {
             //TODO: a reason must be reported back

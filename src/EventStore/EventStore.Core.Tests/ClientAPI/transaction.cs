@@ -38,21 +38,23 @@ using System.Linq;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class transaction
+    public class transaction: SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
 
         [TestFixtureSetUp]
-        public void SetUp()
+        public override void TestFixtureSetUp()
         {
-            _node = new MiniNode();
+            base.TestFixtureSetUp();
+            _node = new MiniNode(PathName);
             _node.Start();
         }
 
         [TestFixtureTearDown]
-        public void TearDown()
+        public override void TestFixtureTearDown()
         {
             _node.Shutdown();
+            base.TestFixtureTearDown();
         }
 
         [Test]
@@ -152,8 +154,8 @@ namespace EventStore.Core.Tests.ClientAPI
             var transWritesCompleted = new AutoResetEvent(false);
             var writesToSameStreamCompleted = new AutoResetEvent(false);
 
-            var totalTranWrites = 500;
-            var totalPlainWrites = 500;
+            const int totalTranWrites = 500;
+            const int totalPlainWrites = 500;
 
             //excplicitly creating stream
             using (var store = EventStoreConnection.Create())

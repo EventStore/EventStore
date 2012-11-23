@@ -67,7 +67,11 @@ namespace EventStore.Core
         private readonly HttpService _httpService;
         private readonly TimerService _timerService;
 
-        public SingleVNode(TFChunkDb db, SingleVNodeSettings vNodeSettings, SingleVNodeAppSettings appSettings, bool dbVerifyHashes)
+        public SingleVNode(TFChunkDb db, 
+                           SingleVNodeSettings vNodeSettings, 
+                           SingleVNodeAppSettings appSettings, 
+                           bool dbVerifyHashes,
+                           int memTableEntryCount = TFConsts.MemTableEntryCount)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(vNodeSettings, "vNodeSettings");
@@ -107,8 +111,8 @@ namespace EventStore.Core
             //STORAGE SUBSYSTEM
             var indexPath = Path.Combine(db.Config.Path, "index");
             var tableIndex = new TableIndex(indexPath,
-                                            () => new HashListMemTable(maxSize: 2000000),
-                                            maxSizeForMemory: 1000000,
+                                            () => new HashListMemTable(maxSize: memTableEntryCount * 2),
+                                            maxSizeForMemory: memTableEntryCount,
                                             maxTablesPerLevel: 2);
 
             var readIndex = new ReadIndex(_mainQueue, 

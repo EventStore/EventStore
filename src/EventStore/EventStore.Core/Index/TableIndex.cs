@@ -442,7 +442,7 @@ namespace EventStore.Core.Index
             return idx;
         }
 
-        public void ClearAll(bool removeFiles = true)
+        public void Close(bool removeFiles = true)
         {
             //this should also make sure that no background tasks are running anymore
             if (!_backgroundRunningEvent.Wait(7000))
