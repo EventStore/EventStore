@@ -128,7 +128,7 @@ namespace EventStore.Core
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
             var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
-            var storageChaser = new StorageChaser(_mainQueue, chaser, readIndex);
+            var storageChaser = new StorageChaser(_mainQueue, chaser, readIndex, _tcpEndPoint);
             _outputBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
             _outputBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
             _outputBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
@@ -197,7 +197,7 @@ namespace EventStore.Core
 
         public void Stop()
         {
-            MainQueue.Publish(new SystemMessage.BecomeShuttingDown());
+            MainQueue.Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: false));
         }
 
         public override string ToString()

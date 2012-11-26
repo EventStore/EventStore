@@ -46,7 +46,6 @@ namespace EventStore.Common.Log
 
     public static class LogManager
     {
-
         static LogManager()
         {
             NLog.Config.ConfigurationItemFactory.Default.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
@@ -114,6 +113,7 @@ namespace EventStore.Common.Log
 
         public static void Finish()
         {
+            NLogger.FlushLog();
             NLog.LogManager.Configuration = null;
         }
     }

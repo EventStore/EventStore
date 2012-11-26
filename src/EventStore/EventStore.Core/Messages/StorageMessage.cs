@@ -211,32 +211,45 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class PrepareAck : Message
+        public class PrepareAck : Message, IFlushableMessage
         {
             public readonly Guid CorrelationId;
+            public readonly IPEndPoint VNodeEndPoint;
             public readonly long LogPosition;
-            public readonly PrepareFlags Flags; 
+            public readonly PrepareFlags Flags;
 
-            public PrepareAck(Guid correlationId, long logPosition, PrepareFlags flags)
+            public PrepareAck(Guid correlationId, IPEndPoint vnodeEndPoint, long logPosition, PrepareFlags flags)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
+                Ensure.Nonnegative(logPosition, "logPosition");
+
                 CorrelationId = correlationId;
+                VNodeEndPoint = vnodeEndPoint;
                 LogPosition = logPosition;
                 Flags = flags;
             }
         }
 
-        public class CommitAck : Message
+        public class CommitAck : Message, IFlushableMessage
         {
             public readonly Guid CorrelationId;
+            public readonly IPEndPoint VNodeEndPoint;
+            public readonly long LogPosition;
             public readonly long TransactionPosition;
             public readonly int EventNumber;
 
-            public CommitAck(Guid correlationId, long transactionPosition, int eventNumber)
+            public CommitAck(Guid correlationId, IPEndPoint vnodeEndPoint, long logPosition, long transactionPosition, int eventNumber)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
+                Ensure.Nonnegative(logPosition, "logPosition");
                 Ensure.Nonnegative(transactionPosition, "transactionPosition");
                 Ensure.Nonnegative(eventNumber, "eventNumber");
 
                 CorrelationId = correlationId;
+                VNodeEndPoint = vnodeEndPoint;
+                LogPosition = logPosition;
                 TransactionPosition = transactionPosition;
                 EventNumber = eventNumber;
             }

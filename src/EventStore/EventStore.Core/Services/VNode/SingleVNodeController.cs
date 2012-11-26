@@ -57,6 +57,7 @@ namespace EventStore.Core.Services.VNode
         private bool _storageReaderInitialized;
         private bool _storageWriterInitialized;
         private int _serviceShutdownsToExpect = 3;
+        private bool _exitProcessOnShutdown;
 
         public SingleVNodeController(IPublisher outputBus, IPEndPoint httpEndPoint)
         {
@@ -160,6 +161,9 @@ namespace EventStore.Core.Services.VNode
             _state = VNodeState.Shutdown;
 
             _outputBus.Publish(message);
+
+            if (_exitProcessOnShutdown)
+                Application.Exit(ExitCode.Success, "Shutdown with exiting from process was requested.");
         }
 
         private void Handle(SystemMessage.StorageReaderInitializationDone message)
@@ -238,6 +242,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(ClientMessage.RequestShutdown message)
         {
+            _exitProcessOnShutdown = message.ExitProcessOnShutdown;
             _mainQueue.Publish(new SystemMessage.BecomeShuttingDown());
         }
 

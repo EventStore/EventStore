@@ -51,6 +51,12 @@ namespace EventStore.Core.Messages
     {
         public class RequestShutdown: Message
         {
+            public readonly bool ExitProcessOnShutdown;
+
+            public RequestShutdown(bool exitProcessOnShutdown)
+            {
+                ExitProcessOnShutdown = exitProcessOnShutdown;
+            }
         }
 
         public abstract class WriteRequestMessage : Message

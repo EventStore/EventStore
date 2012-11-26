@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Diagnostics;
+using System.Net;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -46,6 +47,7 @@ namespace EventStore.Core.Services.Storage
         private readonly IPublisher _masterBus;
         private readonly ITransactionFileChaser _chaser;
         private readonly IReadIndex _readIndex;
+        private readonly IPEndPoint _vnodeEndPoint;
         private Thread _thread;
         private volatile bool _stop;
 
@@ -53,15 +55,17 @@ namespace EventStore.Core.Services.Storage
         private long _flushDelay;
         private long _lastFlush;
 
-        public StorageChaser(IPublisher masterBus, ITransactionFileChaser chaser, IReadIndex readIndex)
+        public StorageChaser(IPublisher masterBus, ITransactionFileChaser chaser, IReadIndex readIndex, IPEndPoint vnodeEndPoint)
         {
             Ensure.NotNull(masterBus, "masterBus");
             Ensure.NotNull(chaser, "chaser");
             Ensure.NotNull(readIndex, "readIndex");
+            Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
 
             _masterBus = masterBus;
             _chaser = chaser;
             _readIndex = readIndex;
+            _vnodeEndPoint = vnodeEndPoint;
 
             _flushDelay = 0;
             _lastFlush = _watch.ElapsedTicks;
@@ -97,6 +101,7 @@ namespace EventStore.Core.Services.Storage
                                 || (record.Flags & PrepareFlags.TransactionEnd) != 0)
                             {
                                 _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId,
+                                                                                 _vnodeEndPoint,
                                                                                  record.LogPosition,
                                                                                  record.Flags));
                             }
@@ -107,6 +112,8 @@ namespace EventStore.Core.Services.Storage
                         {
                             var record = (CommitLogRecord) result.LogRecord;
                             _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, 
+                                                                            _vnodeEndPoint,
+                                                                            record.LogPosition,
                                                                             record.TransactionPosition,
                                                                             record.EventNumber));
                             _readIndex.Commit(record);
