@@ -198,7 +198,7 @@ namespace EventStore.Core.Bus
                             _busyWatch.Reset();
                         }
                     }
-                    }
+                }
                 catch (Exception ex)
                 {
                     Log.ErrorException(ex, "Error while processing message {0} in queued handler '{1}'.", msg, _name);

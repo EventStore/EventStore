@@ -355,8 +355,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.DoesNotThrow(append.Wait);
 
                 var app2 = store.AppendToStreamAsync(stream, 0, events.Concat(new[] {new TestEvent(Guid.NewGuid())}));
-                //Assert.That(() => app2.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<Exception>());
-                Assert.Inconclusive("Storage writer silently writes to log message 'The request was partially committed and other part is different.' but SHOULD SEND FAIL");
+                Assert.That(() => app2.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }
     }

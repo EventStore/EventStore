@@ -85,13 +85,12 @@ namespace EventStore.TestClient.Commands
             var autoResetEvent = new AutoResetEvent(false);
 
             var all = 0;
+            int sent = 0;
+            int received = 0;
 
             for (int i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-
-                int sent = 0;
-                int received = 0;
 
                 threads.Add(new Thread(() =>
                 {
@@ -124,8 +123,10 @@ namespace EventStore.TestClient.Commands
                     {
                         client.Get(url, onsuccess, onException);
                         Interlocked.Increment(ref sent);
-                        while (sent - received > context.Client.Options.PingWindow)
+                        while (sent - received > context.Client.Options.PingWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }

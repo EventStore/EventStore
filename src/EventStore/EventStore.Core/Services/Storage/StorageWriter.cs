@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Storage
                                  IHandle<StorageMessage.WriteTransactionPrepare>,
                                  IHandle<StorageMessage.WriteCommit>
     {
-        private static readonly long TicksPerMs = Stopwatch.Frequency / 1000;
+        protected static readonly long TicksPerMs = Stopwatch.Frequency / 1000;
 
         protected readonly TFChunkWriter Writer;
         protected readonly IReadIndex ReadIndex;
@@ -303,13 +303,16 @@ namespace EventStore.Core.Services.Storage
                         break;
                     case CommitDecision.Idempotent:
                         message.Envelope.ReplyWith(new StorageMessage.AlreadyCommitted(message.CorrelationId,
-                                                                                           result.EventStreamId,
-                                                                                           result.StartEventNumber,
-                                                                                           result.EndEventNumber));
+                                                                                       result.EventStreamId,
+                                                                                       result.StartEventNumber,
+                                                                                       result.EndEventNumber));
                         break;
                     case CommitDecision.CorruptedIdempotency:
                         //TODO AN add messages and error code for invalid idempotent request
-                        throw new Exception("The request was partially committed and other part is different.");
+                        //TODO AN for now 
+                        //throw new Exception("The request was partially committed and other part is different.");
+                        message.Envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(message.CorrelationId));
+                        break;
                     case CommitDecision.InvalidTransaction:
                         message.Envelope.ReplyWith(new StorageMessage.InvalidTransaction(message.CorrelationId));
                         break;
@@ -437,7 +440,7 @@ namespace EventStore.Core.Services.Storage
             var start = _watch.ElapsedTicks;
             if (start - _lastFlush >= _flushDelay + 2 * TicksPerMs || FlushMessagesInQueue == 0)
             {
-                FlushInternal();
+                Writer.Flush();
 
                 var end = _watch.ElapsedTicks;
                 _flushDelay = end - start;
@@ -446,11 +449,6 @@ namespace EventStore.Core.Services.Storage
                 return true;
             }
             return false;
-        }
-
-        protected virtual void FlushInternal()
-        {
-            Writer.Flush();
         }
 
         public void Dispose()

@@ -114,8 +114,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.DoesNotThrow(initialCreate.Wait);
 
                 var secondCreate = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.Inconclusive();
-                //Assert.That(() => secondCreate.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
+                Assert.That(() => secondCreate.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }
 
