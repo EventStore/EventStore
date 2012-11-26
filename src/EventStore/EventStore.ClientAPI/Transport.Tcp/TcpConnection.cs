@@ -27,9 +27,7 @@
 //  
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using Collections = System.Collections;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -85,7 +83,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private SocketAsyncEventArgs _receiveSocketArgs;
         private SocketAsyncEventArgs _sendSocketArgs;
 
-        private readonly ConcurrentQueue<ArraySegment<byte>> _sendQueue = new ConcurrentQueue<ArraySegment<byte>>();
+        private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
         private readonly Queue<Tuple<ArraySegment<byte>, Action>> _receiveQueue = new Queue<Tuple<ArraySegment<byte>, Action>>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 

@@ -27,7 +27,6 @@
 //  
 
 using System;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -55,9 +54,9 @@ namespace EventStore.ClientAPI.Connection
 
         private Thread _executionThread;
         private volatile bool _stopExecutionThread;
-        private readonly ConcurrentQueue<Action> _executionQueue = new ConcurrentQueue<Action>(); 
+        private readonly Common.Concurrent.ConcurrentQueue<Action> _executionQueue = new Common.Concurrent.ConcurrentQueue<Action>(); 
 
-        private readonly ConcurrentDictionary<Guid, Subscription> _subscriptions = new ConcurrentDictionary<Guid, Subscription>();
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, Subscription> _subscriptions = new System.Collections.Concurrent.ConcurrentDictionary<Guid, Subscription>();
 
         public SubscriptionsChannel(TcpConnector connector)
         {

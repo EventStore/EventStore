@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Concurrent;
 using System.Net.Sockets;
 
 namespace EventStore.Transport.Tcp
@@ -36,7 +35,7 @@ namespace EventStore.Transport.Tcp
         public readonly string Name;
 
         private readonly Func<SocketAsyncEventArgs> _socketArgsCreator;
-        private readonly ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new ConcurrentStack<SocketAsyncEventArgs>();
+        private readonly Common.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Common.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
 
         public SocketArgsPool(string name, int initialCount, Func<SocketAsyncEventArgs> socketArgsCreator)
         {

@@ -26,13 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Concurrent;
 
 namespace EventStore.Core.DataStructures
 {
     public class ObjectPool<T> where T: class
     {
-        private readonly ConcurrentQueue<T> _items = new ConcurrentQueue<T>();
+        private readonly Common.Concurrent.ConcurrentQueue<T> _items = new Common.Concurrent.ConcurrentQueue<T>();
 
         private readonly int _count;
         private readonly Func<T> _creator;

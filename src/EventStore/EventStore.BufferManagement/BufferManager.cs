@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace EventStore.BufferManagement
@@ -57,7 +56,7 @@ namespace EventStore.BufferManagement
         private readonly int _segmentSize;
         private readonly bool _allowedToCreateMemory;
 
-        private readonly ConcurrentStack<ArraySegment<byte>> _buffers = new ConcurrentStack<ArraySegment<byte>>();
+        private readonly Common.Concurrent.ConcurrentStack<ArraySegment<byte>> _buffers = new Common.Concurrent.ConcurrentStack<ArraySegment<byte>>();
 
         private readonly List<byte[]> _segments;
         private readonly object _creatingNewSegmentLock = new object();
