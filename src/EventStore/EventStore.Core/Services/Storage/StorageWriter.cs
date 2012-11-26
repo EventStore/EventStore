@@ -50,7 +50,8 @@ namespace EventStore.Core.Services.Storage
                                  IHandle<StorageMessage.WriteTransactionPrepare>,
                                  IHandle<StorageMessage.WriteCommit>
     {
-        protected static readonly long TicksPerMs = Stopwatch.Frequency / 1000;
+        protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
+        private static readonly int MinFlushDelay = 2*TicksPerMs;
 
         protected readonly TFChunkWriter Writer;
         protected readonly IReadIndex ReadIndex;
@@ -438,7 +439,7 @@ namespace EventStore.Core.Services.Storage
         protected bool Flush()
         {
             var start = _watch.ElapsedTicks;
-            if (start - _lastFlush >= _flushDelay + 2 * TicksPerMs || FlushMessagesInQueue == 0)
+            if (start - _lastFlush >= _flushDelay + MinFlushDelay || FlushMessagesInQueue == 0)
             {
                 Writer.Flush();
 
