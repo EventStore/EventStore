@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly IPublisher _publisher;
         private readonly ITcpDispatcher _dispatcher;
         private readonly IMessageFramer _framer;
-        
+        private readonly QueuedHandler _sendQueue;
         private int _messageNumber;
         private bool _isClosed;
         private readonly string _connectionName;
@@ -98,6 +98,8 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             _connection = openedConnection;
             _connection.ConnectionClosed += OnConnectionClosed;
+            _sendQueue = new QueuedHandler(new TCPSender(this), "tcp", true, 50, 100000);
+            _sendQueue.Start();
             ScheduleHeartbeat(0);
         }
 
@@ -306,6 +308,26 @@ namespace EventStore.Core.Services.Transport.Tcp
                 if (x != null)
                     x.Handle(message);
             }
+        }
+
+        public void QueueMessage(Message message)
+        {
+            _sendQueue.Handle(message);
+        }
+    }
+
+    public class TCPSender : IHandle<Message>
+    {
+        private readonly TcpConnectionManager _tcpConnectionManager;
+
+        public TCPSender(TcpConnectionManager tcpConnectionManager)
+        {
+            _tcpConnectionManager = tcpConnectionManager;
+        }
+
+        public void Handle(Message message)
+        {
+            _tcpConnectionManager.SendMessage(message);
         }
     }
 }
