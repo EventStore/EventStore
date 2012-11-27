@@ -86,7 +86,6 @@
     <Compile Include="ClientOperations\TransactionalWriteOperation.cs" />
     <Compile Include="Common\Concurrent\ConcurrentQueue.cs" />
     <Compile Include="Common\Concurrent\ConcurrentStack.cs" />
-    <Compile Include="Common\Concurrent\SpinLock2.cs" />
     <Compile Include="Common\Log\DefaultLogger.cs" />
     <Compile Include="Common\Utils\Tasks.cs" />
     <Compile Include="ConnectionSettings.cs" />

@@ -148,9 +148,11 @@ namespace EventStore.Common.Locks
         private void Dispose(bool disposing)
         {
             if(!disposing && !_disposed) throw new Exception("Lock is being finalized without being released!");
-            if (_disposed) throw new Exception("Lock already disposed!");
-            _spinLock2.Exit();
-            _disposed = true;
+            if (!_disposed)
+            {
+                _spinLock2.Exit();
+                _disposed = true;
+            }
         }
 
         public void Dispose()
