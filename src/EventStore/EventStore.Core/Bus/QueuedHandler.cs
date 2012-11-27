@@ -108,9 +108,7 @@ namespace EventStore.Core.Bus
 
             _queueMonitor.Register(this);
 
-            _thread = new Thread(ReadFromQueue);
-            _thread.IsBackground = true;
-            _thread.Name = _name;
+            _thread = new Thread(ReadFromQueue) {IsBackground = true, Name = _name};
             _thread.Start();
 
             _stopped.Reset();

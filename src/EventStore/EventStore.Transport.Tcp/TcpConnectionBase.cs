@@ -28,6 +28,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Tcp
@@ -37,10 +38,8 @@ namespace EventStore.Transport.Tcp
         private Socket _socket;
         private IPEndPoint _endPoint;
 
-        // this lock is per connection, so unlilkely to block on it
-        // so locking any acces without any optimization
-        private readonly object _lock = new object();
-
+        //TODO GFY THERE ARE SOME DATETIMES IN HERE THAT ARE NOT LOCKED. MIGHT WANT TO STORE AS LONGS THOUGH
+        //I DONT THINK THEY ARE EVER CHECKED FROM ANOTHER THREAD!
         private DateTime? _lastSendStarted;
         private DateTime? _lastReceiveStarted;
         private bool _isClosed;
@@ -58,13 +57,7 @@ namespace EventStore.Transport.Tcp
 
         public IPEndPoint EndPoint
         {
-            get
-            {
-                lock (_lock)
-                {
-                    return _endPoint;
-                }
-            }
+            get { return _endPoint; }
         }
 
         public bool IsReadyForSend
@@ -103,18 +96,12 @@ namespace EventStore.Transport.Tcp
 
         public bool IsInitialized
         {
-            get
-            {
-                lock (_lock)
-                {
-                    return _socket != null;
-                }
-            }
+            get { return _socket != null; }
         }
 
         public bool IsFaulted
         {
-            get 
+            get
             {
                 try
                 {
@@ -130,100 +117,58 @@ namespace EventStore.Transport.Tcp
 
         public bool IsClosed
         {
-            get
-            {
-                lock (_lock)
-                {
-                    return _isClosed;
-                }
-            }
+            get { return _isClosed; }
         }
 
         public bool InSend
         {
-            get
-            {
-                lock (_lock)
-                {
-                    return _lastSendStarted != null;
-                }
-            }
+            get { return _lastSendStarted != null; }
         }
 
         public bool InReceive
         {
-            get
-            {
-                lock (_lock)
-                {
-                    return _lastReceiveStarted != null;
-                }
-            }
+            get { return _lastReceiveStarted != null; }
         }
 
         public DateTime? LastSendStarted
         {
-            get 
+            get
             {
-                lock (_lock)
-                {
-                    return _lastSendStarted;
-                }
+                //todo not safe on 32 bit
+                return _lastSendStarted;
             }
         }
 
         public DateTime? LastReceiveStarted
         {
-            get 
+            get
             {
-                lock (_lock)
-                {
-                    return _lastReceiveStarted;
-                }
+                //todo not safe on 32bit
+                return _lastReceiveStarted;
             }
         }
 
         public uint PendingSendBytes
         {
-            get
-            {
-                lock (_lock)
-                {
-                    return _pendingSendBytes;
-                }
-            }
+            get { return _pendingSendBytes; }
         }
 
         public uint InSendBytes
         {
-            get
-            {
-                lock (_lock)
-                {
-                    return _inSendBytes;
-                }
-            }
+            get { return _inSendBytes; }
         }
 
         public uint PendingReceivedBytes
         {
-            get
-            {
-                lock (_lock)
-                {
-                    return _pendingReceivedBytes;
-                }
-            }
+            get { return _pendingReceivedBytes; }
         }
 
         public long TotalBytesSent
         {
             get
             {
-                lock (_lock)
-                {
-                    return _totaBytesSent;
-                }
+                return Interlocked.Read(ref _totaBytesReceived);
+                ;
             }
         }
 
@@ -231,10 +176,9 @@ namespace EventStore.Transport.Tcp
         {
             get
             {
-                lock (_lock)
-                {
-                    return _totaBytesReceived;
-                }
+
+                return Interlocked.Read(ref _totaBytesReceived);
+                ;
             }
         }
 
@@ -249,68 +193,48 @@ namespace EventStore.Transport.Tcp
 
         protected void NotifySendScheduled(uint bytes)
         {
-            lock (_lock)
-            {
-                _pendingSendBytes += bytes;
-            }
+            _pendingSendBytes += bytes;
         }
 
         protected void NotifySendStarting(uint bytes)
         {
-            lock (_lock)
-            {
-				if (_lastSendStarted != null)
-					throw new Exception("Concurrent send deteced");
-                _lastSendStarted = DateTime.UtcNow;
-                _pendingSendBytes -= bytes;
-                _inSendBytes += bytes;
-            }
+            if (_lastSendStarted != null)
+                throw new Exception("Concurrent send deteced");
+            _lastSendStarted = DateTime.UtcNow;
+            _pendingSendBytes -= bytes;
+            _inSendBytes += bytes;
         }
 
         protected void NotifySendCompleted(uint bytes)
         {
-            lock (_lock)
-            {
-                _lastSendStarted = null;
-                _inSendBytes -= bytes;
-                _totaBytesSent += bytes;
-            }
+            _lastSendStarted = null;
+            _inSendBytes -= bytes;
+            Interlocked.Add(ref _totaBytesSent, bytes);
         }
 
         protected void NotifyReceiveStarting()
         {
-            lock (_lock)
-            {
-				if (_lastReceiveStarted != null)
-					throw new Exception("Concurrent receive deteced");
-                _lastReceiveStarted = DateTime.UtcNow;
-            }
+            if (_lastReceiveStarted != null)
+                throw new Exception("Concurrent receive deteced");
+            _lastReceiveStarted = DateTime.UtcNow;
         }
 
         protected void NotifyReceiveCompleted(uint bytes)
         {
-            lock (_lock)
-            {
-                _lastReceiveStarted = null;
-                _pendingReceivedBytes += bytes;
-                _totaBytesReceived += bytes;
-            }
+            _lastReceiveStarted = null;
+            _pendingReceivedBytes += bytes;
+            Interlocked.Add(ref _totaBytesReceived, bytes);
         }
 
         protected void NotifyReceiveDispatched(uint bytes)
         {
-            lock (_lock)
-            {
-                _pendingReceivedBytes -= bytes;
-            }
+
+            _pendingReceivedBytes -= bytes;
         }
 
         protected void NotifyClosed()
         {
-            lock (_lock)
-            {
-                _isClosed = true;
-            }
+            _isClosed = true;
             TcpConnectionMonitor.Default.Unregister(this);
         }
     }
