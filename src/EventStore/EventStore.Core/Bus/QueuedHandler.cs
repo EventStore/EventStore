@@ -78,11 +78,11 @@ namespace EventStore.Core.Bus
         private long _lastTotalItems;
         private long _totalSkipped;
         private long _lastTotalSkipped;
-        private long _lifetimeQueueLengthPeak;
-        private long _currentQueueLengthPeak;
+        private int _lifetimeQueueLengthPeak;
+        private int _currentQueueLengthPeak;
         private Type _lastProcessedMsgType;
         private Type _inProgressMsgType;
-
+        
         public QueuedHandler(IHandle<Message> consumer,
                              string name,
                              bool watchSlowMsg = true,
@@ -128,6 +128,7 @@ namespace EventStore.Core.Bus
         {
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
             _totalTimeWatch.Start();
+            var wasEmpty = true;
             while (!_stop)
             {
                 Message msg = null;
@@ -135,6 +136,11 @@ namespace EventStore.Core.Bus
                 {
                     if (!_queue.TryDequeue(out msg))
                     {
+                        if(!wasEmpty)
+                        {
+                            EnterIdle();
+                        }
+                        wasEmpty = true;
                         Thread.Sleep(1);
                     }
                     else
@@ -142,31 +148,29 @@ namespace EventStore.Core.Bus
                         var ttlMessage = msg as IAmOnlyCaredAboutForTime;
                         if (ttlMessage != null && !ttlMessage.AmStillCaredAbout())
                         {
-                            _totalSkipped += 1;
+                            Interlocked.Increment(ref _totalSkipped);
                             continue;
                         }
 
                         //NOTE: the following locks are primarily acquired in this thread, 
                         //      so not too high performance penalty
-                        lock (_statisticsLock)
+                        if (wasEmpty)
                         {
-                            _totalIdleWatch.Stop();
-                            _idleWatch.Reset();
-                           
-                            _totalBusyWatch.Start();
-                            _busyWatch.Restart();
-
-                            var cnt = _queue.Count;
-                            _lifetimeQueueLengthPeak = _lifetimeQueueLengthPeak > cnt ? _lifetimeQueueLengthPeak : cnt;
-                            _currentQueueLengthPeak = _currentQueueLengthPeak > cnt ? _currentQueueLengthPeak : cnt;
-
-                            _inProgressMsgType = msg.GetType();
+                            EnterNonIdle();
                         }
+                        wasEmpty = false;
+                        var cnt = _queue.Count;
+                        _lifetimeQueueLengthPeak = _lifetimeQueueLengthPeak > cnt
+                                                       ? _lifetimeQueueLengthPeak
+                                                       : cnt;
+                        _currentQueueLengthPeak = _currentQueueLengthPeak > cnt ? _currentQueueLengthPeak : cnt;
+
+                        _inProgressMsgType = msg.GetType();
 
                         if (!_watchSlowMsg)
                         {
                             _consumer.Handle(msg);
-                            _totalItems += 1;
+                            Interlocked.Increment(ref _totalItems);
                         }
                         else
                         {
@@ -174,7 +178,7 @@ namespace EventStore.Core.Bus
                             var qSize = _queue.Count;
 
                             _consumer.Handle(msg);
-                            _totalItems += 1;
+                            Interlocked.Increment(ref _totalItems);
 
                             if (_slowMsgWatch.Elapsed > _slowMsgThreshold)
                             {
@@ -186,16 +190,8 @@ namespace EventStore.Core.Bus
                                           _queue.Count);
                             }
                         }
-
-                        lock (_statisticsLock)
-                        {
-                            _lastProcessedMsgType = _inProgressMsgType;
-                            _inProgressMsgType = null;
-                            _totalIdleWatch.Start();
-                            _idleWatch.Restart();
-                            _totalBusyWatch.Stop();
-                            _busyWatch.Reset();
-                        }
+                        _lastProcessedMsgType = _inProgressMsgType;
+                        _inProgressMsgType = null;
                     }
                 }
                 catch (Exception ex)
@@ -205,6 +201,29 @@ namespace EventStore.Core.Bus
             }
             _stopped.Set();
             Thread.EndThreadAffinity();
+        }
+
+        private void EnterIdle()
+        {
+            lock (_statisticsLock)
+            {
+                _totalIdleWatch.Start();
+                _idleWatch.Restart();
+                _totalBusyWatch.Stop();
+                _busyWatch.Reset();
+            }
+        }
+
+        private void EnterNonIdle()
+        {
+            lock (_statisticsLock)
+            {
+                _totalIdleWatch.Stop();
+                _idleWatch.Reset();
+
+                _totalBusyWatch.Start();
+                _busyWatch.Restart();
+            }
         }
 
         public void Publish(Message message)
