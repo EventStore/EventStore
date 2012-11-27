@@ -43,7 +43,7 @@ by Joe Duffy (Author)
 using System;
 using System.Threading;
 
-namespace EventStore.Common.Concurrent
+namespace EventStore.Common.Locks
 {
     internal class SpinLock2
     {
@@ -107,6 +107,14 @@ namespace EventStore.Common.Concurrent
             }
         }
 
+        public IDisposable Acquire()
+        {
+            bool taken;
+            Enter(out taken);
+            if(taken) return new LockReleaser(this);
+            throw new Exception("Unable to acquire lock, this shouldnt happen.");
+        }
+
         public void Enter()
         {
             // Convenience method. Using this could be prone to deadlocks.
@@ -124,6 +132,36 @@ namespace EventStore.Common.Concurrent
                 available.Set();
                 Thread.EndCriticalRegion();
             }
+        }
+    }
+
+    internal class LockReleaser : IDisposable
+    {
+        private readonly SpinLock2 _spinLock2;
+        private bool _disposed = false;
+
+        public LockReleaser(SpinLock2 spinLock2)
+        {
+            _spinLock2 = spinLock2;
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if(!disposing && !_disposed) throw new Exception("Lock is being finalized without being released!");
+            if (_disposed) throw new Exception("Lock already disposed!");
+            _spinLock2.Exit();
+            _disposed = true;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~LockReleaser()
+        {
+            Dispose(false);
         }
     }
 }
