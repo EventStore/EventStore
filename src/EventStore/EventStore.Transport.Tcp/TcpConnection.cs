@@ -33,6 +33,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using EventStore.BufferManagement;
+using EventStore.Common.Locks;
 using EventStore.Common.Log;
 
 namespace EventStore.Transport.Tcp
@@ -90,7 +91,7 @@ namespace EventStore.Transport.Tcp
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
         private readonly object _receivingLock = new object();
-        private readonly object _sendingLock = new object();
+        private readonly SpinLock2 _sendingLock = new SpinLock2();
         private bool _isSending;
         private int _closed;
 
@@ -118,8 +119,7 @@ namespace EventStore.Transport.Tcp
             Console.WriteLine("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
 
             base.InitSocket(socket, EffectiveEndPoint);
-            lock (_sendingLock)
-            {
+            using(_sendingLock.Acquire()) {
                 _socket = socket;
                 try
                 {
@@ -147,7 +147,7 @@ namespace EventStore.Transport.Tcp
 
         public void EnqueueSend(IEnumerable<ArraySegment<byte>> data)
         {
-            lock (_sendingLock)
+            using(_sendingLock.Acquire())
             {
                 uint bytes = 0;
                 foreach (var segment in data)
@@ -162,7 +162,7 @@ namespace EventStore.Transport.Tcp
 
         private void TrySend()
         {
-            lock (_sendingLock)
+            using(_sendingLock.Acquire())
             {
                 if (_isSending || _sendQueue.Count == 0 || _socket == null)
                     return;
@@ -188,7 +188,7 @@ namespace EventStore.Transport.Tcp
 
             if (_sendSocketArgs.Count == 0)
             {
-                lock (_sendingLock)
+                using(_sendingLock.Acquire())
                 {
                     _isSending = false;
                     return;
@@ -231,7 +231,7 @@ namespace EventStore.Transport.Tcp
             NotifySendCompleted((uint) socketArgs.Count);
             Interlocked.Increment(ref _packagesSent);
 
-            lock (_sendingLock)
+            using(_sendingLock.Acquire())
             {
                 _isSending = false;
             }
@@ -405,7 +405,7 @@ namespace EventStore.Transport.Tcp
             }
             _socket = null;
 
-            lock (_sendingLock)
+            using (_sendingLock.Acquire())
             {
                 if (!_isSending)
                     ReturnSendingSocketArgs();

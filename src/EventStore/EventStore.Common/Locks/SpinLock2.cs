@@ -45,10 +45,10 @@ using System.Threading;
 
 namespace EventStore.Common.Locks
 {
-    internal class SpinLock2
+    public class SpinLock2
     {
         private int state;
-        private EventWaitHandle available = new AutoResetEvent(false);
+        private readonly EventWaitHandle available = new AutoResetEvent(false);
 
         // This looks at the total number of hardware threads available; if it's
         // only 1, we will use an optimized code path
