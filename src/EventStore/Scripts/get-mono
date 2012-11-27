@@ -5,16 +5,18 @@ function err() {
   exit 1
 }
 
-tag=${1:-""}
+echo get-mono [[tag] [prefix]]
 
+tag=${1:-""}
+prefix=$2
 
 cd ~ || err
 
-if [ -z $tag ]
+if [ -z $prefix ]
 then 
   MONO_PREFIX="/opt/mono" || err
 else
-  MONO_PREFIX="/opt/mono-$tag" || err
+  MONO_PREFIX="/opt/mono-$prefix" || err
 fi
   
 export DYLD_LIBRARY_FALLBACK_PATH=$MONO_PREFIX/lib:$DYLD_LIBRARY_FALLBACK_PATH || err
@@ -62,12 +64,16 @@ then
   git checkout $tag
 fi
 
-echo "Ready to build - into folder $MONO_PREFIX"
+echo "Ready to build, output prefix $MONO_PREFIX"
+sleep 2
 
 git clean -dfx || err
 ./autogen.sh --prefix=$MONO_PREFIX || err
 make || err
 make install || err
 popd || err
+
+echo "Done, output prefix $MONO_PREFIX"
+
 
 
