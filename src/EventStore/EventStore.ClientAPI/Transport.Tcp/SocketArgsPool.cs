@@ -28,7 +28,6 @@
 
 using System;
 using System.Net.Sockets;
-using Collections = System.Collections;
 
 namespace EventStore.ClientAPI.Transport.Tcp
 {
@@ -37,7 +36,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
         public readonly string Name;
         private readonly Func<SocketAsyncEventArgs> _socketArgsCreator;
 
-        private readonly Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
+        private readonly Common.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Common.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
 
         public SocketArgsPool(string name, int initialCount, Func<SocketAsyncEventArgs> socketArgsCreator)
         {

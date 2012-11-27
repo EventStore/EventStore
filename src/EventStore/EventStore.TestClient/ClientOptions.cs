@@ -50,16 +50,16 @@ namespace EventStore.TestClient
         [Option(null, "timeout", DefaultValue = -1, HelpText = "Timeout for command execution in seconds, -1 for infinity")]
         public int Timeout { get; set; }
 
-        [Option("r", "read-window", DefaultValue = 50, HelpText = "The difference between sent/received read commands")]
+        [Option("r", "read-window", DefaultValue = 2000, HelpText = "The difference between sent/received read commands")]
         public int ReadWindow { get; set; }
 
-        [Option("w", "write-window", DefaultValue = 50, HelpText = "The difference between sent/received write commands")]
+        [Option("w", "write-window", DefaultValue = 2000, HelpText = "The difference between sent/received write commands")]
         public int WriteWindow { get; set; }
 
-        [Option("p", "ping-window", DefaultValue = 50, HelpText = "The difference between sent/received ping commands")]
+        [Option("p", "ping-window", DefaultValue = 2000, HelpText = "The difference between sent/received ping commands")]
         public int PingWindow { get; set; }
 
-        [ValueList(typeof(List<string>), MaximumElements = -1)]
+        [ValueList(typeof(List<string>), MaximumElements = -1)] 
         public IList<string> Command { get; set; }
 
         [HelpOption]

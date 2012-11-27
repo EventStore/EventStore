@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -48,7 +47,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly object _backgroundLock = new object();
         private bool _backgroundRunning;
 
-        private readonly ConcurrentQueue<TFChunk> _chunksQueue = new ConcurrentQueue<TFChunk>();
+        private readonly Common.Concurrent.ConcurrentQueue<TFChunk> _chunksQueue = new Common.Concurrent.ConcurrentQueue<TFChunk>();
 
         public TFChunkManager(TFChunkDbConfig config)
         {

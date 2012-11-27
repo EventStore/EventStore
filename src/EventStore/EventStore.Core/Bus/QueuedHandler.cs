@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Log;
@@ -56,7 +55,7 @@ namespace EventStore.Core.Bus
         private readonly Stopwatch _slowMsgWatch = new Stopwatch();
         private readonly TimeSpan _slowMsgThreshold;
 
-        private readonly ConcurrentQueue<Message> _queue = new ConcurrentQueue<Message>();
+        private readonly Common.Concurrent.ConcurrentQueue<Message> _queue = new Common.Concurrent.ConcurrentQueue<Message>();
         private Thread _thread;
         private volatile bool _stop;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
@@ -198,7 +197,7 @@ namespace EventStore.Core.Bus
                             _busyWatch.Reset();
                         }
                     }
-                    }
+                }
                 catch (Exception ex)
                 {
                     Log.ErrorException(ex, "Error while processing message {0} in queued handler '{1}'.", msg, _name);

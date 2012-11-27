@@ -28,12 +28,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
@@ -84,14 +82,13 @@ namespace EventStore.TestClient.Commands
             var fail = 0;
             var all = 0;
 
+            int sent = 0;
+            int received = 0;
+
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-
-                int sent = 0;
-                int received = 0;
-
                 threads.Add(new Thread(() =>
                 {
                     var esId = eventStreamId ?? "es" + Guid.NewGuid();
@@ -141,7 +138,7 @@ namespace EventStore.TestClient.Commands
                         
                         Interlocked.Increment(ref sent);
 
-                        while (sent - received > context.Client.Options.WriteWindow)
+                        while (sent - received > context.Client.Options.WriteWindow/clientsCnt)
                         {
                             Thread.Sleep(1);
                         }

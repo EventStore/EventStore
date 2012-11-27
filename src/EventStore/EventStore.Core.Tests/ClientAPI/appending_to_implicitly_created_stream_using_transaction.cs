@@ -249,8 +249,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.Inconclusive("Storage writer silently writes to log message 'The request was partially committed and other part is different.' but SHOULD SEND FAIL");
-                Assert.That(() => writer.StartTransaction(-1).Write(events.Concat(new[] { new TestEvent(Guid.NewGuid()) }).ToArray()).Commit(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<Exception>());
+                Assert.That(() => writer.StartTransaction(-1).Write(events.Concat(new[] { new TestEvent(Guid.NewGuid()) }).ToArray()).Commit(),
+                            Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }
     }

@@ -75,12 +75,12 @@ namespace EventStore.TestClient.Commands
             var threads = new List<Thread>();
             var all = 0;
 
+            int sent = 0;
+            int received = 0;
+
             for (int i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-                int sent = 0;
-                int received = 0;
-
                 var client = context.Client.CreateTcpConnection(
                     context,
                     (conn, msg) =>
@@ -111,8 +111,10 @@ namespace EventStore.TestClient.Commands
                         client.EnqueueSend(package.AsByteArray());
                         Interlocked.Increment(ref sent);
 
-                        while (sent - received > context.Client.Options.PingWindow)
+                        while (sent - received > context.Client.Options.PingWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }
