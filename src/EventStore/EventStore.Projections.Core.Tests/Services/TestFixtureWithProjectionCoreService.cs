@@ -106,9 +106,9 @@ namespace EventStore.Projections.Core.Tests.Services
             return result.Build(ProjectionMode.Persistent);
         }
 
-        protected static Event CreateEvent()
+        protected static ResolvedEvent CreateEvent()
         {
-            return new Event(Guid.NewGuid(), "t", false, new byte[0], new byte[0]);
+            return ResolvedEvent.Sample(Guid.NewGuid(), "t", false, new byte[0], new byte[0]);
         }
     }
 }

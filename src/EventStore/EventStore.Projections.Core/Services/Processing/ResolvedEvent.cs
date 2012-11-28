@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -27,37 +27,43 @@
 // 
 
 using System;
-using System.Text;
-using EventStore.Core.Data;
-using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection
+namespace EventStore.Projections.Core.Services.Processing
 {
-    [TestFixture]
-    public class when_starting_a_new_projection_and_an_event_is_received : TestFixtureWithCoreProjectionStarted
+    public class ResolvedEvent
     {
-        protected override void Given()
+        public static ResolvedEvent Create(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata)
         {
-            NoStream("$projections-projection-state");
-            NoStream("$projections-projection-checkpoint");
+            return new ResolvedEvent(eventId, eventType, isJson, data, metadata);
         }
 
-        protected override void When()
+        public static ResolvedEvent Sample(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata)
         {
-            var eventId = Guid.NewGuid();
-            _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                    ResolvedEvent.Sample(eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                                        Encoding.UTF8.GetBytes("metadata")), 0));
+            return new ResolvedEvent(eventId, eventType, isJson, data, metadata);
         }
 
-        [Test]
-        public void should_initialize_projection_state_handler()
+        public static readonly byte[] Empty = new byte[0];
+
+        public readonly Guid EventId;
+        public readonly string EventType;
+        public readonly bool IsJson;
+
+        public readonly byte[] Data;
+        public readonly byte[] Metadata;
+
+        private ResolvedEvent(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata)
         {
-            Assert.AreEqual(1, _stateHandler._initializeCalled);
+            if (Guid.Empty == eventId)
+                throw new ArgumentException("Empty eventId provided.");
+            if (string.IsNullOrEmpty(eventType))
+                throw new ArgumentException("Empty eventType provided.");
+
+            EventId = eventId;
+            EventType = eventType;
+            IsJson = isJson;
+
+            Data = data ?? Empty;
+            Metadata = metadata ?? Empty;
         }
     }
 }

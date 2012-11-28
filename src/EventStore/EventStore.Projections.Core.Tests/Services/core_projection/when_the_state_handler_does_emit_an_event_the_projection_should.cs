@@ -54,9 +54,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _causingEventId = Guid.NewGuid();
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                       new Event(
-                           _causingEventId, "no_state_emit1_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata")), 0));
+                       ResolvedEvent.Sample(_causingEventId, "no_state_emit1_type", false, Encoding.UTF8.GetBytes("data"),
+                                           Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]

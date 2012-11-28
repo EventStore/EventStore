@@ -29,6 +29,7 @@
 using System;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
@@ -53,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             //projection subscribes here
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                       new Event(Guid.NewGuid(), "skip_this_type", false, new byte[0], new byte[0]), 0));
+                       ResolvedEvent.Sample(Guid.NewGuid(), "skip_this_type", false, new byte[0], new byte[0]), 0));
         }
 
         [Test]

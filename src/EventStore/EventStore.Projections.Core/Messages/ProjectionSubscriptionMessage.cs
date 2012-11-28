@@ -77,14 +77,14 @@ namespace EventStore.Projections.Core.Messages
         {
             public static CommittedEventReceived Sample(
                 Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
-                bool resolvedLinkTo, Event data, long subscriptionMessageSequenceNumber)
+                bool resolvedLinkTo, ResolvedEvent data, long subscriptionMessageSequenceNumber)
             {
                 return new CommittedEventReceived(
                     correlationId, position, eventStreamId, eventSequenceNumber, null, resolvedLinkTo, data, 77.7f,
                     subscriptionMessageSequenceNumber);
             }
             
-            private readonly Event _data;
+            private readonly ResolvedEvent _data;
             private readonly string _eventStreamId;
             private readonly int _eventSequenceNumber;
             private readonly bool _resolvedLinkTo;
@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Messages
             private CommittedEventReceived(
                 Guid correlationId, EventPosition position, CheckpointTag checkpointTag, string positionStreamId,
                 int positionSequenceNumber, string eventStreamId, int eventSequenceNumber, string eventCategory,
-                bool resolvedLinkTo, Event data, float progress, long subscriptionMessageSequenceNumber)
+                bool resolvedLinkTo, ResolvedEvent data, float progress, long subscriptionMessageSequenceNumber)
                 : base(correlationId, checkpointTag, progress, subscriptionMessageSequenceNumber)
             {
                 if (data == null) throw new ArgumentNullException("data");
@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Messages
 
             private CommittedEventReceived(
                 Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
-                string eventCategory, bool resolvedLinkTo, Event data, float progress,
+                string eventCategory, bool resolvedLinkTo, ResolvedEvent data, float progress,
                 long subscriptionMessageSequenceNumber)
                 : this(
                     correlationId, position,
@@ -122,7 +122,7 @@ namespace EventStore.Projections.Core.Messages
             {
             }
 
-            public Event Data
+            public ResolvedEvent Data
             {
                 get { return _data; }
             }

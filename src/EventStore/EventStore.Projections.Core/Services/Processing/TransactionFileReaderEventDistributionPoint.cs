@@ -159,9 +159,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, receivedPosition, positionEvent.EventStreamId,
                     positionEvent.EventNumber, @event.Event.EventStreamId, @event.Event.EventNumber, @event.Link != null,
-                    new Event(
-                        @event.Event.EventId, @event.Event.EventType, (@event.Event.Flags & PrepareFlags.IsJson) != 0,
-                        @event.Event.Data, @event.Event.Metadata), receivedPosition.PreparePosition, 100.0f * positionEvent.LogPosition / lastCommitPosition));
+                    ResolvedEvent.Create(@event.Event.EventId, @event.Event.EventType, (@event.Event.Flags & PrepareFlags.IsJson) != 0,
+                                        @event.Event.Data, @event.Event.Metadata), receivedPosition.PreparePosition, 100.0f * positionEvent.LogPosition / lastCommitPosition));
         }
     }
 }

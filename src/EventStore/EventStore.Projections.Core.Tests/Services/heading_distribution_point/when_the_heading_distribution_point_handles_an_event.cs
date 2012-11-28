@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
             _point.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, new EventPosition(20, 10), "stream", 10, false,
-                    new Event(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
+                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
         }
 
         [Test]
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
             _point.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, new EventPosition(40, 30), "stream", 12, false,
-                    new Event(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
+                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
         }
 
         [Test]
@@ -89,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
             _point.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, new EventPosition(5, 0), "stream", 8, false,
-                    new Event(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
+                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
         }
 
         [Test]

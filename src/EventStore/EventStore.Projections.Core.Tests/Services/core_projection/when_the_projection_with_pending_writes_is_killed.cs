@@ -31,6 +31,7 @@ using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
@@ -53,21 +54,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                    new Event(
-                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
-                        Encoding.UTF8.GetBytes("metadata")), 0));
+                    ResolvedEvent.Sample(Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
+                                        Encoding.UTF8.GetBytes("metadata")), 0));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     Guid.Empty, new EventPosition(140, 130), "/event_category/1", -1, false,
-                    new Event(
-                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
-                        Encoding.UTF8.GetBytes("metadata")), 1));
+                    ResolvedEvent.Sample(Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
+                                        Encoding.UTF8.GetBytes("metadata")), 1));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     Guid.Empty, new EventPosition(160, 150), "/event_category/1", -1, false,
-                    new Event(
-                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data3"),
-                        Encoding.UTF8.GetBytes("metadata")), 2));
+                    ResolvedEvent.Sample(Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data3"),
+                                        Encoding.UTF8.GetBytes("metadata")), 2));
             _coreProjection.Kill();
         }
 

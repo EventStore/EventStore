@@ -29,6 +29,7 @@
 using System;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projection_subscription
@@ -41,15 +42,15 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             _subscription.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false,
-                    new Event(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
             _subscription.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     Guid.NewGuid(), new EventPosition(100, 50), "test-stream", 0, false,
-                    new Event(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
             _subscription.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false,
-                    new Event(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
         }
 
         [Test]

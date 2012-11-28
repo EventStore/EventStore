@@ -30,6 +30,7 @@ using System;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
@@ -57,9 +58,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             //projection subscribes here
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                       new Event(
-                           Guid.NewGuid(), "emit212_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata")), 0));
+                       ResolvedEvent.Sample(Guid.NewGuid(), "emit212_type", false, Encoding.UTF8.GetBytes("data"),
+                                           Encoding.UTF8.GetBytes("metadata")), 0));
         }
     }
 }
