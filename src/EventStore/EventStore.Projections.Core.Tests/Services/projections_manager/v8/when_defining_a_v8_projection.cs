@@ -163,7 +163,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
-        public class with_options : TestFixtureWithJsProjection
+        public class with_state_stream_name_option : TestFixtureWithJsProjection
         {
             protected override void Given()
             {
@@ -183,6 +183,56 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             public void source_definition_is_correct()
             {
                 Assert.AreEqual("state-stream", _source.Options.StateStreamName);
+            }
+        }
+
+        [TestFixture]
+        public class with_use_event_index_option : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    options({
+                        useEventIndexes: true,
+                    });
+                    fromAll().whenAny(
+                        function(state, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.Options.UseEventIndexes);
+            }
+        }
+
+        [TestFixture]
+        public class with_reorder_events_option : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    options({
+                        reorderEvents: true,
+                        processingLag: 500,
+                    });
+                    fromAll().whenAny(
+                        function(state, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(500, _source.Options.ProcessingLag);
+                Assert.AreEqual(true, _source.Options.ReorderEvents);
             }
         }
     }

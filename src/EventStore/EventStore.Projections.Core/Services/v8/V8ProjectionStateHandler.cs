@@ -127,6 +127,10 @@ namespace EventStore.Projections.Core.Services.v8
                 builder.SetForceProjectionName(sourcesDefintion.Options.ForceProjectionName);
             if (sourcesDefintion.Options.UseEventIndexes)
                 builder.SetUseEventIndexes(true);
+            if (sourcesDefintion.Options.ReorderEvents)
+                builder.SetReorderEvents(true);
+            if (sourcesDefintion.Options.ProcessingLag != null)
+                builder.SetProcessingLag(sourcesDefintion.Options.ProcessingLag.GetValueOrDefault());
         }
 
         public void Load(string state)

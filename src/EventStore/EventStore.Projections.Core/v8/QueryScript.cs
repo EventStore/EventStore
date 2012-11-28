@@ -290,7 +290,7 @@ namespace EventStore.Projections.Core.v8
             public bool ReorderEvents { get; set; }
 
             [DataMember(Name = "processingLag")]
-            public int ProcessingLag { get; set; }
+            public int? ProcessingLag { get; set; }
 
 
         }
