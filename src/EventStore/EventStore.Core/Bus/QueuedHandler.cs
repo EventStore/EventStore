@@ -73,6 +73,7 @@ namespace EventStore.Core.Bus
         private TimeSpan _lastTotalIdleTime;
         private TimeSpan _lastTotalBusyTime;
         private TimeSpan _lastTotalTime;
+        private AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
 
         private long _totalItems;
         private long _lastTotalItems;
@@ -127,6 +128,10 @@ namespace EventStore.Core.Bus
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
             _totalTimeWatch.Start();
             var wasEmpty = true;
+            var spinmax = 5000;
+            var sleepmax = 200000;
+            var spincount = 0;
+            var sleepcount = 0;
             while (!_stop)
             {
                 Message msg = null;
@@ -134,15 +139,28 @@ namespace EventStore.Core.Bus
                 {
                     if (!_queue.TryDequeue(out msg))
                     {
-                        if(!wasEmpty)
+                        if (!wasEmpty)
                         {
                             EnterIdle();
                         }
                         wasEmpty = true;
-                        Thread.Sleep(1);
+                        if(spincount < spinmax)
+                        {
+                            //do nothing... spin
+                            spincount++;
+                        } else if(sleepcount < sleepmax)
+                        {
+                            Thread.Sleep(1);
+                            sleepcount++;
+                        } else
+                        {
+                            _msgAddEvent.WaitOne(500);
+                        }
                     }
                     else
                     {
+                        spincount = 0;
+                        sleepcount = 0;
                         var ttlMessage = msg as IAmOnlyCaredAboutForTime;
                         if (ttlMessage != null && !ttlMessage.AmStillCaredAbout())
                         {
@@ -228,12 +246,12 @@ namespace EventStore.Core.Bus
         {
             Ensure.NotNull(message, "message");
             _queue.Enqueue(message);
+            _msgAddEvent.Set();
         }
 
         public void Handle(Message message)
         {
-            Ensure.NotNull(message, "message");
-            _queue.Enqueue(message);
+            Publish(message);
         }
 
         public QueueStats GetStatistics()
