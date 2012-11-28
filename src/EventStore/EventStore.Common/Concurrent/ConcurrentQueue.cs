@@ -25,23 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/*
-Quote from
 
-Professional .NET Framework 2.0 (Programmer to Programmer) (Paperback)
-by Joe Duffy (Author)
-
-
-# Paperback: 601 pages
-# Publisher: Wrox (April 10, 2006)
-# Language: English
-# ISBN-10: 0764571354
-# ISBN-13: 978-0764571350
-
-*/
-
-
-using EventStore.Common.Locks;
 
 namespace EventStore.Common.Concurrent
 {
@@ -65,7 +49,7 @@ namespace EventStore.Common.Concurrent
 }
 
 #else
-
+    using EventStore.Common.Locks;
     using System;
     using System.Collections;
     using System.Collections.Concurrent;

@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+
 namespace EventStore.Common.Concurrent
 {
 #if !PSEUDO_CONCURRENT_COLLECTIONS
@@ -41,7 +42,7 @@ namespace EventStore.Common.Concurrent
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-
+    using EventStore.Common.Locks;
     /// <summary>
     /// Not very concurrent stack for use in mono
     /// </summary>
@@ -50,7 +51,7 @@ namespace EventStore.Common.Concurrent
     {
         private readonly Stack<T> _stack = new Stack<T>();
         // ReSharper disable FieldCanBeMadeReadOnly.Local
-        private SpinLock2 _padLock = new SpinLock2();
+        private SpinLock2 _spinLock = new SpinLock2();
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
         public IEnumerator<T> GetEnumerator()
@@ -72,15 +73,8 @@ namespace EventStore.Common.Concurrent
         {
             get
             {
-                bool gotLock = false;
-                try
-                {
-                    _padLock.Enter(out gotLock);
+                using(_spinLock.Acquire()) {
                     return _stack.Count;
-                }
-                finally
-                {
-                    if (gotLock) _padLock.Exit();
                 }
             }
         }
@@ -97,30 +91,16 @@ namespace EventStore.Common.Concurrent
 
         public void CopyTo(T[] array, int index)
         {
-            bool gotLock = false;
-            try
-            {
-                _padLock.Enter(out gotLock);
+            using(_spinLock.Acquire()) {
                 _stack.CopyTo(array, index);
-            }
-            finally
-            {
-                if (gotLock) _padLock.Exit();
             }
         }
 
         public bool TryAdd(T item)
         {
-            bool gotLock = false;
-            try
-            {
-                _padLock.Enter(out gotLock);
+            using(_spinLock.Acquire()) {
                 _stack.Push(item);
                 return true;
-            }
-            finally
-            {
-                if (gotLock) _padLock.Exit();
             }
         }
 
@@ -137,32 +117,19 @@ namespace EventStore.Common.Concurrent
         public bool TryTake(out T item)
         {
             item = default(T);
-            bool gotLock = false;
-            try
+            using (_spinLock.Acquire())
             {
-                _padLock.Enter(out gotLock);
-                if (_stack.Count == 0) 
+                if (_stack.Count == 0)
                     return false;
                 item = _stack.Pop();
                 return true;
-            }
-            finally
-            {
-                if (gotLock) _padLock.Exit();
             }
         }
 
         public T[] ToArray()
         {
-            bool gotLock = false;
-            try
-            {
-                _padLock.Enter(out gotLock);
+            using(_spinLock.Acquire()) {
                 return _stack.ToArray();
-            }
-            finally
-            {
-                if (gotLock) _padLock.Exit();
             }
         }
     }
