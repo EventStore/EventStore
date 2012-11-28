@@ -44,6 +44,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
             [DataMember]
             public bool UseEventIndexes { get; set; }
+
+            [DataMember]
+            public bool ReorderEvents { get; set; }
+
+            [DataMember]
+            public int ProcessingLag { get; set; }
         }
 
         protected readonly QuerySourceOptions _options = new QuerySourceOptions();
@@ -103,6 +109,16 @@ namespace EventStore.Projections.Core.Services.Processing
         public void SetUseEventIndexes(bool useEventIndexes)
         {
             _options.UseEventIndexes = useEventIndexes;
+        }
+
+        public void SetReorderEvents(bool reorderEvents)
+        {
+            _options.ReorderEvents = reorderEvents;
+        }
+
+        public void SetProcessingLag(int processingLag)
+        {
+            _options.ProcessingLag = processingLag;
         }
 
         protected HashSet<string> ToSet(IEnumerable<string> list)

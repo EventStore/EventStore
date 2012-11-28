@@ -696,6 +696,12 @@ namespace EventStore.Projections.Core.Services.Management
 
             if (_sourceDefintion.Options != null)
                 builder.SetUseEventIndexes(_sourceDefintion.Options.UseEventIndexes);
+
+            if (_sourceDefintion.Options != null)
+                builder.SetReorderEvents(_sourceDefintion.Options.ReorderEvents);
+
+            if (_sourceDefintion.Options != null)
+                builder.SetProcessingLag(_sourceDefintion.Options.ProcessingLag);
         }
     }
 }
