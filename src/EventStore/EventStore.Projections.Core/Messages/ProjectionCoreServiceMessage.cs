@@ -27,10 +27,8 @@
 // 
 
 using System;
-using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
@@ -75,6 +73,27 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class EventDistributionPointIdle : Message
+        {
+            private readonly Guid _correlationId;
+            private readonly DateTime _idleTimestampUtc;
+
+            public EventDistributionPointIdle(Guid correlationId, DateTime idleTimestampUtc)
+            {
+                _correlationId = correlationId;
+                _idleTimestampUtc = idleTimestampUtc;
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+
+            public DateTime IdleTimestampUtc
+            {
+                get { return _idleTimestampUtc; }
+            }
+        }
 
         public class CommittedEventDistributed : Message
         {

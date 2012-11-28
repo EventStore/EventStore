@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -27,45 +27,35 @@
 // 
 
 using System;
+using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection_subscription
 {
-    public class ResolvedEvent
+    [TestFixture]
+    public class when_handling_duplicate_events : TestFixtureWithEventReorderingProjectionSubscription
     {
-        public static ResolvedEvent Create(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata, DateTime timestamp)
+        protected override void When()
         {
-            return new ResolvedEvent(eventId, eventType, isJson, data, metadata, timestamp);
+            _subscription.Handle(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                    Guid.NewGuid(), new EventPosition(200, 150), "a", 1, false,
+                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+            _subscription.Handle(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                    Guid.NewGuid(), new EventPosition(100, 50), "a", 0, false,
+                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+            _subscription.Handle(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                    Guid.NewGuid(), new EventPosition(200, 150), "a", 1, false,
+                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
         }
 
-        public static ResolvedEvent Sample(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata, DateTime? timestamp = null)
+        [Test]
+        public void duplicates_are_not_passed_to_downstream_handler()
         {
-            return new ResolvedEvent(eventId, eventType, isJson, data, metadata, timestamp ?? DateTime.UtcNow);
-        }
-
-        public static readonly byte[] Empty = new byte[0];
-
-        public readonly Guid EventId;
-        public readonly string EventType;
-        public readonly bool IsJson;
-        public readonly DateTime Timestamp;
-
-        public readonly byte[] Data;
-        public readonly byte[] Metadata;
-
-        private ResolvedEvent(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata, DateTime timestamp)
-        {
-            if (Guid.Empty == eventId)
-                throw new ArgumentException("Empty eventId provided.");
-            if (string.IsNullOrEmpty(eventType))
-                throw new ArgumentException("Empty eventType provided.");
-
-            EventId = eventId;
-            EventType = eventType;
-            IsJson = isJson;
-            Timestamp = timestamp;
-
-            Data = data ?? Empty;
-            Metadata = metadata ?? Empty;
+            Assert.AreEqual(1, _eventHandler.HandledMessages.Count);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,46 +26,42 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
+using System.Collections.Generic;
+using EventStore.Core.Data;
+using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.projection_subscription;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection_subscription
 {
-    public class ResolvedEvent
+    public abstract class TestFixtureWithEventReorderingProjectionSubscription : TestFixtureWithProjectionSubscription
     {
-        public static ResolvedEvent Create(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata, DateTime timestamp)
+        protected int _timeBetweenEvents;
+        protected int _processingLagMs;
+
+        protected override void Given()
         {
-            return new ResolvedEvent(eventId, eventType, isJson, data, metadata, timestamp);
+            _timeBetweenEvents = 1100;
+            _processingLagMs = 500;
+            base.Given();
+            _source = builder =>
+                {
+                    builder.FromStream("a");
+                    builder.FromStream("b");
+                    builder.AllEvents();
+                    builder.SetReorderEvents(true);
+                    builder.SetProcessingLag(1000); // ms
+                };
         }
 
-        public static ResolvedEvent Sample(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata, DateTime? timestamp = null)
+        protected override IProjectionSubscription CreateProjectionSubscription()
         {
-            return new ResolvedEvent(eventId, eventType, isJson, data, metadata, timestamp ?? DateTime.UtcNow);
-        }
-
-        public static readonly byte[] Empty = new byte[0];
-
-        public readonly Guid EventId;
-        public readonly string EventType;
-        public readonly bool IsJson;
-        public readonly DateTime Timestamp;
-
-        public readonly byte[] Data;
-        public readonly byte[] Metadata;
-
-        private ResolvedEvent(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata, DateTime timestamp)
-        {
-            if (Guid.Empty == eventId)
-                throw new ArgumentException("Empty eventId provided.");
-            if (string.IsNullOrEmpty(eventType))
-                throw new ArgumentException("Empty eventType provided.");
-
-            EventId = eventId;
-            EventType = eventType;
-            IsJson = isJson;
-            Timestamp = timestamp;
-
-            Data = data ?? Empty;
-            Metadata = metadata ?? Empty;
+            return new EventReorderingProjectionSubscription(
+                _projectionCorrelationId,
+                CheckpointTag.FromStreamPositions(
+                    new Dictionary<string, int> {{"a", ExpectedVersion.NoStream}, {"b", ExpectedVersion.NoStream}}),
+                _eventHandler, _checkpointHandler, _progressHandler, _checkpointStrategy,
+                _checkpointUnhandledBytesThreshold, _processingLagMs);
         }
     }
 }

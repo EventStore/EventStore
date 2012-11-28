@@ -77,6 +77,15 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
+        public bool Handle(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
+        {
+            EnsureStarted();
+            if (message.CorrelationId != _distributionPointId)
+                return false;
+            DistributeMessage(message);
+            return true;
+        }
+
         private void ValidateEventOrder(ProjectionCoreServiceMessage.CommittedEventDistributed message)
         {
             if (_lastEventPosition >= message.Position)
@@ -141,6 +150,12 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private void DistributeMessage(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        {
+            foreach (var subscriber in _headSubscribers.Values)
+                subscriber.Handle(message);
+        }
+
+        private void DistributeMessage(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
         {
             foreach (var subscriber in _headSubscribers.Values)
                 subscriber.Handle(message);

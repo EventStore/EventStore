@@ -269,7 +269,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, default(EventPosition), streamId, positionEvent.EventNumber,
                     @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
-                    ResolvedEvent.Create(@event.EventId, @event.EventType, false, @event.Data, @event.Metadata),
+                    ResolvedEvent.Create(
+                        @event.EventId, @event.EventType, false, @event.Data, @event.Metadata, positionEvent.TimeStamp),
                     positionEvent.LogPosition, progress));
         }
     }

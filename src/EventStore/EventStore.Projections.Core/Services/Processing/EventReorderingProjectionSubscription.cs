@@ -27,15 +27,17 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
+using System.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionSubscription : IProjectionSubscription
+    public class EventReorderingProjectionSubscription : IProjectionSubscription
     {
-        private readonly ILogger _logger = LogManager.GetLoggerFor<ProjectionSubscription>();
+        private readonly ILogger _logger = LogManager.GetLoggerFor<EventReorderingProjectionSubscription>();
         private readonly Guid _projectionCorrelationId;
         private readonly IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
         private readonly IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
@@ -45,16 +47,19 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
         private readonly PositionTracker _positionTracker;
+        private readonly SortedList<long, ProjectionCoreServiceMessage.CommittedEventDistributed> _buffer =
+            new SortedList<long, ProjectionCoreServiceMessage.CommittedEventDistributed>();
         private EventPosition _lastPassedOrCheckpointedEventPosition;
         private float _progress = -1;
         private long _subscriptionMessageSequenceNumber;
+        private int _processingLagMs;
 
-        public ProjectionSubscription(
+        public EventReorderingProjectionSubscription(
             Guid projectionCorrelationId, CheckpointTag from,
             IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> eventHandler,
             IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> checkpointHandler,
             IHandle<ProjectionSubscriptionMessage.ProgressChanged> progressHandler,
-            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold)
+            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, int processingLagMs)
         {
             if (eventHandler == null) throw new ArgumentNullException("eventHandler");
             if (checkpointHandler == null) throw new ArgumentNullException("checkpointHandler");
@@ -65,22 +70,59 @@ namespace EventStore.Projections.Core.Services.Processing
             _progressHandler = progressHandler;
             _checkpointStrategy = checkpointStrategy;
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
+            _processingLagMs = processingLagMs;
             _projectionCorrelationId = projectionCorrelationId;
-            _lastPassedOrCheckpointedEventPosition = from.Position;
+            _lastPassedOrCheckpointedEventPosition = @from.Position;
 
             _eventFilter = checkpointStrategy.EventFilter;
 
             _positionTagger = checkpointStrategy.PositionTagger;
             _positionTracker = new PositionTracker(_positionTagger);
-            _positionTracker.UpdateByCheckpointTagInitial(from);
+            _positionTracker.UpdateByCheckpointTagInitial(@from);
         }
 
         public void Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
         {
             if (message.Data == null)
                 throw new NotSupportedException();
+            _buffer.Add(message.Position.PreparePosition, message);
+            var maxTimestamp = _buffer.Max(v => v.Value.Data.Timestamp);
+            ProcessAllFor(maxTimestamp);
+        }
 
-            // NOTE: we may receive here messages from heading event distribution point 
+        private void ProcessAllFor(DateTime maxTimestamp)
+        {
+
+            if (_buffer.Count == 0)
+                throw new InvalidOperationException();
+
+            //NOTE: this is the most straightforward implementation 
+            //TODO: build proper data structure when the approach is finalized
+            bool processed;
+            do
+            {
+                processed = ProcessFor(maxTimestamp);
+            } while (processed);
+        }
+
+        private bool ProcessFor(DateTime maxTimestamp)
+        {
+            if (_buffer.Count == 0)
+                return false;
+            var first = _buffer.ElementAt(0);
+            if ((maxTimestamp - first.Value.Data.Timestamp).TotalMilliseconds > _processingLagMs)
+            {
+                _buffer.RemoveAt(0);
+                ProcessOne(first.Value);
+                return true;
+            }
+            return false;
+        }
+
+        private void ProcessOne(ProjectionCoreServiceMessage.CommittedEventDistributed message) 
+        {
+
+        // NOTE: we may receive here messages from heading event distribution point 
             // and they may not pass out source filter.  Discard them first
             var roundedProgress = (float) Math.Round(message.Progress, 2);
             bool progressChanged = _progress != roundedProgress;
@@ -144,16 +186,16 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        public void Handle(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
+        {
+            ProcessAllFor(message.IdleTimestampUtc);
+        }
+
         public EventDistributionPoint CreatePausedEventDistributionPoint(IPublisher publisher, Guid distributionPointId)
         {
             _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
             return _checkpointStrategy.CreatePausedEventDistributionPoint(
                 distributionPointId, publisher, _positionTracker.LastTag);
-        }
-
-        public void Handle(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
-        {
-            throw new NotImplementedException();
         }
     }
 }

@@ -46,6 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionSubscriptionManagement.Pause>,
                                          IHandle<ProjectionSubscriptionManagement.Resume>,
                                          IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>,
+                                         IHandle<ProjectionCoreServiceMessage.EventDistributionPointIdle>,
                                          IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
                                          IHandle<CoreProjectionManagementMessage.CreatePrepared>,
                                          IHandle<CoreProjectionManagementMessage.Dispose>,
@@ -71,8 +72,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly ICheckpoint _writerCheckpoint;
 
-        private readonly Dictionary<Guid, ProjectionSubscription> _subscriptions =
-            new Dictionary<Guid, ProjectionSubscription>();
+        private readonly Dictionary<Guid, IProjectionSubscription> _subscriptions =
+            new Dictionary<Guid, IProjectionSubscription>();
 
         private readonly Dictionary<Guid, CoreProjection> _projections = new Dictionary<Guid, CoreProjection>();
 
@@ -278,6 +279,18 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             if (message.Data != null) // means notification about the end of the stream/source
                 _subscriptions[projectionId].Handle(message);
+        }
+
+        public void Handle(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
+        {
+            Guid projectionId;
+            if (_stopped)
+                return;
+            if (_headingEventDistributionPoint.Handle(message))
+                return;
+            if (!_distributionPointSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+                return; // unsubscribed
+            _subscriptions[projectionId].Handle(message);
         }
 
         public void Handle(CoreProjectionManagementMessage.CreateAndPrepare message)

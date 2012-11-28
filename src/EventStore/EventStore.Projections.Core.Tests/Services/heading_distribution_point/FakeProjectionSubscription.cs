@@ -26,7 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
+using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 
@@ -37,6 +39,9 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
         private readonly List<ProjectionCoreServiceMessage.CommittedEventDistributed> _receivedEvents =
             new List<ProjectionCoreServiceMessage.CommittedEventDistributed>();
 
+        private readonly List<ProjectionCoreServiceMessage.EventDistributionPointIdle> _receivedIdleNotifications =
+            new List<ProjectionCoreServiceMessage.EventDistributionPointIdle>();
+
         public void Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
         {
             _receivedEvents.Add(message);
@@ -45,6 +50,21 @@ namespace EventStore.Projections.Core.Tests.Services.heading_distribution_point
         public List<ProjectionCoreServiceMessage.CommittedEventDistributed> ReceivedEvents
         {
             get { return _receivedEvents; }
+        }
+
+        public List<ProjectionCoreServiceMessage.EventDistributionPointIdle> ReceivedIdleNotifications
+        {
+            get { return _receivedIdleNotifications; }
+        }
+
+        public void Handle(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
+        {
+            _receivedIdleNotifications.Add(message);
+        }
+
+        public EventDistributionPoint CreatePausedEventDistributionPoint(IPublisher publisher, Guid forkedDistributionPointId)
+        {
+            throw new NotImplementedException();
         }
     }
 }
