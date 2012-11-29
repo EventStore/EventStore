@@ -64,6 +64,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnPostHalt(HttpEntity entity, UriTemplateMatch match)
         {
+            Log.Info("Request shut down of node because halt command has been received.");
             Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: false));
             entity.Manager.Reply(HttpStatusCode.OK,
                                  "OK",
@@ -71,6 +72,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         }
         private void OnPostShutdown(HttpEntity entity, UriTemplateMatch match)
         {
+            Log.Info("Request shut down of node because shutdown command has been received.");
             Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: true));
             entity.Manager.Reply(HttpStatusCode.OK,
                                  "OK",
