@@ -27,48 +27,59 @@
 // 
 
 using System;
-using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.Tests.Services.projection_subscription;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection_subscription
 {
     [TestFixture]
-    public class when_receiving_multiple_events_not_passing_event_filter : TestFixtureWithEventReorderingProjectionSubscription
+    public class when_receiving_multiple_events_not_passing_event_filter :
+        TestFixtureWithEventReorderingProjectionSubscription
     {
+        private DateTime _timestamp;
+
         protected override void Given()
         {
-            _source = source =>
+            base.Given();
+            _source = builder =>
                 {
-                    source.FromAll();
-                    source.IncludeEvent("specific-event");
+                    builder.FromStream("a");
+                    builder.FromStream("b");
+                    builder.IncludeEvent("specific-event");
+                    builder.SetReorderEvents(true);
+                    builder.SetProcessingLag(1000); // ms
                 };
         }
 
         protected override void When()
         {
+            _timestamp = DateTime.UtcNow;
             _subscription.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                    _projectionCorrelationId, new EventPosition(200, 150), "a", 1, false,
+                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0], _timestamp)));
             _subscription.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(2000, 1950), "test-stream", 2, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                    _projectionCorrelationId, new EventPosition(2000, 950), "a", 2, false,
+                    ResolvedEvent.Sample(
+                        Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0], _timestamp.AddMilliseconds(1))));
             _subscription.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(2100, 2050), "test-stream", 2, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                    _projectionCorrelationId, new EventPosition(2100, 2050), "b", 1, false,
+                    ResolvedEvent.Sample(
+                        Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0], _timestamp.AddMilliseconds(1))));
+            _subscription.Handle(
+                new ProjectionCoreServiceMessage.EventDistributionPointIdle(
+                    _projectionCorrelationId, _timestamp.AddMilliseconds(1100)));
         }
 
         [Test]
         public void checkpoint_suggested_message_is_published_once_for_interval()
         {
             Assert.AreEqual(1, _checkpointHandler.HandledMessages.Count);
-            Assert.AreEqual(2000, _checkpointHandler.HandledMessages[0].CheckpointTag.CommitPosition);
-            Assert.AreEqual(1950, _checkpointHandler.HandledMessages[0].CheckpointTag.PreparePosition);
+            Assert.AreEqual(2, _checkpointHandler.HandledMessages[0].CheckpointTag.Streams["a"]);
+            Assert.AreEqual(1, _checkpointHandler.HandledMessages[0].CheckpointTag.Streams["b"]);
         }
     }
 }

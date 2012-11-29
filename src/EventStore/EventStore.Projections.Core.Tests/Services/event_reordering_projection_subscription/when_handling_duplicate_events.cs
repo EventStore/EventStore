@@ -36,26 +36,34 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
     [TestFixture]
     public class when_handling_duplicate_events : TestFixtureWithEventReorderingProjectionSubscription
     {
+        private DateTime _timestamp;
+
         protected override void When()
         {
+            _timestamp = DateTime.UtcNow;
             _subscription.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(200, 150), "a", 1, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                    _projectionCorrelationId, new EventPosition(200, 150), "a", 1, false,
+                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0], _timestamp)));
             _subscription.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(100, 50), "a", 0, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                    _projectionCorrelationId, new EventPosition(100, 50), "a", 0, false,
+                    ResolvedEvent.Sample(
+                        Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0], _timestamp.AddMilliseconds(1))));
             _subscription.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(200, 150), "a", 1, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                    _projectionCorrelationId, new EventPosition(200, 150), "a", 1, false,
+                    ResolvedEvent.Sample(
+                        Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0], _timestamp.AddMilliseconds(1))));
+            _subscription.Handle(
+                new ProjectionCoreServiceMessage.EventDistributionPointIdle(
+                    _projectionCorrelationId, _timestamp.AddMilliseconds(1100)));
         }
 
         [Test]
         public void duplicates_are_not_passed_to_downstream_handler()
         {
-            Assert.AreEqual(1, _eventHandler.HandledMessages.Count);
+            Assert.AreEqual(2, _eventHandler.HandledMessages.Count);
         }
     }
 }

@@ -49,10 +49,10 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PositionTracker _positionTracker;
         private readonly SortedList<long, ProjectionCoreServiceMessage.CommittedEventDistributed> _buffer =
             new SortedList<long, ProjectionCoreServiceMessage.CommittedEventDistributed>();
-        private EventPosition _lastPassedOrCheckpointedEventPosition;
+        private long? _lastPassedOrCheckpointedEventPosition;
         private float _progress = -1;
         private long _subscriptionMessageSequenceNumber;
-        private int _processingLagMs;
+        private readonly int _processingLagMs;
 
         public EventReorderingProjectionSubscription(
             Guid projectionCorrelationId, CheckpointTag from,
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _processingLagMs = processingLagMs;
             _projectionCorrelationId = projectionCorrelationId;
-            _lastPassedOrCheckpointedEventPosition = @from.Position;
+            _lastPassedOrCheckpointedEventPosition = null;
 
             _eventFilter = checkpointStrategy.EventFilter;
 
@@ -85,9 +85,14 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (message.Data == null)
                 throw new NotSupportedException();
-            _buffer.Add(message.Position.PreparePosition, message);
-            var maxTimestamp = _buffer.Max(v => v.Value.Data.Timestamp);
-            ProcessAllFor(maxTimestamp);
+            ProjectionCoreServiceMessage.CommittedEventDistributed existing;
+            // ignore duplicate messages (when replaying from heading event distribution point)
+            if (!_buffer.TryGetValue(message.Position.PreparePosition, out existing))
+            {
+                _buffer.Add(message.Position.PreparePosition, message);
+                var maxTimestamp = _buffer.Max(v => v.Value.Data.Timestamp);
+                ProcessAllFor(maxTimestamp);
+            }
         }
 
         private void ProcessAllFor(DateTime maxTimestamp)
@@ -119,10 +124,9 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        private void ProcessOne(ProjectionCoreServiceMessage.CommittedEventDistributed message) 
+        private void ProcessOne(ProjectionCoreServiceMessage.CommittedEventDistributed message)
         {
-
-        // NOTE: we may receive here messages from heading event distribution point 
+            // NOTE: we may receive here messages from heading event distribution point 
             // and they may not pass out source filter.  Discard them first
             var roundedProgress = (float) Math.Round(message.Progress, 2);
             bool progressChanged = _progress != roundedProgress;
@@ -156,7 +160,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
             if (_eventFilter.Passes(message.ResolvedLinkTo, message.PositionStreamId, message.Data.EventType))
             {
-                _lastPassedOrCheckpointedEventPosition = message.Position;
+                _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
                 var convertedMessage =
                     ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
                         message, eventCheckpointTag, _eventFilter.GetCategory(message.PositionStreamId),
@@ -166,10 +170,11 @@ namespace EventStore.Projections.Core.Services.Processing
             else
             {
                 if (_checkpointUnhandledBytesThreshold != null
-                    && message.Position.CommitPosition - _lastPassedOrCheckpointedEventPosition.CommitPosition
-                    > _checkpointUnhandledBytesThreshold)
+                    && (_lastPassedOrCheckpointedEventPosition != null
+                        && message.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
+                        > _checkpointUnhandledBytesThreshold))
                 {
-                    _lastPassedOrCheckpointedEventPosition = message.Position;
+                    _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
                     _checkpointHandler.Handle(
                         new ProjectionSubscriptionMessage.CheckpointSuggested(
                             _projectionCorrelationId, _positionTracker.LastTag, message.Progress,
@@ -184,6 +189,9 @@ namespace EventStore.Projections.Core.Services.Processing
                                 _subscriptionMessageSequenceNumber++));
                 }
             }
+            // initialize checkpointing based on first message 
+            if (_lastPassedOrCheckpointedEventPosition == null)
+                _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
         }
 
         public void Handle(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
