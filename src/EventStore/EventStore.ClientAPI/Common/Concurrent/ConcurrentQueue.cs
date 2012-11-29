@@ -25,21 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/*
-Quote from
-
-Professional .NET Framework 2.0 (Programmer to Programmer) (Paperback)
-by Joe Duffy (Author)
-
-
-# Paperback: 601 pages
-# Publisher: Wrox (April 10, 2006)
-# Language: English
-# ISBN-10: 0764571354
-# ISBN-13: 978-0764571350
-
-*/
-
 namespace EventStore.ClientAPI.Common.Concurrent
 {
 #if !PSEUDO_CONCURRENT_COLLECTIONS
@@ -52,7 +37,8 @@ namespace EventStore.ClientAPI.Common.Concurrent
         {
         }
 
-        public ConcurrentQueue(IEnumerable<T> items): base(items)
+        public ConcurrentQueue(IEnumerable<T> items)
+            : base(items)
         {
         }
 
@@ -60,28 +46,27 @@ namespace EventStore.ClientAPI.Common.Concurrent
     }
 
 #else
-
+    using EventStore.Common.Locks;
     using System;
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using EventStore.Common.Concurrent;
-    using EventStore.ClientAPI.Common.Utils;
-    
+    using EventStore.Common.Utils;
+
     /// <summary>
     /// This is a not concurrent ConcurrentQueue that actually works with mono. Alas one day it may be fixed.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class ConcurrentQueue<T>: IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
+    public class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
     {
         private readonly Queue<T> _queue = new Queue<T>();
         // ReSharper disable FieldCanBeMadeReadOnly.Local
-        private SpinLock2 _padLock = new SpinLock2();
+        private SpinLock2 _spinLock = new SpinLock2();
         // ReSharper restore FieldCanBeMadeReadOnly.Local
 
         public ConcurrentQueue()
         {
-            
+
         }
 
         public ConcurrentQueue(IEnumerable<T> items)
@@ -112,15 +97,9 @@ namespace EventStore.ClientAPI.Common.Concurrent
         {
             get
             {
-                bool gotLock = false;
-                try
+                using (_spinLock.Acquire())
                 {
-                    _padLock.Enter(out gotLock);
                     return _queue.Count;
-                }
-                finally
-                {
-                    if (gotLock) _padLock.Exit();
                 }
             }
         }
@@ -133,36 +112,24 @@ namespace EventStore.ClientAPI.Common.Concurrent
         public bool TryTake(out T item)
         {
             item = default(T);
-            bool gotLock = false;
-            try
+            using (_spinLock.Acquire())
             {
-                _padLock.Enter(out gotLock);
                 if (_queue.Count == 0)
                     return false;
                 item = _queue.Dequeue();
                 return true;
-            }
-            finally
-            {
-                if (gotLock) _padLock.Exit();
             }
         }
 
         public bool TryPeek(out T item)
         {
             item = default(T);
-            bool gotLock = false;
-            try
+            using (_spinLock.Acquire())
             {
-                _padLock.Enter(out gotLock);
-                if (_queue.Count == 0) 
+                if (_queue.Count == 0)
                     return false;
                 item = _queue.Peek();
                 return true;
-            }
-            finally
-            {
-                if (gotLock) _padLock.Exit();
             }
         }
 
@@ -173,30 +140,18 @@ namespace EventStore.ClientAPI.Common.Concurrent
 
         public void CopyTo(T[] array, int index)
         {
-            bool gotLock = false;
-            try
+            using (_spinLock.Acquire())
             {
-                _padLock.Enter(out gotLock);
                 _queue.CopyTo(array, index);
-            }
-            finally
-            {
-                if (gotLock) _padLock.Exit();
             }
         }
 
         public bool TryAdd(T item)
         {
-            bool gotLock = false;
-            try
+            using (_spinLock.Acquire())
             {
-                _padLock.Enter(out gotLock);
                 _queue.Enqueue(item);
                 return true;
-            }
-            finally
-            {
-                if (gotLock) _padLock.Exit();
             }
         }
 
@@ -213,17 +168,10 @@ namespace EventStore.ClientAPI.Common.Concurrent
 
         public T[] ToArray()
         {
-            bool gotLock = false;
-            try
-            {
-                _padLock.Enter(out gotLock);
+            using (_spinLock.Acquire())
                 return _queue.ToArray();
-            }
-            finally
-            {
-                if (gotLock) _padLock.Exit();
-            }
         }
     }
+}
 #endif
 }
