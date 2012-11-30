@@ -107,19 +107,13 @@ namespace EventStore.Common.Locks
             }
         }
 
-        public IDisposable Acquire()
+        public LockReleaserSlim Acquire()
         {
             bool taken;
             Enter(out taken);
-            if(taken) return new LockReleaser(this);
-            throw new Exception("Unable to acquire lock, this shouldnt happen.");
-        }
-
-        public void Enter()
-        {
-            // Convenience method. Using this could be prone to deadlocks.
-            bool b;
-            Enter(out b);
+            if (taken)
+                return new LockReleaserSlim(this);
+            throw new Exception("Unable to acquire lock, this shouldn't happen.");
         }
 
         public void Exit()
@@ -135,7 +129,23 @@ namespace EventStore.Common.Locks
         }
     }
 
-    internal class LockReleaser : IDisposable
+    // BE VERY CAREFUL USING THIS!!!
+    public struct LockReleaserSlim: IDisposable
+    {
+        private readonly SpinLock2 _spinLock;
+
+        public LockReleaserSlim(SpinLock2 spinLock)
+        {
+            _spinLock = spinLock;
+        }
+
+        public void Dispose()
+        {
+            _spinLock.Exit();
+        }
+    }
+
+    public class LockReleaser : IDisposable
     {
         private readonly SpinLock2 _spinLock2;
         private bool _disposed = false;
@@ -147,7 +157,8 @@ namespace EventStore.Common.Locks
 
         private void Dispose(bool disposing)
         {
-            if(!disposing && !_disposed) throw new Exception("Lock is being finalized without being released!");
+            if (!disposing && !_disposed) 
+                throw new Exception("Lock is being finalized without being released!");
             if (!_disposed)
             {
                 _spinLock2.Exit();
