@@ -119,7 +119,8 @@ namespace EventStore.Transport.Tcp
             Console.WriteLine("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
 
             base.InitSocket(socket, EffectiveEndPoint);
-            using(_sendingLock.Acquire()) {
+            using (_sendingLock.Acquire()) 
+            {
                 _socket = socket;
                 try
                 {
@@ -147,13 +148,13 @@ namespace EventStore.Transport.Tcp
 
         public void EnqueueSend(IEnumerable<ArraySegment<byte>> data)
         {
-            using(_sendingLock.Acquire())
+            using (_sendingLock.Acquire())
             {
-                uint bytes = 0;
+                int bytes = 0;
                 foreach (var segment in data)
                 {
                     _sendQueue.Enqueue(segment);
-                    bytes += (uint)segment.Count;
+                    bytes += segment.Count;
                 }
                 NotifySendScheduled(bytes);
             }
@@ -162,7 +163,7 @@ namespace EventStore.Transport.Tcp
 
         private void TrySend()
         {
-            using(_sendingLock.Acquire())
+            using (_sendingLock.Acquire())
             {
                 if (_isSending || _sendQueue.Count == 0 || _socket == null)
                     return;
@@ -188,7 +189,7 @@ namespace EventStore.Transport.Tcp
 
             if (_sendSocketArgs.Count == 0)
             {
-                using(_sendingLock.Acquire())
+                using (_sendingLock.Acquire())
                 {
                     _isSending = false;
                     return;
@@ -198,7 +199,7 @@ namespace EventStore.Transport.Tcp
             try
             {
                 Interlocked.Increment(ref _sentAsyncs);
-                NotifySendStarting((uint) _sendSocketArgs.Count);
+                NotifySendStarting(_sendSocketArgs.Count);
                 
                 var firedAsync = _sendSocketArgs.AcceptSocket.SendAsync(_sendSocketArgs);
                 if (!firedAsync)
@@ -228,10 +229,10 @@ namespace EventStore.Transport.Tcp
                 return;
             }
             
-            NotifySendCompleted((uint) socketArgs.Count);
+            NotifySendCompleted(socketArgs.Count);
             Interlocked.Increment(ref _packagesSent);
 
-            using(_sendingLock.Acquire())
+            using (_sendingLock.Acquire())
             {
                 _isSending = false;
             }
@@ -308,7 +309,7 @@ namespace EventStore.Transport.Tcp
                 return;
             }
             
-            NotifyReceiveCompleted((uint) socketArgs.BytesTransferred);
+            NotifyReceiveCompleted(socketArgs.BytesTransferred);
             Interlocked.Increment(ref _packagesReceived);
             Interlocked.Add(ref _bytesReceived, socketArgs.BytesTransferred);
             
@@ -364,10 +365,10 @@ namespace EventStore.Transport.Tcp
                 _receiveCallback = null;
             }
             callback(this, res.Select(v => v.Item1).ToArray());
-            uint bytes = 0;
+            int bytes = 0;
             foreach (var tuple in res)
             {
-                bytes += (uint)tuple.Item1.Count;
+                bytes += tuple.Item1.Count;
                 tuple.Item2(); // dispose buffers
             }
             NotifyReceiveDispatched(bytes);
