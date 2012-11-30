@@ -50,6 +50,42 @@ namespace EventStore.Projections.Core.Tests.Other
         }
 
         [Test]
+        public void prepare_position_based_checkpoint_tag_zero()
+        {
+            CheckpointTag tag = CheckpointTag.FromPreparePosition(0);
+            byte[] bytes = tag.ToJsonBytes();
+            string instring = Encoding.UTF8.GetString(bytes);
+            Console.WriteLine(instring);
+
+            var back = instring.ParseJson<CheckpointTag>();
+            Assert.AreEqual(tag, back);
+        }
+
+        [Test]
+        public void prepare_position_based_checkpoint_tag_minus_one()
+        {
+            CheckpointTag tag = CheckpointTag.FromPreparePosition(-1);
+            byte[] bytes = tag.ToJsonBytes();
+            string instring = Encoding.UTF8.GetString(bytes);
+            Console.WriteLine(instring);
+
+            var back = instring.ParseJson<CheckpointTag>();
+            Assert.AreEqual(tag, back);
+        }
+
+        [Test]
+        public void prepare_position_based_checkpoint_tag()
+        {
+            CheckpointTag tag = CheckpointTag.FromPreparePosition(1234);
+            byte[] bytes = tag.ToJsonBytes();
+            string instring = Encoding.UTF8.GetString(bytes);
+            Console.WriteLine(instring);
+
+            var back = instring.ParseJson<CheckpointTag>();
+            Assert.AreEqual(tag, back);
+        }
+
+        [Test]
         public void stream_based_checkpoint_tag()
         {
             CheckpointTag tag = CheckpointTag.FromStreamPosition("$ce-account", 12345);

@@ -42,11 +42,17 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             Position,
             Stream,
-            MultiStream
+            MultiStream,
+            PreparePosition
         }
 
         internal CheckpointTag()
         {
+        }
+
+        public CheckpointTag(long preparePosition)
+        {
+            Position = new EventPosition(long.MinValue, preparePosition);
         }
 
         public CheckpointTag(EventPosition position)
@@ -77,7 +83,10 @@ namespace EventStore.Projections.Core.Services.Processing
         internal Mode GetMode()
         {
             if (Streams == null || Streams.Count == 0)
-                return Mode.Position;
+                if (CommitPosition == null && PreparePosition != null)
+                    return Mode.PreparePosition;
+                else 
+                    return Mode.Position;
             if (Streams.Count == 1)
                 return Mode.Stream;
             return Mode.MultiStream;
@@ -100,6 +109,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 case Mode.Position:
                     return left.Position > right.Position;
+                case Mode.PreparePosition:
+                    return left.PreparePosition > right.PreparePosition;
                 case Mode.Stream:
                     if (left.Streams.Keys.First() != right.Streams.Keys.First())
                         throw new InvalidOperationException("Cannot compare checkpoint tags across different streams");
@@ -143,6 +154,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 case Mode.Position:
                     return left.Position >= right.Position;
+                case Mode.PreparePosition:
+                    return left.PreparePosition >= right.PreparePosition;
                 case Mode.Stream:
                     if (left.Streams.Keys.First() != right.Streams.Keys.First())
                         throw new InvalidOperationException("Cannot compare checkpoint tags across different streams");
@@ -199,6 +212,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 case Mode.Position:
                     return Position == other.Position;
+                case Mode.PreparePosition:
+                    return PreparePosition == other.PreparePosition;
                 case Mode.Stream:
                     if (Streams.Keys.First() != other.Streams.Keys.First())
                         return false;
@@ -232,7 +247,12 @@ namespace EventStore.Projections.Core.Services.Processing
         [DataMember]
         public long? CommitPosition
         {
-            get { return Streams != null ? (long?) null : Position.CommitPosition; }
+            get
+            {
+                return Streams != null
+                           ? null
+                           : (Position.CommitPosition != Int64.MinValue ? Position.CommitPosition : (long?) null);
+            }
             set
             {
                 Position = new EventPosition(
@@ -259,6 +279,11 @@ namespace EventStore.Projections.Core.Services.Processing
             return new CheckpointTag(new EventPosition(commitPosition, preparePosition));
         }
 
+        public static CheckpointTag FromPreparePosition(long preparePosition)
+        {
+            return new CheckpointTag(preparePosition);
+        }
+
         public static CheckpointTag FromStreamPosition(string stream, int sequenceNumber)
         {
             return new CheckpointTag(stream, sequenceNumber);
@@ -281,6 +306,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 case Mode.Position:
                     return Position.ToString();
+                case Mode.PreparePosition:
+                    return PreparePosition.ToString();
                 case Mode.Stream:
                     return Streams.Keys.First() + ": " + Streams.Values.First();
                 case Mode.MultiStream:

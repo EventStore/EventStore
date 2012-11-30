@@ -125,6 +125,7 @@
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\PartitionStateCache.cs" />
     <Compile Include="Services\Processing\PositionTracker.cs" />
+    <Compile Include="Services\Processing\PreparePositionTagger.cs" />
     <Compile Include="Services\Processing\ProgressWorkItem.cs" />
     <Compile Include="Services\Processing\ProjectionNamesBuilder.cs" />
     <Compile Include="Services\Processing\ProjectionSourceDefintion.cs" />

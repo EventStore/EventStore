@@ -114,10 +114,16 @@
     <Compile Include="Services\checkpoint_strategy\the_from_category_checkpoint_strategy.cs" />
     <Compile Include="Services\checkpoint_strategy\the_from_stream_checkpoint_strategy.cs" />
     <Compile Include="Services\checkpoint_strategy\when_creating_a_checkpoint_strategy.cs" />
+    <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_prepare_position.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_position.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions_when_updating.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_tf_position.cs" />
+    <Compile Include="Services\prepare_position_tagger\prepare_position_tagger.cs" />
+    <Compile Include="Services\prepare_position_tagger\when_creating_prepare_postion_tracker.cs" />
+    <Compile Include="Services\prepare_position_tagger\when_reinitializing_prepapre_postion_tracker.cs" />
+    <Compile Include="Services\prepare_position_tagger\when_updating_postion_tagger_from_a_tag.cs" />
+    <Compile Include="Services\prepare_position_tagger\when_updating_prepare_postion_tracker.cs" />
     <Compile Include="Services\event_reordering_projection_subscription\TestFixtureWithEventReorderingProjectionSubscription.cs" />
     <Compile Include="Services\event_reordering_projection_subscription\when_creating_projection_subscription.cs" />
     <Compile Include="Services\event_reordering_projection_subscription\when_handling_an_event_after_the_delay_and_reordering_is_required.cs" />

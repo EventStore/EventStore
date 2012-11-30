@@ -135,7 +135,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_allEvents && _events == null)
                 throw new InvalidOperationException("None of events are included");
             if (_streams != null && _categories != null)
-                throw new InvalidOperationException("Streams and categories cannot be included in a filter at the same time");
+                throw new InvalidOperationException(
+                    "Streams and categories cannot be included in a filter at the same time");
             if (_allStreams && (_categories != null || _streams != null))
                 throw new InvalidOperationException("Both FromAll and specific categories/streams cannot be set");
             if (_allEvents && _events != null)
@@ -148,6 +149,16 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("useEventIndexes option is only available in fromAll() projections");
             if (_options.UseEventIndexes && _allEvents)
                 throw new InvalidOperationException("useEventIndexes option cannot be used in whenAny() projections");
+            if (_options.ReorderEvents)
+            {
+                if (!(_allStreams || _streams != null && _streams.Count > 1))
+                {
+                    throw new InvalidOperationException(
+                        "Event reordering is only available in fromAll() and fromStreams([]) projections");
+                }
+                if (_options.ProcessingLag < 50)
+                    throw new InvalidOperationException("Event reordering requires processing lag at least of 50ms");
+            }
         }
 
     }
