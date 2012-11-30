@@ -151,6 +151,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("useEventIndexes option cannot be used in whenAny() projections");
             if (_options.ReorderEvents)
             {
+                if (_options.UseEventIndexes)
+                    throw new InvalidOperationException("Event reordering cannot be used with use event indexes option");
                 if (!(_allStreams || _streams != null && _streams.Count > 1))
                 {
                     throw new InvalidOperationException(

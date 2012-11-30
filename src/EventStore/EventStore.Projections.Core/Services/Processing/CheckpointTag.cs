@@ -48,6 +48,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         internal CheckpointTag()
         {
+            Position = new EventPosition(long.MinValue, long.MinValue);
         }
 
         public CheckpointTag(long preparePosition)
@@ -263,7 +264,12 @@ namespace EventStore.Projections.Core.Services.Processing
         [DataMember]
         public long? PreparePosition
         {
-            get { return Position.PreparePosition != Int64.MinValue ? Position.PreparePosition : (long?) null; }
+            get
+            {
+                return Streams != null
+                         ? null
+                         : (Position.PreparePosition != Int64.MinValue ? Position.PreparePosition : (long?)null);
+            }
             set
             {
                 Position = new EventPosition(

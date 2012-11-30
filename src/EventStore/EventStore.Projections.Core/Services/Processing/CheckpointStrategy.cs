@@ -44,6 +44,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly HashSet<string> _events;
         private readonly bool _byStream;
         private readonly bool _useEventIndexes;
+        private readonly bool _reorderEvents;
+        private readonly int _processingLag;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
         private readonly StatePartitionSelector _statePartitionSelector;
@@ -54,7 +56,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 base.Validate(mode);
                 return new CheckpointStrategy(
-                    _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream, _options.UseEventIndexes);
+                    _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream,
+                    _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag);
             }
         }
 
@@ -143,7 +146,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private CheckpointStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, HashSet<string> events,
-            bool byStream, bool useEventIndexes)
+            bool byStream, bool useEventIndexes, bool reorderEvents, int processingLag)
         {
             _allStreams = allStreams;
             _categories = categories;
@@ -152,6 +155,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _events = events;
             _byStream = byStream;
             _useEventIndexes = useEventIndexes;
+            _reorderEvents = reorderEvents;
+            _processingLag = processingLag;
 
             _eventFilter = CreateEventFilter();
             _positionTagger = CreatePositionTagger();
@@ -183,6 +188,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 return new StreamPositionTagger("$et-" + _events.First());
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
                 return new MultiStreamPositionTagger(GetEventIndexStreams());
+            if (_allStreams && _reorderEvents)
+                return new PreparePositionTagger();
             if (_allStreams)
                 return new TransactionFilePositionTagger();
             if (_categories != null && _categories.Count == 1)
@@ -211,9 +218,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
             ICoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-                requestResponseDispatcher,
+            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> requestResponseDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> responseDispatcher,
             ProjectionConfig projectionConfig, string name, string stateUpdatesStreamId)
         {
@@ -242,6 +247,20 @@ namespace EventStore.Projections.Core.Services.Processing
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
                     projectionConfig, projectionCheckpointStreamId, name, PositionTagger);
             }
+        }
+
+        public IProjectionSubscription CreateProjectionSubscription(
+            CheckpointTag fromCheckpointTag, Guid projectionCorrelationId, ICoreProjection checkpointHandler,
+            long checkpointUnhandledBytesThreshold)
+        {
+            if (_reorderEvents)
+                return new EventReorderingProjectionSubscription(
+                    projectionCorrelationId, fromCheckpointTag, checkpointHandler, checkpointHandler, checkpointHandler,
+                    this, checkpointUnhandledBytesThreshold, _processingLag);
+            else
+                return new ProjectionSubscription(
+                    projectionCorrelationId, fromCheckpointTag, checkpointHandler, checkpointHandler, checkpointHandler,
+                    this, checkpointUnhandledBytesThreshold);
         }
     }
 }
