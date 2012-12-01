@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
             _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
             _edp = new MultiStreamReaderEventDistributionPoint(
-                _bus, _distibutionPointCorrelationId, _abStreams, _ab12Tag, false);
+                _bus, _distibutionPointCorrelationId, _abStreams, _ab12Tag, false, new RealTimeProvider());
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();

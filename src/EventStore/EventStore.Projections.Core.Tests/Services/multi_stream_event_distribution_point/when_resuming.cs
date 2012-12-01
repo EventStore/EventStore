@@ -32,6 +32,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
@@ -56,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
 
             _distibutionPointCorrelationId = Guid.NewGuid();
             _edp = new MultiStreamReaderEventDistributionPoint(
-                _bus, _distibutionPointCorrelationId, _abStreams, _ab12Tag, false);
+                _bus, _distibutionPointCorrelationId, _abStreams, _ab12Tag, false, new RealTimeProvider());
 
             _edp.Resume();
         }

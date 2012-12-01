@@ -29,7 +29,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -45,6 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly HashSet<string> _streams;
         private CheckpointTag _fromPositions;
         private readonly bool _resolveLinkTos;
+        private readonly ITimeProvider _timeProvider;
 
         private readonly HashSet<string> _eventsRequested = new HashSet<string>();
         private readonly Dictionary<string, long?> _preparePositions = new Dictionary<string, long?>();
@@ -55,19 +55,23 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private int _maxReadCount = 111;
         private long? _safePositionToJoin;
+        private readonly Dictionary<string, bool> _eofs;
 
         public MultiStreamReaderEventDistributionPoint(
             IPublisher publisher, Guid distibutionPointCorrelationId, string[] streams,
-            Dictionary<string, int> fromPositions, bool resolveLinkTos)
+            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider)
             : base(publisher, distibutionPointCorrelationId)
         {
             if (streams == null) throw new ArgumentNullException("streams");
+            if (timeProvider == null) throw new ArgumentNullException("timeProvider");
             if (streams.Length == 0) throw new ArgumentException("streams");
             _streams = new HashSet<string>(streams);
+            _eofs = _streams.ToDictionary(v => v, v => false);
             var positions = CheckpointTag.FromStreamPositions(fromPositions);
             ValidateTag(positions);
             _fromPositions = positions;
             _resolveLinkTos = resolveLinkTos;
+            _timeProvider = timeProvider;
             foreach (var stream in streams)
             {
                 _preparePositions.Add(stream, null);
@@ -116,6 +120,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (message.Result)
             {
                 case RangeReadResult.NoStream:
+                    _eofs[message.EventStreamId] = true;
                     UpdateSafePositionToJoin(message.EventStreamId, message.LastCommitPosition);
                     ProcessBuffers();
                     if (_pauseRequested)
@@ -123,15 +128,19 @@ namespace EventStore.Projections.Core.Services.Processing
                     else
                         RequestEvents(message.EventStreamId, delay: true);
                     _publisher.Publish(CreateTickMessage());
+                    CheckIdle();
                     break;
                 case RangeReadResult.Success:
                     if (message.Events.Length == 0)
                     {
                         // the end
+                        _eofs[message.EventStreamId] = true;
                         UpdateSafePositionToJoin(message.EventStreamId, message.LastCommitPosition);
+                        CheckIdle();
                     }
                     else
                     {
+                        _eofs[message.EventStreamId] = false;
                         for (int index = 0; index < message.Events.Length; index++)
                         {
                             var @event = message.Events[index].Event;
@@ -145,7 +154,9 @@ namespace EventStore.Projections.Core.Services.Processing
                                 _buffers.Add(positionEvent.EventStreamId, queue);
                             }
                             //TODO: progress calculation below is incorrect.  sum(current)/sum(last_event) where sum by all streams
-                            queue.Enqueue(Tuple.Create(@event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber));
+                            queue.Enqueue(
+                                Tuple.Create(
+                                    @event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber));
                         }
                     }
                     ProcessBuffers();
@@ -159,6 +170,14 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
+        }
+
+        private void CheckIdle()
+        {
+            if (_eofs.All(v => v.Value))
+                _publisher.Publish(
+                    new ProjectionCoreServiceMessage.EventDistributionPointIdle(
+                        _distibutionPointCorrelationId, _timeProvider.Now));
         }
 
         private void ProcessBuffers()

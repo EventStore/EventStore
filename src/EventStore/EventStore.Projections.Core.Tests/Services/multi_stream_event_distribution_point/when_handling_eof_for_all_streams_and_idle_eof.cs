@@ -33,6 +33,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -42,16 +43,12 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribution_point
 {
     [TestFixture]
-    public class when_handling_read_completed_for_all_streams_then_pause_requested_then_eof :
-        TestFixtureWithExistingEvents
+    public class when_handling_eof_for_all_streams_and_idle_eof : TestFixtureWithExistingEvents
     {
         private MultiStreamReaderEventDistributionPoint _edp;
-        private Guid _publishWithCorrelationId;
         private Guid _distibutionPointCorrelationId;
         private Guid _firstEventId;
         private Guid _secondEventId;
-        private Guid _thirdEventId;
-        private Guid _fourthEventId;
 
         protected override void Given()
         {
@@ -60,6 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
 
         private string[] _abStreams;
         private Dictionary<string, int> _ab12Tag;
+        private FakeTimeProvider _fakeTimeProvider;
 
         [SetUp]
         public void When()
@@ -67,15 +65,13 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
             _ab12Tag = new Dictionary<string, int> {{"a", 1}, {"b", 2}};
             _abStreams = new[] {"a", "b"};
 
-            _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
+            _fakeTimeProvider = new FakeTimeProvider();
             _edp = new MultiStreamReaderEventDistributionPoint(
-                _bus, _distibutionPointCorrelationId, _abStreams, _ab12Tag, false, new RealTimeProvider());
+                _bus, _distibutionPointCorrelationId, _abStreams, _ab12Tag, false, _fakeTimeProvider);
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
-            _thirdEventId = Guid.NewGuid();
-            _fourthEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "a",
@@ -83,15 +79,11 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                         {
                             new EventLinkPair(
                         new EventRecord(
-                            1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
+                            1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, _fakeTimeProvider.Now,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type1", new byte[] {1}, new byte[] {2}), null),
-                            new EventLinkPair(
-                        new EventRecord(
-                            2, 100, Guid.NewGuid(), _secondEventId, 100, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
-                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, RangeReadResult.Success, 3, 2, true, 200));
+                        }, RangeReadResult.Success, 2, 1, true,
+                    200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "b",
@@ -99,47 +91,42 @@ namespace EventStore.Projections.Core.Tests.Services.multi_stream_event_distribu
                         {
                             new EventLinkPair(
                         new EventRecord(
-                            2, 150, Guid.NewGuid(), _thirdEventId, 150, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
+                            2, 100, Guid.NewGuid(), _secondEventId, 100, 0, "b", ExpectedVersion.Any, _fakeTimeProvider.Now,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type1", new byte[] {1}, new byte[] {2}), null),
-                            new EventLinkPair(
-                        new EventRecord(
-                            3, 200, Guid.NewGuid(), _fourthEventId, 200, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
-                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, RangeReadResult.Success, 4, 3, true, 200));
-            _edp.Pause();
+                        }, RangeReadResult.Success, 3, 2, true,
+                    200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", new EventLinkPair[] {}, RangeReadResult.Success, 3, 2, true, 400));
+                    _distibutionPointCorrelationId, "a", new EventLinkPair[] {}, RangeReadResult.Success, 2, 1, true,
+                    400));
+            _edp.Handle(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
+                    _distibutionPointCorrelationId, "b", new EventLinkPair[] {}, RangeReadResult.Success, 3, 2, true,
+                    400));
+            _fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(500));
+            _edp.Handle(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
+                    _distibutionPointCorrelationId, "a", new EventLinkPair[] { }, RangeReadResult.Success, 2, 1, true,
+                    600));
         }
 
         [Test]
-        public void publishes_read_events_from_beginning_with_correct_next_event_number()
+        public void publishes_event_distribution_idle_messages()
         {
-            Assert.AreEqual(3, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
-            Assert.IsTrue(
-                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
-                         .Any(m => m.EventStreamId == "a"));
-            Assert.IsTrue(
-                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
-                         .Any(m => m.EventStreamId == "b"));
             Assert.AreEqual(
-                3,
-                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
-                         .Last(m => m.EventStreamId == "a")
-                         .FromEventNumber);
-            Assert.AreEqual(
-                2,
-                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()
-                         .Last(m => m.EventStreamId == "b")
-                         .FromEventNumber);
-        }
+                2, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>().Count());
+            var first =
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>().First();
+            var second =
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>()
+                         .Skip(1)
+                         .First();
 
-        [Test]
-        public void does_not_publish_schedule()
-        {
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
+            Assert.AreEqual(first.CorrelationId, _distibutionPointCorrelationId);
+            Assert.AreEqual(second.CorrelationId, _distibutionPointCorrelationId);
+
+            Assert.AreEqual(TimeSpan.FromMilliseconds(500), second.IdleTimestampUtc - first.IdleTimestampUtc);
         }
 
     }

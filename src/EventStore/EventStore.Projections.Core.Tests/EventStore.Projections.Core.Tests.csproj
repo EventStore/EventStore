@@ -119,6 +119,7 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions_when_updating.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_tf_position.cs" />
+    <Compile Include="Services\multi_stream_event_distribution_point\when_handling_eof_for_all_streams_and_idle_eof.cs" />
     <Compile Include="Services\prepare_position_tagger\prepare_position_tagger.cs" />
     <Compile Include="Services\prepare_position_tagger\when_creating_prepare_postion_tracker.cs" />
     <Compile Include="Services\prepare_position_tagger\when_reinitializing_prepapre_postion_tracker.cs" />

@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using EventStore.Core.Bus;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -140,7 +141,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
 
             var distributionPoint = new MultiStreamReaderEventDistributionPoint(
-                publisher, distributionPointId, streams.ToArray(), nextPositions, resolveLinkTos);
+                publisher, distributionPointId, streams.ToArray(), nextPositions, resolveLinkTos, new RealTimeProvider());
             return distributionPoint;
         }
 
