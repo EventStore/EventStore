@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var man = _manager.Target as TcpConnectionManager;
             if (man != null)
-                man.SendMessage(message);
+                man.QueueMessage(message);
         }
     }
 }

@@ -27,7 +27,6 @@
 //  
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
@@ -58,8 +57,8 @@ namespace EventStore.ClientAPI
 
         private readonly SubscriptionsChannel _subscriptionsChannel;
 
-        private readonly ConcurrentQueue<IClientOperation> _queue = new ConcurrentQueue<IClientOperation>();
-        private readonly ConcurrentDictionary<Guid, WorkItem> _inProgress = new ConcurrentDictionary<Guid, WorkItem>();
+        private readonly Common.Concurrent.ConcurrentQueue<IClientOperation> _queue = new Common.Concurrent.ConcurrentQueue<IClientOperation>();
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, WorkItem> _inProgress = new System.Collections.Concurrent.ConcurrentDictionary<Guid, WorkItem>();
         private int _inProgressCount;
 
         private DateTime _lastReconnectionTimestamp;

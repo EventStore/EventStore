@@ -28,7 +28,6 @@
 using System;
 using System.Linq;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
@@ -41,13 +40,13 @@ namespace EventStore.Core.Tests.Index
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
-            _tableIndex = new TableIndex(PathName, () => new HashListMemTable(), maxSizeForMemory: 2000);
+            _tableIndex = new TableIndex(PathName, () => new HashListMemTable(maxSize: 20), maxSizeForMemory: 10);
             _tableIndex.Initialize();
         }
 
         public override void TestFixtureTearDown()
         {
-            _tableIndex.ClearAll(); 
+            _tableIndex.Close(); 
             base.TestFixtureTearDown();
         }
 

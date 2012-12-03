@@ -106,12 +106,13 @@ namespace EventStore.TestClient.Commands
 
             var requestsCnt = 0;
 
+            int sent = 0;
+            int received = 0;
+
             var watchLockRoot = new object();
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < clientsCnt; i++)
             {
-                int sent = 0;
-                int received = 0;
 
                 threads.Add(new Thread(() =>
                 {
@@ -210,8 +211,10 @@ namespace EventStore.TestClient.Commands
                         Thread.Sleep(sleepTime);
                         sentCount -= 1;
 
-                        while (sent - received > context.Client.Options.WriteWindow)
+                        while (sent - received > context.Client.Options.WriteWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }

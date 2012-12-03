@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Concurrent;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
@@ -35,7 +34,7 @@ namespace EventStore.Core.Services.TimerService
 {
     public class ThreadBasedScheduler : IDisposable, IScheduler
     {
-        private readonly ConcurrentQueue<ScheduledTask> _pending = new ConcurrentQueue<ScheduledTask>();
+        private readonly Common.Concurrent.ConcurrentQueue<ScheduledTask> _pending = new Common.Concurrent.ConcurrentQueue<ScheduledTask>();
         private readonly PairingHeap<ScheduledTask> _tasks = new PairingHeap<ScheduledTask>((x, y) => x.DueTime < y.DueTime);
 
         private readonly ITimeProvider _timeProvider;

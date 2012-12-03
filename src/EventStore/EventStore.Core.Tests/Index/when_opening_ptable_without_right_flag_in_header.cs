@@ -33,15 +33,13 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class when_opening_ptable_without_right_flag_in_header
+    public class when_opening_ptable_without_right_flag_in_header: SpecificationWithFile
     {
-        private string _filename;
-
         [SetUp]
-        public void SetUp()
+        public override void SetUp()
         {
-            _filename = Path.GetRandomFileName();
-            using (var stream = File.OpenWrite(_filename))
+            base.SetUp();
+            using (var stream = File.OpenWrite(Filename))
             {
                 var bytes = new byte[128];
                 bytes[0] = 0x27;
@@ -52,14 +50,8 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void the_invalid_file_exception_is_thrown()
         {
-            var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(_filename));
+            var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(Filename));
             Assert.IsInstanceOf<InvalidFileException>(exc.InnerException);
-        }
-
-        [TearDown]
-        public void Teardown()
-        {
-            File.Delete(_filename);
         }
     }
 }

@@ -5,9 +5,20 @@ function err() {
   exit 1
 }
 
+echo get-mono [[tag] [prefix]]
+
+tag=${1:-""}
+prefix=$2
+
 cd ~ || err
 
-MONO_PREFIX=/opt/mono || err
+if [ -z $prefix ]
+then 
+  MONO_PREFIX="/opt/mono" || err
+else
+  MONO_PREFIX="/opt/mono-$prefix" || err
+fi
+  
 export DYLD_LIBRARY_FALLBACK_PATH=$MONO_PREFIX/lib:$DYLD_LIBRARY_FALLBACK_PATH || err
 export LD_LIBRARY_PATH=$MONO_PREFIX/lib:$LD_LIBRARY_PATH || err
 export C_INCLUDE_PATH=$MONO_PREFIX/include || err
@@ -37,20 +48,32 @@ apt-get install -y mono-gmcs || err
 
 if [[ -d mono ]] ; then
   pushd mono || err
+  git checkout master
+  git reset --hard
   git pull || err
   popd || err
 else
   git clone git://github.com/mono/mono.git || err
 fi
 
-
-
 pushd mono || err
+
+if [ ! -z $tag ]
+then
+  echo "Checking out version or tag [$tag]"
+  git checkout $tag
+fi
+
+echo "Ready to build, output prefix $MONO_PREFIX"
+sleep 2
 
 git clean -dfx || err
 ./autogen.sh --prefix=$MONO_PREFIX || err
 make || err
 make install || err
 popd || err
+
+echo "Done, output prefix $MONO_PREFIX"
+
 
 

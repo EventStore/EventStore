@@ -35,7 +35,7 @@ namespace EventStore.Core.Index
         long PrepareCheckpoint { get; }
 
         void Initialize();
-        void ClearAll(bool removeFiles = true);
+        void Close(bool removeFiles = true);
 
         void Add(long commitPos, uint stream, int version, long position);
         

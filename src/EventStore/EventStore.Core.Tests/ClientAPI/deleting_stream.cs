@@ -34,21 +34,23 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    public class deleting_stream
+    public class deleting_stream : SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
 
         [TestFixtureSetUp]
-        public void SetUp()
+        public override void TestFixtureSetUp()
         {
-            _node = new MiniNode();
+            base.TestFixtureSetUp();
+            _node = new MiniNode(PathName);
             _node.Start();
         }
 
         [TestFixtureTearDown]
-        public void TearDown()
+        public override void TestFixtureTearDown()
         {
             _node.Shutdown();
+            base.TestFixtureTearDown();
         }
 
         [Test]
@@ -101,14 +103,14 @@ namespace EventStore.Core.Tests.ClientAPI
 
         [Test]
         [Category("Network")]
-        public void which_does_not_exist_should_fail()
+        public void which_does_not_exist_should_not_fail()
         {
-            const string stream = "which_does_not_exist_should_fail";
+            const string stream = "which_does_not_exist_should_not_fail";
             using (var connection = EventStoreConnection.Create())
             {
                 connection.Connect(_node.TcpEndPoint);
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.Any);
-                Assert.Inconclusive();
+                Assert.DoesNotThrow(delete.Wait);
                 //Assert.That(() => delete.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }

@@ -79,12 +79,12 @@ namespace EventStore.TestClient.Commands
 
             var readsCnt = 0;
 
+            int sent = 0;
+            int received = 0;
+
             for (int i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-
-                int sent = 0;
-                int received = 0;
 
                 threads.Add(new Thread(() =>
                 {
@@ -112,8 +112,10 @@ namespace EventStore.TestClient.Commands
                                     autoResetEvent.Set();
                             });
                         Interlocked.Increment(ref sent);
-                        while (sent - received > context.Client.Options.ReadWindow)
+                        while (sent - received > context.Client.Options.ReadWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }

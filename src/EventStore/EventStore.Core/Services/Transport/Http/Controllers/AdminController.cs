@@ -48,17 +48,32 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
+            service.RegisterControllerAction(new ControllerAction("/halt",
+                                                                  HttpMethod.Get,
+                                                                  SupportedCodecs,
+                                                                  SupportedCodecs,
+                                                                  DefaultResponseCodec),
+                                             OnPostHalt);
             service.RegisterControllerAction(new ControllerAction("/shutdown",
-                                                                  HttpMethod.Post,
+                                                                  HttpMethod.Get,
                                                                   SupportedCodecs,
                                                                   SupportedCodecs,
                                                                   DefaultResponseCodec),
                                              OnPostShutdown);
         }
 
+        private void OnPostHalt(HttpEntity entity, UriTemplateMatch match)
+        {
+            Log.Info("Request shut down of node because halt command has been received.");
+            Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: false));
+            entity.Manager.Reply(HttpStatusCode.OK,
+                                 "OK",
+                                 e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
+        }
         private void OnPostShutdown(HttpEntity entity, UriTemplateMatch match)
         {
-            Publish(new ClientMessage.RequestShutdown());
+            Log.Info("Request shut down of node because shutdown command has been received.");
+            Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: true));
             entity.Manager.Reply(HttpStatusCode.OK,
                                  "OK",
                                  e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));

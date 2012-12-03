@@ -34,23 +34,25 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI.AllEvents
 {
     [TestFixture, Category("LongRunning")]
-    public class subscribe_to_all_should
+    public class subscribe_to_all_should: SpecificationWithDirectory
     {
-        private const int Timeout = 1000;
+        private const int Timeout = 10000;
         
         private MiniNode _node;
 
         [SetUp]
-        public void SetUp()
+        public override void SetUp()
         {
-            _node = new MiniNode();
+            base.SetUp();
+            _node = new MiniNode(PathName);
             _node.Start();
         }
 
         [TearDown]
-        public void TearDown()
+        public override void TearDown()
         {
             _node.Shutdown();
+            base.TearDown();
         }
 
         [Test]
@@ -70,9 +72,9 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.That(create.Wait(Timeout));
+                Assert.IsTrue(create.Wait(Timeout), "StreamCreateAsync timed out.");
 
-                Assert.That(appeared.Wait(Timeout));
+                Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
             }
         }
 
@@ -91,8 +93,11 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
+                Thread.Sleep(10);
+
                 store.UnsubscribeFromAllStreamsAsync();
-                Assert.That(dropped.Wait(Timeout));
+
+                Assert.IsTrue(dropped.Wait(Timeout), "Appeared countdown event timed out.");
             }
         }
 
@@ -112,11 +117,11 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.That(create.Wait(Timeout));
+                Assert.IsTrue(create.Wait(Timeout), "CreateStreamAsync timed out.");
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
-                Assert.That(delete.Wait(Timeout));
+                Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");
 
-                Assert.That(appeared.Wait(Timeout));
+                Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event didn't fire in time.");
             }
         }
     }

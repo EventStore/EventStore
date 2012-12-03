@@ -31,7 +31,6 @@
 #endif
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -61,8 +60,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _succReadCount;
         private long _failedReadCount;
 
-        private readonly ConcurrentStack<ITransactionFileReader> _readers = new ConcurrentStack<ITransactionFileReader>();
-        private readonly ConcurrentStack<ITransactionFileSequentialReader> _seqReaders = new ConcurrentStack<ITransactionFileSequentialReader>();
+        private readonly Common.Concurrent.ConcurrentStack<ITransactionFileReader> _readers = new Common.Concurrent.ConcurrentStack<ITransactionFileReader>();
+        private readonly Common.Concurrent.ConcurrentStack<ITransactionFileSequentialReader> _seqReaders = new Common.Concurrent.ConcurrentStack<ITransactionFileSequentialReader>();
 
         private readonly ITableIndex _tableIndex;
         private readonly IHasher _hasher;
@@ -950,6 +949,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             foreach (var seqReader in _seqReaders)
             {
                 seqReader.Close();
+            }
+            try
+            {
+                _tableIndex.Close(removeFiles: false);
+            }
+            catch (TimeoutException exc)
+            {
+                Log.ErrorException(exc, "Timeout exception when trying to close TableIndex.");
             }
         }
 

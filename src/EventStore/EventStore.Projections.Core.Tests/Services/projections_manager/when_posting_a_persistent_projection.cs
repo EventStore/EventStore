@@ -34,7 +34,6 @@ using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
@@ -59,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             OneWriteCompletes();
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void the_projection_status_is_creating()
         {
             _manager.Handle(
@@ -70,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     MasterStatus);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void a_projection_created_event_is_written()
         {
             Assert.AreEqual(
@@ -82,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First().Events[0].Data));
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void a_projection_updated_message_is_not_published()
         {
             // not published until all writes complete

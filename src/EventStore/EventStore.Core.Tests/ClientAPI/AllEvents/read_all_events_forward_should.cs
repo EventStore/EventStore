@@ -37,23 +37,25 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI.AllEvents
 {
     [TestFixture, Category("LongRunning")]
-    public class read_all_events_forward_should
+    public class read_all_events_forward_should: SpecificationWithDirectory
     {
-        private const int Timeout = 1000;
+        private const int Timeout = 10000;
 
         private MiniNode _node;
 
         [SetUp]
-        public void SetUp()
+        public override void SetUp()
         {
-            _node = new MiniNode();
+            base.SetUp();
+            _node = new MiniNode(PathName);
             _node.Start();
         }
 
         [TearDown]
-        public void TearDown()
+        public override void TearDown()
         {
             _node.Shutdown();
+            base.TearDown();
         }
 
         [Test]

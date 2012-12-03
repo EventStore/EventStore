@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Index
         {
             base.TestFixtureSetUp();
 
-            var table = new HashListMemTable(maxSize: 2000);
+            var table = new HashListMemTable(maxSize: 10);
             table.Add(0x0101, 0x0001, 0x0001);
             _ptable = PTable.FromMemtable(table, Filename, cacheDepth: 0);
         }

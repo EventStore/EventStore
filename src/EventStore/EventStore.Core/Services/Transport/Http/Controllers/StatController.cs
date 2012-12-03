@@ -67,10 +67,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnGetFreshStats(HttpEntity entity, UriTemplateMatch match)
         {
-            var envelope = new SendToHttpEnvelope(
-                    entity,
-                    Format.GetFreshStatsCompleted,
-                    Configure.GetFreshStatsCompleted);
+            var envelope = new SendToHttpEnvelope(entity,
+                                                  Format.GetFreshStatsCompleted,
+                                                  Configure.GetFreshStatsCompleted);
 
             var statPath = match.BoundVariables["statPath"];
             var statSelector = GetStatSelector(statPath);
@@ -85,7 +84,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             if (!useGrouping && !string.IsNullOrEmpty(statPath))
             {
-                base.SendBadRequest(entity, "Dynamic stats selection works only with grouping enabled");
+                SendBadRequest(entity, "Dynamic stats selection works only with grouping enabled");
                 return;
             }
              

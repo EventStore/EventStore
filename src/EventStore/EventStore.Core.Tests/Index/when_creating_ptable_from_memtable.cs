@@ -34,12 +34,12 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class when_creating_ptable_from_memtable
+    public class when_creating_ptable_from_memtable: SpecificationWithFile
     {
         [Test]
         public void null_file_throws_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(new HashListMemTable(maxSize: 2000), null));
+            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(new HashListMemTable(maxSize: 10), null));
         }
 
         [Test]
@@ -51,11 +51,14 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void wait_for_destroy_will_timeout()
         {
-            var tmp = Path.GetRandomFileName();
-            var table = new HashListMemTable(maxSize: 2000);
+            var table = new HashListMemTable(maxSize: 10);
             table.Add(0x0101, 0x0001, 0x0001);
-            var stable = PTable.FromMemtable(table, tmp);
-            Assert.Throws<TimeoutException>(() => stable.WaitForDestroy(1));
+            var ptable = PTable.FromMemtable(table, Filename);
+            Assert.Throws<TimeoutException>(() => ptable.WaitForDestroy(1));
+
+            // tear down
+            ptable.MarkForDestruction();
+            ptable.WaitForDestroy(1000);
         }
 
         //[Test]
@@ -71,15 +74,14 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void the_file_gets_created()
         {
-            var tmp = Path.GetRandomFileName();
-            var table = new HashListMemTable(maxSize: 2000);
+            var table = new HashListMemTable(maxSize: 10);
             table.Add(0x0101, 0x0001, 0x0001);
             table.Add(0x0105, 0x0001, 0x0002);
             table.Add(0x0102, 0x0001, 0x0003);
             table.Add(0x0102, 0x0002, 0x0003);
-            using (var sstable = PTable.FromMemtable(table, tmp))
+            using (var sstable = PTable.FromMemtable(table, Filename))
             {
-                var fileinfo = new FileInfo(tmp);
+                var fileinfo = new FileInfo(Filename);
                 Assert.AreEqual(PTableHeader.Size + PTable.MD5Size + 4*16, fileinfo.Length);
                 var items = sstable.IterateAllInOrder().ToList();
                 Assert.AreEqual(0x0105, items[0].Stream);
@@ -91,24 +93,20 @@ namespace EventStore.Core.Tests.Index
                 Assert.AreEqual(0x0101, items[3].Stream);
                 Assert.AreEqual(0x0001, items[3].Version);        
             }
-            File.Delete(tmp);
         }
 
         [Test]
         public void the_hash_of_file_is_valid()
         {
-            var tmp = Path.GetRandomFileName();
-            var table = new HashListMemTable(maxSize: 2000);
+            var table = new HashListMemTable(maxSize: 10);
             table.Add(0x0101, 0x0001, 0x0001);
             table.Add(0x0105, 0x0001, 0x0002);
             table.Add(0x0102, 0x0001, 0x0003);
             table.Add(0x0102, 0x0002, 0x0003);
-            using (var sstable = PTable.FromMemtable(table, tmp))
+            using (var sstable = PTable.FromMemtable(table, Filename))
             {
                 Assert.DoesNotThrow(() => sstable.VerifyFileHash());
             }
-            File.Delete(tmp);
         }
-
     }
 }

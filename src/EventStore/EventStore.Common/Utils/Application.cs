@@ -39,31 +39,25 @@ namespace EventStore.Common.Utils
     public class Application
     {
         private static Action<ExitCode> _exit;
-        private static bool _initialized;
 
         public static void RegisterExitAction(Action<ExitCode> exitAction)
         {
             Ensure.NotNull(exitAction, "exitAction");
 
-            if (_initialized)
-                throw new InvalidOperationException("Application is already initialized");
-
             _exit = exitAction;
-            _initialized = true;
         }
 
         public static void Exit(ExitCode exitCode, string reason)
         {
             Ensure.NotNullOrEmpty(reason, "reason");
             
-            if (!_initialized)
-                throw new InvalidOperationException("Application should be initialized before exiting");
-
-            Console.WriteLine("Exiting...");
-            Console.WriteLine("Exit reason : {0}", reason);
+            Console.WriteLine("Exiting... Exit reason : {0}", reason);
 
             LogManager.Finish();
-            _exit(exitCode);
+
+            var exit = _exit;
+            if (exit != null)
+                exit(exitCode);
         }
     }
 }

@@ -67,7 +67,11 @@ namespace EventStore.Core
         private readonly HttpService _httpService;
         private readonly TimerService _timerService;
 
-        public SingleVNode(TFChunkDb db, SingleVNodeSettings vNodeSettings, SingleVNodeAppSettings appSettings, bool dbVerifyHashes)
+        public SingleVNode(TFChunkDb db, 
+                           SingleVNodeSettings vNodeSettings, 
+                           SingleVNodeAppSettings appSettings, 
+                           bool dbVerifyHashes,
+                           int memTableEntryCount = TFConsts.MemTableEntryCount)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(vNodeSettings, "vNodeSettings");
@@ -101,14 +105,14 @@ namespace EventStore.Core
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
-            monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
             monitoringInnerBus.Subscribe<ClientMessage.CreateStreamCompleted>(monitoring);
+            monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 
             //STORAGE SUBSYSTEM
             var indexPath = Path.Combine(db.Config.Path, "index");
             var tableIndex = new TableIndex(indexPath,
-                                            () => new HashListMemTable(maxSize: 2000000),
-                                            maxSizeForMemory: 1000000,
+                                            () => new HashListMemTable(maxSize: memTableEntryCount * 2),
+                                            maxSizeForMemory: memTableEntryCount,
                                             maxTablesPerLevel: 2);
 
             var readIndex = new ReadIndex(_mainQueue, 
@@ -124,7 +128,7 @@ namespace EventStore.Core
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
             var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
-            var storageChaser = new StorageChaser(_mainQueue, chaser, readIndex);
+            var storageChaser = new StorageChaser(_mainQueue, chaser, readIndex, _tcpEndPoint);
             _outputBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
             _outputBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
             _outputBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
@@ -193,7 +197,7 @@ namespace EventStore.Core
 
         public void Stop()
         {
-            MainQueue.Publish(new SystemMessage.BecomeShuttingDown());
+            MainQueue.Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: false));
         }
 
         public override string ToString()

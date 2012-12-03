@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -64,7 +63,7 @@ namespace EventStore.Core.Index
         private readonly long _size;
         private readonly GCHandle _bufferPtr;
         private readonly byte[] _buffer;
-        private readonly ConcurrentQueue<FileStream> _streams = new ConcurrentQueue<FileStream>();
+        private readonly Common.Concurrent.ConcurrentQueue<FileStream> _streams = new Common.Concurrent.ConcurrentQueue<FileStream>();
 
         private readonly Midpoint[] _midpoints;
         private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
@@ -86,7 +85,6 @@ namespace EventStore.Core.Index
 
             _filename = filename;
             File.SetAttributes(_filename, FileAttributes.ReadOnly);
-            File.SetAttributes(_filename, FileAttributes.Temporary);
             File.SetAttributes(_filename, FileAttributes.NotContentIndexed);
 
             _bufferSize = bufferSize;

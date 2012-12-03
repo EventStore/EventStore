@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.Services.Storage
         {
         }
 
-        public void ClearAll(bool removeFiles = true)
+        public void Close(bool removeFiles = true)
         {
         }
 

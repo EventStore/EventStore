@@ -1,0 +1,58 @@
+.dropdown {
+    margin-left: 10px;
+}
+.hidegraph{
+    float: right;
+}
+
+.es-zoomer {
+    overflow-x: hidden!important;
+}
+.es-selector {
+    min-width: 250px;
+}
+.es-selector li{
+    margin: 0 20px;
+}
+.es-selector-all{
+    text-align: center;
+}
+.es-selector-all a{
+    display: inline-block;
+}
+
+.ui-slider-handle.ui-state-default.ui-corner-all {
+    background: url("../img/control.png");
+    margin-top: -4px;
+}
+.slider.ui-slider.ui-slider-horizontal {
+    height: 3px;
+    margin-top: 8px;
+}
+.es-chart-cont, .es-chart-header {
+    display: inline-block;
+    margin: 10px;
+    border: 1px solid gray;
+    padding: 0px 10px 15px;
+    background-color: whitesmoke;
+    
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}
+.es-chart-cont .es-chart-title {
+	text-align: center;
+	font-size: 14px;
+	margin: 10px auto;
+    overflow: hidden;
+}
+.rickshaw_graph {
+    position: relative;
+    background-color: white;
+    /*padding: 10px 0px 2px 5px;*/
+    border: 1px solid #E3E3E3;
+    
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}

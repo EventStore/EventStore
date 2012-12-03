@@ -78,6 +78,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _portableServer.Publish(new SystemMessage.SystemInit());
             Assert.IsTrue(_portableServer.IsListening);
 
+            _portableServer.Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: false));
+            _portableServer.Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: true));
             _portableServer.Publish(new SystemMessage.BecomeShutdown());
             _portableServer.Publish(new SystemMessage.BecomeShuttingDown());
             Assert.IsTrue(_portableServer.IsListening);

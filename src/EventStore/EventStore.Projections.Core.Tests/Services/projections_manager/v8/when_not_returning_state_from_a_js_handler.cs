@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             ";
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_should_return_updated_state()
         {
             string state;
@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.IsTrue(state.Contains("\"newValue\":\"new\""));
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_returns_true()
         {
             string state;

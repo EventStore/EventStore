@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new PublishEnvelope(_bus), @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void projection_updated_is_published()
         {
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Count());

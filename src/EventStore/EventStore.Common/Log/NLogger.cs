@@ -43,6 +43,11 @@ namespace EventStore.Common.Log
 
         public void Flush(TimeSpan? maxTimeToWait = null)
         {
+            FlushLog(maxTimeToWait);
+        }
+
+        public static void FlushLog(TimeSpan? maxTimeToWait = null)
+        {
             var config = NLog.LogManager.Configuration;
             if (config == null)
                 return;

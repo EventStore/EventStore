@@ -10,9 +10,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
     {
         public long LastCommitPosition { get { throw new NotImplementedException(); } }
 
-        private readonly Dictionary<string, int> _streams;
+        private readonly Dictionary<string, StreamInfo> _streams;
 
-        public ScavengeReadIndex(Dictionary<string, int> streams)
+        public ScavengeReadIndex(Dictionary<string, StreamInfo> streams)
         {
             _streams = streams;
         }
@@ -58,20 +58,23 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
 
         public bool IsStreamDeleted(string streamId)
         {
-            int streamVersion;
-            return _streams.TryGetValue(streamId, out streamVersion) && streamVersion == EventNumber.DeletedStream;
+            StreamInfo streamInfo;
+            return _streams.TryGetValue(streamId, out streamInfo) && streamInfo.StreamVersion == EventNumber.DeletedStream;
         }
 
         public int GetLastStreamEventNumber(string streamId)
         {
-            int streamVersion;
-            if (_streams.TryGetValue(streamId, out streamVersion))
-                return streamVersion;
+            StreamInfo streamInfo;
+            if (_streams.TryGetValue(streamId, out streamInfo))
+                return streamInfo.StreamVersion;
             return -1;
         }
 
         public StreamMetadata GetStreamMetadata(string streamId)
         {
+            StreamInfo streamInfo;
+            if (_streams.TryGetValue(streamId, out streamInfo))
+                return streamInfo.StreamMetadata;
             return new StreamMetadata(null, null);
         }
 

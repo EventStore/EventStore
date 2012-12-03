@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -75,8 +74,8 @@ namespace EventStore.Core.TransactionLog.Chunks
         private ChunkFooter _chunkFooter;
         
         private readonly int _maxReadThreads;
-        private readonly ConcurrentQueue<ReaderWorkItem> _streams = new ConcurrentQueue<ReaderWorkItem>();
-        private ConcurrentQueue<ReaderWorkItem> _memoryStreams;
+        private readonly Common.Concurrent.ConcurrentQueue<ReaderWorkItem> _streams = new Common.Concurrent.ConcurrentQueue<ReaderWorkItem>();
+        private Common.Concurrent.ConcurrentQueue<ReaderWorkItem> _memoryStreams;
         private WriterWorkItem _writerWorkItem;
         private volatile int _actualDataSize;
 
@@ -308,7 +307,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 // in mono SetAttributes on non-existing file throws exception, in windows it just works silently.
                 File.SetAttributes(_filename, FileAttributes.ReadOnly);
-                File.SetAttributes(_filename, FileAttributes.Temporary); // non-intuitive, tells OS to try to cache it!
                 File.SetAttributes(_filename, FileAttributes.NotContentIndexed);
             });
         }
@@ -499,9 +497,9 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private ConcurrentQueue<ReaderWorkItem> BuildCacheReaders()
+        private Common.Concurrent.ConcurrentQueue<ReaderWorkItem> BuildCacheReaders()
         {
-            var queue = new ConcurrentQueue<ReaderWorkItem>();
+            var queue = new Common.Concurrent.ConcurrentQueue<ReaderWorkItem>();
             for (int i = 0; i < _maxReadThreads; i++)
             {
                 var stream = new UnmanagedMemoryStream(_cachedData, _cachedDataLength);

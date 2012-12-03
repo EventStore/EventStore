@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             _state = @"{""count"": 0}";
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_counts_events()
         {
             string state;
@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.AreEqual(@"2", _logged[1]);
         }
 
-        [Test, Ignore]
+        [Test, Category("v8"), Ignore]
         public void can_handle_million_events()
         {
             for (var i = 0; i < 1000000; i++)

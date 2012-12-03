@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRange_And_NextEventNumber
+namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNextEventNumber
 {
     public class when_reading_stream_with_max_age_and_max_count_and_max_age_is_more_strict: ReadIndexTestScenario
     {
@@ -22,12 +19,14 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRange_And_Ne
         {
             var now = DateTime.UtcNow;
 
-            _event0 = WriteStreamCreated("ES", @"{""$maxAge"":20,""$maxCount"":5}", now.AddSeconds(-100));
-            _event1 = WriteSingleEvent("ES", 1, "bla", now.AddSeconds(-50));
-            _event2 = WriteSingleEvent("ES", 2, "bla", now.AddSeconds(-25));
-            _event3 = WriteSingleEvent("ES", 3, "bla", now.AddSeconds(-15));
-            _event4 = WriteSingleEvent("ES", 4, "bla", now.AddSeconds(-11));
-            _event5 = WriteSingleEvent("ES", 5, "bla", now.AddSeconds(-3));
+            var metadata = string.Format(@"{{""$maxAge"":{0},""$maxCount"":5}}", (int)TimeSpan.FromMinutes(20).TotalSeconds);
+
+            _event0 = WriteStreamCreated("ES", metadata, now.AddMinutes(-100));
+            _event1 = WriteSingleEvent("ES", 1, "bla", now.AddMinutes(-50));
+            _event2 = WriteSingleEvent("ES", 2, "bla", now.AddMinutes(-25));
+            _event3 = WriteSingleEvent("ES", 3, "bla", now.AddMinutes(-15));
+            _event4 = WriteSingleEvent("ES", 4, "bla", now.AddMinutes(-11));
+            _event5 = WriteSingleEvent("ES", 5, "bla", now.AddMinutes(-3));
         }
 
         [Test]

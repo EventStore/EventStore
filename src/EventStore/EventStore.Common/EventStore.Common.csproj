@@ -52,9 +52,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommandLine\ArgumentsParser.cs" />
     <Compile Include="CommandLine\EventStoreCmdLineOptionsBase.cs" />
     <Compile Include="CommandLine\lib\CommandLine.cs" />
     <Compile Include="CommandLine\lib\CommandLineText.cs" />
+    <Compile Include="Concurrent\ConcurrentQueue.cs" />
+    <Compile Include="Concurrent\ConcurrentStack.cs" />
+    <Compile Include="Locks\SpinLock2.cs" />
     <Compile Include="Configuration\Constants.cs" />
     <Compile Include="Exceptions\ApplicationInitializationException.cs" />
     <Compile Include="Log\LazyLogger.cs" />

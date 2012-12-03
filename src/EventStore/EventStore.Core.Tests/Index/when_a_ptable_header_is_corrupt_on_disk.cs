@@ -44,10 +44,10 @@ namespace EventStore.Core.Tests.Index
         [SetUp]
         public void Setup()
         {
-            _filename = Path.Combine(PathName, Guid.NewGuid().ToString());
-            _copiedfilename = Path.Combine(PathName, Guid.NewGuid().ToString());
+            _filename = GetTempFilePath();
+            _copiedfilename = GetTempFilePath();
 
-            var mtable = new HashListMemTable(maxSize: 2000);
+            var mtable = new HashListMemTable(maxSize: 10);
             mtable.Add(0x0101, 0x0001, 0x0001);
             mtable.Add(0x0105, 0x0001, 0x0002);
             _table = PTable.FromMemtable(mtable, _filename);

@@ -26,12 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 
@@ -56,7 +54,7 @@ namespace EventStore.Core.Bus
         private readonly Stopwatch _slowMsgWatch = new Stopwatch();
         private readonly TimeSpan _slowMsgThreshold;
 
-        private readonly ConcurrentQueue<Message> _queue = new ConcurrentQueue<Message>();
+        private readonly Common.Concurrent.ConcurrentQueue<Message> _queue = new Common.Concurrent.ConcurrentQueue<Message>();
         private Thread _thread;
         private volatile bool _stop;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
@@ -74,16 +72,15 @@ namespace EventStore.Core.Bus
         private TimeSpan _lastTotalIdleTime;
         private TimeSpan _lastTotalBusyTime;
         private TimeSpan _lastTotalTime;
+        private readonly AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
 
         private long _totalItems;
         private long _lastTotalItems;
-        private long _totalSkipped;
-        private long _lastTotalSkipped;
-        private long _lifetimeQueueLengthPeak;
-        private long _currentQueueLengthPeak;
+        private int _lifetimeQueueLengthPeak;
+        private int _currentQueueLengthPeak;
         private Type _lastProcessedMsgType;
         private Type _inProgressMsgType;
-
+        
         public QueuedHandler(IHandle<Message> consumer,
                              string name,
                              bool watchSlowMsg = true,
@@ -109,9 +106,7 @@ namespace EventStore.Core.Bus
 
             _queueMonitor.Register(this);
 
-            _thread = new Thread(ReadFromQueue);
-            _thread.IsBackground = true;
-            _thread.Name = _name;
+            _thread = new Thread(ReadFromQueue) {IsBackground = true, Name = _name};
             _thread.Start();
 
             _stopped.Reset();
@@ -129,6 +124,11 @@ namespace EventStore.Core.Bus
         {
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
             _totalTimeWatch.Start();
+            var wasEmpty = true;
+            const int spinmax = 5000;
+            const int sleepmax = 200000;
+            var spincount = 0;
+            var sleepcount = 0;
             while (!_stop)
             {
                 Message msg = null;
@@ -136,69 +136,68 @@ namespace EventStore.Core.Bus
                 {
                     if (!_queue.TryDequeue(out msg))
                     {
-                        Thread.Sleep(1);
+                        if (!wasEmpty)
+                            EnterIdle();
+                        wasEmpty = true;
+
+                        if (spincount < spinmax)
+                        {
+                            //do nothing... spin
+                            spincount++;
+                        } 
+                        else if (sleepcount < sleepmax)
+                        {
+                            Thread.Sleep(1);
+                            sleepcount++;
+                        } 
+                        else
+                        {
+                            _msgAddEvent.WaitOne(500);
+                        }
                     }
                     else
                     {
-                        var ttlMessage = msg as IAmOnlyCaredAboutForTime;
-                        if (ttlMessage != null && !ttlMessage.AmStillCaredAbout())
-                        {
-                            _totalSkipped += 1;
-                            continue;
-                        }
+                        spincount = 0;
+                        sleepcount = 0;
 
                         //NOTE: the following locks are primarily acquired in this thread, 
                         //      so not too high performance penalty
-                        lock (_statisticsLock)
-                        {
-                            _totalIdleWatch.Stop();
-                            _idleWatch.Reset();
-                           
-                            _totalBusyWatch.Start();
-                            _busyWatch.Restart();
+                        if (wasEmpty)
+                            EnterNonIdle();
+                        wasEmpty = false;
 
-                            var cnt = _queue.Count;
-                            _lifetimeQueueLengthPeak = _lifetimeQueueLengthPeak > cnt ? _lifetimeQueueLengthPeak : cnt;
-                            _currentQueueLengthPeak = _currentQueueLengthPeak > cnt ? _currentQueueLengthPeak : cnt;
+                        var cnt = _queue.Count;
+                        _lifetimeQueueLengthPeak = _lifetimeQueueLengthPeak > cnt ? _lifetimeQueueLengthPeak : cnt;
+                        _currentQueueLengthPeak = _currentQueueLengthPeak > cnt ? _currentQueueLengthPeak : cnt;
 
-                            _inProgressMsgType = msg.GetType();
-                        }
+                        _inProgressMsgType = msg.GetType();
 
                         if (!_watchSlowMsg)
                         {
                             _consumer.Handle(msg);
-                            _totalItems += 1;
+                            Interlocked.Increment(ref _totalItems);
                         }
                         else
                         {
                             _slowMsgWatch.Restart();
-                            var qSize = _queue.Count;
-
                             _consumer.Handle(msg);
-                            _totalItems += 1;
+                            Interlocked.Increment(ref _totalItems);
 
                             if (_slowMsgWatch.Elapsed > _slowMsgThreshold)
                             {
                                 Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
                                           _name,
-                                          msg.GetType().Name,
+                                          _inProgressMsgType.Name,
                                           _slowMsgWatch.ElapsedMilliseconds,
-                                          qSize,
+                                          cnt,
                                           _queue.Count);
                             }
                         }
 
-                        lock (_statisticsLock)
-                        {
-                            _lastProcessedMsgType = _inProgressMsgType;
-                            _inProgressMsgType = null;
-                            _totalIdleWatch.Start();
-                            _idleWatch.Restart();
-                            _totalBusyWatch.Stop();
-                            _busyWatch.Reset();
-                        }
+                        _lastProcessedMsgType = _inProgressMsgType;
+                        _inProgressMsgType = null;
                     }
-                    }
+                }
                 catch (Exception ex)
                 {
                     Log.ErrorException(ex, "Error while processing message {0} in queued handler '{1}'.", msg, _name);
@@ -208,16 +207,40 @@ namespace EventStore.Core.Bus
             Thread.EndThreadAffinity();
         }
 
+        private void EnterIdle()
+        {
+            lock (_statisticsLock)
+            {
+                _totalIdleWatch.Start();
+                _idleWatch.Restart();
+
+                _totalBusyWatch.Stop();
+                _busyWatch.Reset();
+            }
+        }
+
+        private void EnterNonIdle()
+        {
+            lock (_statisticsLock)
+            {
+                _totalIdleWatch.Stop();
+                _idleWatch.Reset();
+
+                _totalBusyWatch.Start();
+                _busyWatch.Restart();
+            }
+        }
+
         public void Publish(Message message)
         {
             Ensure.NotNull(message, "message");
             _queue.Enqueue(message);
+            _msgAddEvent.Set();
         }
 
         public void Handle(Message message)
         {
-            Ensure.NotNull(message, "message");
-            _queue.Enqueue(message);
+            Publish(message);
         }
 
         public QueueStats GetStatistics()
@@ -228,7 +251,6 @@ namespace EventStore.Core.Bus
                 var totalIdleTime = _totalIdleWatch.Elapsed;
                 var totalBusyTime = _totalBusyWatch.Elapsed;
                 var totalItems = Interlocked.Read(ref _totalItems);
-                var totalSkipped = Interlocked.Read(ref _totalSkipped);
 
                 var lastRunMs = (long)(totalTime - _lastTotalTime).TotalMilliseconds;
                 var lastItems = totalItems - _lastTotalItems;
@@ -248,15 +270,12 @@ namespace EventStore.Core.Bus
                     _currentQueueLengthPeak,
                     _lifetimeQueueLengthPeak,
                     _lastProcessedMsgType,
-                    _inProgressMsgType,
-                    totalSkipped,
-                    _totalSkipped - _lastTotalSkipped);
+                    _inProgressMsgType);
 
                 _lastTotalTime = totalTime;
                 _lastTotalIdleTime = totalIdleTime;
                 _lastTotalBusyTime = totalBusyTime;
                 _lastTotalItems = totalItems;
-                _lastTotalSkipped = totalSkipped;
 
                 _currentQueueLengthPeak = 0;
                 return stats;

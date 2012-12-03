@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             ";
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_should_reflect_event()
         {
             string state;
@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.AreEqual(@"{}/{""a"":""b""}/stream1/type1/0/metadata", _logged[0]);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void multiple_process_event_should_reflect_events()
         {
             string state;
@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.AreEqual(@"{}/{""c"":""d""}/stream1/type1/1/metadata", _logged[1]);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_returns_true()
         {
             string state;
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.IsTrue(result);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_with_null_category_returns_true()
         {
             string state;

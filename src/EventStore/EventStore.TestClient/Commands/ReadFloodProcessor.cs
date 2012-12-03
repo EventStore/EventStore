@@ -78,13 +78,12 @@ namespace EventStore.TestClient.Commands
             var sw2 = new Stopwatch();
 
             long all = 0;
+            int sent = 0;
+            int received = 0;
 
             for (int i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-
-                int sent = 0;
-                int received = 0;
 
                 var client = context.Client.CreateTcpConnection(
                     context,
@@ -108,7 +107,7 @@ namespace EventStore.TestClient.Commands
                     },
                     connectionClosed: (conn, err) =>
                     {
-                        if (all < requestsCnt)
+                        if (received < count)
                             context.Fail(null, "Socket was closed, but not all requests were completed.");
                         else
                             context.Success();
@@ -127,8 +126,10 @@ namespace EventStore.TestClient.Commands
                         client.EnqueueSend(package.AsByteArray());
                         
                         Interlocked.Increment(ref sent);
-                        while (sent - received > context.Client.Options.ReadWindow)
+                        while (sent - received > context.Client.Options.ReadWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }

@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRange_And_NextEventNumber
+namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNextEventNumber
 {
-    public class when_reading_stream_with_max_age_and_max_count_and_max_count_is_more_strict: ReadIndexTestScenario
+    public class when_reading_stream_with_max_age: ReadIndexTestScenario
     {
         private EventRecord _event0;
         private EventRecord _event1;
@@ -21,20 +18,21 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRange_And_Ne
         {
             var now = DateTime.UtcNow;
 
-            _event0 = WriteStreamCreated("ES", @"{""$maxAge"":61,""$maxCount"":3}", now.AddSeconds(-100));
-            _event1 = WriteSingleEvent("ES", 1, "bla", now.AddSeconds(-50));
-            _event2 = WriteSingleEvent("ES", 2, "bla", now.AddSeconds(-25));
-            _event3 = WriteSingleEvent("ES", 3, "bla", now.AddSeconds(-15));
-            _event4 = WriteSingleEvent("ES", 4, "bla", now.AddSeconds(-11));
-            _event5 = WriteSingleEvent("ES", 5, "bla", now.AddSeconds(-3));
+            var metadata = string.Format(@"{{""$maxAge"":{0}}}", (int)TimeSpan.FromMinutes(20).TotalSeconds);
+            _event0 = WriteStreamCreated("ES", metadata, now.AddMinutes(-100));
+            _event1 = WriteSingleEvent("ES", 1, "bla", now.AddMinutes(-50));
+            _event2 = WriteSingleEvent("ES", 2, "bla", now.AddMinutes(-25));
+            _event3 = WriteSingleEvent("ES", 3, "bla", now.AddMinutes(-15));
+            _event4 = WriteSingleEvent("ES", 4, "bla", now.AddMinutes(-11));
+            _event5 = WriteSingleEvent("ES", 5, "bla", now.AddMinutes(-3));
         }
 
         [Test]
-        public void on_read_forward_from_start_to_expired_next_event_number_is_first_active_and_its_not_end_of_stream()
+        public void on_read_forward_from_start_to_expired_next_event_number_is_expired_plus_1_and_its_not_end_of_stream()
         {
             var res = ReadIndex.ReadStreamEventsForward("ES", 0, 2);
             Assert.AreEqual(RangeReadResult.Success, res.Result);
-            Assert.AreEqual(3, res.NextEventNumber);
+            Assert.AreEqual(2, res.NextEventNumber);
             Assert.AreEqual(5, res.LastEventNumber);
             Assert.IsFalse(res.IsEndOfStream);
 
@@ -133,13 +131,13 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRange_And_Ne
         }
 
         [Test]
-        public void on_read_backward_from_end_to_maxcount_bound_its_end_of_stream()
+        public void on_read_backward_from_end_to_maxage_bound_next_event_number_is_maxage_bound_minus_1_and_its_not_end_of_stream() // just no simple way to tell this
         {
             var res = ReadIndex.ReadStreamEventsBackward("ES", 5, 3);
             Assert.AreEqual(RangeReadResult.Success, res.Result);
-            Assert.AreEqual(-1, res.NextEventNumber);
+            Assert.AreEqual(2, res.NextEventNumber);
             Assert.AreEqual(5, res.LastEventNumber);
-            Assert.IsTrue(res.IsEndOfStream);
+            Assert.IsFalse(res.IsEndOfStream);
 
             var records = res.Records;
             Assert.AreEqual(3, records.Length);

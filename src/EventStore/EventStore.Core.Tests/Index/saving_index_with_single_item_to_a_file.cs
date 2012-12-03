@@ -35,7 +35,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class saving_index_with_single_item_to_a_file: SpecificationWithDirectory
+    public class saving_index_with_single_item_to_a_file: SpecificationWithDirectoryPerTestFixture
     {
         private string _filename;
         private IndexMap _map;
@@ -43,17 +43,17 @@ namespace EventStore.Core.Tests.Index
         private string _mergeFile;
         private MergeResult _result;
 
-        [SetUp]
-        public override void SetUp()
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
         {
-            base.SetUp();
+            base.TestFixtureSetUp();
 
             _filename = GetFilePathFor("indexfile");
             _tablename = GetTempFilePath();
             _mergeFile = GetFilePathFor("outputfile");
 
             _map = IndexMap.FromFile(_filename, x => false);
-            var memtable = new HashListMemTable(maxSize: 2000);
+            var memtable = new HashListMemTable(maxSize: 10);
             memtable.Add(0, 2, 7);
             var table = PTable.FromMemtable(memtable, _tablename);
             _result = _map.AddFile(table, 7, 11, new FakeFilenameProvider(_mergeFile));
@@ -63,12 +63,13 @@ namespace EventStore.Core.Tests.Index
             table.Dispose();
         }
 
-        [TearDown]
-        public override void TearDown()
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
         {
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
             _result.MergedMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
-            base.TearDown();
+            _result.MergedMap.InOrder().ToList().ForEach(x => x.WaitForDestroy(1000));
+            base.TestFixtureTearDown();
         }
 
         [Test]

@@ -36,21 +36,23 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    internal class appending_to_explicitly_created_stream_using_transaction
+    internal class appending_to_explicitly_created_stream_using_transaction: SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
 
         [TestFixtureSetUp]
-        public void SetUp()
+        public override void TestFixtureSetUp()
         {
-            _node = new MiniNode();
+            base.TestFixtureSetUp();
+            _node = new MiniNode(PathName);
             _node.Start();
         }
 
         [TestFixtureTearDown]
-        public void TearDown()
+        public override void TestFixtureTearDown()
         {
             _node.Shutdown();
+            base.TestFixtureTearDown();
         }
 
         /*
@@ -267,8 +269,8 @@ namespace EventStore.Core.Tests.ClientAPI
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(0).Write(events).Commit());
-                Assert.Inconclusive("Storage writer silently writes to log message 'The request was partially committed and other part is different.' but SHOULD SEND FAIL");
-                Assert.That(() => writer.StartTransaction(0).Write(events.Concat(new[] {new TestEvent(Guid.NewGuid())}).ToArray()).Commit(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<Exception>());
+                Assert.That(() => writer.StartTransaction(0).Write(events.Concat(new[] {new TestEvent(Guid.NewGuid())}).ToArray()).Commit(),
+                            Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }
     }

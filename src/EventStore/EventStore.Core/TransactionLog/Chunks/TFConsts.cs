@@ -46,6 +46,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public const int ChunkSize = 256 * 1024 * 1024;
         public const int CachedChunkCount = 2;
 
+        public const int MemTableEntryCount = 1000000;
         public const int MetadataCacheCapacity = 100000;
     }
 }

@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.IO;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -35,23 +34,30 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_appending_to_a_tfchunk_and_flushing
+    public class when_appending_to_a_tfchunk_and_flushing: SpecificationWithFilePerTestFixture
     {
-        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
         private TFChunk _chunk;
         private readonly Guid _corrId = Guid.NewGuid();
         private readonly Guid _eventId = Guid.NewGuid();
         private RecordWriteResult _result;
         private PrepareLogRecord _record;
 
-        [SetUp]
-        public void Setup()
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
         {
+            base.TestFixtureSetUp();
             _record = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                            PrepareFlags.None, "Foo", new byte[12], new byte[15]);
-            _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);
+            _chunk = TFChunk.CreateNew(Filename, 4096, 0, 0);
             _result = _chunk.TryAppend(_record);
             _chunk.Flush();
+        }
+
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
+        {
+            _chunk.Dispose();
+            base.TestFixtureTearDown();
         }
 
         [Test]
@@ -125,13 +131,6 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             Assert.IsTrue(res.Success);
             Assert.AreEqual(_record, res.LogRecord);
             Assert.AreEqual(0, res.NextPosition);
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _chunk.Dispose();
-            File.Delete(_filename);
         }
     }
 }

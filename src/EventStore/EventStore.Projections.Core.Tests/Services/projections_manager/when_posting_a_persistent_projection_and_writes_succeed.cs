@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void projection_status_is_running()
         {
             _manager.Handle(
@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     MasterStatus);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void a_projection_updated_event_is_written()
         {
             Assert.IsTrue(
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     v => v.Events[0].EventType == "ProjectionUpdated"));
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void a_projection_updated_message_is_published()
         {
             // not published until writes complete

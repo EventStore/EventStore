@@ -36,21 +36,23 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
-    internal class appending_to_implicitly_created_stream
+    internal class appending_to_implicitly_created_stream: SpecificationWithDirectoryPerTestFixture
     {
         private MiniNode _node;
 
         [TestFixtureSetUp]
-        public void SetUp()
+        public override void TestFixtureSetUp()
         {
-            _node = new MiniNode();
+            base.TestFixtureSetUp();
+            _node = new MiniNode(PathName);
             _node.Start();
         }
 
         [TestFixtureTearDown]
-        public void TearDown()
+        public override void TestFixtureTearDown()
         {
             _node.Shutdown();
+            base.TestFixtureTearDown();
         }
 
         /*
@@ -325,8 +327,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.DoesNotThrow(append.Wait);
 
                 var app2 = store.AppendToStreamAsync(stream, -1, events.Concat(new[] { new TestEvent(Guid.NewGuid()) }));
-                //Assert.That(() => app2.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<Exception>());
-                Assert.Inconclusive("Storage writer silently writes to log message 'The request was partially committed and other part is different.' but SHOULD SEND FAIL");
+                Assert.That(() => app2.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }
     }

@@ -203,11 +203,11 @@
     <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_both_maxage_and_maxcount_specified_with_maxcount_more_strict.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_with_maxage_specified.cs" />
     <Compile Include="Services\Storage\MaxAgeMaxCount\AfterScavenge\when_having_stream_with_maxcount_specified.cs" />
-    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_age_is_more_strict.cs" />
-    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_count_is_more_strict.cs" />
-    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_age.cs" />
-    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_max_count.cs" />
-    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRange_And_NextEventNumber\when_reading_stream_with_no_max_age_max_count.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_age_is_more_strict.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_age_and_max_count_and_max_count_is_more_strict.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_age.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_max_count.cs" />
+    <Compile Include="Services\Storage\MaxAgeMaxCount\ReadRangeAndNextEventNumber\when_reading_stream_with_no_max_age_max_count.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_2nd_chunk__in_db_with_3_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_writing_delete_prepare_without_commit_on_stream_spanning_through_2_chunks_in_db_with_2_chunks.cs" />
     <Compile Include="Services\Storage\Scavenge\when_deleting_single_stream_spanning_through_2_chunks_in_db_with_3_chunks.cs" />
@@ -307,6 +307,11 @@
     <Compile Include="TransactionLog\Scavenging\when_deleting_stream_with_a_lot_of_data.cs" />
     <Compile Include="TransactionLog\Scavenging\when_deleting_stream_with_explicit_transaction.cs" />
     <Compile Include="TransactionLog\Scavenging\when_having_nothing_to_scavenge.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_both_max_age_and_max_count_with_stricted_max_age_specified.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_both_max_age_and_max_count_with_stricted_max_count_specified.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_max_age_specified.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_max_count_specified.cs" />
+    <Compile Include="TransactionLog\Scavenging\when_having_stream_with_strict_max_age_leaving_no_events_in_stream.cs" />
     <Compile Include="TransactionLog\Scavenging\when_stream_is_deleted.cs" />
     <Compile Include="TransactionLog\Scavenging\when_stream_is_deleted_and_bulk_transaction_spans_chunks_boundary.cs" />
     <Compile Include="TransactionLog\Scavenging\when_stream_is_deleted_and_explicit_transaction_spans_chunks_boundary.cs" />
@@ -352,7 +357,7 @@
   <ItemGroup>
     <None Include="..\EventStore.SingleNode\NLog.config">
       <Link>NLog.config</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="app.config">
       <SubType>Designer</SubType>

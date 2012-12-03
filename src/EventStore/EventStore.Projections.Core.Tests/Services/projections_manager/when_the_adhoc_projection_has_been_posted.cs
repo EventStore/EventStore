@@ -52,13 +52,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _manager.Dispose();
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void it_has_been_posted()
         {
             Assert.IsNotNullOrEmpty(_projectionName);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void it_cab_be_listed()
         {
             _manager.Handle(
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     v => v.Projections.Any(p => p.Name == _projectionName)));
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void the_projection_status_can_be_retrieved()
         {
             _manager.Handle(
@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Single().Name);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void the_projection_state_can_be_retrieved()
         {
             _manager.Handle(new ProjectionManagementMessage.GetState(new PublishEnvelope(_bus), _projectionName, ""));
@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 "", _consumer.HandledMessages.OfType<ProjectionManagementMessage.ProjectionState>().Single().State);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void the_projection_source_can_be_retrieved()
         {
             _manager.Handle(new ProjectionManagementMessage.GetQuery(new PublishEnvelope(_bus), _projectionName));

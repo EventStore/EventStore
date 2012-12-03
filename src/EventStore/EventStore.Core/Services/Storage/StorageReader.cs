@@ -131,6 +131,7 @@ namespace EventStore.Core.Services.Storage
                                                          _storageReaderQueues[i].Name));
                     }   
                 }
+                _readIndex.Close();
                 _bus.Publish(new SystemMessage.ServiceShutdown("StorageReader"));
             }
         }

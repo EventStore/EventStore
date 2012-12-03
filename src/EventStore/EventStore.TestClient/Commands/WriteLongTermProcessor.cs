@@ -101,13 +101,13 @@ namespace EventStore.TestClient.Commands
 
             var requestsCnt = 0;
 
+            int sent = 0;
+            int received = 0;
+
             var watchLockRoot = new object();
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < clientsCnt; i++)
             {
-                int sent = 0;
-                int received = 0;
-
                 var esId = eventStreamId ?? "Stream-" + Thread.CurrentThread.ManagedThreadId % 3;
 
                 var client = context.Client.CreateTcpConnection(
@@ -209,8 +209,10 @@ namespace EventStore.TestClient.Commands
                         Thread.Sleep(sleepTime);
                         sentCount -= 1;
 
-                        while (sent - received > context.Client.Options.WriteWindow)
+                        while (sent - received > context.Client.Options.WriteWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }

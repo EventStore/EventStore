@@ -44,15 +44,14 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 
         protected override void WriteTestScenario()
         {
-            var now = DateTime.UtcNow;
             const string metadata = @"{""$maxCount"":4}";
             
-            _r1 = WriteStreamCreated("ES", metadata, now.AddSeconds(-100));
-            _r2 = WriteSingleEvent("ES", 1, "bla1", now.AddSeconds(-50));
-            _r3 = WriteSingleEvent("ES", 2, "bla1", now.AddSeconds(-20));
-            _r4 = WriteSingleEvent("ES", 3, "bla1", now.AddSeconds(-11));
-            _r5 = WriteSingleEvent("ES", 4, "bla1", now.AddSeconds(-5));
-            _r6 = WriteSingleEvent("ES", 5, "bla1", now.AddSeconds(-1));
+            _r1 = WriteStreamCreated("ES", metadata);
+            _r2 = WriteSingleEvent("ES", 1, "bla1");
+            _r3 = WriteSingleEvent("ES", 2, "bla1");
+            _r4 = WriteSingleEvent("ES", 3, "bla1");
+            _r5 = WriteSingleEvent("ES", 4, "bla1");
+            _r6 = WriteSingleEvent("ES", 5, "bla1");
         }
 
         [Test]

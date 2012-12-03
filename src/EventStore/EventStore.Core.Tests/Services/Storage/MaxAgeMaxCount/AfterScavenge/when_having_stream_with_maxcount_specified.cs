@@ -45,15 +45,16 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
 
         protected override void WriteTestScenario()
         {
-            var now = DateTime.UtcNow;
             const string metadata = @"{""$maxCount"":4}";
             
-            _r1 = WriteStreamCreated("ES", metadata, now.AddSeconds(-100));
-            _r2 = WriteSingleEvent("ES", 1, "bla1", now.AddSeconds(-50));
-            _r3 = WriteSingleEvent("ES", 2, "bla1", now.AddSeconds(-20));
-            _r4 = WriteSingleEvent("ES", 3, "bla1", now.AddSeconds(-11));
-            _r5 = WriteSingleEvent("ES", 4, "bla1", now.AddSeconds(-5));
-            _r6 = WriteSingleEvent("ES", 5, "bla1", now.AddSeconds(-1));
+            _r1 = WriteStreamCreated("ES", metadata);
+            _r2 = WriteSingleEvent("ES", 1, "bla1");
+            _r3 = WriteSingleEvent("ES", 2, "bla1");
+            _r4 = WriteSingleEvent("ES", 3, "bla1");
+            _r5 = WriteSingleEvent("ES", 4, "bla1");
+            _r6 = WriteSingleEvent("ES", 5, "bla1");
+
+            Scavenge(completeLast: true);
         }
 
         [Test]
@@ -117,27 +118,27 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
         }
 
         [Test]
-        public void read_all_forward_returns_all_records_including_expired_ones()
+        public void read_all_forward_doesnt_return_expired_records()
         {
-            Assert.Inconclusive();
-
             var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records;
-            Assert.AreEqual(3, records.Count);
-            Assert.AreEqual(_r4, records[0].Event);
-            Assert.AreEqual(_r5, records[1].Event);
-            Assert.AreEqual(_r6, records[2].Event);
+            Assert.AreEqual(5, records.Count);
+            Assert.AreEqual(_r1, records[0].Event);
+            Assert.AreEqual(_r3, records[1].Event);
+            Assert.AreEqual(_r4, records[2].Event);
+            Assert.AreEqual(_r5, records[3].Event);
+            Assert.AreEqual(_r6, records[4].Event);
         }
 
         [Test]
-        public void read_all_backward_returns_all_records_including_expired_ones()
+        public void read_all_backward_doesnt_return_expired_records()
         {
-            Assert.Inconclusive();
-
             var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
-            Assert.AreEqual(3, records.Count);
+            Assert.AreEqual(5, records.Count);
             Assert.AreEqual(_r6, records[0].Event);
             Assert.AreEqual(_r5, records[1].Event);
             Assert.AreEqual(_r4, records[2].Event);
+            Assert.AreEqual(_r3, records[3].Event);
+            Assert.AreEqual(_r1, records[4].Event);
         }
     }
 }

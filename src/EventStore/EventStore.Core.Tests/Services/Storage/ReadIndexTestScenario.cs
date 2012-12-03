@@ -57,8 +57,9 @@ namespace EventStore.Core.Tests.Services.Storage
 
         private TFChunkScavenger _scavenger;
         private bool _scavenge;
+        private bool _completeLastChunkOnScavenge;
 
-        protected ReadIndexTestScenario(int maxEntriesInMemTable = 1000000)
+        protected ReadIndexTestScenario(int maxEntriesInMemTable = 20)
         {
             Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
             MaxEntriesInMemTable = maxEntriesInMemTable;
@@ -70,9 +71,6 @@ namespace EventStore.Core.Tests.Services.Storage
 
             WriterChecksum = new InMemoryCheckpoint(0);
             ChaserChecksum = new InMemoryCheckpoint(0);
-
-            //WriterChecksum = new FileCheckpoint(Path.Combine(PathName, Checkpoint.Writer + ".chk"));
-            //ChaserChecksum = new FileCheckpoint(Path.Combine(PathName, Checkpoint.Chaser + ".chk"));
 
             Db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
@@ -94,7 +92,7 @@ namespace EventStore.Core.Tests.Services.Storage
             ChaserChecksum.Write(WriterChecksum.Read());
             ChaserChecksum.Flush();
 
-            TableIndex = new TableIndex(Path.Combine(PathName, "index"),
+            TableIndex = new TableIndex(GetFilePathFor("index"),
                                         () => new HashListMemTable(MaxEntriesInMemTable * 2),
                                         MaxEntriesInMemTable);
 
@@ -112,6 +110,8 @@ namespace EventStore.Core.Tests.Services.Storage
             // scavenge must run after readIndex is built
             if (_scavenge)
             {
+                if (_completeLastChunkOnScavenge)
+                    Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
                 _scavenger = new TFChunkScavenger(Db, ReadIndex);
                 _scavenger.Scavenge(alwaysKeepScavenged: true);
             }
@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.Services.Storage
             ReadIndex.Close();
             ReadIndex.Dispose();
 
-            TableIndex.ClearAll();
+            TableIndex.Close();
 
             Db.Close();
             Db.Dispose();
@@ -358,11 +358,12 @@ namespace EventStore.Core.Tests.Services.Storage
             return pos;
         }
 
-        protected void Scavenge()
+        protected void Scavenge(bool completeLast)
         {
             if (_scavenge)
                 throw new InvalidOperationException("Scavenge can be executed only once in ReadIndexTestScenario");
             _scavenge = true;
+            _completeLastChunkOnScavenge = completeLast;
         }
     }
 }

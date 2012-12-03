@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.TransactionLog
             db.Dispose();
 
             Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix(), _checkpoint.Read());
-            using (var filestream = File.Open(Path.Combine(PathName, "prefix.tf0"), FileMode.Open, FileAccess.Read))
+            using (var filestream = File.Open(GetFilePathFor("prefix.tf0"), FileMode.Open, FileAccess.Read))
             {
                 filestream.Position = ChunkHeader.Size;
 

@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             ";
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_should_return_initialized_state()
         {
             string state;

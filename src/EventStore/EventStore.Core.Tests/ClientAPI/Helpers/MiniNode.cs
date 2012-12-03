@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
     internal class MiniNode
     {
-        private static readonly ConcurrentQueue<int> AvailablePorts = new ConcurrentQueue<int>(GetRandomPorts(10000, 10000));
+        private static readonly EventStore.Common.Concurrent.ConcurrentQueue<int> AvailablePorts = new EventStore.Common.Concurrent.ConcurrentQueue<int>(GetRandomPorts(49200, 5000));
 
         public IPEndPoint TcpEndPoint { get; private set; }
         public IPEndPoint HttpEndPoint { get; private set; }
@@ -58,29 +58,47 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         private ICheckpoint _chaserChk;
         private readonly string _dbPath;
 
-        public MiniNode()
+        public MiniNode(string pathname)
         {
-            int extTcpPort;
-            int extHttpPort;
-            if (!AvailablePorts.TryDequeue(out extTcpPort))
-                throw new Exception("Couldn't get free external TCP port for MiniNode.");
-            if (!AvailablePorts.TryDequeue(out extHttpPort))
-                throw new Exception("Couldn't get free external HTTP port for MiniNode.");
-
-            _dbPath = Path.Combine(Path.GetTempPath(),
-                                   Guid.NewGuid().ToString(),
-                                   string.Format("mini-node-db-{0}-{1}", extTcpPort, extHttpPort));
-            Directory.CreateDirectory(_dbPath);
-            _tfChunkDb = new TFChunkDb(CreateOneTimeDbConfig(1*1024*1024, _dbPath, 2));
-
             var ip = GetLocalIp();
+
+            int extTcpPort = GetAvailablePort(ip);
+            int extHttpPort = GetAvailablePort(ip);
+
+            _dbPath = Path.Combine(pathname, string.Format("mini-node-db-{0}-{1}", extTcpPort, extHttpPort));
+            Directory.CreateDirectory(_dbPath);
+            _tfChunkDb = new TFChunkDb(CreateOneTimeDbConfig(1024*1024, _dbPath, 1));
+
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             HttpEndPoint = new IPEndPoint(ip, extHttpPort);
 
             var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint, HttpEndPoint, new[] {HttpEndPoint.ToHttpUrl()});
             var appSettings = new SingleVNodeAppSettings(TimeSpan.FromHours(1), StatsStorage.None);
 
-            _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, appSettings, dbVerifyHashes: true);
+            _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, appSettings, dbVerifyHashes: true, memTableEntryCount: 1000);
+        }
+
+        private int GetAvailablePort(IPAddress ip)
+        {
+            for (int i = 0; i < 50; ++i)
+            {
+                int port;
+                if (!AvailablePorts.TryDequeue(out port))
+                    throw new Exception("Couldn't get free TCP port for MiniNode.");
+                try
+                {
+                    var listener = new TcpListener(ip, port);
+                    listener.Start();
+
+                    listener.Stop();
+                    return port;
+                }
+                catch (Exception)
+                {
+                    AvailablePorts.Enqueue(port);
+                }
+            }
+            throw new Exception("Reached trials limit while trying to get free port for MiniNode");
         }
 
         private static int[] GetRandomPorts(int from, int portCount)
@@ -108,8 +126,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
             _node.Start();
 
-            if (!startedEvent.Wait(20000))
-                throw new TimeoutException("MiniNode haven't started in 20 seconds.");
+            if (!startedEvent.Wait(60000))
+                throw new TimeoutException("MiniNode haven't started in 60 seconds.");
 
             Thread.Sleep(100);
         }

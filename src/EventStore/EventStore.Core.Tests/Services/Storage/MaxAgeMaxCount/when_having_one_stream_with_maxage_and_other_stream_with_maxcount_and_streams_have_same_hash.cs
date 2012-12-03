@@ -53,26 +53,26 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         {
             var now = DateTime.UtcNow;
 
-            const string metadata1 = @"{""$maxAge"":25}";
+            var metadata1 = string.Format(@"{{""$maxAge"":{0}}}", (int)TimeSpan.FromMinutes(25).TotalSeconds);
             const string metadata2 = @"{""$maxCount"":2}";
 
-            _r11 = WriteStreamCreated("ES1", metadata1, now.AddSeconds(-100));
-            _r21 = WriteStreamCreated("ES2", metadata2, now.AddSeconds(-99));
+            _r11 = WriteStreamCreated("ES1", metadata1, now.AddMinutes(-100));
+            _r21 = WriteStreamCreated("ES2", metadata2, now.AddMinutes(-99));
 
-            _r12 = WriteSingleEvent("ES1", 1, "bla1", now.AddSeconds(-50));
-            _r13 = WriteSingleEvent("ES1", 2, "bla1", now.AddSeconds(-20));
-            
-            _r22 = WriteSingleEvent("ES2", 1, "bla1", now.AddSeconds(-20));
-            _r23 = WriteSingleEvent("ES2", 2, "bla1", now.AddSeconds(-19));
+            _r12 = WriteSingleEvent("ES1", 1, "bla1", now.AddMinutes(-50));
+            _r13 = WriteSingleEvent("ES1", 2, "bla1", now.AddMinutes(-20));
 
-            _r14 = WriteSingleEvent("ES1", 3, "bla1", now.AddSeconds(-11));
-            _r24 = WriteSingleEvent("ES2", 3, "bla1", now.AddSeconds(-10));
+            _r22 = WriteSingleEvent("ES2", 1, "bla1", now.AddMinutes(-20));
+            _r23 = WriteSingleEvent("ES2", 2, "bla1", now.AddMinutes(-19));
 
-            _r15 = WriteSingleEvent("ES1", 4, "bla1", now.AddSeconds(-5));
-            _r16 = WriteSingleEvent("ES1", 5, "bla1", now.AddSeconds(-2));
+            _r14 = WriteSingleEvent("ES1", 3, "bla1", now.AddMinutes(-11));
+            _r24 = WriteSingleEvent("ES2", 3, "bla1", now.AddMinutes(-10));
 
-            _r25 = WriteSingleEvent("ES2", 4, "bla1", now.AddSeconds(-1));
-            _r26 = WriteSingleEvent("ES2", 5, "bla1", now.AddSeconds(-1));
+            _r15 = WriteSingleEvent("ES1", 4, "bla1", now.AddMinutes(-5));
+            _r16 = WriteSingleEvent("ES1", 5, "bla1", now.AddMinutes(-2));
+
+            _r25 = WriteSingleEvent("ES2", 4, "bla1", now.AddMinutes(-1));
+            _r26 = WriteSingleEvent("ES2", 5, "bla1", now.AddMinutes(-1));
         }
 
         [Test]

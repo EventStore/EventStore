@@ -135,8 +135,7 @@ namespace EventStore.Core.Services.Monitoring
 
             if (drive != null)
             {
-                Func<string, string, string> driveStat = 
-                    (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName, stat);
+                Func<string, string, string> driveStat = (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName, stat);
                 stats[driveStat(drive.DiskName, "availableBytes")] = drive.AvailableBytes;
                 stats[driveStat(drive.DiskName, "totalBytes")] = drive.TotalBytes;
                 stats[driveStat(drive.DiskName, "usage")] = drive.Usage;
@@ -179,7 +178,7 @@ namespace EventStore.Core.Services.Monitoring
             }
             catch (Exception ex)
             {
-                _log.DebugException(ex, "couldn't get free mem on linux");
+                _log.DebugException(ex, "Couldn't get free mem on linux.");
                 return -1;
             }
         }

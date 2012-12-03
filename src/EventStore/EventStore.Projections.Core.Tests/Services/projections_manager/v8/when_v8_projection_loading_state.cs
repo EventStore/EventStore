@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             _state = @"{""A"":""A"",""B"":""B""}";
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void the_state_is_loaded()
         {
             string state;

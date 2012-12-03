@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_creating_chunked_transaction_chaser
+    public class when_creating_chunked_transaction_chaser: SpecificationWithDirectory
     {
         [Test]
         public void a_null_file_config_throws_argument_null_exception()
@@ -48,8 +48,8 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_null_writer_checksum_throws_argument_null_exception()
         {
-            var db = new TFChunkDb(new TFChunkDbConfig(Path.GetTempPath(),
-                                                       new PrefixFileNamingStrategy(Path.GetTempPath(), "prefix.tf"),
+            var db = new TFChunkDb(new TFChunkDbConfig(PathName,
+                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                                        10000,
                                                        0,
                                                        new InMemoryCheckpoint(),
@@ -61,8 +61,8 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_null_chaser_checksum_throws_argument_null_exception()
         {
-            var db = new TFChunkDb(new TFChunkDbConfig(Path.GetTempPath(),
-                                                       new PrefixFileNamingStrategy(Path.GetTempPath(), "prefix.tf"),
+            var db = new TFChunkDb(new TFChunkDbConfig(PathName,
+                                                       new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                                        10000,
                                                        0,
                                                        new InMemoryCheckpoint(),
