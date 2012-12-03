@@ -35,6 +35,18 @@ namespace EventStore.Core.Messages
 {
     public static class TcpMessage
     {
+        public class TcpSend: Message
+        {
+            public readonly TcpConnectionManager ConnectionManager;
+            public readonly Message Message;
+
+            public TcpSend(TcpConnectionManager connectionManager, Message message)
+            {
+                ConnectionManager = connectionManager;
+                Message = message;
+            }
+        }
+
         public class Heartbeat: Message
         {
             public readonly IPEndPoint EndPoint;

@@ -56,6 +56,7 @@ namespace EventStore.Core
         public InMemoryBus Bus { get { return _outputBus; } } 
         public HttpService HttpService { get { return _httpService; } }
         public TimerService TimerService { get { return _timerService; } }
+        public IPublisher NetworkSendQueue { get { return _networkSendQueue; } }
 
         private readonly IPEndPoint _tcpEndPoint;
         private readonly IPEndPoint _httpEndPoint;
@@ -66,6 +67,7 @@ namespace EventStore.Core
         private readonly SingleVNodeController _controller;
         private readonly HttpService _httpService;
         private readonly TimerService _timerService;
+        private readonly QueuedHandler _networkSendQueue;
 
         public SingleVNode(TFChunkDb db, 
                            SingleVNodeSettings vNodeSettings, 
@@ -136,8 +138,15 @@ namespace EventStore.Core
             var storageScavenger = new StorageScavenger(db, readIndex);
             _outputBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
 
+            // NETWORK SEND
+            var networkSendService = new NetworkSendService();
+            var networkSendBus = new InMemoryBus("NetworkSendBus", watchSlowMsg: false);
+            networkSendBus.Subscribe<TcpMessage.TcpSend>(networkSendService);
+            networkSendBus.Subscribe<HttpMessage.HttpSend>(networkSendService);
+            _networkSendQueue = new QueuedHandler(networkSendBus, "NetworkSendQueue", watchSlowMsg: true, slowMsgThresholdMs: 30);
+
             //TCP
-            var tcpService = new TcpService(MainQueue, _tcpEndPoint);
+            var tcpService = new TcpService(MainQueue, _tcpEndPoint, _networkSendQueue);
             Bus.Subscribe<SystemMessage.SystemInit>(tcpService);
             Bus.Subscribe<SystemMessage.SystemStart>(tcpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
@@ -150,9 +159,9 @@ namespace EventStore.Core
             Bus.Subscribe<HttpMessage.UpdatePendingRequests>(HttpService);
             HttpService.SetupController(new AdminController(MainQueue));
             HttpService.SetupController(new PingController());
-            HttpService.SetupController(new StatController(monitoringQueue));
-            HttpService.SetupController(new ReadEventDataController(MainQueue));
-            HttpService.SetupController(new AtomController(MainQueue));
+            HttpService.SetupController(new StatController(monitoringQueue, _networkSendQueue));
+            HttpService.SetupController(new ReadEventDataController(MainQueue, _networkSendQueue));
+            HttpService.SetupController(new AtomController(MainQueue, _networkSendQueue));
             HttpService.SetupController(new WebSiteController(MainQueue));
 
             //REQUEST MANAGEMENT
@@ -182,12 +191,12 @@ namespace EventStore.Core
             Bus.Subscribe<StorageMessage.EventCommited>(clientService);
 
             //TIMER
-            //var timer = new TimerService(new TimerBasedScheduler(new RealTimer(), new RealTimeProvider()));
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
             Bus.Subscribe<TimerMessage.Schedule>(TimerService);
 
-            MainQueue.Start();
+            _networkSendQueue.Start();
             monitoringQueue.Start();
+            MainQueue.Start();
         }
 
         public void Start()

@@ -120,6 +120,7 @@
     <Compile Include="Messages\HttpClientMessageDto.cs" />
     <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
     <Compile Include="Services\ClientService.cs" />
+    <Compile Include="Services\NetworkSendService.cs" />
     <Compile Include="Services\RequestManager\Managers\CreateStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\RequestManager\Managers\DeleteStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\Monitoring\StatsCollectorEnvelope.cs" />

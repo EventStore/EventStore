@@ -29,6 +29,7 @@ using System;
 using System.Net;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Messages
 {
@@ -39,6 +40,25 @@ namespace EventStore.Core.Messages
 
     public static class HttpMessage
     {
+        public class HttpSend: Message
+        {
+            public readonly HttpEntity Entity;
+            public readonly Func<HttpEntity, Message, string> Formatter;
+            public readonly Func<HttpEntity, Message, ResponseConfiguration> Configurator;
+            public readonly Message Message;
+
+            public HttpSend(HttpEntity entity, 
+                            Func<HttpEntity, Message, string> formatter, 
+                            Func<HttpEntity, Message, ResponseConfiguration> configurator,
+                            Message message)
+            {
+                Entity = entity;
+                Formatter = formatter;
+                Configurator = configurator;
+                Message = message;
+            }
+        }
+
         public class DeniedToHandle : Message
         {
             public readonly DenialReason Reason;

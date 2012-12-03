@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
@@ -42,12 +43,17 @@ namespace EventStore.Core.Services.Transport.Http
 
         private readonly IEnvelope _httpEnvelope;
 
-        public SendToHttpWithConversionEnvelope(HttpEntity entity, Func<ICodec, TExpectedHttpFormattedResponseMessage, string> formatter, Func<ICodec, TExpectedHttpFormattedResponseMessage, ResponseConfiguration> configurator, Func<TExpectedResponseMessage, TExpectedHttpFormattedResponseMessage> convertor, IEnvelope nonMatchingEnvelope = null)
+        public SendToHttpWithConversionEnvelope(IPublisher networkSendQueue,
+                                                HttpEntity entity, 
+                                                Func<ICodec, TExpectedHttpFormattedResponseMessage, string> formatter, 
+                                                Func<ICodec, TExpectedHttpFormattedResponseMessage, ResponseConfiguration> configurator, 
+                                                Func<TExpectedResponseMessage, TExpectedHttpFormattedResponseMessage> convertor, 
+                                                IEnvelope nonMatchingEnvelope = null)
         {
             _formatter = formatter;
             _configurator = configurator;
             _convertor = convertor;
-            _httpEnvelope = new SendToHttpEnvelope<TExpectedResponseMessage>(entity, Formatter, Configurator, nonMatchingEnvelope);
+            _httpEnvelope = new SendToHttpEnvelope<TExpectedResponseMessage>(networkSendQueue, entity, Formatter, Configurator, nonMatchingEnvelope);
         }
 
         private ResponseConfiguration Configurator(ICodec codec, TExpectedResponseMessage message)

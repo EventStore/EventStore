@@ -26,18 +26,23 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Common.Utils;
+using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
     public class SendOverTcpEnvelope : IEnvelope
     {
+        private readonly IPublisher _networkSendQueue;
         private readonly WeakReference _manager;
 
-        public SendOverTcpEnvelope(TcpConnectionManager manager)
+        public SendOverTcpEnvelope(TcpConnectionManager manager, IPublisher networkSendQueue)
         {
-            if (manager == null)
-                throw new ArgumentNullException("manager");
+            _networkSendQueue = networkSendQueue;
+            Ensure.NotNull(manager, "manager");
+            Ensure.NotNull(networkSendQueue, "networkSendQueue");
             _manager = new WeakReference(manager);
         }
 
@@ -45,7 +50,9 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var man = _manager.Target as TcpConnectionManager;
             if (man != null)
-                man.QueueMessage(message);
+            {
+                _networkSendQueue.Publish(new TcpMessage.TcpSend(man, message));
+            }
         }
     }
 }
