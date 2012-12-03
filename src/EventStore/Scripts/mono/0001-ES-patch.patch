@@ -1,0 +1,35 @@
+---
+ mono/metadata/threadpool.c | 2 +-
+ mono/mini/driver.c         | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mono/metadata/threadpool.c b/mono/metadata/threadpool.c
+index ad2b3de..c24950b 100644
+--- a/mono/metadata/threadpool.c
++++ b/mono/metadata/threadpool.c
+@@ -574,8 +574,8 @@ socket_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *state)
+ 
+ 	mono_g_hash_table_replace (data->sock_to_state, state->handle, list);
+ 	ievt = get_events_from_list (list);
+-	LeaveCriticalSection (&data->io_lock);
+ 	data->modify (data->event_data, fd, state->operation, ievt, is_new);
++	LeaveCriticalSection (&data->io_lock);
+ }
+ 
+ #ifndef DISABLE_SOCKETS
+diff --git a/mono/mini/driver.c b/mono/mini/driver.c
+index 7a4c4de..632eedb 100644
+--- a/mono/mini/driver.c
++++ b/mono/mini/driver.c
+@@ -1457,7 +1457,7 @@ mono_main (int argc, char* argv[])
+ 			char *build = mono_get_runtime_build_info ();
+ 			char *gc_descr;
+ 
+-			g_print ("Mono JIT compiler version %s\nCopyright (C) 2002-2012 Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com\n", build);
++			g_print ("Mono JIT compiler version (EventStore patched build: ThreadPool.c) %s\nCopyright (C) 2002-2012 Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com\n", build);
+ 			g_free (build);
+ 			g_print (info);
+ 			gc_descr = mono_gc_get_description ();
+-- 
+1.8.0.msysgit.0
+
