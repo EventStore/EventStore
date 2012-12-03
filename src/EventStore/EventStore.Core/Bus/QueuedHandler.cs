@@ -30,7 +30,6 @@ using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 
@@ -73,12 +72,10 @@ namespace EventStore.Core.Bus
         private TimeSpan _lastTotalIdleTime;
         private TimeSpan _lastTotalBusyTime;
         private TimeSpan _lastTotalTime;
-        private AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
+        private readonly AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
 
         private long _totalItems;
         private long _lastTotalItems;
-        private long _totalSkipped;
-        private long _lastTotalSkipped;
         private int _lifetimeQueueLengthPeak;
         private int _currentQueueLengthPeak;
         private Type _lastProcessedMsgType;
@@ -128,8 +125,8 @@ namespace EventStore.Core.Bus
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
             _totalTimeWatch.Start();
             var wasEmpty = true;
-            var spinmax = 5000;
-            var sleepmax = 200000;
+            const int spinmax = 5000;
+            const int sleepmax = 200000;
             var spincount = 0;
             var sleepcount = 0;
             while (!_stop)
@@ -140,19 +137,20 @@ namespace EventStore.Core.Bus
                     if (!_queue.TryDequeue(out msg))
                     {
                         if (!wasEmpty)
-                        {
                             EnterIdle();
-                        }
                         wasEmpty = true;
-                        if(spincount < spinmax)
+
+                        if (spincount < spinmax)
                         {
                             //do nothing... spin
                             spincount++;
-                        } else if(sleepcount < sleepmax)
+                        } 
+                        else if (sleepcount < sleepmax)
                         {
                             Thread.Sleep(1);
                             sleepcount++;
-                        } else
+                        } 
+                        else
                         {
                             _msgAddEvent.WaitOne(500);
                         }
@@ -161,24 +159,15 @@ namespace EventStore.Core.Bus
                     {
                         spincount = 0;
                         sleepcount = 0;
-                        var ttlMessage = msg as IAmOnlyCaredAboutForTime;
-                        if (ttlMessage != null && !ttlMessage.AmStillCaredAbout())
-                        {
-                            Interlocked.Increment(ref _totalSkipped);
-                            continue;
-                        }
 
                         //NOTE: the following locks are primarily acquired in this thread, 
                         //      so not too high performance penalty
                         if (wasEmpty)
-                        {
                             EnterNonIdle();
-                        }
                         wasEmpty = false;
+
                         var cnt = _queue.Count;
-                        _lifetimeQueueLengthPeak = _lifetimeQueueLengthPeak > cnt
-                                                       ? _lifetimeQueueLengthPeak
-                                                       : cnt;
+                        _lifetimeQueueLengthPeak = _lifetimeQueueLengthPeak > cnt ? _lifetimeQueueLengthPeak : cnt;
                         _currentQueueLengthPeak = _currentQueueLengthPeak > cnt ? _currentQueueLengthPeak : cnt;
 
                         _inProgressMsgType = msg.GetType();
@@ -191,8 +180,6 @@ namespace EventStore.Core.Bus
                         else
                         {
                             _slowMsgWatch.Restart();
-                            var qSize = _queue.Count;
-
                             _consumer.Handle(msg);
                             Interlocked.Increment(ref _totalItems);
 
@@ -200,12 +187,13 @@ namespace EventStore.Core.Bus
                             {
                                 Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
                                           _name,
-                                          msg.GetType().Name,
+                                          _inProgressMsgType.Name,
                                           _slowMsgWatch.ElapsedMilliseconds,
-                                          qSize,
+                                          cnt,
                                           _queue.Count);
                             }
                         }
+
                         _lastProcessedMsgType = _inProgressMsgType;
                         _inProgressMsgType = null;
                     }
@@ -225,6 +213,7 @@ namespace EventStore.Core.Bus
             {
                 _totalIdleWatch.Start();
                 _idleWatch.Restart();
+
                 _totalBusyWatch.Stop();
                 _busyWatch.Reset();
             }
@@ -262,7 +251,6 @@ namespace EventStore.Core.Bus
                 var totalIdleTime = _totalIdleWatch.Elapsed;
                 var totalBusyTime = _totalBusyWatch.Elapsed;
                 var totalItems = Interlocked.Read(ref _totalItems);
-                var totalSkipped = Interlocked.Read(ref _totalSkipped);
 
                 var lastRunMs = (long)(totalTime - _lastTotalTime).TotalMilliseconds;
                 var lastItems = totalItems - _lastTotalItems;
@@ -282,15 +270,12 @@ namespace EventStore.Core.Bus
                     _currentQueueLengthPeak,
                     _lifetimeQueueLengthPeak,
                     _lastProcessedMsgType,
-                    _inProgressMsgType,
-                    totalSkipped,
-                    _totalSkipped - _lastTotalSkipped);
+                    _inProgressMsgType);
 
                 _lastTotalTime = totalTime;
                 _lastTotalIdleTime = totalIdleTime;
                 _lastTotalBusyTime = totalBusyTime;
                 _lastTotalItems = totalItems;
-                _lastTotalSkipped = totalSkipped;
 
                 _currentQueueLengthPeak = 0;
                 return stats;

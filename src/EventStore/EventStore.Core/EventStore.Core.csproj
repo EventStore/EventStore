@@ -118,7 +118,6 @@
     <Compile Include="Index\PTableHeader.cs" />
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />
-    <Compile Include="Messages\IAmOnlyCaredAboutForTime.cs" />
     <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
     <Compile Include="Services\ClientService.cs" />
     <Compile Include="Services\RequestManager\Managers\CreateStreamTwoPhaseRequestManager.cs" />
