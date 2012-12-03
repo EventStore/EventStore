@@ -15,7 +15,7 @@ namespace EventStore.Common.CommandLine
             if (!string.IsNullOrEmpty(ipsString))
             {
                 var list = new List<IPAddress>();
-                foreach (var ipStr in ipsString.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (var ipStr in ipsString.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
                 {
                     IPAddress ip;
                     if (!IPAddress.TryParse(ipStr, out ip))

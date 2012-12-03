@@ -85,7 +85,6 @@ namespace EventStore.Core.Index
 
             _filename = filename;
             File.SetAttributes(_filename, FileAttributes.ReadOnly);
-            File.SetAttributes(_filename, FileAttributes.Temporary);
             File.SetAttributes(_filename, FileAttributes.NotContentIndexed);
 
             _bufferSize = bufferSize;

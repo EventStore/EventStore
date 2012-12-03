@@ -307,7 +307,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 // in mono SetAttributes on non-existing file throws exception, in windows it just works silently.
                 File.SetAttributes(_filename, FileAttributes.ReadOnly);
-                File.SetAttributes(_filename, FileAttributes.Temporary); // non-intuitive, tells OS to try to cache it!
                 File.SetAttributes(_filename, FileAttributes.NotContentIndexed);
             });
         }
@@ -1147,7 +1146,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                     }
                 }
                 if (_deleteFile && _lockedCount == 0)
+                {
+                    Log.Info("File {0} has been marked for delete and will be deleted in TryDestruct.", _filename);
                     Helper.EatException(() => File.Delete(_filename));
+                }
 
                 _destroyEvent.Set();
             }
