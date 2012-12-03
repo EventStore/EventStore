@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
@@ -39,37 +40,37 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         [Test]
         public void it_can_be_created()
         {
-            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), "stream", 0, false);
+            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), "stream", 0, new RealTimeProvider(), false);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_publisher_throws_argument_null_exception()
         {
-            var edp = new StreamReaderEventDistributionPoint(null, Guid.NewGuid(), "stream", 0, false);
+            var edp = new StreamReaderEventDistributionPoint(null, Guid.NewGuid(), "stream", 0, new RealTimeProvider(), false);
         }
 
         [Test, ExpectedException(typeof(ArgumentException))]
         public void empty_distribution_point_id_throws_argument_exception()
         {
-            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.Empty, "stream", 0, false);
+            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.Empty, "stream", 0, new RealTimeProvider(), false);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_stream_name_throws_argument_null_exception()
         {
-            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), null, 0, false);
+            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), null, 0, new RealTimeProvider(), false);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void empty_stream_name_throws_argument_exception()
         {
-            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), "", 0, false);
+            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), "", 0, new RealTimeProvider(), false);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void negative_event_sequence_number_throws_argument_exception()
         {
-            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), "", -1, false);
+            var edp = new StreamReaderEventDistributionPoint(_bus, Guid.NewGuid(), "", -1, new RealTimeProvider(), false);
         }
     }
 }

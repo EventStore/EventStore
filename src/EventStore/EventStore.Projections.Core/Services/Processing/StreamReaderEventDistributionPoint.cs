@@ -27,7 +27,6 @@
 // 
 
 using System;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -42,6 +41,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly string _streamName;
         private int _fromSequenceNumber;
+        private readonly ITimeProvider _timeProvider;
         private readonly bool _resolveLinkTos;
 
         private bool _eventsRequested;
@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public StreamReaderEventDistributionPoint(
             IPublisher publisher, Guid distibutionPointCorrelationId, string streamName, int fromSequenceNumber,
-            bool resolveLinkTos)
+            ITimeProvider timeProvider, bool resolveLinkTos)
             : base(publisher, distibutionPointCorrelationId)
         {
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
@@ -57,6 +57,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (string.IsNullOrEmpty(streamName)) throw new ArgumentException("streamName");
             _streamName = streamName;
             _fromSequenceNumber = fromSequenceNumber;
+            _timeProvider = timeProvider;
             _resolveLinkTos = resolveLinkTos;
         }
 
@@ -95,13 +96,14 @@ namespace EventStore.Projections.Core.Services.Processing
                         _paused = true;
                     else 
                         RequestEvents(delay: true);
-
+                    SendIdle();
                     break;
                 case RangeReadResult.Success:
                     if (message.Events.Length == 0)
                     {
                         // the end
                         DeliverSafeJoinPosition(message.LastCommitPosition.Value);
+                        SendIdle();
                     }
                     else
                     {
@@ -123,6 +125,13 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
+        }
+
+        private void SendIdle()
+        {
+            _publisher.Publish(
+                new ProjectionCoreServiceMessage.EventDistributionPointIdle(
+                    _distibutionPointCorrelationId, _timeProvider.Now));
         }
 
         public override void Handle(ClientMessage.ReadAllEventsForwardCompleted message)

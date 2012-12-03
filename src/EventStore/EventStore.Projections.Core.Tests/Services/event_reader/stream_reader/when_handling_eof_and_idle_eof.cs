@@ -27,11 +27,12 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -41,13 +42,14 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
 {
     [TestFixture]
-    public class when_handling_read_completed_and_eof : TestFixtureWithExistingEvents
+    public class when_handling_eof_and_idle_eof : TestFixtureWithExistingEvents
     {
         private StreamReaderEventDistributionPoint _edp;
         private Guid _publishWithCorrelationId;
         private Guid _distibutionPointCorrelationId;
         private Guid _firstEventId;
         private Guid _secondEventId;
+        private FakeTimeProvider _fakeTimeProvider;
 
         protected override void Given()
         {
@@ -59,7 +61,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
-            _edp = new StreamReaderEventDistributionPoint(_bus, _distibutionPointCorrelationId, "stream", 10, new RealTimeProvider(), false);
+            _fakeTimeProvider = new FakeTimeProvider();
+            _edp = new StreamReaderEventDistributionPoint(_bus, _distibutionPointCorrelationId, "stream", 10, _fakeTimeProvider, false);
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
@@ -84,68 +87,29 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "stream",
                     new EventLinkPair[] { }, RangeReadResult.Success, 12, 11, true, 400));
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void cannot_be_resumed()
-        {
-            _edp.Resume();
-        }
-
-        [Test]
-        public void cannot_be_paused()
-        {
-            _edp.Pause();
+            _fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(500));
+            _edp.Handle(
+                new ClientMessage.ReadStreamEventsForwardCompleted(
+                    _distibutionPointCorrelationId, "stream",
+                    new EventLinkPair[] { }, RangeReadResult.Success, 12, 11, true, 400));
         }
 
         [Test]
-        public void publishes_correct_committed_event_received_messages()
+        public void publishes_event_distribution_idle_messages()
         {
             Assert.AreEqual(
-                3, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
+                2, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>().Count());
             var first =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().First();
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>().First();
             var second =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>()
                          .Skip(1)
                          .First();
-            var third = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
-                         .Skip(2)
-                         .First();
-            Assert.IsNull(third.Data);
-            Assert.AreEqual(400, third.SafeTransactionFileReaderJoinPosition);
 
-            Assert.AreEqual("event_type1", first.Data.EventType);
-            Assert.AreEqual("event_type2", second.Data.EventType);
-            Assert.AreEqual(_firstEventId, first.Data.EventId);
-            Assert.AreEqual(_secondEventId, second.Data.EventId);
-            Assert.AreEqual(1, first.Data.Data[0]);
-            Assert.AreEqual(2, first.Data.Metadata[0]);
-            Assert.AreEqual(3, second.Data.Data[0]);
-            Assert.AreEqual(4, second.Data.Metadata[0]);
-            Assert.AreEqual("stream", first.EventStreamId);
-            Assert.AreEqual("stream", second.EventStreamId);
-            Assert.AreEqual(0, first.Position.PreparePosition);
-            Assert.AreEqual(0, second.Position.PreparePosition);
-            Assert.AreEqual(0, first.Position.CommitPosition);
-            Assert.AreEqual(0, second.Position.CommitPosition);
-            Assert.AreEqual(50, first.SafeTransactionFileReaderJoinPosition);
-            Assert.AreEqual(100, second.SafeTransactionFileReaderJoinPosition);
-        }
+            Assert.AreEqual(first.CorrelationId, _distibutionPointCorrelationId);
+            Assert.AreEqual(second.CorrelationId, _distibutionPointCorrelationId);
 
-        [Test]
-        public void publishes_schedule()
-        {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
-        }
-
-        [Test]
-        public void publishes_read_events_on_schedule_reply()
-        {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Count());
-            var schedule = _consumer.HandledMessages.OfType<TimerMessage.Schedule>().Single();
-            schedule.Reply();
-            Assert.AreEqual(3, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
+            Assert.AreEqual(TimeSpan.FromMilliseconds(500), second.IdleTimestampUtc - first.IdleTimestampUtc);
         }
 
     }
