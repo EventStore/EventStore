@@ -307,7 +307,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             {
                 // in mono SetAttributes on non-existing file throws exception, in windows it just works silently.
                 File.SetAttributes(_filename, FileAttributes.ReadOnly);
-                File.SetAttributes(_filename, FileAttributes.Temporary); // non-intuitive, tells OS to try to cache it!
                 File.SetAttributes(_filename, FileAttributes.NotContentIndexed);
             });
         }
