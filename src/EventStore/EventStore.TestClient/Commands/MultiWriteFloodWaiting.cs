@@ -95,6 +95,8 @@ namespace EventStore.TestClient.Commands
                 var autoEvent = new AutoResetEvent(false);
                 var eventStreamId = "es" + Guid.NewGuid();
 
+                var received = 0;
+
                 var client = context.Client.CreateTcpConnection(
                     context,
                     (conn, pkg) =>
@@ -104,6 +106,8 @@ namespace EventStore.TestClient.Commands
                             context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
                             return;
                         }
+
+                        Interlocked.Increment(ref received);
 
                         var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
                         if (dto.ErrorCode == (int)OperationErrorCode.Success)
@@ -120,7 +124,7 @@ namespace EventStore.TestClient.Commands
                     },
                     connectionClosed: (conn, err) =>
                     {
-                        if (all < requestsCnt)
+                        if (received < count)
                             context.Fail(null, "Socket was closed, but not all requests were completed.");
                         else
                             context.Success();

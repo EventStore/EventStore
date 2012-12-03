@@ -107,7 +107,7 @@ namespace EventStore.TestClient.Commands
                     },
                     connectionClosed: (conn, err) =>
                     {
-                        if (all < requestsCnt)
+                        if (received < count)
                             context.Fail(null, "Socket was closed, but not all requests were completed.");
                         else
                             context.Success();
