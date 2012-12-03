@@ -164,7 +164,9 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 status = _lastReceivedStatistics.Clone();
                 status.Name = _name;
-                status.Status = _state.EnumVaueName() + "/" + status.Status;
+                status.Status = !status.Status.StartsWith(_state.EnumVaueName())
+                                    ? _state.EnumVaueName() + "/" + status.Status
+                                    : status.Status;
                 status.MasterStatus = _state;
             }
             if (_state == ManagedProjectionState.Faulted)

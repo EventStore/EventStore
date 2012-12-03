@@ -16,7 +16,7 @@
 		
 		.content table td { word-wrap: break-word; }
 		.content table .name { width: 150px; }
-		.content table .status { width: 125px; }
+		.content table .status { width: 75px; }
 		.content table .mode { width: 70px; }
 		.content table .progress { width: 50px; }
 		.content table .position { width: 165px; }
@@ -26,6 +26,7 @@
 		.content table .writes { width: 60px; }
 		.content table .partitions { width: 65px; }
 		.content table .processed { width: 75px; }
+		.content table .per-second { width: 75px; }
 		.content table .buffered { width: 60px; }
 		.content table td {vertical-align: middle;}
     </style>
@@ -61,6 +62,7 @@
                     <th class="c writes">Writes Pending</th>
                     <th class="c partitions">Partitions Cached</th>
                     <th class="c processed">Processed (since restart)</th>
+                    <th class="c per-second">per Second</th>
                     <th class="c buffered">Buffered Events</th>
                 </tr>
             </thead>
@@ -80,6 +82,7 @@
           <td class="r">{{>writePendingEventsBeforeCheckpoint}} / {{>writePendingEventsAfterCheckpoint}}</td>
           <td class="r">{{>partitionsCached}}</td>
           <td class="r">{{>eventsProcessedAfterRestart}}</td>
+          <td class="r">{{>eventsPerSecond}}</td>
           <td class="r">{{>bufferedEvents}}</td>
         </tr>
         </script>
@@ -97,6 +100,8 @@
         (function() {
 
             $(function() {
+
+                $.templates("projectionTemplate", "#projectionTemplate");
 
                 requestList();
 
@@ -177,7 +182,10 @@
                     }
                 }
             });
-            
+
+            var lastTimestamp = null;
+            var lastRequest = {};
+
             function requestList() {
                 $.ajax("/projections/any", {
                     headers: {
@@ -192,8 +200,18 @@
                     data.projections.sort(function(a, b) {
                         return a.name.localeCompare(b.name);
                     });
+                    var current = {};
+                    var currentTime = new Date();
+                    for (var i = 0; i < data.projections.length; i++) {
+                        current[data.projections[i].name] = data.projections[i];
+                        if (lastRequest[data.projections[i].name] !== undefined && lastTimestamp != null)
+                            data.projections[i].eventsPerSecond =
+                            (1000.0 * (data.projections[i].eventsProcessedAfterRestart - lastRequest[data.projections[i].name].eventsProcessedAfterRestart) /
+                                (currentTime - lastTimestamp)).toFixed(1);
+                    }
+                    lastRequest = current;
+                    lastTimestamp = currentTime;
 
-                    $.templates("projectionTemplate", "#projectionTemplate");
 
                     $("#projections").html(
                         $.render.projectionTemplate(data.projections, {
