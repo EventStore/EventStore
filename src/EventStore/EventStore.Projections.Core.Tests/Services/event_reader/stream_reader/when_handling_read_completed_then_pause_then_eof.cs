@@ -15,7 +15,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
     [TestFixture]
     public class when_handling_read_completed_then_pause_then_eof : TestFixtureWithExistingEvents
     {
-        private StreamReaderEventDistributionPoint _edp;
+        private StreamEventReader _edp;
         private Guid _publishWithCorrelationId;
         private Guid _distibutionPointCorrelationId;
         private Guid _firstEventId;
@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
-            _edp = new StreamReaderEventDistributionPoint(_bus, _distibutionPointCorrelationId, "stream", 10, new RealTimeProvider(), false);
+            _edp = new StreamEventReader(_bus, _distibutionPointCorrelationId, "stream", 10, new RealTimeProvider(), false);
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();

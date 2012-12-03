@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -27,19 +27,24 @@
 // 
 
 using System;
+using System.Linq;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distribution_point
+namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader
 {
     [TestFixture]
-    public class when_heading_distribution_point_has_been_created: TestFixtureWithReadWriteDisaptchers
+    public class when_the_heading_event_reader_with_a_subscribed_projection_handles_an_idle_notification :
+        TestFixtureWithReadWriteDisaptchers
     {
-        private HeadingEventDistributionPoint _point;
+        private HeadingEventReader _point;
         private Exception _exception;
+        private Guid _distibutionPointCorrelationId;
+        private FakeProjectionSubscription _subscription;
+        private Guid _projectionSubscriptionId;
 
         [SetUp]
         public void setup()
@@ -47,55 +52,41 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distri
             _exception = null;
             try
             {
-                _point = new HeadingEventDistributionPoint(10);
+                _point = new HeadingEventReader(10);
             }
             catch (Exception ex)
             {
                 _exception = ex;
             }
-        }
 
-        [Test]
-        public void it_has_been_created()
-        {
-            Assert.IsNull(_exception, ((object) _exception ?? "").ToString());
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void stop_throws_invalid_operation_exception()
-        {
-            _point.Stop();
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void try_subscribe_throws_invalid_operation_exception()
-        {
-            _point.TrySubscribe(Guid.NewGuid(), new FakeProjectionSubscription(), 10);
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void usubscribe_throws_invalid_operation_exception()
-        {
-            _point.Unsubscribe(Guid.NewGuid());
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void handle_throws_invalid_operation_exception()
-        {
+            _distibutionPointCorrelationId = Guid.NewGuid();
+            _point.Start(
+                _distibutionPointCorrelationId,
+                new TransactionEventReader(
+                    _bus, _distibutionPointCorrelationId, new EventPosition(0, -1), new RealTimeProvider()));
+            DateTime timestamp = DateTime.UtcNow;
             _point.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(20, 10), "stream", 10, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
+                    _distibutionPointCorrelationId, new EventPosition(20, 10), "stream", 10, false,
+                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0], timestamp)));
+            _point.Handle(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                    _distibutionPointCorrelationId, new EventPosition(40, 30), "stream", 11, false,
+                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0], timestamp.AddMilliseconds(1))));
+            _subscription = new FakeProjectionSubscription();
+            _projectionSubscriptionId = Guid.NewGuid();
+            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
+            _point.Handle(
+                new ProjectionCoreServiceMessage.EventReaderIdle(
+                    _distibutionPointCorrelationId, timestamp.AddMilliseconds(1100)));
         }
 
+
         [Test]
-        public void can_be_started()
+        public void projection_receives_events_after_the_subscription_point()
         {
-            var distributionPointId = Guid.NewGuid();
-            _point.Start(
-                distributionPointId,
-                new TransactionFileReaderEventDistributionPoint(
-                    _bus, distributionPointId, new EventPosition(0, -1), new RealTimeProvider()));
+            Assert.AreEqual(1, _subscription.ReceivedIdleNotifications.Count());
         }
+
     }
 }

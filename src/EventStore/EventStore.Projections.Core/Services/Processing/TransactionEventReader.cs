@@ -27,7 +27,6 @@
 // 
 
 using System;
-using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -38,7 +37,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class TransactionFileReaderEventDistributionPoint : EventDistributionPoint
+    public class TransactionEventReader : EventReader
     {
         private bool _eventsRequested = false;
         private int _maxReadCount = 50;
@@ -46,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _deliverEndOfTfPosition;
         private readonly ITimeProvider _timeProvider;
 
-        public TransactionFileReaderEventDistributionPoint(IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition @from, ITimeProvider timeProvider, bool deliverEndOfTFPosition = true)
+        public TransactionEventReader(IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition @from, ITimeProvider timeProvider, bool deliverEndOfTFPosition = true)
             : base(publisher, distibutionPointCorrelationId)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -115,7 +114,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void SendIdle()
         {
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.EventDistributionPointIdle(
+                new ProjectionCoreServiceMessage.EventReaderIdle(
                     _distibutionPointCorrelationId, _timeProvider.Now));
         }
 

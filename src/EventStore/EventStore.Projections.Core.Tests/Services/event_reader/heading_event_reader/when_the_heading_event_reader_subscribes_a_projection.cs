@@ -32,15 +32,18 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
+using System.Linq;
 
-namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distribution_point
+namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader
 {
     [TestFixture]
-    public class when_the_heading_distribution_point_handles_an_event : TestFixtureWithReadWriteDisaptchers
+    public class when_the_heading_event_reader_subscribes_a_projection : TestFixtureWithReadWriteDisaptchers
     {
-        private HeadingEventDistributionPoint _point;
+        private HeadingEventReader _point;
         private Exception _exception;
         private Guid _distibutionPointCorrelationId;
+        private FakeProjectionSubscription _subscription;
+        private Guid _projectionSubscriptionId;
 
         [SetUp]
         public void setup()
@@ -48,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distri
             _exception = null;
             try
             {
-                _point = new HeadingEventDistributionPoint(10);
+                _point = new HeadingEventReader(10);
             }
             catch (Exception ex)
             {
@@ -58,52 +61,44 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distri
             _distibutionPointCorrelationId = Guid.NewGuid();
             _point.Start(
                 _distibutionPointCorrelationId,
-                new TransactionFileReaderEventDistributionPoint(
+                new TransactionEventReader(
                     _bus, _distibutionPointCorrelationId, new EventPosition(0, -1), new RealTimeProvider()));
             _point.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, new EventPosition(20, 10), "stream", 10, false,
                     ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
-        }
-
-        [Test]
-        public void can_handle_next_event()
-        {
             _point.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, new EventPosition(40, 30), "stream", 12, false,
+                    _distibutionPointCorrelationId, new EventPosition(40, 30), "stream", 11, false,
                     ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
+            _subscription = new FakeProjectionSubscription();
+            _projectionSubscriptionId = Guid.NewGuid();
+            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
+        }
+
+
+        [Test]
+        public void projection_receives_at_least_one_cached_event_before_the_subscription_position()
+        {
+            Assert.AreEqual(true, _subscription.ReceivedEvents.Any(v => v.Position.PreparePosition <= 30));
         }
 
         [Test]
-        public void can_handle_special_update_position_event()
+        public void projection_receives_all_the_previously_handled_events_after_the_subscription_position()
         {
-            _point.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, new EventPosition(long.MinValue, 30), "stream", 12, false, null));
+            Assert.AreEqual(true, _subscription.ReceivedEvents.Any(v => v.Position.PreparePosition == 30));
+        }
+
+        [Test]
+        public void it_can_be_unsubscribed()
+        {
+            _point.Unsubscribe(_projectionSubscriptionId);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]
-        public void cannot_handle_previous_event()
+        public void no_other_projection_can_subscribe_with_the_same_projection_id()
         {
-            _point.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, new EventPosition(5, 0), "stream", 8, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
-        }
-
-        [Test]
-        public void a_projection_can_be_subscribed_after_event_position()
-        {
-            var subscribed = _point.TrySubscribe(Guid.NewGuid(), new FakeProjectionSubscription(), 30);
-            Assert.AreEqual(true, subscribed);
-        }
-
-        [Test]
-        public void a_projection_cannot_be_subscribed_at_earlier_position()
-        {
-            var subscribed = _point.TrySubscribe(Guid.NewGuid(), new FakeProjectionSubscription(), 10);
-            Assert.AreEqual(false, subscribed);
+            var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
         }
     }
 }

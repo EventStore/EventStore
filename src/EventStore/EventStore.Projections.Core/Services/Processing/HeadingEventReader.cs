@@ -34,10 +34,10 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class HeadingEventDistributionPoint
+    public class HeadingEventReader
     {
-        private readonly ILogger _logger = LogManager.GetLoggerFor<HeadingEventDistributionPoint>();
-        private EventDistributionPoint _headDistributionPoint;
+        private readonly ILogger _logger = LogManager.GetLoggerFor<HeadingEventReader>();
+        private EventReader _headEventReader;
         private EventPosition _subscribeFromPosition = new EventPosition(long.MaxValue, long.MaxValue);
 
         private readonly Queue<ProjectionCoreServiceMessage.CommittedEventDistributed> _lastMessages =
@@ -48,12 +48,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<Guid, IProjectionSubscription> _headSubscribers =
             new Dictionary<Guid, IProjectionSubscription>();
 
-        private bool _headDistributionPointPaused;
-        private Guid _distributionPointId;
+        private bool _headEventReaderPaused;
+        private Guid _eventReaderId;
         private bool _started;
         private EventPosition _lastEventPosition = new EventPosition(0, -1);
 
-        public HeadingEventDistributionPoint(int eventCacheSize)
+        public HeadingEventReader(int eventCacheSize)
         {
             _eventCacheSize = eventCacheSize;
         }
@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public bool Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
         {
             EnsureStarted();
-            if (message.CorrelationId != _distributionPointId)
+            if (message.CorrelationId != _eventReaderId)
                 return false;
             if (message.Data == null)
                 return true;
@@ -69,18 +69,18 @@ namespace EventStore.Projections.Core.Services.Processing
 
             CacheRecentMessage(message);
             DistributeMessage(message);
-            if (_headSubscribers.Count == 0 && !_headDistributionPointPaused)
+            if (_headSubscribers.Count == 0 && !_headEventReaderPaused)
             {
-                _headDistributionPoint.Pause();
-                _headDistributionPointPaused = true;
+                _headEventReader.Pause();
+                _headEventReaderPaused = true;
             }
             return true;
         }
 
-        public bool Handle(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
+        public bool Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
         {
             EnsureStarted();
-            if (message.CorrelationId != _distributionPointId)
+            if (message.CorrelationId != _eventReaderId)
                 return false;
             DistributeMessage(message);
             return true;
@@ -96,21 +96,21 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastEventPosition = message.Position;
         }
 
-        public void Start(Guid distributionPointId, EventDistributionPoint eventDistributionPoint)
+        public void Start(Guid eventReaderId, EventReader eventReader)
         {
             if (_started)
                 throw new InvalidOperationException("Already started");
-            _distributionPointId = distributionPointId;
-            _headDistributionPoint = eventDistributionPoint;
+            _eventReaderId = eventReaderId;
+            _headEventReader = eventReader;
             //Guid.Empty means head distribution point
-            _headDistributionPoint.Resume();
+            _headEventReader.Resume();
             _started = true;
         }
 
         public void Stop()
         {
             EnsureStarted();
-            _headDistributionPoint = null;
+            _headEventReader = null;
             _started = false;
         }
 
@@ -138,7 +138,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_headSubscribers.ContainsKey(projectionId))
                 throw new InvalidOperationException(
                     string.Format("Projection '{0}' has not been subscribed", projectionId));
-            _logger.Trace("The '{0}' subscription has unsubscribed from the '{1}' heading distribution point", projectionId, _distributionPointId);
+            _logger.Trace("The '{0}' subscription has unsubscribed from the '{1}' heading distribution point", projectionId, _eventReaderId);
             _headSubscribers.Remove(projectionId);
         }
 
@@ -155,7 +155,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 subscriber.Handle(message);
         }
 
-        private void DistributeMessage(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
+        private void DistributeMessage(ProjectionCoreServiceMessage.EventReaderIdle message)
         {
             foreach (var subscriber in _headSubscribers.Values)
                 subscriber.Handle(message);
@@ -174,12 +174,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void AddSubscriber(Guid publishWithCorrelationId, IProjectionSubscription subscription)
         {
-            _logger.Trace("The '{0}' projection subscribed to the '{1}' heading distribution point", publishWithCorrelationId, _distributionPointId);
+            _logger.Trace("The '{0}' projection subscribed to the '{1}' heading distribution point", publishWithCorrelationId, _eventReaderId);
             _headSubscribers.Add(publishWithCorrelationId, subscription);
-            if (_headDistributionPointPaused)
+            if (_headEventReaderPaused)
             {
-                _headDistributionPointPaused = false;
-                _headDistributionPoint.Resume();
+                _headEventReaderPaused = false;
+                _headEventReader.Resume();
             }
         }
 

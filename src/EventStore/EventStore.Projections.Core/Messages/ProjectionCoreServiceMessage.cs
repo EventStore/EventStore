@@ -73,12 +73,12 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class EventDistributionPointIdle : Message
+        public class EventReaderIdle : Message
         {
             private readonly Guid _correlationId;
             private readonly DateTime _idleTimestampUtc;
 
-            public EventDistributionPointIdle(Guid correlationId, DateTime idleTimestampUtc)
+            public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc)
             {
                 _correlationId = correlationId;
                 _idleTimestampUtc = idleTimestampUtc;

@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
     [TestFixture]
     public class when_handling_eof_and_idle_eof : TestFixtureWithExistingEvents
     {
-        private StreamReaderEventDistributionPoint _edp;
+        private StreamEventReader _edp;
         private Guid _publishWithCorrelationId;
         private Guid _distibutionPointCorrelationId;
         private Guid _firstEventId;
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
             _fakeTimeProvider = new FakeTimeProvider();
-            _edp = new StreamReaderEventDistributionPoint(_bus, _distibutionPointCorrelationId, "stream", 10, _fakeTimeProvider, false);
+            _edp = new StreamEventReader(_bus, _distibutionPointCorrelationId, "stream", 10, _fakeTimeProvider, false);
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
@@ -98,11 +98,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         public void publishes_event_distribution_idle_messages()
         {
             Assert.AreEqual(
-                2, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>().Count());
+                2, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>().Count());
             var first =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>().First();
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>().First();
             var second =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>()
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>()
                          .Skip(1)
                          .First();
 

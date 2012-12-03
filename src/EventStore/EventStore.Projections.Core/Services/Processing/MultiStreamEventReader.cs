@@ -39,7 +39,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class MultiStreamReaderEventDistributionPoint : EventDistributionPoint
+    public class MultiStreamEventReader : EventReader
     {
         private readonly HashSet<string> _streams;
         private CheckpointTag _fromPositions;
@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private long? _safePositionToJoin;
         private readonly Dictionary<string, bool> _eofs;
 
-        public MultiStreamReaderEventDistributionPoint(
+        public MultiStreamEventReader(
             IPublisher publisher, Guid distibutionPointCorrelationId, string[] streams,
             Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider)
             : base(publisher, distibutionPointCorrelationId)
@@ -176,7 +176,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_eofs.All(v => v.Value))
                 _publisher.Publish(
-                    new ProjectionCoreServiceMessage.EventDistributionPointIdle(
+                    new ProjectionCoreServiceMessage.EventReaderIdle(
                         _distibutionPointCorrelationId, _timeProvider.Now));
         }
 

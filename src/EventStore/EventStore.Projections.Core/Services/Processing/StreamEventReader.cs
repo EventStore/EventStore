@@ -37,7 +37,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class StreamReaderEventDistributionPoint : EventDistributionPoint
+    public class StreamEventReader : EventReader
     {
         private readonly string _streamName;
         private int _fromSequenceNumber;
@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _eventsRequested;
         private int _maxReadCount = 111;
 
-        public StreamReaderEventDistributionPoint(
+        public StreamEventReader(
             IPublisher publisher, Guid distibutionPointCorrelationId, string streamName, int fromSequenceNumber,
             ITimeProvider timeProvider, bool resolveLinkTos)
             : base(publisher, distibutionPointCorrelationId)
@@ -130,7 +130,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void SendIdle()
         {
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.EventDistributionPointIdle(
+                new ProjectionCoreServiceMessage.EventReaderIdle(
                     _distibutionPointCorrelationId, _timeProvider.Now));
         }
 

@@ -34,13 +34,13 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distribution_point
+namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader
 {
     [TestFixture]
-    public class when_the_heading_distribution_point_with_a_subscribed_projection_handles_an_event :
+    public class when_the_heading_event_reader_with_a_subscribed_projection_handles_an_event :
         TestFixtureWithReadWriteDisaptchers
     {
-        private HeadingEventDistributionPoint _point;
+        private HeadingEventReader _point;
         private Exception _exception;
         private Guid _distibutionPointCorrelationId;
         private FakeProjectionSubscription _subscription;
@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distri
             _exception = null;
             try
             {
-                _point = new HeadingEventDistributionPoint(10);
+                _point = new HeadingEventReader(10);
             }
             catch (Exception ex)
             {
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distri
             _distibutionPointCorrelationId = Guid.NewGuid();
             _point.Start(
                 _distibutionPointCorrelationId,
-                new TransactionFileReaderEventDistributionPoint(
+                new TransactionEventReader(
                     _bus, _distibutionPointCorrelationId, new EventPosition(0, -1), new RealTimeProvider()));
             _point.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(

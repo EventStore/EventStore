@@ -32,15 +32,15 @@ using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 
-namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distribution_point
+namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader
 {
     class FakeProjectionSubscription : IProjectionSubscription
     {
         private readonly List<ProjectionCoreServiceMessage.CommittedEventDistributed> _receivedEvents =
             new List<ProjectionCoreServiceMessage.CommittedEventDistributed>();
 
-        private readonly List<ProjectionCoreServiceMessage.EventDistributionPointIdle> _receivedIdleNotifications =
-            new List<ProjectionCoreServiceMessage.EventDistributionPointIdle>();
+        private readonly List<ProjectionCoreServiceMessage.EventReaderIdle> _receivedIdleNotifications =
+            new List<ProjectionCoreServiceMessage.EventReaderIdle>();
 
         public void Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
         {
@@ -52,17 +52,17 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distri
             get { return _receivedEvents; }
         }
 
-        public List<ProjectionCoreServiceMessage.EventDistributionPointIdle> ReceivedIdleNotifications
+        public List<ProjectionCoreServiceMessage.EventReaderIdle> ReceivedIdleNotifications
         {
             get { return _receivedIdleNotifications; }
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
+        public void Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
         {
             _receivedIdleNotifications.Add(message);
         }
 
-        public EventDistributionPoint CreatePausedEventDistributionPoint(IPublisher publisher, Guid forkedDistributionPointId)
+        public EventReader CreatePausedEventReader(IPublisher publisher, Guid forkedEventReaderId)
         {
             throw new NotImplementedException();
         }

@@ -95,7 +95,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return false;
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
+        public void Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
         {
             ProcessAllFor(message.IdleTimestampUtc);
         }

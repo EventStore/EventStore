@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
     [TestFixture]
     public class when_has_been_created : TestFixtureWithExistingEvents
     {
-        private MultiStreamReaderEventDistributionPoint _edp;
+        private MultiStreamEventReader _edp;
         private Guid _publishWithCorrelationId;
         private Guid _distibutionPointCorrelationId;
         private string[] _abStreams;
@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 
             _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
-            _edp = new MultiStreamReaderEventDistributionPoint(_bus, _distibutionPointCorrelationId, _abStreams, _ab12Tag, false, new RealTimeProvider());
+            _edp = new MultiStreamEventReader(_bus, _distibutionPointCorrelationId, _abStreams, _ab12Tag, false, new RealTimeProvider());
         }
 
         [Test]

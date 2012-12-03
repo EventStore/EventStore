@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ProcessOne(message);
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
+        public void Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
         {
             // ignore
         }

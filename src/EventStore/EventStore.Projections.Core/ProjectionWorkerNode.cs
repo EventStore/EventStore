@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<ProjectionSubscriptionManagement.Pause>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionSubscriptionManagement.Resume>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionCoreServiceMessage.CommittedEventDistributed>(_projectionCoreService);
-            coreInputBus.Subscribe<ProjectionCoreServiceMessage.EventDistributionPointIdle>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionCoreServiceMessage.EventReaderIdle>(_projectionCoreService);
             coreInputBus.Subscribe<CoreProjectionManagementMessage.Start>(_projectionCoreService);
             coreInputBus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(_projectionCoreService);
             coreInputBus.Subscribe<CoreProjectionManagementMessage.Stop>(_projectionCoreService);

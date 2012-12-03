@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionSubscriptionManagement.Pause>,
                                          IHandle<ProjectionSubscriptionManagement.Resume>,
                                          IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>,
-                                         IHandle<ProjectionCoreServiceMessage.EventDistributionPointIdle>,
+                                         IHandle<ProjectionCoreServiceMessage.EventReaderIdle>,
                                          IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
                                          IHandle<CoreProjectionManagementMessage.CreatePrepared>,
                                          IHandle<CoreProjectionManagementMessage.Dispose>,
@@ -78,13 +78,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly Dictionary<Guid, CoreProjection> _projections = new Dictionary<Guid, CoreProjection>();
 
-        private readonly Dictionary<Guid, EventDistributionPoint> _distributionPoints =
-            new Dictionary<Guid, EventDistributionPoint>();
+        private readonly Dictionary<Guid, EventReader> _eventReaders =
+            new Dictionary<Guid, EventReader>();
 
-        private readonly Dictionary<Guid, Guid> _projectionDistributionPoints = new Dictionary<Guid, Guid>();
-        private readonly Dictionary<Guid, Guid> _distributionPointSubscriptions = new Dictionary<Guid, Guid>();
+        private readonly Dictionary<Guid, Guid> _projectionEventReaders = new Dictionary<Guid, Guid>();
+        private readonly Dictionary<Guid, Guid> _eventReaderSubscriptions = new Dictionary<Guid, Guid>();
         private readonly HashSet<Guid> _pausedProjections = new HashSet<Guid>();
-        private readonly HeadingEventDistributionPoint _headingEventDistributionPoint;
+        private readonly HeadingEventReader _headingEventReader;
 
         private readonly
             RequestResponseDispatcher
@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _publisher = publisher;
             _inputQueue = inputQueue;
-            _headingEventDistributionPoint = new HeadingEventDistributionPoint(eventCacheSize);
+            _headingEventReader = new HeadingEventReader(eventCacheSize);
             _writerCheckpoint = writerCheckpoint;
             _readDispatcher =
                 new RequestResponseDispatcher
@@ -117,11 +117,11 @@ namespace EventStore.Projections.Core.Services.Processing
             //TODO: do we need to clear subscribed distribution points here?
             _stopped = false;
             var distibutionPointCorrelationId = Guid.NewGuid();
-            var transactionFileReader = new TransactionFileReaderEventDistributionPoint(
+            var transactionFileReader = new TransactionEventReader(
                 _publisher, distibutionPointCorrelationId, new EventPosition(_writerCheckpoint.Read(), -1),
                 new RealTimeProvider(), deliverEndOfTFPosition: false);
-            _distributionPoints.Add(distibutionPointCorrelationId, transactionFileReader);
-            _headingEventDistributionPoint.Start(distibutionPointCorrelationId, transactionFileReader);
+            _eventReaders.Add(distibutionPointCorrelationId, transactionFileReader);
+            _headingEventReader.Start(distibutionPointCorrelationId, transactionFileReader);
             //NOTE: writing any event to avoid empty database which we don not handle properly
             // and write it after startAtCurrent to fill buffer
             _publisher.Publish(
@@ -152,25 +152,25 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projections.Clear();
             }
 
-            if (_distributionPoints.Count > 0)
+            if (_eventReaders.Count > 0)
             {
-                _logger.Info("_distributionPoints is not empty after all the projections have been killed");
-                _distributionPoints.Clear();
+                _logger.Info("_eventReaders is not empty after all the projections have been killed");
+                _eventReaders.Clear();
             }
 
-            if (_projectionDistributionPoints.Count > 0)
+            if (_projectionEventReaders.Count > 0)
             {
-                _logger.Info("_projectionDistributionPoints is not empty after all the projections have been killed");
-                _projectionDistributionPoints.Clear();
+                _logger.Info("_projectionEventReaders is not empty after all the projections have been killed");
+                _projectionEventReaders.Clear();
             }
 
-            if (_distributionPointSubscriptions.Count > 0)
+            if (_eventReaderSubscriptions.Count > 0)
             {
-                _logger.Info("_distributionPointSubscriptions is not empty after all the projections have been killed");
-                _distributionPointSubscriptions.Clear();
+                _logger.Info("_eventReaderSubscriptions is not empty after all the projections have been killed");
+                _eventReaderSubscriptions.Clear();
             }
 
-            _headingEventDistributionPoint.Stop();
+            _headingEventReader.Stop();
             _stopped = true;
         }
 
@@ -179,21 +179,21 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_pausedProjections.Add(message.CorrelationId))
                 throw new InvalidOperationException("Already paused projection");
             var projectionSubscription = _subscriptions[message.CorrelationId];
-            var distributionPointId = _projectionDistributionPoints[message.CorrelationId];
-            if (distributionPointId == Guid.Empty) // head
+            var eventReaderId = _projectionEventReaders[message.CorrelationId];
+            if (eventReaderId == Guid.Empty) // head
             {
-                _projectionDistributionPoints.Remove(message.CorrelationId);
-                _headingEventDistributionPoint.Unsubscribe(message.CorrelationId);
-                var forkedDistributionPointId = Guid.NewGuid();
-                var forkedDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
-                    _publisher, forkedDistributionPointId);
-                _projectionDistributionPoints.Add(message.CorrelationId, forkedDistributionPointId);
-                _distributionPointSubscriptions.Add(forkedDistributionPointId, message.CorrelationId);
-                _distributionPoints.Add(forkedDistributionPointId, forkedDistributionPoint);
+                _projectionEventReaders.Remove(message.CorrelationId);
+                _headingEventReader.Unsubscribe(message.CorrelationId);
+                var forkedEventReaderId = Guid.NewGuid();
+                var forkedEventReader = projectionSubscription.CreatePausedEventReader(
+                    _publisher, forkedEventReaderId);
+                _projectionEventReaders.Add(message.CorrelationId, forkedEventReaderId);
+                _eventReaderSubscriptions.Add(forkedEventReaderId, message.CorrelationId);
+                _eventReaders.Add(forkedEventReaderId, forkedEventReader);
             }
             else
             {
-                _distributionPoints[distributionPointId].Pause();
+                _eventReaders[eventReaderId].Pause();
             }
         }
 
@@ -201,8 +201,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_pausedProjections.Remove(message.CorrelationId))
                 throw new InvalidOperationException("Not a paused projection");
-            var distributionPoint = _projectionDistributionPoints[message.CorrelationId];
-            _distributionPoints[distributionPoint].Resume();
+            var eventReader = _projectionEventReaders[message.CorrelationId];
+            _eventReaders[eventReader].Resume();
         }
 
         public void Handle(ProjectionSubscriptionManagement.Subscribe message)
@@ -216,34 +216,34 @@ namespace EventStore.Projections.Core.Services.Processing
             _subscriptions.Add(message.CorrelationId, projectionSubscription);
 
             var distibutionPointCorrelationId = Guid.NewGuid();
-            var eventDistributionPoint = projectionSubscription.CreatePausedEventDistributionPoint(
+            var eventReader = projectionSubscription.CreatePausedEventReader(
                 _publisher, distibutionPointCorrelationId);
             _logger.Trace(
                 "The '{0}' projection subscribed to the '{1}' distribution point", message.CorrelationId,
                 distibutionPointCorrelationId);
-            _distributionPoints.Add(distibutionPointCorrelationId, eventDistributionPoint);
-            _projectionDistributionPoints.Add(message.CorrelationId, distibutionPointCorrelationId);
-            _distributionPointSubscriptions.Add(distibutionPointCorrelationId, message.CorrelationId);
-            eventDistributionPoint.Resume();
+            _eventReaders.Add(distibutionPointCorrelationId, eventReader);
+            _projectionEventReaders.Add(message.CorrelationId, distibutionPointCorrelationId);
+            _eventReaderSubscriptions.Add(distibutionPointCorrelationId, message.CorrelationId);
+            eventReader.Resume();
         }
 
         public void Handle(ProjectionSubscriptionManagement.Unsubscribe message)
         {
             if (!_pausedProjections.Contains(message.CorrelationId))
                 Handle(new ProjectionSubscriptionManagement.Pause(message.CorrelationId));
-            var distributionPointId = _projectionDistributionPoints[message.CorrelationId];
-            if (distributionPointId != Guid.Empty)
+            var eventReaderId = _projectionEventReaders[message.CorrelationId];
+            if (eventReaderId != Guid.Empty)
             {
                 //TODO: test it
-                _distributionPoints.Remove(distributionPointId);
-                _distributionPointSubscriptions.Remove(distributionPointId);
+                _eventReaders.Remove(eventReaderId);
+                _eventReaderSubscriptions.Remove(eventReaderId);
                 _logger.Trace(
                     "The '{0}' projection has unsubscribed from the '{1}' distribution point", message.CorrelationId,
-                    distributionPointId);
+                    eventReaderId);
             }
 
             _pausedProjections.Remove(message.CorrelationId);
-            _projectionDistributionPoints.Remove(message.CorrelationId);
+            _projectionEventReaders.Remove(message.CorrelationId);
             _subscriptions.Remove(message.CorrelationId);
         }
 
@@ -254,16 +254,16 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ClientMessage.ReadStreamEventsForwardCompleted message)
         {
-            EventDistributionPoint distributionPoint;
-            if (_distributionPoints.TryGetValue(message.CorrelationId, out distributionPoint))
-                distributionPoint.Handle(message);
+            EventReader reader;
+            if (_eventReaders.TryGetValue(message.CorrelationId, out reader))
+                reader.Handle(message);
         }
 
         public void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
         {
-            EventDistributionPoint distributionPoint;
-            if (_distributionPoints.TryGetValue(message.CorrelationId, out distributionPoint))
-                distributionPoint.Handle(message);
+            EventReader reader;
+            if (_eventReaders.TryGetValue(message.CorrelationId, out reader))
+                reader.Handle(message);
         }
 
         public void Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
@@ -271,24 +271,24 @@ namespace EventStore.Projections.Core.Services.Processing
             Guid projectionId;
             if (_stopped)
                 return;
-            if (_headingEventDistributionPoint.Handle(message))
+            if (_headingEventReader.Handle(message))
                 return;
-            if (!_distributionPointSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+            if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed
-            if (TrySubscribeHeadingDistributionPoint(message, projectionId))
+            if (TrySubscribeHeadingEventReader(message, projectionId))
                 return;
             if (message.Data != null) // means notification about the end of the stream/source
                 _subscriptions[projectionId].Handle(message);
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventDistributionPointIdle message)
+        public void Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
         {
             Guid projectionId;
             if (_stopped)
                 return;
-            if (_headingEventDistributionPoint.Handle(message))
+            if (_headingEventReader.Handle(message))
                 return;
-            if (!_distributionPointSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+            if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed
             _subscriptions[projectionId].Handle(message);
         }
@@ -406,7 +406,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _writeDispatcher.Handle(message);
         }
 
-        private bool TrySubscribeHeadingDistributionPoint(
+        private bool TrySubscribeHeadingEventReader(
             ProjectionCoreServiceMessage.CommittedEventDistributed message, Guid projectionId)
         {
             if (_pausedProjections.Contains(projectionId))
@@ -415,7 +415,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var projectionSubscription = _subscriptions[projectionId];
 
             if (message.SafeTransactionFileReaderJoinPosition == null
-                || !_headingEventDistributionPoint.TrySubscribe(
+                || !_headingEventReader.TrySubscribe(
                     projectionId, projectionSubscription, message.SafeTransactionFileReaderJoinPosition.Value))
                 return false;
 
@@ -426,11 +426,11 @@ namespace EventStore.Projections.Core.Services.Processing
                     projectionId, message.SafeTransactionFileReaderJoinPosition);
             }
 
-            Guid distributionPointId = message.CorrelationId;
-            _distributionPoints[distributionPointId].Dispose();
-            _distributionPoints.Remove(distributionPointId);
-            _distributionPointSubscriptions.Remove(distributionPointId);
-            _projectionDistributionPoints[projectionId] = Guid.Empty;
+            Guid eventReaderId = message.CorrelationId;
+            _eventReaders[eventReaderId].Dispose();
+            _eventReaders.Remove(eventReaderId);
+            _eventReaderSubscriptions.Remove(eventReaderId);
+            _projectionEventReaders[projectionId] = Guid.Empty;
             return true;
         }
     }

@@ -117,11 +117,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
         }
 
-        public EventDistributionPoint CreatePausedEventDistributionPoint(IPublisher publisher, Guid distributionPointId)
+        public EventReader CreatePausedEventReader(IPublisher publisher, Guid eventReaderId)
         {
             _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
-            return _checkpointStrategy.CreatePausedEventDistributionPoint(
-                distributionPointId, publisher, _positionTracker.LastTag);
+            return _checkpointStrategy.CreatePausedEventReader(
+                eventReaderId, publisher, _positionTracker.LastTag);
         }
     }
 }

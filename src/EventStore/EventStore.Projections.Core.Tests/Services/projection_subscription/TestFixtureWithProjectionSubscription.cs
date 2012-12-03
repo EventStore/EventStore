@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
         protected TestHandler<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
         protected IProjectionSubscription _subscription;
-        protected EventDistributionPoint _forkedDistributionPoint;
+        protected EventReader ForkedReader;
         protected FakePublisher _bus;
         protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
         protected int _checkpointUnhandledBytesThreshold;

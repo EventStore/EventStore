@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                         _firstEventId, "bad-event-type", false, new byte[0], new byte[0],
                         _firstEventTimestamp.AddMilliseconds(1))));
             _subscription.Handle(
-                new ProjectionCoreServiceMessage.EventDistributionPointIdle(
+                new ProjectionCoreServiceMessage.EventReaderIdle(
                     Guid.NewGuid(), _firstEventTimestamp.AddMilliseconds(_timeBetweenEvents)));
         }
 

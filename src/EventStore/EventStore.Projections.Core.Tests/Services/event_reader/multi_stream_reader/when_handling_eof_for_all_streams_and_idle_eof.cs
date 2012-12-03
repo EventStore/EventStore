@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
     [TestFixture]
     public class when_handling_eof_for_all_streams_and_idle_eof : TestFixtureWithExistingEvents
     {
-        private MultiStreamReaderEventDistributionPoint _edp;
+        private MultiStreamEventReader _edp;
         private Guid _distibutionPointCorrelationId;
         private Guid _firstEventId;
         private Guid _secondEventId;
@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 
             _distibutionPointCorrelationId = Guid.NewGuid();
             _fakeTimeProvider = new FakeTimeProvider();
-            _edp = new MultiStreamReaderEventDistributionPoint(
+            _edp = new MultiStreamEventReader(
                 _bus, _distibutionPointCorrelationId, _abStreams, _ab12Tag, false, _fakeTimeProvider);
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
@@ -114,11 +114,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         public void publishes_event_distribution_idle_messages()
         {
             Assert.AreEqual(
-                2, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>().Count());
+                2, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>().Count());
             var first =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>().First();
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>().First();
             var second =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventDistributionPointIdle>()
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>()
                          .Skip(1)
                          .First();
 

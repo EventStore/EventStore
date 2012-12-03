@@ -40,16 +40,16 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
 {
     [TestFixture]
-    public class when_resuming_stream_event_distribution_point : TestFixtureWithExistingEvents
+    public class when_resuming_stream_event_reader : TestFixtureWithExistingEvents
     {
-        private StreamReaderEventDistributionPoint _edp;
+        private StreamEventReader _edp;
         private Guid _distibutionPointCorrelationId;
 
         [SetUp]
         public void When()
         {
             _distibutionPointCorrelationId = Guid.NewGuid();
-            _edp = new StreamReaderEventDistributionPoint(_bus, _distibutionPointCorrelationId, "stream", 10, new RealTimeProvider(), false);
+            _edp = new StreamEventReader(_bus, _distibutionPointCorrelationId, "stream", 10, new RealTimeProvider(), false);
             _edp.Resume();
         }
 

@@ -27,49 +27,72 @@
 // 
 
 using System;
-using EventStore.Core.Data;
+using System.Linq;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.Tests.Services.core_projection;
+using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
+namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader
 {
     [TestFixture]
-    public class when_stream_event_distribution_point_has_been_created : TestFixtureWithExistingEvents
+    public class when_starting_a_heading_event_reader : TestFixtureWithReadWriteDisaptchers
     {
-        private StreamReaderEventDistributionPoint _edp;
-        private Guid _publishWithCorrelationId;
+        private HeadingEventReader _point;
+        private Exception _exception;
         private Guid _distibutionPointCorrelationId;
 
         [SetUp]
-        public void When()
+        public void setup()
         {
-            _publishWithCorrelationId = Guid.NewGuid();
+            _exception = null;
+            try
+            {
+                _point = new HeadingEventReader(10);
+            }
+            catch (Exception ex)
+            {
+                _exception = ex;
+            }
+
             _distibutionPointCorrelationId = Guid.NewGuid();
-            _edp = new StreamReaderEventDistributionPoint(_bus, _distibutionPointCorrelationId, "stream", 0, new RealTimeProvider(), false);
+            _point.Start(
+                _distibutionPointCorrelationId,
+                new TransactionEventReader(
+                    _bus, _distibutionPointCorrelationId, new EventPosition(0, -1), new RealTimeProvider()));
+        }
+
+
+        [Test]
+        public void transaction_file_reader_publishes_read_events_from_tf()
+        {
+            Assert.IsTrue(_consumer.HandledMessages.OfType<ClientMessage.ReadAllEventsForward>().Any());
         }
 
         [Test]
-        public void it_can_be_resumed()
+        public void can_handle_events()
         {
-            _edp.Resume();
+            _point.Handle(
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                    _distibutionPointCorrelationId, new EventPosition(20, 10), "stream", 10, false,
+                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void it_cannot_be_paused()
+        [Test]
+        public void can_be_stopped()
         {
-            _edp.Pause();
+            _point.Stop();
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void handle_read_events_completed_throws()
+
+        [Test]
+        public void cannot_suibscribe_even_from_reader_zero_position()
         {
-            _edp.Handle(
-                new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", new EventLinkPair[0], RangeReadResult.Success, -1, 4, false, 100));
+            var subscribed = _point.TrySubscribe(
+                Guid.NewGuid(), new FakeProjectionSubscription(), -1);
+            Assert.AreEqual(false, subscribed);
         }
     }
 }

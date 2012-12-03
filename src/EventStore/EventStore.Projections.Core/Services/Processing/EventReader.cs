@@ -33,19 +33,19 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public abstract class EventDistributionPoint : IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
+    public abstract class EventReader : IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
                                                    IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
                                                    IDisposable
     {
         protected readonly Guid _distibutionPointCorrelationId;
         protected readonly IPublisher _publisher;
-        protected readonly ILogger _logger = LogManager.GetLoggerFor<EventDistributionPoint>();
+        protected readonly ILogger _logger = LogManager.GetLoggerFor<EventReader>();
 
         protected bool _paused = true;
         protected bool _pauseRequested = true;
         protected bool _disposed;
 
-        protected EventDistributionPoint(
+        protected EventReader(
             IPublisher publisher, Guid distibutionPointCorrelationId)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
