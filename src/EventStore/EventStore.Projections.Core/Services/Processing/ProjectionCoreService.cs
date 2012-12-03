@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 
@@ -118,7 +119,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var distibutionPointCorrelationId = Guid.NewGuid();
             var transactionFileReader = new TransactionFileReaderEventDistributionPoint(
                 _publisher, distibutionPointCorrelationId, new EventPosition(_writerCheckpoint.Read(), -1),
-                deliverEndOfTFPosition: false);
+                new RealTimeProvider(), deliverEndOfTFPosition: false);
             _distributionPoints.Add(distibutionPointCorrelationId, transactionFileReader);
             _headingEventDistributionPoint.Start(distibutionPointCorrelationId, transactionFileReader);
             //NOTE: writing any event to avoid empty database which we don not handle properly

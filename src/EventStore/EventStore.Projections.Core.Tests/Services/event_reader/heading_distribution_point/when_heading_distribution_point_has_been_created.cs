@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
@@ -91,7 +92,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distri
         public void can_be_started()
         {
             var distributionPointId = Guid.NewGuid();
-            _point.Start(distributionPointId, new TransactionFileReaderEventDistributionPoint(_bus, distributionPointId, new EventPosition(0, -1)));
+            _point.Start(
+                distributionPointId,
+                new TransactionFileReaderEventDistributionPoint(
+                    _bus, distributionPointId, new EventPosition(0, -1), new RealTimeProvider()));
         }
     }
 }

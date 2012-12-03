@@ -44,14 +44,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _maxReadCount = 50;
         private EventPosition _from;
         private readonly bool _deliverEndOfTfPosition;
+        private readonly ITimeProvider _timeProvider;
 
-        public TransactionFileReaderEventDistributionPoint(
-            IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition from, bool deliverEndOfTFPosition = true)
+        public TransactionFileReaderEventDistributionPoint(IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition @from, ITimeProvider timeProvider, bool deliverEndOfTFPosition = true)
             : base(publisher, distibutionPointCorrelationId)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             _from = @from;
             _deliverEndOfTfPosition = deliverEndOfTFPosition;
+            _timeProvider = timeProvider;
         }
 
         protected override void RequestEvents()
@@ -89,6 +90,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_deliverEndOfTfPosition)
                     DeliverLastCommitPosition(_from);
                 // allow joining heading distribution
+                SendIdle();
             }
             else
             {
@@ -108,6 +110,13 @@ namespace EventStore.Projections.Core.Services.Processing
             else
                 _publisher.Publish(CreateTickMessage());
 
+        }
+
+        private void SendIdle()
+        {
+            _publisher.Publish(
+                new ProjectionCoreServiceMessage.EventDistributionPointIdle(
+                    _distibutionPointCorrelationId, _timeProvider.Now));
         }
 
         private void RequestEvents(bool delay)

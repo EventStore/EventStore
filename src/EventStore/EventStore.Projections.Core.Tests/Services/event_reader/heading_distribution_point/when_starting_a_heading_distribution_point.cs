@@ -29,6 +29,7 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
@@ -60,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_distri
             _point.Start(
                 _distibutionPointCorrelationId,
                 new TransactionFileReaderEventDistributionPoint(
-                    _bus, _distibutionPointCorrelationId, new EventPosition(0, -1)));
+                    _bus, _distibutionPointCorrelationId, new EventPosition(0, -1), new RealTimeProvider()));
         }
 
 

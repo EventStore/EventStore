@@ -100,7 +100,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 var distributionPoint = new TransactionFileReaderEventDistributionPoint(
                     publisher, distributionPointId,
-                    new EventPosition(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value));
+                    new EventPosition(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value),
+                    new RealTimeProvider(), deliverEndOfTFPosition: true);
                 return distributionPoint;
             }
             if (_streams != null && _streams.Count == 1)

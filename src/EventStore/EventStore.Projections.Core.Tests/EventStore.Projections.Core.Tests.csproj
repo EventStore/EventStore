@@ -120,6 +120,7 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions_when_updating.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_tf_position.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_eof_for_all_streams_and_idle_eof.cs" />
+    <Compile Include="Services\event_reader\transaction_file_reader\when_handling_eof_and_idle_eof.cs" />
     <Compile Include="Services\position_tagging\prepare_position_tagger\prepare_position_tagger.cs" />
     <Compile Include="Services\position_tagging\prepare_position_tagger\when_creating_prepare_postion_tracker.cs" />
     <Compile Include="Services\position_tagging\prepare_position_tagger\when_reinitializing_prepapre_postion_tracker.cs" />
@@ -326,9 +327,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Services\event_reader\transaction_file_reader\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="BeforeBuild">
     <Copy SourceFiles="..\libs\libjs1.so" DestinationFolder="$(OutDir)" Condition=" '$(OS)' != 'Windows_NT' " />
