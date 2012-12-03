@@ -284,7 +284,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             // TODO AN it is possible that chunk with the newFileName already exists, need to work around that
             // TODO AN this could be caused by scavenging... no scavenge -- no cry :(
 
-            Log.Info("File {0} will be moved to file {1} ...", oldFileName, newFileName);
+            Log.Info("File {0} will be moved to file {1}", oldFileName, newFileName);
             File.Move(oldFileName, newFileName);
 
             var newChunk = TFChunk.FromCompletedFile(newFileName, verifyHash);
@@ -295,10 +295,11 @@ namespace EventStore.Core.TransactionLog.Chunks
                 if (oldChunk != null)
                 {
                     // -- code to be used after 'temporary workaround' above is resolved.
-                    //Log.Info("Old chunk {0} will be marked for deletion ...", oldChunk.FileName);
+                    //Log.Info("Old chunk {0} will be marked for deletion", oldChunk.FileName);
                     // oldChunk.MarkForDeletion(); -- end section
                 }
             }
+
             _chunksCount = newChunk.ChunkHeader.ChunkEndNumber + 1;
             Debug.Assert(_chunks[_chunksCount] == null);
 

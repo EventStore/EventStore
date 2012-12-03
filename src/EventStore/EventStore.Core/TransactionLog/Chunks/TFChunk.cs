@@ -1147,7 +1147,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
                 if (_deleteFile && _lockedCount == 0)
                 {
-                    Log.Info("File {0} has been marked for delete and will be deleted...", _filename);
+                    Log.Info("File {0} has been marked for delete and will be deleted in TryDestruct.", _filename);
                     Helper.EatException(() => File.Delete(_filename));
                 }
 
