@@ -40,10 +40,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml };
         private static readonly ICodec DefaultResponseCodec = Codec.Json;
+        
+        private readonly IPublisher _networkSendQueue;
 
-        public StatController(IPublisher publisher)
+        public StatController(IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
         {
+            _networkSendQueue = networkSendQueue;
         }
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
@@ -67,7 +70,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnGetFreshStats(HttpEntity entity, UriTemplateMatch match)
         {
-            var envelope = new SendToHttpEnvelope(entity,
+            var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                  entity,
                                                   Format.GetFreshStatsCompleted,
                                                   Configure.GetFreshStatsCompleted);
 

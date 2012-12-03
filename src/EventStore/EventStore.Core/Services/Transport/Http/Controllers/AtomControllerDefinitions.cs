@@ -60,11 +60,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private readonly GenericController _genericController;
         private readonly AllEventsController _allEventsController;
+        private readonly IPublisher _networkSendQueue;
 
-        public AtomController(IPublisher publisher) : base(publisher)
+        public AtomController(IPublisher publisher, IPublisher networkSendQueue)
+            : base(publisher)
         {
-            _genericController = new GenericController(publisher);
-            _allEventsController = new AllEventsController(publisher);
+            _networkSendQueue = networkSendQueue;
+            _genericController = new GenericController(publisher, networkSendQueue);
+            _allEventsController = new AllEventsController(publisher, networkSendQueue);
         }
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
@@ -142,7 +145,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         private void OnGetServiceDocument(HttpEntity entity, UriTemplateMatch match)
         {
-            var envelope = new SendToHttpEnvelope(entity, Format.Atom.ListStreamsCompletedServiceDoc, Configure.ListStreamsCompletedServiceDoc);
+            var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                  entity,
+                                                  Format.Atom.ListStreamsCompletedServiceDoc,
+                                                  Configure.ListStreamsCompletedServiceDoc);
             Publish(new ClientMessage.ListStreams(envelope));
         }
 
@@ -296,10 +302,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
     public class GenericController : CommunicationController
     {
+        private readonly IPublisher _networkSendQueue;
         private static readonly ILogger Log = LogManager.GetLoggerFor<GenericController>();
 
-        public GenericController(IPublisher publisher) : base(publisher)
+        public GenericController(IPublisher publisher, IPublisher networkSendQueue)
+            : base(publisher)
         {
+            _networkSendQueue = networkSendQueue;
         }
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
@@ -324,7 +333,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
 
-            var envelope = new SendToHttpEnvelope(entity,
+            var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                  entity,
                                                   Format.Atom.CreateStreamCompleted,
                                                   Configure.CreateStreamCompleted);
             var msg = new ClientMessage.CreateStream(Guid.NewGuid(),
@@ -356,7 +366,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
 
-            var envelope = new SendToHttpEnvelope(entity,
+            var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                  entity,
                                                   Format.Atom.DeleteStreamCompleted,
                                                   Configure.DeleteStreamCompleted);
             var msg = new ClientMessage.DeleteStream(Guid.NewGuid(),
@@ -370,7 +381,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public void GetFeedPage(HttpEntity entity, string stream, int start, int count)
         {
             entity.Manager.AsyncState = start;
-            var envelope = new SendToHttpEnvelope(entity,
+            var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                  entity,
                                                   (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, start, count),
                                                   Configure.ReadStreamEventsBackwardCompleted);
             Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), envelope, stream, start, count, resolveLinks: true));
@@ -378,7 +390,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         public void GetEntry(HttpEntity entity, string stream, int version)
         {
-            var envelope = new SendToHttpEnvelope(entity, Format.Atom.ReadEventCompletedEntry, Configure.ReadEventCompleted);
+            var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, Format.Atom.ReadEventCompletedEntry, Configure.ReadEventCompleted);
             Publish(new ClientMessage.ReadEvent(Guid.NewGuid(), envelope, stream, version, true));
         }
 
@@ -404,7 +416,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
 
-            var envelope = new SendToHttpEnvelope(entity, Format.WriteEventsCompleted, Configure.WriteEventsCompleted);
+            var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, Format.WriteEventsCompleted, Configure.WriteEventsCompleted);
             var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, true, stream, expectedVersion, events);
 
             Publish(msg);
@@ -413,8 +425,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
     public class AllEventsController : CommunicationController
     {
-        public AllEventsController(IPublisher publisher) : base(publisher)
+        private readonly IPublisher _networkSendQueue;
+
+        public AllEventsController(IPublisher publisher, IPublisher networkSendQueue)
+            : base(publisher)
         {
+            _networkSendQueue = networkSendQueue;
         }
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
@@ -424,7 +440,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         public void GetAllBefore(HttpEntity entity, TFPos position, int count)
         {
-            var envelope = new SendToHttpEnvelope(entity, 
+            var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                  entity, 
                                                   Format.Atom.ReadAllEventsBackwardCompleted, 
                                                   Configure.ReadAllEventsBackwardCompleted);
             Publish(new ClientMessage.ReadAllEventsBackward(Guid.NewGuid(),
@@ -437,7 +454,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         public void GetAllAfter(HttpEntity entity, TFPos position, int count)
         {
-            var envelope = new SendToHttpEnvelope(entity, 
+            var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                  entity, 
                                                   Format.Atom.ReadAllEventsForwardCompleted,
                                                   Configure.ReadAllEventsForwardCompleted);
             Publish(new ClientMessage.ReadAllEventsForward(Guid.NewGuid(),

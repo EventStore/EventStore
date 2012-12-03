@@ -50,15 +50,16 @@ namespace EventStore.Projections.Core
 
         public Projections(
             TFChunkDb db, QueuedHandler mainQueue, InMemoryBus mainBus, TimerService timerService,
-            HttpService httpService, int projectionWorkerThreadCount)
+            HttpService httpService, IPublisher networkSendQueue,
+            int projectionWorkerThreadCount)
         {
             _projectionWorkerThreadCount = projectionWorkerThreadCount;
-            SetupMessaging(db, mainQueue, mainBus, timerService, httpService);
+            SetupMessaging(db, mainQueue, mainBus, timerService, httpService, networkSendQueue);
         }
 
         private void SetupMessaging(
             TFChunkDb db, QueuedHandler mainQueue, InMemoryBus mainBus, TimerService timerService,
-            HttpService httpService)
+            HttpService httpService, IPublisher networkSendQueue)
         {
             _coreQueues = new List<QueuedHandler>();
             _managerInputBus = new InMemoryBus("manager input bus");
@@ -108,7 +109,7 @@ namespace EventStore.Projections.Core
 
 
             _projectionManagerNode = ProjectionManagerNode.Create(
-                db, _managerInputQueue, httpService, _coreQueues.Cast<IPublisher>().ToArray());
+                db, _managerInputQueue, httpService, networkSendQueue, _coreQueues.Cast<IPublisher>().ToArray());
             _projectionManagerNode.SetupMessaging(_managerInputBus);
             {
                 var forwarder = new RequestResponseQueueForwarder(

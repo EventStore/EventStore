@@ -279,6 +279,7 @@
     <Compile Include="TransactionLog\Checkpoints\when_creating_file_multi_checkpoint_from_existing_file.cs" />
     <Compile Include="TransactionLog\Checkpoints\when_creating_file_multi_checkpoint_with_no_previously_existing_file.cs" />
     <Compile Include="TransactionLog\Checkpoints\in_mem_multi_checkpoint.cs" />
+    <Compile Include="TransactionLog\Chunks\FlushTimeMeter.cs" />
     <Compile Include="TransactionLog\Chunks\when_reading_logical_bytes_bulk_from_a_chunk.cs" />
     <Compile Include="TransactionLog\Chunks\when_reading_physical_bytes_bulk_from_a_chunk.cs" />
     <Compile Include="TransactionLog\Chunks\when_sequentially_reading_db_with_few_chunks.cs" />

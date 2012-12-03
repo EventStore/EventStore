@@ -26,8 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
@@ -37,23 +37,23 @@ namespace EventStore.Core.Services.Transport.Http
 {
     public class SendToHttpEnvelope : IEnvelope
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<SendToHttpEnvelope>();
-
+        private readonly IPublisher _networkSendQueue;
         private readonly HttpEntity _entity;
-
         private readonly Func<HttpEntity, Message, string> _formatter;
         private readonly Func<HttpEntity, Message, ResponseConfiguration> _configurator;
- 
-        public SendToHttpEnvelope(HttpEntity entity, 
-                                  Func<HttpEntity, Message, string> formatter, 
+
+        public SendToHttpEnvelope(IPublisher networkSendQueue, 
+                                  HttpEntity entity, 
+                                  Func<HttpEntity, Message, string> formatter,
                                   Func<HttpEntity, Message, ResponseConfiguration> configurator)
         {
+            Ensure.NotNull(networkSendQueue, "networkSendQueue");
             Ensure.NotNull(entity, "entity");
             Ensure.NotNull(formatter, "formatter");
             Ensure.NotNull(configurator, "configurator");
 
+            _networkSendQueue = networkSendQueue;
             _entity = entity;
-
             _formatter = formatter;
             _configurator = configurator;
         }
@@ -61,40 +61,7 @@ namespace EventStore.Core.Services.Transport.Http
         public void ReplyWith<T>(T message) where T : Message
         {
             Ensure.NotNull(message, "message");
-
-            var deniedToHandle = message as HttpMessage.DeniedToHandle;
-            if (deniedToHandle != null)
-            {
-                Deny(deniedToHandle);
-                return;
-            }
-
-            var response = _formatter(_entity, message);
-            var config = _configurator(_entity,  message);
-
-            _entity.Manager.Reply(response,
-                                  config.Code,
-                                  config.Description,
-                                  config.Type,
-                                  config.Headers,
-                                  exc => Log.ErrorException(exc, "Error occurred while replying to http request (envelope)"));
-        }
-
-        private void Deny(HttpMessage.DeniedToHandle deniedToHandle)
-        {
-            int code;
-            switch (deniedToHandle.Reason)
-            {
-                case DenialReason.ServerTooBusy:
-                    code = HttpStatusCode.InternalServerError;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-            _entity.Manager.Reply(code,
-                                  deniedToHandle.Details,
-                                  exc => Log.ErrorException(exc, "Error occurred while replying to http request (envelope)"));
+            _networkSendQueue.Publish(new HttpMessage.HttpSend(_entity, _formatter, _configurator, message));
         }
     }
 
@@ -106,12 +73,16 @@ namespace EventStore.Core.Services.Transport.Http
 
         private readonly IEnvelope _httpEnvelope;
 
-        public SendToHttpEnvelope(HttpEntity entity, Func<ICodec, TExpectedResponseMessage, string> formatter, Func<ICodec, TExpectedResponseMessage, ResponseConfiguration> configurator, IEnvelope notMatchingEnvelope)
+        public SendToHttpEnvelope(IPublisher networkSendQueue, 
+                                  HttpEntity entity, 
+                                  Func<ICodec, TExpectedResponseMessage, string> formatter, 
+                                  Func<ICodec, TExpectedResponseMessage, ResponseConfiguration> configurator,
+                                  IEnvelope notMatchingEnvelope)
         {
             _formatter = formatter;
             _configurator = configurator;
             _notMatchingEnvelope = notMatchingEnvelope;
-            _httpEnvelope = new SendToHttpEnvelope(entity, Formatter, Configurator);
+            _httpEnvelope = new SendToHttpEnvelope(networkSendQueue, entity, Formatter, Configurator);
         }
 
         private ResponseConfiguration Configurator(HttpEntity http, Message message)

@@ -30,6 +30,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
@@ -47,15 +48,19 @@ namespace EventStore.Projections.Core.Services
         private readonly IPublisher _bus;
         private readonly string _ip;
         private readonly int _port;
+        private readonly IPublisher _networkSendQueue;
         private bool _running;
 
         private TcpConnectionManager _connectionManager;
 
-        public ProjectionClientConnectionManager(IPublisher bus, string ip, int port)
+        public ProjectionClientConnectionManager(IPublisher bus, string ip, int port, IPublisher networkSendQueue)
         {
+            Ensure.NotNull(networkSendQueue, "networkSendQueue");
+
             _bus = bus;
             _ip = ip;
             _port = port;
+            _networkSendQueue = networkSendQueue;
         }
 
         private void Connect()
@@ -70,7 +75,8 @@ namespace EventStore.Projections.Core.Services
                 new ClientTcpDispatcher(),
                 _bus,
                 endPoint,
-                clientConnector);
+                clientConnector,
+                _networkSendQueue);
 
             _connectionManager.ConnectionEstablished += manager =>
                 {
