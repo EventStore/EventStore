@@ -79,23 +79,22 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             var sw = Stopwatch.StartNew();
 
-            var chunkNumber = oldChunk.ChunkHeader.ChunkStartNumber;
-            long chunkStartPosition = chunkNumber * (long)oldChunk.ChunkHeader.ChunkSize;
-            var newScavengeVersion = oldChunk.ChunkHeader.ChunkScavengeVersion + 1;
-            var chunkSize = oldChunk.ChunkHeader.ChunkSize;
+            int chunkStartNumber = oldChunk.ChunkHeader.ChunkStartNumber;
+            int chunkEndNumber = oldChunk.ChunkHeader.ChunkStartNumber;
+            long chunkStartPosition = chunkStartNumber * (long)oldChunk.ChunkHeader.ChunkSize;
+            int chunkSize = oldChunk.ChunkHeader.ChunkSize;
 
             var tmpChunkPath = Path.Combine(_db.Config.Path, Guid.NewGuid() + ".scavenge.tmp");
-            var newChunkPath = _db.Config.FileNamingStrategy.GetFilenameFor(chunkNumber, newScavengeVersion);
-            Log.Trace("Scavenging chunk #{0} ({1}) started. Scavenged chunk: {2} --> {3}.",
-                      chunkNumber,
+            Log.Trace("Scavenging chunk #{0}-{1} ({2}) started. Temp file: {3}.",
+                      chunkStartNumber,
+                      chunkEndNumber,
                       Path.GetFileName(oldChunk.FileName),
-                      Path.GetFileName(tmpChunkPath),
-                      Path.GetFileName(newChunkPath));
+                      Path.GetFileName(tmpChunkPath));
 
             TFChunk newChunk;
             try
             {
-                newChunk = TFChunk.CreateNew(tmpChunkPath, chunkSize, chunkNumber, newScavengeVersion);
+                newChunk = TFChunk.CreateNew(tmpChunkPath, chunkSize, chunkStartNumber, chunkEndNumber, isScavenged: true);
             }
             catch (IOException exc)
             {
@@ -105,38 +104,36 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             var commits = new Dictionary<long, CommitInfo>();
 
-            TraverseChunk(
-                oldChunk,
-                prepare =>
-                {
-                    // NOOP
-                },
-                commit =>
-                {
-                    if (commit.TransactionPosition < chunkStartPosition)
-                        return;
-                    commits.Add(commit.TransactionPosition, new CommitInfo(commit));
-                });
+            TraverseChunk(oldChunk,
+                          prepare =>
+                          {
+                              // NOOP
+                          },
+                          commit =>
+                          {
+                              if (commit.TransactionPosition < chunkStartPosition)
+                                  return;
+                              commits.Add(commit.TransactionPosition, new CommitInfo(commit));
+                          });
 
             var positionMapping = new List<PosMap>();
-            TraverseChunk(
-                oldChunk,
-                prepare =>
-                {
-                    if (ShouldKeepPrepare(prepare, commits)) 
-                    {
-                        var posMap = WriteRecord(newChunk, prepare);
-                        positionMapping.Add(posMap);
-                    }
-                },
-                commit =>
-                {
-                    if (ShouldKeepCommit(commit, commits))
-                    {
-                        var posMap = WriteRecord(newChunk, commit);
-                        positionMapping.Add(posMap);
-                    }
-                });
+            TraverseChunk(oldChunk,
+                          prepare =>
+                          {
+                              if (ShouldKeepPrepare(prepare, commits))
+                              {
+                                  var posMap = WriteRecord(newChunk, prepare);
+                                  positionMapping.Add(posMap);
+                              }
+                          },
+                          commit =>
+                          {
+                              if (ShouldKeepCommit(commit, commits))
+                              {
+                                  var posMap = WriteRecord(newChunk, commit);
+                                  positionMapping.Add(posMap);
+                              }
+                          });
 
             var oldSize = oldChunk.ChunkFooter.ActualChunkSize + oldChunk.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
             var newSize = newChunk.ActualDataSize 
@@ -146,11 +143,12 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             if (!alwaysKeepScavenged && oldSize <= newSize)
             {
-                Log.Trace("Scavenging of chunk #{0} ({1}) completed in {2}.\n"
+                Log.Trace("Scavenging of chunk #{0}-{1} ({2}) completed in {3}.\n"
                           + "Old version is kept as it is smaller.\n"
-                          + "Old chunk size: {3}, scavenged size: {4}.\n"
+                          + "Old chunk size: {4}, scavenged size: {5}.\n"
                           + "Scavenged chunk removed.",
-                          chunkNumber,
+                          chunkStartNumber,
+                          chunkEndNumber,
                           oldChunk.FileName,
                           sw.Elapsed,
                           oldSize,
@@ -161,25 +159,19 @@ namespace EventStore.Core.TransactionLog.Chunks
             else
             {
                 newChunk.CompleteScavenge(positionMapping);
-                newChunk.Dispose();
+                var chunk = _db.Manager.SwitchChunk(newChunk, verifyHash: false, replaceChunksWithGreaterNumbers: false);
 
-                File.Move(tmpChunkPath, newChunkPath);
-
-                newChunk = TFChunk.FromCompletedFile(newChunkPath, verifyHash: true);
-                var removedChunk = _db.Manager.SwapChunk(chunkNumber, newChunk);
-                Debug.Assert(ReferenceEquals(removedChunk, oldChunk)); // only scavenging could switch, so old should be always same
-                oldChunk.MarkForDeletion();
-
-                Log.Trace("Scavenging of chunk #{0} ({1}) completed in {2} into ({3} --> {4}).\n" 
-                          + "Old size: {5}, new size: {6}, new scavenge version: {7}.",
-                          chunkNumber,
+                Log.Trace("Scavenging of chunk #{0}-{1} ({2}) completed in {3}.\n"
+                          + "File {4} --> {5}.\n" 
+                          + "Old size: {6}, new size: {7}.",
+                          chunkStartNumber,
+                          chunkEndNumber,
                           Path.GetFileName(oldChunk.FileName),
                           sw.Elapsed,
                           Path.GetFileName(tmpChunkPath),
-                          Path.GetFileName(newChunkPath),
+                          Path.GetFileName(chunk.FileName),
                           oldSize,
-                          newSize,
-                          newScavengeVersion);
+                          newSize);
             }
         }
 

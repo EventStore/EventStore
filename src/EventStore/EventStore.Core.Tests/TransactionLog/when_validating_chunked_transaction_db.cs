@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(), 
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
-            File.WriteAllText(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0)), "this is just some test blahbydy blah");
+            File.WriteAllText(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), "this is just some test blahbydy blah");
             var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<BadChunkInDatabaseException>(ex.InnerException);
             db.Dispose();
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0)), 10000, 12000);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), 10000, 12000);
             var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<BadChunkInDatabaseException>(ex.InnerException);
             db.Dispose();
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(), 
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
             var exc = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<ChunkNotFoundException>(exc.InnerException);
             db.Dispose();
@@ -102,7 +102,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
             Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
             db.Dispose();
         }
@@ -118,8 +118,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1, 0)), config.ChunkSize, config.ChunkSize);
             Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
             db.Dispose();
         }
@@ -135,8 +135,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1)), config.ChunkSize-1000, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1, 0)), config.ChunkSize-1000, config.ChunkSize);
             var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<BadChunkInDatabaseException>(ex.InnerException);
             db.Dispose();
@@ -153,8 +153,8 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1, 0)), config.ChunkSize, config.ChunkSize);
             var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<ExtraneousFileFoundException>(ex.InnerException);
             db.Dispose();
@@ -172,9 +172,9 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new ICheckpoint[0]);
 
             var db = new TFChunkDb(config);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1)), config.ChunkSize, config.ChunkSize);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(2)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1, 0)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(2, 0)), config.ChunkSize, config.ChunkSize);
             var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<ExtraneousFileFoundException>(ex.InnerException);
             db.Dispose();
@@ -191,7 +191,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(4)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(4, 0)), config.ChunkSize, config.ChunkSize);
             var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<ExtraneousFileFoundException>(ex.InnerException);
             db.Dispose();
@@ -208,7 +208,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(),
                                              new ICheckpoint[] {new InMemoryCheckpoint(11)});
             var db = new TFChunkDb(config);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
             var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
             Assert.IsInstanceOf<ReaderCheckpointHigherThanWriterException>(ex.InnerException);
             db.Dispose();
@@ -240,7 +240,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(),
                                              new ICheckpoint[0]);
             var db = new TFChunkDb(config);
-            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0)), config.ChunkSize, config.ChunkSize);
+            CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
             Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
             db.Dispose();
         }
@@ -466,7 +466,7 @@ namespace EventStore.Core.Tests.TransactionLog
 
         private void CreateChunk(string filename, int actualSize, int chunkSize)
         {
-            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, chunkSize, 0, 0, 0);
+            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, chunkSize, 0, 0, false);
             var chunkBytes = chunkHeader.AsByteArray();
             var buf = new byte[ChunkHeader.Size + actualSize + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
@@ -478,7 +478,7 @@ namespace EventStore.Core.Tests.TransactionLog
 
         private void CreateOngoingChunk(string filename, int actualSize, int chunkSize)
         {
-            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, chunkSize, 0, 0, 0);
+            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, chunkSize, 0, 0, false);
             var chunkBytes = chunkHeader.AsByteArray();
             var buf = new byte[ChunkHeader.Size + actualSize + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);

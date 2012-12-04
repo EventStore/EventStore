@@ -214,12 +214,12 @@ namespace EventStore.Core.Services.Monitoring
         {
             var metadata = Encoding.UTF8.GetBytes(StreamMetadata);
             _mainBus.Publish(new ClientMessage.CreateStream(Guid.NewGuid(),
-                                                              new PublishEnvelope(_monitoringBus), 
-                                                              true,
-                                                              _nodeStatsStream,
-                                                              Guid.NewGuid(),
-                                                              true,
-                                                              metadata));
+                                                            new PublishEnvelope(_monitoringBus),
+                                                            true,
+                                                            _nodeStatsStream,
+                                                            Guid.NewGuid(),
+                                                            true,
+                                                            metadata));
         }
 
         public void Handle(ClientMessage.CreateStreamCompleted message)
