@@ -46,8 +46,12 @@ namespace EventStore.Projections.Core.Services.Processing
             IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> eventHandler,
             IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> checkpointHandler,
             IHandle<ProjectionSubscriptionMessage.ProgressChanged> progressHandler,
-            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, int processingLagMs)
-            : base(projectionCorrelationId, @from, eventHandler, checkpointHandler, progressHandler, checkpointStrategy, checkpointUnhandledBytesThreshold)
+            IHandle<ProjectionSubscriptionMessage.EofReached> eofHandler,
+            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, int processingLagMs,
+            bool stopOnEof = false)
+            : base(
+                projectionCorrelationId, @from, eventHandler, checkpointHandler, progressHandler, eofHandler, checkpointStrategy,
+                checkpointUnhandledBytesThreshold, stopOnEof)
         {
             _processingLagMs = processingLagMs;
         }
@@ -100,9 +104,11 @@ namespace EventStore.Projections.Core.Services.Processing
             ProcessAllFor(message.IdleTimestampUtc);
         }
 
-        public void Handle(ProjectionCoreServiceMessage.EventReaderEof message)
+
+        protected override void EofReached()
         {
-            throw new NotImplementedException();
+            // flush all available events as wqe reached eof (currently onetime projections only)
+            ProcessAllFor(DateTime.MaxValue);
         }
     }
 }

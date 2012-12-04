@@ -40,8 +40,11 @@ namespace EventStore.Projections.Core.Services.Processing
             IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> eventHandler,
             IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> checkpointHandler,
             IHandle<ProjectionSubscriptionMessage.ProgressChanged> progressHandler,
-            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold)
-            : base(projectionCorrelationId, from, eventHandler, checkpointHandler, progressHandler, checkpointStrategy, checkpointUnhandledBytesThreshold)
+            IHandle<ProjectionSubscriptionMessage.EofReached> eofHandler,
+            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, bool stopOnEof = false)
+            : base(
+                projectionCorrelationId, from, eventHandler, checkpointHandler, progressHandler, eofHandler,
+                checkpointStrategy, checkpointUnhandledBytesThreshold, stopOnEof)
         {
         }
 
@@ -51,11 +54,6 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public void Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
-        {
-            // ignore
-        }
-
-        public void Handle(ProjectionCoreServiceMessage.EventReaderEof message)
         {
             // ignore
         }

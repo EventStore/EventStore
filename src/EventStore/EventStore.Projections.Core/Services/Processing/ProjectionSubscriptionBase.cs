@@ -12,31 +12,38 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
         private readonly IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
         private readonly IHandle<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
+        private readonly IHandle<ProjectionSubscriptionMessage.EofReached> _eofHandler;
         private readonly CheckpointStrategy _checkpointStrategy;
         private readonly long? _checkpointUnhandledBytesThreshold;
+        private readonly bool _stopOnEof;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
         private readonly PositionTracker _positionTracker;
         private long? _lastPassedOrCheckpointedEventPosition;
         private float _progress = -1;
         private long _subscriptionMessageSequenceNumber;
+        private bool _eofReached;
 
         protected ProjectionSubscriptionBase(
             Guid projectionCorrelationId, CheckpointTag from,
             IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> eventHandler,
             IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> checkpointHandler,
             IHandle<ProjectionSubscriptionMessage.ProgressChanged> progressHandler,
-            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold)
+            IHandle<ProjectionSubscriptionMessage.EofReached> eofHandler,
+            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, bool stopOnEof)
         {
             if (eventHandler == null) throw new ArgumentNullException("eventHandler");
             if (checkpointHandler == null) throw new ArgumentNullException("checkpointHandler");
             if (progressHandler == null) throw new ArgumentNullException("progressHandler");
+            if (eofHandler == null) throw new ArgumentNullException("eofHandler");
             if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
             _eventHandler = eventHandler;
             _checkpointHandler = checkpointHandler;
             _progressHandler = progressHandler;
+            _eofHandler = eofHandler;
             _checkpointStrategy = checkpointStrategy;
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
+            _stopOnEof = stopOnEof;
             _projectionCorrelationId = projectionCorrelationId;
             _lastPassedOrCheckpointedEventPosition = null;
 
@@ -119,9 +126,28 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public EventReader CreatePausedEventReader(IPublisher publisher, Guid eventReaderId)
         {
+            if (_eofReached)
+                throw new InvalidOperationException("Onetime projection has alerady reached the eof position");
             _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
             return _checkpointStrategy.CreatePausedEventReader(
-                eventReaderId, publisher, _positionTracker.LastTag);
+                eventReaderId, publisher, _positionTracker.LastTag, _stopOnEof);
+        }
+
+        public void Handle(ProjectionCoreServiceMessage.EventReaderEof message)
+        {
+            if (_stopOnEof)
+            {
+                _eofReached = true;
+                EofReached();
+                _eofHandler.Handle(
+                    new ProjectionSubscriptionMessage.EofReached(
+                        _projectionCorrelationId, _positionTracker.LastTag, _progress,
+                        _subscriptionMessageSequenceNumber++));
+            }
+        }
+
+        protected virtual void EofReached()
+        {
         }
     }
 }

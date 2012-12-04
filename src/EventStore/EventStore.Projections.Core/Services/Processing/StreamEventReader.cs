@@ -173,7 +173,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverSafeJoinPosition(long safeJoinPosition)
         {
-            if (safeJoinPosition == -1)
+            if (_stopOnEof || safeJoinPosition == -1)
                 return; //TODO: this should not happen, but StorageReader does not return it now
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
@@ -198,7 +198,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _distibutionPointCorrelationId, default(EventPosition), positionEvent.EventStreamId,
                     positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
                     ResolvedEvent.Create(@event.EventId, @event.EventType, false, @event.Data, @event.Metadata, positionEvent.TimeStamp),
-                    positionEvent.LogPosition, progress));
+                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress));
         }
     }
 }

@@ -150,6 +150,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverLastCommitPosition(EventPosition lastPosition)
         {
+            if (_stopOnEof)
+                return;
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
                     _distibutionPointCorrelationId, default(EventPosition), null, int.MinValue,
@@ -173,7 +175,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     ResolvedEvent.Create(
                         @event.Event.EventId, @event.Event.EventType, (@event.Event.Flags & PrepareFlags.IsJson) != 0,
                         @event.Event.Data, @event.Event.Metadata, positionEvent.TimeStamp),
-                    receivedPosition.PreparePosition, 100.0f*positionEvent.LogPosition/lastCommitPosition));
+                    _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
+                    100.0f*positionEvent.LogPosition/lastCommitPosition));
         }
     }
 }

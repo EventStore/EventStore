@@ -73,6 +73,15 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class EofReached : ProjectionSubscriptionMessage
+        {
+            public EofReached(
+                Guid correlationId, CheckpointTag checkpointTag, float progress, long subscriptionMessageSequenceNumber)
+                : base(correlationId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+            {
+            }
+        }
+
         public class CommittedEventReceived : ProjectionSubscriptionMessage
         {
             public static CommittedEventReceived Sample(

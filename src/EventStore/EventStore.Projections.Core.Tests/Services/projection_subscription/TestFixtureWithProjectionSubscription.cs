@@ -43,6 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
         protected TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
         protected TestHandler<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
+        protected TestHandler<ProjectionSubscriptionMessage.EofReached> _eofHandler;
         protected IProjectionSubscription _subscription;
         protected EventReader ForkedReader;
         protected FakePublisher _bus;
@@ -60,6 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             _eventHandler = new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>();
             _checkpointHandler = new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>();
             _progressHandler = new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>();
+            _eofHandler = new TestHandler<ProjectionSubscriptionMessage.EofReached>();
             _checkpointStrategy = CreateCheckpointStrategy();
             _subscription = CreateProjectionSubscription();
 
@@ -70,8 +72,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected virtual IProjectionSubscription CreateProjectionSubscription()
         {
             return new ProjectionSubscription(
-                _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler, _progressHandler,
-                _checkpointStrategy, _checkpointUnhandledBytesThreshold);
+                _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler,
+                _progressHandler, _eofHandler, _checkpointStrategy, _checkpointUnhandledBytesThreshold);
         }
 
         protected virtual void Given()

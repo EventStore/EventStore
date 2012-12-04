@@ -82,26 +82,25 @@ namespace EventStore.Projections.Core.Services.Processing
             return _streams == null || _streams.Count <= 1;
         }
 
-        public EventReader CreatePausedEventReader(
-            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag)
+        public EventReader CreatePausedEventReader(Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof)
         {
             if (_allStreams && _useEventIndexes && _events != null && _events.Count == 1)
             {
                 var streamName = checkpointTag.Streams.Keys.First();
                 return CreatePausedStreamEventReader(
-                    eventReaderId, publisher, checkpointTag, streamName, resolveLinkTos: true);
+                    eventReaderId, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true);
             }
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
                 return CreatePausedMultiStreamEventReader(
-                    eventReaderId, publisher, checkpointTag, resolveLinkTos: true, streams: GetEventIndexStreams());
+                    eventReaderId, publisher, checkpointTag, stopOnEof, resolveLinkTos: true, streams: GetEventIndexStreams());
             }
             if (_allStreams)
             {
                 var eventReader = new TransactionFileEventReader(
                     publisher, eventReaderId,
                     new EventPosition(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value),
-                    new RealTimeProvider(), deliverEndOfTFPosition: true);
+                    new RealTimeProvider(), deliverEndOfTFPosition: true, stopOnEof: stopOnEof);
                 return eventReader;
             }
             if (_streams != null && _streams.Count == 1)
@@ -109,40 +108,43 @@ namespace EventStore.Projections.Core.Services.Processing
                 var streamName = checkpointTag.Streams.Keys.First();
                 //TODO: handle if not the same
                 return CreatePausedStreamEventReader(
-                    eventReaderId, publisher, checkpointTag, streamName, resolveLinkTos: true);
+                    eventReaderId, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true);
             }
             if (_categories != null && _categories.Count == 1)
             {
                 var streamName = checkpointTag.Streams.Keys.First();
                 return CreatePausedStreamEventReader(
-                    eventReaderId, publisher, checkpointTag, streamName, resolveLinkTos: true);
+                    eventReaderId, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true);
             }
             if (_streams != null && _streams.Count > 1)
             {
                 return CreatePausedMultiStreamEventReader(
-                    eventReaderId, publisher, checkpointTag, resolveLinkTos: true, streams: _streams);
+                    eventReaderId, publisher, checkpointTag, stopOnEof, resolveLinkTos: true, streams: _streams);
             }
             throw new NotSupportedException();
         }
 
         private static EventReader CreatePausedStreamEventReader(
-            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag,
-            string streamName, bool resolveLinkTos)
+            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, string streamName, bool stopOnEof,
+            bool resolveLinkTos)
         {
             var lastProcessedSequenceNumber = checkpointTag.Streams.Values.First();
             var fromSequenceNumber = lastProcessedSequenceNumber + 1;
             var eventReader = new StreamEventReader(
-                publisher, eventReaderId, streamName, fromSequenceNumber, new RealTimeProvider(), resolveLinkTos);
+                publisher, eventReaderId, streamName, fromSequenceNumber, new RealTimeProvider(), resolveLinkTos,
+                stopOnEof);
             return eventReader;
         }
 
         private EventReader CreatePausedMultiStreamEventReader(
-            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool resolveLinkTos, IEnumerable<string> streams)
+            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, bool resolveLinkTos,
+            IEnumerable<string> streams)
         {
             var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
 
             var eventReader = new MultiStreamEventReader(
-                publisher, eventReaderId, streams.ToArray(), nextPositions, resolveLinkTos, new RealTimeProvider());
+                publisher, eventReaderId, streams.ToArray(), nextPositions, resolveLinkTos, new RealTimeProvider(),
+                stopOnEof);
             return eventReader;
         }
 
@@ -252,17 +254,17 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public IProjectionSubscription CreateProjectionSubscription(
-            CheckpointTag fromCheckpointTag, Guid projectionCorrelationId, ICoreProjection checkpointHandler,
-            long checkpointUnhandledBytesThreshold)
+            CheckpointTag fromCheckpointTag, Guid projectionCorrelationId, ICoreProjection projection,
+            long checkpointUnhandledBytesThreshold, bool stopOnEof)
         {
             if (_reorderEvents)
                 return new EventReorderingProjectionSubscription(
-                    projectionCorrelationId, fromCheckpointTag, checkpointHandler, checkpointHandler, checkpointHandler,
-                    this, checkpointUnhandledBytesThreshold, _processingLag);
+                    projectionCorrelationId, fromCheckpointTag, projection, projection, projection, projection, this,
+                    checkpointUnhandledBytesThreshold, _processingLag, stopOnEof);
             else
                 return new ProjectionSubscription(
-                    projectionCorrelationId, fromCheckpointTag, checkpointHandler, checkpointHandler, checkpointHandler,
-                    this, checkpointUnhandledBytesThreshold);
+                    projectionCorrelationId, fromCheckpointTag, projection, projection, projection, projection, this,
+                    checkpointUnhandledBytesThreshold, stopOnEof);
         }
     }
 }

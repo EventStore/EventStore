@@ -267,7 +267,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void DeliverSafePositionToJoin()
         {
-            if (_safePositionToJoin == null)
+            if (_stopOnEof || _safePositionToJoin == null)
                 return;
             // deliver if already available
             _publisher.Publish(
@@ -301,7 +301,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
                     ResolvedEvent.Create(
                         @event.EventId, @event.EventType, false, @event.Data, @event.Metadata, positionEvent.TimeStamp),
-                    positionEvent.LogPosition, progress));
+                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress));
         }
     }
 }

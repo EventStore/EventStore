@@ -47,7 +47,8 @@ namespace EventStore.Projections.Core.Services.Processing
                                   IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
                                   IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>,
                                   IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>,
-                                  IHandle<ProjectionSubscriptionMessage.ProgressChanged>
+                                  IHandle<ProjectionSubscriptionMessage.ProgressChanged>,
+                                  IHandle<ProjectionSubscriptionMessage.EofReached>
     {
         public static CoreProjection CreateAndPrepapre(
             string name, Guid projectionCorrelationId, IPublisher publisher,
@@ -287,6 +288,14 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 SetFaulted(ex);
             }
+        }
+
+        public void Handle(ProjectionSubscriptionMessage.EofReached message)
+        {
+            if (_projectionConfig.Mode != ProjectionMode.OneTime)
+                throw new InvalidOperationException("_projectionConfig.Mode != ProjectionMode.OneTime");
+
+            Stop();
         }
 
         public void Handle(ProjectionSubscriptionMessage.CheckpointSuggested message)
@@ -718,10 +727,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingQueue.InitializeQueue(checkpointTag);
             _expectedSubscriptionMessageSequenceNumber = 0;
             _subscribed = true;
+            bool stopOnEof = _projectionConfig.Mode == ProjectionMode.OneTime;
             _publisher.Publish(
                 new ProjectionSubscriptionManagement.Subscribe(
                     _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,
-                    _projectionConfig.CheckpointUnhandledBytesThreshold));
+                    _projectionConfig.CheckpointUnhandledBytesThreshold, stopOnEof));
         }
 
         internal void BeginStatePartitionLoad(
