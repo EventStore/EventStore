@@ -8,20 +8,20 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ProjectionSubscriptionBase
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<EventReorderingProjectionSubscription>();
-        private Guid _projectionCorrelationId;
-        private IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
-        private IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
-        private IHandle<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
-        private CheckpointStrategy _checkpointStrategy;
-        private long? _checkpointUnhandledBytesThreshold;
-        private EventFilter _eventFilter;
-        private PositionTagger _positionTagger;
-        private PositionTracker _positionTracker;
+        private readonly Guid _projectionCorrelationId;
+        private readonly IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
+        private readonly IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
+        private readonly IHandle<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
+        private readonly CheckpointStrategy _checkpointStrategy;
+        private readonly long? _checkpointUnhandledBytesThreshold;
+        private readonly EventFilter _eventFilter;
+        private readonly PositionTagger _positionTagger;
+        private readonly PositionTracker _positionTracker;
         private long? _lastPassedOrCheckpointedEventPosition;
         private float _progress = -1;
         private long _subscriptionMessageSequenceNumber;
 
-        public ProjectionSubscriptionBase(
+        protected ProjectionSubscriptionBase(
             Guid projectionCorrelationId, CheckpointTag from,
             IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> eventHandler,
             IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> checkpointHandler,
