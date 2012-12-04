@@ -30,6 +30,26 @@ index 7a4c4de..632eedb 100644
  			g_free (build);
  			g_print (info);
  			gc_descr = mono_gc_get_description ();
+
+ mono/mini/mini.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mono/mini/mini.c b/mono/mini/mini.c
+index f52a44f..e7e5154 100644
+--- a/mono/mini/mini.c
++++ b/mono/mini/mini.c
+@@ -6968,9 +6968,9 @@ char*
+ mono_get_runtime_build_info (void)
+ {
+ 	if (mono_build_date)
+-		return g_strdup_printf ("%s (%s %s)", VERSION, FULL_VERSION, mono_build_date);
++		return g_strdup_printf ("%s (%s %s) (EventStore build)", VERSION, FULL_VERSION, mono_build_date);
+ 	else
+-		return g_strdup_printf ("%s (%s)", VERSION, FULL_VERSION);
++		return g_strdup_printf ("%s (%s) (EventStore build)", VERSION, FULL_VERSION);
+ }
+ 
+ static void
+
 -- 
 1.8.0.msysgit.0
-
