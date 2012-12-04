@@ -98,7 +98,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             if (_allStreams)
             {
-                var eventReader = new TransactionEventReader(
+                var eventReader = new TransactionFileEventReader(
                     publisher, eventReaderId,
                     new EventPosition(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value),
                     new RealTimeProvider(), deliverEndOfTFPosition: true);

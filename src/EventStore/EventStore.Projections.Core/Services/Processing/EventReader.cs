@@ -41,18 +41,20 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly IPublisher _publisher;
         protected readonly ILogger _logger = LogManager.GetLoggerFor<EventReader>();
 
+        protected readonly bool _stopOnEof;
         protected bool _paused = true;
         protected bool _pauseRequested = true;
         protected bool _disposed;
 
         protected EventReader(
-            IPublisher publisher, Guid distibutionPointCorrelationId)
+            IPublisher publisher, Guid distibutionPointCorrelationId, bool stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (distibutionPointCorrelationId == Guid.Empty)
                 throw new ArgumentException("distibutionPointCorrelationId");
             _publisher = publisher;
             _distibutionPointCorrelationId = distibutionPointCorrelationId;
+            _stopOnEof = stopOnEof;
         }
 
         public void Resume()
@@ -100,6 +102,15 @@ namespace EventStore.Projections.Core.Services.Processing
             return
                 new ProjectionCoreServiceMessage.Tick(
                     () => { if (!_paused && !_disposed) RequestEvents(); });
+        }
+
+        protected void SendEof()
+        {
+            if (_stopOnEof)
+            {
+                _publisher.Publish(new ProjectionCoreServiceMessage.EventReaderEof(_distibutionPointCorrelationId));
+                Dispose();
+            }
         }
     }
 }

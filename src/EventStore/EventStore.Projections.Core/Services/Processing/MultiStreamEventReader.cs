@@ -59,8 +59,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public MultiStreamEventReader(
             IPublisher publisher, Guid distibutionPointCorrelationId, string[] streams,
-            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider)
-            : base(publisher, distibutionPointCorrelationId)
+            Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider, bool stopOnEof = false)
+            : base(publisher, distibutionPointCorrelationId, stopOnEof)
         {
             if (streams == null) throw new ArgumentNullException("streams");
             if (timeProvider == null) throw new ArgumentNullException("timeProvider");
@@ -129,6 +129,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         RequestEvents(message.EventStreamId, delay: true);
                     _publisher.Publish(CreateTickMessage());
                     CheckIdle();
+                    CheckEof();
                     break;
                 case RangeReadResult.Success:
                     if (message.Events.Length == 0)
@@ -137,6 +138,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         _eofs[message.EventStreamId] = true;
                         UpdateSafePositionToJoin(message.EventStreamId, message.LastCommitPosition);
                         CheckIdle();
+                        CheckEof();
                     }
                     else
                     {
@@ -159,6 +161,9 @@ namespace EventStore.Projections.Core.Services.Processing
                                     @event, positionEvent, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber));
                         }
                     }
+                    if (_disposed)
+                        return;
+
                     ProcessBuffers();
                     if (_pauseRequested)
                         _paused = true;
@@ -170,6 +175,12 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException(
                         string.Format("ReadEvents result code was not recognized. Code: {0}", message.Result));
             }
+        }
+
+        private void CheckEof()
+        {
+            if (_eofs.All(v => v.Value))
+                SendEof();
         }
 
         private void CheckIdle()

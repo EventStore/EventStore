@@ -48,6 +48,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ProjectionSubscriptionManagement.Resume>,
                                          IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>,
                                          IHandle<ProjectionCoreServiceMessage.EventReaderIdle>,
+                                         IHandle<ProjectionCoreServiceMessage.EventReaderEof>,
                                          IHandle<CoreProjectionManagementMessage.CreateAndPrepare>,
                                          IHandle<CoreProjectionManagementMessage.CreatePrepared>,
                                          IHandle<CoreProjectionManagementMessage.Dispose>,
@@ -117,7 +118,7 @@ namespace EventStore.Projections.Core.Services.Processing
             //TODO: do we need to clear subscribed distribution points here?
             _stopped = false;
             var distibutionPointCorrelationId = Guid.NewGuid();
-            var transactionFileReader = new TransactionEventReader(
+            var transactionFileReader = new TransactionFileEventReader(
                 _publisher, distibutionPointCorrelationId, new EventPosition(_writerCheckpoint.Read(), -1),
                 new RealTimeProvider(), deliverEndOfTFPosition: false);
             _eventReaders.Add(distibutionPointCorrelationId, transactionFileReader);
@@ -287,6 +288,16 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_stopped)
                 return;
             if (_headingEventReader.Handle(message))
+                return;
+            if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
+                return; // unsubscribed
+            _subscriptions[projectionId].Handle(message);
+        }
+
+        public void Handle(ProjectionCoreServiceMessage.EventReaderEof message)
+        {
+            Guid projectionId;
+            if (_stopped)
                 return;
             if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed

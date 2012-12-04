@@ -99,5 +99,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             ProcessAllFor(message.IdleTimestampUtc);
         }
+
+        public void Handle(ProjectionCoreServiceMessage.EventReaderEof message)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

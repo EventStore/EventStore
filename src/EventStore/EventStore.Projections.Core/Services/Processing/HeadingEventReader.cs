@@ -86,6 +86,11 @@ namespace EventStore.Projections.Core.Services.Processing
             return true;
         }
 
+        public bool Handle(ProjectionCoreServiceMessage.EventReaderEof message)
+        {
+            throw new NotImplementedException();
+        }
+
         private void ValidateEventOrder(ProjectionCoreServiceMessage.CommittedEventDistributed message)
         {
             if (_lastEventPosition >= message.Position)

@@ -49,8 +49,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public StreamEventReader(
             IPublisher publisher, Guid distibutionPointCorrelationId, string streamName, int fromSequenceNumber,
-            ITimeProvider timeProvider, bool resolveLinkTos)
-            : base(publisher, distibutionPointCorrelationId)
+            ITimeProvider timeProvider, bool resolveLinkTos, bool stopOnEof = false)
+            : base(publisher, distibutionPointCorrelationId, stopOnEof)
         {
             if (fromSequenceNumber < 0) throw new ArgumentException("fromSequenceNumber");
             if (streamName == null) throw new ArgumentNullException("streamName");
@@ -97,6 +97,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     else 
                         RequestEvents(delay: true);
                     SendIdle();
+                    SendEof();
                     break;
                 case RangeReadResult.Success:
                     if (message.Events.Length == 0)
@@ -104,6 +105,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         // the end
                         DeliverSafeJoinPosition(message.LastCommitPosition.Value);
                         SendIdle();
+                        SendEof();
                     }
                     else
                     {
@@ -114,6 +116,9 @@ namespace EventStore.Projections.Core.Services.Processing
                             DeliverEvent(@event, @link, 100.0f * (link ?? @event).EventNumber / message.LastEventNumber);
                         }
                     }
+                    if (_disposed)
+                        return;
+
                     if (_pauseRequested)
                         _paused = true;
                     else if (message.Events.Length == 0)

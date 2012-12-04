@@ -54,5 +54,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             // ignore
         }
+
+        public void Handle(ProjectionCoreServiceMessage.EventReaderEof message)
+        {
+            // ignore
+        }
     }
 }

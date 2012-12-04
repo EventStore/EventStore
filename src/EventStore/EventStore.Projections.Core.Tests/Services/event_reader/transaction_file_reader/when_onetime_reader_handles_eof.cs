@@ -41,7 +41,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_file_reader
 {
     [TestFixture]
-    public class when_handling_eof_and_idle_eof : TestFixtureWithExistingEvents
+    public class when_onetime_reader_handles_eof : TestFixtureWithExistingEvents
     {
         private TransactionFileEventReader _edp;
         private Guid _distibutionPointCorrelationId;
@@ -58,37 +58,35 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
         [SetUp]
         public void When()
         {
-
             _distibutionPointCorrelationId = Guid.NewGuid();
             _fakeTimeProvider = new FakeTimeProvider();
             _edp = new TransactionFileEventReader(
                 _bus, _distibutionPointCorrelationId, new EventPosition(100, 50), _fakeTimeProvider,
-                deliverEndOfTFPosition: false);
+                deliverEndOfTFPosition: false, stopOnEof: true);
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadAllEventsForwardCompleted(
-                    _distibutionPointCorrelationId, new ReadAllResult(
-                    new[]
-                        {
-                            new ResolvedEventRecord(
-                        new EventRecord(
-                            1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, _fakeTimeProvider.Now,
-                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            "event_type1", new byte[] {1}, new byte[] {2}), null, 100), 
-                            new ResolvedEventRecord(
-                        new EventRecord(
-                            2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "b", ExpectedVersion.Any, _fakeTimeProvider.Now,
-                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            "event_type1", new byte[] {1}, new byte[] {2}), null, 200), 
-                        }, 100, new TFPos(200, 150), new TFPos(500, -1), new TFPos(100, 50), 500)));
-
-            _edp.Handle(
-                new ClientMessage.ReadAllEventsForwardCompleted(
                     _distibutionPointCorrelationId,
-                    new ReadAllResult(new ResolvedEventRecord[0], 100, new TFPos(), new TFPos(), new TFPos(), 500)));
-            _fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(500));
+                    new ReadAllResult(
+                        new[]
+                            {
+                                new ResolvedEventRecord(
+                            new EventRecord(
+                                1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any,
+                                _fakeTimeProvider.Now,
+                                PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                                "event_type1", new byte[] {1}, new byte[] {2}), null, 100),
+                                new ResolvedEventRecord(
+                            new EventRecord(
+                                2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "b", ExpectedVersion.Any,
+                                _fakeTimeProvider.Now,
+                                PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                                "event_type1", new byte[] {1}, new byte[] {2}), null, 200),
+                            }, 100, new TFPos(200, 150),
+                        new TFPos(500, -1), new TFPos(100, 50), 500)));
+
             _edp.Handle(
                 new ClientMessage.ReadAllEventsForwardCompleted(
                     _distibutionPointCorrelationId,
@@ -96,22 +94,17 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
         }
 
         [Test]
-        public void publishes_event_distribution_idle_messages()
+        public void publishes_eof_message()
         {
-            Assert.AreEqual(
-                2, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>().Count());
-            var first =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>().First();
-            var second =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderIdle>()
-                         .Skip(1)
-                         .First();
-
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderEof>().Count());
+            var first = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.EventReaderEof>().First();
             Assert.AreEqual(first.CorrelationId, _distibutionPointCorrelationId);
-            Assert.AreEqual(second.CorrelationId, _distibutionPointCorrelationId);
-
-            Assert.AreEqual(TimeSpan.FromMilliseconds(500), second.IdleTimestampUtc - first.IdleTimestampUtc);
         }
 
+        [Test]
+        public void does_not_publish_read_messages_anymore()
+        {
+            Assert.AreEqual(2, _consumer.HandledMessages.OfType<ClientMessage.ReadAllEventsForward>().Count());
+        }
     }
 }

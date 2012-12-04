@@ -37,7 +37,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class TransactionEventReader : EventReader
+    public class TransactionFileEventReader : EventReader
     {
         private bool _eventsRequested = false;
         private int _maxReadCount = 50;
@@ -45,8 +45,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _deliverEndOfTfPosition;
         private readonly ITimeProvider _timeProvider;
 
-        public TransactionEventReader(IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition @from, ITimeProvider timeProvider, bool deliverEndOfTFPosition = true)
-            : base(publisher, distibutionPointCorrelationId)
+        public TransactionFileEventReader(IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition @from, ITimeProvider timeProvider, bool stopOnEof = false, bool deliverEndOfTFPosition = true)
+            : base(publisher, distibutionPointCorrelationId, stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             _from = @from;
@@ -90,6 +90,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     DeliverLastCommitPosition(_from);
                 // allow joining heading distribution
                 SendIdle();
+                SendEof();
             }
             else
             {
@@ -101,6 +102,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 _from = message.Result.NextPos;
             }
 
+            if (_disposed)
+                return;
 
             if (_pauseRequested)
                 _paused = true;

@@ -95,6 +95,22 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class EventReaderEof : Message
+        {
+            private readonly Guid _correlationId;
+
+            public EventReaderEof(Guid correlationId)
+            {
+                _correlationId = correlationId;
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+
+        }
+
         public class CommittedEventDistributed : Message
         {
             private readonly Guid _correlationId;

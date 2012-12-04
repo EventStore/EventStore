@@ -42,6 +42,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         private readonly List<ProjectionCoreServiceMessage.EventReaderIdle> _receivedIdleNotifications =
             new List<ProjectionCoreServiceMessage.EventReaderIdle>();
 
+        private readonly List<ProjectionCoreServiceMessage.EventReaderEof> _receivedEofNotifications =
+            new List<ProjectionCoreServiceMessage.EventReaderEof>();
+
         public void Handle(ProjectionCoreServiceMessage.CommittedEventDistributed message)
         {
             _receivedEvents.Add(message);
@@ -57,9 +60,19 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             get { return _receivedIdleNotifications; }
         }
 
+        public List<ProjectionCoreServiceMessage.EventReaderEof> ReceivedEofNotifications
+        {
+            get { return _receivedEofNotifications; }
+        }
+
         public void Handle(ProjectionCoreServiceMessage.EventReaderIdle message)
         {
             _receivedIdleNotifications.Add(message);
+        }
+
+        public void Handle(ProjectionCoreServiceMessage.EventReaderEof message)
+        {
+            _receivedEofNotifications.Add(message);
         }
 
         public EventReader CreatePausedEventReader(IPublisher publisher, Guid forkedEventReaderId)

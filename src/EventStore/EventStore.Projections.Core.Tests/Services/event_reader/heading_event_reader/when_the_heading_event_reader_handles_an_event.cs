@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             _distibutionPointCorrelationId = Guid.NewGuid();
             _point.Start(
                 _distibutionPointCorrelationId,
-                new TransactionEventReader(
+                new TransactionFileEventReader(
                     _bus, _distibutionPointCorrelationId, new EventPosition(0, -1), new RealTimeProvider()));
             _point.Handle(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
