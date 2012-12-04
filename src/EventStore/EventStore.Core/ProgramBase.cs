@@ -112,10 +112,27 @@ namespace EventStore.Core
             var logger = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
 
             var logsDirectory = string.Format("LOGS DIRECTORY : {0}", LogManager.LogsDirectory);
+            
             var systemInfo = string.Format("{0} {1}", OS.IsLinux ? "Linux" : "Windows", Runtime.IsMono ? "MONO" : ".NET");
+            PrintMonoVersionIfAny();
+
             var startInfo = string.Join(Environment.NewLine, 
                                         options.GetLoadedOptionsPairs().Select(pair => string.Format("{0} : {1}", pair.Key, pair.Value)));
             logger.Info(string.Format("{0}\n{1}\n{2}", logsDirectory, systemInfo, startInfo));
+        }
+
+        private static void PrintMonoVersionIfAny()
+        {
+            var type = Type.GetType("Mono.Runtime");
+            if (type != null)
+            {
+                MethodInfo getDisplayNameMethod = type.GetMethod("GetDisplayName", BindingFlags.NonPublic | BindingFlags.Static);
+                if (getDisplayNameMethod != null)
+                {
+                    var monoVersion = (string)getDisplayNameMethod.Invoke(null, null);
+                    Log.Info("Mono version: {0}", monoVersion);
+                }
+            }
         }
 
         private string FormatExceptionMessage(Exception ex)

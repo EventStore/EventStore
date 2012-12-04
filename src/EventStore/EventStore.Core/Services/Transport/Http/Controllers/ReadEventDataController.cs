@@ -39,8 +39,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private static readonly ICodec[] SupportedCodecs = new ICodec[] { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
         private static readonly ICodec DefaultResponseCodec = Codec.Json;
 
-        public ReadEventDataController(IPublisher publisher) : base(publisher)
+        private readonly IPublisher _networkSendQueue;
+
+        public ReadEventDataController(IPublisher publisher, IPublisher networkSendQueue) : base(publisher)
         {
+            _networkSendQueue = networkSendQueue;
         }
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
@@ -67,9 +70,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
 
-            var envelope = new SendToHttpEnvelope(entity, Format.ReadEventCompleted, Configure.ReadEventCompleted);
-            Publish(
-                new ClientMessage.ReadEvent(
+            var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                  entity,
+                                                  Format.ReadEventCompleted,
+                                                  Configure.ReadEventCompleted);
+            Publish(new ClientMessage.ReadEvent(
                     Guid.NewGuid(), envelope, stream, version, resolve.Equals("yes", StringComparison.OrdinalIgnoreCase)));
         }
     }

@@ -224,31 +224,35 @@ namespace EventStore.Core.Services.Transport.Http
                 }
 
                 ICodec requestCodec;
-                if (
-                    !TrySelectRequestCodec(
-                        context.Request.HttpMethod, context.Request.ContentType,
-                        match.ControllerAction.SupportedRequestCodecs, out requestCodec))
+                if (!TrySelectRequestCodec(context.Request.HttpMethod, 
+                                           context.Request.ContentType,
+                                           match.ControllerAction.SupportedRequestCodecs, 
+                                           out requestCodec))
                 {
                     BadCodec(context, "Content-Type MUST be set for POST PUT and DELETE");
                     return;
                 }
                 ICodec responseCodec;
-                if (
-                    !TrySelectResponseCodec(
-                        context.Request.QueryString, context.Request.AcceptTypes,
-                        match.ControllerAction.SupportedResponseCodecs, match.ControllerAction.DefaultResponseCodec,
-                        out responseCodec))
+                if (!TrySelectResponseCodec(context.Request.QueryString, 
+                                            context.Request.AcceptTypes,
+                                            match.ControllerAction.SupportedResponseCodecs, 
+                                            match.ControllerAction.DefaultResponseCodec,
+                                            out responseCodec))
                 {
                     BadCodec(context, "Requested uri is not available in requested format");
                     return;
                 }
 
-                var entity = CreateEntity(
-                    DateTime.UtcNow, context, requestCodec, responseCodec, allowedMethods, satisfied =>
-                        {
-                            lock (_pendingLock)
-                                _pending.Remove(satisfied);
-                        });
+                var entity = CreateEntity(DateTime.UtcNow,
+                                          context,
+                                          requestCodec,
+                                          responseCodec,
+                                          allowedMethods,
+                                          satisfied =>
+                                          {
+                                              lock (_pendingLock)
+                                                  _pending.Remove(satisfied);
+                                          });
                 lock (_pendingLock)
                     _pending.Add(entity);
 

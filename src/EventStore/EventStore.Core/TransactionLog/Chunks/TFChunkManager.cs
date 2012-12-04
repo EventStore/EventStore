@@ -29,6 +29,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using System.Linq;
 
@@ -36,6 +37,8 @@ namespace EventStore.Core.TransactionLog.Chunks
 {
     public class TFChunkManager: IDisposable
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunkManager>();
+
         public const int MaxChunksCount = 100000; // that's enough for about 25 Tb of data
 
         public int ChunksCount { get { return _chunksCount; } }
@@ -248,6 +251,8 @@ namespace EventStore.Core.TransactionLog.Chunks
             if (!replicatedChunk.IsReadOnly)
                 throw new ArgumentException(string.Format("Passed TFChunk is not completed: {0}.", replicatedChunk.FileName));
 
+            Log.Info("Adding replicated chunk file {0} ...", replicatedChunk.FileName);
+
             var chunkHeader = replicatedChunk.ChunkHeader;
             var oldFileName = replicatedChunk.FileName;
             var newFileName = _config.FileNamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, chunkHeader.ChunkScavengeVersion);
@@ -278,15 +283,23 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             // TODO AN it is possible that chunk with the newFileName already exists, need to work around that
             // TODO AN this could be caused by scavenging... no scavenge -- no cry :(
+
+            Log.Info("File {0} will be moved to file {1}", oldFileName, newFileName);
             File.Move(oldFileName, newFileName);
+
             var newChunk = TFChunk.FromCompletedFile(newFileName, verifyHash);
 
             for (int i = chunkHeader.ChunkStartNumber; i <= chunkHeader.ChunkEndNumber; ++i)
             {
                 var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
                 if (oldChunk != null)
-                    oldChunk.MarkForDeletion();
+                {
+                    // -- code to be used after 'temporary workaround' above is resolved.
+                    //Log.Info("Old chunk {0} will be marked for deletion", oldChunk.FileName);
+                    // oldChunk.MarkForDeletion(); -- end section
+                }
             }
+
             _chunksCount = newChunk.ChunkHeader.ChunkEndNumber + 1;
             Debug.Assert(_chunks[_chunksCount] == null);
 
