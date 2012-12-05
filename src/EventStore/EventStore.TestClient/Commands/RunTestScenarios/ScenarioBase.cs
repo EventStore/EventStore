@@ -150,9 +150,20 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             CloseConnections();
             KillStartedNodes();
 
-            Log.Info("Deleting {0}...", _dbPath);
-            Directory.Delete(_dbPath, true);
-            Log.Info("Deleted {0}", _dbPath);
+            try
+            {
+                Log.Info("Deleting {0}...", _dbPath);
+                Directory.Delete(_dbPath, true);
+                Log.Info("Deleted {0}", _dbPath);
+            }
+            catch (IOException ex)
+            {
+                Log.ErrorException(ex, "Failed to delete dir {0}, IOException was raised", _dbPath);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Log.ErrorException(ex, "Failed to delete dir {0}, UnauthorizedAccessException was raised", _dbPath);
+            }
         }
 
         protected T[][] Split<T>(IEnumerable<T> sequence, int parts)
