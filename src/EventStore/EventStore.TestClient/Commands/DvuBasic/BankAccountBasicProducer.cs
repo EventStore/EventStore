@@ -75,7 +75,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 if (deserialized.GetType() != generated.GetType())
                 {
                     isEqual = false;
-                    reason = string.Format("Type does not match, actual type is {0}", deserialized.GetType().FullName);
+                    reason = string.Format("Type does not match, actual type is {0}", deserialized.GetType().Name);
                 }
                 else
                 {
