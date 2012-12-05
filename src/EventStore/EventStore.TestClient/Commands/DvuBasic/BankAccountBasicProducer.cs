@@ -51,7 +51,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             var accountObject = BankAccountEventFactory.CreateAccountObject(version);
 
             var serializedObject = Codec.Json.To(accountObject);
-            var @event = new Event(Guid.NewGuid(), accountObject.GetType().FullName, true,  Encoding.UTF8.GetBytes(serializedObject), new byte[0]);
+            var @event = new Event(Guid.NewGuid(), accountObject.GetType().Name, true,  Encoding.UTF8.GetBytes(serializedObject), new byte[0]);
 
             return @event;
         }
@@ -75,7 +75,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 if (deserialized.GetType() != generated.GetType())
                 {
                     isEqual = false;
-                    reason = string.Format("Type does not match, actual type is {0}", deserialized.GetType().FullName);
+                    reason = string.Format("Type does not match, actual type is {0}", deserialized.GetType().Name);
                 }
                 else
                 {
@@ -102,19 +102,19 @@ namespace EventStore.TestClient.Commands.DvuBasic
             }
             else
             {
-                if (eventType == typeof(AccountCredited).FullName)
+                if (eventType == typeof(AccountCredited).Name)
                 {
                     result = Codec.Json.From<AccountCredited>(strData);
                 }
                 else
                 {
-                    if (eventType == typeof(AccountDebited).FullName)
+                    if (eventType == typeof(AccountDebited).Name)
                     {
                         result = Codec.Json.From<AccountDebited>(strData);
                     }
                     else
                     {
-                        if (eventType == typeof(AccountCheckPoint).FullName)
+                        if (eventType == typeof(AccountCheckPoint).Name)
                         {
                             result = Codec.Json.From<AccountCheckPoint>(strData);
                         }
