@@ -638,7 +638,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
                             continue;
 
-                        if ((prepare.Flags & PrepareFlags.Data) != 0) // prepare with useful data
+                        // prepare with useful data or delete tombstone
+                        if ((prepare.Flags & (PrepareFlags.Data | PrepareFlags.StreamDelete)) != 0) 
                         {
                             if (new TFPos(commit.Position, prepare.LogPosition) >= pos)
                             {
@@ -730,7 +731,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
                             continue;
 
-                        if ((prepare.Flags & PrepareFlags.Data) != 0) // prepare with useful data
+                        // prepare with useful data or delete tombstone
+                        if ((prepare.Flags & (PrepareFlags.Data | PrepareFlags.StreamDelete)) != 0) 
                         {
                             if (new TFPos(commitPostPos, result.RecordPostPosition) <= pos)
                             {
