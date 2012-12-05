@@ -97,8 +97,7 @@ namespace EventStore.Core.Services.Storage
                         {
                             var record = (PrepareLogRecord) result.LogRecord;
 
-                            if ((record.Flags & PrepareFlags.TransactionBegin) != 0 
-                                || (record.Flags & PrepareFlags.TransactionEnd) != 0)
+                            if ((record.Flags & (PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd)) != 0)
                             {
                                 _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId,
                                                                                  _vnodeEndPoint,
@@ -133,9 +132,7 @@ namespace EventStore.Core.Services.Storage
                 }
 
                 if (!result.Success)
-                {
                     Thread.Sleep(1);
-                }
             }
             _chaser.Close();
             _masterBus.Publish(new SystemMessage.ServiceShutdown("StorageChaser"));

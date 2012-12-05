@@ -248,13 +248,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             return chunk;
         }
 
-        private Stream GetSequentialReaderFileStream()
-        {
-            return new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-                                   64000, FileOptions.SequentialScan);
-            
-        }
-
         private void CreateReaderStreams()
         {
             for (int i = 0; i < _maxReadThreads; i++)
@@ -1000,7 +993,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             return curPos;
         }
-        
+
         public void Flush()
         {
             if (_isReadonly) 
@@ -1238,6 +1231,11 @@ namespace EventStore.Core.TransactionLog.Chunks
             Interlocked.Increment(ref _lockedCount);
 #pragma warning restore 420
             return new TFChunkBulkReader(this, GetSequentialReaderFileStream());
+        }
+
+        private Stream GetSequentialReaderFileStream()
+        {
+            return new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 65536, FileOptions.SequentialScan);
         }
 
         public void ReleaseReader(TFChunkBulkReader reader)

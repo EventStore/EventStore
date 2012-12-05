@@ -198,7 +198,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var writerPosition = (int)(pos % Config.ChunkSize);
 
             ChunkFooter chunkFooter;
-            using (var fs = File.OpenRead(chunkFileName))
+            using (var fs = new FileStream(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 if (fs.Length < ChunkFooter.Size + ChunkHeader.Size)
                 {
