@@ -90,7 +90,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (versions.Length == 0)
                     {
                         throw new CorruptDatabaseException(
-                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i)));
+                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i, 0)));
                     }
 
                     for (int j=1; j<versions.Length; ++j)
@@ -156,7 +156,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (versions.Length == 0)
                     {
                         throw new CorruptDatabaseException(
-                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i)));
+                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i, 0)));
                     }
 
                     var chunkFileName = versions[0];

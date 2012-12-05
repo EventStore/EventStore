@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void when_getting_file_for_positive_index_and_no_version_appends_index_to_name_with_zero_version()
         {
             var strategy = new VersionedPatternFileNamingStrategy("path", "prefix-");
-            Assert.AreEqual("path" + Path.DirectorySeparatorChar + "prefix-000001.000000", strategy.GetFilenameFor(1));
+            Assert.AreEqual("path" + Path.DirectorySeparatorChar + "prefix-000001.000000", strategy.GetFilenameFor(1, 0));
         }
 
         [Test]
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void when_getting_file_for_negative_index_throws_argumentoutofrangeexception()
         {
             var strategy = new VersionedPatternFileNamingStrategy("Path", "prefix");
-            Assert.Throws<ArgumentOutOfRangeException>(() => strategy.GetFilenameFor(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => strategy.GetFilenameFor(-1, 0));
         }
 
         [Test]

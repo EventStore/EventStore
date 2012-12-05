@@ -130,8 +130,8 @@ namespace EventStore.Core.TransactionLog.Chunks
         public TFChunk AddNewChunk()
         {
             var chunkNumber = _chunksCount;
-            var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber);
-            var chunk = TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, 0);
+            var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
+            var chunk = TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, isScavenged: false);
             AddChunk(chunk);
             return chunk;
         }
@@ -150,7 +150,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
 
             var chunkNumber = _chunksCount;
-            var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber);
+            var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
             var chunk = TFChunk.CreateWithHeader(chunkName, chunkHeader, fileSize);
             AddChunk(chunk);
             return chunk;
@@ -211,14 +211,6 @@ namespace EventStore.Core.TransactionLog.Chunks
             return chunk;
         }
 
-        public TFChunk SwapChunk(int chunkNumber, TFChunk newChunk)
-        {
-            var oldChunk = Interlocked.Exchange(ref _chunks[chunkNumber], newChunk);
-            oldChunk.UnCacheFromMemory();
-            TryCacheChunk(newChunk);
-            return oldChunk;
-        }
-
         private void TryCacheChunk(TFChunk chunk)
         {
             if (_cachingEnabled)
@@ -245,65 +237,64 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public void AddReplicatedChunk(TFChunk replicatedChunk, bool verifyHash)
+        public TFChunk SwitchChunk(TFChunk chunk, bool verifyHash, bool replaceChunksWithGreaterNumbers)
         {
-            Ensure.NotNull(replicatedChunk, "replicatedChunk");
-            if (!replicatedChunk.IsReadOnly)
-                throw new ArgumentException(string.Format("Passed TFChunk is not completed: {0}.", replicatedChunk.FileName));
+            Ensure.NotNull(chunk, "chunk");
+            if (!chunk.IsReadOnly)
+                throw new ArgumentException(string.Format("Passed TFChunk is not completed: {0}.", chunk.FileName));
 
-            Log.Info("Adding replicated chunk file {0} ...", replicatedChunk.FileName);
+            var chunkHeader = chunk.ChunkHeader;
+            var oldFileName = chunk.FileName;
 
-            var chunkHeader = replicatedChunk.ChunkHeader;
-            var oldFileName = replicatedChunk.FileName;
-            var newFileName = _config.FileNamingStrategy.GetFilenameFor(chunkHeader.ChunkStartNumber, chunkHeader.ChunkScavengeVersion);
-            
-            replicatedChunk.Dispose();
+            Log.Info("Switching chunk #{0}-{1} ({2})...", chunkHeader.ChunkStartNumber, chunkHeader.ChunkEndNumber, oldFileName);
+
+            chunk.Dispose();
             try
             {
-                replicatedChunk.WaitForDestroy(0); // should happen immediately
+                chunk.WaitForDestroy(0); // should happen immediately
             }
             catch (TimeoutException exc)
             {
-                throw new Exception(string.Format("Replicated chunk '{0}' ({1}-{2}) is used by someone else.",
-                                                  replicatedChunk.FileName,
-                                                  replicatedChunk.ChunkHeader.ChunkStartNumber,
-                                                  replicatedChunk.ChunkHeader.ChunkEndNumber), exc);
+                throw new Exception(string.Format("The chunk that is being switched #{0}-{1} ({2}) is used by someone else.",
+                                                  chunk.ChunkHeader.ChunkStartNumber,
+                                                  chunk.ChunkHeader.ChunkEndNumber,
+                                                  chunk.FileName), exc);
             }
 
-            //TODO AN: temporary workaround
-            for (int i = chunkHeader.ChunkStartNumber; i <= chunkHeader.ChunkEndNumber; ++i)
-            {
-                var oldChunk = _chunks[i];
-                if (oldChunk != null)
-                {
-                    oldChunk.MarkForDeletion();
-                    oldChunk.WaitForDestroy(500);
-                }
-            }
-
-            // TODO AN it is possible that chunk with the newFileName already exists, need to work around that
-            // TODO AN this could be caused by scavenging... no scavenge -- no cry :(
-
+            var newFileName = _config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber);
             Log.Info("File {0} will be moved to file {1}", oldFileName, newFileName);
             File.Move(oldFileName, newFileName);
-
             var newChunk = TFChunk.FromCompletedFile(newFileName, verifyHash);
-
+            
             for (int i = chunkHeader.ChunkStartNumber; i <= chunkHeader.ChunkEndNumber; ++i)
             {
                 var oldChunk = Interlocked.Exchange(ref _chunks[i], newChunk);
                 if (oldChunk != null)
                 {
-                    // -- code to be used after 'temporary workaround' above is resolved.
-                    //Log.Info("Old chunk {0} will be marked for deletion", oldChunk.FileName);
-                    // oldChunk.MarkForDeletion(); -- end section
+                    oldChunk.MarkForDeletion();
+                    Log.Info("Old chunk {0} is marked for deletion.", oldChunk.FileName);
                 }
             }
 
-            _chunksCount = newChunk.ChunkHeader.ChunkEndNumber + 1;
-            Debug.Assert(_chunks[_chunksCount] == null);
+            if (replaceChunksWithGreaterNumbers)
+            {
+                var oldChunksCount = _chunksCount;
+                _chunksCount = newChunk.ChunkHeader.ChunkEndNumber + 1;
+
+                for (int i = chunkHeader.ChunkEndNumber + 1; i < oldChunksCount; ++i)
+                {
+                    var oldChunk = Interlocked.Exchange(ref _chunks[i], null);
+                    if (oldChunk != null)
+                    {
+                        oldChunk.MarkForDeletion();
+                        Log.Info("Excessive chunk {0} is marked for deletion.", oldChunk.FileName);
+                    }
+                }
+                Debug.Assert(_chunks[_chunksCount] == null);
+            }
 
             TryCacheChunk(newChunk);
+            return newChunk;
         }
 
         public TFChunk CreateTempChunk(ChunkHeader chunkHeader, int fileSize)
