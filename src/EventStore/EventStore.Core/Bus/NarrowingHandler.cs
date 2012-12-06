@@ -1,10 +1,10 @@
 ﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,43 +24,26 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
-using System;
-using System.Collections.Generic;
-using System.Net;
-using EventStore.Common.Exceptions;
-using EventStore.Common.Utils;
+using EventStore.Core.Messaging;
 
-namespace EventStore.Common.CommandLine
+namespace EventStore.Core.Bus
 {
-    public static class ArgumentsParser
+    public class NarrowingHandler<TInput, TOutput> : IHandle<TInput>
+        where TInput : Message
+        where TOutput : TInput
     {
-        public static IPAddress[] ParseIpsList(string ipsString)
+        private readonly IHandle<TOutput> _handler;
+
+        public NarrowingHandler(IHandle<TOutput> handler)
         {
-            IPAddress[] addresses;
-            if (ipsString.IsEmptyString())
-            {
-                var list = new List<IPAddress>();
-                foreach (var ipStr in ipsString.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
-                {
-                    IPAddress ip;
-                    if (!IPAddress.TryParse(ipStr, out ip))
-                    {
-                        throw new ApplicationInitializationException(
-                            string.Format("Could not parse IP address [{0}] provided in argument ManagersIPs list {1}.",
-                                          ipStr,
-                                          ipsString));
-                    }
-                    list.Add(ip);
-                }
-                addresses = list.ToArray();
-            }
-            else
-            {
-                addresses = new IPAddress[0];
-            }
-            return addresses;
+            _handler = handler;
+        }
+
+        public void Handle(TInput message)
+        {
+            _handler.Handle((TOutput) message); // will throw if message type is wrong
         }
     }
 }

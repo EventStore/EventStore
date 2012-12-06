@@ -37,5 +37,12 @@ namespace EventStore.Core.Bus
         {
             return new WideningHandler<TInput, TOutput>(handler);
         }
+
+        public static IHandle<TInput> NarrowTo<TInput, TOutput>(this IHandle<TOutput> handler)
+            where TInput : Message
+            where TOutput : TInput
+        {
+            return new NarrowingHandler<TInput, TOutput>(handler);
+        }
     }
 }

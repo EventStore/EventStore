@@ -44,7 +44,7 @@ namespace EventStore.Core
 {
     public abstract class ProgramBase<TOptions> where TOptions : EventStoreCmdLineOptionsBase, new()
     {
-        private static readonly ILogger Log = LogManager.GetLogger("ProgramBase");
+        protected readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
 
         private int _exitCode;
         private readonly ManualResetEventSlim _exitEvent = new ManualResetEventSlim(false);
@@ -95,9 +95,9 @@ namespace EventStore.Core
             return _exitCode;
         }
 
-        private void Exit(ExitCode exitCode)
+        private void Exit(int exitCode)
         {
-            _exitCode = (int)exitCode;
+            _exitCode = exitCode;
             _exitEvent.Set();
         }
 
@@ -108,31 +108,18 @@ namespace EventStore.Core
 
             Console.Title = string.Format("{0}, {1}", projName, componentName);
 
-            LogManager.Init(componentName, options.LogsDir.IsNotEmptyString() ? options.LogsDir : GetLogsDirectory(options));
-            var logger = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
+            string logsDirectory = Path.GetFullPath(options.LogsDir.IsNotEmptyString() ? options.LogsDir : GetLogsDirectory(options));
+            LogManager.Init(componentName, logsDirectory);
 
-            var logsDirectory = string.Format("LOGS DIRECTORY : {0}", LogManager.LogsDirectory);
-            
-            var systemInfo = string.Format("{0} {1}", OS.IsLinux ? "Linux" : "Windows", Runtime.IsMono ? "MONO" : ".NET");
-            PrintMonoVersionIfAny();
-
-            var startInfo = string.Join(Environment.NewLine, 
-                                        options.GetLoadedOptionsPairs().Select(pair => string.Format("{0} : {1}", pair.Key, pair.Value)));
-            logger.Info(string.Format("{0}\n{1}\n{2}", logsDirectory, systemInfo, startInfo));
-        }
-
-        private static void PrintMonoVersionIfAny()
-        {
-            var type = Type.GetType("Mono.Runtime");
-            if (type != null)
-            {
-                MethodInfo getDisplayNameMethod = type.GetMethod("GetDisplayName", BindingFlags.NonPublic | BindingFlags.Static);
-                if (getDisplayNameMethod != null)
-                {
-                    var monoVersion = (string)getDisplayNameMethod.Invoke(null, null);
-                    Log.Info("Mono version: {0}", monoVersion);
-                }
-            }
+            Log.Info("\nOS: {0} ({1})\n"
+                     + "RUNTIME: {2}\n"
+                     + "LOGS: {3}\n"
+                     + "{4}",
+                     OS.IsLinux ? "Linux" : "Windows",
+                     Environment.OSVersion,
+                     OS.GetRuntimeVersion(),
+                     LogManager.LogsDirectory,
+                     string.Join("\n", options.GetLoadedOptionsPairs().Select(pair => string.Format("{0} : {1}", pair.Key, pair.Value))));
         }
 
         private string FormatExceptionMessage(Exception ex)

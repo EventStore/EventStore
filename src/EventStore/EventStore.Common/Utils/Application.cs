@@ -33,14 +33,14 @@ namespace EventStore.Common.Utils
     public enum ExitCode
     {
         Success = 0,
-        Error
+        Error = 1
     }
 
     public class Application
     {
-        private static Action<ExitCode> _exit;
+        private static Action<int> _exit;
 
-        public static void RegisterExitAction(Action<ExitCode> exitAction)
+        public static void RegisterExitAction(Action<int> exitAction)
         {
             Ensure.NotNull(exitAction, "exitAction");
 
@@ -48,6 +48,11 @@ namespace EventStore.Common.Utils
         }
 
         public static void Exit(ExitCode exitCode, string reason)
+        {
+            Exit((int) exitCode, reason);
+        }
+
+        public static void Exit(int exitCode, string reason)
         {
             Ensure.NotNullOrEmpty(reason, "reason");
             

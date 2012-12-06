@@ -44,11 +44,11 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private readonly TcpServerListener _serverListener;
         private readonly IPEndPoint _serverEndPoint;
-        private readonly QueuedHandler _networkSendQueue;
+        private readonly IPublisher _networkSendQueue;
         private readonly ITcpDispatcher _tcpDispatcher;
         private readonly IPublisher _publisher;
 
-        public TcpService(IPublisher publisher, IPEndPoint serverEndPoint, QueuedHandler networkSendQueue)
+        public TcpService(IPublisher publisher, IPEndPoint serverEndPoint, IPublisher networkSendQueue)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(serverEndPoint, "serverEndPoint");

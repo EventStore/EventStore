@@ -70,7 +70,8 @@ namespace EventStore.SingleNode
 
         protected override void Create(SingleNodeOptions options)
         {
-            var dbPath = ResolveDbPath(options.DbPath, options.HttpPort);
+            var dbPath = Path.GetFullPath(ResolveDbPath(options.DbPath, options.HttpPort));
+            Log.Info("\nDATABASE: {0}", dbPath);
             var db = new TFChunkDb(CreateDbConfig(dbPath, options.ChunksToCache));
             var vnodeSettings = GetVNodeSettings(options);
             var appSettings = new SingleVNodeAppSettings(TimeSpan.FromSeconds(options.StatsPeriodSec));
@@ -84,7 +85,7 @@ namespace EventStore.SingleNode
                                                                 _node.Bus,
                                                                 _node.TimerService,
                                                                 _node.HttpService,
-                                                                _node.NetworkSendQueue,
+                                                                _node.NetworkSendService,
                                                                 options.ProjectionThreads);
             }
         }

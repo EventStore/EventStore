@@ -47,11 +47,11 @@ namespace EventStore.TestClient
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<Client>();
 
+        public readonly bool InteractiveMode;
+
         public readonly ClientOptions Options;
         public readonly IPEndPoint TcpEndpoint;
         public readonly IPEndPoint HttpEndpoint;
-
-        private readonly bool _interactiveMode;
 
         private readonly BufferManager _bufferManager = new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
         private readonly TcpClientConnector _connector = new TcpClientConnector();
@@ -66,7 +66,7 @@ namespace EventStore.TestClient
             TcpEndpoint = new IPEndPoint(ipAddr, options.TcpPort);
             HttpEndpoint = new IPEndPoint(ipAddr, options.HttpPort);
 
-            _interactiveMode = options.Command.IsEmpty();
+            InteractiveMode = options.Command.IsEmpty();
 
             RegisterProcessors();
         }
@@ -123,38 +123,40 @@ namespace EventStore.TestClient
 
         public int Run()
         {
-            if (!_interactiveMode)
+            if (!InteractiveMode)
                 return Execute(Options.Command.ToArray());
 
-            Thread.Sleep(100);
-            Console.Write(">>> ");
-            
-            string line;
-            while ((line = Console.ReadLine()) != null)
+            new Thread(() =>
             {
-                try
-                {
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
+                Thread.Sleep(100);
+                Console.Write(">>> ");
 
+                string line;
+                while ((line = Console.ReadLine()) != null)
+                {
                     try
                     {
-                        var args = ParseCommandLine(line);
-                        Execute(args);
-                    }
-                    catch (Exception exc)
-                    {
-                        Log.ErrorException(exc, "Error during executing command.");
-                    }
-                }
-                finally
-                {
-                    Thread.Sleep(100);
-                    Console.Write(">>> ");
-                }
-            }
+                        if (string.IsNullOrWhiteSpace(line))
+                            continue;
 
-            return -1;
+                        try
+                        {
+                            var args = ParseCommandLine(line);
+                            Execute(args);
+                        }
+                        catch (Exception exc)
+                        {
+                            Log.ErrorException(exc, "Error during executing command.");
+                        }
+                    }
+                    finally
+                    {
+                        Thread.Sleep(100);
+                        Console.Write(">>> ");
+                    }
+                }
+            }) { IsBackground = true, Name = "Client Main Loop Thread" }.Start();
+            return 0;
         }
 
         private static string[] ParseCommandLine(string line)

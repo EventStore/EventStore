@@ -25,75 +25,56 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+
 using System.Net;
-using EventStore.Common.CommandLine.lib;
-using EventStore.Common.Log;
+using System.Threading;
+using EventStore.Common.Exceptions;
 using EventStore.Common.Utils;
+using EventStore.Core;
 
 namespace EventStore.TestClient
 {
-    public class Program
+    public class Program: ProgramBase<ClientOptions>
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<Program>();
+        private Client _client;
 
-        private static int Main(string[] args)
+        public static int Main(string[] args)
         {
-            AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) =>
+            var p = new Program();
+            return p.Run(args);
+        }
+
+        protected override string GetLogsDirectory(ClientOptions options)
+        {
+            return options.LogsDir.IsNotEmptyString() ? options.LogsDir : Helper.GetDefaultLogsDir();
+        }
+
+        protected override string GetComponentName(ClientOptions options)
+        {
+            return "client";
+        }
+
+        protected override void Create(ClientOptions options)
+        {
+            IPAddress ipAddr;
+            if (!IPAddress.TryParse(options.Ip, out ipAddr))
+                throw new ApplicationInitializationException(string.Format("Wrong IP address provided: {0}.", options.Ip));
+
+            _client = new Client(options);
+        }
+
+        protected override void Start()
+        {
+            var exitCode = _client.Run();
+            if (!_client.InteractiveMode)
             {
-                var exc = eventArgs.ExceptionObject as Exception;
-                if (exc != null)
-                    Log.FatalException(exc, "Global Unhandled Exception occurred within {0}.", sender);
-                else
-                    Log.Fatal("Global Unhandled Exception ({0}) occurred within {1}.", eventArgs.ExceptionObject, sender);
-            };
-
-            try
-            {
-                Console.Title = string.Format("EventStore - CLIENT - {0}", DateTime.UtcNow);
-
-                var options = new ClientOptions();
-                if (!CommandLineParser.Default.ParseArguments(args, options))
-                {
-                    Console.WriteLine("Error parsing arguments. Exiting...");
-                    return -1;
-                }
-
-                var logsDir = options.LogsDir.IsNotEmptyString() ? options.LogsDir : Helper.GetDefaultLogsDir();
-                LogManager.Init("client", logsDir);
-
-                IPAddress ipAddr;
-                if (!IPAddress.TryParse(options.Ip, out ipAddr))
-                {
-                    Log.Error("Wrong IP address provided: {0}.", ipAddr);
-                    return -1;
-                }
-
-                var systemInfo = string.Format("{0} {1}", OS.IsLinux ? "Linux" : "Windows", Runtime.IsMono ? "MONO" : ".NET");
-                var startInfo = string.Join(Environment.NewLine, options.GetLoadedOptionsPairs().Select(pair => string.Format("{0} : {1}", pair.Key, pair.Value)));
-                var logsDirectory = string.Format("LOGS DIRECTORY : {0}", LogManager.LogsDirectory);
-
-                Log.Info(string.Format("{0}{1}{2}{1}{3}", logsDirectory, Environment.NewLine, systemInfo, startInfo));
-
-                var client = new Client(options);
-                var exitCode = client.Run();
-
-                Log.Info("Exit code: {0}.", exitCode);
-                return exitCode;
+                Thread.Sleep(500);
+                Application.Exit(exitCode, "Client non-interactive mode has exited.");
             }
-            catch(Exception exc)
-            {
-                Log.ErrorException(exc, "Exception during execution of client.");
-                return -1;
-            }
-            finally
-            {
-                // VERY IMPORTANT TO PREVENT DEADLOCKING ON MONO
-                LogManager.Finish();
-            }
+        }
+
+        public override void Stop()
+        {
         }
     }
 }
