@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Http
     {
         public static class Atom
         {
-            public static string ListStreamsCompletedServiceDoc(HttpEntity entity, Message message)
+            public static string ListStreamsCompletedServiceDoc(HttpResponseFormatterArgs entity, Message message)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ListStreamsCompleted));
 
@@ -51,7 +51,7 @@ namespace EventStore.Core.Services.Transport.Http
                            : string.Empty;
             }
 
-            public static string ReadEventCompletedEntry(HttpEntity entity, Message message)
+            public static string ReadEventCompletedEntry(HttpResponseFormatterArgs entity, Message message)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
 
@@ -73,7 +73,7 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
             }
 
-            public static string ReadStreamEventsBackwardCompletedFeed(HttpEntity entity, Message message, int start, int count)
+            public static string ReadStreamEventsBackwardCompletedFeed(HttpResponseFormatterArgs entity, Message message, int start, int count)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 
@@ -104,7 +104,7 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
             }
 
-            public static string ReadAllEventsBackwardCompleted(HttpEntity entity, Message message)
+            public static string ReadAllEventsBackwardCompleted(HttpResponseFormatterArgs entity, Message message)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
 
@@ -114,7 +114,7 @@ namespace EventStore.Core.Services.Transport.Http
                     : string.Empty;
             }
 
-            public static string ReadAllEventsForwardCompleted(HttpEntity entity, Message message)
+            public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
 
@@ -124,20 +124,20 @@ namespace EventStore.Core.Services.Transport.Http
                     : string.Empty;
             }
 
-            public static string CreateStreamCompleted(HttpEntity entity, Message message)
+            public static string CreateStreamCompleted(HttpResponseFormatterArgs entity, Message message)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
                 return string.Empty;
             }
 
-            public static string DeleteStreamCompleted(HttpEntity entity, Message message)
+            public static string DeleteStreamCompleted(HttpResponseFormatterArgs entity, Message message)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.DeleteStreamCompleted));
                 return string.Empty;
             }
         }
 
-        public static string TextMessage(HttpEntity entity, Message message)
+        public static string TextMessage(HttpResponseFormatterArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(HttpMessage.TextMessage));
 
@@ -145,13 +145,13 @@ namespace EventStore.Core.Services.Transport.Http
             return textMessage != null ? entity.ResponseCodec.To(textMessage) : string.Empty;
         }
 
-        public static string WriteEventsCompleted(HttpEntity entity, Message message)
+        public static string WriteEventsCompleted(HttpResponseFormatterArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.WriteEventsCompleted));
             return string.Empty;
         }
 
-        public static string ReadEventCompleted(HttpEntity entity, Message message)
+        public static string ReadEventCompleted(HttpResponseFormatterArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
 
@@ -173,7 +173,7 @@ namespace EventStore.Core.Services.Transport.Http
             return string.Empty;
         }
 
-        public static string GetFreshStatsCompleted(HttpEntity entity, Message message)
+        public static string GetFreshStatsCompleted(HttpResponseFormatterArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(MonitoringMessage.GetFreshStatsCompleted));
 

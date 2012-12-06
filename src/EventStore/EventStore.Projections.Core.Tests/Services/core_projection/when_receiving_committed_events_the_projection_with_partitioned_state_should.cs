@@ -54,6 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             TicksAreHandledImmediately();
             NoStream("$projections-projection-state");
             NoStream("$projections-projection-checkpoint");
+            NoStream("$projections-projection-partitions");
             NoStream("$projections-projection-account-01-state");
             NoStream("$projections-projection-account-02-state");
             AllWritesSucceed();
@@ -65,19 +66,27 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _eventId = Guid.NewGuid();
             _consumer.HandledMessages.Clear();
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "account-01", 1, false,
-                       ResolvedEvent.Sample(_eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
-                                           Encoding.UTF8.GetBytes("metadata")), 0));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, new EventPosition(120, 110), "account-01", 1, false,
+                    ResolvedEvent.Sample(
+                        _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(140, 130), "account-02", 2, false,
-                       ResolvedEvent.Sample(_eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
-                                           Encoding.UTF8.GetBytes("metadata")), 1));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, new EventPosition(140, 130), "account-02", 2, false,
+                    ResolvedEvent.Sample(
+                        _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
+                        Encoding.UTF8.GetBytes("metadata")), 1));
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(160, 150), "account-01", 2, false,
-                       ResolvedEvent.Sample(_eventId, "append", false, Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata")), 2));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, new EventPosition(160, 150), "account-01", 2, false,
+                    ResolvedEvent.Sample(
+                        _eventId, "append", false, Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata")), 2));
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(180, 170), "account-02", 3, false,
-                       ResolvedEvent.Sample(_eventId, "append", false, Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata")), 3));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, new EventPosition(180, 170), "account-02", 3, false,
+                    ResolvedEvent.Sample(
+                        _eventId, "append", false, Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata")), 3));
         }
 
         [Test]
@@ -87,36 +96,52 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             // 2 - by emitted stream to ensure idempotency
             Assert.AreEqual(
                 2,
-                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>().Count(
-                    v => v.EventStreamId == "$projections-projection-account-01-state"));
+                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>()
+                         .Count(v => v.EventStreamId == "$projections-projection-account-01-state"));
             Assert.AreEqual(
                 2,
-                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>().Count(
-                    v => v.EventStreamId == "$projections-projection-account-02-state"));
+                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>()
+                         .Count(v => v.EventStreamId == "$projections-projection-account-02-state"));
         }
 
         [Test]
         public void update_state_snapshots_are_written_to_the_correct_stream()
         {
-            Assert.AreEqual(4, _writeEventHandler.HandledMessages.Count);
-            Assert.AreEqual(
-                "$projections-projection-account-01-state", _writeEventHandler.HandledMessages[0].EventStreamId);
-            Assert.AreEqual(
-                "$projections-projection-account-02-state", _writeEventHandler.HandledMessages[1].EventStreamId);
-            Assert.AreEqual(
-                "$projections-projection-account-01-state", _writeEventHandler.HandledMessages[2].EventStreamId);
-            Assert.AreEqual(
-                "$projections-projection-account-02-state", _writeEventHandler.HandledMessages[3].EventStreamId);
+            var writeEvents =
+                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "StateUpdated")).ToList();
+            Assert.AreEqual(4, writeEvents.Count);
+            Assert.AreEqual("$projections-projection-account-01-state", writeEvents[0].EventStreamId);
+            Assert.AreEqual("$projections-projection-account-02-state", writeEvents[1].EventStreamId);
+            Assert.AreEqual("$projections-projection-account-01-state", writeEvents[2].EventStreamId);
+            Assert.AreEqual("$projections-projection-account-02-state", writeEvents[3].EventStreamId);
         }
 
         [Test]
         public void update_state_snapshots_are_correct()
         {
-            Assert.AreEqual(4, _writeEventHandler.HandledMessages.Count);
-            Assert.AreEqual("data1", Encoding.UTF8.GetString(_writeEventHandler.HandledMessages[0].Events[0].Data));
-            Assert.AreEqual("data2", Encoding.UTF8.GetString(_writeEventHandler.HandledMessages[1].Events[0].Data));
-            Assert.AreEqual("data1$", Encoding.UTF8.GetString(_writeEventHandler.HandledMessages[2].Events[0].Data));
-            Assert.AreEqual("data2$", Encoding.UTF8.GetString(_writeEventHandler.HandledMessages[3].Events[0].Data));
+            var writeEvents =
+                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "StateUpdated")).ToList();
+            Assert.AreEqual(4, writeEvents.Count);
+            Assert.AreEqual("data1", Encoding.UTF8.GetString(writeEvents[0].Events[0].Data));
+            Assert.AreEqual("data2", Encoding.UTF8.GetString(writeEvents[1].Events[0].Data));
+            Assert.AreEqual("data1$", Encoding.UTF8.GetString(writeEvents[2].Events[0].Data));
+            Assert.AreEqual("data2$", Encoding.UTF8.GetString(writeEvents[3].Events[0].Data));
+        }
+
+        [Test]
+        public void register_new_partition_state_stream_only_once()
+        {
+            var writes =
+                _writeEventHandler.HandledMessages.Where(v => v.EventStreamId == "$projections-projection-partitions")
+                                  .ToArray();
+            Assert.AreEqual(2, writes.Length);
+
+            Assert.AreEqual(1, writes[0].Events.Length);
+            Assert.AreEqual("account-01", Encoding.UTF8.GetString(writes[0].Events[0].Data));
+
+            Assert.AreEqual(1, writes[1].Events.Length);
+            Assert.AreEqual("account-02", Encoding.UTF8.GetString(writes[1].Events[0].Data));
+
         }
     }
 }

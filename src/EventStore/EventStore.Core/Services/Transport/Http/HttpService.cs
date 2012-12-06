@@ -111,7 +111,7 @@ namespace EventStore.Core.Services.Transport.Http
             _inputBus = inputBus;
             _publishEnvelope = new PublishEnvelope(inputBus);
 
-            _pending = new SortedSet<HttpEntity>(new HttpEntityReceivedComparer());
+            _pending = new SortedSet<HttpEntity>(new HttpEntity.HttpEntityReceivedComparer());
             _actions = new Dictionary<ControllerAction, Action<HttpEntity, UriTemplateMatch>>();
 
             _httpPipe = new HttpMessagePipe();
@@ -164,7 +164,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             foreach (var request in garbage)
             {
-                request.Manager.Reply(
+                request.Manager.ReplyStatus(
                     HttpStatusCode.RequestTimeout,
                     "Server was unable to handle request in time",
                     e => _log.ErrorException(e, "Error occured while closing timed out connection (http service core)"));
@@ -286,7 +286,7 @@ namespace EventStore.Core.Services.Transport.Http
         private void MethodNotAllowed(HttpListenerContext context, string[] allowed)
         {
             var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
-            entity.Manager.Reply(HttpStatusCode.MethodNotAllowed,
+            entity.Manager.ReplyStatus(HttpStatusCode.MethodNotAllowed,
                                  "Requested method is not allowed for requested url",
                                  e => _log.ErrorException(e, "Error while closing http connection (http service core)"));
         }
@@ -294,7 +294,7 @@ namespace EventStore.Core.Services.Transport.Http
         private void RespondWithOptions(HttpListenerContext context, string[] allowed)
         {
             var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
-            entity.Manager.Reply(HttpStatusCode.OK,
+            entity.Manager.ReplyStatus(HttpStatusCode.OK,
                                  "OK",
                                  e => _log.ErrorException(e, "Error while closing http connection (http service core)"));
         }
@@ -302,7 +302,7 @@ namespace EventStore.Core.Services.Transport.Http
         private void NotFound(HttpListenerContext context)
         {
             var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, new string[0], _ => { });
-            entity.Manager.Reply(HttpStatusCode.NotFound,
+            entity.Manager.ReplyStatus(HttpStatusCode.NotFound,
                                  "Not Found",
                                  e => _log.ErrorException(e, "Error while closing http connection (http service core)"));
         }
@@ -310,7 +310,7 @@ namespace EventStore.Core.Services.Transport.Http
         private void InternalServerError(HttpListenerContext context)
         {
             var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, new string[0], _ => { });
-            entity.Manager.Reply(HttpStatusCode.InternalServerError,
+            entity.Manager.ReplyStatus(HttpStatusCode.InternalServerError,
                                  "Internal Server Error",
                                  e => _log.ErrorException(e, "Error while closing http connection (http service core)"));
         }
@@ -318,7 +318,7 @@ namespace EventStore.Core.Services.Transport.Http
         private void BadCodec(HttpListenerContext context, string reason)
         {
             var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, new string[0], _ => { });
-            entity.Manager.Reply(HttpStatusCode.UnsupportedMediaType,
+            entity.Manager.ReplyStatus(HttpStatusCode.UnsupportedMediaType,
                                  reason,
                                  e => _log.ErrorException(e, "Error while closing http connection (http service core)"));
         }
@@ -331,12 +331,9 @@ namespace EventStore.Core.Services.Transport.Http
                                         Action<HttpEntity> onRequestSatisfied)
         {
             return new HttpEntity(receivedTime,
-                                  context.Request.UserHostName,
                                   requestCodec,
                                   responseCodec,
                                   context,
-                                  context.Request,
-                                  context.Response,
                                   allowedMethods,
                                   onRequestSatisfied);
         }

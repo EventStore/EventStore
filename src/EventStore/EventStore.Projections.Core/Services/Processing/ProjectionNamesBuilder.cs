@@ -54,5 +54,11 @@ namespace EventStore.Projections.Core.Services.Processing
         internal const string ProjectionsStreamPrefix = "$projections-";
         private const string ProjectionsStateStreamSuffix = "-state";
         internal const string ProjectionCheckpointStreamSuffix = "-checkpoint";
+        private const string ProjectionPartitionCatalogStreamSuffix = "-partitions";
+
+        public string GetPartitionCatalogStreamName(string name)
+        {
+            return ProjectionsStreamPrefix + name + ProjectionPartitionCatalogStreamSuffix;
+        }
     }
 }

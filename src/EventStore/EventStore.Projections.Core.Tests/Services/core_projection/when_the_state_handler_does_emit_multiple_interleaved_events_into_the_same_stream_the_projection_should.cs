@@ -43,12 +43,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             ExistingEvent(
                 "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", "{}");
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
             ExistingEvent(
                 "$projections-projection-state", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", "{}");
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
             NoStream(FakeProjectionStateHandler._emit1StreamId);
             NoStream(FakeProjectionStateHandler._emit2StreamId);
         }

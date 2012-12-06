@@ -13,7 +13,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected CoreProjection _coreProjection;
         protected TestHandler<ProjectionSubscriptionManagement.Subscribe> _subscribeProjectionHandler;
         protected TestHandler<ClientMessage.WriteEvents> _writeEventHandler;
-        protected readonly string _lastSeenEvent = Guid.NewGuid().ToString("D");
         protected Guid _firstWriteCorrelationId;
         protected FakeProjectionStateHandler _stateHandler;
         protected int _checkpointHandledThreshold = 5;

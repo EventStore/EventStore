@@ -66,7 +66,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             Log.Info("Request shut down of node because halt command has been received.");
             Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: false));
-            entity.Manager.Reply(HttpStatusCode.OK,
+            entity.Manager.ReplyStatus(HttpStatusCode.OK,
                                  "OK",
                                  e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
         }
@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             Log.Info("Request shut down of node because shutdown command has been received.");
             Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: true));
-            entity.Manager.Reply(HttpStatusCode.OK,
+            entity.Manager.ReplyStatus(HttpStatusCode.OK,
                                  "OK",
                                  e => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
         }

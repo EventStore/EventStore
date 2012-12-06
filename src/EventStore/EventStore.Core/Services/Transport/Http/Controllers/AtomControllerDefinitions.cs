@@ -318,7 +318,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         public void CreateStream(HttpEntity entity)
         {
-            entity.Manager.ReadRequestAsync(CreateStreamBodyRead,
+            entity.Manager.ReadTextRequestAsync(CreateStreamBodyRead,
                                             e => Log.ErrorException(e, "Error while reading request (CREATE stream)"));
         }
 
@@ -350,7 +350,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public void DeleteStream(HttpEntity entity, string stream)
         {
             entity.Manager.AsyncState = stream;
-            entity.Manager.ReadRequestAsync(DeleteStreamBodyRead,
+            entity.Manager.ReadTextRequestAsync(DeleteStreamBodyRead,
                                             e => Log.ErrorException(e, "Error while reading request (DELETE stream)"));
         }
 
@@ -397,7 +397,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public void PostEntry(HttpEntity entity, string stream)
         {
             entity.Manager.AsyncState = stream;
-            entity.Manager.ReadRequestAsync(OnPostEntryRequestRead, 
+            entity.Manager.ReadTextRequestAsync(OnPostEntryRequestRead, 
                                             e => Log.ErrorException(e, "Error while reading request (POST entry)"));
         }
 

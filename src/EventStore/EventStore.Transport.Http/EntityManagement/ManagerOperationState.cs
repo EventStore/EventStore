@@ -34,20 +34,20 @@ namespace EventStore.Transport.Http.EntityManagement
     internal class ManagerOperationState
     {
         public readonly HttpEntity Entity;
-        public readonly Action<HttpEntityManager, byte[]> OnSuccess;
+        public readonly Action<HttpEntityManager, byte[]> OnReadSuccess;
         public readonly Action<Exception> OnError;
 
         public Stream InputStream { get; set; }
         public Stream OutputStream { get; set; }
 
-        public ManagerOperationState(HttpEntity entity, Action<HttpEntityManager, byte[]> onSuccess, Action<Exception> onError)
+        public ManagerOperationState(HttpEntity entity, Action<HttpEntityManager, byte[]> onReadSuccess, Action<Exception> onError)
         {
             Ensure.NotNull(entity, "entity");
-            Ensure.NotNull(onSuccess, "onSuccess");
+            Ensure.NotNull(onReadSuccess, "OnReadSuccess");
             Ensure.NotNull(onError, "onError");
 
             Entity = entity;
-            OnSuccess = onSuccess;
+            OnReadSuccess = onReadSuccess;
             OnError = onError;
         }
 

@@ -40,22 +40,60 @@ namespace EventStore.Core.Messages
 
     public static class HttpMessage
     {
-        public class HttpSend: Message
+        public class HttpSendMessage : Message
         {
-            public readonly HttpEntity Entity;
-            public readonly Func<HttpEntity, Message, string> Formatter;
-            public readonly Func<HttpEntity, Message, ResponseConfiguration> Configurator;
+            public readonly HttpEntityManager HttpEntityManager;
+
+            protected HttpSendMessage(HttpEntityManager httpEntityManager)
+            {
+                HttpEntityManager = httpEntityManager;
+            }
+        }
+
+        public class HttpSend : HttpSendMessage
+        {
+            public readonly string Data;
+            public readonly ResponseConfiguration Configuration;
             public readonly Message Message;
 
-            public HttpSend(HttpEntity entity, 
-                            Func<HttpEntity, Message, string> formatter, 
-                            Func<HttpEntity, Message, ResponseConfiguration> configurator,
-                            Message message)
+            public HttpSend(
+                HttpEntityManager httpEntityManager, ResponseConfiguration configuration, string data, Message message)
+                : base(httpEntityManager)
             {
-                Entity = entity;
-                Formatter = formatter;
-                Configurator = configurator;
+                Data = data;
+                Configuration = configuration;
                 Message = message;
+            }
+        }
+
+        public class HttpBeginSend : HttpSendMessage
+        {
+            public readonly ResponseConfiguration Configuration;
+
+            public HttpBeginSend(
+                HttpEntityManager httpEntityManager, ResponseConfiguration configuration)
+                : base(httpEntityManager)
+            {
+                Configuration = configuration;
+            }
+        }
+
+        public class HttpSendPart : HttpSendMessage
+        {
+            public readonly string Data;
+
+            public HttpSendPart(HttpEntityManager httpEntityManager, string data)
+                : base(httpEntityManager)
+            {
+                Data = data;
+            }
+        }
+
+        public class HttpEndSend : HttpSendMessage
+        {
+            public HttpEndSend(HttpEntityManager httpEntityManager)
+                : base(httpEntityManager)
+            {
             }
         }
 

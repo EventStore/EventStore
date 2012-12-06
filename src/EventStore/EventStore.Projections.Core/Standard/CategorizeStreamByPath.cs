@@ -73,6 +73,8 @@ namespace EventStore.Projections.Core.Standard
             newState = null;
             if (sequenceNumber != 0)
                 return false; // not our event
+            if (streamId.StartsWith("$"))
+                return false;
             var lastSlashPos = streamId.LastIndexOf(_separator);
             if (lastSlashPos < 0)
                 return true; // handled but not interesting to us

@@ -27,8 +27,8 @@
 // 
 
 using System;
+using System.Linq;
 using System.Text;
-using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -36,43 +36,59 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_state_handler_does_process_an_event_the_projection_should : TestFixtureWithCoreProjectionStarted
+    public class when_receiving_committed_event_the_projection_with_existing_partitioned_state_should :
+        TestFixtureWithCoreProjectionStarted
     {
+        private Guid _eventId;
+        private string _testProjectionState = @"{""test"":1}";
+
         protected override void Given()
         {
+            _configureBuilderByQuerySource = source =>
+                {
+                    source.FromAll();
+                    source.AllEvents();
+                    source.SetByStream();
+                };
+            TicksAreHandledImmediately();
+            NoStream("$projections-projection-state");
             ExistingEvent(
-                "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
+                "$projections-projection-partitions", "PartitionCreated",
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "account-01");
+            ExistingEvent(
+                "$projections-projection-account-01-state", "StateUpdated",
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", _testProjectionState);
+            AllWritesSucceed();
         }
 
         protected override void When()
         {
             //projection subscribes here
+            _eventId = Guid.NewGuid();
+            _consumer.HandledMessages.Clear();
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                       ResolvedEvent.Sample(Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                                           Encoding.UTF8.GetBytes("metadata")), 0));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, new EventPosition(120, 110), "account-01", 2, false,
+                    ResolvedEvent.Sample(
+                        _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
+            _coreProjection.Handle(
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, new EventPosition(160, 150), "account-01", 3, false,
+                    ResolvedEvent.Sample(
+                        _eventId, "append", false, Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata")), 2));
         }
 
         [Test]
-        public void write_the_new_state_snapshot()
+        public void register_new_partition_state_stream_only_once()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
-
-            var data = Encoding.UTF8.GetString(_writeEventHandler.HandledMessages[0].Events[0].Data);
-            Assert.AreEqual("data", data);
-        }
-
-        [Test]
-        public void emit_a_state_updated_event()
-        {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
-
-            var @event = _writeEventHandler.HandledMessages[0].Events[0];
-            Assert.AreEqual("StateUpdated", @event.EventType);
+            var writes =
+                _writeEventHandler.HandledMessages.Where(v => v.EventStreamId == "$projections-projection-partitions")
+                                  .ToArray();
+            Assert.AreEqual(0, writes.Length);
         }
     }
 }
