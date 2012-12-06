@@ -42,20 +42,16 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             ExistingEvent(
                 "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 200, ""PreparePosition"": 150, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
+                @"{""CommitPosition"": 200, ""PreparePosition"": 150}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 300, ""PreparePosition"": 250, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
+                @"{""CommitPosition"": 300, ""PreparePosition"": 250}", _testProjectionState);
         }
 
         protected override void When()
