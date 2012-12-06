@@ -90,7 +90,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (versions.Length == 0)
                     {
                         throw new CorruptDatabaseException(
-                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i)));
+                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i, 0)));
                     }
 
                     for (int j=1; j<versions.Length; ++j)
@@ -156,7 +156,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (versions.Length == 0)
                     {
                         throw new CorruptDatabaseException(
-                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i)));
+                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i, 0)));
                     }
 
                     var chunkFileName = versions[0];
@@ -198,7 +198,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var writerPosition = (int)(pos % Config.ChunkSize);
 
             ChunkFooter chunkFooter;
-            using (var fs = File.OpenRead(chunkFileName))
+            using (var fs = new FileStream(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 if (fs.Length < ChunkFooter.Size + ChunkHeader.Size)
                 {

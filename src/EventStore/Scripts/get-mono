@@ -7,6 +7,18 @@ function err() {
 
 echo get-mono [[tag] [prefix]]
 
+if [ ! -z $patchtoapply ]
+then
+  echo "Patch $patchtoapply will be applied before build"
+  if [ ! -f $patchtoapply ]
+  then
+    echo "File with patch was not found"
+    err
+  fi
+else
+  echo "Patch to apply was not provided"
+fi
+
 tag=${1:-""}
 prefix=$2
 
@@ -48,8 +60,9 @@ apt-get install -y mono-gmcs || err
 
 if [[ -d mono ]] ; then
   pushd mono || err
-  git checkout master
-  git reset --hard
+  git clean -dfx || err
+  git reset --hard || err
+  git checkout master || err
   git pull || err
   popd || err
 else
@@ -61,7 +74,13 @@ pushd mono || err
 if [ ! -z $tag ]
 then
   echo "Checking out version or tag [$tag]"
-  git checkout $tag
+  git checkout $tag || err
+fi
+
+if [ ! -z $patchtoapply ]
+then
+  echo "Applying patch $patchtoapply ..."
+  git apply $patchtoapply || err
 fi
 
 echo "Ready to build, output prefix $MONO_PREFIX"

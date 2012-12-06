@@ -45,12 +45,23 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy
             _prefix = prefix;
         }
 
-        public string GetFilenameFor(int index, int version = 0)
+        public string GetFilenameFor(int index, int version)
         {
             Ensure.Nonnegative(index, "index");
             Ensure.Nonnegative(version, "version");
 
             return Path.Combine(_path, string.Format("{0}{1:000000}.{2:000000}", _prefix, index, version));
+        }
+
+        public string DetermineBestVersionFilenameFor(int index)
+        {
+            var allVersions = GetAllVersionsFor(index);
+            if (allVersions.Length == 0)
+                return GetFilenameFor(index, 0);
+            int lastVersion;
+            if (!int.TryParse(allVersions[0].Substring(allVersions[0].LastIndexOf('.') + 1), out lastVersion))
+                throw new Exception(string.Format("Couldn't determine version from filename '{0}'.", allVersions[0]));
+            return GetFilenameFor(index, lastVersion + 1);
         }
 
         public string[] GetAllVersionsFor(int index)

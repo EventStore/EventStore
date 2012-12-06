@@ -132,6 +132,8 @@ namespace EventStore.ClientAPI
             {
                 if (_active)
                     throw new InvalidOperationException("EventStoreConnection is already active");
+                if (_stopping)
+                    throw new InvalidOperationException("EventStoreConnection has been closed");
                 _active = true;
 
                 _tcpEndPoint = tcpEndPoint;
@@ -166,6 +168,7 @@ namespace EventStore.ClientAPI
                     return;
 
                 _stopping = true;
+                _active = false;
 
                 _connection.Close();
                 _subscriptionsChannel.Close();
@@ -467,7 +470,7 @@ namespace EventStore.ClientAPI
                     {
                         _reconnectionsCount += 1;
                         if (_reconnectionsCount > _settings.MaxReconnections)
-                            throw new CannotEstablishConnectionException();
+                            Close();
 
                         _lastReconnectionTimestamp = DateTime.UtcNow;
                         _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);

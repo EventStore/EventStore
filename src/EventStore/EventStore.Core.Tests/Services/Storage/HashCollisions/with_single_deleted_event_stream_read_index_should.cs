@@ -37,11 +37,12 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
     public class with_single_deleted_event_stream_read_index_should : ReadIndexTestScenario
     {
         private EventRecord _prepare1;
+        private EventRecord _delete1;
 
         protected override void WriteTestScenario()
         {
             _prepare1 = WriteSingleEvent("ES", 0, "test1");
-            WriteDelete("ES");
+            _delete1 = WriteDelete("ES");
         }
 
         [Test]
@@ -151,19 +152,21 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         }
 
         [Test]
-        public void return_all_events_excluding_delete_event_on_read_all_forward()
+        public void return_all_events_on_read_all_forward()
         {
             var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(1, events.Length);
+            Assert.AreEqual(2, events.Length);
             Assert.AreEqual(_prepare1, events[0]);
+            Assert.AreEqual(_delete1, events[1]);
         }
 
         [Test]
-        public void return_all_events_excluding_delete_event_on_read_all_backward()
+        public void return_all_events_on_read_all_backward()
         {
             var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(1, events.Length);
-            Assert.AreEqual(_prepare1, events[0]);
+            Assert.AreEqual(2, events.Length);
+            Assert.AreEqual(_delete1, events[0]);
+            Assert.AreEqual(_prepare1, events[1]);
         }
     }
 }

@@ -39,6 +39,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         private EventRecord[] _prepares1;
         private EventRecord[] _prepares2;
         private EventRecord[] _prepares3;
+        private EventRecord _delete3;
 
         protected override void WriteTestScenario()
         {
@@ -59,7 +60,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             {
                 _prepares3[i] = WriteSingleEvent("EF", i, "test" + i);
             }
-            WriteDelete("EF");
+            _delete3 = WriteDelete("EF");
         }
 
         #region first
@@ -648,7 +649,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void return_all_prepares_on_read_all_forward()
         {
             var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(3 + 5 + 7, events.Length);
+            Assert.AreEqual(3 + 5 + 7 + 1, events.Length);
             
             Assert.AreEqual(_prepares1[0], events[0]);
             Assert.AreEqual(_prepares1[1], events[1]);
@@ -667,31 +668,35 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
             Assert.AreEqual(_prepares3[4], events[12]);
             Assert.AreEqual(_prepares3[5], events[13]);
             Assert.AreEqual(_prepares3[6], events[14]);
+
+            Assert.AreEqual(_delete3, events[15]);
         }
 
         [Test]
         public void return_all_prepares_on_read_all_backward()
         {
             var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event).ToArray();
-            Assert.AreEqual(3 + 5 + 7, events.Length);
+            Assert.AreEqual(3 + 5 + 7 + 1, events.Length);
 
-            Assert.AreEqual(_prepares1[0], events[14]);
-            Assert.AreEqual(_prepares1[1], events[13]);
-            Assert.AreEqual(_prepares1[2], events[12]);
+            Assert.AreEqual(_prepares1[0], events[15]);
+            Assert.AreEqual(_prepares1[1], events[14]);
+            Assert.AreEqual(_prepares1[2], events[13]);
 
-            Assert.AreEqual(_prepares2[0], events[11]);
-            Assert.AreEqual(_prepares2[1], events[10]);
-            Assert.AreEqual(_prepares2[2], events[9]);
-            Assert.AreEqual(_prepares2[3], events[8]);
-            Assert.AreEqual(_prepares2[4], events[7]);
+            Assert.AreEqual(_prepares2[0], events[12]);
+            Assert.AreEqual(_prepares2[1], events[11]);
+            Assert.AreEqual(_prepares2[2], events[10]);
+            Assert.AreEqual(_prepares2[3], events[9]);
+            Assert.AreEqual(_prepares2[4], events[8]);
 
-            Assert.AreEqual(_prepares3[0], events[6]);
-            Assert.AreEqual(_prepares3[1], events[5]);
-            Assert.AreEqual(_prepares3[2], events[4]);
-            Assert.AreEqual(_prepares3[3], events[3]);
-            Assert.AreEqual(_prepares3[4], events[2]);
-            Assert.AreEqual(_prepares3[5], events[1]);
-            Assert.AreEqual(_prepares3[6], events[0]);
+            Assert.AreEqual(_prepares3[0], events[7]);
+            Assert.AreEqual(_prepares3[1], events[6]);
+            Assert.AreEqual(_prepares3[2], events[5]);
+            Assert.AreEqual(_prepares3[3], events[4]);
+            Assert.AreEqual(_prepares3[4], events[3]);
+            Assert.AreEqual(_prepares3[5], events[2]);
+            Assert.AreEqual(_prepares3[6], events[1]);
+
+            Assert.AreEqual(_delete3, events[0]);
         }
 
         #endregion

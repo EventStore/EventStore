@@ -34,7 +34,6 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.TestClient.Commands.DvuBasic;
 
@@ -73,7 +72,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var expectedEventsPerStream = EventsPerStream.ToString();
 
             var isWatchStarted = false;
-            var store = GetConnection();
             var manager = GetProjectionsManager();
             
             var stopWatch = new Stopwatch();
@@ -120,7 +118,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected Task WriteData()
         {
-            var streams = Enumerable.Range(0, Streams).Select(i => string.Format("bank-account-it{0}-{1}", GetIterationCode(), i)).ToArray();
+            var streams = Enumerable.Range(0, Streams).Select(i => string.Format("bank_account_it{0}-{1}", GetIterationCode(), i)).ToArray();
             var slices = Split(streams, 3);
 
             var w1 = Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream, CreateBankEvent);
@@ -182,17 +180,27 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected string CreateCountItem()
         {
+            var projectionManager = GetProjectionsManager();
+
+            projectionManager.Enable("$by_category");
+
             string countItemsProjectionName = string.Format("CountItems_it{0}", GetIterationCode());
-            const string countItemsProjection = @"
-                fromAll().whenAny(
-                    function(state, event) {
-                        if (event.streamId.indexOf('bank-account-') != 0) return state;
-                        if (state.count == undefined) state.count = 0;
-                        state.count += 1;
-                        return state;
-                    });
-";
-            GetProjectionsManager().CreatePersistent(countItemsProjectionName, countItemsProjection);
+            string countItemsProjection = string.Format(@"
+                fromCategory('bank_account_it{0}').when({{
+                $init: function() {{ return {{c:0}}; }},
+                AccountCredited: function (state, event) {{ 
+                                        state.c += 1; 
+                                    }},
+                AccountDebited: function (state, event) {{ 
+                                        state.c+= 1; 
+                                    }},
+                AccountCheckPoint: function (state, event) {{ 
+                                        state.c+= 1; 
+                                    }}
+                }})
+", GetIterationCode());
+
+            projectionManager.CreatePersistent(countItemsProjectionName, countItemsProjection);
             return countItemsProjectionName;
         }
 
@@ -200,36 +208,40 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             string countItemsProjectionName = string.Format("CheckSumsInAccounts_it{0}", GetIterationCode());
             string countItemsProjection = string.Format(@"
-                fromAll().whenAny(
-                    function(state, event) {{
-                        if (event.streamId.indexOf('bank-account-it{0}-0') != 0) return state;
-                        if (event.eventType.indexOf('AccountCredited') == 0)
-                        {{
-                            if (state.credited == undefined) {{ state.credited = 0; state.credsum = '' }};
-                            state.credited += event.body.creditedAmount;
-                            // state.credsum += '#' + event.sequenceNumber + ':' + event.body.creditedAmount + ';';
+                fromStream('bank_account_it{0}-0').when({{
+                    $init: function() {{ 
+                        return {{credited:0, credsum:'', debited:0, debsum:''}}; 
+                    }},
+                    AccountCredited: function (state, event) {{ 
+                        state.credited += event.body.creditedAmount; 
+                        /*state.credsum += '#' + event.sequenceNumber + ':' + event.body.creditedAmount + ';'*/ 
+                    }},
+                    AccountDebited: function (state, event) {{ 
+                        state.debited += event.body.debitedAmount; 
+                        /*state.debsum += '#' + event.sequenceNumber + ':' + event.body.debitedAmount + ';'*/ 
+                    }},
+                    AccountCheckPoint: function(state, event) {{ 
+                        if (state.credited != event.body.creditedAmount) {{
+                            throw JSON.stringify({{
+                                message: 'Credited amount is incorrect. ',
+                                expected: event.body.creditedAmount,
+                                actual: state.credited,
+                                stream: event.streamId,
+                                ver: event.sequenceNumber,
+                                details: state.credsum }});
                         }}
-
-                        if (event.eventType.indexOf('AccountDebited') == 0)
-                        {{
-                            if (state.debited == undefined) {{ state.debited = 0; state.debsum = '' }};
-                            state.debited += event.body.debitedAmount;
-                            // state.debsum += '#' + event.sequenceNumber + ':' + event.body.debitedAmount + ';';
+                        if (state.debited != event.body.debitedAmount) {{
+                            throw JSON.stringify({{
+                                message: 'Debited amount is incorrect. ',
+                                expected: event.body.debitedAmount,
+                                actual: state.debited,
+                                stream: event.streamId,
+                                ver: event.sequenceNumber,
+                                details: state.debsum }});
                         }}
-
-                        if (event.eventType.indexOf('AccountCheckPoint') == 0)
-                        {{
-                            if (state.debited == undefined) return state;
-                            if (state.credited == undefined) return state;
-                            
-                            if (state.credited != event.body.creditedAmount) throw 'Credited amount is incorrect (expected: ' + event.body.creditedAmount + ', actual: ' + state.credited + ' stream: ' + event.streamId + ' ver: ' + event.sequenceNumber + ': details: ' + state.credsum + ')'
-                            if (state.debited != event.body.debitedAmount) throw 'Debited amount is incorrect (expected: ' + event.body.debitedAmount + ', actual: ' + state.debited + ' stream: ' + event.streamId + ' ver: ' + event.sequenceNumber + ': details: ' + state.debsum + ')'
-
-                            state.success=event.sequenceNumber;
-                        }}
-                        
-                        return state;
-                    }});
+                        state.success=event.sequenceNumber;
+                    }}
+                }})                
 ", GetIterationCode());
             
             GetProjectionsManager().CreatePersistent(countItemsProjectionName, countItemsProjection);
