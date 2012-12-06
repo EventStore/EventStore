@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.Transport.Http
     {
         public readonly int Code;
         public readonly string Description;
-        public readonly string Type;
+        public readonly string ContentType;
 
         public readonly KeyValuePair<string, string>[] Headers;
 
@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             Code = code;
             Description = description;
-            Type = type;
+            ContentType = type;
             Headers = headers;
         }
     }

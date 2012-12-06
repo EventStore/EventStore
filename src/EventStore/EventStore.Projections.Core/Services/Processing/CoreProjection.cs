@@ -129,6 +129,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _stateStreamNamePattern;
         private readonly string _stateStreamName;
         private readonly string _partitionCatalogStreamName;
+        private readonly CheckpointTag _makeZeroCheckpointTag;
 
         private readonly IPublisher _publisher;
 
@@ -571,7 +572,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly List<CoreProjectionManagementMessage.DebugState.Event> _eventsForDebugging =
             new List<CoreProjectionManagementMessage.DebugState.Event>();
 
-        private CheckpointTag _makeZeroCheckpointTag;
 
         private void InternalCollectEventForDebugging(CommittedEventWorkItem committedEventWorkItem, string partition, ProjectionSubscriptionMessage.CommittedEventReceived message)
         {

@@ -58,7 +58,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void OnGetPing(HttpEntity entity, UriTemplateMatch match)
         {
             var response = new HttpMessage.TextMessage("Ping request successfully handled");
-            entity.Manager.Reply(Format.TextMessage(entity, response),
+            entity.Manager.ReplyTextContent(Format.TextMessage(entity, response),
                                  HttpStatusCode.OK,
                                  "OK",
                                  entity.ResponseCodec.ContentType,

@@ -32,13 +32,17 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
 
 namespace EventStore.Core.Services
 {
-    public class NetworkSendService: IPublisher,
+    public class NetworkSendService: IPublisher, 
                                      IHandle<TcpMessage.TcpSend>,
-                                     IHandle<HttpMessage.HttpSend>
+                                     IHandle<HttpMessage.HttpSend>,
+                                     IHandle<HttpMessage.HttpBeginSend>,
+                                     IHandle<HttpMessage.HttpSendPart>,
+                                     IHandle<HttpMessage.HttpEndSend>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<NetworkSendService>();
         
@@ -88,10 +92,14 @@ namespace EventStore.Core.Services
                 _tcpQueues[queueNumber].Handle(message);
                 return;
             }
-            if (message is HttpMessage.HttpSend)
+            var sendHttpMessage = message as HttpMessage.HttpSendMessage;
+            if (sendHttpMessage != null)
             {
-                var queueNumber = ((uint)Interlocked.Increment(ref _httpQueueIndex)) % _httpQueueCount;
-                _httpQueues[queueNumber].Handle(message);
+                //NOTE: subsequent messages to the same entitgy must be handled in order
+                var queueNumber = sendHttpMessage.HttpEntityManager.GetHashCode() % _httpQueueCount;
+                    
+                    //((uint)Interlocked.Increment(ref _httpQueueIndex)) % _httpQueueCount;
+                _httpQueues[queueNumber].Handle(sendHttpMessage);
                 return;
             }
         }
@@ -116,22 +124,46 @@ namespace EventStore.Core.Services
                         throw new ArgumentOutOfRangeException();
                 }
 
-                message.Entity.Manager.Reply(code,
+                message.HttpEntityManager.ReplyStatus(code,
                                              deniedToHandle.Details,
                                              exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
             }
             else
             {
-                var response = message.Formatter(message.Entity, message.Message);
-                var config = message.Configurator(message.Entity, message.Message);
+                var response = message.Data;
+                var config = message.Configuration;
 
-                message.Entity.Manager.Reply(response,
+                message.HttpEntityManager.ReplyTextContent(response,
                                              config.Code,
                                              config.Description,
-                                             config.Type,
+                                             config.ContentType,
                                              config.Headers,
                                              exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
             }
         }
+
+
+        public void Handle(HttpMessage.HttpBeginSend message)
+        {
+            var config = message.Configuration;
+
+            message.HttpEntityManager.BeginReply(config.Code, config.Description, config.ContentType, config.Headers);
+        }
+
+        public void Handle(HttpMessage.HttpSendPart message)
+        {
+                var response = message.Data;
+
+                message.HttpEntityManager.ContinueReplyTextContent(response,
+                                             exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message),
+                                                        () =>
+                                                            { });
+        }
+        public void Handle(HttpMessage.HttpEndSend message)
+        {
+            message.HttpEntityManager.EndReply(
+                                             exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message));
+        }
+
     }
 }

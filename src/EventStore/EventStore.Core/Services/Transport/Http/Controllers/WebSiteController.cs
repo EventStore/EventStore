@@ -70,7 +70,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     HttpMethod.Get, 
                     Codec.NoCodecs, 
                     new ICodec[] { Codec.ManualEncoding }, Codec.ManualEncoding),
-                    (http, match) => http.Manager.Reply(
+                    (http, match) => http.Manager.ReplyTextContent(
                         "Moved", 302, "Found", "text/plain",
                         new[]
                             {

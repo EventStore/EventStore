@@ -94,11 +94,11 @@ namespace EventStore.Transport.Http.EntityManagement
             }
         }
 
-        private void SetResponseType(string type)
+        private void SetContentType(string contentType)
         {
             try
             {
-                HttpEntity.Response.ContentType = type;
+                HttpEntity.Response.ContentType = contentType;
             }
             catch (ObjectDisposedException e)
             {
@@ -159,39 +159,45 @@ namespace EventStore.Transport.Http.EntityManagement
             }
         }
 
-        public void Reply(int code, string description, Action<Exception> onError)
+        public void ReplyStatus(int code, string description, Action<Exception> onError)
         {
             Reply((byte[])null, code, description, null, null, onError);
         }
 
-        public void Reply(string response,
+        public void ReplyTextContent(string response,
                           int code,
                           string description,
                           string type,
                           KeyValuePair<string, string>[] headers,
                           Action<Exception> onError)
         {
+            //TODO: add encoding header???
             Reply(Encoding.UTF8.GetBytes(response ?? string.Empty), code, description, type, headers, onError);
+        }
+
+        public void ContinueReplyTextContent(string response, Action<Exception> onError, Action completed)
+        {
+            //TODO: add encoding header???
+            var bytes = Encoding.UTF8.GetBytes(response ?? string.Empty);
+            ContinueReply(bytes, onError, completed);
+        }
+
+        public void EndReply(Action<Exception> onError)
+        {
+            IOStreams.SafelyDispose(HttpEntity.Response.OutputStream);
+            CloseConnection(e => Log.ErrorException(e, "Close connection error (after successful response write)"));
         }
 
         public void Reply(byte[] response,
                           int code,
                           string description,
-                          string type,
+                          string contentType,
                           KeyValuePair<string, string>[] headers,
                           Action<Exception> onError)
         {
             Ensure.NotNull(onError, "onError");
 
-            bool isAlreadyProcessing = Interlocked.CompareExchange(ref _processing, 1, 0) == 1;
-            if (isAlreadyProcessing)
-                return;
-
-            SetResponseCode(code);
-            SetResponseDescription(description);
-            SetResponseType(type);
-            SetRequiredHeaders();
-            SetAdditionalHeaders(headers ?? Enumerable.Empty<KeyValuePair<string, string>>());
+            if (!BeginReply(code, description, contentType, headers)) return;
 
             if (response == null || response.Length == 0)
             {
@@ -199,27 +205,54 @@ namespace EventStore.Transport.Http.EntityManagement
                 CloseConnection(onError);
             }
             else
-                WriteResponseAsync(response, onError);
+            {
+                SetResponseLength(response.Length);
+                ContinueWriteResponseAsync(response, onError, ResponseWritten);
+            }
         }
 
-        private void WriteResponseAsync(byte[] response, Action<Exception> onError)
+        public void ContinueReply(byte[] response, Action<Exception> onError, Action completed)
         {
-            SetResponseLength(response.Length);
+            Ensure.NotNull(onError, "onError");
+            Ensure.NotNull(completed, "completed");
 
-            var state = new ManagerOperationState(HttpEntity, (sender, e) => {}, onError)
-            {
-                InputStream = new MemoryStream(response),
-                OutputStream = HttpEntity.Response.OutputStream
-            };
+            ContinueWriteResponseAsync(response, onError, (sender, args) =>
+                {
+                    ResponsePartWritten(sender);  
+                    completed(); 
+                });
+        }
+
+        public bool BeginReply(int code, string description, string contentType, KeyValuePair<string, string>[] headers)
+        {
+            bool isAlreadyProcessing = Interlocked.CompareExchange(ref _processing, 1, 0) == 1;
+            if (isAlreadyProcessing)
+                return false;
+
+            SetResponseCode(code);
+            SetResponseDescription(description);
+            SetContentType(contentType);
+            SetRequiredHeaders();
+            SetAdditionalHeaders(headers ?? Enumerable.Empty<KeyValuePair<string, string>>());
+            return true;
+        }
+
+        private void ContinueWriteResponseAsync(byte[] response, Action<Exception> onError, EventHandler copierOnCompleted)
+        {
+            var state = new ManagerOperationState(HttpEntity, (sender, e) => { }, onError)
+                {
+                    InputStream = new MemoryStream(response),
+                    OutputStream = HttpEntity.Response.OutputStream
+                };
             var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
-            copier.Completed += ResponseWritten;
+            copier.Completed += copierOnCompleted;
             copier.Start();
         }
 
         private void ResponseWritten(object sender, EventArgs eventArgs)
         {
             var copier = (AsyncStreamCopier<ManagerOperationState>) sender;
-            var state = copier.AsyncState;
+            ManagerOperationState state = copier.AsyncState;
 
             if (copier.Error != null)
             {
@@ -232,6 +265,20 @@ namespace EventStore.Transport.Http.EntityManagement
 
             state.DisposeIOStreams();
             CloseConnection(e => Log.ErrorException(e, "Close connection error (after successful response write)"));
+        }
+
+        private void ResponsePartWritten(object sender)
+        {
+            var copier = (AsyncStreamCopier<ManagerOperationState>)sender;
+            var state = copier.AsyncState;
+
+            if (copier.Error != null)
+            {
+                state.DisposeIOStreams();
+                CloseConnection(e => Log.ErrorException(e, "Close connection error (after crash in write response)"));
+
+                state.OnError(copier.Error);
+            }
         }
 
         public void ReadRequestAsync(Action<HttpEntityManager, string> onSuccess, Action<Exception> onError)
@@ -248,12 +295,12 @@ namespace EventStore.Transport.Http.EntityManagement
             }, onError);
         }
         
-        public void ReadRequestAsync(Action<HttpEntityManager, byte[]> onSuccess, Action<Exception> onError)
+        public void ReadRequestAsync(Action<HttpEntityManager, byte[]> onReadSuccess, Action<Exception> onError)
         {
-            Ensure.NotNull(onSuccess, "onSuccess");
+            Ensure.NotNull(onReadSuccess, "OnReadSuccess");
             Ensure.NotNull(onError, "onError");
 
-            var state = new ManagerOperationState(HttpEntity, onSuccess, onError)
+            var state = new ManagerOperationState(HttpEntity, onReadSuccess, onError)
             {
                 InputStream = HttpEntity.Request.InputStream,
                 OutputStream = new MemoryStream()
@@ -287,7 +334,7 @@ namespace EventStore.Transport.Http.EntityManagement
                 request = new byte[memory.Length];
                 Buffer.BlockCopy(memory.GetBuffer(), 0, request, 0, (int)memory.Length);
             }
-            state.OnSuccess(this, request);
+            state.OnReadSuccess(this, request);
         }
 
         private void CloseConnection(Action<Exception> onError)

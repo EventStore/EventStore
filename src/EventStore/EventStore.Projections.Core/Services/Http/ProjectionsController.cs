@@ -153,7 +153,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private static void OnProjections(HttpEntity http, UriTemplateMatch match)
         {
-            http.Manager.Reply(
+            http.Manager.ReplyTextContent(
                 "Moved", 302, "Found", "text/plain",
                 new[]
                     {
@@ -241,7 +241,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private void OnProjectionStatusGet(HttpEntity http, UriTemplateMatch match)
         {
-            http.Manager.Reply(
+            http.Manager.ReplyStatus(
                 HttpStatusCode.NotImplemented, "Not Implemented",
                 e => Log.ErrorException(e, "Error while closing http connection (http service core)"));
         }
@@ -411,7 +411,7 @@ namespace EventStore.Projections.Core.Services.Http
         private void OnPostShutdown(HttpEntity entity, UriTemplateMatch match)
         {
             Publish(new ClientMessage.RequestShutdown());
-            entity.Manager.Reply(HttpStatusCode.OK,
+            entity.Manager.ReplyStatus(HttpStatusCode.OK,
                                  "OK",
                                  (s, e) => Log.ErrorException(e, "Error while closing http connection (admin controller)"));
         }

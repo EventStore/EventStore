@@ -42,12 +42,12 @@ namespace EventStore.Core.Services.Transport.Http
         private const int MaxPossibleAge = 31556926;
         private const int MinPossibleAge = 1;
 
-        public static ResponseConfiguration Ok(HttpEntity entity, Message message)
+        public static ResponseConfiguration Ok(HttpResponseConfiguratorArgs entity, Message message)
         {
             return new ResponseConfiguration(HttpStatusCode.OK, "OK", entity.ResponseCodec.ContentType);
         }
 
-        public static ResponseConfiguration OkCache(HttpEntity entity, Message message, int seconds)
+        public static ResponseConfiguration OkCache(HttpResponseConfiguratorArgs entity, Message message, int seconds)
         {
             return OkCache(entity.ResponseCodec.ContentType, seconds);
         }
@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.Transport.Http
                                              new KeyValuePair<string, string>("Cache-Control", string.Format("max-age={0}", seconds)));
         }
 
-        public static ResponseConfiguration OkNoCache(HttpEntity entity, Message message, params KeyValuePair<string, string>[] headers)
+        public static ResponseConfiguration OkNoCache(HttpResponseConfiguratorArgs entity, Message message, params KeyValuePair<string, string>[] headers)
         {
             return OkNoCache(entity.ResponseCodec.ContentType, headers);
         }
@@ -79,12 +79,12 @@ namespace EventStore.Core.Services.Transport.Http
                                              }.ToArray());
         }
 
-        public static ResponseConfiguration NotFound(HttpEntity entity, Message message)
+        public static ResponseConfiguration NotFound(HttpResponseConfiguratorArgs entity, Message message)
         {
             return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", null);
         }
 
-        public static ResponseConfiguration Gone(HttpEntity entity, Message message)
+        public static ResponseConfiguration Gone(HttpResponseConfiguratorArgs entity, Message message)
         {
             return new ResponseConfiguration(HttpStatusCode.Gone, "Deleted", null);
         }
@@ -94,7 +94,7 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Internal Server Error", null);
         }
 
-        public static ResponseConfiguration ReadEventCompleted(HttpEntity entity, Message message)
+        public static ResponseConfiguration ReadEventCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
 
@@ -116,7 +116,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public static ResponseConfiguration ReadStreamEventsBackwardCompleted(HttpEntity entity, Message message)
+        public static ResponseConfiguration ReadStreamEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 
@@ -137,7 +137,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public static ResponseConfiguration WriteEventsCompleted(HttpEntity entity, Message message)
+        public static ResponseConfiguration WriteEventsCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.WriteEventsCompleted));
 
@@ -171,7 +171,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public static ResponseConfiguration GetFreshStatsCompleted(HttpEntity entity, Message message)
+        public static ResponseConfiguration GetFreshStatsCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(MonitoringMessage.GetFreshStatsCompleted));
 
@@ -182,7 +182,7 @@ namespace EventStore.Core.Services.Transport.Http
             return completed.Success ? OkNoCache(entity, message) : NotFound(entity, message);
         }
 
-        public static ResponseConfiguration CreateStreamCompleted(HttpEntity entity, Message message)
+        public static ResponseConfiguration CreateStreamCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
 
@@ -215,7 +215,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public static ResponseConfiguration DeleteStreamCompleted(HttpEntity entity, Message message)
+        public static ResponseConfiguration DeleteStreamCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.DeleteStreamCompleted));
 
@@ -242,7 +242,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public static ResponseConfiguration ListStreamsCompletedServiceDoc(HttpEntity entity, Message message)
+        public static ResponseConfiguration ListStreamsCompletedServiceDoc(HttpResponseConfiguratorArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ListStreamsCompleted));
 
@@ -252,7 +252,7 @@ namespace EventStore.Core.Services.Transport.Http
                        : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Couldn't get streams list. Try turning projection 'Index By Streams' on", null);
         }
 
-        public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpEntity entity, Message message)
+        public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
 
@@ -263,7 +263,7 @@ namespace EventStore.Core.Services.Transport.Http
                                                    "Failed to read all events backward", null);
         }
 
-        public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpEntity entity, Message message)
+        public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
 
