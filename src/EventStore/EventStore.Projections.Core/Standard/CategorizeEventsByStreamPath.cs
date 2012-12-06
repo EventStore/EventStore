@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Standard
         {
             emittedEvents = null;
             newState = null;
-            if (streamId.StartsWith(_categoryStreamPrefix))
+            if (streamId.StartsWith("$"))
                 return false;
             var lastSlashPos = streamId.LastIndexOf(_separator);
             if (lastSlashPos < 0)
