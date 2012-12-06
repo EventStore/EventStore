@@ -82,6 +82,9 @@ function scope($on, $notify) {
             if (name == 0 || name === "$init") {
                 eventProcessor.on_init_state(handlers[name]);
             }
+            else if (name === "$any") {
+                eventProcessor.on_any(handlers[name]);
+            }
             else {
                 eventProcessor.on_pure(name, handlers[name]);
             }
