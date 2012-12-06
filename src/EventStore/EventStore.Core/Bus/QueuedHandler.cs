@@ -258,7 +258,7 @@ namespace EventStore.Core.Bus
                 var lastItems = totalItems - _lastTotalItems;
                 var avgItemsPerSecond = lastRunMs != 0 ? (int)(1000 * lastItems / lastRunMs) : 0;
                 var avgProcessingTime = lastItems != 0 ? (totalBusyTime - _lastTotalBusyTime).TotalMilliseconds / lastItems : 0;
-                var idleTimePercent = lastRunMs != 0 ? 100.0 * (totalIdleTime - _lastTotalIdleTime).TotalMilliseconds / lastRunMs : 0;
+                var idleTimePercent = Math.Min(100.0, lastRunMs != 0 ? 100.0 * (totalIdleTime - _lastTotalIdleTime).TotalMilliseconds / lastRunMs : 0);
 
                 var stats = new QueueStats(
                     _name,
