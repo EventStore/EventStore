@@ -31,7 +31,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -159,27 +158,46 @@ namespace EventStore.Transport.Http.EntityManagement
             }
         }
 
-        public void ReplyStatus(int code, string description, Action<Exception> onError)
+        public void ReadRequestAsync(Action<HttpEntityManager, byte[]> onReadSuccess, Action<Exception> onError)
         {
-            Reply((byte[])null, code, description, null, null, onError);
+            Ensure.NotNull(onReadSuccess, "OnReadSuccess");
+            Ensure.NotNull(onError, "onError");
+
+            var state = new ManagerOperationState(HttpEntity, onReadSuccess, onError)
+                {
+                    InputStream = HttpEntity.Request.InputStream,
+                    OutputStream = new MemoryStream()
+                };
+
+            var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
+            copier.Completed += RequestRead;
+            copier.Start();
         }
 
-        public void ReplyTextContent(string response,
-                          int code,
-                          string description,
-                          string type,
-                          KeyValuePair<string, string>[] headers,
-                          Action<Exception> onError)
+        public bool BeginReply(int code, string description, string contentType, KeyValuePair<string, string>[] headers)
         {
-            //TODO: add encoding header???
-            Reply(Encoding.UTF8.GetBytes(response ?? string.Empty), code, description, type, headers, onError);
+            bool isAlreadyProcessing = Interlocked.CompareExchange(ref _processing, 1, 0) == 1;
+            if (isAlreadyProcessing)
+                return false;
+
+            SetResponseCode(code);
+            SetResponseDescription(description);
+            SetContentType(contentType);
+            SetRequiredHeaders();
+            SetAdditionalHeaders(headers ?? Enumerable.Empty<KeyValuePair<string, string>>());
+            return true;
         }
 
-        public void ContinueReplyTextContent(string response, Action<Exception> onError, Action completed)
+        public void ContinueReply(byte[] response, Action<Exception> onError, Action completed)
         {
-            //TODO: add encoding header???
-            var bytes = Encoding.UTF8.GetBytes(response ?? string.Empty);
-            ContinueReply(bytes, onError, completed);
+            Ensure.NotNull(onError, "onError");
+            Ensure.NotNull(completed, "completed");
+
+            ContinueWriteResponseAsync(response, onError, (sender, args) =>
+                {
+                    ResponsePartWritten(sender);  
+                    completed(); 
+                });
         }
 
         public void EndReply(Action<Exception> onError)
@@ -209,32 +227,6 @@ namespace EventStore.Transport.Http.EntityManagement
                 SetResponseLength(response.Length);
                 ContinueWriteResponseAsync(response, onError, ResponseWritten);
             }
-        }
-
-        public void ContinueReply(byte[] response, Action<Exception> onError, Action completed)
-        {
-            Ensure.NotNull(onError, "onError");
-            Ensure.NotNull(completed, "completed");
-
-            ContinueWriteResponseAsync(response, onError, (sender, args) =>
-                {
-                    ResponsePartWritten(sender);  
-                    completed(); 
-                });
-        }
-
-        public bool BeginReply(int code, string description, string contentType, KeyValuePair<string, string>[] headers)
-        {
-            bool isAlreadyProcessing = Interlocked.CompareExchange(ref _processing, 1, 0) == 1;
-            if (isAlreadyProcessing)
-                return false;
-
-            SetResponseCode(code);
-            SetResponseDescription(description);
-            SetContentType(contentType);
-            SetRequiredHeaders();
-            SetAdditionalHeaders(headers ?? Enumerable.Empty<KeyValuePair<string, string>>());
-            return true;
         }
 
         private void ContinueWriteResponseAsync(byte[] response, Action<Exception> onError, EventHandler copierOnCompleted)
@@ -279,36 +271,6 @@ namespace EventStore.Transport.Http.EntityManagement
 
                 state.OnError(copier.Error);
             }
-        }
-
-        public void ReadRequestAsync(Action<HttpEntityManager, string> onSuccess, Action<Exception> onError)
-        {
-            ReadRequestAsync((manager, bytes) =>
-            {
-                int offset = 0;
-                        
-                // check for UTF-8 BOM (0xEF, 0xBB, 0xBF) and skip it safely, if any
-                if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
-                    offset = 3;
-
-                onSuccess(manager, Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset));
-            }, onError);
-        }
-        
-        public void ReadRequestAsync(Action<HttpEntityManager, byte[]> onReadSuccess, Action<Exception> onError)
-        {
-            Ensure.NotNull(onReadSuccess, "OnReadSuccess");
-            Ensure.NotNull(onError, "onError");
-
-            var state = new ManagerOperationState(HttpEntity, onReadSuccess, onError)
-            {
-                InputStream = HttpEntity.Request.InputStream,
-                OutputStream = new MemoryStream()
-            };
-
-            var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
-            copier.Completed += RequestRead;
-            copier.Start();
         }
 
         private void RequestRead(object sender, EventArgs e)

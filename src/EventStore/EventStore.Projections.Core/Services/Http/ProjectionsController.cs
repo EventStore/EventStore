@@ -218,7 +218,7 @@ namespace EventStore.Projections.Core.Services.Http
         {
             var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
                 _networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
-            http.Manager.ReadRequestAsync(
+            http.Manager.ReadTextRequestAsync(
                 (o, s) =>
                 Publish(
                     new ProjectionManagementMessage.UpdateQuery(
@@ -306,7 +306,7 @@ namespace EventStore.Projections.Core.Services.Http
                         return new ResponseConfiguration(
                             201, "Created", codec.ContentType, new KeyValuePair<string, string>("Location", url));
                     }, ErrorsEnvelope(http));
-            http.Manager.ReadRequestAsync(
+            http.Manager.ReadTextRequestAsync(
                 (o, s) =>
                     {
                         ProjectionManagementMessage.Post postMessage;

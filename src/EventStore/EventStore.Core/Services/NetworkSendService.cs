@@ -34,6 +34,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
+using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services
 {
