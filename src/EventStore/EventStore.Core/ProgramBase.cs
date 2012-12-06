@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using EventStore.Common.CommandLine;
 using EventStore.Common.CommandLine.lib;
@@ -112,13 +113,14 @@ namespace EventStore.Core
             LogManager.Init(componentName, logsDirectory);
 
             Log.Info("\nOS: {0} ({1})\n"
-                     + "RUNTIME: {2}\n"
-                     + "GC: {3}\n"
-                     + "LOGS: {4}\n"
-                     + "{5}",
+                     + "RUNTIME: {2} ({3}-bit)\n"
+                     + "GC: {4}\n"
+                     + "LOGS: {5}\n"
+                     + "{6}",
                      OS.IsLinux ? "Linux" : "Windows",
                      Environment.OSVersion,
                      OS.GetRuntimeVersion(),
+                     Marshal.SizeOf(typeof(IntPtr)) * 8,
                      GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
                      LogManager.LogsDirectory,
                      string.Join("\n", options.GetLoadedOptionsPairs().Select(pair => string.Format("{0} : {1}", pair.Key, pair.Value))));

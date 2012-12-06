@@ -65,6 +65,11 @@ namespace EventStore.Common.Log
             }
         }
 
+        public static ILogger GetLoggerFor(Type type)
+        {
+            return GetLogger(type.Name);
+        }
+
         public static ILogger GetLoggerFor<T>()
         {
             return GetLogger(typeof(T).Name);
