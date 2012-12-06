@@ -27,10 +27,9 @@
 // 
 
 using System;
-using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages
 {
@@ -74,11 +73,48 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class EventReaderIdle : Message
+        {
+            private readonly Guid _correlationId;
+            private readonly DateTime _idleTimestampUtc;
+
+            public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc)
+            {
+                _correlationId = correlationId;
+                _idleTimestampUtc = idleTimestampUtc;
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+
+            public DateTime IdleTimestampUtc
+            {
+                get { return _idleTimestampUtc; }
+            }
+        }
+
+        public class EventReaderEof : Message
+        {
+            private readonly Guid _correlationId;
+
+            public EventReaderEof(Guid correlationId)
+            {
+                _correlationId = correlationId;
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+
+        }
 
         public class CommittedEventDistributed : Message
         {
             private readonly Guid _correlationId;
-            private readonly Event _data;
+            private readonly ResolvedEvent _data;
             private readonly string _eventStreamId;
             private readonly int _eventSequenceNumber;
             private readonly bool _resolvedLinkTo;
@@ -94,7 +130,7 @@ namespace EventStore.Projections.Core.Messages
 
             public CommittedEventDistributed(
                 Guid correlationId, EventPosition position, string positionStreamId, int positionSequenceNumber,
-                string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, Event data,
+                string eventStreamId, int eventSequenceNumber, bool resolvedLinkTo, ResolvedEvent data,
                 long? safeTransactionFileReaderJoinPosition, float progress)
             {
                 _correlationId = correlationId;
@@ -111,14 +147,14 @@ namespace EventStore.Projections.Core.Messages
 
             public CommittedEventDistributed(
                 Guid correlationId, EventPosition position, string eventStreamId, int eventSequenceNumber,
-                bool resolvedLinkTo, Event data)
+                bool resolvedLinkTo, ResolvedEvent data)
                 : this(
                     correlationId, position, eventStreamId, eventSequenceNumber, eventStreamId, eventSequenceNumber,
                     resolvedLinkTo, data, position.PreparePosition, 11.1f)
             {
             }
 
-            public Event Data
+            public ResolvedEvent Data
             {
                 get { return _data; }
             }

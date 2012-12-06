@@ -64,9 +64,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _consumer.HandledMessages.Clear();
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "account-01", -1, false,
-                       new Event(
-                           _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata")), 0));
+                       ResolvedEvent.Sample(_eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
+                                           Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]

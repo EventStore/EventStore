@@ -45,7 +45,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(),
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(),
-                new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(), CreateCheckpointStrategy(),
+                new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
+                new TestHandler<ProjectionSubscriptionMessage.EofReached>(), 
+                CreateCheckpointStrategy(),
                 1000);
         }
 
@@ -55,7 +57,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var ps = new ProjectionSubscription(
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), null,
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(),
-                new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(), CreateCheckpointStrategy(),
+                new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
+                new TestHandler<ProjectionSubscriptionMessage.EofReached>(),
+                CreateCheckpointStrategy(),
                 1000);
         }
 
@@ -65,7 +69,9 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var ps = new ProjectionSubscription(
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(), null,
-                new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(), CreateCheckpointStrategy(),
+                new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
+                new TestHandler<ProjectionSubscriptionMessage.EofReached>(),
+                CreateCheckpointStrategy(),
                 1000);
         }
 
@@ -76,17 +82,31 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(),
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(), null,
+                new TestHandler<ProjectionSubscriptionMessage.EofReached>(), 
                 CreateCheckpointStrategy(), 1000);
         }
 
-        [Test, ExpectedException(typeof (ArgumentNullException))]
+        [Test, ExpectedException(typeof(ArgumentNullException))]
+        public void null_eof_handler_throws_argument_null_exception()
+        {
+            var ps = new ProjectionSubscription(
+                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
+                new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(),
+                new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(), 
+                new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
+                null,
+                CreateCheckpointStrategy(), 1000);
+        }
+
+        [Test, ExpectedException(typeof(ArgumentNullException))]
         public void null_describe_source_throws_argument_null_exception()
         {
             var ps = new ProjectionSubscription(
                 Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(),
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(),
-                new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(), null, 1000);
+                new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
+                new TestHandler<ProjectionSubscriptionMessage.EofReached>(), null, 1000);
         }
 
         private CheckpointStrategy CreateCheckpointStrategy()

@@ -48,6 +48,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public readonly List<ProjectionSubscriptionMessage.ProgressChanged> _progresschangedMessages =
             new List<ProjectionSubscriptionMessage.ProgressChanged>();
 
+        public readonly List<ProjectionSubscriptionMessage.EofReached> _eofReachedMessages =
+            new List<ProjectionSubscriptionMessage.EofReached>();
+
         public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
             _committedEventReceivedMessages.Add(message);
@@ -71,6 +74,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
         {
             _progresschangedMessages.Add(message);
+        }
+
+        public void Handle(ProjectionSubscriptionMessage.EofReached message)
+        {
+            _eofReachedMessages.Add(message);
         }
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)

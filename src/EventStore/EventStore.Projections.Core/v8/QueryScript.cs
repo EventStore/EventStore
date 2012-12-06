@@ -285,6 +285,14 @@ namespace EventStore.Projections.Core.v8
 
             [DataMember(Name = "$forceProjectionName")]
             public string ForceProjectionName { get; set; }
+
+            [DataMember(Name = "reorderEvents")]
+            public bool ReorderEvents { get; set; }
+
+            [DataMember(Name = "processingLag")]
+            public int? ProcessingLag { get; set; }
+
+
         }
     }
 }

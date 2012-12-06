@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public string GetStatus()
         {
-            return (_subscriptionPaused ? "/Subscription Paused" : "");
+            return (_subscriptionPaused ? "/Paused" : "");
         }
 
         private void ValidateQueueingOrder(CheckpointTag eventTag, bool allowCurrentPosition = false)

@@ -39,15 +39,17 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
 {
     public abstract class TestFixtureWithProjectionSubscription
     {
-        private Guid _projectionCorrelationId;
+        protected Guid _projectionCorrelationId;
         protected TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
         protected TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
         protected TestHandler<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
-        protected IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed> _subscription;
-        protected EventDistributionPoint _forkedDistributionPoint;
+        protected TestHandler<ProjectionSubscriptionMessage.EofReached> _eofHandler;
+        protected IProjectionSubscription _subscription;
+        protected EventReader ForkedReader;
         protected FakePublisher _bus;
         protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
-        private int _checkpointUnhandledBytesThreshold;
+        protected int _checkpointUnhandledBytesThreshold;
+        protected CheckpointStrategy _checkpointStrategy;
 
         [SetUp]
         public void setup()
@@ -59,12 +61,19 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             _eventHandler = new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>();
             _checkpointHandler = new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>();
             _progressHandler = new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>();
-            _subscription = new ProjectionSubscription(
-                _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler, _progressHandler,
-                CreateCheckpointStrategy(), _checkpointUnhandledBytesThreshold);
+            _eofHandler = new TestHandler<ProjectionSubscriptionMessage.EofReached>();
+            _checkpointStrategy = CreateCheckpointStrategy();
+            _subscription = CreateProjectionSubscription();
 
 
             When();
+        }
+
+        protected virtual IProjectionSubscription CreateProjectionSubscription()
+        {
+            return new ProjectionSubscription(
+                _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler,
+                _progressHandler, _eofHandler, _checkpointStrategy, _checkpointUnhandledBytesThreshold);
         }
 
         protected virtual void Given()
@@ -73,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
 
         protected abstract void When();
 
-        private CheckpointStrategy CreateCheckpointStrategy()
+        protected virtual CheckpointStrategy CreateCheckpointStrategy()
         {
             var result = new CheckpointStrategy.Builder();
             if (_source != null)

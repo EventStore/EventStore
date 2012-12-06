@@ -53,6 +53,9 @@ namespace EventStore.Projections.Core.Tests.Services
             public List<ProjectionSubscriptionMessage.ProgressChanged> HandledProgress =
                 new List<ProjectionSubscriptionMessage.ProgressChanged>();
 
+            public List<ProjectionSubscriptionMessage.EofReached> HandledEof =
+                new List<ProjectionSubscriptionMessage.EofReached>();
+
             public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
             {
                 HandledMessages.Add(message);
@@ -76,6 +79,11 @@ namespace EventStore.Projections.Core.Tests.Services
             public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
             {
                 HandledProgress.Add(message);
+            }
+
+            public void Handle(ProjectionSubscriptionMessage.EofReached message)
+            {
+                HandledEof.Add(message);
             }
 
             public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
@@ -106,9 +114,9 @@ namespace EventStore.Projections.Core.Tests.Services
             return result.Build(ProjectionMode.Persistent);
         }
 
-        protected static Event CreateEvent()
+        protected static ResolvedEvent CreateEvent()
         {
-            return new Event(Guid.NewGuid(), "t", false, new byte[0], new byte[0]);
+            return ResolvedEvent.Sample(Guid.NewGuid(), "t", false, new byte[0], new byte[0]);
         }
     }
 }

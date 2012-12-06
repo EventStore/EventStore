@@ -16,6 +16,8 @@ var $projections = {
                 stateStreamName: null, 
                 $forceProjectionName: null, 
                 useEventIndexes: false,
+                reorderEvents: false,
+                processingLag: 0,
             }, 
         };
         var initStateHandler = function() { return { }; };

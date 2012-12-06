@@ -26,12 +26,16 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface IProjectionSubscription : IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>
+    public interface IProjectionSubscription : IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed>,
+                                               IHandle<ProjectionCoreServiceMessage.EventReaderIdle>,
+                                               IHandle<ProjectionCoreServiceMessage.EventReaderEof>
     {
+        EventReader CreatePausedEventReader(IPublisher publisher, Guid forkedEventReaderId);
     }
 }
