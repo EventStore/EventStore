@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Reflection;
 
 namespace EventStore.Common.Utils
 {
@@ -48,6 +49,29 @@ namespace EventStore.Common.Utils
             }
 
             return Environment.ExpandEnvironmentVariables("%HOMEDRIVE%%HOMEPATH%");
+        }
+
+        public static string GetRuntimeVersion()
+        {
+            var type = Type.GetType("Mono.Runtime");
+            if (type != null)
+            {
+                MethodInfo getDisplayNameMethod = type.GetMethod("GetDisplayName", BindingFlags.NonPublic | BindingFlags.Static);
+                if (getDisplayNameMethod != null)
+                {
+                    var monoVersion = (string)getDisplayNameMethod.Invoke(null, null);
+                    return monoVersion;
+                }
+                else
+                {
+                    return "Mono <UNKNOWN>";
+                }
+            }
+            else
+            {
+                // must be .NET
+                return ".NET " + Environment.Version;
+            }
         }
     }
 }
