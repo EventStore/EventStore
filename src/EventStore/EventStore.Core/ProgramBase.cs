@@ -113,11 +113,13 @@ namespace EventStore.Core
 
             Log.Info("\nOS: {0} ({1})\n"
                      + "RUNTIME: {2}\n"
-                     + "LOGS: {3}\n"
-                     + "{4}",
+                     + "GC: {3}\n"
+                     + "LOGS: {4}\n"
+                     + "{5}",
                      OS.IsLinux ? "Linux" : "Windows",
                      Environment.OSVersion,
                      OS.GetRuntimeVersion(),
+                     GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
                      LogManager.LogsDirectory,
                      string.Join("\n", options.GetLoadedOptionsPairs().Select(pair => string.Format("{0} : {1}", pair.Key, pair.Value))));
         }

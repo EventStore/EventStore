@@ -39,7 +39,7 @@ namespace EventStore.Common.CommandLine
         public static IPAddress[] ParseIpsList(string ipsString)
         {
             IPAddress[] addresses;
-            if (ipsString.IsEmptyString())
+            if (ipsString.IsNotEmptyString())
             {
                 var list = new List<IPAddress>();
                 foreach (var ipStr in ipsString.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
