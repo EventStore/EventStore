@@ -85,7 +85,7 @@ namespace EventStore.SingleNode
                                                                 _node.Bus,
                                                                 _node.TimerService,
                                                                 _node.HttpService,
-                                                                _node.NetworkSendQueue,
+                                                                _node.NetworkSendService,
                                                                 options.ProjectionThreads);
             }
         }

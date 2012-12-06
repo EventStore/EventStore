@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,24 +25,25 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Bus
 {
-    public static class HandleExtensions
+    public class NarrowingHandler<TInput, TOutput> : IHandle<TInput>
+        where TInput : Message
+        where TOutput : TInput
     {
-        public static IHandle<TInput> WidenFrom<TInput, TOutput>(this IHandle<TOutput> handler)
-            where TOutput : Message
-            where TInput : TOutput
+        private readonly IHandle<TOutput> _handler;
+
+        public NarrowingHandler(IHandle<TOutput> handler)
         {
-            return new WideningHandler<TInput, TOutput>(handler);
+            _handler = handler;
         }
 
-        public static IHandle<TInput> NarrowTo<TInput, TOutput>(this IHandle<TOutput> handler)
-            where TInput : Message
-            where TOutput : TInput
+        public void Handle(TInput message)
         {
-            return new NarrowingHandler<TInput, TOutput>(handler);
+            _handler.Handle((TOutput) message); // will throw if message type is wrong
         }
     }
 }

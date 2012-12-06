@@ -26,17 +26,75 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Threading;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Transport.Http;
 
 namespace EventStore.Core.Services
 {
-    public class NetworkSendService: IHandle<TcpMessage.TcpSend>,
+    public class NetworkSendService: IPublisher,
+                                     IHandle<TcpMessage.TcpSend>,
                                      IHandle<HttpMessage.HttpSend>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<NetworkSendService>();
+        
+        private readonly int _tcpQueueCount;
+        private readonly int _httpQueueCount;
+
+        private int _tcpQueueIndex = -1;
+        private int _httpQueueIndex = -1;
+
+        private readonly QueuedHandler[] _tcpQueues;
+        private readonly QueuedHandler[] _httpQueues;
+
+        public NetworkSendService(int tcpQueueCount, int httpQueueCount)
+        {
+            Ensure.Positive(tcpQueueCount, "tcpQueueCount");
+            Ensure.Positive(httpQueueCount, "httpQueueCount");
+
+            _tcpQueueCount = tcpQueueCount;
+            _httpQueueCount = httpQueueCount;
+
+            _tcpQueues = new QueuedHandler[_tcpQueueCount];
+            for (int i = 0; i < _tcpQueueCount; ++i)
+            {
+                _tcpQueues[i] = new QueuedHandler(this.NarrowTo<Message, TcpMessage.TcpSend>(),
+                                                  string.Format("NetworkSendQueue TCP #{0}", i),
+                                                  watchSlowMsg: true,
+                                                  slowMsgThresholdMs: 30);
+                _tcpQueues[i].Start();
+            }
+
+            _httpQueues = new QueuedHandler[_httpQueueCount];
+            for (int i = 0; i < _httpQueueCount; ++i)
+            {
+                _httpQueues[i] = new QueuedHandler(this.NarrowTo<Message, HttpMessage.HttpSend>(),
+                                                   string.Format("NetworkSendQueue HTTP #{0}", i),
+                                                   watchSlowMsg: true,
+                                                   slowMsgThresholdMs: 30);
+                _httpQueues[i].Start();
+            }
+        }
+
+        public void Publish(Message message)
+        {
+            if (message is TcpMessage.TcpSend)
+            {
+                var queueNumber = ((uint)Interlocked.Increment(ref _tcpQueueIndex)) % _tcpQueueCount;
+                _tcpQueues[queueNumber].Handle(message);
+                return;
+            }
+            if (message is HttpMessage.HttpSend)
+            {
+                var queueNumber = ((uint)Interlocked.Increment(ref _httpQueueIndex)) % _httpQueueCount;
+                _httpQueues[queueNumber].Handle(message);
+                return;
+            }
+        }
 
         public void Handle(TcpMessage.TcpSend message)
         {

@@ -65,6 +65,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bus\AdHocHandler.cs" />
+    <Compile Include="Bus\NarrowingHandler.cs" />
     <Compile Include="Bus\WideningHandler.cs" />
     <Compile Include="Bus\HandleExtensions.cs" />
     <Compile Include="Bus\IBus.cs" />
