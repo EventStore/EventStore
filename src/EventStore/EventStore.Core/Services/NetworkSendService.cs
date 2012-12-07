@@ -51,7 +51,6 @@ namespace EventStore.Core.Services
         private readonly int _httpQueueCount;
 
         private int _tcpQueueIndex = -1;
-        private int _httpQueueIndex = -1;
 
         private readonly QueuedHandler[] _tcpQueues;
         private readonly QueuedHandler[] _httpQueues;
@@ -67,18 +66,20 @@ namespace EventStore.Core.Services
             _tcpQueues = new QueuedHandler[_tcpQueueCount];
             for (int i = 0; i < _tcpQueueCount; ++i)
             {
-                _tcpQueues[i] = new QueuedHandler(
-                    this.NarrowTo<Message, TcpMessage.TcpSend>(), string.Format("NetworkSendQueue TCP #{0}", i),
-                    watchSlowMsg: true, slowMsgThresholdMs: 30);
+                _tcpQueues[i] = new QueuedHandler(this.NarrowTo<Message, TcpMessage.TcpSend>(),
+                                                  string.Format("NetworkSendQueue TCP #{0}", i),
+                                                  watchSlowMsg: true,
+                                                  slowMsgThresholdMs: 50);
                 _tcpQueues[i].Start();
             }
 
             _httpQueues = new QueuedHandler[_httpQueueCount];
             for (int i = 0; i < _httpQueueCount; ++i)
             {
-                _httpQueues[i] = new QueuedHandler(
-                    this.NarrowTo<Message, HttpMessage.HttpSend>(), string.Format("NetworkSendQueue HTTP #{0}", i),
-                    watchSlowMsg: true, slowMsgThresholdMs: 30);
+                _httpQueues[i] = new QueuedHandler(this.NarrowTo<Message, HttpMessage.HttpSend>(),
+                                                   string.Format("NetworkSendQueue HTTP #{0}", i),
+                                                   watchSlowMsg: true,
+                                                   slowMsgThresholdMs: 50);
                 _httpQueues[i].Start();
             }
         }

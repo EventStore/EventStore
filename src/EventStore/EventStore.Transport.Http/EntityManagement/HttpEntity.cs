@@ -26,27 +26,16 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Runtime.Remoting.Contexts;
 using EventStore.Common.Utils;
-using Uri = System.Uri;
 
 namespace EventStore.Transport.Http.EntityManagement
 {
     public class HttpEntity
     {
-        public class HttpEntityReceivedComparer : IComparer<HttpEntity>
-        {
-            public int Compare(HttpEntity x, HttpEntity y)
-            {
-                return x.Received.CompareTo(y.Received);
-            }
-        }
-
         public readonly HttpEntityManager Manager;
 
-        public readonly DateTime Received;
+        public readonly DateTime TimeStamp;
         public readonly string UserHostName;
 
         public readonly ICodec RequestCodec;
@@ -56,8 +45,7 @@ namespace EventStore.Transport.Http.EntityManagement
         internal readonly HttpListenerRequest Request;
         internal readonly HttpListenerResponse Response;
 
-
-        public HttpEntity(DateTime received,
+        public HttpEntity(DateTime timeStamp,
                           ICodec requestCodec,
                           ICodec responseCodec,
                           HttpListenerContext context,
@@ -70,7 +58,7 @@ namespace EventStore.Transport.Http.EntityManagement
             Ensure.NotNull(allowedMethods, "allowedMethods");
             Ensure.NotNull(onRequestSatisfied, "onRequestSatisfied");
 
-            Received = received;
+            TimeStamp = timeStamp;
             UserHostName = context.Request.UserHostName;
 
             RequestCodec = requestCodec;

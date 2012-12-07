@@ -85,33 +85,42 @@ namespace EventStore.TestClient.Commands
             int sent = 0;
             int received = 0;
 
-            var sw = Stopwatch.StartNew();
+            var sw = new Stopwatch();
+            var sw2 = new Stopwatch();
             for (int i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
                 threads.Add(new Thread(() =>
                 {
-                    var esId = eventStreamId ?? "es" + Guid.NewGuid();
-
+                    var esId = eventStreamId ?? ("es" + Guid.NewGuid());
                     var client = new HttpAsyncClient();
 
                     Action<HttpResponse> succHandler = response =>
                     {
                         if (response.HttpStatusCode == HttpStatusCode.Created)
                         {
-                            if (Interlocked.Increment(ref succ) % 100 == 0)
-                                Console.Write(".");
+                            Interlocked.Increment(ref succ);
                         }
                         else
                         {
                             if (Interlocked.Increment(ref fail) % 10 == 0)
-                            {
                                 context.Log.Info("ANOTHER 10th WRITE FAILED. [{0}] - [{1}]", response.HttpStatusCode, response.StatusDescription);
-                            }
                         }
 
                         Interlocked.Increment(ref received);
-                        if (Interlocked.Increment(ref all) == requestsCnt)
+
+                        var localAll = Interlocked.Increment(ref all);
+                        if (localAll % 100 == 0) Console.Write(".");
+                        if (localAll % 10000 == 0)
+                        {
+                            var elapsed = sw2.Elapsed;
+                            sw2.Restart();
+                            context.Log.Trace("\nDONE TOTAL {0} WRITES IN {1} ({2:0.0}/s).",
+                                              localAll,
+                                              elapsed,
+                                              1000.0 * 10000 / elapsed.TotalMilliseconds);
+                        }
+                        if (localAll == requestsCnt)
                             autoResetEvent.Set();
                     };
 
@@ -145,6 +154,9 @@ namespace EventStore.TestClient.Commands
                     }
                 }));
             }
+
+            sw.Start();
+            sw2.Start();
 
             foreach (var thread in threads)
             {

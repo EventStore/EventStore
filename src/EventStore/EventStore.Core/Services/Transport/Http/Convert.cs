@@ -191,7 +191,7 @@ namespace EventStore.Core.Services.Transport.Http
         {
             var self = HostName.Combine(userHostName, "/streams/$all");
             var feed = new FeedElement();
-            feed.SetTitle(string.Format("All events"));
+            feed.SetTitle("All events");
             feed.SetId(self);
 
             var items = result.Records.Reverse().Select(rer => rer.Event).ToList();

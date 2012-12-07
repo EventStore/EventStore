@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -45,6 +46,11 @@ namespace EventStore.Common.Utils
 
         public static bool IsEmpty<T>(this IEnumerable<T> collection)
         {
+            if (collection == null)
+                return true;
+            var list = collection as IList;
+            if (list != null)
+                return list.Count == 0;
             return !collection.Any();
         }
     }

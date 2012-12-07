@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void parses_generic_wildcard()
         {
-            var c = new AcceptComponent("*/*");
+            var c = AcceptComponent.Parse("*/*");
 
             Assert.AreEqual("*", c.MediaType);
             Assert.AreEqual("*", c.MediaSubtype);
@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void parses_generic_wildcard_with_priority()
         {
-            var c = new AcceptComponent("*/*;q=0.4");
+            var c = AcceptComponent.Parse("*/*;q=0.4");
 
             Assert.AreEqual("*", c.MediaType);
             Assert.AreEqual("*", c.MediaSubtype);
@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void parses_generic_wildcard_with_priority_and_other_param()
         {
-            var c = new AcceptComponent("*/*;q=0.4;z=7");
+            var c = AcceptComponent.Parse("*/*;q=0.4;z=7");
 
             Assert.AreEqual("*", c.MediaType);
             Assert.AreEqual("*", c.MediaSubtype);
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void parses_partial_wildcard()
         {
-            var c = new AcceptComponent("text/*");
+            var c = AcceptComponent.Parse("text/*");
 
             Assert.AreEqual("text", c.MediaType);
             Assert.AreEqual("*", c.MediaSubtype);
@@ -81,7 +81,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         [Test]
         public void parses_specific_media_range_with_priority()
         {
-            var c = new AcceptComponent("application/xml;q=0.7");
+            var c = AcceptComponent.Parse("application/xml;q=0.7");
 
             Assert.AreEqual("application", c.MediaType);
             Assert.AreEqual("xml", c.MediaSubtype);

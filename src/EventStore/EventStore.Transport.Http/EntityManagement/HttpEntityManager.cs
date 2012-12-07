@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -164,10 +163,10 @@ namespace EventStore.Transport.Http.EntityManagement
             Ensure.NotNull(onError, "onError");
 
             var state = new ManagerOperationState(onReadSuccess, onError)
-                {
-                    InputStream = HttpEntity.Request.InputStream,
-                    OutputStream = new MemoryStream()
-                };
+            {
+                InputStream = HttpEntity.Request.InputStream,
+                OutputStream = new MemoryStream()
+            };
 
             var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
             copier.Completed += RequestRead;
@@ -194,10 +193,10 @@ namespace EventStore.Transport.Http.EntityManagement
             Ensure.NotNull(onCompleted, "onCompleted");
 
             ContinueWriteResponseAsync(response, onError, (sender, args) =>
-                {
-                    ResponsePartWritten(sender);  
-                    onCompleted(); 
-                });
+            {
+                ResponsePartWritten(sender);  
+                onCompleted(); 
+            });
         }
 
         public void EndReply()
@@ -215,7 +214,8 @@ namespace EventStore.Transport.Http.EntityManagement
         {
             Ensure.NotNull(onError, "onError");
 
-            if (!BeginReply(code, description, contentType, headers)) return;
+            if (!BeginReply(code, description, contentType, headers)) 
+                return;
 
             if (response == null || response.Length == 0)
             {
@@ -232,10 +232,10 @@ namespace EventStore.Transport.Http.EntityManagement
         private void ContinueWriteResponseAsync(byte[] response, Action<Exception> onError, EventHandler copierOnCompleted)
         {
             var state = new ManagerOperationState((sender, e) => { }, onError)
-                {
-                    InputStream = new MemoryStream(response),
-                    OutputStream = HttpEntity.Response.OutputStream
-                };
+            {
+                InputStream = new MemoryStream(response),
+                OutputStream = HttpEntity.Response.OutputStream
+            };
             var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
             copier.Completed += copierOnCompleted;
             copier.Start();

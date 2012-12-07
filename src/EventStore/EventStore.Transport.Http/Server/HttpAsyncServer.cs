@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Net;
-using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
