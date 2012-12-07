@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Bus.Helpers
         public virtual void SetUp()
         {
             Consumer = new NoopConsumer();
-            Queue = new QueuedHandler(Consumer, "test_name", watchSlowMsg: false, threadStopWaitTimeoutMs: 100);
+            Queue = new QueuedHandler(Consumer, "test_name", watchSlowMsg: false, threadStopWaitTimeoutMs: 1000);
         }
 
         [TearDown]

@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.Bus.Helpers
         public virtual void SetUp()
         {
             Consumer = new WaitingConsumer(0);
-            Queue = new QueuedHandler(Consumer, "waiting_queue", watchSlowMsg: false, threadStopWaitTimeoutMs: 100);
+            Queue = new QueuedHandler(Consumer, "waiting_queue", watchSlowMsg: false, threadStopWaitTimeoutMs: 1000);
         }
 
         [TearDown]

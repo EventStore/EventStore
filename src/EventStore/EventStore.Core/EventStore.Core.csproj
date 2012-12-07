@@ -65,6 +65,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bus\AdHocHandler.cs" />
+    <Compile Include="Bus\QueuedHandlerSleep.cs" />
+    <Compile Include="Bus\QueuedHandlerMRES.cs" />
+    <Compile Include="Bus\QueuedHandler.cs" />
+    <Compile Include="Bus\QueuedHandlerPulse.cs" />
     <Compile Include="Bus\NarrowingHandler.cs" />
     <Compile Include="Bus\WideningHandler.cs" />
     <Compile Include="Bus\HandleExtensions.cs" />
@@ -73,7 +77,7 @@
     <Compile Include="Bus\InMemoryBus.cs" />
     <Compile Include="Bus\ISubscriber.cs" />
     <Compile Include="Bus\MessageHandler.cs" />
-    <Compile Include="Bus\QueuedHandler.cs" />
+    <Compile Include="Bus\QueuedHandlerAutoReset.cs" />
     <Compile Include="Bus\IPublisher.cs" />
     <Compile Include="Bus\IHandle.cs" />
     <Compile Include="Bus\QueueMonitor.cs" />

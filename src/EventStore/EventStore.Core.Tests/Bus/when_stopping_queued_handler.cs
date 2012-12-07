@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Bus
                 wait.Set();
             });
 
-            Assert.IsTrue(wait.Wait(100), "Couldn't stop queue in time.");
+            Assert.IsTrue(wait.Wait(1000), "Couldn't stop queue in time.");
         }
 
         [Test]
