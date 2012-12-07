@@ -129,8 +129,7 @@ namespace EventStore.Core.Bus
             var wasEmpty = true;
             const int spinmax = 5000;
             const int sleepmax = 500;
-            var spincount = 0;
-            var sleepcount = 0;
+            var iterationcount = 0;
             while (!_stop)
             {
                 Message msg = null;
@@ -141,16 +140,13 @@ namespace EventStore.Core.Bus
                         if (!wasEmpty)
                             EnterIdle();
                         wasEmpty = true;
-
-                        if (spincount < spinmax)
-                        {
-                            //do nothing... spin
-                            spincount++;
+                        iterationcount++;
+                        if (iterationcount < spinmax) { 
+                            //do nothing... spin 
                         } 
-                        else if (sleepcount < sleepmax)
+                        else if (iterationcount < sleepmax)
                         {
                             Thread.Sleep(1);
-                            sleepcount++;
                         } 
                         else
                         {
@@ -159,9 +155,7 @@ namespace EventStore.Core.Bus
                     }
                     else
                     {
-                        spincount = 0;
-                        sleepcount = 0;
-
+                        iterationcount = 0;
                         //NOTE: the following locks are primarily acquired in this thread, 
                         //      so not too high performance penalty
                         if (wasEmpty)
