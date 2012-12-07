@@ -194,7 +194,7 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetTitle(string.Format("All events"));
             feed.SetId(self);
 
-            var items = result.Records.Select(rer => rer.Event).OrderByDescending(re => re.TimeStamp).ToList();
+            var items = result.Records.Reverse().Select(rer => rer.Event).ToList();
 
             feed.SetUpdated(items.Any() ? items.First().TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
