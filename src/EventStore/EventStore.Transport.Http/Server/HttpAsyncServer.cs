@@ -118,7 +118,7 @@ namespace EventStore.Transport.Http.Server
         private void ProcessRequest(HttpListenerContext context)
         {
             context.Response.StatusCode = HttpStatusCode.InternalServerError;
-            ThreadPool.QueueUserWorkItem(x => OnRequestReceived(context));
+            OnRequestReceived(context);
         }
 
         protected virtual void OnRequestReceived(HttpListenerContext context)
