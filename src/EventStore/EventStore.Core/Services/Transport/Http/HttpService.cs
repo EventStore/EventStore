@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net;
+using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -101,12 +102,14 @@ namespace EventStore.Core.Services.Transport.Http
 
         private readonly HttpMessagePipe _httpPipe;
         private readonly HttpAsyncServer _server;
+        private readonly List<QueuedHandler> _receiveHandlers;
+        private long _requestCount = 0;
 
-        public HttpService(ServiceAccessibility accessibility, IPublisher inputBus, string[] prefixes)
+        public HttpService(ServiceAccessibility accessibility, IPublisher inputBus, string[] prefixes, int receiveHandlerCount)
         {
             Ensure.NotNull(inputBus, "inputBus");
             Ensure.NotNull(prefixes, "prefixes");
-
+            Ensure.Positive(receiveHandlerCount, "receiveHandlerCount");
             _accessibility = accessibility;
             _inputBus = inputBus;
             _publishEnvelope = new PublishEnvelope(inputBus);
@@ -115,7 +118,14 @@ namespace EventStore.Core.Services.Transport.Http
             _actions = new Dictionary<ControllerAction, Action<HttpEntity, UriTemplateMatch>>();
 
             _httpPipe = new HttpMessagePipe();
-
+            _receiveHandlers = new List<QueuedHandler>();
+            for (int i = 0; i < receiveHandlerCount;i++)
+            {
+                var handler = new QueuedHandler(new NarrowingHandler<Message, IncomingHttpRequestMessage>(new ProcessHttpHandler(this)), "Incoming HTTP " + (i + 1),
+                                                true, 50, 5000);
+                _receiveHandlers.Add(handler);
+                handler.Start();
+            }
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
         }
@@ -134,6 +144,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
+
         }
 
         public void Handle(HttpMessage.SendOverHttp message)
@@ -195,7 +206,14 @@ namespace EventStore.Core.Services.Transport.Http
                 _actions[action] = handler;
         }
 
+
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
+        {
+            Interlocked.Increment(ref _requestCount);
+            _receiveHandlers[(int)(_requestCount % _receiveHandlers.Count)].Handle(new IncomingHttpRequestMessage(sender, context));
+        }
+
+        private void ProcessRequest(HttpAsyncServer sender, HttpListenerContext context)
         {
             try
             {
@@ -423,6 +441,31 @@ namespace EventStore.Core.Services.Transport.Http
                     return ContentType.AtomServiceDocJson;
                 default:
                     throw new NotSupportedException("Unknown format requested");
+            }
+        }
+        class ProcessHttpHandler : IHandle<IncomingHttpRequestMessage>
+        {
+            private readonly HttpService _parent;
+
+            public ProcessHttpHandler(HttpService parent)
+            {
+                _parent = parent;
+            }
+
+            public void Handle(IncomingHttpRequestMessage message)
+            {
+                _parent.ProcessRequest(message.Sender, message.Context);
+            }
+        }
+        class IncomingHttpRequestMessage : Message
+        {
+            public readonly HttpAsyncServer Sender;
+            public readonly HttpListenerContext Context;
+
+            public IncomingHttpRequestMessage(HttpAsyncServer sender, HttpListenerContext context)
+            {
+                Sender = sender;
+                Context = context;
             }
         }
     }

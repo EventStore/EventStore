@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Net;
+using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
@@ -94,22 +95,24 @@ namespace EventStore.Transport.Http.Server
             try
             {
                 context = _listener.EndGetContext(ar);
-                _listener.BeginGetContext(ContextAcquired, null);
             }
             catch (HttpListenerException e)
             {
                 Logger.ErrorException(e, "EndGetContext/BeginGetContext error. Status : {0}",
                                       IsListening ? "listening" : "stopped");
+                _listener.BeginGetContext(ContextAcquired, null);
                 return;
             }
             catch (InvalidOperationException e)
             {
                 Logger.ErrorException(e, "EndGetContext/BeginGetContext error. Status : {0}",
                                       IsListening ? "listening" : "stopped");
+                _listener.BeginGetContext(ContextAcquired, null);
                 return;
             }
 
             ProcessRequest(context);
+            _listener.BeginGetContext(ContextAcquired, null);
         }
 
         private void ProcessRequest(HttpListenerContext context)

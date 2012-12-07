@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         {
             _bus = new InMemoryBus(string.Format("bus_{0}", _serverEndPoint.Port));
 
-            _service = new HttpService(ServiceAccessibility.Private, _bus, new[]{_serverEndPoint.ToHttpUrl()});
+            _service = new HttpService(ServiceAccessibility.Private, _bus, new[]{_serverEndPoint.ToHttpUrl()}, 1);
             _client = new HttpAsyncClient();
 
             HttpBootstrap.Subscribe(_bus, _service);
