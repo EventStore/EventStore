@@ -25,6 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Threading;
 using EventStore.Common.Log;
@@ -32,21 +33,20 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services
 {
-    public class NetworkSendService: IPublisher, 
-                                     IHandle<TcpMessage.TcpSend>,
-                                     IHandle<HttpMessage.HttpSend>,
-                                     IHandle<HttpMessage.HttpBeginSend>,
-                                     IHandle<HttpMessage.HttpSendPart>,
-                                     IHandle<HttpMessage.HttpEndSend>
+    public class NetworkSendService : IPublisher,
+                                      IHandle<TcpMessage.TcpSend>,
+                                      IHandle<HttpMessage.HttpSend>,
+                                      IHandle<HttpMessage.HttpBeginSend>,
+                                      IHandle<HttpMessage.HttpSendPart>,
+                                      IHandle<HttpMessage.HttpEndSend>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<NetworkSendService>();
-        
+
         private readonly int _tcpQueueCount;
         private readonly int _httpQueueCount;
 
@@ -67,20 +67,18 @@ namespace EventStore.Core.Services
             _tcpQueues = new QueuedHandler[_tcpQueueCount];
             for (int i = 0; i < _tcpQueueCount; ++i)
             {
-                _tcpQueues[i] = new QueuedHandler(this.NarrowTo<Message, TcpMessage.TcpSend>(),
-                                                  string.Format("NetworkSendQueue TCP #{0}", i),
-                                                  watchSlowMsg: true,
-                                                  slowMsgThresholdMs: 30);
+                _tcpQueues[i] = new QueuedHandler(
+                    this.NarrowTo<Message, TcpMessage.TcpSend>(), string.Format("NetworkSendQueue TCP #{0}", i),
+                    watchSlowMsg: true, slowMsgThresholdMs: 30);
                 _tcpQueues[i].Start();
             }
 
             _httpQueues = new QueuedHandler[_httpQueueCount];
             for (int i = 0; i < _httpQueueCount; ++i)
             {
-                _httpQueues[i] = new QueuedHandler(this.NarrowTo<Message, HttpMessage.HttpSend>(),
-                                                   string.Format("NetworkSendQueue HTTP #{0}", i),
-                                                   watchSlowMsg: true,
-                                                   slowMsgThresholdMs: 30);
+                _httpQueues[i] = new QueuedHandler(
+                    this.NarrowTo<Message, HttpMessage.HttpSend>(), string.Format("NetworkSendQueue HTTP #{0}", i),
+                    watchSlowMsg: true, slowMsgThresholdMs: 30);
                 _httpQueues[i].Start();
             }
         }
@@ -89,7 +87,7 @@ namespace EventStore.Core.Services
         {
             if (message is TcpMessage.TcpSend)
             {
-                var queueNumber = ((uint)Interlocked.Increment(ref _tcpQueueIndex)) % _tcpQueueCount;
+                var queueNumber = ((uint) Interlocked.Increment(ref _tcpQueueIndex))%_tcpQueueCount;
                 _tcpQueues[queueNumber].Handle(message);
                 return;
             }
@@ -97,9 +95,9 @@ namespace EventStore.Core.Services
             if (sendHttpMessage != null)
             {
                 //NOTE: subsequent messages to the same entitgy must be handled in order
-                var queueNumber = sendHttpMessage.HttpEntityManager.GetHashCode() % _httpQueueCount;
-                    
-                    //((uint)Interlocked.Increment(ref _httpQueueIndex)) % _httpQueueCount;
+                var queueNumber = sendHttpMessage.HttpEntityManager.GetHashCode()%_httpQueueCount;
+
+                //((uint)Interlocked.Increment(ref _httpQueueIndex)) % _httpQueueCount;
                 _httpQueues[queueNumber].Handle(sendHttpMessage);
                 return;
             }
@@ -125,21 +123,20 @@ namespace EventStore.Core.Services
                         throw new ArgumentOutOfRangeException();
                 }
 
-                message.HttpEntityManager.ReplyStatus(code,
-                                             deniedToHandle.Details,
-                                             exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
+                message.HttpEntityManager.ReplyStatus(
+                    code, deniedToHandle.Details,
+                    exc =>
+                    Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
             }
             else
             {
                 var response = message.Data;
                 var config = message.Configuration;
 
-                message.HttpEntityManager.ReplyTextContent(response,
-                                             config.Code,
-                                             config.Description,
-                                             config.ContentType,
-                                             config.Headers,
-                                             exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
+                message.HttpEntityManager.ReplyTextContent(
+                    response, config.Code, config.Description, config.ContentType, config.Headers,
+                    exc =>
+                    Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
             }
         }
 
@@ -149,22 +146,31 @@ namespace EventStore.Core.Services
             var config = message.Configuration;
 
             message.HttpEntityManager.BeginReply(config.Code, config.Description, config.ContentType, config.Headers);
+            if (message.Envelope != null)
+                message.Envelope.ReplyWith(
+                    new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
         }
 
         public void Handle(HttpMessage.HttpSendPart message)
         {
-                var response = message.Data;
+            var response = message.Data;
 
-                message.HttpEntityManager.ContinueReplyTextContent(response,
-                                             exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message),
-                                                        () =>
-                                                            { });
+            message.HttpEntityManager.ContinueReplyTextContent(
+                response,
+                exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message), () =>
+                    {
+                        if (message.Envelope != null)
+                            message.Envelope.ReplyWith(
+                                new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
+                    });
         }
+
         public void Handle(HttpMessage.HttpEndSend message)
         {
-            message.HttpEntityManager.EndReply(
-                                             exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message));
+            message.HttpEntityManager.EndReply();
+            if (message.Envelope != null)
+                message.Envelope.ReplyWith(
+                    new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
         }
-
     }
 }

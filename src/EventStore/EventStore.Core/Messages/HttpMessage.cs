@@ -42,10 +42,15 @@ namespace EventStore.Core.Messages
     {
         public class HttpSendMessage : Message
         {
+            public readonly IEnvelope Envelope;
+            public readonly Guid CorrelationId;
             public readonly HttpEntityManager HttpEntityManager;
 
-            protected HttpSendMessage(HttpEntityManager httpEntityManager)
+            /// <param name="envelope">non-null envelope requests HttpCompleted messages in response</param>
+            protected HttpSendMessage(Guid correlationId, IEnvelope envelope, HttpEntityManager httpEntityManager)
             {
+                CorrelationId = correlationId;
+                Envelope = envelope;
                 HttpEntityManager = httpEntityManager;
             }
         }
@@ -58,7 +63,7 @@ namespace EventStore.Core.Messages
 
             public HttpSend(
                 HttpEntityManager httpEntityManager, ResponseConfiguration configuration, string data, Message message)
-                : base(httpEntityManager)
+                : base(Guid.Empty, null, httpEntityManager)
             {
                 Data = data;
                 Configuration = configuration;
@@ -70,9 +75,9 @@ namespace EventStore.Core.Messages
         {
             public readonly ResponseConfiguration Configuration;
 
-            public HttpBeginSend(
+            public HttpBeginSend(Guid correlationId, IEnvelope envelope, 
                 HttpEntityManager httpEntityManager, ResponseConfiguration configuration)
-                : base(httpEntityManager)
+                : base(correlationId, envelope, httpEntityManager)
             {
                 Configuration = configuration;
             }
@@ -82,8 +87,8 @@ namespace EventStore.Core.Messages
         {
             public readonly string Data;
 
-            public HttpSendPart(HttpEntityManager httpEntityManager, string data)
-                : base(httpEntityManager)
+            public HttpSendPart(Guid correlationId, IEnvelope envelope, HttpEntityManager httpEntityManager, string data)
+                : base(correlationId, envelope, httpEntityManager)
             {
                 Data = data;
             }
@@ -91,9 +96,21 @@ namespace EventStore.Core.Messages
 
         public class HttpEndSend : HttpSendMessage
         {
-            public HttpEndSend(HttpEntityManager httpEntityManager)
-                : base(httpEntityManager)
+            public HttpEndSend(Guid correlationId, IEnvelope envelope, HttpEntityManager httpEntityManager)
+                : base(correlationId, envelope, httpEntityManager)
             {
+            }
+        }
+
+        public class HttpCompleted : Message
+        {
+            public readonly Guid CorrelationId;
+            public readonly HttpEntityManager HttpEntityManager;
+
+            public HttpCompleted(Guid correlationId, HttpEntityManager httpEntityManager)
+            {
+                CorrelationId = correlationId;
+                HttpEntityManager = httpEntityManager;
             }
         }
 
