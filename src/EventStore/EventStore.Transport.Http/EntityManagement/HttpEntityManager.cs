@@ -163,7 +163,7 @@ namespace EventStore.Transport.Http.EntityManagement
             Ensure.NotNull(onReadSuccess, "OnReadSuccess");
             Ensure.NotNull(onError, "onError");
 
-            var state = new ManagerOperationState(HttpEntity, onReadSuccess, onError)
+            var state = new ManagerOperationState(onReadSuccess, onError)
                 {
                     InputStream = HttpEntity.Request.InputStream,
                     OutputStream = new MemoryStream()
@@ -188,19 +188,19 @@ namespace EventStore.Transport.Http.EntityManagement
             return true;
         }
 
-        public void ContinueReply(byte[] response, Action<Exception> onError, Action completed)
+        public void ContinueReply(byte[] response, Action<Exception> onError, Action onCompleted)
         {
             Ensure.NotNull(onError, "onError");
-            Ensure.NotNull(completed, "completed");
+            Ensure.NotNull(onCompleted, "onCompleted");
 
             ContinueWriteResponseAsync(response, onError, (sender, args) =>
                 {
                     ResponsePartWritten(sender);  
-                    completed(); 
+                    onCompleted(); 
                 });
         }
 
-        public void EndReply(Action<Exception> onError)
+        public void EndReply()
         {
             IOStreams.SafelyDispose(HttpEntity.Response.OutputStream);
             CloseConnection(e => Log.ErrorException(e, "Close connection error (after successful response write)"));
@@ -231,7 +231,7 @@ namespace EventStore.Transport.Http.EntityManagement
 
         private void ContinueWriteResponseAsync(byte[] response, Action<Exception> onError, EventHandler copierOnCompleted)
         {
-            var state = new ManagerOperationState(HttpEntity, (sender, e) => { }, onError)
+            var state = new ManagerOperationState((sender, e) => { }, onError)
                 {
                     InputStream = new MemoryStream(response),
                     OutputStream = HttpEntity.Response.OutputStream
