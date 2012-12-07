@@ -128,7 +128,7 @@ namespace EventStore.Core.Bus
             _totalTimeWatch.Start();
             var wasEmpty = true;
             const int spinmax = 5000;
-            const int sleepmax = 200000;
+            const int sleepmax = 500;
             var spincount = 0;
             var sleepcount = 0;
             while (!_stop)
