@@ -38,12 +38,7 @@ using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services
 {
-    public class NetworkSendService : IPublisher,
-                                      IHandle<TcpMessage.TcpSend>,
-                                      IHandle<HttpMessage.HttpSend>,
-                                      IHandle<HttpMessage.HttpBeginSend>,
-                                      IHandle<HttpMessage.HttpSendPart>,
-                                      IHandle<HttpMessage.HttpEndSend>
+    public class NetworkSendService : IPublisher
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<NetworkSendService>();
 
@@ -66,7 +61,7 @@ namespace EventStore.Core.Services
             _tcpQueues = new QueuedHandler[_tcpQueueCount];
             for (int i = 0; i < _tcpQueueCount; ++i)
             {
-                _tcpQueues[i] = new QueuedHandler(this.NarrowTo<Message, TcpMessage.TcpSend>(),
+                _tcpQueues[i] = new QueuedHandler(new NarrowingHandler<Message, TcpMessage.TcpSend>(new TcpSendSubservice()),
                                                   string.Format("NetworkSendQueue TCP #{0}", i),
                                                   watchSlowMsg: true,
                                                   slowMsgThresholdMs: 50);
@@ -76,7 +71,7 @@ namespace EventStore.Core.Services
             _httpQueues = new QueuedHandler[_httpQueueCount];
             for (int i = 0; i < _httpQueueCount; ++i)
             {
-                _httpQueues[i] = new QueuedHandler(this.NarrowTo<Message, HttpMessage.HttpSend>(),
+                _httpQueues[i] = new QueuedHandler(new NarrowingHandler<Message, HttpMessage.HttpSend>(new HttpSendSubservice()),
                                                    string.Format("NetworkSendQueue HTTP #{0}", i),
                                                    watchSlowMsg: true,
                                                    slowMsgThresholdMs: 50);
@@ -92,11 +87,12 @@ namespace EventStore.Core.Services
                 _tcpQueues[queueNumber].Handle(message);
                 return;
             }
+
             var sendHttpMessage = message as HttpMessage.HttpSendMessage;
             if (sendHttpMessage != null)
             {
-                //NOTE: subsequent messages to the same entitgy must be handled in order
-                var queueNumber = sendHttpMessage.HttpEntityManager.GetHashCode()%_httpQueueCount;
+                //NOTE: subsequent messages to the same entity must be handled in order
+                var queueNumber = sendHttpMessage.HttpEntityManager.GetHashCode() % _httpQueueCount;
 
                 //((uint)Interlocked.Increment(ref _httpQueueIndex)) % _httpQueueCount;
                 _httpQueues[queueNumber].Handle(sendHttpMessage);
@@ -104,74 +100,82 @@ namespace EventStore.Core.Services
             }
         }
 
-        public void Handle(TcpMessage.TcpSend message)
+        private class TcpSendSubservice: IHandle<TcpMessage.TcpSend>
         {
-            message.ConnectionManager.SendMessage(message.Message);
+            public void Handle(TcpMessage.TcpSend message)
+            {
+                message.ConnectionManager.SendMessage(message.Message);
+            }
         }
 
-        public void Handle(HttpMessage.HttpSend message)
+        private class HttpSendSubservice: IHandle<HttpMessage.HttpSend>,
+                                          IHandle<HttpMessage.HttpBeginSend>,
+                                          IHandle<HttpMessage.HttpSendPart>,
+                                          IHandle<HttpMessage.HttpEndSend>
         {
-            var deniedToHandle = message.Message as HttpMessage.DeniedToHandle;
-            if (deniedToHandle != null)
+            public void Handle(HttpMessage.HttpSend message)
             {
-                int code;
-                switch (deniedToHandle.Reason)
+                var deniedToHandle = message.Message as HttpMessage.DeniedToHandle;
+                if (deniedToHandle != null)
                 {
-                    case DenialReason.ServerTooBusy:
-                        code = HttpStatusCode.InternalServerError;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                    int code;
+                    switch (deniedToHandle.Reason)
+                    {
+                        case DenialReason.ServerTooBusy:
+                            code = HttpStatusCode.InternalServerError;
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
 
-                message.HttpEntityManager.ReplyStatus(
-                    code, deniedToHandle.Details,
-                    exc =>
-                    Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
+                    message.HttpEntityManager.ReplyStatus(
+                        code, deniedToHandle.Details,
+                        exc =>
+                        Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
+                }
+                else
+                {
+                    var response = message.Data;
+                    var config = message.Configuration;
+
+                    message.HttpEntityManager.ReplyTextContent(
+                        response, config.Code, config.Description, config.ContentType, config.Headers,
+                        exc =>
+                        Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
+                }
             }
-            else
+
+            public void Handle(HttpMessage.HttpBeginSend message)
             {
-                var response = message.Data;
                 var config = message.Configuration;
 
-                message.HttpEntityManager.ReplyTextContent(
-                    response, config.Code, config.Description, config.ContentType, config.Headers,
-                    exc =>
-                    Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
+                message.HttpEntityManager.BeginReply(config.Code, config.Description, config.ContentType, config.Headers);
+                if (message.Envelope != null)
+                    message.Envelope.ReplyWith(
+                        new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
             }
-        }
 
+            public void Handle(HttpMessage.HttpSendPart message)
+            {
+                var response = message.Data;
 
-        public void Handle(HttpMessage.HttpBeginSend message)
-        {
-            var config = message.Configuration;
-
-            message.HttpEntityManager.BeginReply(config.Code, config.Description, config.ContentType, config.Headers);
-            if (message.Envelope != null)
-                message.Envelope.ReplyWith(
-                    new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
-        }
-
-        public void Handle(HttpMessage.HttpSendPart message)
-        {
-            var response = message.Data;
-
-            message.HttpEntityManager.ContinueReplyTextContent(
-                response,
-                exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message), () =>
+                message.HttpEntityManager.ContinueReplyTextContent(
+                    response,
+                    exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message), () =>
                     {
                         if (message.Envelope != null)
                             message.Envelope.ReplyWith(
                                 new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
                     });
-        }
+            }
 
-        public void Handle(HttpMessage.HttpEndSend message)
-        {
-            message.HttpEntityManager.EndReply();
-            if (message.Envelope != null)
-                message.Envelope.ReplyWith(
-                    new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
+            public void Handle(HttpMessage.HttpEndSend message)
+            {
+                message.HttpEntityManager.EndReply();
+                if (message.Envelope != null)
+                    message.Envelope.ReplyWith(
+                        new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
+            }
         }
     }
 }
