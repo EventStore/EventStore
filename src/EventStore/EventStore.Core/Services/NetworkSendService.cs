@@ -92,9 +92,7 @@ namespace EventStore.Core.Services
             if (sendHttpMessage != null)
             {
                 //NOTE: subsequent messages to the same entity must be handled in order
-                var queueNumber = sendHttpMessage.HttpEntityManager.GetHashCode() % _httpQueueCount;
-
-                //((uint)Interlocked.Increment(ref _httpQueueIndex)) % _httpQueueCount;
+                var queueNumber = (uint)sendHttpMessage.HttpEntityManager.GetHashCode() % _httpQueueCount;
                 _httpQueues[queueNumber].Handle(sendHttpMessage);
                 return;
             }

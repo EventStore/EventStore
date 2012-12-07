@@ -92,7 +92,6 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly IPublisher _inputBus;
         private readonly IEnvelope _publishEnvelope;
 
-        private readonly object _pendingLock = new object();
         private readonly Common.Concurrent.ConcurrentQueue<HttpEntity> _pending = new Common.Concurrent.ConcurrentQueue<HttpEntity>();
         private readonly List<HttpRoute> _actions;
 
@@ -165,12 +164,16 @@ namespace EventStore.Core.Services.Transport.Http
         {
             // pending request are almost perfectly sorted by DateTime.UtcNow, no need to use SortedSet
             HttpEntity request;
-            while (_pending.TryDequeue(out request) && DateTime.UtcNow - request.TimeStamp > MaxDuration)
+            while (_pending.TryPeek(out request) && DateTime.UtcNow - request.TimeStamp > MaxDuration)
             {
                 request.Manager.ReplyStatus(
                     HttpStatusCode.RequestTimeout,
                     "Server was unable to handle request in time",
                     e => Log.ErrorException(e, "Error occurred while closing timed out connection (http service core)."));
+
+                HttpEntity req;
+                if (!_pending.TryDequeue(out req) || !ReferenceEquals(request, req))
+                    throw new Exception("Concurrent removing from pending requests queue.");
             }
         }
 
@@ -203,6 +206,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void ProcessRequest(HttpAsyncServer sender, HttpListenerContext context)
         {
+/*
             try
             {
                 PurgeTimedOutRequests();
@@ -211,6 +215,7 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 Log.ErrorException(exc, "Error during purging timed-out request.");
             }
+*/
 
             try
             {
