@@ -148,7 +148,7 @@ namespace EventStore.Core
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             //HTTP
-            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpPrefixes, 4);
+            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpPrefixes, 6);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
