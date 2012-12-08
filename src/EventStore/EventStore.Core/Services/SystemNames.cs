@@ -45,7 +45,7 @@ namespace EventStore.Core.Services
         public const string StreamCreated = "$stream-created";
         public const string StreamCreatedImplicit = "$stream-created-implicit";
         public const string StreamDeleted = "$stream-deleted";
-        public const string StatsCollection = "$stats-collection";
+        public const string StatsCollection = "$stats-collected";
         public const string LinkTo = "$>";
     }
 }
