@@ -71,10 +71,15 @@ namespace EventStore.Core.Services
             _httpQueues = new QueuedHandler[_httpQueueCount];
             for (int i = 0; i < _httpQueueCount; ++i)
             {
-                _httpQueues[i] = new QueuedHandler(new NarrowingHandler<Message, HttpMessage.HttpSend>(new HttpSendSubservice()),
-                                                   string.Format("NetworkSendQueue HTTP #{0}", i),
-                                                   watchSlowMsg: true,
-                                                   slowMsgThresholdMs: 50);
+                var bus = new InMemoryBus("http");
+                _httpQueues[i] = new QueuedHandler(bus, "http", true, 50);
+
+                var subservice = new HttpSendSubservice();
+                //TODO: make it faster? can we have just dictionary map inmemory bus?
+                bus.Subscribe<HttpMessage.HttpSend>(subservice);
+                bus.Subscribe<HttpMessage.HttpSendPart>(subservice);
+                bus.Subscribe<HttpMessage.HttpBeginSend>(subservice);
+                bus.Subscribe<HttpMessage.HttpEndSend>(subservice);
                 _httpQueues[i].Start();
             }
         }
@@ -106,10 +111,11 @@ namespace EventStore.Core.Services
             }
         }
 
-        private class HttpSendSubservice: IHandle<HttpMessage.HttpSend>,
-                                          IHandle<HttpMessage.HttpBeginSend>,
-                                          IHandle<HttpMessage.HttpSendPart>,
-                                          IHandle<HttpMessage.HttpEndSend>
+        private class HttpSendSubservice: 
+                                      IHandle<HttpMessage.HttpSend>,
+                                      IHandle<HttpMessage.HttpBeginSend>,
+                                      IHandle<HttpMessage.HttpSendPart>,
+                                      IHandle<HttpMessage.HttpEndSend>
         {
             public void Handle(HttpMessage.HttpSend message)
             {
@@ -135,7 +141,6 @@ namespace EventStore.Core.Services
                 {
                     var response = message.Data;
                     var config = message.Configuration;
-
                     message.HttpEntityManager.ReplyTextContent(
                         response, config.Code, config.Description, config.ContentType, config.Headers,
                         exc =>
@@ -174,6 +179,8 @@ namespace EventStore.Core.Services
                     message.Envelope.ReplyWith(
                         new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
             }
+
         }
+
     }
 }

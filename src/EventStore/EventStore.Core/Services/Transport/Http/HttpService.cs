@@ -162,6 +162,9 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void PurgeTimedOutRequests()
         {
+#if DO_NOT_TIMEOUT_REQUESTS 
+            return;
+#endif
             // pending request are almost perfectly sorted by DateTime.UtcNow, no need to use SortedSet
             HttpEntity request;
             while (_pending.TryPeek(out request) && DateTime.UtcNow - request.TimeStamp > MaxDuration)
