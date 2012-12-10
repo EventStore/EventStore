@@ -65,7 +65,7 @@ namespace EventStore.Core.Services
                     bus.Subscribe<HttpMessage.HttpBeginSend>(subservice);
                     bus.Subscribe<HttpMessage.HttpEndSend>(subservice);
 
-                    return new QueuedHandler(new NarrowingHandler<Message, HttpMessage.HttpSend>(new HttpSendSubservice()),
+                    return new QueuedHandler(bus,
                                              string.Format("Outgoing HTTP #{0}", queueNum + 1),
                                              watchSlowMsg: true,
                                              slowMsgThreshold: TimeSpan.FromMilliseconds(50));
