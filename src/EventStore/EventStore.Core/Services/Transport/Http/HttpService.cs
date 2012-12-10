@@ -47,33 +47,6 @@ using Uri = System.Uri;
 
 namespace EventStore.Core.Services.Transport.Http
 {
-    public class UriToActionMatch
-    {
-        public readonly UriTemplateMatch TemplateMatch;
-        public readonly ControllerAction ControllerAction;
-        public readonly Action<HttpEntity, UriTemplateMatch> RequestHandler;
-
-        public UriToActionMatch(UriTemplateMatch templateMatch, 
-                                ControllerAction controllerAction, 
-                                Action<HttpEntity, UriTemplateMatch> requestHandler)
-        {
-            TemplateMatch = templateMatch;
-            ControllerAction = controllerAction;
-            RequestHandler = requestHandler;
-        }
-    }
-
-    public enum ServiceAccessibility
-    {
-        Private,
-        Public
-    }
-
-    public interface IHttpService
-    {
-        void RegisterControllerAction(ControllerAction action, Action<HttpEntity, UriTemplateMatch> handler);
-    }
-
     public class HttpService : IHttpService,
                                IHandle<SystemMessage.SystemInit>,
                                IHandle<SystemMessage.BecomeShuttingDown>,
@@ -93,6 +66,7 @@ namespace EventStore.Core.Services.Transport.Http
         private readonly IEnvelope _publishEnvelope;
 
         private readonly Common.Concurrent.ConcurrentQueue<HttpEntity> _pending = new Common.Concurrent.ConcurrentQueue<HttpEntity>();
+        private int _timedOutProcessing;
         private readonly List<HttpRoute> _actions;
 
         private readonly HttpMessagePipe _httpPipe;
@@ -153,27 +127,62 @@ namespace EventStore.Core.Services.Transport.Http
             if (_accessibility != message.Accessibility)
                 return;
 
-            PurgeTimedOutRequests();
+            ScheduleTimedOutRequestsPurge();
 
             _inputBus.Publish(TimerMessage.Schedule.Create(UpdateInterval,
                                                            _publishEnvelope,
                                                            new HttpMessage.UpdatePendingRequests(_accessibility)));
         }
 
+        private void ScheduleTimedOutRequestsPurge()
+        {
+            if (Interlocked.CompareExchange(ref _timedOutProcessing, 1, 0) == 0)
+                ThreadPool.QueueUserWorkItem(_ => PurgeTimedOutRequests());
+        }
+
         private void PurgeTimedOutRequests()
         {
-            // pending request are almost perfectly sorted by DateTime.UtcNow, no need to use SortedSet
-            HttpEntity request;
-            while (_pending.TryPeek(out request) && DateTime.UtcNow - request.TimeStamp > MaxDuration)
+            try
             {
-                request.Manager.ReplyStatus(
-                    HttpStatusCode.RequestTimeout,
-                    "Server was unable to handle request in time",
-                    e => Log.ErrorException(e, "Error occurred while closing timed out connection (http service core)."));
+                bool proceed = true;
+                while (proceed)
+                {
+                    var now = DateTime.UtcNow;
 
-                HttpEntity req;
-                if (!_pending.TryDequeue(out req) || !ReferenceEquals(request, req))
-                    throw new Exception("Concurrent removing from pending requests queue.");
+                    // pending request are almost perfectly sorted by DateTime.UtcNow, no need to use SortedSet
+                    HttpEntity request;
+                    while (_pending.TryPeek(out request) && now - request.TimeStamp > MaxDuration)
+                    {
+                        if (!request.Manager.IsProcessing)
+                        {
+                            request.Manager.ReplyStatus(
+                                HttpStatusCode.RequestTimeout,
+                                "Server was unable to handle request in time",
+                                e => Log.ErrorException(e, "Error occurred while closing timed out connection (http service core)."));
+                        }
+
+                        HttpEntity req;
+                        if (!_pending.TryDequeue(out req) || !ReferenceEquals(request, req))
+                            throw new Exception("Concurrent removing from pending requests queue.");
+                    }
+
+                    // signal we are not processing any more, so others can schedule purging
+                    var was = Interlocked.CompareExchange(ref _timedOutProcessing, 0, 1);
+                    Debug.Assert(was == 1, "Some concurrency weirdness, _timedOutProcessing should have been kept 1 all this time.");
+
+                    // do more processing only if
+                    proceed = _pending.TryPeek(out request)                                         // there are some requests
+                              && now - request.TimeStamp > MaxDuration                              // that are expired
+                              && Interlocked.CompareExchange(ref _timedOutProcessing, 1, 0) == 0;   // and we are good to process
+                }
+            }
+            catch (Exception exc)
+            {
+                Log.ErrorException(exc, "Error purging timed out requests in {1} HTTP service ().", _accessibility);
+
+                // signal we are not processing any more, so others can schedule purging, even if we had exception here
+                var was = Interlocked.CompareExchange(ref _timedOutProcessing, 0, 1);
+                Debug.Assert(was == 1, "Some concurrency weirdness, _timedOutProcessing should have been kept 1 all this time.");
             }
         }
 
@@ -197,7 +206,6 @@ namespace EventStore.Core.Services.Transport.Http
             _actions.Add(new HttpRoute(action, handler));
         }
 
-
         private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
         {
             var queueNum = (int)(Interlocked.Increment(ref _requestNumber) % _receiveHandlers.Length);
@@ -206,17 +214,6 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void ProcessRequest(HttpAsyncServer sender, HttpListenerContext context)
         {
-/*
-            try
-            {
-                PurgeTimedOutRequests();
-            }
-            catch (Exception exc)
-            {
-                Log.ErrorException(exc, "Error during purging timed-out request.");
-            }
-*/
-
             try
             {
                 var allMatches = GetAllUriMatches(context.Request.Url);
@@ -241,7 +238,7 @@ namespace EventStore.Core.Services.Transport.Http
                 }
 
                 var match = allMatches.LastOrDefault(m => 
-                    m.ControllerAction.HttpMethod.Equals(context.Request.HttpMethod, StringComparison.OrdinalIgnoreCase));
+                        m.ControllerAction.HttpMethod.Equals(context.Request.HttpMethod, StringComparison.OrdinalIgnoreCase));
                 if (match == null)
                 {
                     MethodNotAllowed(context, allowedMethods);
@@ -263,16 +260,11 @@ namespace EventStore.Core.Services.Transport.Http
                                                            match.ControllerAction.DefaultResponseCodec);
                 if (responseCodec == null)
                 {
-                    BadCodec(context, "Requested uri is not available in requested format");
+                    BadCodec(context, "Requested URI is not available in requested format");
                     return;
                 }
 
-                var entity = CreateEntity(DateTime.UtcNow,
-                                          context,
-                                          requestCodec,
-                                          responseCodec,
-                                          allowedMethods,
-                                          satisfied => { });
+                var entity = CreateEntity(DateTime.UtcNow, context, requestCodec, responseCodec, allowedMethods, satisfied => { });
                 _pending.Enqueue(entity);
                 match.RequestHandler(entity, match.TemplateMatch);
             }
@@ -281,6 +273,8 @@ namespace EventStore.Core.Services.Transport.Http
                 Log.ErrorException(exception, "Unhandled exception while processing http request.");
                 InternalServerError(context);
             }
+
+            ScheduleTimedOutRequestsPurge();
         }
 
         private List<UriToActionMatch> GetAllUriMatches(Uri uri)
@@ -429,7 +423,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        private struct HttpRoute
+        private class HttpRoute
         {
             public readonly ControllerAction Action;
             public readonly Action<HttpEntity, UriTemplateMatch> Handler;

@@ -38,7 +38,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
     {
         private Guid _firstEventId;
         private DateTime _firstEventTimestamp;
+#pragma warning disable 108,114
         private int _timeBetweenEvents;
+#pragma warning restore 108,114
 
         protected override void When()
         {

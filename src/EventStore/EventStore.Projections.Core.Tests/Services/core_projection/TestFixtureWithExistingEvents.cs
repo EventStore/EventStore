@@ -172,6 +172,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 else
                 {
                     throw new NotImplementedException();
+/*
                     message.Envelope.ReplyWith(
                             new ClientMessage.ReadStreamEventsBackwardCompleted(
                                     message.CorrelationId,
@@ -182,6 +183,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                                     lastEventNumber: list.Safe().Last().EventNumber,
                                     isEndOfStream: true,// NOTE AN: don't know how to correctly determine this here
                                     lastCommitPosition: _lastPosition));
+*/
                 }
             }
         }

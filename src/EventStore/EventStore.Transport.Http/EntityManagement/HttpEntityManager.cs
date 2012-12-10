@@ -42,6 +42,7 @@ namespace EventStore.Transport.Http.EntityManagement
 
         public object AsyncState { get; set; }
         public readonly HttpEntity HttpEntity;
+        public bool IsProcessing { get { return _processing != 0; } }
 
         private int _processing;
         private readonly string[] _allowedMethods;

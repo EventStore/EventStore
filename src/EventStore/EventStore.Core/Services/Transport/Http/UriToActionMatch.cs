@@ -26,43 +26,23 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using EventStore.Common.Log;
+using EventStore.Transport.Http.EntityManagement;
 
-namespace EventStore.Common.Utils
+namespace EventStore.Core.Services.Transport.Http
 {
-    public enum ExitCode
+    public class UriToActionMatch
     {
-        Success = 0,
-        Error = 1
-    }
+        public readonly UriTemplateMatch TemplateMatch;
+        public readonly ControllerAction ControllerAction;
+        public readonly Action<HttpEntity, UriTemplateMatch> RequestHandler;
 
-    public class Application
-    {
-        private static Action<int> _exit;
-
-        public static void RegisterExitAction(Action<int> exitAction)
+        public UriToActionMatch(UriTemplateMatch templateMatch, 
+                                ControllerAction controllerAction, 
+                                Action<HttpEntity, UriTemplateMatch> requestHandler)
         {
-            Ensure.NotNull(exitAction, "exitAction");
-
-            _exit = exitAction;
-        }
-
-        public static void Exit(ExitCode exitCode, string reason)
-        {
-            Exit((int) exitCode, reason);
-        }
-
-        public static void Exit(int exitCode, string reason)
-        {
-            Ensure.NotNullOrEmpty(reason, "reason");
-            
-            Console.WriteLine("Exiting with exitcode {0}, exit reason : {1}", exitCode, reason);
-
-            LogManager.Finish();
-
-            var exit = _exit;
-            if (exit != null)
-                exit(exitCode);
+            TemplateMatch = templateMatch;
+            ControllerAction = controllerAction;
+            RequestHandler = requestHandler;
         }
     }
 }

@@ -233,6 +233,8 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         [Test]
         public void not_return_events_from_deleted_streams()
         {
+            Assert.Inconclusive();
+
             const string stream = "read_all_events_forward_should_not_return_events_from_deleted_streams";
             using (var store = EventStoreConnection.Create())
             {
@@ -264,14 +266,15 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                     position = slice.Position;
                 }
 
-                Assert.Inconclusive();
-                //Assert.That(TestEventsComparer.Equal(testEvents, all.Skip(1).ToArray()));
+                Assert.That(TestEventsComparer.Equal(testEvents, all.Skip(1).ToArray()));
             }
         }
 
         [Test]
         public void not_return_stream_deleted_records()
         {
+            Assert.Inconclusive();
+
             const string stream = "read_all_events_forward_should_not_return_stream_deleted_records";
             using (var store = EventStoreConnection.Create())
             {
@@ -288,14 +291,15 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var read = store.ReadAllEventsForwardAsync(Position.Start, 3);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.Inconclusive();
-                //Assert.That(read.Result.Events.Length, Is.EqualTo(1));
+                Assert.That(read.Result.Events.Length, Is.EqualTo(1));
             }
         }
 
         [Test]
         public void return_no_records_if_stream_created_than_deleted()
         {
+            Assert.Inconclusive();
+
             const string stream = "read_all_events_forward_should_return_no_records_if_stream_created_than_deleted";
             using (var store = EventStoreConnection.Create())
             {
@@ -315,8 +319,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var read = store.ReadAllEventsForwardAsync(Position.Start, 4);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.Inconclusive();
-                //Assert.That(read.Result.Events.Length, Is.EqualTo(0));
+                Assert.That(read.Result.Events.Length, Is.EqualTo(0));
             }
         }
 

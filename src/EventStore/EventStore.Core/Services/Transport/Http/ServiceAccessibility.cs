@@ -25,44 +25,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
-using EventStore.Common.Log;
-
-namespace EventStore.Common.Utils
+namespace EventStore.Core.Services.Transport.Http
 {
-    public enum ExitCode
+    public enum ServiceAccessibility
     {
-        Success = 0,
-        Error = 1
-    }
-
-    public class Application
-    {
-        private static Action<int> _exit;
-
-        public static void RegisterExitAction(Action<int> exitAction)
-        {
-            Ensure.NotNull(exitAction, "exitAction");
-
-            _exit = exitAction;
-        }
-
-        public static void Exit(ExitCode exitCode, string reason)
-        {
-            Exit((int) exitCode, reason);
-        }
-
-        public static void Exit(int exitCode, string reason)
-        {
-            Ensure.NotNullOrEmpty(reason, "reason");
-            
-            Console.WriteLine("Exiting with exitcode {0}, exit reason : {1}", exitCode, reason);
-
-            LogManager.Finish();
-
-            var exit = _exit;
-            if (exit != null)
-                exit(exitCode);
-        }
+        Private,
+        Public
     }
 }
