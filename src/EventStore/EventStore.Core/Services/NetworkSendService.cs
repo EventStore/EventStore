@@ -54,10 +54,22 @@ namespace EventStore.Core.Services
 
             _httpMultiHandler = new MultiQueuedHandler(
                 httpQueueCount,
-                queueNum => new QueuedHandler(new NarrowingHandler<Message, HttpMessage.HttpSend>(new HttpSendSubservice()),
-                                              string.Format("Outgoing HTTP #{0}", queueNum + 1),
-                                              watchSlowMsg: true,
-                                              slowMsgThreshold: TimeSpan.FromMilliseconds(50)),
+                queueNum => 
+                {
+                    var subservice = new HttpSendSubservice();
+
+                    //TODO: make it faster? can we have just dictionary map inmemory bus?
+                    var bus = new InMemoryBus(string.Format("Outgoing HTTP #{0} Bus", queueNum + 1), watchSlowMsg: false);
+                    bus.Subscribe<HttpMessage.HttpSend>(subservice);
+                    bus.Subscribe<HttpMessage.HttpSendPart>(subservice);
+                    bus.Subscribe<HttpMessage.HttpBeginSend>(subservice);
+                    bus.Subscribe<HttpMessage.HttpEndSend>(subservice);
+
+                    return new QueuedHandler(new NarrowingHandler<Message, HttpMessage.HttpSend>(new HttpSendSubservice()),
+                                             string.Format("Outgoing HTTP #{0}", queueNum + 1),
+                                             watchSlowMsg: true,
+                                             slowMsgThreshold: TimeSpan.FromMilliseconds(50));
+                },
                 msg =>
                 {
                     //NOTE: subsequent messages to the same entity must be handled in order
@@ -121,7 +133,6 @@ namespace EventStore.Core.Services
                 {
                     var response = message.Data;
                     var config = message.Configuration;
-
                     message.HttpEntityManager.ReplyTextContent(
                         response, config.Code, config.Description, config.ContentType, config.Headers,
                         exc =>
@@ -157,6 +168,8 @@ namespace EventStore.Core.Services
                 if (message.Envelope != null)
                     message.Envelope.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
             }
+
         }
+
     }
 }

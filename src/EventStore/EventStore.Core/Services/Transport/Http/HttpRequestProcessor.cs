@@ -79,17 +79,16 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void PurgeTimedOutRequests()
         {
-#if DO_NOT_TIMEOUT_REQUESTS 
-            return;
-#endif
             try 
             {
                 var now = DateTime.UtcNow;
-
                 // pending request are almost perfectly sorted by DateTime.UtcNow, no need to use SortedSet
                 while (_pending.Count > 0 && now - _pending.Peek().TimeStamp > MaxRequestDuration)
                 {
                     var request = _pending.Dequeue();
+#if DO_NOT_TIMEOUT_REQUESTS
+                    continue;
+#endif
                     if (!request.Manager.IsProcessing)
                     {
                         request.Manager.ReplyStatus(
