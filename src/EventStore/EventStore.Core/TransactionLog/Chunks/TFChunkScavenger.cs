@@ -269,7 +269,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 // in transaction, as in some circumstances we need it.
                 // For instance, this prepare could be part of ongoing transaction and though we sometimes can determine
                 // that prepare wouldn't ever be needed (e.g., stream was deleted, $maxAge or $maxCount rule it out)
-                // we still need the first prepare to find out StreamId for possible commit in StorageWriter.WriteCommit method. 
+                // we still need the first prepare to find out StreamId for possible commit in StorageWriterService.WriteCommit method. 
                 // There could be other reasons where it is needed, so we just safely filter it out to not bother further.
                 if ((prepare.Flags & PrepareFlags.TransactionBegin) != 0)
                     return true;

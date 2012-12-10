@@ -25,18 +25,22 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Bus
 {
     public class QueuedHandler: QueuedHandlerMRES
     {
+        public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
+
         public QueuedHandler(IHandle<Message> consumer,
                              string name,
                              bool watchSlowMsg = true,
-                             int? slowMsgThresholdMs = null,
-                             int threadStopWaitTimeoutMs = 10000)
-                : base(consumer, name, watchSlowMsg, slowMsgThresholdMs, threadStopWaitTimeoutMs)
+                             TimeSpan? slowMsgThreshold = null,
+                             TimeSpan? threadStopWaitTimeout = null)
+                : base(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout)
         {
         }
     }

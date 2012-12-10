@@ -39,16 +39,15 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage
 {
-    public class StorageWriter : IDisposable,
-                                 IHandle<Message>,
-                                 IHandle<SystemMessage.SystemInit>,
-                                 IHandle<SystemMessage.BecomeShuttingDown>,
-                                 IHandle<StorageMessage.WritePrepares>,
-                                 IHandle<StorageMessage.WriteDelete>,
-                                 IHandle<StorageMessage.WriteTransactionStart>,
-                                 IHandle<StorageMessage.WriteTransactionData>,
-                                 IHandle<StorageMessage.WriteTransactionPrepare>,
-                                 IHandle<StorageMessage.WriteCommit>
+    public class StorageWriterService : IHandle<Message>,
+                                        IHandle<SystemMessage.SystemInit>,
+                                        IHandle<SystemMessage.BecomeShuttingDown>,
+                                        IHandle<StorageMessage.WritePrepares>,
+                                        IHandle<StorageMessage.WriteDelete>,
+                                        IHandle<StorageMessage.WriteTransactionStart>,
+                                        IHandle<StorageMessage.WriteTransactionData>,
+                                        IHandle<StorageMessage.WriteTransactionPrepare>,
+                                        IHandle<StorageMessage.WriteCommit>
     {
         protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
         private static readonly int MinFlushDelay = 2*TicksPerMs;
@@ -68,7 +67,7 @@ namespace EventStore.Core.Services.Storage
 
         protected int FlushMessagesInQueue;
 
-        public StorageWriter(IPublisher bus, ISubscriber subscriber, TFChunkWriter writer, IReadIndex readIndex)
+        public StorageWriterService(IPublisher bus, ISubscriber subscriber, TFChunkWriter writer, IReadIndex readIndex)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(subscriber, "subscriber");
@@ -85,7 +84,7 @@ namespace EventStore.Core.Services.Storage
             Writer = writer;
             Writer.Open();
 
-            _writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: true, slowMsgThresholdMs: 500);
+            _writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: true, slowMsgThresholdMs: TimeSpan.FromMilliseconds(500));
             _storageWriterQueue = new QueuedHandler(_writerBus, "StorageWriterQueue", watchSlowMsg: false);
             _storageWriterQueue.Start();
 
@@ -117,11 +116,10 @@ namespace EventStore.Core.Services.Storage
 
             _storageWriterQueue.Publish(message);
 
-            // TODO AN manage this cyclic thread stopping dependency
-            if (message is SystemMessage.BecomeShuttingDown)
+            if (message is SystemMessage.BecomeShuttingDown) // we need to handle this message on main thread to stop StorageWriterQueue
             {
                 _storageWriterQueue.Stop();
-                Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
+                Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriterService"));
             }
         }
 
@@ -133,7 +131,7 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<SystemMessage.BecomeShuttingDown>.Handle(SystemMessage.BecomeShuttingDown message)
         {
-            Dispose();
+            Writer.Close();
         }
 
         void IHandle<StorageMessage.WritePrepares>.Handle(StorageMessage.WritePrepares message)
@@ -450,17 +448,6 @@ namespace EventStore.Core.Services.Storage
                 return true;
             }
             return false;
-        }
-
-        public void Dispose()
-        {
-            Writer.Flush();
-            Writer.Close();
-
-            ReadIndex.Close();
-
-            // TODO AN manage this cyclic thread stopping dependency
-            //_storageWriterQueue.Stop();
         }
 
         private struct WriteResult

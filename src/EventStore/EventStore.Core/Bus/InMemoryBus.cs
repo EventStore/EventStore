@@ -41,7 +41,7 @@ namespace EventStore.Core.Bus
     /// </summary>
     public class InMemoryBus : IBus, ISubscriber, IPublisher, IHandle<Message>
     {
-        public const int DefaultSlowMessageThresholdMs = 48;
+        public static readonly TimeSpan DefaultSlowMessageThreshold = TimeSpan.FromMilliseconds(48);
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<InMemoryBus>();
 
@@ -51,15 +51,15 @@ namespace EventStore.Core.Bus
 
         private readonly Stopwatch _slowMsgWatch = new Stopwatch();
         private readonly bool _watchSlowMsg;
-        private readonly int _slowMsgThresholdMs;
+        private readonly TimeSpan _slowMsgThreshold;
 
-        public InMemoryBus(string name, bool watchSlowMsg = true, int? slowMsgThresholdMs = null)
+        public InMemoryBus(string name, bool watchSlowMsg = true, TimeSpan? slowMsgThresholdMs = null)
         {
             _typeHash = new Dictionary<Type, List<IMessageHandler>>();
 
             Name = name;
             _watchSlowMsg = watchSlowMsg;
-            _slowMsgThresholdMs = slowMsgThresholdMs ?? DefaultSlowMessageThresholdMs;
+            _slowMsgThreshold = slowMsgThresholdMs ?? DefaultSlowMessageThreshold;
         }
 
         public void Subscribe<T>(IHandle<T> handler) where T : Message
@@ -125,7 +125,7 @@ namespace EventStore.Core.Bus
 
                         handler.TryHandle(message);
 
-                        if (_slowMsgWatch.ElapsedMilliseconds > _slowMsgThresholdMs)
+                        if (_slowMsgWatch.Elapsed > _slowMsgThreshold)
                         {
                             Log.Trace("SLOW BUS MSG [{0}]: {1} - {2}ms. Handler: {3}.",
                                       Name,

@@ -157,11 +157,11 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class UpdatePendingRequests : Message
+        public class PurgeTimedOutRequests : Message
         {
             public readonly ServiceAccessibility Accessibility;
 
-            public UpdatePendingRequests(ServiceAccessibility accessibility)
+            public PurgeTimedOutRequests(ServiceAccessibility accessibility)
             {
                 Accessibility = accessibility;
             }

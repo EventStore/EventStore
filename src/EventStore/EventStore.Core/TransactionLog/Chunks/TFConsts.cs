@@ -35,7 +35,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public const int StorageReaderHandlerCount = 4;
 
-        public const int ReadIndexReaderCount = 1 /*StorageWriter*/
+        public const int ReadIndexReaderCount = 1   /*StorageWriter*/
                                                 + 1 /*StorageChaser*/
                                                 + 1 /*Projections*/
                                                 + 1 /*Scavenging*/

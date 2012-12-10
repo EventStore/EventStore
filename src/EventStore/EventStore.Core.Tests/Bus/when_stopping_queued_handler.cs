@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.Bus
         public void while_queue_is_busy_should_crash_with_timeout()
         {
             var consumer = new WaitingConsumer(1);
-            var busyQueue = new QueuedHandler(consumer, "busy_test_queue", watchSlowMsg: false, threadStopWaitTimeoutMs: 100);
+            var busyQueue = new QueuedHandler(consumer, "busy_test_queue", watchSlowMsg: false, threadStopWaitTimeout: TimeSpan.FromMilliseconds(100));
             var waitHandle = new ManualResetEvent(false);
             var handledEvent = new ManualResetEvent(false);
             try

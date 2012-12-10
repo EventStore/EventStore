@@ -26,130 +26,39 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Services.Storage
 {
-    public class StorageReader : IDisposable,
-                                 IHandle<Message>,
-                                 IHandle<SystemMessage.SystemInit>,
-                                 IHandle<SystemMessage.BecomeShuttingDown>,
-                                 IHandle<ClientMessage.ReadEvent>,
-                                 IHandle<ClientMessage.ReadStreamEventsBackward>,
-                                 IHandle<ClientMessage.ReadStreamEventsForward>,
-                                 IHandle<ClientMessage.ReadAllEventsForward>,
-                                 IHandle<ClientMessage.ReadAllEventsBackward>,
-                                 IHandle<ClientMessage.ListStreams>,
-                                 IHandle<MonitoringMessage.InternalStatsRequest>
+    public class StorageReaderWorker: IHandle<ClientMessage.ReadEvent>,
+                                      IHandle<ClientMessage.ReadStreamEventsBackward>,
+                                      IHandle<ClientMessage.ReadStreamEventsForward>,
+                                      IHandle<ClientMessage.ReadAllEventsForward>,
+                                      IHandle<ClientMessage.ReadAllEventsBackward>,
+                                      IHandle<ClientMessage.ListStreams>
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<StorageReader>();
+        private static readonly ILogger Log = LogManager.GetLoggerFor<StorageReaderWorker>();
 
-        private readonly IPublisher _bus;
         private readonly IReadIndex _readIndex;
-        private readonly int _threadCount;
         private readonly ICheckpoint _writerCheckpoint;
-        private QueuedHandler[] _storageReaderQueues;
-        private int _lastQueueNumber = -1; // to start from queue #0
 
-        public StorageReader(IPublisher bus, ISubscriber subscriber, IReadIndex readIndex, int threadCount, ICheckpoint writerCheckpoint)
+        public StorageReaderWorker(IReadIndex readIndex, ICheckpoint writerCheckpoint)
         {
-            Ensure.NotNull(bus, "bus");
-            Ensure.NotNull(subscriber, "subscriber");
             Ensure.NotNull(readIndex, "readIndex");
-            Ensure.Positive(threadCount, "threadCount");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 
-            _bus = bus;
             _readIndex = readIndex;
-            _threadCount = threadCount;
             _writerCheckpoint = writerCheckpoint;
-
-            SetupMessaging(subscriber);
-        }
-
-        private void SetupMessaging(ISubscriber subscriber)
-        {
-            var storageReaderBus = new InMemoryBus("StorageReaderBus");
-            storageReaderBus.Subscribe<SystemMessage.SystemInit>(this);
-            storageReaderBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
-            storageReaderBus.Subscribe<ClientMessage.ReadEvent>(this);
-            storageReaderBus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
-            storageReaderBus.Subscribe<ClientMessage.ReadStreamEventsForward>(this);
-            storageReaderBus.Subscribe<ClientMessage.ReadAllEventsForward>(this);
-            storageReaderBus.Subscribe<ClientMessage.ReadAllEventsBackward>(this);
-            storageReaderBus.Subscribe<ClientMessage.ListStreams>(this);
-
-            subscriber.Subscribe(this.WidenFrom<SystemMessage.SystemInit, Message>());
-            subscriber.Subscribe(this.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
-            subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadEvent, Message>());
-            subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadStreamEventsBackward, Message>());
-            subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadStreamEventsForward, Message>());
-            subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadAllEventsForward, Message>());
-            subscriber.Subscribe(this.WidenFrom<ClientMessage.ReadAllEventsBackward, Message>());
-            subscriber.Subscribe(this.WidenFrom<ClientMessage.ListStreams, Message>());
-
-            _storageReaderQueues = new QueuedHandler[_threadCount];
-            for (int i = 0; i < _threadCount; ++i)
-            {
-                var queue = new QueuedHandler(storageReaderBus, string.Format("StorageReaderQueue #{0}", i));
-                _storageReaderQueues[i] = queue;
-                queue.Start();
-            }
-        }
-
-        public void Handle(Message message)
-        {
-            var queueNumber = ((uint)Interlocked.Increment(ref _lastQueueNumber)) % _threadCount;
-            _storageReaderQueues[queueNumber].Handle(message);
-
-            // TODO AN manage this cyclic thread stopping dependency
-            if (message is SystemMessage.BecomeShuttingDown)
-            {
-                for (int i = 0; i < _storageReaderQueues.Length; ++i)
-                {
-                    try
-                    {
-                        _storageReaderQueues[i].Stop();
-                    }
-                    catch (Exception exc)
-                    {
-                        Log.ErrorException(exc, 
-                                           string.Format("Error during stopping reader QueuedHandler '{0}'.", 
-                                                         _storageReaderQueues[i].Name));
-                    }   
-                }
-                _readIndex.Close();
-                _bus.Publish(new SystemMessage.ServiceShutdown("StorageReader"));
-            }
-        }
-
-        void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message)
-        {
-            _bus.Publish(new SystemMessage.StorageReaderInitializationDone());
-        }
-
-        void IHandle<SystemMessage.BecomeShuttingDown>.Handle(SystemMessage.BecomeShuttingDown message)
-        {
-            Dispose();
-        }
-
-        public void Dispose()
-        {
-            // TODO AN manage this cyclic thread stopping dependency
-            //_storageReaderQueue.Stop();
         }
 
         void IHandle<ClientMessage.ReadEvent>.Handle(ClientMessage.ReadEvent message)
@@ -184,27 +93,27 @@ namespace EventStore.Core.Services.Storage
                     if (records[index].EventNumber != records[index - 1].EventNumber + 1)
                     {
                         throw new Exception(string.Format(
-                                "Invalid order of events has been detected in read index for the event stream '{0}'. "
-                                + "The event {1} at position {2} goes after the event {3} at position {4}",
-                                message.EventStreamId,
-                                records[index].EventNumber,
-                                records[index].LogPosition,
-                                records[index - 1].EventNumber,
-                                records[index - 1].LogPosition));
+                                                          "Invalid order of events has been detected in read index for the event stream '{0}'. "
+                                                          + "The event {1} at position {2} goes after the event {3} at position {4}",
+                                                          message.EventStreamId,
+                                                          records[index].EventNumber,
+                                                          records[index].LogPosition,
+                                                          records[index - 1].EventNumber,
+                                                          records[index - 1].LogPosition));
                     }
                 }
             }
 
             var resolvedPairs = ResolveLinkToEvents(result.Records, message.ResolveLinks);
             message.Envelope.ReplyWith(
-                new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId,
-                                                                   message.EventStreamId,
-                                                                   resolvedPairs,
-                                                                   result.Result,
-                                                                   result.NextEventNumber,
-                                                                   result.LastEventNumber,
-                                                                   result.IsEndOfStream,
-                                                                   result.IsEndOfStream ? lastCommitPosition : (long?) null));
+                                       new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId,
+                                                                                          message.EventStreamId,
+                                                                                          resolvedPairs,
+                                                                                          result.Result,
+                                                                                          result.NextEventNumber,
+                                                                                          result.LastEventNumber,
+                                                                                          result.IsEndOfStream,
+                                                                                          result.IsEndOfStream ? lastCommitPosition : (long?)null));
         }
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)
@@ -220,26 +129,26 @@ namespace EventStore.Core.Services.Storage
                     if (records[index].EventNumber != records[index - 1].EventNumber - 1)
                     {
                         throw new Exception(string.Format(
-                                "Invalid order of events has been detected in read index for the event stream '{0}'. "
-                                + "The event {1} at position {2} goes after the event {3} at position {4}",
-                                message.EventStreamId,
-                                records[index].EventNumber,
-                                records[index].LogPosition,
-                                records[index - 1].EventNumber,
-                                records[index - 1].LogPosition));
+                                                          "Invalid order of events has been detected in read index for the event stream '{0}'. "
+                                                          + "The event {1} at position {2} goes after the event {3} at position {4}",
+                                                          message.EventStreamId,
+                                                          records[index].EventNumber,
+                                                          records[index].LogPosition,
+                                                          records[index - 1].EventNumber,
+                                                          records[index - 1].LogPosition));
                     }
                 }
             }
             var resolvedPairs = ResolveLinkToEvents(result.Records, message.ResolveLinks);
             message.Envelope.ReplyWith(
-                new ClientMessage.ReadStreamEventsBackwardCompleted(message.CorrelationId,
-                                                                    message.EventStreamId,
-                                                                    resolvedPairs,
-                                                                    result.Result,
-                                                                    result.NextEventNumber,
-                                                                    result.LastEventNumber,
-                                                                    result.IsEndOfStream,
-                                                                    result.IsEndOfStream ? lastCommitPosition : (long?) null));
+                                       new ClientMessage.ReadStreamEventsBackwardCompleted(message.CorrelationId,
+                                                                                           message.EventStreamId,
+                                                                                           resolvedPairs,
+                                                                                           result.Result,
+                                                                                           result.NextEventNumber,
+                                                                                           result.LastEventNumber,
+                                                                                           result.IsEndOfStream,
+                                                                                           result.IsEndOfStream ? lastCommitPosition : (long?)null));
         }
 
         private EventLinkPair[] ResolveLinkToEvents(EventRecord[] records, bool resolveLinks)
@@ -346,45 +255,32 @@ namespace EventStore.Core.Services.Storage
                 var result = _readIndex.ReadStreamEventsForward(SystemStreams.StreamsStream, 1, int.MaxValue);
                 if (result.Result != RangeReadResult.Success)
                     throw new SystemStreamNotFoundException(
-                        string.Format("Couldn't find system stream {0}, which should've been created with projection 'Index By Streams'",
-                                        SystemStreams.StreamsStream));
+                            string.Format("Couldn't find system stream {0}, which should've been created with projection 'Index By Streams'",
+                                          SystemStreams.StreamsStream));
 
                 var streamIds = result.Records
-                    .Select(e =>
-                    {
-                        var dataStr = Encoding.UTF8.GetString(e.Data);
-                        var parts = dataStr.Split('@');
-                        if (parts.Length < 2)
-                        {
-                            throw new FormatException(string.Format("{0} stream event data is in bad format: {1}. Expected: eventNumber@streamid",
-                                                                    SystemStreams.StreamsStream,
-                                                                    dataStr));
-                        }
-                        var streamid = parts[1];
-                        return streamid;
-                    })
-                    .ToArray();
+                                      .Select(e =>
+                                      {
+                                          var dataStr = Encoding.UTF8.GetString(e.Data);
+                                          var parts = dataStr.Split('@');
+                                          if (parts.Length < 2)
+                                          {
+                                              throw new FormatException(string.Format("{0} stream event data is in bad format: {1}. Expected: eventNumber@streamid",
+                                                                                      SystemStreams.StreamsStream,
+                                                                                      dataStr));
+                                          }
+                                          var streamid = parts[1];
+                                          return streamid;
+                                      })
+                                      .ToArray();
 
                 message.Envelope.ReplyWith(new ClientMessage.ListStreamsCompleted(true, streamIds));
             }
             catch (Exception ex)
             {
-                Log.ErrorException(ex, "Error while reading stream ids");
+                Log.ErrorException(ex, "Error while reading stream ids.");
                 message.Envelope.ReplyWith(new ClientMessage.ListStreamsCompleted(false, null));
             }
-        }
-
-        public void Handle(MonitoringMessage.InternalStatsRequest message)
-        {
-            var indexStats = _readIndex.GetStatistics();
-
-            var stats = new Dictionary<string, object>
-                {
-                    {"es-readIndex-failedReadCount", indexStats.FailedReadCount},
-                    {"es-readIndex-succReadCount", indexStats.SuccReadCount}
-                };
-
-            message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));
         }
     }
 }

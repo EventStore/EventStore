@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             bus.Subscribe<SystemMessage.SystemInit>(service);
             bus.Subscribe<SystemMessage.BecomeShuttingDown>(service);
             bus.Subscribe<HttpMessage.SendOverHttp>(service);
-            bus.Subscribe<HttpMessage.UpdatePendingRequests>(service);
+            bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(service);
         }
 
         public static void Unsubscribe(IBus bus, HttpService service)
@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             bus.Unsubscribe<SystemMessage.SystemInit>(service);
             bus.Unsubscribe<SystemMessage.BecomeShuttingDown>(service);
             bus.Unsubscribe<HttpMessage.SendOverHttp>(service);
-            bus.Unsubscribe<HttpMessage.UpdatePendingRequests>(service);
+            bus.Unsubscribe<HttpMessage.PurgeTimedOutRequests>(service);
         }
 
         public static void RegisterPing(HttpService service)

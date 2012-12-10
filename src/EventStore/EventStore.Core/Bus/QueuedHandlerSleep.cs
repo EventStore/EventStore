@@ -59,7 +59,7 @@ namespace EventStore.Core.Bus
         private Thread _thread;
         private volatile bool _stop;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
-        private readonly int _threadStopWaitTimeoutMs;
+        private readonly TimeSpan _threadStopWaitTimeout;
 
         // monitoring
         private readonly QueueMonitor _queueMonitor;
@@ -84,8 +84,8 @@ namespace EventStore.Core.Bus
         public QueuedHandlerSleep(IHandle<Message> consumer,
                                   string name,
                                   bool watchSlowMsg = true,
-                                  int? slowMsgThresholdMs = null,
-                                  int threadStopWaitTimeoutMs = 10000)
+                                  TimeSpan? slowMsgThreshold = null,
+                                  TimeSpan? threadStopWaitTimeout = null)
         {
             Ensure.NotNull(consumer, "consumer");
             Ensure.NotNull(name, "name");
@@ -93,8 +93,8 @@ namespace EventStore.Core.Bus
             _consumer = consumer;
             _name = name;
             _watchSlowMsg = watchSlowMsg;
-            _slowMsgThreshold = TimeSpan.FromMilliseconds(slowMsgThresholdMs ?? InMemoryBus.DefaultSlowMessageThresholdMs);
-            _threadStopWaitTimeoutMs = threadStopWaitTimeoutMs;
+            _slowMsgThreshold = slowMsgThreshold ?? InMemoryBus.DefaultSlowMessageThreshold;
+            _threadStopWaitTimeout = threadStopWaitTimeout ?? QueuedHandler.DefaultStopWaitTimeout;
 
             _queueMonitor = QueueMonitor.Default;
         }
@@ -115,7 +115,7 @@ namespace EventStore.Core.Bus
         public void Stop()
         {
             _stop = true;
-            if (!_stopped.Wait(_threadStopWaitTimeoutMs))
+            if (!_stopped.Wait(_threadStopWaitTimeout))
                 throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", _name));
             _queueMonitor.Unregister(this);
         }

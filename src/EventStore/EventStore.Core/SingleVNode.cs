@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.IO;
 using System.Net;
 using EventStore.Core.Bus;
@@ -91,7 +92,7 @@ namespace EventStore.Core
             //MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
-            var monitoringQueue = new QueuedHandler(monitoringInnerBus, "MonitoringQueue", watchSlowMsg: true, slowMsgThresholdMs: 100);
+            var monitoringQueue = new QueuedHandler(monitoringInnerBus, "MonitoringQueue", true, TimeSpan.FromMilliseconds(100));
             var monitoring = new MonitoringService(monitoringQueue, 
                                                    monitoringRequestBus, 
                                                    MainQueue, 
@@ -125,8 +126,12 @@ namespace EventStore.Core
                                           new XXHashUnsafe(),
                                           new LRUCache<string, StreamCacheInfo>(TFConsts.MetadataCacheCapacity));
             var writer = new TFChunkWriter(db);
-            var storageWriter = new StorageWriter(_mainQueue, _outputBus, writer, readIndex);
-            var storageReader = new StorageReader(_mainQueue, _outputBus, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
+            var storageWriter = new StorageWriterService(_mainQueue, _outputBus, writer, readIndex);
+            var storageReader = new StorageReaderService(_mainQueue, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
+            _outputBus.Subscribe<SystemMessage.SystemInit>(storageReader);
+            _outputBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
+            _outputBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
+            _outputBus.Subscribe<Message>(storageReader); 
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
             var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
@@ -139,7 +144,7 @@ namespace EventStore.Core
             _outputBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
 
             // NETWORK SEND
-            _networkSendService = new NetworkSendService(tcpQueueCount: 1, httpQueueCount: 2);
+            _networkSendService = new NetworkSendService(tcpQueueCount: 1, httpQueueCount: 3);
 
             //TCP
             var tcpService = new TcpService(MainQueue, _tcpEndPoint, _networkSendService);
@@ -148,11 +153,11 @@ namespace EventStore.Core
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             //HTTP
-            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpPrefixes, 6);
+            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, 6, vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
-            Bus.Subscribe<HttpMessage.UpdatePendingRequests>(HttpService);
+            Bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(HttpService);
             HttpService.SetupController(new AdminController(MainQueue));
             HttpService.SetupController(new PingController());
             HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));

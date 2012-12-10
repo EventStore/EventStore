@@ -1,3 +1,4 @@
+using System;
 using EventStore.Core.Bus;
 using NUnit.Framework;
 
@@ -12,7 +13,7 @@ namespace EventStore.Core.Tests.Bus.Helpers
         public virtual void SetUp()
         {
             Consumer = new WaitingConsumer(0);
-            Queue = new QueuedHandler(Consumer, "waiting_queue", watchSlowMsg: false, threadStopWaitTimeoutMs: 1000);
+            Queue = new QueuedHandler(Consumer, "waiting_queue", watchSlowMsg: false, threadStopWaitTimeout: TimeSpan.FromMilliseconds(1000));
         }
 
         [TearDown]

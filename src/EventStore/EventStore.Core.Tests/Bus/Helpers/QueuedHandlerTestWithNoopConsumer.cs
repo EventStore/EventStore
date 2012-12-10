@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using NUnit.Framework;
@@ -41,7 +42,7 @@ namespace EventStore.Core.Tests.Bus.Helpers
         public virtual void SetUp()
         {
             Consumer = new NoopConsumer();
-            Queue = new QueuedHandler(Consumer, "test_name", watchSlowMsg: false, threadStopWaitTimeoutMs: 1000);
+            Queue = new QueuedHandler(Consumer, "test_name", watchSlowMsg: false, threadStopWaitTimeout: TimeSpan.FromMilliseconds(1000));
         }
 
         [TearDown]

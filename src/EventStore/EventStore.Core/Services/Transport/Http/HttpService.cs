@@ -27,23 +27,15 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
-using System.Threading;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Services.Transport.Http.Codecs;
-using EventStore.Transport.Http;
-using System.Linq;
 using EventStore.Transport.Http.EntityManagement;
 using EventStore.Transport.Http.Server;
-using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
-using Uri = System.Uri;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -51,51 +43,47 @@ namespace EventStore.Core.Services.Transport.Http
                                IHandle<SystemMessage.SystemInit>,
                                IHandle<SystemMessage.BecomeShuttingDown>,
                                IHandle<HttpMessage.SendOverHttp>,
-                               IHandle<HttpMessage.UpdatePendingRequests>
+                               IHandle<HttpMessage.PurgeTimedOutRequests>
     {
         private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
-        private static readonly TimeSpan MaxDuration = TimeSpan.FromSeconds(5);
-        private static readonly string[] Empty = new string[0];
-
-        private static readonly ILogger Log = LogManager.GetLoggerFor<HttpService>();
 
         public bool IsListening { get { return _server.IsListening; } }
+        public IEnumerable<string> ListenPrefixes { get { return _server.ListenPrefixes; } }
 
         private readonly ServiceAccessibility _accessibility;
         private readonly IPublisher _inputBus;
         private readonly IEnvelope _publishEnvelope;
 
-        private readonly Common.Concurrent.ConcurrentQueue<HttpEntity> _pending = new Common.Concurrent.ConcurrentQueue<HttpEntity>();
-        private int _timedOutProcessing;
         private readonly List<HttpRoute> _actions;
 
         private readonly HttpMessagePipe _httpPipe;
         private readonly HttpAsyncServer _server;
-        private readonly QueuedHandler[] _receiveHandlers;
-        private long _requestNumber = -1;
+        private readonly MultiQueuedHandler _requestsMultiHandler;
 
-        public HttpService(ServiceAccessibility accessibility, IPublisher inputBus, string[] prefixes, int receiveHandlerCount)
+        public HttpService(ServiceAccessibility accessibility, IPublisher inputBus, int receiveHandlerCount, params string[] prefixes)
         {
             Ensure.NotNull(inputBus, "inputBus");
             Ensure.NotNull(prefixes, "prefixes");
             Ensure.Positive(receiveHandlerCount, "receiveHandlerCount");
+
             _accessibility = accessibility;
             _inputBus = inputBus;
             _publishEnvelope = new PublishEnvelope(inputBus);
 
             _actions = new List<HttpRoute>();
-
             _httpPipe = new HttpMessagePipe();
-            _receiveHandlers = new QueuedHandler[receiveHandlerCount];
-            for (int i = 0; i < receiveHandlerCount; i++)
-            {
-                var handler = new QueuedHandler(new NarrowingHandler<Message, IncomingHttpRequestMessage>(new ProcessHttpHandler(this)),
-                                                "Incoming HTTP #" + (i + 1),
-                                                true,
-                                                50);
-                _receiveHandlers[i] = handler;
-                handler.Start();
-            }
+
+            _requestsMultiHandler = new MultiQueuedHandler(
+                    receiveHandlerCount,
+                    queueNum =>
+                    {
+                        var bus = new InMemoryBus(string.Format("Incoming HTTP #{0} Bus", queueNum + 1), watchSlowMsg: false);
+                        var requestProcessor = new HttpRequestProcessor(this);
+                        bus.Subscribe<IncomingHttpRequestMessage>(requestProcessor);
+                        bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
+                        return new QueuedHandler(bus, "Incoming HTTP #" + (queueNum + 1), true, TimeSpan.FromMilliseconds(50));
+                    });
+
             _server = new HttpAsyncServer(prefixes);
             _server.RequestReceived += RequestReceived;
         }
@@ -104,17 +92,21 @@ namespace EventStore.Core.Services.Transport.Http
         {
             if (_server.TryStart())
             {
+                _requestsMultiHandler.Start();
                 _inputBus.Publish(TimerMessage.Schedule.Create(UpdateInterval,
                                                                _publishEnvelope,
-                                                               new HttpMessage.UpdatePendingRequests(_accessibility)));
+                                                               new HttpMessage.PurgeTimedOutRequests(_accessibility)));
             }
             else
-                Application.Exit(ExitCode.Error, "Http async server failed to start.");
+            {
+                Application.Exit(ExitCode.Error,
+                                 string.Format("Http async server failed to start listening at [{0}].",
+                                               string.Join(", ", _server.ListenPrefixes)));
+            }
         }
 
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
-
         }
 
         public void Handle(HttpMessage.SendOverHttp message)
@@ -122,73 +114,27 @@ namespace EventStore.Core.Services.Transport.Http
             _httpPipe.Push(message.Message, message.EndPoint);
         }
 
-        public void Handle(HttpMessage.UpdatePendingRequests message)
+        private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
+        {
+            _requestsMultiHandler.Handle(new IncomingHttpRequestMessage(sender, context));
+        }
+
+        public void Handle(HttpMessage.PurgeTimedOutRequests message)
         {
             if (_accessibility != message.Accessibility)
                 return;
 
-            ScheduleTimedOutRequestsPurge();
+            _requestsMultiHandler.PublishToAll(message);
 
             _inputBus.Publish(TimerMessage.Schedule.Create(UpdateInterval,
                                                            _publishEnvelope,
-                                                           new HttpMessage.UpdatePendingRequests(_accessibility)));
-        }
-
-        private void ScheduleTimedOutRequestsPurge()
-        {
-            if (Interlocked.CompareExchange(ref _timedOutProcessing, 1, 0) == 0)
-                ThreadPool.QueueUserWorkItem(_ => PurgeTimedOutRequests());
-        }
-
-        private void PurgeTimedOutRequests()
-        {
-            try
-            {
-                bool proceed = true;
-                while (proceed)
-                {
-                    var now = DateTime.UtcNow;
-
-                    // pending request are almost perfectly sorted by DateTime.UtcNow, no need to use SortedSet
-                    HttpEntity request;
-                    while (_pending.TryPeek(out request) && now - request.TimeStamp > MaxDuration)
-                    {
-                        if (!request.Manager.IsProcessing)
-                        {
-                            request.Manager.ReplyStatus(
-                                HttpStatusCode.RequestTimeout,
-                                "Server was unable to handle request in time",
-                                e => Log.ErrorException(e, "Error occurred while closing timed out connection (http service core)."));
-                        }
-
-                        HttpEntity req;
-                        if (!_pending.TryDequeue(out req) || !ReferenceEquals(request, req))
-                            throw new Exception("Concurrent removing from pending requests queue.");
-                    }
-
-                    // signal we are not processing any more, so others can schedule purging
-                    var was = Interlocked.CompareExchange(ref _timedOutProcessing, 0, 1);
-                    Debug.Assert(was == 1, "Some concurrency weirdness, _timedOutProcessing should have been kept 1 all this time.");
-
-                    // do more processing only if
-                    proceed = _pending.TryPeek(out request)                                         // there are some requests
-                              && now - request.TimeStamp > MaxDuration                              // that are expired
-                              && Interlocked.CompareExchange(ref _timedOutProcessing, 1, 0) == 0;   // and we are good to process
-                }
-            }
-            catch (Exception exc)
-            {
-                Log.ErrorException(exc, "Error purging timed out requests in {1} HTTP service ().", _accessibility);
-
-                // signal we are not processing any more, so others can schedule purging, even if we had exception here
-                var was = Interlocked.CompareExchange(ref _timedOutProcessing, 0, 1);
-                Debug.Assert(was == 1, "Some concurrency weirdness, _timedOutProcessing should have been kept 1 all this time.");
-            }
+                                                           new HttpMessage.PurgeTimedOutRequests(_accessibility)));
         }
 
         public void Shutdown()
         {
             _server.Shutdown();
+            _requestsMultiHandler.Stop();
         }
 
         public void SetupController(IController controller)
@@ -206,78 +152,7 @@ namespace EventStore.Core.Services.Transport.Http
             _actions.Add(new HttpRoute(action, handler));
         }
 
-        private void RequestReceived(HttpAsyncServer sender, HttpListenerContext context)
-        {
-            var queueNum = (int)(Interlocked.Increment(ref _requestNumber) % _receiveHandlers.Length);
-            _receiveHandlers[queueNum].Handle(new IncomingHttpRequestMessage(sender, context));
-        }
-
-        private void ProcessRequest(HttpAsyncServer sender, HttpListenerContext context)
-        {
-            try
-            {
-                var allMatches = GetAllUriMatches(context.Request.Url);
-                if (allMatches.Count == 0)
-                {
-                    NotFound(context);
-                    return;
-                }
-
-                var allowedMethods = new string[allMatches.Count + 1];
-                for (int i = 0; i < allMatches.Count; ++i)
-                {
-                    allowedMethods[i] = allMatches[i].ControllerAction.HttpMethod;
-                }
-                //add options to the list of allowed request methods
-                allowedMethods[allMatches.Count] = HttpMethod.Options;
-
-                if (context.Request.HttpMethod.Equals(HttpMethod.Options, StringComparison.OrdinalIgnoreCase))
-                {
-                    RespondWithOptions(context, allowedMethods);
-                    return;
-                }
-
-                var match = allMatches.LastOrDefault(m => 
-                        m.ControllerAction.HttpMethod.Equals(context.Request.HttpMethod, StringComparison.OrdinalIgnoreCase));
-                if (match == null)
-                {
-                    MethodNotAllowed(context, allowedMethods);
-                    return;
-                }
-
-                ICodec requestCodec = SelectRequestCodec(context.Request.HttpMethod,
-                                                         context.Request.ContentType,
-                                                         match.ControllerAction.SupportedRequestCodecs);
-                if (requestCodec == null)
-                {
-                    BadCodec(context, "Content-Type MUST be set for POST, PUT and DELETE.");
-                    return;
-                }
-
-                ICodec responseCodec = SelectResponseCodec(context.Request.QueryString,
-                                                           context.Request.AcceptTypes,
-                                                           match.ControllerAction.SupportedResponseCodecs,
-                                                           match.ControllerAction.DefaultResponseCodec);
-                if (responseCodec == null)
-                {
-                    BadCodec(context, "Requested URI is not available in requested format");
-                    return;
-                }
-
-                var entity = CreateEntity(DateTime.UtcNow, context, requestCodec, responseCodec, allowedMethods, satisfied => { });
-                _pending.Enqueue(entity);
-                match.RequestHandler(entity, match.TemplateMatch);
-            }
-            catch (Exception exception)
-            {
-                Log.ErrorException(exception, "Unhandled exception while processing http request.");
-                InternalServerError(context);
-            }
-
-            ScheduleTimedOutRequestsPurge();
-        }
-
-        private List<UriToActionMatch> GetAllUriMatches(Uri uri)
+        public List<UriToActionMatch> GetAllUriMatches(Uri uri)
         {
             var matches = new List<UriToActionMatch>();
             for (int i = 0; i < _actions.Count; ++i)
@@ -288,139 +163,6 @@ namespace EventStore.Core.Services.Transport.Http
                     matches.Add(new UriToActionMatch(match, route.Action, route.Handler));
             }
             return matches;
-        }
-
-        private void RespondWithOptions(HttpListenerContext context, string[] allowed)
-        {
-            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
-            entity.Manager.ReplyStatus(HttpStatusCode.OK,
-                                       "OK",
-                                       e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
-        }
-
-        private void MethodNotAllowed(HttpListenerContext context, string[] allowed)
-        {
-            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, allowed, _ => { });
-            entity.Manager.ReplyStatus(HttpStatusCode.MethodNotAllowed,
-                                       "Method Not Allowed",
-                                       e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
-        }
-
-        private void NotFound(HttpListenerContext context)
-        {
-            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, Empty, _ => { });
-            entity.Manager.ReplyStatus(HttpStatusCode.NotFound,
-                                       "Not Found",
-                                       e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
-        }
-
-        private void InternalServerError(HttpListenerContext context)
-        {
-            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, Empty, _ => { });
-            entity.Manager.ReplyStatus(HttpStatusCode.InternalServerError,
-                                       "Internal Server Error",
-                                       e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
-        }
-
-        private void BadCodec(HttpListenerContext context, string reason)
-        {
-            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, Empty, _ => { });
-            entity.Manager.ReplyStatus(HttpStatusCode.UnsupportedMediaType,
-                                       reason,
-                                       e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
-        }
-
-        private HttpEntity CreateEntity(DateTime receivedTime,
-                                        HttpListenerContext context,
-                                        ICodec requestCodec,
-                                        ICodec responseCodec,
-                                        string[] allowedMethods,
-                                        Action<HttpEntity> onRequestSatisfied)
-        {
-            return new HttpEntity(receivedTime, requestCodec, responseCodec, context, allowedMethods, onRequestSatisfied);
-        }
-
-        private ICodec SelectRequestCodec(string method, string contentType, IEnumerable<ICodec> supportedCodecs)
-        {
-            switch (method.ToUpper())
-            {
-                case HttpMethod.Post:
-                case HttpMethod.Put:
-                case HttpMethod.Delete:
-                    return supportedCodecs.SingleOrDefault(c => c.CanParse(contentType));
-
-                default:
-                    return Codec.NoCodec;
-            }
-        }
-
-        private ICodec SelectResponseCodec(NameValueCollection query, string[] acceptTypes, ICodec[] supported, ICodec @default)
-        {
-            var requestedFormat = GetFormatOrDefault(query);
-            if (requestedFormat == null && acceptTypes.IsEmpty())
-                return @default;
-
-            if (requestedFormat != null)
-                return supported.FirstOrDefault(c => c.SuitableForReponse(AcceptComponent.Parse(requestedFormat)));
-
-            return acceptTypes.Select(AcceptComponent.TryParse)
-                              .Where(x => x != null)
-                              .OrderByDescending(v => v.Priority)
-                              .Select(type => supported.FirstOrDefault(codec => codec.SuitableForReponse(type)))
-                              .FirstOrDefault(corresponding => corresponding != null);
-        }
-
-        private string GetFormatOrDefault(NameValueCollection query)
-        {
-            var format = (query != null && query.Count > 0) ? query.Get("format") : null;
-            if (format == null)
-                return null;
-            switch (format.ToLower())
-            {
-                case "json":
-                    return ContentType.Json;
-                case "text":
-                    return ContentType.PlainText;
-                case "xml":
-                    return ContentType.Xml;
-                case "atom":
-                    return ContentType.Atom;
-                case "atomxj":
-                    return ContentType.AtomJson;
-                case "atomsvc":
-                    return ContentType.AtomServiceDoc;
-                case "atomsvcxj":
-                    return ContentType.AtomServiceDocJson;
-                default:
-                    throw new NotSupportedException("Unknown format requested");
-            }
-        }
-
-        private class ProcessHttpHandler : IHandle<IncomingHttpRequestMessage>
-        {
-            private readonly HttpService _parent;
-
-            public ProcessHttpHandler(HttpService parent)
-            {
-                _parent = parent;
-            }
-
-            public void Handle(IncomingHttpRequestMessage message)
-            {
-                _parent.ProcessRequest(message.Sender, message.Context);
-            }
-        }
-
-        private class IncomingHttpRequestMessage : Message
-        {
-            public readonly HttpAsyncServer Sender;
-            public readonly HttpListenerContext Context;
-
-            public IncomingHttpRequestMessage(HttpAsyncServer sender, HttpListenerContext context)
-            {
-                Sender = sender;
-                Context = context;
-            }
         }
 
         private class HttpRoute
