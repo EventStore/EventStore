@@ -79,6 +79,9 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void PurgeTimedOutRequests()
         {
+#if DO_NOT_TIMEOUT_REQUESTS 
+            return;
+#endif
             try 
             {
                 var now = DateTime.UtcNow;
