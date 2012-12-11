@@ -155,10 +155,11 @@ namespace EventStore.Core.Services.Transport.Http
         public List<UriToActionMatch> GetAllUriMatches(Uri uri)
         {
             var matches = new List<UriToActionMatch>();
+            var baseAddress = new UriBuilder(uri.Scheme, uri.Host, uri.Port).Uri;
             for (int i = 0; i < _actions.Count; ++i)
             {
                 var route = _actions[i];
-                var match = route.UriTemplate.Match(new UriBuilder(uri.Scheme, uri.Host, uri.Port).Uri, uri);
+                var match = route.UriTemplate.Match(baseAddress, uri);
                 if (match != null)
                     matches.Add(new UriToActionMatch(match, route.Action, route.Handler));
             }
