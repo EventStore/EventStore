@@ -43,7 +43,8 @@ test runner starts 64-bit runner and loads js1.dll corectly)
 
 0. Prerequisites
 
-Mono (2.11 at least) available on $PATH
+- Mono (2.11 at least) available on $PATH
+- svn binary available on $PATH (sudo apt-get install subversion)
 
 You can get and build mono from the master branch in github repository with 
 
