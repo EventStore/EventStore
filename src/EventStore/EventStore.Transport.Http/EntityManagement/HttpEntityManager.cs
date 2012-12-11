@@ -47,6 +47,8 @@ namespace EventStore.Transport.Http.EntityManagement
         private int _processing;
         private readonly string[] _allowedMethods;
         private readonly Action<HttpEntity> _onRequestSatisfied;
+        private Stream _currentOutputStream;
+        private AsyncQueuedBufferWriter _asyncWriter;
 
         internal HttpEntityManager(HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
         {
@@ -196,29 +198,29 @@ namespace EventStore.Transport.Http.EntityManagement
             Ensure.NotNull(onError, "onError");
             Ensure.NotNull(onCompleted, "onCompleted");
 
-            ContinueWriteResponseAsync(response, onError, (sender, args) =>
-            {
-                ResponsePartWritten(sender);  
-                onCompleted(); 
-            });
+            _currentOutputStream = HttpEntity.Response.OutputStream;
+            ContinueWriteResponseAsync(response, () => { }, onError, onCompleted);
+        }
+
+        private void DisposeStreamAndCloseConnection(string message)
+        {
+            IOStreams.SafelyDispose(_currentOutputStream);
+            _currentOutputStream = null;
+            CloseConnection(e => Log.ErrorException(e, message));
         }
 
         public void EndReply()
         {
-            IOStreams.SafelyDispose(HttpEntity.Response.OutputStream);
-            CloseConnection(e => Log.ErrorException(e, "Close connection error (after successful response write)"));
+            EndWriteResponse();
         }
 
-        public void Reply(byte[] response,
-                          int code,
-                          string description,
-                          string contentType,
-                          KeyValuePair<string, string>[] headers,
-                          Action<Exception> onError)
+        public void Reply(
+            byte[] response, int code, string description, string contentType, KeyValuePair<string, string>[] headers,
+            Action<Exception> onError)
         {
             Ensure.NotNull(onError, "onError");
 
-            if (!BeginReply(code, description, contentType, headers)) 
+            if (!BeginReply(code, description, contentType, headers))
                 return;
 
             if (response == null || response.Length == 0)
@@ -229,52 +231,36 @@ namespace EventStore.Transport.Http.EntityManagement
             else
             {
                 SetResponseLength(response.Length);
-                ContinueWriteResponseAsync(response, onError, ResponseWritten);
+                BeginWriteResponse();
+                ContinueWriteResponseAsync(response, () => { }, onError, () => { });
+                EndWriteResponse();
             }
         }
 
-        private void ContinueWriteResponseAsync(byte[] response, Action<Exception> onError, EventHandler copierOnCompleted)
+        private void EndWriteResponse()
         {
-            var state = new ManagerOperationState((sender, e) => { }, onError)
-            {
-                InputStream = new MemoryStream(response),
-                OutputStream = HttpEntity.Response.OutputStream
-            };
-            var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
-            copier.Completed += copierOnCompleted;
-            copier.Start();
+            _asyncWriter.AppnedDispose(exception => { });
         }
 
-        private void ResponseWritten(object sender, EventArgs eventArgs)
+        private void BeginWriteResponse()
         {
-            var copier = (AsyncStreamCopier<ManagerOperationState>) sender;
-            ManagerOperationState state = copier.AsyncState;
-
-            if (copier.Error != null)
-            {
-                state.DisposeIOStreams();
-                CloseConnection(e => Log.ErrorException(e, "Close connection error (after crash in write response)"));
-
-                state.OnError(copier.Error);
-                return;
-            }
-
-            state.DisposeIOStreams();
-            CloseConnection(e => Log.ErrorException(e, "Close connection error (after successful response write)"));
+            _currentOutputStream = HttpEntity.Response.OutputStream;
         }
 
-        private void ResponsePartWritten(object sender)
+        private void ContinueWriteResponseAsync(byte[] response, Action onSuccess, Action<Exception> onError, Action onCompleted)
         {
-            var copier = (AsyncStreamCopier<ManagerOperationState>)sender;
-            var state = copier.AsyncState;
+            if (_asyncWriter == null)
+                _asyncWriter = new AsyncQueuedBufferWriter(
+                    _currentOutputStream, () => DisposeStreamAndCloseConnection("Close connection error"));
 
-            if (copier.Error != null)
-            {
-                state.DisposeIOStreams();
-                CloseConnection(e => Log.ErrorException(e, "Close connection error (after crash in write response)"));
-
-                state.OnError(copier.Error);
-            }
+            _asyncWriter.Append(response, errorIfAny =>
+                {
+                    if (errorIfAny == null)
+                        onSuccess();
+                    else
+                        onError(errorIfAny);
+                    onCompleted();
+                });
         }
 
         private void RequestRead(object sender, EventArgs e)

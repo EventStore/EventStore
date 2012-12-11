@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AcceptComponent.cs" />
+    <Compile Include="AsyncQueuedBufferWriter.cs" />
     <Compile Include="Client\ClientOperationState.cs" />
     <Compile Include="Client\HttpAsyncClient.cs" />
     <Compile Include="Client\IHttpClient.cs" />
