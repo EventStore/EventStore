@@ -17,6 +17,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 source.FromAll();
                 source.AllEvents();
                 source.SetStateStreamNameOption("state-stream");
+                source.SetEmitStateUpdated();
             };
             NoStream("state-stream");
             NoStream("$projections-projection-checkpoint");

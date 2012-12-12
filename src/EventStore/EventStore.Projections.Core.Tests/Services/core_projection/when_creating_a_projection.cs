@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     public class when_creating_a_projection
     {
         private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
-            ProjectionMode.AdHoc, 5, 10, 1000, 250, true, true, true);
+            5, 10, 1000, 250, true, true, true, true);
 
         private
             RequestResponseDispatcher
@@ -98,7 +98,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
-                                         new ProjectionConfig(ProjectionMode.AdHoc, -1, 10, 1000, 250, true, true, true), _readDispatcher,
+                                         new ProjectionConfig(-1, 10, 1000, 250, true, true, false, false), _readDispatcher,
                                          _writeDispatcher, null);
         }
 
@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
-                                         new ProjectionConfig(ProjectionMode.AdHoc, 0, 10, 1000, 250, true, true, true), _readDispatcher,
+                                         new ProjectionConfig(0, 10, 1000, 250, true, true, false, false), _readDispatcher,
                                          _writeDispatcher, null);
         }
 
@@ -117,7 +117,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
             var p = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
-                                         new ProjectionConfig(ProjectionMode.AdHoc, 10, 5, 1000, 250, true, true, true), _readDispatcher,
+                                         new ProjectionConfig(10, 5, 1000, 250, true, true, false, false), _readDispatcher,
                                          _writeDispatcher, null);
         }
 

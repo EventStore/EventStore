@@ -54,6 +54,9 @@ namespace EventStore.Projections.Core.Services.Management
             public bool Enabled { get; set; }
             public bool Deleted { get; set; }
             public ProjectionSourceDefintion SourceDefintion { get; set; }
+            public bool? EmitEnabled { get; set; }
+            public bool? CreateTempStreams { get; set; }
+            public bool? CheckpointsDisabled { get; set; }
         }
 
         private readonly IPublisher _inputQueue;
@@ -335,7 +338,9 @@ namespace EventStore.Projections.Core.Services.Management
             if (completed.Result == RangeReadResult.Success && completed.Events.Length == 1)
             {
                 byte[] state = completed.Events[0].Event.Data;
-                LoadPersistedState(state.ParseJson<PersistedState>());
+                var persistedState = state.ParseJson<PersistedState>();
+                FixupOldProjectionModes(persistedState);
+                LoadPersistedState(persistedState);
                 //TODO: encapsulate this into managed projection
                 _state = ManagedProjectionState.Loaded;
                 if (Enabled)
@@ -350,6 +355,20 @@ namespace EventStore.Projections.Core.Services.Management
             _logger.Trace(
                 "Projection manager did not find any projection configuration records in the {0} stream.  Projection stays in CREATING state",
                 completed.EventStreamId);
+        }
+
+        private void FixupOldProjectionModes(PersistedState persistedState)
+        {
+            switch (persistedState.Mode)
+            {
+                case ProjectionMode.AdHoc:
+                    persistedState.Mode = ProjectionMode.OneTime;
+                    break;
+                case ProjectionMode.Persistent:
+                    persistedState.Mode = ProjectionMode.Continuous;
+                    persistedState.EmitEnabled = persistedState.EmitEnabled ?? true;
+                    break;
+            }
         }
 
         private void LoadPersistedState(PersistedState persistedState)
@@ -417,14 +436,14 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void Prepare(Action onPrepared)
         {
-            var config = CreateDefaultProjectionConfiguration(GetMode());
+            var config = CreateDefaultProjectionConfiguration();
             DisposeCoreProjection(); 
             BeginCreateAndPrepare(_projectionStateHandlerFactory, config, onPrepared);
         }
 
         private void CreatePrepared(Action onPrepared)
         {
-            var config = CreateDefaultProjectionConfiguration(GetMode());
+            var config = CreateDefaultProjectionConfiguration();
             DisposeCoreProjection();
             BeginCreatePrepared(config, onPrepared);
         }
@@ -510,7 +529,7 @@ namespace EventStore.Projections.Core.Services.Management
                                 stateHandler = handlerFactory.Create(HandlerType, Query, Console.WriteLine);
                                 var checkpointStrategyBuilder = new CheckpointStrategy.Builder();
                                 stateHandler.ConfigureSourceProcessingStrategy(checkpointStrategyBuilder);
-                                checkpointStrategyBuilder.Validate(Mode); // avoid future exceptions in coreprojection
+                                checkpointStrategyBuilder.Validate(config); // avoid future exceptions in coreprojection
                                 return stateHandler;
                             }
                             catch (Exception ex)
@@ -595,13 +614,20 @@ namespace EventStore.Projections.Core.Services.Management
             _faultedReason = reason;
         }
 
-        private static ProjectionConfig CreateDefaultProjectionConfiguration(ProjectionMode mode)
+        private ProjectionConfig CreateDefaultProjectionConfiguration()
         {
+            var checkpointsEnabled = _persistedState.CheckpointsDisabled != true;
+            var checkpointHandledThreshold = checkpointsEnabled ? 2000 : 0;
+            var checkpointUnhandledBytesThreshold = checkpointsEnabled ? 10*1000*1000 : 0;
+            var pendingEventsThreshold = 1000;
+            var maxWriteBatchLength = 500;
+            var emitEventEnabled = _persistedState.EmitEnabled == true;
+            var createTempStreams = _persistedState.CreateTempStreams == true;
+            var stopOnEof = _persistedState.Mode == ProjectionMode.AdHoc;
+
             var projectionConfig = new ProjectionConfig(
-                mode, mode > ProjectionMode.AdHoc ? 2000 : 0, mode > ProjectionMode.AdHoc ? 10*1000*1000 : 0,
-                pendingEventsThreshold: 1000, maxWriteBatchLength: 500,
-                publishStateUpdates: mode == ProjectionMode.Persistent, checkpointsEnabled: mode > ProjectionMode.AdHoc,
-                emitEventEnabled: mode == ProjectionMode.Persistent); //TODO: allow emit in continuous
+                checkpointHandledThreshold, checkpointUnhandledBytesThreshold, pendingEventsThreshold,
+                maxWriteBatchLength, emitEventEnabled, checkpointsEnabled, createTempStreams, stopOnEof); 
             return projectionConfig;
         }
 
@@ -690,6 +716,8 @@ namespace EventStore.Projections.Core.Services.Management
             if (_sourceDefintion.ByStream)
                 builder.SetByStream();
 
+            //TODO: set false if options == null?
+
             if (_sourceDefintion.Options != null && !string.IsNullOrEmpty(_sourceDefintion.Options.StateStreamName))
                 builder.SetStateStreamNameOption(_sourceDefintion.Options.StateStreamName);
 
@@ -704,6 +732,9 @@ namespace EventStore.Projections.Core.Services.Management
 
             if (_sourceDefintion.Options != null)
                 builder.SetProcessingLag(_sourceDefintion.Options.ProcessingLag);
+
+            if (_sourceDefintion.Options != null)
+                builder.SetEmitStateUpdated(_sourceDefintion.Options.EmitStateUpdated);
         }
     }
 }

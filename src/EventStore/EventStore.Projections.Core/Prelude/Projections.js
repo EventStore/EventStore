@@ -18,6 +18,7 @@ var $projections = {
                 useEventIndexes: false,
                 reorderEvents: false,
                 processingLag: 0,
+                emitStateUpdated: false,
             }, 
         };
         var initStateHandler = function() { return { }; };
@@ -144,6 +145,10 @@ var $projections = {
             sources.by_streams = true;
         }
 
+        function emit_state_updated() {
+            sources.options.emitStateUpdated = true;
+        }
+
         function fromAll() {
             sources.all_streams = true;
         }
@@ -171,6 +176,7 @@ var $projections = {
             fromStream: fromStream,
 
             byStream: byStream,
+            emit_state_updated: emit_state_updated,
 
             emit: emit,
             options: options,

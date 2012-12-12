@@ -91,26 +91,36 @@ function scope($on, $notify) {
         }
     }
 
+    function emitStateUpdated() {
+        eventProcessor.emit_state_updated();
+    }
+
+    function when(handlers) {
+        translateOn(handlers);
+        return {
+            emitStateUpdated: emitStateUpdated,
+        };
+    }
+
+    function whenAny(handler) {
+        eventProcessor.on_any(handler);
+        return {
+            emitStateUpdated: emitStateUpdated,
+        };
+    }
+
     function fromCategory(category) {
         eventProcessor.fromCategory(category);
         return {
             foreachStream: function () {
                 eventProcessor.byStream();
                 return {
-                    when: function (handlers) {
-                        translateOn(handlers);
-                    },
-                    whenAny: function (handler) {
-                        eventProcessor.on_any(handler);
-                    }
+                    when: when,
+                    whenAny: whenAny,
                 };
             },
-            when: function (handlers) {
-                translateOn(handlers);
-            },
-            whenAny: function (handler) {
-                eventProcessor.on_any(handler);
-            }
+            when: when,
+            whenAny: whenAny,
         };
     }
 
@@ -120,20 +130,12 @@ function scope($on, $notify) {
             foreachStream: function () {
                 eventProcessor.byStream();
                 return {
-                    when: function (handlers) {
-                        translateOn(handlers);
-                    },
-                    whenAny: function (handler) {
-                        eventProcessor.on_any(handler);
-                    }
+                    when: when,
+                    whenAny: whenAny,
                 };
             },
-            when: function (handlers) {
-                translateOn(handlers);
-            },
-            whenAny: function (handler) {
-                eventProcessor.on_any(handler);
-            }
+            when: when,
+            whenAny: whenAny,
         };
     }
 

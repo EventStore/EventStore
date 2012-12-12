@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 result.FromAll();
                 result.AllEvents();
             }
-            return result.Build(ProjectionMode.Persistent);
+            return result.Build(ProjectionConfig.GetTest());
         }
     }
 }

@@ -19,7 +19,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected int _checkpointUnhandledBytesThreshold = 10000;
         protected Action<QuerySourceProcessingStrategyBuilder> _configureBuilderByQuerySource = null;
         protected Guid _projectionCorrelationId;
-        private ProjectionMode _projectionMode = ProjectionMode.Persistent;
+        private bool _createTempStreams = false;
+        private bool _stopOnEof = false;
+        private ProjectionConfig _projectionConfig;
 
         [SetUp]
         public void setup()
@@ -34,10 +36,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                             ?? new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource);
             _firstWriteCorrelationId = Guid.NewGuid();
             _projectionCorrelationId = Guid.NewGuid();
-            _coreProjection = CoreProjection.CreateAndPrepapre("projection", _projectionCorrelationId, _bus, _stateHandler,
-                                                   new ProjectionConfig(
-                                                       _projectionMode, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
-                                                       true), _readDispatcher, _writeDispatcher, null);
+            _projectionConfig = new ProjectionConfig(
+                _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold, 1000, 250, true, true,
+                _createTempStreams, _stopOnEof);
+            _coreProjection = CoreProjection.CreateAndPrepapre(
+                "projection", _projectionCorrelationId, _bus, _stateHandler, _projectionConfig, _readDispatcher,
+                _writeDispatcher, null);
             PreWhen();
             When();
         }

@@ -53,9 +53,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string projectionCheckpointStreamId, string name,
-            PositionTagger positionTagger)
+            PositionTagger positionTagger, bool useCheckpoints)
             : base(
-                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig, name, positionTagger)
+                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
+                name, positionTagger, useCheckpoints)
         {
             if (projectionCheckpointStreamId == null) throw new ArgumentNullException("projectionCheckpointStreamId");
             if (projectionCheckpointStreamId == "") throw new ArgumentException("projectionCheckpointStreamId");

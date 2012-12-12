@@ -31,20 +31,19 @@ namespace EventStore.Projections.Core.Services
 {
     public class ProjectionConfig
     {
-        private readonly ProjectionMode _mode;
         private readonly int _checkpointHandledThreshold;
         private readonly int _checkpointUnhandledBytesThreshold;
         private readonly int _pendingEventsThreshold;
         private readonly int _maxWriteBatchLength;
-        private readonly bool _publishStateUpdates;
         private readonly bool _emitEventEnabled;
         private readonly bool _checkpointsEnabled;
+        private readonly bool _createTempStreams;
+        private readonly bool _stopOnEof;
 
-        public ProjectionConfig(
-            ProjectionMode mode, int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold, int pendingEventsThreshold, int maxWriteBatchLength,
-            bool publishStateUpdates, bool emitEventEnabled, bool checkpointsEnabled)
+        public ProjectionConfig(int checkpointHandledThreshold, int checkpointUnhandledBytesThreshold,
+            int pendingEventsThreshold, int maxWriteBatchLength, bool emitEventEnabled, bool checkpointsEnabled,
+            bool createTempStreams, bool stopOnEof)
         {
-            _mode = mode;
             if (checkpointsEnabled)
             {
                 if (checkpointHandledThreshold <= 0)
@@ -63,9 +62,10 @@ namespace EventStore.Projections.Core.Services
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _pendingEventsThreshold = pendingEventsThreshold;
             _maxWriteBatchLength = maxWriteBatchLength;
-            _publishStateUpdates = publishStateUpdates;
             _emitEventEnabled = emitEventEnabled;
             _checkpointsEnabled = checkpointsEnabled;
+            _createTempStreams = createTempStreams;
+            _stopOnEof = stopOnEof;
         }
 
         public int CheckpointHandledThreshold
@@ -83,11 +83,6 @@ namespace EventStore.Projections.Core.Services
             get { return _maxWriteBatchLength; }
         }
 
-        public bool PublishStateUpdates
-        {
-            get { return _publishStateUpdates; }
-        }
-
         public bool EmitEventEnabled
         {
             get { return _emitEventEnabled; }
@@ -98,14 +93,24 @@ namespace EventStore.Projections.Core.Services
             get { return _checkpointsEnabled; }
         }
 
-        public ProjectionMode Mode
-        {
-            get { return _mode; }
-        }
-
         public int PendingEventsThreshold
         {
             get { return _pendingEventsThreshold; }
+        }
+
+        public bool CreateTempStreams
+        {
+            get { return _createTempStreams; }
+        }
+
+        public bool StopOnEof
+        {
+            get { return _stopOnEof; }
+        }
+
+        public static ProjectionConfig GetTest()
+        {
+            return new ProjectionConfig(1000, 1000*1000, 100, 500, true, true, false, false);
         }
     }
 }

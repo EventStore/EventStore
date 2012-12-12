@@ -75,6 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             {
                 builder.FromAll();
                 builder.AllEvents();
+                builder.SetEmitStateUpdated(true);
             }
         }
 

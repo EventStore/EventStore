@@ -50,6 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected readonly string _name;
         private readonly PositionTagger _positionTagger;
+        private readonly bool _useCheckpoints;
         protected readonly ILogger _logger;
 
         private readonly ICoreProjection _coreProjection;
@@ -81,7 +82,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name,
-            PositionTagger positionTagger)
+            PositionTagger positionTagger, bool useCheckpoints)
         {
             if (coreProjection == null) throw new ArgumentNullException("coreProjection");
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -101,6 +102,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _logger = LogManager.GetLoggerFor<CoreProjectionCheckpointManager>();
             _name = name;
             _positionTagger = positionTagger;
+            _useCheckpoints = useCheckpoints;
         }
 
         public virtual void Initialize()
@@ -156,7 +158,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public virtual void GetStatistics(ProjectionStatistics info)
         {
-            info.Mode = _projectionConfig.Mode;
             info.Position = _lastProcessedEventPosition.LastTag;
             info.Progress = _lastProcessedEventProgress;
             info.LastCheckpoint = string.Format(CultureInfo.InvariantCulture, "{0}", _lastCompletedCheckpointPosition);
@@ -188,7 +189,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_stopping)
                 throw new InvalidOperationException("Not stopping");
             // do not request checkpoint if no events were processed since last checkpoint
-            if (_projectionConfig.CheckpointsEnabled
+            if (_useCheckpoints
                 && _lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
             {
                 RequestCheckpoint(_lastProcessedEventPosition);
@@ -218,8 +219,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void CheckpointSuggested(CheckpointTag checkpointTag, float progress)
         {
-            if (!_projectionConfig.CheckpointsEnabled)
-                throw new InvalidOperationException("Checkpoints are not enabled");
+            if (!_useCheckpoints)
+                throw new InvalidOperationException("Checkpoints are not used");
             if (_stopped || _stopping)
                 return;
             EnsureStarted();
@@ -242,7 +243,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("State has been already requested");
             BeforeBeginLoadState();
             _stateRequested = true;
-            if (_projectionConfig.CheckpointsEnabled)
+            if (_useCheckpoints)
             {
                 RequestLoadState();
             }
@@ -260,7 +261,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void RequestCheckpoint(PositionTracker lastProcessedEventPosition)
         {
-            if (!_projectionConfig.CheckpointsEnabled)
+            if (!_useCheckpoints)
                 throw new InvalidOperationException("Checkpoints are not allowed");
             if (!_inCheckpoint)
                 CompleteCheckpoint(lastProcessedEventPosition, _currentProjectionState);
@@ -285,7 +286,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ProcessCheckpoints()
         {
-            if (_projectionConfig.CheckpointsEnabled)
+            if (_useCheckpoints)
                 if (_handledEventsAfterCheckpoint >= _projectionConfig.CheckpointHandledThreshold)
                     RequestCheckpoint(_lastProcessedEventPosition);
                 else
