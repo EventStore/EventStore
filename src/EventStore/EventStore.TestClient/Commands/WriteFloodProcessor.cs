@@ -233,8 +233,8 @@ namespace EventStore.TestClient.Commands
                 string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt),
                 100*fail/(fail + succ));
 
-            if (succ < fail)
-                context.Fail(reason: "Number of failures is greater than number of successes");
+            if (succ < prepTimeout+commitTimeout+forwardTimeout)
+                context.Fail(reason: "Number of timeout is greater than number of successes");
             else
                 context.Success();
         }

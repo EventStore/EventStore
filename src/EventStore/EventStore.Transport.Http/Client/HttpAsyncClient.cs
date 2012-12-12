@@ -38,7 +38,7 @@ namespace EventStore.Transport.Http.Client
         static HttpAsyncClient()
         {
             ServicePointManager.MaxServicePointIdleTime = 10000;
-            ServicePointManager.DefaultConnectionLimit = 800;
+            ServicePointManager.DefaultConnectionLimit = 500;
         }
 
         public void Get(string url, Action<HttpResponse> onSuccess, Action<Exception> onException)
@@ -86,8 +86,8 @@ namespace EventStore.Transport.Http.Client
             var request = (HttpWebRequest)WebRequest.Create(url);
 
             request.Method = method;
-            request.KeepAlive = false;//TODO TR : hangs on mono
-            request.Pipelined = false;
+            request.KeepAlive = true;
+            request.Pipelined = true;
 
             request.BeginGetResponse(ResponseAcquired, new ClientOperationState(request, onSuccess, onException));
         }
@@ -98,8 +98,8 @@ namespace EventStore.Transport.Http.Client
             var bodyBytes = Encoding.UTF8.GetBytes(body);
 
             request.Method = method;
-            request.KeepAlive = false;
-            request.Pipelined = false;
+            request.KeepAlive = true;
+            request.Pipelined = true;
             request.ContentLength = bodyBytes.Length;
             request.ContentType = contentType;
 

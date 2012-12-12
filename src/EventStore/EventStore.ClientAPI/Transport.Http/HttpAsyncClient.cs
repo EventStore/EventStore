@@ -87,8 +87,8 @@ namespace EventStore.ClientAPI.Transport.Http
             var request = (HttpWebRequest)WebRequest.Create(url);
 
             request.Method = method;
-            request.KeepAlive = false;//TODO TR : hangs on mono
-            request.Pipelined = false;
+            request.KeepAlive = true;
+            request.Pipelined = true;
 
             request.BeginGetResponse(ResponseAcquired, new ClientOperationState(request, onSuccess, onException));
         }
@@ -99,8 +99,8 @@ namespace EventStore.ClientAPI.Transport.Http
             var bodyBytes = Encoding.UTF8.GetBytes(body);
 
             request.Method = method;
-            request.KeepAlive = false;
-            request.Pipelined = false;
+            request.KeepAlive = true;
+            request.Pipelined = true;
             request.ContentLength = bodyBytes.Length;
             request.ContentType = contentType;
 
