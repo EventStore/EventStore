@@ -166,6 +166,7 @@ namespace EventStore.Projections.Core.Services.Management
             else
             {
                 status = _lastReceivedStatistics.Clone();
+                status.Mode = GetMode();
                 status.Name = _name;
                 status.Status = !status.Status.StartsWith(_state.EnumVaueName())
                                     ? _state.EnumVaueName() + "/" + status.Status
@@ -359,12 +360,12 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void FixupOldProjectionModes(PersistedState persistedState)
         {
-            switch (persistedState.Mode)
+            switch ((int)persistedState.Mode)
             {
-                case ProjectionMode.AdHoc:
+                case 1: //old AdHoc
                     persistedState.Mode = ProjectionMode.OneTime;
                     break;
-                case ProjectionMode.Persistent:
+                case 3: // old persistent
                     persistedState.Mode = ProjectionMode.Continuous;
                     persistedState.EmitEnabled = persistedState.EmitEnabled ?? true;
                     break;
@@ -398,7 +399,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void BeginWrite(Action completed)
         {
-            if (Mode <= ProjectionMode.AdHoc)
+            if (Mode == ProjectionMode.OneTime)
             {
                 completed();
                 return;
@@ -623,7 +624,7 @@ namespace EventStore.Projections.Core.Services.Management
             var maxWriteBatchLength = 500;
             var emitEventEnabled = _persistedState.EmitEnabled == true;
             var createTempStreams = _persistedState.CreateTempStreams == true;
-            var stopOnEof = _persistedState.Mode == ProjectionMode.AdHoc;
+            var stopOnEof = _persistedState.Mode == ProjectionMode.OneTime;
 
             var projectionConfig = new ProjectionConfig(
                 checkpointHandledThreshold, checkpointUnhandledBytesThreshold, pendingEventsThreshold,

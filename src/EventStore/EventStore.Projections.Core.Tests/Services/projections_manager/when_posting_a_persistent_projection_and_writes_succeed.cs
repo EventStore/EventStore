@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _projectionName = "test-projection";
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), ProjectionMode.Persistent, _projectionName, "JS",
+                    new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS",
                     @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
         }
 

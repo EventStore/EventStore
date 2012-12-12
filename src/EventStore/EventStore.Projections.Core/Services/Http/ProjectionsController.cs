@@ -79,35 +79,17 @@ namespace EventStore.Projections.Core.Services.Http
                 OnProjectionsGetOneTime);
             service.RegisterControllerAction(
                 new ControllerAction(
-                    "/projections/adhoc", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionsGetAdHoc);
-            service.RegisterControllerAction(
-                new ControllerAction(
                     "/projections/continuous", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
                 OnProjectionsGetContinuous);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projections/persistent", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionsGetPersistent);
             service.RegisterControllerAction(
                 new ControllerAction(
                     "/projections/onetime?name={name}&type={type}", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},
                     SupportedCodecs, DefaultResponseCodec), OnProjectionsPostAdOneTime);
             service.RegisterControllerAction(
                 new ControllerAction(
-                    "/projections/adhoc?name={name}&type={type}", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},
-                    SupportedCodecs, DefaultResponseCodec), OnProjectionsPostAdHoc);
-            service.RegisterControllerAction(
-                new ControllerAction(
                     "/projections/continuous?name={name}&type={type}", HttpMethod.Post,
                     new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, DefaultResponseCodec),
                 OnProjectionsPostContinuous);
-            service.RegisterControllerAction(
-                new ControllerAction(
-                    "/projections/persistent?name={name}&type={type}", HttpMethod.Post,
-                    new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, DefaultResponseCodec),
-                OnProjectionsPostPersistent);
-
             service.RegisterControllerAction(
                 new ControllerAction(
                     "/projection/{name}/query", HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding},
@@ -172,19 +154,9 @@ namespace EventStore.Projections.Core.Services.Http
             ProjectionsGet(http, match, ProjectionMode.OneTime);
         }
 
-        private void OnProjectionsGetAdHoc(HttpEntity http, UriTemplateMatch match)
-        {
-            ProjectionsGet(http, match, ProjectionMode.AdHoc);
-        }
-
         private void OnProjectionsGetContinuous(HttpEntity http, UriTemplateMatch match)
         {
             ProjectionsGet(http, match, ProjectionMode.Continuous);
-        }
-
-        private void OnProjectionsGetPersistent(HttpEntity http, UriTemplateMatch match)
-        {
-            ProjectionsGet(http, match, ProjectionMode.Persistent);
         }
 
         private void OnProjectionsPostAdOneTime(HttpEntity http, UriTemplateMatch match)
@@ -192,19 +164,9 @@ namespace EventStore.Projections.Core.Services.Http
             ProjectionsPost(http, match, ProjectionMode.OneTime, match.BoundVariables["name"]);
         }
 
-        private void OnProjectionsPostAdHoc(HttpEntity http, UriTemplateMatch match)
-        {
-            ProjectionsPost(http, match, ProjectionMode.AdHoc, match.BoundVariables["name"]);
-        }
-
         private void OnProjectionsPostContinuous(HttpEntity http, UriTemplateMatch match)
         {
             ProjectionsPost(http, match, ProjectionMode.Continuous, match.BoundVariables["name"]);
-        }
-
-        private void OnProjectionsPostPersistent(HttpEntity http, UriTemplateMatch match)
-        {
-            ProjectionsPost(http, match, ProjectionMode.Persistent, match.BoundVariables["name"]);
         }
 
         private void OnProjectionQueryGet(HttpEntity http, UriTemplateMatch match)
@@ -311,8 +273,7 @@ namespace EventStore.Projections.Core.Services.Http
                     {
                         ProjectionManagementMessage.Post postMessage;
                         string handlerType = match.BoundVariables["type"] ?? "JS";
-                        if ((mode == ProjectionMode.OneTime || mode == ProjectionMode.AdHoc)
-                            && string.IsNullOrEmpty(name))
+                        if (mode == ProjectionMode.OneTime && string.IsNullOrEmpty(name))
                             postMessage = new ProjectionManagementMessage.Post(
                                 envelope, mode, Guid.NewGuid().ToString("D"), handlerType, s, enabled: true);
                         else

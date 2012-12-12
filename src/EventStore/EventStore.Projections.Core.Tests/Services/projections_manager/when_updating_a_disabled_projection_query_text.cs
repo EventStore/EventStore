@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _projectionName = "test-projection";
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), ProjectionMode.Persistent, _projectionName, "JS",
+                    new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS",
                     @"fromAll(); on_any(function(){});log(1);", enabled: false));
             // when
             _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
