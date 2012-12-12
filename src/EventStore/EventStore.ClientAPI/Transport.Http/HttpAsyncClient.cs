@@ -99,8 +99,8 @@ namespace EventStore.ClientAPI.Transport.Http
             var bodyBytes = Encoding.UTF8.GetBytes(body);
 
             request.Method = method;
-            request.KeepAlive = true;
-            request.Pipelined = true;
+            request.KeepAlive = false;
+            request.Pipelined = false;
             request.ContentLength = bodyBytes.Length;
             request.ContentType = contentType;
 
