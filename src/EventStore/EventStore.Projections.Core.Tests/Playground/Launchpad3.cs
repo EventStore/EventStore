@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Tests.Playground
             if (_clientProcess != null) _clientProcess.Dispose();
         }
 
-        [Test, Ignore]
+        [Test, Explicit, Category("LongRunning")]
         public void RunSingle()
         {
             Thread.Sleep(1000);

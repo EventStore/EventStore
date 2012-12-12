@@ -152,8 +152,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Both AllEvents and specific event filters cannot be set");
             if (_byStream && _streams != null)
                 throw new InvalidOperationException("Partitioned projections are not supported on stream based sources");
-            if (_byStream && !config.CheckpointsEnabled)  // TODO: JUST or AND emit state updates? - see CheckpointStrategy
-                throw new InvalidOperationException("Partitioned (foreachStream) projections require Persistent mode");
+            if (_byStream && !_options.EmitStateUpdated)  // TODO: JUST or AND emit state updates? - see CheckpointStrategy
+                throw new InvalidOperationException("Partitioned (foreachStream) projections require emitStateUpdated option");
             if (_options.UseEventIndexes && !_allStreams)
                 throw new InvalidOperationException("useEventIndexes option is only available in fromAll() projections");
             if (_options.UseEventIndexes && _allEvents)

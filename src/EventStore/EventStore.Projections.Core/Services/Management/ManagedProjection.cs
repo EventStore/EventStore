@@ -365,6 +365,9 @@ namespace EventStore.Projections.Core.Services.Management
                 case 1: //old AdHoc
                     persistedState.Mode = ProjectionMode.OneTime;
                     break;
+                case 2: // old continuous
+                    persistedState.Mode = ProjectionMode.Continuous;
+                    break;
                 case 3: // old persistent
                     persistedState.Mode = ProjectionMode.Continuous;
                     persistedState.EmitEnabled = persistedState.EmitEnabled ?? true;

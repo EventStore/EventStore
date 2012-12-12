@@ -63,7 +63,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         return state;
                     });
 ";
-            projectionManager.CreateAdHoc(countItemsProjectionName, countItemsProjection);
+            projectionManager.CreateContinuous(countItemsProjectionName, countItemsProjection);
 
             var w1 = Write(WriteMode.SingleEventAtTime, slices[0], EventsPerStream);
             var w2 = Write(WriteMode.Bucket, slices[1], EventsPerStream);

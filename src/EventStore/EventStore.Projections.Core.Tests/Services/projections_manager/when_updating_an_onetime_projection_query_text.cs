@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_updating_an_adhoc_projection_query_text : TestFixtureWithProjectionCoreAndManagementServices
+    public class when_updating_an_onetime_projection_query_text : TestFixtureWithProjectionCoreAndManagementServices
     {
         private string _projectionName;
         private string _newProjectionSource;

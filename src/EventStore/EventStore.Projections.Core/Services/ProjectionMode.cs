@@ -31,7 +31,8 @@ namespace EventStore.Projections.Core.Services
     {
         OneTime = 0,
         //____1 = 1,
-        Continuous = 2,
+        //____2 = 2,
         //____3 = 3,
+        Continuous = 4,
     }
 }
