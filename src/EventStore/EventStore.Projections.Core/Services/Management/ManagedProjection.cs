@@ -314,7 +314,8 @@ namespace EventStore.Projections.Core.Services.Management
                         Enabled = message.Enabled,
                         HandlerType = message.HandlerType,
                         Query = message.Query,
-                        Mode = message.Mode
+                        Mode = message.Mode,
+                        EmitEnabled = message.EmitEnabled,
                     });
             Action completed1 = () => StartOrLoadNew(completed);
             Prepare(() => BeginWrite(completed1));

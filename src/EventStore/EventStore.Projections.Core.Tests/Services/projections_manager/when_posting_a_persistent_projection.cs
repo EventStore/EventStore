@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS",
-                    @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
+                    @"fromAll().whenAny(function(s,e){return s;});", enabled: true, emitEnabled: true));
             OneWriteCompletes();
         }
 

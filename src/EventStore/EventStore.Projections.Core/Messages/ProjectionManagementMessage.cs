@@ -68,8 +68,11 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _handlerType;
             private readonly string _query;
             private readonly bool _enabled;
+            private readonly bool _emitEnabled;
 
-            public Post(IEnvelope envelope, ProjectionMode mode, string name, string handlerType, string query, bool enabled)
+            public Post(
+                IEnvelope envelope, ProjectionMode mode, string name, string handlerType, string query, bool enabled,
+                bool emitEnabled)
             {
                 _envelope = envelope;
                 _name = name;
@@ -77,6 +80,7 @@ namespace EventStore.Projections.Core.Messages
                 _mode = mode;
                 _query = query;
                 _enabled = enabled;
+                _emitEnabled = emitEnabled;
             }
 
             // shortcut for posting ad-hoc JS queries
@@ -118,6 +122,11 @@ namespace EventStore.Projections.Core.Messages
             public bool Enabled
             {
                 get { return _enabled; }
+            }
+
+            public bool EmitEnabled
+            {
+                get { return _emitEnabled; }
             }
         }
 

@@ -83,11 +83,11 @@ namespace EventStore.Projections.Core.Services.Http
                 OnProjectionsGetContinuous);
             service.RegisterControllerAction(
                 new ControllerAction(
-                    "/projections/onetime?name={name}&type={type}", HttpMethod.Post, new ICodec[] {Codec.ManualEncoding},
-                    SupportedCodecs, DefaultResponseCodec), OnProjectionsPostAdOneTime);
+                    "/projections/onetime?name={name}&type={type}&enabled={enabled}&emit={emit}", HttpMethod.Post, new ICodec[] { Codec.ManualEncoding },
+                    SupportedCodecs, DefaultResponseCodec), OnProjectionsPostOneTime);
             service.RegisterControllerAction(
                 new ControllerAction(
-                    "/projections/continuous?name={name}&type={type}", HttpMethod.Post,
+                    "/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}", HttpMethod.Post,
                     new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, DefaultResponseCodec),
                 OnProjectionsPostContinuous);
             service.RegisterControllerAction(
@@ -159,7 +159,7 @@ namespace EventStore.Projections.Core.Services.Http
             ProjectionsGet(http, match, ProjectionMode.Continuous);
         }
 
-        private void OnProjectionsPostAdOneTime(HttpEntity http, UriTemplateMatch match)
+        private void OnProjectionsPostOneTime(HttpEntity http, UriTemplateMatch match)
         {
             ProjectionsPost(http, match, ProjectionMode.OneTime, match.BoundVariables["name"]);
         }
@@ -215,8 +215,8 @@ namespace EventStore.Projections.Core.Services.Http
             Publish(
                 new ProjectionManagementMessage.Delete(
                     envelope, match.BoundVariables["name"],
-                    "yes".Equals(match.BoundVariables["deleteCheckpointStream"], StringComparison.OrdinalIgnoreCase),
-                    "yes".Equals(match.BoundVariables["deleteStateStream"], StringComparison.OrdinalIgnoreCase)));
+                    IsOn(match, "deleteCheckpointStream"),
+                    IsOn(match, "deleteStateStream")));
         }
 
         private void OnProjectionStatisticsGet(HttpEntity http, UriTemplateMatch match)
@@ -273,12 +273,15 @@ namespace EventStore.Projections.Core.Services.Http
                     {
                         ProjectionManagementMessage.Post postMessage;
                         string handlerType = match.BoundVariables["type"] ?? "JS";
+                        bool emitEnabled = IsOn(match, "emit");
+                        bool enabled = IsOn(match, "enabled", def: true);
                         if (mode == ProjectionMode.OneTime && string.IsNullOrEmpty(name))
                             postMessage = new ProjectionManagementMessage.Post(
-                                envelope, mode, Guid.NewGuid().ToString("D"), handlerType, s, enabled: true);
+                                envelope, mode, Guid.NewGuid().ToString("D"), handlerType, s, enabled: enabled,
+                                emitEnabled: emitEnabled);
                         else
                             postMessage = new ProjectionManagementMessage.Post(
-                                envelope, mode, name, handlerType, s, enabled: true);
+                                envelope, mode, name, handlerType, s, enabled: enabled, emitEnabled: emitEnabled);
                         Publish(postMessage);
                     }, Console.WriteLine);
         }
@@ -367,6 +370,16 @@ namespace EventStore.Projections.Core.Services.Http
         {
             return codec.To(message);
         }
+
+        private static bool IsOn(UriTemplateMatch match, string option, bool def = false)
+        {
+            var rawValue = match.BoundVariables[option];
+            if (string.IsNullOrEmpty(rawValue))
+                return def;
+            var value = rawValue.ToLowerInvariant();
+            return "yes" == value || "true" == value || "1" == value;
+        }
+
 
 /*
         private void OnPostShutdown(HttpEntity entity, UriTemplateMatch match)

@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.OneTime, _projectionName, "JS",
-                    @"fromAll(); on_any(function(){});log(1);", enabled: true));
+                    @"fromAll(); on_any(function(){});log(1);", enabled: true, emitEnabled: false));
             // when
             _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
             _manager.Handle(

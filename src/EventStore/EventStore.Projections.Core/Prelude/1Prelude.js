@@ -109,16 +109,21 @@ function scope($on, $notify) {
         };
     }
 
+    function foreachStream() {
+        eventProcessor.byStream();
+        // NOTE: this may be removed in the future
+        // currently we do not support foreach projections without emitStateUpdated
+        eventProcessor.emit_state_updated();
+        return {
+            when: when,
+            whenAny: whenAny,
+        };
+    }
+
     function fromCategory(category) {
         eventProcessor.fromCategory(category);
         return {
-            foreachStream: function () {
-                eventProcessor.byStream();
-                return {
-                    when: when,
-                    whenAny: whenAny,
-                };
-            },
+            foreachStream: foreachStream,
             when: when,
             whenAny: whenAny,
         };
@@ -127,13 +132,7 @@ function scope($on, $notify) {
     function fromAll() {
         eventProcessor.fromAll();
         return {
-            foreachStream: function () {
-                eventProcessor.byStream();
-                return {
-                    when: when,
-                    whenAny: whenAny,
-                };
-            },
+            foreachStream: foreachStream,
             when: when,
             whenAny: whenAny,
         };

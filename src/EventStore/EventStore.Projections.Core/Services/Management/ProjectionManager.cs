@@ -397,7 +397,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             var postMessage = new ProjectionManagementMessage.Post(
                 envelope, ProjectionMode.Continuous, name, "native:" + handlerType.Namespace + "." + handlerType.Name,
-                config, enabled: false);
+                config, enabled: false, emitEnabled: true);
 
             _publisher.Publish(postMessage);
         }

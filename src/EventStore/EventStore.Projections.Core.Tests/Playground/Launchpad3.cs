@@ -81,7 +81,7 @@ namespace EventStore.Projections.Core.Tests.Playground
             var timer = Stopwatch.StartNew();
             while (timer.Elapsed.TotalSeconds < 15)
             {
-                var request = WebRequest.Create(@"http://127.0.0.1:2111/projections/adhoc");
+                var request = WebRequest.Create(@"http://127.0.0.1:2111/projections/onetime");
                 try
                 {
                     request.Method = "POST";
