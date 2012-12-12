@@ -68,7 +68,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var writeTask = WriteData();
 
             var success = false;
-            var expectedAllEventsCount = (Streams * EventsPerStream + Streams).ToString();
+            var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
             var expectedEventsPerStream = EventsPerStream.ToString();
 
             var isWatchStarted = false;
@@ -144,9 +144,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var state = GetProjectionState(manager, projectionName);
             string value;
             if (state != null && state.Count > 0 && state.TryGetValue(key, out value))
-            {
                 result = convert(value);
-            }
+
             return result;
         }
 
@@ -157,6 +156,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Log.Info("Raw {0} state: {1}", projectionName, rawState);
 
             if (string.IsNullOrEmpty(rawState))
+                return null;
+
+            if (rawState == "*** UNKNOWN ***")
                 return null;
 
             var state = Codec.Json.From<Dictionary<string, string>>(rawState);
@@ -182,26 +184,38 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             var projectionManager = GetProjectionsManager();
 
-            projectionManager.Enable("$by_category");
+            EnableProjectionByCategory();
 
             string countItemsProjectionName = string.Format("CountItems_it{0}", GetIterationCode());
             string countItemsProjection = string.Format(@"
                 fromCategory('bank_account_it{0}').when({{
-                $init: function() {{ return {{c:0}}; }},
+                $init: function() {{ return {{count:0}}; }},
                 AccountCredited: function (state, event) {{ 
-                                        state.c += 1; 
+                                        state.count += 1; 
                                     }},
                 AccountDebited: function (state, event) {{ 
-                                        state.c+= 1; 
+                                        state.count += 1; 
                                     }},
                 AccountCheckPoint: function (state, event) {{ 
-                                        state.c+= 1; 
+                                        state.count += 1; 
                                     }}
                 }})
 ", GetIterationCode());
 
             projectionManager.CreatePersistent(countItemsProjectionName, countItemsProjection);
             return countItemsProjectionName;
+        }
+
+        private void EnableProjectionByCategory()
+        {
+            try
+            {
+                GetProjectionsManager().Enable("$by_category");
+            }
+            catch (Exception ex)
+            {
+                Log.ErrorException(ex, " !!! Failed to enable *$by_category* projection the second time. Command to get projection Enable/Disable status is needed.");
+            }
         }
 
         protected string CreateSumCheckForBankAccount0()

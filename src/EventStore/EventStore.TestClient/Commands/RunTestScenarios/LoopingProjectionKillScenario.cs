@@ -39,10 +39,17 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         private static readonly TimeSpan _iterationSleepInterval = TimeSpan.FromMinutes(10);
         private TimeSpan _executionPeriod;
 
+        private int _iterationCode;
+        private readonly TimeSpan _iterationLoopDuration;
+        private readonly TimeSpan _firstKillInterval;
+
         public LoopingProjectionKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath) 
             : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
         {
             _executionPeriod = executionPeriod;
+
+            _iterationLoopDuration = TimeSpan.FromMilliseconds(10 * (Streams * EventsPerStream + Streams));
+            _firstKillInterval = TimeSpan.FromSeconds(_iterationLoopDuration.TotalSeconds / 3);
         }
 
         protected override TimeSpan IterationSleepInterval
@@ -50,7 +57,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             get { return _iterationSleepInterval; }
         }
 
-        private int _iterationCode = 0;
+        
         protected override int GetIterationCode()
         {
             return _iterationCode;
@@ -79,35 +86,38 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 var iterationTask = RunIteration();
 
-                Thread.Sleep(TimeSpan.FromMinutes(0.5));
+                Thread.Sleep(_firstKillInterval);
 
                 KillNode(nodeProcessId);
                 nodeProcessId = StartNode();
 
-                iterationTask.Wait();
+                if (!iterationTask.Wait(_iterationLoopDuration))
+                    throw new TimeoutException("Iteration execution timeout.");
+
+                if (iterationTask.Result != true)
+                    throw new ApplicationException("Iteration faulted.", iterationTask.Exception);
 
                 SetNextIterationCode();
             }
         }
 
-        private Task RunIteration()
+        private Task<bool> RunIteration()
         {
             var countItem = CreateCountItem();
             var sumCheckForBankAccount0 = CreateSumCheckForBankAccount0();
 
             var writeTask = WriteData();
 
-            var expectedAllEventsCount = (Streams * EventsPerStream + Streams).ToString();
+            var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
             var expectedEventsPerStream = EventsPerStream.ToString();
 
-            var store = GetConnection();
             var manager = GetProjectionsManager();
 
-            var successTask = Task.Factory.StartNew<bool>(() => 
+            var successTask = Task.Factory.StartNew(() => 
                 {
                     var success = false;
                     var stopWatch = new Stopwatch();
-                    while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(10 * (Streams * EventsPerStream + Streams)))
+                    while (stopWatch.Elapsed < _iterationLoopDuration)
                     {
                         if (writeTask.IsFaulted)
                             throw new ApplicationException("Failed to write data");
@@ -118,7 +128,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         }
 
                         success = CheckProjectionState(manager, countItem, "count", x => x == expectedAllEventsCount)
-                                  && CheckProjectionState(manager, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
+                               && CheckProjectionState(manager, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
 
                         if (success)
                             break;
@@ -130,7 +140,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     
                 });
 
-            return Task.Factory.ContinueWhenAll(new [] { writeTask, successTask }, tasks => { Log.Info("Iteration {0} tasks completed", GetIterationCode()); Task.WaitAll(tasks); Log.Info("Iteration {0} successfull", GetIterationCode()); });
+            writeTask.Wait();
+
+            return successTask;
         }
     }
 }
