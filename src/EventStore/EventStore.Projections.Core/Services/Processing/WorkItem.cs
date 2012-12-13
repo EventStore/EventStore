@@ -38,12 +38,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private Action<int, object> _complete;
         private int _onStage;
         private CheckpointTag _checkpointTag;
+        private object _lastStageCorrelationId;
 
-        protected WorkItem(CoreProjection projection, string stream)
-            : base(stream)
+        protected WorkItem(CoreProjection projection, object initialCorrelationId)
+            : base(initialCorrelationId)
         {
             Projection = projection;
-            _lastStage = 2;
+            _lastStage = 3;
         }
 
         public override void Process(int onStage, Action<int, object> readyForStage)
@@ -56,12 +57,15 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (onStage)
             {
                 case 0:
-                    Load(_checkpointTag);
+                    GetStatePartition();
                     break;
                 case 1:
-                    ProcessEvent();
+                    Load(_checkpointTag);
                     break;
                 case 2:
+                    ProcessEvent();
+                    break;
+                case 3:
                     WriteOutput();
                     break;
                 default:
@@ -70,6 +74,11 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected virtual void WriteOutput()
+        {
+            NextStage();
+        }
+
+        protected virtual void GetStatePartition()
         {
             NextStage();
         }
@@ -84,9 +93,10 @@ namespace EventStore.Projections.Core.Services.Processing
             NextStage();
         }
 
-        protected void NextStage()
+        protected void NextStage(object newCorrelationId = null)
         {
-            _complete(_onStage == _lastStage ? -1 : _onStage + 1, InitialCorrelationId);
+            _lastStageCorrelationId = newCorrelationId ?? _lastStageCorrelationId ?? InitialCorrelationId;
+            _complete(_onStage == _lastStage ? -1 : _onStage + 1, _lastStageCorrelationId);
         }
 
         public void SetCheckpointTag(CheckpointTag checkpointTag)

@@ -55,15 +55,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private readonly bool _failOnInitialize;
         private readonly bool _failOnLoad;
         private readonly bool _failOnProcessEvent;
+        private readonly bool _failOnGetPartition;
         private readonly Action<QuerySourceProcessingStrategyBuilder> _configureBuilder;
 
         public FakeProjectionStateHandler(
             bool failOnInitialize = false, bool failOnLoad = false, bool failOnProcessEvent = false,
+            bool failOnGetPartition = true,
             Action<QuerySourceProcessingStrategyBuilder> configureBuilder = null)
         {
             _failOnInitialize = failOnInitialize;
             _failOnLoad = failOnLoad;
             _failOnProcessEvent = failOnProcessEvent;
+            _failOnGetPartition = failOnGetPartition;
             _configureBuilder = configureBuilder;
         }
 
@@ -97,7 +100,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public string GetStatePartition(
             string streamId, string eventType, string category, Guid eventid, int sequenceNumber, string metadata, string data)
         {
-            throw new NotImplementedException();
+            if (_failOnGetPartition)
+                throw new Exception("GetStatePartition FAILED");
+            return "region-a";
         }
 
         public bool ProcessEvent(

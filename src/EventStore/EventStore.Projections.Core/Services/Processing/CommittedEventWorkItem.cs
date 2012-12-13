@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
 
@@ -34,15 +35,23 @@ namespace EventStore.Projections.Core.Services.Processing
     class CommittedEventWorkItem : WorkItem
     {
         private readonly ProjectionSubscriptionMessage.CommittedEventReceived _message;
-        private readonly string _partition;
+        private string _partition;
         private List<EmittedEvent[]> _scheduledWrites;
+        private readonly StatePartitionSelector _statePartitionSelector;
 
         public CommittedEventWorkItem(
-            CoreProjection projection, ProjectionSubscriptionMessage.CommittedEventReceived message, string partition)
-            : base(projection, message.EventStreamId)
+            CoreProjection projection, ProjectionSubscriptionMessage.CommittedEventReceived message,
+            StatePartitionSelector statePartitionSelector)
+            : base(projection, Guid.NewGuid())
         {
+            _statePartitionSelector = statePartitionSelector;
             _message = message;
-            _partition = partition;
+        }
+
+        protected override void GetStatePartition()
+        {
+            _partition = _statePartitionSelector.GetStatePartition(_message);
+            NextStage(_partition);
         }
 
         protected override void Load(CheckpointTag checkpointTag)

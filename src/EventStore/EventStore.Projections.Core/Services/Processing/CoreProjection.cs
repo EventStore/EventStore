@@ -103,6 +103,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private long _expectedSubscriptionMessageSequenceNumber = -1;
         private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
         private bool _subscribed;
+        private StatePartitionSelector _statePartitionSelector;
 
         public CoreProjection(
             string name, Guid projectionCorrelationId, IPublisher publisher,
@@ -134,6 +135,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var builder = new CheckpointStrategy.Builder();
             _projectionStateHandler.ConfigureSourceProcessingStrategy(builder);
             _checkpointStrategy = builder.Build(_projectionConfig.Mode);
+            _statePartitionSelector = this._checkpointStrategy.CreateStatePartitionSelector(projectionStateHandler);
             _partitionStateCache = new PartitionStateCache();
             _processingQueue = new CoreProjectionQueue(
                 projectionCorrelationId, publisher, projectionConfig.PendingEventsThreshold, UpdateStatistics);
@@ -203,8 +205,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_state == State.Running || _state == State.Paused)
                 {
                     CheckpointTag eventTag = message.CheckpointTag;
-                    string partition = _checkpointStrategy.StatePartitionSelector.GetStatePartition(message);
-                    var committedEventWorkItem = new CommittedEventWorkItem(this, message, partition);
+                    var committedEventWorkItem = new CommittedEventWorkItem(this, message, _statePartitionSelector);
                     _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
                 }
                 _processingQueue.ProcessEvent();
