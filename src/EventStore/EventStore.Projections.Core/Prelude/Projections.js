@@ -98,7 +98,7 @@ var $projections = {
             }
         }
 
-        function getStatePartition(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw, log_position) {
+        function getStatePartition(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw) {
 
              var eventHandler = getStatePartitionHandler;
 
@@ -109,7 +109,6 @@ var $projections = {
                  streamId: streamId,
                  sequenceNumber: sequenceNumber,
                  metadataRaw: metadataRaw,
-                 logPosition: log_position,
              };
 
              tryDeserializeBody(eventEnvelope);
@@ -118,7 +117,7 @@ var $projections = {
 
          }
 
-         function processEvent(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw, log_position) {
+         function processEvent(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw, partition) {
 
             var eventName = eventType;
 
@@ -134,7 +133,7 @@ var $projections = {
                 streamId: streamId,
                 sequenceNumber: sequenceNumber,
                 metadataRaw: metadataRaw,
-                logPosition: log_position,
+                partition: partition,
             };
             // debug only
             for (index = 0; index < rawEventHandlers.length; index++) {

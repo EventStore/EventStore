@@ -95,7 +95,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void pass_partition_name_to_state_handler()
         {
-            Assert.Inconclusive();
+            Assert.AreEqual("region-a", _stateHandler._lastPartition);
         }
     }
 }

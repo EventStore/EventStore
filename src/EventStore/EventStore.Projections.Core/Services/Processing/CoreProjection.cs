@@ -579,7 +579,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             SetHandlerState(partition);
             return _projectionStateHandler.ProcessEvent(
-                message.Position, message.CheckpointTag, message.EventStreamId, message.Data.EventType,
+                partition, message.CheckpointTag, message.EventStreamId, message.Data.EventType,
                 message.EventCategory, message.Data.EventId, message.EventSequenceNumber,
                 Encoding.UTF8.GetString(message.Data.Metadata), Encoding.UTF8.GetString(message.Data.Data), out newState,
                 out emittedEvents);

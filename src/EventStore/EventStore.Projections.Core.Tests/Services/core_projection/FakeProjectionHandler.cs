@@ -44,6 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public int _lastProcessedSequencenumber;
         public string _lastProcessedMetadata;
         public string _lastProcessedData;
+        public string _lastPartition;
         public const string _emit1Data = @"{""emit"":1}";
         public const string _emit2Data = @"{""emit"":2}";
         public const string _emit3Data = @"{""emit"":3}";
@@ -106,7 +107,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         public bool ProcessEvent(
-            EventPosition position, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventId, int sequenceNumber,
+            string partition, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventId, int sequenceNumber,
             string metadata, string data, out string newState, out EmittedEvent[] emittedEvents)
         {
             if (_failOnProcessEvent)
@@ -117,6 +118,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _lastProcessedSequencenumber = sequenceNumber;
             _lastProcessedMetadata = metadata;
             _lastProcessedData = data;
+            _lastPartition = partition;
 
             _eventsProcessed++;
             switch (eventType)
