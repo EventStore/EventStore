@@ -28,10 +28,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
-using System.Text;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.v8;
 
@@ -121,6 +118,8 @@ namespace EventStore.Projections.Core.Services.v8
                         builder.IncludeEvent(@event);
             if (sourcesDefintion.ByStreams)
                 builder.SetByStream();
+            if (sourcesDefintion.ByCustomPartitions)
+                builder.SetByCustomPartitions();
             if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.StateStreamName))
                 builder.SetStateStreamNameOption(sourcesDefintion.Options.StateStreamName);
             if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.ForceProjectionName))
@@ -139,6 +138,20 @@ namespace EventStore.Projections.Core.Services.v8
         {
             CheckDisposed();
             _query.Initialize();
+        }
+
+        public string GetStatePartition(
+            string streamId, string eventType, string category, Guid eventid, int sequenceNumber, string metadata, string data)
+        {
+            CheckDisposed();
+            if (eventType == null)
+                throw new ArgumentNullException("eventType");
+            if (streamId == null)
+                throw new ArgumentNullException("streamId");
+            var partition = _query.GetPartition(
+                data.Trim(), // trimming data passed to a JS 
+                new string[] { streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture), metadata ?? "", "" });
+            return partition;
         }
 
         public bool ProcessEvent(

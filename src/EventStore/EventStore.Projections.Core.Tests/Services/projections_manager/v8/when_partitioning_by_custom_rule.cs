@@ -25,31 +25,34 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services
+namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
 {
-    public interface IProjectionStateHandler : IDisposable
+    [TestFixture]
+    public class when_partitioning_by_custom_rule : TestFixtureWithJsProjection
     {
-        void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder);
-        void Load(string state);
-        void Initialize();
+        protected override void Given()
+        {
+            _projection = @"
+                fromAll().partitionBy(function(event){
+                    return event.body.region;
+                }).whenAny(function(event, state) {
+                    return {};
+                });
+            ";
+        }
 
-        /// <summary>
-        /// Get state partition from the event
-        /// </summary>
-        /// <returns>partition name</returns>
-        string GetStatePartition(
-            string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data);
+        [Test]
+        public void get_state_partition_returns_correct_result()
+        {
+            var result = _stateHandler.GetStatePartition(
+                "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata", @"{""region"":""Europe""}");
 
-        /// <summary>
-        /// Processes event and updates internal state if necessary.  
-        /// </summary>
-        /// <returns>true - if event was processed (new state must be returned) </returns>
-        bool ProcessEvent(
-            EventPosition position, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
-            int sequenceNumber, string metadata, string data, out string newState, out EmittedEvent[] emittedEvents);
+            Assert.AreEqual("Europe", result);
+        }
+
     }
 }

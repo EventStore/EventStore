@@ -15,6 +15,9 @@ namespace EventStore.Projections.Core.Services.Processing
         public bool ByStream { get; set; }
 
         [DataMember]
+        public bool ByCustomPartitions { get; set; }
+
+        [DataMember]
         public string[] Categories { get; set; }
 
         [DataMember]

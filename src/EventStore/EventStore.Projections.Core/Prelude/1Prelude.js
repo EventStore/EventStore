@@ -32,7 +32,11 @@ function scope($on, $notify) {
     var commandHandlers = {
             initialize: function() {
                 return eventProcessor.commandHandlers.initialize_raw();
-            }, 
+            },
+
+            get_state_partition: function (json, streamId, eventType, category, sequenceNumber, metadata, log_position) {
+                return eventProcessor.commandHandlers.get_state_partition_raw(json, streamId, eventType, category, sequenceNumber, metadata, log_position);
+            },
         
             process_event: function(json, streamId, eventType, category, sequenceNumber, metadata, log_position) {
                 return eventProcessor.commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata, log_position);
@@ -84,9 +88,22 @@ function scope($on, $notify) {
         }
     }
 
+    function partitionBy(byHandler) {
+        eventProcessor.partitionBy(byHandler);
+        return {
+            when: function (handlers) {
+                translateOn(handlers);
+            },
+            whenAny: function (handler) {
+                eventProcessor.on_any(handler);
+            }
+        };
+    }
+
     function fromCategory(category) {
         eventProcessor.fromCategory(category);
         return {
+            partitionBy: partitionBy,
             foreachStream: function () {
                 eventProcessor.byStream();
                 return {
@@ -110,6 +127,7 @@ function scope($on, $notify) {
     function fromAll() {
         eventProcessor.fromAll();
         return {
+            partitionBy: partitionBy,
             foreachStream: function () {
                 eventProcessor.byStream();
                 return {
@@ -133,6 +151,7 @@ function scope($on, $notify) {
     function fromStream(stream) {
         eventProcessor.fromStream(stream);
         return {
+            partitionBy: partitionBy,
             when: function (handlers) {
                 translateOn(handlers);
             },
@@ -146,6 +165,7 @@ function scope($on, $notify) {
         for (var i = 0; i < streams.length; i++) 
             eventProcessor.fromStream(streams[i]);
         return {
+            partitionBy: partitionBy,
             when: function (handlers) {
                 translateOn(handlers);
             },

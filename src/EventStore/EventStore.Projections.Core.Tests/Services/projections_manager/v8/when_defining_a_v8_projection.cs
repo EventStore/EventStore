@@ -163,6 +163,33 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
+        public class with_from_all_by_custom_partitions : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromAll().partitionBy(function(event){
+                        return event.eventType;
+                    }).whenAny(
+                        function(state, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.AllStreams);
+                Assert.That(_source.Categories == null || _source.Categories.Count == 0);
+                Assert.That(_source.Streams == null || _source.Streams.Count == 0);
+                Assert.AreEqual(true, _source.ByCustomParititions);
+                Assert.AreEqual(false, _source.ByStream);
+            }
+        }
+
+        [TestFixture]
         public class with_options : TestFixtureWithJsProjection
         {
             protected override void Given()

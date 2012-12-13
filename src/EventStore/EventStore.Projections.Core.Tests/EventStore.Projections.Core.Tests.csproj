@@ -165,6 +165,7 @@
     <Compile Include="Services\projections_manager\v8\when_defining_a_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_initializing_state.cs" />
     <Compile Include="Services\projections_manager\v8\when_not_returning_state_from_a_js_handler.cs" />
+    <Compile Include="Services\projections_manager\v8\when_partitioning_by_custom_rule.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_emitting_v8_projection.cs" />
     <Compile Include="Services\projection_subscription\when_handling_multiple_committed_event_passing_the_filter.cs" />
     <Compile Include="Services\staged_processing_queue.cs" />

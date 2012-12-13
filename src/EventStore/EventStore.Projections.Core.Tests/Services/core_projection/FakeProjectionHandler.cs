@@ -94,6 +94,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _loadedState = "";
         }
 
+        public string GetStatePartition(
+            string streamId, string eventType, string category, Guid eventid, int sequenceNumber, string metadata, string data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
             EventPosition position, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventId, int sequenceNumber,
             string metadata, string data, out string newState, out EmittedEvent[] emittedEvents)
