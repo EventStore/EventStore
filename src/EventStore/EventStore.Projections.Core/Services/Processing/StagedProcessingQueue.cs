@@ -45,12 +45,14 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             public readonly StagedTask Task;
             public bool Busy;
+            public object BusyCorrelationId;
             public bool Completed;
             public int ReadForStage;
 
             public TaskEntry(StagedTask task)
             {
                 Task = task;
+                BusyCorrelationId = task.InitialCorrelationId;
             }
 
             public override string ToString()
@@ -110,9 +112,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 previousTaskMinimumProcessingStage = Math.Min(taskStage, previousTaskMinimumProcessingStage);
                 taskStage = entry.ReadForStage;
 
-                if (_precedingCorrelations.Contains(entry.Task.CorrelationId))
-                    break;
-                _precedingCorrelations.Add(entry.Task.CorrelationId);
+                var busyCorrelationId = entry.BusyCorrelationId;
+                if (busyCorrelationId != null)
+                {
+                    if (_precedingCorrelations.Contains(busyCorrelationId))
+                        break;
+                    _precedingCorrelations.Add(busyCorrelationId);
+                }
 
                 if (entry.Busy)
                     continue;
@@ -128,17 +134,20 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 // here we should be at the first StagedTask of current processing level which is not busy
                 entry.Busy = true;
-                entry.Task.Process(taskStage, readyForStage => CompleteTaskProcessing(entry, readyForStage));
+                entry.Task.Process(
+                    taskStage,
+                    (readyForStage, newCorrelationId) => CompleteTaskProcessing(entry, readyForStage, newCorrelationId));
                 return entry.Task;
             }
             return null;
         }
 
-        private void CompleteTaskProcessing(TaskEntry entry, int readyForStage)
+        private void CompleteTaskProcessing(TaskEntry entry, int readyForStage, object newCorrelationId)
         {
             if (!entry.Busy)
                 throw new InvalidOperationException("Task was not in progress");
             entry.Busy = false;
+            entry.BusyCorrelationId = newCorrelationId;
             if (readyForStage < 0)
                 RemoveCompletedTask(entry);
             else
@@ -159,14 +168,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
     public abstract class StagedTask
     {
-        public readonly object CorrelationId;
+        public readonly object InitialCorrelationId;
 
-        protected StagedTask(object correlationId)
+        protected StagedTask(object initialCorrelationId)
         {
-            CorrelationId = correlationId;
+            InitialCorrelationId = initialCorrelationId;
         }
 
-        public abstract void Process(int onStage, Action<int> readyForStage);
+        public abstract void Process(int onStage, Action<int, object> readyForStage);
 
     }
 }

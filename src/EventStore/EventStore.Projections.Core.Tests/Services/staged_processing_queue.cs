@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -83,8 +84,7 @@ namespace EventStore.Projections.Core.Tests.Services
             {
                 _q.Process();
 
-                Assert.That(_t1.Executed);
-                Assert.AreEqual(0, _t1.ExecutedOnStage);
+                Assert.That(_t1.StartedOn(0));
             }
 
             [Test]
@@ -115,8 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services
             {
                 _q.Process();
 
-                Assert.That(_t1.Executed);
-                Assert.AreEqual(1, _t1.ExecutedOnStage);
+                Assert.That(_t1.StartedOn(1));
             }
 
             [Test]
@@ -148,7 +147,7 @@ namespace EventStore.Projections.Core.Tests.Services
             {
                 _q.Process();
 
-                Assert.That(!_t1.Executed);
+                Assert.That(!_t1.StartedOn(0));
             }
 
             [Test]
@@ -226,9 +225,8 @@ namespace EventStore.Projections.Core.Tests.Services
                 _q.Process();
                 _q.Process();
 
-                Assert.That(_t1.Executed);
-                Assert.AreEqual(0, _t1.ExecutedOnStage);
-                Assert.That(!_t2.Executed);
+                Assert.That(_t1.StartedOn(0));
+                Assert.That(!_t2.StartedOn(0));
             }
 
             [Test]
@@ -239,6 +237,86 @@ namespace EventStore.Projections.Core.Tests.Services
 
                 Assert.AreEqual(1, processed1);
                 Assert.AreEqual(0, processed2);
+            }
+        }
+
+        [TestFixture]
+        public class when_enqueuing_two_two_step_tasks_that_relate_on_first_stage
+        {
+            private StagedProcessingQueue _q;
+            private TestTask _t1;
+            private TestTask _t2;
+
+            [SetUp]
+            public void when()
+            {
+                _q = new StagedProcessingQueue(new[] { true, true });
+                _t1 = new TestTask(Guid.NewGuid(), 2, stageCorrelations: new object[]{"a", "a"});
+                _t2 = new TestTask(Guid.NewGuid(), 2, stageCorrelations: new object[] { "a", "a" });
+                _q.Enqueue(_t1);
+                _q.Enqueue(_t2);
+            }
+
+            [Test]
+            public void first_task_starts_on_second_stage_on_first_stage_completion()
+            {
+                _q.Process();
+                _q.Process();
+                 
+                _t1.Complete();
+
+                _q.Process();
+
+                Assert.That(_t1.StartedOn(1));
+            }
+
+            [Test]
+            public void second_task_does_not_start_on_second_stage_on_first_stage_completion()
+            {
+                _q.Process();
+                _q.Process();
+
+                _t2.Complete();
+
+                _q.Process();
+                _q.Process();
+
+                Assert.That(!_t2.StartedOn(1));
+            }
+
+            [Test]
+            public void second_task_does_not_start_on_both_task_completion_on_the_first_stage()
+            {
+                _q.Process();
+                _q.Process();
+
+                _t1.Complete();
+                _t2.Complete();
+
+                _q.Process();
+                _q.Process();
+
+                Assert.That(!_t2.StartedOn(1));
+            }
+
+            [Test]
+            public void second_task_starts_on_the_first_task_completion_on_the_first_stage()
+            {
+                _q.Process();
+                _q.Process();
+
+                _t1.Complete();
+                _t2.Complete();
+
+                _q.Process();
+                _q.Process();
+
+                _t1.Complete();
+
+                _q.Process();
+
+
+                Assert.That(_t2.StartedOn(1));
             }
         }
 
@@ -268,10 +346,8 @@ namespace EventStore.Projections.Core.Tests.Services
             [Test]
             public void process_waits_for_the_first_task_to_complete()
             {
-                Assert.That(_t1.Executed);
-                Assert.AreEqual(0, _t1.ExecutedOnStage);
-                Assert.That(_t2.Executed);
-                Assert.AreEqual(0, _t2.ExecutedOnStage);
+                Assert.That(_t1.StartedOn(0));
+                Assert.That(_t2.StartedOn(0));
             }
 
             [Test]
@@ -323,10 +399,8 @@ namespace EventStore.Projections.Core.Tests.Services
             [Test]
             public void start_processing_second_task_on_stage_one()
             {
-                Assert.That(_t1.Executed);
-                Assert.AreEqual(0, _t1.ExecutedOnStage);
-                Assert.That(_t2.Executed);
-                Assert.AreEqual(1, _t2.ExecutedOnStage);
+                Assert.That(_t1.StartedOn(0));
+                Assert.That(_t2.StartedOn(1));
             }
 
             [Test]
@@ -381,12 +455,9 @@ namespace EventStore.Projections.Core.Tests.Services
             [Test]
             public void start_processing_second_and_third_tasks_on_stage_one()
             {
-                Assert.That(_t1.Executed);
-                Assert.AreEqual(0, _t1.ExecutedOnStage);
-                Assert.That(_t2.Executed);
-                Assert.AreEqual(1, _t2.ExecutedOnStage);
-                Assert.That(_t3.Executed);
-                Assert.AreEqual(1, _t3.ExecutedOnStage);
+                Assert.That(_t1.StartedOn(0));
+                Assert.That(_t2.StartedOn(1));
+                Assert.That(_t3.StartedOn(1));
             }
 
             [Test]
@@ -464,10 +535,8 @@ namespace EventStore.Projections.Core.Tests.Services
                 _q.Process();
                 _q.Process();
 
-                Assert.That(_t1.Executed);
-                Assert.AreEqual(0, _t1.ExecutedOnStage);
-                Assert.That(_t2.Executed);
-                Assert.AreEqual(0, _t2.ExecutedOnStage);
+                Assert.That(_t1.StartedOn(0));
+                Assert.That(_t2.StartedOn(0));
             }
 
             [Test]

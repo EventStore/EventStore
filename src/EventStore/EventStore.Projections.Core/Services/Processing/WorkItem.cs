@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly CoreProjection Projection;
 
         private readonly int _lastStage;
-        private Action<int> _complete;
+        private Action<int, object> _complete;
         private int _onStage;
         private CheckpointTag _checkpointTag;
 
@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastStage = 2;
         }
 
-        public override void Process(int onStage, Action<int> readyForStage)
+        public override void Process(int onStage, Action<int, object> readyForStage)
         {
             if (_checkpointTag == null)
                 throw new InvalidOperationException("CheckpointTag has not been initialized");
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected void NextStage()
         {
-            _complete(_onStage == _lastStage ? -1 : _onStage + 1);
+            _complete(_onStage == _lastStage ? -1 : _onStage + 1, InitialCorrelationId);
         }
 
         public void SetCheckpointTag(CheckpointTag checkpointTag)
