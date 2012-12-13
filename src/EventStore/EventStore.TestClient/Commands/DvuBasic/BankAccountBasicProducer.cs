@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Globalization;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
@@ -182,10 +183,12 @@ namespace EventStore.TestClient.Commands.DvuBasic
     public class AccountCredited
     {
         public readonly decimal CreditedAmount;
+        public readonly string Kind;
 
-        public AccountCredited(decimal creditedAmount)
+        public AccountCredited(decimal creditedAmount, int kind)
         {
             CreditedAmount = creditedAmount;
+            Kind = kind.ToString(CultureInfo.InvariantCulture);
         }
 
         public override bool Equals(object obj)
@@ -219,10 +222,12 @@ namespace EventStore.TestClient.Commands.DvuBasic
     public class AccountDebited
     {
         public readonly decimal DebitedAmount;
+        public readonly string Kind;
 
-        public AccountDebited(decimal debitedAmount)
+        public AccountDebited(decimal debitedAmount, int kind)
         {
             DebitedAmount = debitedAmount;
+            Kind = kind.ToString(CultureInfo.InvariantCulture);
         }
 
         public override bool Equals(object obj)
