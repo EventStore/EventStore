@@ -99,6 +99,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _complete(_onStage == _lastStage ? -1 : _onStage + 1, _lastStageCorrelationId);
         }
 
+        protected void Complete()
+        {
+            _complete(-1, InitialCorrelationId);
+        }
+
         public void SetCheckpointTag(CheckpointTag checkpointTag)
         {
             _checkpointTag = checkpointTag;

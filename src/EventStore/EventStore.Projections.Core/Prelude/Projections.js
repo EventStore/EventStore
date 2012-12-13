@@ -113,9 +113,17 @@ var $projections = {
 
              tryDeserializeBody(eventEnvelope);
 
-             return eventHandler(eventEnvelope);
+            var partition = eventHandler(eventEnvelope);
 
-         }
+            var result;
+            //TODO: warn/disable empty string
+            if (partition === undefined || partition === null || partition === "")
+                result = "";
+            else
+                result = partition.toString();
+            return result;
+
+        }
 
          function processEvent(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw, partition) {
 

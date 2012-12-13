@@ -151,7 +151,10 @@ namespace EventStore.Projections.Core.Services.v8
             var partition = _query.GetPartition(
                 data.Trim(), // trimming data passed to a JS 
                 new string[] { streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture), metadata ?? ""});
-            return partition;
+            if (partition == "")
+                return null;
+            else 
+                return partition;
         }
 
         public bool ProcessEvent(

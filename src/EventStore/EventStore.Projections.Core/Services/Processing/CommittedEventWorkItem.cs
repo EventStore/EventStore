@@ -51,7 +51,11 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override void GetStatePartition()
         {
             _partition = _statePartitionSelector.GetStatePartition(_message);
-            NextStage(_partition);
+            if (_partition == null)
+                // skip processing of events not mapped to any partition
+                Complete();
+            else
+                NextStage(_partition);
         }
 
         protected override void Load(CheckpointTag checkpointTag)
