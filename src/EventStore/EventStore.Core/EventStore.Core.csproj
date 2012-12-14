@@ -182,7 +182,7 @@
     <Compile Include="Services\Transport\Http\SendToHttpWithConversionEnvelope.cs" />
     <Compile Include="TransactionLog\Chunks\ChunkFooter.cs" />
     <Compile Include="TransactionLog\Chunks\ChunkHeader.cs" />
-    <Compile Include="TransactionLog\Chunks\ReaderWorkItem.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\ReaderWorkItem.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkChaser.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkDbConfig.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkDb.cs" />
@@ -191,7 +191,7 @@
     <Compile Include="TransactionLog\Chunks\TFChunkWriter.cs" />
     <Compile Include="TransactionLog\Chunks\TFConsts.cs" />
     <Compile Include="Exceptions\UnableToReadPastEndOfStreamException.cs" />
-    <Compile Include="TransactionLog\Chunks\WriterWorkItem.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\WriterWorkItem.cs" />
     <Compile Include="Exceptions\CorruptDatabaseException.cs" />
     <Compile Include="TransactionLog\ITransactionFileChaser.cs" />
     <Compile Include="TransactionLog\ITransactionFileReader.cs" />

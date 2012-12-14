@@ -57,6 +57,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public ChunkHeader ChunkHeader { get { return _chunkHeader; } }
         public ChunkFooter ChunkFooter { get { return _chunkFooter; } }
+        public readonly int MidpointsDepth;
 
         public int PhysicalWriterPosition 
         {
@@ -77,15 +78,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private readonly int _maxReadThreads;
         private readonly Common.Concurrent.ConcurrentQueue<ReaderWorkItem> _fileStreams = new Common.Concurrent.ConcurrentQueue<ReaderWorkItem>();
         private readonly Common.Concurrent.ConcurrentQueue<ReaderWorkItem> _memStreams = new Common.Concurrent.ConcurrentQueue<ReaderWorkItem>();
+        private volatile int _fileStreamCount;
+        private int _memStreamCount;
+
         private WriterWorkItem _writerWorkItem;
         private volatile int _actualDataSize;
 
         private volatile IntPtr _cachedData;
         private int _cachedLength;
         private volatile bool _cached;
-
-        private Midpoint[] _midpoints;
-        private readonly int _midpointsDepth;
 
         private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
         private volatile bool _selfdestructin54321;
@@ -97,10 +98,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         {
             Ensure.NotNullOrEmpty(filename, "filename");
             Ensure.Positive(maxReadThreads, "maxReadThreads");
+            Ensure.Nonnegative(midpointsDepth, "midpointsDepth");
 
             _filename = filename;
             _maxReadThreads = maxReadThreads;
-            _midpointsDepth = midpointsDepth;
+            MidpointsDepth = midpointsDepth;
         }
 
         ~TFChunk()
@@ -198,8 +200,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 ReturnReaderWorkItem(reader);
             }
 
-            _midpoints = PopulateMidpoints(_midpointsDepth);
             _readSide = _chunkFooter.MapCount > 0 ? (IChunkReadSide) new TFChunkReadSideScavenged(this) : new TFChunkReadSideUnscavenged(this);
+            _readSide.Cache();
 
             SetAttributes();
             if (verifyHash)
@@ -391,74 +393,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             return footer;
         }
 
-        private Midpoint[] PopulateMidpoints(int depth)
-        {
-            if (depth > 31)
-                throw new ArgumentOutOfRangeException("depth", "Too large depth for midpoints.");
-            if (!_isReadOnly || _chunkFooter.MapSize == 0)
-                return null;
-
-            ReaderWorkItem workItem = null;
-            try
-            {
-                workItem = GetReaderWorkItem();
-
-                int midPointsCnt = 1 << depth;
-                int segmentSize;
-                Midpoint[] midpoints;
-                var mapCount = _chunkFooter.MapCount;
-                if (mapCount < midPointsCnt)
-                {
-                    segmentSize = 1; // we cache all items
-                    midpoints = new Midpoint[mapCount];
-                }
-                else
-                {
-                    segmentSize = mapCount/midPointsCnt;
-                    midpoints = new Midpoint[1 + (mapCount + segmentSize - 1)/segmentSize];
-                }
-
-                for (int x = 0, i = 0, xN = mapCount - 1;
-                     x < xN;
-                     x += segmentSize, i += 1)
-                {
-                    midpoints[i] = new Midpoint(x, ReadPosMap(workItem, x));
-                }
-
-                // add the very last item as the last midpoint (possibly it is done twice)
-                midpoints[midpoints.Length - 1] = new Midpoint(mapCount - 1, ReadPosMap(workItem, mapCount - 1));
-                return midpoints;
-            }
-            catch (FileBeingDeletedException)
-            {
-                return null;
-            }
-            catch (OutOfMemoryException)
-            {
-                return null;
-            }
-            finally
-            {
-                if (workItem != null)
-                    ReturnReaderWorkItem(workItem);
-            }
-        }
-
-        private PosMap ReadPosMap(ReaderWorkItem workItem, int index)
-        {
-            var pos = ChunkHeader.Size + _chunkFooter.ActualChunkSize + index*PosMap.Size;
-            workItem.Stream.Seek(pos, SeekOrigin.Begin);
-            return new PosMap(workItem.Reader.ReadUInt64());
-        }
-
         private static int GetRealPosition(int logicalPosition)
         {
             return ChunkHeader.Size + logicalPosition;
-        }
-
-        private static int GetLogicalPosition(ReaderWorkItem workItem)
-        {
-            return (int)workItem.Stream.Position - ChunkHeader.Size;
         }
 
         private static int GetLogicalPosition(WriterWorkItem workItem)
@@ -481,7 +418,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 writerWorkItem.UnmanagedMemoryStream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite);
             
             _cached = true;
-            _midpoints = null;
+            _readSide.Uncache();
 
             Log.Trace("CACHED TFChunk #{0} at {1} in {2}.", _chunkHeader.ChunkStartNumber, Path.GetFileName(_filename), sw.Elapsed);
         }
@@ -533,7 +470,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             var wasCached = _cached;
 
             if (!_selfdestructin54321)
-                _midpoints = PopulateMidpoints(_midpointsDepth);
+                _readSide.Cache();
 
             _cached = false;
 
@@ -747,9 +684,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             TryDestructFileStreams();
             TryDestructMemStreams();
         }
-
-        private volatile int _fileStreamCount;
-        private int _memStreamCount;
 
         private void TryDestructFileStreams()
         {

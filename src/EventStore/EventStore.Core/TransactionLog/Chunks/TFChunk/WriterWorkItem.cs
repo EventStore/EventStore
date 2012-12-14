@@ -25,21 +25,29 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System.IO;
+using System.Security.Cryptography;
 
-namespace EventStore.Core.TransactionLog.Chunks
+namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 {
-    internal class ReaderWorkItem
+    internal class WriterWorkItem
     {
-        public readonly Stream Stream;
-        public readonly BinaryReader Reader;
-        public readonly bool IsMemory;
+        public readonly FileStream Stream;
+        public readonly BinaryWriter Writer;
+        public readonly MemoryStream Buffer;
+        public readonly BinaryWriter BufferWriter;
+        public readonly MD5 MD5;
 
-        public ReaderWorkItem(Stream stream, BinaryReader reader, bool isMemory)
+        public UnmanagedMemoryStream UnmanagedMemoryStream;
+
+        public WriterWorkItem(FileStream stream, BinaryWriter writer, MD5 md5)
         {
             Stream = stream;
-            Reader = reader;
-            IsMemory = isMemory;
+            Writer = writer;
+            Buffer = new MemoryStream(2048);
+            BufferWriter = new BinaryWriter(Buffer);
+            MD5 = md5;
         }
     }
 }
