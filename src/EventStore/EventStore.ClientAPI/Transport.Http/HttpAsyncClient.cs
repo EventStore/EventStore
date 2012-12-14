@@ -87,8 +87,13 @@ namespace EventStore.ClientAPI.Transport.Http
             var request = (HttpWebRequest)WebRequest.Create(url);
 
             request.Method = method;
+#if __MonoCS__
+            request.KeepAlive = false;
+            request.Pipelined = false;
+#else
             request.KeepAlive = true;
             request.Pipelined = true;
+#endif
 
             request.BeginGetResponse(ResponseAcquired, new ClientOperationState(request, onSuccess, onException));
         }
