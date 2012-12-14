@@ -27,11 +27,10 @@
 // 
 using System;
 using System.IO;
-using System.Linq;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 

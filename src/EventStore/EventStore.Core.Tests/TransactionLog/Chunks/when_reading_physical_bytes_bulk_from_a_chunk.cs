@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Chunks

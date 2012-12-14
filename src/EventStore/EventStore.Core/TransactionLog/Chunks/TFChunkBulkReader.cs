@@ -29,18 +29,19 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
     public class TFChunkBulkReader : IDisposable
     {
-        public TFChunk Chunk { get { return _chunk; } }
+        public TFChunk.TFChunk Chunk { get { return _chunk; } }
 
-        private readonly TFChunk _chunk;
+        private readonly TFChunk.TFChunk _chunk;
         private readonly Stream _stream;
         private bool _disposed;
 
-        internal TFChunkBulkReader(TFChunk chunk, Stream streamToUse)
+        internal TFChunkBulkReader(TFChunk.TFChunk chunk, Stream streamToUse)
         {
             Ensure.NotNull(chunk, "chunk");
             Ensure.NotNull(streamToUse, "stream");
