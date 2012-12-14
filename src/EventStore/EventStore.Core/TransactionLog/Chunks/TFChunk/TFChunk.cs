@@ -259,9 +259,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private void CreateReaderStreams()
         {
-#pragma warning disable 420
             Interlocked.Add(ref _fileStreamCount, _maxReadThreads);
-#pragma warning restore 420
             for (int i = 0; i < _maxReadThreads; i++)
             {
                 var stream = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
@@ -737,9 +735,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             while (_fileStreams.TryDequeue(out workItem))
             {
                 workItem.Stream.Dispose();
-#pragma warning disable 420
                 fileStreamCount = Interlocked.Decrement(ref _fileStreamCount);
-#pragma warning restore 420
             }
 
             Debug.Assert(fileStreamCount >= 0, "Somehow we managed to decrease count of file streams below zero.");
@@ -778,9 +774,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private void FreeCachedData()
         {
-#pragma warning disable 420
             var cachedData = Interlocked.Exchange(ref _cachedData, IntPtr.Zero);
-#pragma warning restore 420
             if (cachedData != IntPtr.Zero)
                 Marshal.FreeHGlobal(cachedData);
         }
@@ -826,7 +820,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public TFChunkBulkReader AcquireReader()
         {
-#pragma warning disable 420
             Interlocked.Increment(ref _fileStreamCount);
             if (_selfdestructin54321)
             {
@@ -837,7 +830,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 }
                 throw new FileBeingDeletedException();
             }
-#pragma warning restore 420
 
             // if we get here, then we reserved TFChunk for sure so no one should dispose of chunk file
             // until client returns dedicated reader
@@ -851,9 +843,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public void ReleaseReader(TFChunkBulkReader reader)
         {
-#pragma warning disable 420
             Interlocked.Decrement(ref _fileStreamCount);
-#pragma warning restore 420
             if (_selfdestructin54321 && _fileStreamCount == 0)
                 CleanUpFileStreamDestruction();
         }
