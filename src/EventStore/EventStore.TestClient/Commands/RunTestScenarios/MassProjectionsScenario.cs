@@ -47,6 +47,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var success = true;
 
             var nodeProcessId = StartNode();
+            EnableProjectionByCategory();
 
             var countProjections = new List<string>();
             var bankProjections = new List<string>();

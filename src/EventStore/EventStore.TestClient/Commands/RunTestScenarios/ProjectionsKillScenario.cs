@@ -61,6 +61,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         protected override void RunInternal()
         {
             var nodeProcessId = StartNode();
+            EnableProjectionByCategory();
 
             var countItem = CreateCountItem();
             var sumCheckForBankAccount0 = CreateSumCheckForBankAccount0();
@@ -181,8 +182,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             var projectionManager = GetProjectionsManager();
 
-            EnableProjectionByCategory();
-
             string countItemsProjectionName = string.Format("CountItems_it{0}", GetIterationCode());
             string countItemsProjection = string.Format(@"
                 fromCategory('bank_account_it{0}').when({{
@@ -203,16 +202,30 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return countItemsProjectionName;
         }
 
-        private void EnableProjectionByCategory()
+        protected void EnableProjectionByCategory()
         {
-            try
+            var retryCount = 0;
+            Exception exception = null;
+            while (retryCount < 5)
             {
-                GetProjectionsManager().Enable("$by_category");
+                Thread.Sleep(250 * (retryCount * retryCount));
+                try
+                {
+                    Log.Debug("Enable *$by_category* projection");
+                    GetProjectionsManager().Enable("$by_category");
+                    exception = null;
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    exception = new ApplicationException("Failed to enable by_category.", ex);
+                    Log.ErrorException(ex, "Failed to enable *$by_category* projection, retry #{0}.", retryCount);
+                }
+                retryCount += 1;
             }
-            catch (Exception ex)
-            {
-                Log.ErrorException(ex, " !!! Failed to enable *$by_category* projection the second time. Command to get projection Enable/Disable status is needed.");
-            }
+
+            if (exception != null)
+                throw exception;
         }
 
         protected string CreateSumCheckForBankAccount0()

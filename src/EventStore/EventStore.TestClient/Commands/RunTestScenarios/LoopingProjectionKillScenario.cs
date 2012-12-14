@@ -64,6 +64,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         protected override void RunInternal()
         {
             var nodeProcessId = StartNode();
+            EnableProjectionByCategory();
 
             var stopWatch = Stopwatch.StartNew();
 
