@@ -112,8 +112,6 @@ namespace EventStore.TestClient.Commands
                     Log.Error("Invalid arguments ({0})", e.Message);
                     return false;
                 }
-
-               
             }
 
             context.IsAsync();

@@ -49,7 +49,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         StreamMetadata GetStreamMetadata(string streamId);
 
         CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition);
-        int GetLastTransactionOffset(long writerCheckpoint, long transactionId);
+
+        void UpdateTransactionOffset(long transactionId, int transactionOffset);
+        int GetTransactionOffset(long writerCheckpoint, long transactionId);
        
         void Close();
         void Dispose();

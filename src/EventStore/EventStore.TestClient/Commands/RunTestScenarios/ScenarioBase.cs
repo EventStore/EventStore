@@ -137,7 +137,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             for (int i = 0; i < Connections; ++i)
             {
-                _connections[i] = EventStoreConnection.Create(ConnectionSettings.Create().UseLogger(ApiLogger).LimitConcurrentOperationsTo(MaxConcurrentRequests));
+                _connections[i] = EventStoreConnection.Create(ConnectionSettings.Create()
+                                                                                .UseLogger(ApiLogger)
+                                                                                .LimitConcurrentOperationsTo(MaxConcurrentRequests));
                 _connections[i].Connect(_tcpEndPoint);
             }
             RunInternal();   
@@ -287,7 +289,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected int StartNode()
         {
-            
             var clientFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
             string fileName;
@@ -344,6 +345,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private IPAddress GetInterIpAddress()
         {
+            return IPAddress.Loopback;
+
             var interIp = IPAddress.None;
 
             var host = Dns.GetHostEntry(Dns.GetHostName());
