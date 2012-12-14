@@ -75,7 +75,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var manager = GetProjectionsManager();
             
             var stopWatch = new Stopwatch();
-            while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(1000 + 5 * Streams * EventsPerStream))
+            
+            var waitDuration = TimeSpan.FromMilliseconds(20 * 1000 + 5 * Streams * EventsPerStream);
+            while (stopWatch.Elapsed < waitDuration)
             {
                 if (writeTask.IsFaulted)
                     throw new ApplicationException("Failed to write data");
@@ -95,7 +97,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 if (isWatchStarted)
                     stopWatch.Stop();
 
-                Thread.Sleep(IterationSleepInterval);
+                Thread.Sleep((int)(waitDuration.TotalMilliseconds / 10));
+
                 KillNode(nodeProcessId);
                 nodeProcessId = StartNode();
 
@@ -111,11 +114,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 throw new ApplicationException(string.Format("Projections did not complete with expected result in time"));
         }
 
-        protected virtual TimeSpan IterationSleepInterval
-        {
-            get { return TimeSpan.FromSeconds(4); }
-        }
-
         protected Task WriteData()
         {
             var streams = Enumerable.Range(0, Streams).Select(i => string.Format("bank_account_it{0}-{1}", GetIterationCode(), i)).ToArray();
@@ -125,9 +123,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var w2 = Write(WriteMode.Bucket, slices[1], EventsPerStream, CreateBankEvent);
             var w3 = Write(WriteMode.Transactional, slices[2], EventsPerStream, CreateBankEvent);
 
-            var task = Task.Factory.ContinueWhenAll(new [] {w1, w2, w3}, Task.WaitAll);
-            task.ContinueWith(x => Log.Info("Data written."));
-            return task;
+            var task = Task.Factory.ContinueWhenAll(new[] { w1, w2, w3 }, Task.WaitAll);
+            return task.ContinueWith(x => Log.Info("Data written for iteration {0}.", GetIterationCode()));
         }
 
         protected bool CheckProjectionState(ProjectionsManager manager, string projectionName, string key, Func<string, bool> checkValue)

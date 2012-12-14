@@ -36,18 +36,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal class ProjectionWrongTagCheck : ProjectionsKillScenario
     {
-        private readonly TimeSpan _iterationSleepInterval = TimeSpan.FromMinutes(10);
         private TimeSpan _executionPeriod;
 
         public ProjectionWrongTagCheck(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath)
             : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
         {
             _executionPeriod = executionPeriod;
-        }
-
-        protected override TimeSpan IterationSleepInterval
-        {
-            get { return _iterationSleepInterval; }
         }
 
         private int _iterationCode = 0;

@@ -36,7 +36,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal class LoopingProjectionKillScenario : ProjectionsKillScenario
     {
-        private static readonly TimeSpan _iterationSleepInterval = TimeSpan.FromMinutes(10);
         private TimeSpan _executionPeriod;
 
         private int _iterationCode;
@@ -48,16 +47,10 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             _executionPeriod = executionPeriod;
 
-            _iterationLoopDuration = TimeSpan.FromMilliseconds(10 * (Streams * EventsPerStream + Streams));
+            _iterationLoopDuration = TimeSpan.FromMilliseconds(10 * (Streams * EventsPerStream + Streams) + 20 * 1000);
             _firstKillInterval = TimeSpan.FromSeconds(_iterationLoopDuration.TotalSeconds / 3);
         }
 
-        protected override TimeSpan IterationSleepInterval
-        {
-            get { return _iterationSleepInterval; }
-        }
-
-        
         protected override int GetIterationCode()
         {
             return _iterationCode;
@@ -133,7 +126,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         if (success)
                             break;
 
-                        Thread.Sleep(500);
+                        Thread.Sleep(2000);
 
                     }
                     return success;
