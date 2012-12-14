@@ -36,13 +36,13 @@ namespace EventStore.Core.TransactionLog.Chunks
     public class TFChunkWriter: ITransactionFileWriter
     {
         public ICheckpoint Checkpoint { get { return _writerCheckpoint; } }
-        public TFChunk CurrentChunk { get { return _writerChunk; } }
+        public TFChunk.TFChunk CurrentChunk { get { return _writerChunk; } }
 
         private readonly TFChunkDb _db;
         private readonly ICheckpoint _writerCheckpoint;
 
         private long _writerPos;
-        private TFChunk _writerChunk;
+        private TFChunk.TFChunk _writerChunk;
  
         public TFChunkWriter(TFChunkDb db)
         {
@@ -93,7 +93,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             _writerCheckpoint.Write(_writerPos);
         }
 
-        public void CompleteReplicatedRawChunk(TFChunk rawChunk)
+        public void CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk)
         {
             rawChunk.Flush();
             rawChunk.CompleteRaw();

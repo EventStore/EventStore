@@ -27,6 +27,7 @@
 //  
 using System.IO;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Chunks

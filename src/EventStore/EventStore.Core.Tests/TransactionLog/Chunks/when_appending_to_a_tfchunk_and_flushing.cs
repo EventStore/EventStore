@@ -28,6 +28,7 @@
 using System;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 

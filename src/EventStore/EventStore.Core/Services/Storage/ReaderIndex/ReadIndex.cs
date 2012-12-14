@@ -52,8 +52,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 {
     public class ReadIndex : IDisposable, IReadIndex
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<ReadIndex>();
         internal static readonly EventRecord[] EmptyRecords = new EventRecord[0];
+        private static readonly ILogger Log = LogManager.GetLoggerFor<ReadIndex>();
 
         public long LastCommitPosition { get { return Interlocked.Read(ref _lastCommitPosition); } }
 

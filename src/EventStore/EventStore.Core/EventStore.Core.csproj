@@ -171,6 +171,9 @@
     <Compile Include="TransactionLog\Checkpoint\FileMultiCheckpoint.cs" />
     <Compile Include="TransactionLog\Checkpoint\IMultiCheckpoint.cs" />
     <Compile Include="TransactionLog\Checkpoint\InMemMultiCheckpoint.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\BulkReadResult.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\PosMap.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\TFChunkReadSide.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkBulkReader.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkScavenger.cs" />
     <Compile Include="Services\Transport\Http\Configure.cs" />
@@ -194,7 +197,7 @@
     <Compile Include="TransactionLog\ITransactionFileReader.cs" />
     <Compile Include="TransactionLog\ITransactionFileSequentialReader.cs" />
     <Compile Include="TransactionLog\ReadResults.cs" />
-    <Compile Include="TransactionLog\Chunks\TFChunk.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\TFChunk.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkManager.cs" />
     <Compile Include="TransactionLog\RecordWriteResult.cs" />
     <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
