@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+#pragma warning disable 420
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -50,7 +52,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunk>();
 
         public bool IsReadOnly { get { return _isReadOnly; } }
-        public bool IsCached { get { return _cached; } }
+        public bool IsCached { get { return _isCached != 0; } }
         public int ActualDataSize { get { return _actualDataSize; } }
         public string FileName { get { return _filename; } }
         public int FileSize { get { return (int) new FileInfo(_filename).Length; } }
@@ -86,7 +88,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private volatile IntPtr _cachedData;
         private int _cachedLength;
-        private volatile bool _cached;
+        private volatile int _isCached;
 
         private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
         private volatile bool _selfdestructin54321;
@@ -403,24 +405,54 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             return (int)workItem.Stream.Position - ChunkHeader.Size;
         }
 
+        // WARNING CacheInMemory/UncacheFromMemory should not be called simultaneously !!!
         public void CacheInMemory()
         {
-            if (_cached || _selfdestructin54321)
-                return;
+            if (Interlocked.CompareExchange(ref _isCached, 1, 0) == 0)
+            {
+                // we won the right to cache
+                var sw = Stopwatch.StartNew();
 
-            var sw = Stopwatch.StartNew();
+                try
+                {
+                    BuildCacheArray();
+                }
+                catch (OutOfMemoryException)
+                {
+                    Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk #{0}-{1} at {2}.",
+                              _chunkHeader.ChunkStartNumber,
+                              _chunkHeader.ChunkEndNumber,
+                              Path.GetFileName(_filename));
+                    _isCached = 0;
+                    return;
+                }
+                catch (FileBeingDeletedException)
+                {
+                    Log.Debug("CACHING FAILED due to FileBeingDeleted exception (TFChunk is being disposed) in TFChunk #{0}-{1} at {2}.",
+                              _chunkHeader.ChunkStartNumber,
+                              _chunkHeader.ChunkEndNumber,
+                              Path.GetFileName(_filename));
+                    _isCached = 0;
+                    return;
+                }
 
-            BuildCacheArray();
-            BuildCacheReaders();
+                BuildCacheReaders();
+                _readSide.Uncache();
 
-            var writerWorkItem = _writerWorkItem;
-            if (writerWorkItem != null)
-                writerWorkItem.UnmanagedMemoryStream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite);
-            
-            _cached = true;
-            _readSide.Uncache();
+                var writerWorkItem = _writerWorkItem;
+                if (writerWorkItem != null)
+                    writerWorkItem.UnmanagedMemoryStream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite);
 
-            Log.Trace("CACHED TFChunk #{0} at {1} in {2}.", _chunkHeader.ChunkStartNumber, Path.GetFileName(_filename), sw.Elapsed);
+                Log.Trace("CACHED TFChunk #{0} at {1} in {2}.", _chunkHeader.ChunkStartNumber, Path.GetFileName(_filename), sw.Elapsed);
+            }
+            else
+            {
+                Log.Trace("CACHING SKIPPED as chunk is cached or caching already in (TFChunk #{0}-{1} at {2}).",
+                          _chunkHeader.ChunkStartNumber,
+                          _chunkHeader.ChunkEndNumber,
+                          Path.GetFileName(_filename));
+
+            }
         }
 
         private void BuildCacheArray()
@@ -438,7 +470,17 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     using (var unmanagedStream = new UnmanagedMemoryStream((byte*)cachedData, _cachedLength, _cachedLength, FileAccess.ReadWrite))
                     {
                         workItem.Stream.Seek(0, SeekOrigin.Begin);
-                        workItem.Stream.CopyTo(unmanagedStream);
+                        var buffer = new byte[4096];
+                        // in ongoing chunk there is no need to read everything, it's enough to read just actual data written
+                        int toRead = _isReadOnly ? _cachedLength : ChunkHeader.Size + _actualDataSize; 
+                        while (toRead > 0)
+                        {
+                            int read = workItem.Stream.Read(buffer, 0, Math.Min(toRead, buffer.Length));
+                            if (read == 0)
+                                break;
+                            toRead -= read;
+                            unmanagedStream.Write(buffer, 0, read);
+                        }
                     }
                 }
                 catch
@@ -465,27 +507,29 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             }
         }
 
+        //WARNING CacheInMemory/UncacheFromMemory should not be called simultaneously !!!
         public void UnCacheFromMemory()
         {
-            var wasCached = _cached;
+            if (Interlocked.CompareExchange(ref _isCached, 0, 1) == 1)
+            {
+                // we won the right to un-cache and chunk was cached
+                // NOTE: calling simultaneously cache and uncache is very dangerous
+                // NOTE: though multiple simultaneous calls to either Cache or Uncache is ok
 
-            if (!_selfdestructin54321)
                 _readSide.Cache();
 
-            _cached = false;
+                var writerWorkItem = _writerWorkItem;
+                var unmanagedMemStream = writerWorkItem == null ? null : writerWorkItem.UnmanagedMemoryStream;
+                if (unmanagedMemStream != null)
+                {
+                    unmanagedMemStream.Dispose();
+                    writerWorkItem.UnmanagedMemoryStream = null;
+                }
 
-            var writerWorkItem = _writerWorkItem;
-            var unmanagedMemStream = writerWorkItem == null ? null : writerWorkItem.UnmanagedMemoryStream;
-            if (unmanagedMemStream != null)
-            {
-                unmanagedMemStream.Dispose();
-                writerWorkItem.UnmanagedMemoryStream = null;
-            }
+                TryDestructMemStreams();
 
-            TryDestructMemStreams();
-
-            if (wasCached)
                 Log.Trace("UNCACHED TFChunk #{0} at {1}", _chunkHeader.ChunkStartNumber, Path.GetFileName(_filename));
+            }
         }
 
         public RecordReadResult TryReadAt(int logicalPosition)
@@ -624,7 +668,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             int mapSize = 0;
             if (mapping != null)
             {
-                if (_cached)
+                if (_isCached != 0)
                 {
                     throw new InvalidOperationException("Trying to write mapping while chunk is cached! "
                                                       + "You probably are writing scavenged chunk as cached. "
@@ -769,7 +813,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             if (item.IsMemory)
             {
                 _memStreams.Enqueue(item);
-                if (!_cached || _selfdestructin54321)
+                if (_isCached == 0 || _selfdestructin54321)
                     TryDestructMemStreams();
             }
             else
