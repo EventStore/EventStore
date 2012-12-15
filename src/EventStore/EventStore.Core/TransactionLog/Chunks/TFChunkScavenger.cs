@@ -33,6 +33,7 @@ using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog.Chunks
@@ -75,7 +76,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             Log.Trace("Scavenging pass COMPLETED in {0}.", sw.Elapsed);
         }
 
-        private void ScavengeChunk(TFChunk oldChunk, bool alwaysKeepScavenged)
+        private void ScavengeChunk(TFChunk.TFChunk oldChunk, bool alwaysKeepScavenged)
         {
             var sw = Stopwatch.StartNew();
 
@@ -91,10 +92,10 @@ namespace EventStore.Core.TransactionLog.Chunks
                       Path.GetFileName(oldChunk.FileName),
                       Path.GetFileName(tmpChunkPath));
 
-            TFChunk newChunk;
+            TFChunk.TFChunk newChunk;
             try
             {
-                newChunk = TFChunk.CreateNew(tmpChunkPath, chunkSize, chunkStartNumber, chunkEndNumber, isScavenged: true);
+                newChunk = TFChunk.TFChunk.CreateNew(tmpChunkPath, chunkSize, chunkStartNumber, chunkEndNumber, isScavenged: true);
             }
             catch (IOException exc)
             {
@@ -311,7 +312,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             return true;
         }
 
-        private void TraverseChunk(TFChunk chunk, Action<PrepareLogRecord> processPrepare, Action<CommitLogRecord> processCommit)
+        private void TraverseChunk(TFChunk.TFChunk chunk, Action<PrepareLogRecord> processPrepare, Action<CommitLogRecord> processCommit)
         {
             var result = chunk.TryReadFirst();
             while (result.Success)
@@ -338,7 +339,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private static PosMap WriteRecord(TFChunk newChunk, LogRecord record)
+        private static PosMap WriteRecord(TFChunk.TFChunk newChunk, LogRecord record)
         {
             var writeResult = newChunk.TryAppend(record);
             if (!writeResult.Success)

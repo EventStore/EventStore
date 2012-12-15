@@ -171,6 +171,9 @@
     <Compile Include="TransactionLog\Checkpoint\FileMultiCheckpoint.cs" />
     <Compile Include="TransactionLog\Checkpoint\IMultiCheckpoint.cs" />
     <Compile Include="TransactionLog\Checkpoint\InMemMultiCheckpoint.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\BulkReadResult.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\PosMap.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\TFChunkReadSide.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkBulkReader.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkScavenger.cs" />
     <Compile Include="Services\Transport\Http\Configure.cs" />
@@ -179,7 +182,7 @@
     <Compile Include="Services\Transport\Http\SendToHttpWithConversionEnvelope.cs" />
     <Compile Include="TransactionLog\Chunks\ChunkFooter.cs" />
     <Compile Include="TransactionLog\Chunks\ChunkHeader.cs" />
-    <Compile Include="TransactionLog\Chunks\ReaderWorkItem.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\ReaderWorkItem.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkChaser.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkDbConfig.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkDb.cs" />
@@ -188,13 +191,13 @@
     <Compile Include="TransactionLog\Chunks\TFChunkWriter.cs" />
     <Compile Include="TransactionLog\Chunks\TFConsts.cs" />
     <Compile Include="Exceptions\UnableToReadPastEndOfStreamException.cs" />
-    <Compile Include="TransactionLog\Chunks\WriterWorkItem.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\WriterWorkItem.cs" />
     <Compile Include="Exceptions\CorruptDatabaseException.cs" />
     <Compile Include="TransactionLog\ITransactionFileChaser.cs" />
     <Compile Include="TransactionLog\ITransactionFileReader.cs" />
     <Compile Include="TransactionLog\ITransactionFileSequentialReader.cs" />
     <Compile Include="TransactionLog\ReadResults.cs" />
-    <Compile Include="TransactionLog\Chunks\TFChunk.cs" />
+    <Compile Include="TransactionLog\Chunks\TFChunk\TFChunk.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkManager.cs" />
     <Compile Include="TransactionLog\RecordWriteResult.cs" />
     <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />

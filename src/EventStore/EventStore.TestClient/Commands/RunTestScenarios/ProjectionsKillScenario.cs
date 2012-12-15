@@ -61,6 +61,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         protected override void RunInternal()
         {
             var nodeProcessId = StartNode();
+            EnableProjectionByCategory();
 
             var countItem = CreateCountItem();
             var sumCheckForBankAccount0 = CreateSumCheckForBankAccount0();
@@ -68,14 +69,16 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var writeTask = WriteData();
 
             var success = false;
-            var expectedAllEventsCount = (Streams * EventsPerStream + Streams).ToString();
+            var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
             var expectedEventsPerStream = EventsPerStream.ToString();
 
             var isWatchStarted = false;
             var manager = GetProjectionsManager();
             
             var stopWatch = new Stopwatch();
-            while (stopWatch.Elapsed < TimeSpan.FromMilliseconds(1000 + 5 * Streams * EventsPerStream))
+            
+            var waitDuration = TimeSpan.FromMilliseconds(20 * 1000 + 5 * Streams * EventsPerStream);
+            while (stopWatch.Elapsed < waitDuration)
             {
                 if (writeTask.IsFaulted)
                     throw new ApplicationException("Failed to write data");
@@ -95,7 +98,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 if (isWatchStarted)
                     stopWatch.Stop();
 
-                Thread.Sleep(IterationSleepInterval);
+                Thread.Sleep((int)(waitDuration.TotalMilliseconds / 10));
+
                 KillNode(nodeProcessId);
                 nodeProcessId = StartNode();
 
@@ -111,11 +115,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 throw new ApplicationException(string.Format("Projections did not complete with expected result in time"));
         }
 
-        protected virtual TimeSpan IterationSleepInterval
-        {
-            get { return TimeSpan.FromSeconds(4); }
-        }
-
         protected Task WriteData()
         {
             var streams = Enumerable.Range(0, Streams).Select(i => string.Format("bank_account_it{0}-{1}", GetIterationCode(), i)).ToArray();
@@ -125,9 +124,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var w2 = Write(WriteMode.Bucket, slices[1], EventsPerStream, CreateBankEvent);
             var w3 = Write(WriteMode.Transactional, slices[2], EventsPerStream, CreateBankEvent);
 
-            var task = Task.Factory.ContinueWhenAll(new [] {w1, w2, w3}, Task.WaitAll);
-            task.ContinueWith(x => Log.Info("Data written."));
-            return task;
+            var task = Task.Factory.ContinueWhenAll(new[] { w1, w2, w3 }, Task.WaitAll);
+            return task.ContinueWith(x => Log.Info("Data written for iteration {0}.", GetIterationCode()));
         }
 
         protected bool CheckProjectionState(ProjectionsManager manager, string projectionName, string key, Func<string, bool> checkValue)
@@ -144,9 +142,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var state = GetProjectionState(manager, projectionName);
             string value;
             if (state != null && state.Count > 0 && state.TryGetValue(key, out value))
-            {
                 result = convert(value);
-            }
+
             return result;
         }
 
@@ -157,6 +154,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Log.Info("Raw {0} state: {1}", projectionName, rawState);
 
             if (string.IsNullOrEmpty(rawState))
+                return null;
+
+            if (rawState == "*** UNKNOWN ***")
                 return null;
 
             var state = Codec.Json.From<Dictionary<string, string>>(rawState);
@@ -182,26 +182,50 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
             var projectionManager = GetProjectionsManager();
 
-            projectionManager.Enable("$by_category");
-
             string countItemsProjectionName = string.Format("CountItems_it{0}", GetIterationCode());
             string countItemsProjection = string.Format(@"
                 fromCategory('bank_account_it{0}').when({{
-                $init: function() {{ return {{c:0}}; }},
+                $init: function() {{ return {{count:0}}; }},
                 AccountCredited: function (state, event) {{ 
-                                        state.c += 1; 
+                                        state.count += 1; 
                                     }},
                 AccountDebited: function (state, event) {{ 
-                                        state.c+= 1; 
+                                        state.count += 1; 
                                     }},
                 AccountCheckPoint: function (state, event) {{ 
-                                        state.c+= 1; 
+                                        state.count += 1; 
                                     }}
                 }})
 ", GetIterationCode());
 
             projectionManager.CreatePersistent(countItemsProjectionName, countItemsProjection);
             return countItemsProjectionName;
+        }
+
+        protected void EnableProjectionByCategory()
+        {
+            var retryCount = 0;
+            Exception exception = null;
+            while (retryCount < 5)
+            {
+                Thread.Sleep(250 * (retryCount * retryCount));
+                try
+                {
+                    Log.Debug("Enable *$by_category* projection");
+                    GetProjectionsManager().Enable("$by_category");
+                    exception = null;
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    exception = new ApplicationException("Failed to enable by_category.", ex);
+                    Log.ErrorException(ex, "Failed to enable *$by_category* projection, retry #{0}.", retryCount);
+                }
+                retryCount += 1;
+            }
+
+            if (exception != null)
+                throw exception;
         }
 
         protected string CreateSumCheckForBankAccount0()

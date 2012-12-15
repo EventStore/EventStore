@@ -186,13 +186,13 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private TFChunk LoadChunk(string chunkFileName, bool verifyHash)
+        private TFChunk.TFChunk LoadChunk(string chunkFileName, bool verifyHash)
         {
-            var chunk = TFChunk.FromCompletedFile(chunkFileName, verifyHash);
+            var chunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash);
             return chunk;
         }
 
-        private TFChunk LoadLastChunk(string chunkFileName, bool verifyHash)
+        private TFChunk.TFChunk LoadLastChunk(string chunkFileName, bool verifyHash)
         {
             var pos = Config.WriterCheckpoint.Read();
             var writerPosition = (int)(pos % Config.ChunkSize);
@@ -213,12 +213,12 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
             
             if (chunkFooter.Completed && chunkFooter.MapSize > 0)
-                return TFChunk.FromCompletedFile(chunkFileName, verifyHash);
+                return TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash);
             
             if (writerPosition == 0 && pos > 0)
                 writerPosition = Config.ChunkSize;
 
-            return TFChunk.FromOngoingFile(chunkFileName, writerPosition, checkSize: false);
+            return TFChunk.TFChunk.FromOngoingFile(chunkFileName, writerPosition, checkSize: false);
         }
 
         private void EnsureNoOtherFiles(int expectedFiles)

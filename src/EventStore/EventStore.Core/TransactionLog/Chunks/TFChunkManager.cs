@@ -43,14 +43,14 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public int ChunksCount { get { return _chunksCount; } }
         private readonly TFChunkDbConfig _config;
-        private readonly TFChunk[] _chunks = new TFChunk[MaxChunksCount]; 
+        private readonly TFChunk.TFChunk[] _chunks = new TFChunk.TFChunk[MaxChunksCount]; 
         private volatile int _chunksCount;
         private volatile bool _cachingEnabled;
 
         private readonly object _backgroundLock = new object();
         private bool _backgroundRunning;
 
-        private readonly Common.Concurrent.ConcurrentQueue<TFChunk> _chunksQueue = new Common.Concurrent.ConcurrentQueue<TFChunk>();
+        private readonly Common.Concurrent.ConcurrentQueue<TFChunk.TFChunk> _chunksQueue = new Common.Concurrent.ConcurrentQueue<TFChunk.TFChunk>();
 
         public TFChunkManager(TFChunkDbConfig config)
         {
@@ -104,7 +104,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                         return;
                     }
                 }
-                TFChunk chunk;
+                TFChunk.TFChunk chunk;
                 while (_chunksQueue.TryDequeue(out chunk))
                 {
                     CacheUncacheIfNecessary(chunk);
@@ -112,7 +112,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private void CacheUncacheIfNecessary(TFChunk chunk)
+        private void CacheUncacheIfNecessary(TFChunk.TFChunk chunk)
         {
             var chunkNumber = chunk.ChunkHeader.ChunkStartNumber;
             if (_cachingEnabled
@@ -127,16 +127,16 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public TFChunk AddNewChunk()
+        public TFChunk.TFChunk AddNewChunk()
         {
             var chunkNumber = _chunksCount;
             var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
-            var chunk = TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, isScavenged: false);
+            var chunk = TFChunk.TFChunk.CreateNew(chunkName, _config.ChunkSize, chunkNumber, isScavenged: false);
             AddChunk(chunk);
             return chunk;
         }
 
-        public TFChunk AddNewChunk(ChunkHeader chunkHeader, int fileSize)
+        public TFChunk.TFChunk AddNewChunk(ChunkHeader chunkHeader, int fileSize)
         {
             Ensure.NotNull(chunkHeader, "chunkHeader");
             Ensure.Positive(fileSize, "fileSize");
@@ -151,12 +151,12 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             var chunkNumber = _chunksCount;
             var chunkName = _config.FileNamingStrategy.GetFilenameFor(chunkNumber, 0);
-            var chunk = TFChunk.CreateWithHeader(chunkName, chunkHeader, fileSize);
+            var chunk = TFChunk.TFChunk.CreateWithHeader(chunkName, chunkHeader, fileSize);
             AddChunk(chunk);
             return chunk;
         }   
 
-        public void AddChunk(TFChunk chunk)
+        public void AddChunk(TFChunk.TFChunk chunk)
         {
             Ensure.NotNull(chunk, "chunk");
 
@@ -185,19 +185,19 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public TFChunk GetChunkFor(long logPosition)
+        public TFChunk.TFChunk GetChunkFor(long logPosition)
         {
             return GetChunk((int)(logPosition / _config.ChunkSize));
         }
 
-        public TFChunk GetChunkForOrDefault(string path)
+        public TFChunk.TFChunk GetChunkForOrDefault(string path)
         {
             return _chunks != null
                        ? _chunks.FirstOrDefault(c => c != null && c.FileName == path)
                        : null;
         }
 
-        public TFChunk GetChunk(int chunkNumber)
+        public TFChunk.TFChunk GetChunk(int chunkNumber)
         {
             Ensure.Nonnegative(chunkNumber, "chunkNumber");
             if (chunkNumber >= MaxChunksCount) 
@@ -211,7 +211,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             return chunk;
         }
 
-        private void TryCacheChunk(TFChunk chunk)
+        private void TryCacheChunk(TFChunk.TFChunk chunk)
         {
             if (_cachingEnabled)
             {
@@ -237,7 +237,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        public TFChunk SwitchChunk(TFChunk chunk, bool verifyHash, bool replaceChunksWithGreaterNumbers)
+        public TFChunk.TFChunk SwitchChunk(TFChunk.TFChunk chunk, bool verifyHash, bool replaceChunksWithGreaterNumbers)
         {
             Ensure.NotNull(chunk, "chunk");
             if (!chunk.IsReadOnly)
@@ -264,7 +264,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             var newFileName = _config.FileNamingStrategy.DetermineBestVersionFilenameFor(chunkHeader.ChunkStartNumber);
             Log.Info("File {0} will be moved to file {1}", oldFileName, newFileName);
             File.Move(oldFileName, newFileName);
-            var newChunk = TFChunk.FromCompletedFile(newFileName, verifyHash);
+            var newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash);
             
             for (int i = chunkHeader.ChunkStartNumber; i <= chunkHeader.ChunkEndNumber; ++i)
             {
@@ -297,10 +297,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             return newChunk;
         }
 
-        public TFChunk CreateTempChunk(ChunkHeader chunkHeader, int fileSize)
+        public TFChunk.TFChunk CreateTempChunk(ChunkHeader chunkHeader, int fileSize)
         {
             var chunkFileName = _config.FileNamingStrategy.GetTempFilename();
-            return TFChunk.CreateWithHeader(chunkFileName, chunkHeader, fileSize);
+            return TFChunk.TFChunk.CreateWithHeader(chunkFileName, chunkHeader, fileSize);
         }
     }
 }

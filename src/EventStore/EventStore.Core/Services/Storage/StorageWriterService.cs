@@ -225,7 +225,7 @@ namespace EventStore.Core.Services.Storage
                 Debug.Assert(message.Events.Length > 0);
 
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
-                var transactionOffset = ReadIndex.GetLastTransactionOffset(logPosition, message.TransactionId);
+                var transactionOffset = ReadIndex.GetTransactionOffset(Writer.Checkpoint.Read(), message.TransactionId);
                 if (transactionOffset < -1)
                 {
                     throw new Exception(
@@ -248,6 +248,7 @@ namespace EventStore.Core.Services.Storage
                     var res = WritePrepareWithRetry(record);
                     logPosition = res.NewPos;
                 }
+                ReadIndex.UpdateTransactionOffset(message.TransactionId, transactionOffset + message.Events.Length);
             }
             finally
             {

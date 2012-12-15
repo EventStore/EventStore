@@ -52,8 +52,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 {
     public class ReadIndex : IDisposable, IReadIndex
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<ReadIndex>();
         internal static readonly EventRecord[] EmptyRecords = new EventRecord[0];
+        private static readonly ILogger Log = LogManager.GetLoggerFor<ReadIndex>();
 
         public long LastCommitPosition { get { return Interlocked.Read(ref _lastCommitPosition); } }
 
@@ -67,6 +67,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly IHasher _hasher;
         private readonly IPublisher _bus;
         private readonly ILRUCache<string, StreamCacheInfo> _streamInfoCache;
+        private readonly ILRUCache<long, int> _transactionOffsetsCache = new LRUCache<long, int>(50000); 
 
         private long _persistedPrepareCheckpoint = -1;
         private long _persistedCommitCheckpoint = -1;
@@ -867,29 +868,51 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        int IReadIndex.GetLastTransactionOffset(long writerCheckpoint, long transactionId)
+        void IReadIndex.UpdateTransactionOffset(long transactionId, int transactionOffset)
+        {
+            _transactionOffsetsCache.Put(transactionId, transactionOffset);
+        }
+
+        int IReadIndex.GetTransactionOffset(long writerCheckpoint, long transactionId)
+        {
+            int transactionOffset;
+            if (!_transactionOffsetsCache.TryGet(transactionId, out transactionOffset))
+            {
+                if (GetTransactionOffsetUncached(writerCheckpoint, transactionId, out transactionOffset))
+                    _transactionOffsetsCache.Put(transactionId, transactionOffset);
+                else
+                    transactionOffset = int.MinValue;
+            }
+            return transactionOffset;
+        }
+
+        private bool GetTransactionOffsetUncached(long writerCheckpoint, long transactionId, out int transactionOffset)
         {
             var seqReader = GetSeqReader();
             try
             {
                 seqReader.Reposition(writerCheckpoint);
                 SeqReadResult result;
-                while ((result = seqReader.TryReadPrevNonFlushed()).Success)
+                while ((result = seqReader.TryReadPrev()).Success)
                 {
                     if (result.LogRecord.Position < transactionId)
                         break;
                     if (result.LogRecord.RecordType != LogRecordType.Prepare)
                         continue;
-                    var prepare = (PrepareLogRecord) result.LogRecord;
+                    var prepare = (PrepareLogRecord)result.LogRecord;
                     if (prepare.TransactionPosition == transactionId)
-                        return prepare.TransactionOffset;
+                    {
+                        transactionOffset = prepare.TransactionOffset;
+                        return true;
+                    }
                 }
             }
             finally
             {
                 ReturnSeqReader(seqReader);
             }
-            return int.MinValue;
+            transactionOffset = int.MinValue;
+            return false;
         }
 
         ReadIndexStats IReadIndex.GetStatistics()

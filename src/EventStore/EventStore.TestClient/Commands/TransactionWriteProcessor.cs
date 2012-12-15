@@ -63,7 +63,6 @@ namespace EventStore.TestClient.Commands
             var stage = Stage.AcquiringTransactionId;
             long transactionId = -1;
             var writtenEvents = 0;
-            var corrid = Guid.NewGuid();
             context.Client.CreateTcpConnection(
                     context,
                     connectionEstablished: conn =>
@@ -72,7 +71,7 @@ namespace EventStore.TestClient.Commands
                         sw.Start();
                         
                         var tranStart = new TcpClientMessageDto.TransactionStart(eventStreamId, expectedVersion, true);
-                        var package = new TcpPackage(TcpCommand.TransactionStart, corrid, tranStart.Serialize());
+                        var package = new TcpPackage(TcpCommand.TransactionStart, Guid.NewGuid(), tranStart.Serialize());
                         conn.EnqueueSend(package.AsByteArray());
                     },
                     handlePackage: (conn, pkg) =>
@@ -114,7 +113,7 @@ namespace EventStore.TestClient.Commands
                                                                                    Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()))
                                                 },
                                                 true);
-                                        var package = new TcpPackage(TcpCommand.TransactionWrite, corrid, writeDto.Serialize());
+                                        var package = new TcpPackage(TcpCommand.TransactionWrite, Guid.NewGuid(), writeDto.Serialize());
                                         conn.EnqueueSend(package.AsByteArray());
                                     }
                                 }
@@ -145,7 +144,7 @@ namespace EventStore.TestClient.Commands
 
                                         stage = Stage.Committing;
                                         var commitDto = new TcpClientMessageDto.TransactionCommit(transactionId, eventStreamId, true);
-                                        var package = new TcpPackage(TcpCommand.TransactionCommit, corrid, commitDto.Serialize());
+                                        var package = new TcpPackage(TcpCommand.TransactionCommit, Guid.NewGuid(), commitDto.Serialize());
                                         conn.EnqueueSend(package.AsByteArray());
                                     }
                                 }
