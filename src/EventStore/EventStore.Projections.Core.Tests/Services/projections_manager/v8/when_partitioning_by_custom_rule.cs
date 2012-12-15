@@ -27,36 +27,32 @@
 // 
 
 using System;
-using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.v8;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
 {
     [TestFixture]
-    public class when_running_a_faulting_v8_projection : TestFixtureWithJsProjection
+    public class when_partitioning_by_custom_rule : TestFixtureWithJsProjection
     {
         protected override void Given()
         {
             _projection = @"
-                fromAll();
-                on_any(function(state, event) {
-                    log(state.count);
-                    throw ""failed"";
-                    return state;
+                fromAll().partitionBy(function(event){
+                    return event.body.region;
+                }).whenAny(function(event, state) {
+                    return {};
                 });
             ";
-            _state = @"{""count"": 0}";
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "failed")]
-        public void process_event_throws_js1_exception()
+        [Test]
+        public void get_state_partition_returns_correct_result()
         {
-            string state;
-            EmittedEvent[] emittedEvents;
-            _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
-                @"{""a"":""b""}", out state, out emittedEvents);
+            var result = _stateHandler.GetStatePartition(
+                "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata", @"{""region"":""Europe""}");
+
+            Assert.AreEqual("Europe", result);
         }
+
     }
 }

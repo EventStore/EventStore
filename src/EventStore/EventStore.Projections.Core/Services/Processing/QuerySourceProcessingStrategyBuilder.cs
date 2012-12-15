@@ -59,6 +59,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected bool _allEvents;
         protected List<string> _events;
         protected bool _byStream;
+        protected bool _byCustomPartitions;
 
         public void FromAll()
         {
@@ -94,6 +95,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public void SetByStream()
         {
             _byStream = true;
+        }
+
+        public void SetByCustomPartitions()
+        {
+            _byCustomPartitions = true;
         }
 
         public void SetStateStreamNameOption(string stateStreamName)
@@ -141,10 +147,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Both FromAll and specific categories/streams cannot be set");
             if (_allEvents && _events != null)
                 throw new InvalidOperationException("Both AllEvents and specific event filters cannot be set");
+
             if (_byStream && _streams != null)
                 throw new InvalidOperationException("Partitioned projections are not supported on stream based sources");
             if (_byStream && mode < ProjectionMode.Persistent)
                 throw new InvalidOperationException("Partitioned (foreachStream) projections require Persistent mode");
+
+            if (_byCustomPartitions && mode < ProjectionMode.Persistent)
+                throw new InvalidOperationException("Partitioned (foreachStream) projections require Persistent mode"); 
+            
             if (_options.UseEventIndexes && !_allStreams)
                 throw new InvalidOperationException("useEventIndexes option is only available in fromAll() projections");
             if (_options.UseEventIndexes && _allEvents)

@@ -162,6 +162,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
         private bool _subscribed;
         private bool _startOnLoad;
+        private StatePartitionSelector _statePartitionSelector;
 
         private CoreProjection(
             string name, Guid projectionCorrelationId, IPublisher publisher,
@@ -194,6 +195,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
             _checkpointStrategy = checkpointStrategy;
+            _statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(projectionStateHandler);
             _partitionStateCache = new PartitionStateCache();
             _processingQueue = projectionQueue;
             _checkpointManager = coreProjectionCheckpointManager;
@@ -267,8 +269,7 @@ namespace EventStore.Projections.Core.Services.Processing
             try
             {
                 CheckpointTag eventTag = message.CheckpointTag;
-                string partition = _checkpointStrategy.StatePartitionSelector.GetStatePartition(message);
-                var committedEventWorkItem = new CommittedEventWorkItem(this, message, partition);
+                var committedEventWorkItem = new CommittedEventWorkItem(this, message, _statePartitionSelector);
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
                 _processingQueue.ProcessEvent();
             }
@@ -659,7 +660,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             SetHandlerState(partition);
             return _projectionStateHandler.ProcessEvent(
-                message.Position, message.CheckpointTag, message.EventStreamId, message.Data.EventType,
+                partition, message.CheckpointTag, message.EventStreamId, message.Data.EventType,
                 message.EventCategory, message.Data.EventId, message.EventSequenceNumber,
                 Encoding.UTF8.GetString(message.Data.Metadata), Encoding.UTF8.GetString(message.Data.Data), out newState,
                 out emittedEvents);

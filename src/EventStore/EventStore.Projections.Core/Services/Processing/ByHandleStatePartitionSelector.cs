@@ -26,37 +26,26 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.v8;
-using NUnit.Framework;
+using System.Text;
+using EventStore.Projections.Core.Messages;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
+namespace EventStore.Projections.Core.Services.Processing
 {
-    [TestFixture]
-    public class when_running_a_faulting_v8_projection : TestFixtureWithJsProjection
+    public class ByHandleStatePartitionSelector : StatePartitionSelector
     {
-        protected override void Given()
+        private readonly IProjectionStateHandler _handler;
+
+        public ByHandleStatePartitionSelector(IProjectionStateHandler handler)
         {
-            _projection = @"
-                fromAll();
-                on_any(function(state, event) {
-                    log(state.count);
-                    throw ""failed"";
-                    return state;
-                });
-            ";
-            _state = @"{""count"": 0}";
+            _handler = handler;
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "failed")]
-        public void process_event_throws_js1_exception()
+        public override string GetStatePartition(ProjectionSubscriptionMessage.CommittedEventReceived @event)
         {
-            string state;
-            EmittedEvent[] emittedEvents;
-            _stateHandler.ProcessEvent(
-                "", CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
-                @"{""a"":""b""}", out state, out emittedEvents);
+            return _handler.GetStatePartition(
+                @event.EventStreamId, @event.Data.EventType, @event.EventCategory, @event.Data.EventId,
+                @event.EventSequenceNumber, Encoding.UTF8.GetString(@event.Data.Metadata),
+                Encoding.UTF8.GetString(@event.Data.Data));
         }
     }
 }

@@ -36,7 +36,11 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly StagedProcessingQueue _queuePendingEvents =
             new StagedProcessingQueue(
-                new[] {false /* load foreach state */, false /* process Js */, true /* write emits */});
+                new[]
+                    {
+                        false /* get state partition */, false /* load foreach state */, false /* process Js */, true
+                        /* write emits */
+                    });
 
         private readonly IPublisher _publisher;
         private readonly Guid _projectionCorrelationId;

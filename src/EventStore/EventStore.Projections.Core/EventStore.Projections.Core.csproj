@@ -104,6 +104,7 @@
     <Compile Include="Services\Management\ManagedProjection.cs" />
     <Compile Include="Services\Management\ManagedProjectionState.cs" />
     <Compile Include="Services\Management\ProjectionStateHandlerFactory.cs" />
+    <Compile Include="Services\Processing\ByHandleStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\ByStreamStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\CategoryEventFilter.cs" />
     <Compile Include="Services\Processing\CheckpointSuggestedWorkItem.cs" />

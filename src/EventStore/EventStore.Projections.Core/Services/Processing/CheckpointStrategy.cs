@@ -44,12 +44,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _allEvents;
         private readonly HashSet<string> _events;
         private readonly bool _byStream;
+        private readonly bool _byCustomPartitions;
         private readonly bool _useEventIndexes;
         private readonly bool _reorderEvents;
         private readonly int _processingLag;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
-        private readonly StatePartitionSelector _statePartitionSelector;
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 base.Validate(mode);
                 return new CheckpointStrategy(
                     _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream,
-                    _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag);
+                    _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag);
             }
         }
 
@@ -70,11 +70,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public PositionTagger PositionTagger
         {
             get { return _positionTagger; }
-        }
-
-        public StatePartitionSelector StatePartitionSelector
-        {
-            get { return _statePartitionSelector; }
         }
 
         public bool IsEmiEnabled()
@@ -150,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private CheckpointStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, HashSet<string> events,
-            bool byStream, bool useEventIndexes, bool reorderEvents, int processingLag)
+            bool byStream, bool byCustomPartitions, bool useEventIndexes, bool reorderEvents, int processingLag)
         {
             _allStreams = allStreams;
             _categories = categories;
@@ -158,13 +153,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _allEvents = allEvents;
             _events = events;
             _byStream = byStream;
+            _byCustomPartitions = byCustomPartitions;
             _useEventIndexes = useEventIndexes;
             _reorderEvents = reorderEvents;
             _processingLag = processingLag;
 
             _eventFilter = CreateEventFilter();
             _positionTagger = CreatePositionTagger();
-            _statePartitionSelector = CreateStatePartitionSelector();
         }
 
         private EventFilter CreateEventFilter()
@@ -213,11 +208,13 @@ namespace EventStore.Projections.Core.Services.Processing
             return _events.Select(v => "$et-" + v).ToArray();
         }
 
-        private StatePartitionSelector CreateStatePartitionSelector()
+        public StatePartitionSelector CreateStatePartitionSelector(IProjectionStateHandler projectionStateHandler)
         {
-            return _byStream
-                       ? (StatePartitionSelector) new ByStreamStatePartitionSelector()
-                       : new NoopStatePartitionSelector();
+            return _byCustomPartitions
+                       ? new ByHandleStatePartitionSelector(projectionStateHandler)
+                       : (_byStream
+                              ? (StatePartitionSelector) new ByStreamStatePartitionSelector()
+                              : new NoopStatePartitionSelector());
         }
 
         public ICoreProjectionCheckpointManager CreateCheckpointManager(

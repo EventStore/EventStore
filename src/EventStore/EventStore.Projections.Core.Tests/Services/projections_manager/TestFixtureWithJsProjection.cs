@@ -113,6 +113,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             get { return _byStream; }
         }
 
+        public bool ByCustomParititions
+        {
+            get { return _byCustomPartitions; }
+        }
+
         public QuerySourceOptions Options 
         {
             get { return _options; }
