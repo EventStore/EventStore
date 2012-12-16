@@ -136,13 +136,15 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _name;
             private readonly string _handlerType;
             private readonly string _query;
+            private readonly bool? _emitEnabled;
 
-            public UpdateQuery(IEnvelope envelope, string name, string handlerType, string query)
+            public UpdateQuery(IEnvelope envelope, string name, string handlerType, string query, bool? emitEnabled)
             {
                 _envelope = envelope;
                 _name = name;
                 _handlerType = handlerType;
                 _query = query;
+                _emitEnabled = emitEnabled;
             }
 
             public string Query
@@ -163,6 +165,11 @@ namespace EventStore.Projections.Core.Messages
             public string HandlerType
             {
                 get { return _handlerType; }
+            }
+
+            public bool? EmitEnabled
+            {
+                get { return _emitEnabled; }
             }
         }
 
@@ -409,11 +416,13 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly string _name;
             private readonly string _query;
+            private readonly bool _emitEnabled;
 
-            public ProjectionQuery(string name, string query)
+            public ProjectionQuery(string name, string query, bool emitEnabled)
             {
                 _name = name;
                 _query = query;
+                _emitEnabled = emitEnabled;
             }
 
             public string Name
@@ -424,6 +433,11 @@ namespace EventStore.Projections.Core.Messages
             public string Query
             {
                 get { return _query; }
+            }
+
+            public bool EmitEnabled
+            {
+                get { return _emitEnabled; }
             }
         }
 

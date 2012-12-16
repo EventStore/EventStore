@@ -102,7 +102,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
             _manager.Handle(
                 new ProjectionManagementMessage.UpdateQuery(
-                    new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource));
+                    new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource, emitEnabled: null));
         }
     }
 }

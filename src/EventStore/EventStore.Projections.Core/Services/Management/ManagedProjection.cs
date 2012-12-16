@@ -117,19 +117,16 @@ namespace EventStore.Projections.Core.Services.Management
         private string HandlerType
         {
             get { return _persistedState.HandlerType; }
-            set { _persistedState.HandlerType = value; }
         }
 
         private string Query
         {
             get { return _persistedState.Query; }
-            set { _persistedState.Query = value; }
         }
 
         private ProjectionMode Mode
         {
             get { return _persistedState.Mode; }
-            set { _persistedState.Mode = value; }
         }
 
         private bool Enabled
@@ -180,7 +177,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.GetQuery message)
         {
-            message.Envelope.ReplyWith(new ProjectionManagementMessage.ProjectionQuery(_name, Query));
+            var emitEnabled = _persistedState.EmitEnabled ?? false;
+            message.Envelope.ReplyWith(new ProjectionManagementMessage.ProjectionQuery(_name, Query, emitEnabled));
         }
 
         public void Handle(ProjectionManagementMessage.UpdateQuery message)
@@ -499,10 +497,11 @@ namespace EventStore.Projections.Core.Services.Management
             Deleted = true;
         }
 
-        private void UpdateQuery(string handlerType, string query)
+        private void UpdateQuery(string handlerType, string query, bool? emitEnabled)
         {
-            HandlerType = handlerType;
-            Query = query;
+            _persistedState.HandlerType = handlerType;
+            _persistedState.Query = query;
+            _persistedState.EmitEnabled = emitEnabled ?? _persistedState.EmitEnabled;
         }
 
         private void BeginCreateAndPrepare(
@@ -646,7 +645,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void DoUpdateQuery(ProjectionManagementMessage.UpdateQuery message)
         {
-            UpdateQuery(message.HandlerType ?? HandlerType, message.Query);
+            UpdateQuery(message.HandlerType ?? HandlerType, message.Query, message.EmitEnabled);
             Action completed = () =>
                 {
                     if (Enabled)

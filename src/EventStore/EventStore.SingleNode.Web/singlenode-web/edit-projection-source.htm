@@ -30,6 +30,10 @@
                 </div>
             </div>
             <div class="control-group">
+                <label class="control-label" for="emit"><strong>Emit Enabled</strong></label>
+                <div class="controls"><input type="checkbox" id="emit" /></div>
+            </div>
+            <div class="control-group">
                 <div class="controls" id="update-source-container">
                     <button id="update-button" class="btn btn-success">
                         Update</button>
@@ -53,7 +57,10 @@
                 projectionStatusUrl = location.hash.substr(1);
 
                 $('#update-button').click(function(ev) {
-                    $.ajax(projectionStatusUrl + "/query", {
+                    var params = $.param({
+                        emit: $("#emit").attr("checked") ? "yes" : "no",
+                    });
+                    $.ajax(projectionStatusUrl + "/query?" + params, {
                         headers: {
                             Accept: "application/json",
                         },
@@ -92,17 +99,18 @@
             }
 
             function requestProjectionSource() {
-                $.ajax(projectionStatusUrl + "/query", {
+                $.ajax(projectionStatusUrl + "/query?config=yes", {
                     headers: {
-                        Accept: "text/plain",
+                        Accept: "application/json",
                     },
-                    dataType: "text",
+                    dataType: "json",
                     success: successSource,
                     error: errorSource
                 });
 
                 function successSource(data, status, xhr) {
-                    $("#source").text(data);
+                    $("#source").text(data.Query);
+                    $("#emit").attr("checked", data.EmitEnabled);
                 }
 
                 function errorSource(xhr, status) {
