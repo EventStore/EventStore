@@ -48,17 +48,20 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _useEventIndexes;
         private readonly bool _reorderEvents;
         private readonly int _processingLag;
+        private readonly bool _emitStateUpdated;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
+        private readonly bool _useCheckpoints;
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
-            public CheckpointStrategy Build(ProjectionMode mode)
+            public CheckpointStrategy Build(ProjectionConfig config)
             {
-                base.Validate(mode);
+                base.Validate(config);
                 return new CheckpointStrategy(
                     _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream,
-                    _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag);
+                    _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag,
+                    _options.EmitStateUpdated, config.CheckpointsEnabled && config.EmitEventEnabled);
             }
         }
 
@@ -70,6 +73,16 @@ namespace EventStore.Projections.Core.Services.Processing
         public PositionTagger PositionTagger
         {
             get { return _positionTagger; }
+        }
+
+        public bool EmitStateUpdated
+        {
+            get { return _emitStateUpdated; }
+        }
+
+        public bool UseCheckpoints
+        {
+            get { return _useCheckpoints; }
         }
 
         public bool IsEmiEnabled()
@@ -145,7 +158,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private CheckpointStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, HashSet<string> events,
-            bool byStream, bool byCustomPartitions, bool useEventIndexes, bool reorderEvents, int processingLag)
+            bool byStream, bool byCustomPartitions, bool useEventIndexes, bool reorderEvents, int processingLag,
+            bool emitStateUpdated, bool useCheckpoints)
         {
             _allStreams = allStreams;
             _categories = categories;
@@ -157,6 +171,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _useEventIndexes = useEventIndexes;
             _reorderEvents = reorderEvents;
             _processingLag = processingLag;
+            _emitStateUpdated = emitStateUpdated;
+            _useCheckpoints = useCheckpoints;
 
             _eventFilter = CreateEventFilter();
             _positionTagger = CreatePositionTagger();
@@ -229,7 +245,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 return new MultiStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, name, PositionTagger, projectionStateUpdatesStreamId);
+                    projectionConfig, name, PositionTagger, projectionStateUpdatesStreamId, UseCheckpoints);
             }
             else if (_streams != null && _streams.Count > 1)
             {
@@ -237,7 +253,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 return new MultiStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, name, PositionTagger, projectionStateUpdatesStreamId);
+                    projectionConfig, name, PositionTagger, projectionStateUpdatesStreamId, UseCheckpoints);
             }
             else
             {
@@ -246,7 +262,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 return new DefaultCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, projectionCheckpointStreamId, name, PositionTagger);
+                    projectionConfig, projectionCheckpointStreamId, name, PositionTagger, UseCheckpoints);
             }
         }
 

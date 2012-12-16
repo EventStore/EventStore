@@ -74,14 +74,14 @@ namespace EventStore.Projections.Core.Tests.Playground
             if (_clientProcess != null) _clientProcess.Dispose();
         }
 
-        [Test, Ignore]
+        [Test, Explicit, Category("LongRunning")]
         public void RunSingle()
         {
             Thread.Sleep(1000);
             var timer = Stopwatch.StartNew();
             while (timer.Elapsed.TotalSeconds < 15)
             {
-                var request = WebRequest.Create(@"http://127.0.0.1:2111/projections/adhoc");
+                var request = WebRequest.Create(@"http://127.0.0.1:2111/projections/onetime");
                 try
                 {
                     request.Method = "POST";

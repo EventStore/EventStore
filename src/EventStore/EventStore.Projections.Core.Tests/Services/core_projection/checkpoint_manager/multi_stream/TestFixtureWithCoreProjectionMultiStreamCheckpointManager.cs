@@ -38,33 +38,32 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         protected CoreProjectionCheckpointManager _manager;
         protected FakeCoreProjection _projection;
         protected ProjectionConfig _config;
-        protected ProjectionMode _projectionMode;
         protected int _checkpointHandledThreshold;
         protected int _checkpointUnhandledBytesThreshold;
         protected int _pendingEventsThreshold;
         protected int _maxWriteBatchLength;
-        protected bool _publishStateUpdates;
         protected bool _emitEventEnabled;
         protected bool _checkpointsEnabled;
         protected Guid _projectionCorrelationId;
         private string _projectionStateUpdatesStreamId;
+        protected bool _createTempStreams;
+        protected bool _stopOnEof;
 
         [SetUp]
         public void setup()
         {
             Given();
-            _config = new ProjectionConfig(
-                _projectionMode, _checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
-                _pendingEventsThreshold, _maxWriteBatchLength, _publishStateUpdates, _emitEventEnabled,
-                _checkpointsEnabled);
+            _config = new ProjectionConfig(_checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
+                _pendingEventsThreshold, _maxWriteBatchLength, _emitEventEnabled,
+                _checkpointsEnabled, _createTempStreams, _stopOnEof);
             When();
         }
 
         protected virtual void When()
         {
             _manager = new MultiStreamCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config,
-                "projection", new MultiStreamPositionTagger(new[] { "a", "b" }), _projectionStateUpdatesStreamId);
+                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
+                new MultiStreamPositionTagger(new[] {"a", "b"}), _projectionStateUpdatesStreamId, _checkpointsEnabled);
         }
 
         protected new virtual void Given()
@@ -72,14 +71,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _projectionStateUpdatesStreamId = "$projections-projection-state";
             _projectionCorrelationId = Guid.NewGuid();
             _projection = new FakeCoreProjection();
-            _projectionMode = ProjectionMode.Persistent;
             _checkpointHandledThreshold = 2;
             _checkpointUnhandledBytesThreshold = 5;
             _pendingEventsThreshold = 5;
             _maxWriteBatchLength = 5;
-            _publishStateUpdates = true;
             _emitEventEnabled = true;
             _checkpointsEnabled = true;
+            _createTempStreams = false;
+            _stopOnEof = false;
             NoStream(_projectionStateUpdatesStreamId);
         }
     }

@@ -396,15 +396,15 @@ namespace EventStore.Projections.Core.Services.Management
             IEnvelope envelope = new NoopEnvelope();
 
             var postMessage = new ProjectionManagementMessage.Post(
-                envelope, ProjectionMode.Persistent, name, "native:" + handlerType.Namespace + "." + handlerType.Name,
-                config, enabled: false);
+                envelope, ProjectionMode.Continuous, name, "native:" + handlerType.Namespace + "." + handlerType.Name,
+                config, enabled: false, emitEnabled: true);
 
             _publisher.Publish(postMessage);
         }
 
         private void PostNewProjection(ProjectionManagementMessage.Post message, Action<ManagedProjection> completed)
         {
-            if (message.Mode > ProjectionMode.AdHoc)
+            if (message.Mode > ProjectionMode.OneTime)
             {
                 BeginWriteProjectionRegistration(
                     message.Name, () =>

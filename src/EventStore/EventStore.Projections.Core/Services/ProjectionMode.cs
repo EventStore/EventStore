@@ -30,8 +30,9 @@ namespace EventStore.Projections.Core.Services
     public enum ProjectionMode
     {
         OneTime = 0,
-        AdHoc = 1,
-        Continuous = 2,
-        Persistent = 3,
+        //____1 = 1,
+        //____2 = 2,
+        //____3 = 3,
+        Continuous = 4,
     }
 }

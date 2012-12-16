@@ -34,7 +34,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_the_adhoc_projection_has_been_posted: TestFixtureWithProjectionCoreAndManagementServices
+    public class when_the_onetime_projection_has_been_posted: TestFixtureWithProjectionCoreAndManagementServices
     {
         private string _projectionName;
         private string _projectionQuery;

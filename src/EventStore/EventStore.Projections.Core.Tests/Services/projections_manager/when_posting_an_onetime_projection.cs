@@ -27,17 +27,14 @@
 // 
 
 using System.Linq;
-using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_posting_an_adhoc_projection: TestFixtureWithProjectionCoreAndManagementServices
+    public class when_posting_an_onetime_projection: TestFixtureWithProjectionCoreAndManagementServices
     {
         protected override void When()
         {

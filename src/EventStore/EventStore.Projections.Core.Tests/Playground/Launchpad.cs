@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Tests.Playground
             _projectionsProcess = _launch(clientExecutable, clientCommandLine, _environment);
         }
 
-        [Test, Ignore]
+        [Test, Explicit, Category("LongRunning")]
         public void WriteFloodAndProjections()
         {
             Thread.Sleep(5000);
@@ -106,7 +106,7 @@ namespace EventStore.Projections.Core.Tests.Playground
             Thread.Sleep(160000);
         }
 
-        [Test, Ignore]
+        [Test, Explicit, Category("LongRunning")]
         public void JustProjections()
         {
             Thread.Sleep(3500);

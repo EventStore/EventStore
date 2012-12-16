@@ -79,13 +79,13 @@ namespace EventStore.Projections.Core.Tests.Playground
             _clientProcess = _launch(clientExecutable, clientCommandLine, _environment);
         }
 
-        [Test, Ignore]
+        [Test, Explicit, Category("LongRunning")]
         public void RunSingle()
         {
             Thread.Sleep(60000);
         }
 
-        [Test, Ignore]
+        [Test, Explicit, Category("LongRunning")]
         public void RunSingleAndFlood()
         {
             Thread.Sleep(4000);

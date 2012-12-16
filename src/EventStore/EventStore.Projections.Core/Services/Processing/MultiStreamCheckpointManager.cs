@@ -48,9 +48,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name,
-            PositionTagger positionTagger, string projectionStateUpdatesStreamId)
+            PositionTagger positionTagger, string projectionStateUpdatesStreamId, bool useCheckpoints)
             : base(
-                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig, name, positionTagger)
+                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
+                name, positionTagger, useCheckpoints)
         {
             _projectionStateUpdatesStreamId = projectionStateUpdatesStreamId;
         }

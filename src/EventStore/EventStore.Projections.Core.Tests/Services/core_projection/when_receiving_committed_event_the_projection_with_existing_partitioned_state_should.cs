@@ -49,6 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.FromAll();
                     source.AllEvents();
                     source.SetByStream();
+                    source.SetEmitStateUpdated();
                 };
             TicksAreHandledImmediately();
             NoStream("$projections-projection-state");

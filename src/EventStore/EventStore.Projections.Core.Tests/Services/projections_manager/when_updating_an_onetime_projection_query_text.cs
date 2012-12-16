@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     [TestFixture]
-    public class when_updating_an_adhoc_projection_query_text : TestFixtureWithProjectionCoreAndManagementServices
+    public class when_updating_an_onetime_projection_query_text : TestFixtureWithProjectionCoreAndManagementServices
     {
         private string _projectionName;
         private string _newProjectionSource;
@@ -96,13 +96,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _projectionName = "test-projection";
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), ProjectionMode.AdHoc, _projectionName, "JS",
-                    @"fromAll(); on_any(function(){});log(1);", enabled: true));
+                    new PublishEnvelope(_bus), ProjectionMode.OneTime, _projectionName, "JS",
+                    @"fromAll(); on_any(function(){});log(1);", enabled: true, emitEnabled: false));
             // when
             _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
             _manager.Handle(
                 new ProjectionManagementMessage.UpdateQuery(
-                    new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource));
+                    new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource, emitEnabled: null));
         }
     }
 }

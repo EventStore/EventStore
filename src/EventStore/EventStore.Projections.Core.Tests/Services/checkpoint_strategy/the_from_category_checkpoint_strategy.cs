@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Tests.Services.checkpoint_strategy
             var builder = new CheckpointStrategy.Builder();
             builder.FromCategory("category1");
             builder.AllEvents();
-            _strategy = builder.Build(ProjectionMode.Persistent);
+            _strategy = builder.Build(ProjectionConfig.GetTest());
         }
 
     }
