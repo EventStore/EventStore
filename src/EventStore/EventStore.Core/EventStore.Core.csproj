@@ -65,6 +65,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bus\AdHocHandler.cs" />
+    <Compile Include="Bus\IQueuedHandler.cs" />
+    <Compile Include="Bus\QueuedHandlerThreadPool.cs" />
     <Compile Include="Bus\MultiQueuedHandler.cs" />
     <Compile Include="Bus\QueuedHandlerSleep.cs" />
     <Compile Include="Bus\QueuedHandlerMRES.cs" />
@@ -166,6 +168,7 @@
     <Compile Include="Services\Transport\Http\ServiceAccessibility.cs" />
     <Compile Include="Services\Transport\Http\UriToActionMatch.cs" />
     <Compile Include="Settings\ApplicationSettings.cs" />
+    <Compile Include="Settings\ESConsts.cs" />
     <Compile Include="Settings\VNodeSettings.cs" />
     <Compile Include="TransactionLog\Checkpoint\Checkpoint.cs" />
     <Compile Include="TransactionLog\Checkpoint\FileMultiCheckpoint.cs" />

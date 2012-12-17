@@ -40,7 +40,7 @@ namespace EventStore.Core.Bus
     /// to the consumer. It also tracks statistics about the message processing to help
     /// in identifying bottlenecks
     /// </summary>
-    public class QueuedHandlerPulse : IHandle<Message>, IPublisher, IMonitoredQueue, IThreadSafePublisher
+    public class QueuedHandlerPulse : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue, IThreadSafePublisher
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandlerPulse>();
 

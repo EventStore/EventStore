@@ -25,30 +25,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-
-using System;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Monitoring.Stats;
 
 namespace EventStore.Core.Bus
 {
-    // on Windows AutoReset version is much slower, but on Linux ManualResetEventSlim version is much slower
-    public class QueuedHandler: 
-#if __MonoCS__
-        QueuedHandlerAutoReset,
-#else
-        QueuedHandlerMRES,
-#endif
-        IQueuedHandler
+    public interface IQueuedHandler
     {
-        public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
-
-        public QueuedHandler(IHandle<Message> consumer,
-                             string name,
-                             bool watchSlowMsg = true,
-                             TimeSpan? slowMsgThreshold = null,
-                             TimeSpan? threadStopWaitTimeout = null)
-                : base(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout)
-        {
-        }
+        string Name { get; }
+        void Start();
+        void Stop();
+        void Publish(Message message);
+        QueueStats GetStatistics();
     }
 }

@@ -26,29 +26,25 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Core.Messaging;
-
-namespace EventStore.Core.Bus
+namespace EventStore.Core.Settings
 {
-    // on Windows AutoReset version is much slower, but on Linux ManualResetEventSlim version is much slower
-    public class QueuedHandler: 
-#if __MonoCS__
-        QueuedHandlerAutoReset,
-#else
-        QueuedHandlerMRES,
-#endif
-        IQueuedHandler
+    public static class ESConsts
     {
-        public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
+        public const int IncomingHttpQueues = 6;
+        public const int OutgoingHttpQueues = 3;
+        public const int OugoingTcpQueues = 3;
 
-        public QueuedHandler(IHandle<Message> consumer,
-                             string name,
-                             bool watchSlowMsg = true,
-                             TimeSpan? slowMsgThreshold = null,
-                             TimeSpan? threadStopWaitTimeout = null)
-                : base(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout)
-        {
-        }
+        public const int StorageReaderHandlerCount = 4;
+
+        public const int ReadIndexReaderCount = 1   /*StorageWriter*/
+                                                + 1 /*StorageChaser*/
+                                                + 1 /*Projections*/
+                                                + 1 /*Scavenging*/
+                                                + StorageReaderHandlerCount;
+
+        public const int TFChunkReaderCount = ReadIndexReaderCount + 2 /* for caching/uncaching, populating midpoints */;
+
+        public const int MemTableEntryCount = 1000000;
+        public const int MetadataCacheCapacity = 100000;
     }
 }

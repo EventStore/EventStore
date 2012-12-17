@@ -40,7 +40,7 @@ namespace EventStore.TestClient.Commands
 {
     internal class WriteFloodProcessor : ICmdProcessor
     {
-        public string Usage { get { return "WRFL [<clients> <requests> [<streams-cnt>]]"; } }
+        public string Usage { get { return "WRFL [<clients> <requests> [<streams-cnt> <size>]]"; } }
         public string Keyword { get { return "WRFL"; } }
 
         public bool Execute(CommandProcessorContext context, string[] args)
@@ -48,17 +48,20 @@ namespace EventStore.TestClient.Commands
             int clientsCnt = 1;
             long requestsCnt = 5000;
             int streamsCnt = 1000;
+            int size = 100;
             if (args.Length > 0)
             {
-                if (args.Length != 2 && args.Length != 3)
+                if (args.Length != 2 && args.Length != 4)
                     return false;
 
                 try
                 {
                     clientsCnt = int.Parse(args[0]);
                     requestsCnt = long.Parse(args[1]);
-                    if (args.Length >= 3)
+                    if (args.Length >= 3) {
                         streamsCnt = int.Parse(args[2]);
+                        size = int.Parse(args[3]);
+                    }
                 }
                 catch
                 {
@@ -66,11 +69,11 @@ namespace EventStore.TestClient.Commands
                 }
             }
 
-            WriteFlood(context, clientsCnt, requestsCnt, streamsCnt);
+            WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size);
             return true;
         }
 
-        private void WriteFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt, int streamsCnt)
+        private void WriteFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt, int streamsCnt, int size)
         {
             context.IsAsync();
 
@@ -173,7 +176,7 @@ namespace EventStore.TestClient.Commands
                                     new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
                                                                         "TakeSomeSpaceEvent",
                                                                         false,
-                                                                        Encoding.UTF8.GetBytes("DATA" + new string('*', 256)),
+                                                                        Encoding.UTF8.GetBytes("DATA" + new string('*', size)),
                                                                         Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
                                 },
                             true);

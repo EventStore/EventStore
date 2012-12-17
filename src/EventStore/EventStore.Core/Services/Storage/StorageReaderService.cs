@@ -37,9 +37,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Services.Storage
 {
-    public class StorageReaderService : //IDisposable,
-                                        IHandle<Message>,
-                                        IHandle<SystemMessage.SystemInit>,
+    public class StorageReaderService : IHandle<SystemMessage.SystemInit>,
                                         IHandle<SystemMessage.BecomeShuttingDown>,
                                         IHandle<SystemMessage.BecomeShutdown>,
                                         IHandle<MonitoringMessage.InternalStatsRequest>
@@ -52,9 +50,10 @@ namespace EventStore.Core.Services.Storage
 
         private readonly MultiQueuedHandler _workersMultiHandler;
 
-        public StorageReaderService(IPublisher bus, IReadIndex readIndex, int threadCount, ICheckpoint writerCheckpoint)
+        public StorageReaderService(IPublisher bus, ISubscriber subscriber, IReadIndex readIndex, int threadCount, ICheckpoint writerCheckpoint)
         {
             Ensure.NotNull(bus, "bus");
+            Ensure.NotNull(subscriber, "subscriber");
             Ensure.NotNull(readIndex, "readIndex");
             Ensure.Positive(threadCount, "threadCount");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
@@ -76,11 +75,13 @@ namespace EventStore.Core.Services.Storage
                 _threadCount,
                 queueNum => new QueuedHandler(storageReaderBus, string.Format("StorageReaderQueue #{0}", queueNum + 1)));
             _workersMultiHandler.Start();
-        }
 
-        public void Handle(Message message)
-        {
-            _workersMultiHandler.Publish(message);
+            subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadEvent, Message>());
+            subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadStreamEventsBackward, Message>());
+            subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadStreamEventsForward, Message>());
+            subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsForward, Message>());
+            subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsBackward, Message>());
+            subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ListStreams, Message>());
         }
 
         void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message)
@@ -107,12 +108,6 @@ namespace EventStore.Core.Services.Storage
             // by now (in case of successful shutdown process, all readers and writers should not be using ReadIndex
             _readIndex.Close();
         }
-
-/*
-        public void Dispose()
-        {
-        }
-*/
 
         void IHandle<MonitoringMessage.InternalStatsRequest>.Handle(MonitoringMessage.InternalStatsRequest message)
         {

@@ -81,7 +81,7 @@ namespace EventStore.Core.Services.Transport.Http
                         var requestProcessor = new HttpRequestProcessor(this);
                         bus.Subscribe<IncomingHttpRequestMessage>(requestProcessor);
                         bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(requestProcessor);
-                        return new QueuedHandler(bus, "Incoming HTTP #" + (queueNum + 1), true, TimeSpan.FromMilliseconds(50));
+                        return new QueuedHandlerThreadPool(bus, "Incoming HTTP #" + (queueNum + 1), true, TimeSpan.FromMilliseconds(50));
                     });
 
             _server = new HttpAsyncServer(prefixes);

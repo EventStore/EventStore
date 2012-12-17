@@ -35,6 +35,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Exceptions;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 
@@ -74,7 +75,7 @@ namespace EventStore.Core.Index
         private PTable(string filename, 
                        Guid id, 
                        int bufferSize = 8096, 
-                       int maxReadingThreads = TFConsts.ReadIndexReaderCount, 
+                       int maxReadingThreads = ESConsts.ReadIndexReaderCount, 
                        int depth = 16)
         {
             if (!File.Exists(filename)) 
