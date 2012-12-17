@@ -47,11 +47,12 @@ namespace EventStore.Core.Services
         {
             _tcpMultiHandler = new MultiQueuedHandler(
                 tcpQueueCount,
-                queueNum => new QueuedHandler(new NarrowingHandler<Message, TcpMessage.TcpSend>(new TcpSendSubservice()),
-                                              string.Format("Outgoing TCP #{0}", queueNum + 1),
-                                              watchSlowMsg: true,
-                                              slowMsgThreshold: TimeSpan.FromMilliseconds(50)),
-                                              msg => ((TcpMessage.TcpSend)msg).ConnectionManager.GetHashCode());
+                queueNum => new QueuedHandlerThreadPool(new NarrowingHandler<Message, TcpMessage.TcpSend>(new TcpSendSubservice()),
+                                                        string.Format("Outgoing TCP #{0}", queueNum + 1),
+                                                        watchSlowMsg: true,
+                                                        slowMsgThreshold: TimeSpan.FromMilliseconds(50)),
+                //NOTE: all messages for same connection should go to one thread
+                msg => ((TcpMessage.TcpSend)msg).ConnectionManager.GetHashCode());
 
             _httpMultiHandler = new MultiQueuedHandler(
                 httpQueueCount,
@@ -66,10 +67,10 @@ namespace EventStore.Core.Services
                     bus.Subscribe<HttpMessage.HttpBeginSend>(subservice);
                     bus.Subscribe<HttpMessage.HttpEndSend>(subservice);
 
-                    return new QueuedHandler(bus,
-                                             string.Format("Outgoing HTTP #{0}", queueNum + 1),
-                                             watchSlowMsg: true,
-                                             slowMsgThreshold: TimeSpan.FromMilliseconds(50));
+                    return new QueuedHandlerThreadPool(bus,
+                                                       string.Format("Outgoing HTTP #{0}", queueNum + 1),
+                                                       watchSlowMsg: true,
+                                                       slowMsgThreshold: TimeSpan.FromMilliseconds(50));
                 },
                 //NOTE: subsequent messages to the same entity must be handled in order
                 msg => ((HttpMessage.HttpSendMessage) msg).HttpEntityManager.GetHashCode());
