@@ -49,7 +49,6 @@ namespace EventStore.Core.Bus
 
         private readonly Dictionary<Type, List<IMessageHandler>> _typeHash;
 
-        private readonly Stopwatch _slowMsgWatch = new Stopwatch();
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
 
@@ -121,18 +120,13 @@ namespace EventStore.Core.Bus
                     var handler = handlers[i];
                     if (_watchSlowMsg)
                     {
-                        _slowMsgWatch.Restart();
+                        var start = DateTime.UtcNow;
 
                         handler.TryHandle(message);
 
-                        if (_slowMsgWatch.Elapsed > _slowMsgThreshold)
-                        {
-                            Log.Trace("SLOW BUS MSG [{0}]: {1} - {2}ms. Handler: {3}.",
-                                      Name,
-                                      message.GetType().Name,
-                                      _slowMsgWatch.ElapsedMilliseconds,
-                                      handler.HandlerName);
-                        }
+                        var elapsed = DateTime.UtcNow - start;
+                        if (elapsed > _slowMsgThreshold)
+                            Log.Trace("SLOW BUS MSG [{0}]: {1} - {2}ms. Handler: {3}.", Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
                     }
                     else
                     {

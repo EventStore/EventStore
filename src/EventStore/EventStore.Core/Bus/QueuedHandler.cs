@@ -31,7 +31,13 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Bus
 {
-    public class QueuedHandler: QueuedHandlerMRES
+    // on Windows AutoReset version is much slower, but on Linux ManualResetEventSlim version is much slower
+    public class QueuedHandler: 
+#if __MonoCS__
+        QueuedHandlerAutoReset
+#else
+        QueuedHandlerMRES
+#endif
     {
         public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
 
