@@ -104,14 +104,18 @@ namespace EventStore.Core.Tests.Bus
             };
 
             foreach (var thread in threads)
+            {
                 thread.Start();
+            }
 
-            bool executedOnTime = Consumer.Wait(500);
+            bool executedOnTime = Consumer.Wait(5000);
 
             if (!executedOnTime)
             {
                 foreach (var thread in threads)
+                {
                     thread.Abort();
+                }
             }
 
             Assert.That(msg1ThreadId == msg2ThreadId && msg2ThreadId == msg3ThreadId);
@@ -148,7 +152,14 @@ namespace EventStore.Core.Tests.Bus
             var waitHandle = new ManualResetEvent(false);
             try
             {
-                Queue.Publish(new DeferredExecutionTestMessage(() => waitHandle.WaitOne()));
+                var firstEvent = new ManualResetEventSlim(false);
+                Queue.Publish(new DeferredExecutionTestMessage(() =>
+                {
+                    firstEvent.Set();
+                    waitHandle.WaitOne();
+                }));
+
+                firstEvent.Wait();
                 Queue.Publish(new TestMessage());
 
                 Assert.That(Consumer.HandledMessages.ContainsNo<TestMessage>());
