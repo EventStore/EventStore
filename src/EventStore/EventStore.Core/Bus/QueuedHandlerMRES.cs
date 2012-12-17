@@ -223,8 +223,7 @@ namespace EventStore.Core.Bus
         {
             Ensure.NotNull(message, "message");
             _queue.Enqueue(message);
-            if (!_msgAddEvent.IsSet)
-                _msgAddEvent.Set();
+            _msgAddEvent.Set();
         }
 
         public void Handle(Message message)
