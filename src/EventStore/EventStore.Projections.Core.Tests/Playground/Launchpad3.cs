@@ -40,7 +40,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Playground
 {
-    [TestFixture]
+    [TestFixture, Explicit, Category("Manual")]
     public class Launchpad3 : LaunchpadBase
     {
         private IDisposable _vnodeProcess;
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Playground
             if (_clientProcess != null) _clientProcess.Dispose();
         }
 
-        [Test, Explicit, Category("LongRunning")]
+        [Test, Explicit]
         public void RunSingle()
         {
             Thread.Sleep(1000);

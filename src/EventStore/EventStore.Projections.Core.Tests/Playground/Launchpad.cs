@@ -36,7 +36,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Playground
 {
-    [TestFixture]
+    [TestFixture, Explicit, Category("Manual")]
     public class Launchpad : LaunchpadBase
     {
         private IDisposable _vnodeProcess;
@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Playground
             _projectionsProcess = _launch(clientExecutable, clientCommandLine, _environment);
         }
 
-        [Test, Explicit, Category("LongRunning")]
+        [Test]
         public void WriteFloodAndProjections()
         {
             Thread.Sleep(5000);
@@ -108,7 +108,7 @@ namespace EventStore.Projections.Core.Tests.Playground
             Thread.Sleep(160000);
         }
 
-        [Test, Explicit, Category("LongRunning")]
+        [Test]
         public void JustProjections()
         {
             Thread.Sleep(3500);
