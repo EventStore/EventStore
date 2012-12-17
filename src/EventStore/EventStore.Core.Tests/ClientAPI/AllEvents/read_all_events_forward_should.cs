@@ -357,6 +357,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var write2 = store.AppendToStreamAsync(stream, testEvents.Length, testEvents);
                 Assert.That(write2.Wait(Timeout));
 
+                Assert.NotNull("Last know position should not be null.");
                 var missed = store.ReadAllEventsForwardAsync(lastKnonwPosition, int.MaxValue);
                 Assert.That(missed.Wait(Timeout));
 
