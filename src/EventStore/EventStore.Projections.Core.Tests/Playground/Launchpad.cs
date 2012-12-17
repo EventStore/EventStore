@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using EventStore.Common.Utils;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Playground
@@ -50,7 +51,8 @@ namespace EventStore.Projections.Core.Tests.Playground
         [SetUp]
         public void Setup()
         {
-            AllocConsole(); // this is required to keep console open after executeassemly has exited
+            if (!OS.IsLinux)
+                AllocConsole(); // this is required to keep console open after executeassemly has exited
 
             _binFolder = AppDomain.CurrentDomain.BaseDirectory;
             _dbPath = Path.Combine(_binFolder, DateTime.UtcNow.Ticks.ToString());

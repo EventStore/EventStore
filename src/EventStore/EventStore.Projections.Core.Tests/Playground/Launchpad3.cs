@@ -35,6 +35,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using EventStore.Common.Utils;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Playground
@@ -52,7 +53,8 @@ namespace EventStore.Projections.Core.Tests.Playground
         [SetUp]
         public void Setup()
         {
-            AllocConsole(); // this is required to keep console open after ExecuteAssembly has exited
+            if (!OS.IsLinux)
+                AllocConsole(); // this is required to keep console open after ExecuteAssembly has exited
 
             _binFolder = AppDomain.CurrentDomain.BaseDirectory;
             _dbPath = Path.GetFullPath(Path.Combine(_binFolder, @"..\..\..\..\Data"));
