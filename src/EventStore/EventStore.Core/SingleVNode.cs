@@ -74,7 +74,7 @@ namespace EventStore.Core
                            SingleVNodeSettings vNodeSettings, 
                            SingleVNodeAppSettings appSettings, 
                            bool dbVerifyHashes,
-                           int memTableEntryCount = TFConsts.MemTableEntryCount)
+                           int memTableEntryCount = ESConsts.MemTableEntryCount)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(vNodeSettings, "vNodeSettings");
@@ -119,15 +119,15 @@ namespace EventStore.Core
                                             maxTablesPerLevel: 2);
 
             var readIndex = new ReadIndex(_mainQueue, 
-                                          TFConsts.ReadIndexReaderCount, 
+                                          ESConsts.ReadIndexReaderCount, 
                                           () => new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0), 
                                           () => new TFChunkReader(db, db.Config.WriterCheckpoint), 
                                           tableIndex, 
                                           new XXHashUnsafe(),
-                                          new LRUCache<string, StreamCacheInfo>(TFConsts.MetadataCacheCapacity));
+                                          new LRUCache<string, StreamCacheInfo>(ESConsts.MetadataCacheCapacity));
             var writer = new TFChunkWriter(db);
             var storageWriter = new StorageWriterService(_mainQueue, _mainBus, writer, readIndex);
-            var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
+            var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
             _mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
@@ -143,7 +143,7 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
 
             // NETWORK SEND
-            _networkSendService = new NetworkSendService(tcpQueueCount: 1, httpQueueCount: 3);
+            _networkSendService = new NetworkSendService(tcpQueueCount: ESConsts.OugoingTcpQueues, httpQueueCount: ESConsts.OutgoingHttpQueues);
 
             //TCP
             var tcpService = new TcpService(MainQueue, _tcpEndPoint, _networkSendService);
@@ -152,7 +152,7 @@ namespace EventStore.Core
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             //HTTP
-            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, 6, vNodeSettings.HttpPrefixes);
+            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, ESConsts.IncomingHttpQueues, vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);

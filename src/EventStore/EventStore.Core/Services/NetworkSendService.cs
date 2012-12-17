@@ -50,7 +50,8 @@ namespace EventStore.Core.Services
                 queueNum => new QueuedHandler(new NarrowingHandler<Message, TcpMessage.TcpSend>(new TcpSendSubservice()),
                                               string.Format("Outgoing TCP #{0}", queueNum + 1),
                                               watchSlowMsg: true,
-                                              slowMsgThreshold: TimeSpan.FromMilliseconds(50)));
+                                              slowMsgThreshold: TimeSpan.FromMilliseconds(50)),
+                                              msg => ((TcpMessage.TcpSend)msg).ConnectionManager.GetHashCode());
 
             _httpMultiHandler = new MultiQueuedHandler(
                 httpQueueCount,
@@ -70,11 +71,8 @@ namespace EventStore.Core.Services
                                              watchSlowMsg: true,
                                              slowMsgThreshold: TimeSpan.FromMilliseconds(50));
                 },
-                msg =>
-                {
-                    //NOTE: subsequent messages to the same entity must be handled in order
-                    return ((HttpMessage.HttpSendMessage) msg).HttpEntityManager.GetHashCode();
-                });
+                //NOTE: subsequent messages to the same entity must be handled in order
+                msg => ((HttpMessage.HttpSendMessage) msg).HttpEntityManager.GetHashCode());
 
             _tcpMultiHandler.Start();
             _httpMultiHandler.Start();
