@@ -33,6 +33,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
     public class QueueStats
     {
         public readonly string Name;
+        public readonly string GroupName;
         public readonly int Length;
         public readonly long LengthLifetimePeak;
         public readonly long LengthCurrentTryPeak;
@@ -47,6 +48,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
         public readonly Type InProgressMessageType;
 
         public QueueStats(string name,
+                          string groupName,
                           int length,
                           int avgItemsPerSecond,
                           double avgProcessingTime,
@@ -60,6 +62,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
                           Type inProgressMessageType)
         {
             Name = name;
+            GroupName = groupName;
             Length = length;
             AvgItemsPerSecond = avgItemsPerSecond;
             AvgProcessingTime = avgProcessingTime;

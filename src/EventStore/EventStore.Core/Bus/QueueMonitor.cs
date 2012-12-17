@@ -37,7 +37,6 @@ namespace EventStore.Core.Bus
     {
         public static readonly QueueMonitor Default = new QueueMonitor();
 
-        private static readonly ILogger Log = LogManager.GetLoggerFor<QueueMonitor>();
         private readonly ConcurrentDictionary<IMonitoredQueue, IMonitoredQueue> _queues = new ConcurrentDictionary<IMonitoredQueue, IMonitoredQueue>();
 
         private QueueMonitor()

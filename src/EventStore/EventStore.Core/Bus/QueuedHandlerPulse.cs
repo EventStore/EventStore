@@ -49,6 +49,7 @@ namespace EventStore.Core.Bus
 
         private readonly IHandle<Message> _consumer;
         private readonly string _name;
+        private readonly string _groupName;
 
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
@@ -86,13 +87,15 @@ namespace EventStore.Core.Bus
                                   string name,
                                   bool watchSlowMsg = true,
                                   TimeSpan? slowMsgThreshold = null,
-                                  TimeSpan? threadStopWaitTimeout = null)
+                                  TimeSpan? threadStopWaitTimeout = null,
+                                  string groupName = null)
         {
             Ensure.NotNull(consumer, "consumer");
             Ensure.NotNull(name, "name");
 
             _consumer = consumer;
             _name = name;
+            _groupName = name;
             _watchSlowMsg = watchSlowMsg;
             _slowMsgThreshold = slowMsgThreshold ?? InMemoryBus.DefaultSlowMessageThreshold;
             _threadStopWaitTimeout = threadStopWaitTimeout ?? QueuedHandler.DefaultStopWaitTimeout;
@@ -240,6 +243,7 @@ namespace EventStore.Core.Bus
 
                 var stats = new QueueStats(
                     _name,
+                    _groupName,
                     _queue.Count,
                     avgItemsPerSecond,
                     avgProcessingTime,
