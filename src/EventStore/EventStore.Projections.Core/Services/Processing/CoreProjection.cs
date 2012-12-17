@@ -105,7 +105,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var stateStreamNamePattern = namingBuilder.GetStateStreamNamePattern(name);
             var stateStreamName = namingBuilder.GetStateStreamName(name);
             var partitionCatralogStreamName = namingBuilder.GetPartitionCatalogStreamName(name);
-            var checkpointStrategy = builder.Build(projectionConfig.Mode);
+            var checkpointStrategy = builder.Build(projectionConfig);
             return new CoreProjection(
                 name, projectionCorrelationId, publisher, projectionStateHandler, projectionConfig, readDispatcher,
                 writeDispatcher, logger, checkpointStrategy, stateStreamNamePattern, stateStreamName,
@@ -251,7 +251,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _checkpointManager.GetStatistics(info);
             info.Status = _state.EnumVaueName() + info.Status + _processingQueue.GetStatus();
-            info.Mode = _projectionConfig.Mode;
             info.Name = _name;
             info.StateReason = "";
             info.BufferedEvents = _processingQueue.GetBufferedEventCount();
@@ -300,8 +299,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ProjectionSubscriptionMessage.EofReached message)
         {
-            if (_projectionConfig.Mode != ProjectionMode.OneTime)
-                throw new InvalidOperationException("_projectionConfig.Mode != ProjectionMode.OneTime");
+            if (!_projectionConfig.StopOnEof)
+                throw new InvalidOperationException("!_projectionConfig.StopOnEof");
 
             Stop();
         }
@@ -315,7 +314,7 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                if (_projectionConfig.CheckpointsEnabled)
+                if (_checkpointStrategy.UseCheckpoints)
                 {
                     CheckpointTag checkpointTag = message.CheckpointTag;
                     var checkpointSuggestedWorkItem = new CheckpointSuggestedWorkItem(this, message, _checkpointManager);
@@ -618,7 +617,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     var lockPartitionStateAt = partition != "" ? message.CheckpointTag : null;
                     _partitionStateCache.CacheAndLockPartitionState(partition, new PartitionStateCache.State(newState, message.CheckpointTag), lockPartitionStateAt);
-                    if (_projectionConfig.PublishStateUpdates)
+                    if (_checkpointStrategy.EmitStateUpdated)
                     {
                         PublishStateUpdate(committedEventWorkItem, partition, message, newState, oldState);
                     }
@@ -627,7 +626,8 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private void PublishStateUpdate(
-            CommittedEventWorkItem committedEventWorkItem, string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, string newState,
+            CommittedEventWorkItem committedEventWorkItem, string partition,
+            ProjectionSubscriptionMessage.CommittedEventReceived message, string newState,
             PartitionStateCache.State oldState)
         {
             if (!string.IsNullOrEmpty(partition) && (oldState.CausedBy == null || oldState.CausedBy == _makeZeroCheckpointTag))
@@ -754,7 +754,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingQueue.InitializeQueue(checkpointTag);
             _expectedSubscriptionMessageSequenceNumber = 0;
             _subscribed = true;
-            bool stopOnEof = _projectionConfig.Mode == ProjectionMode.OneTime;
+            bool stopOnEof = _projectionConfig.StopOnEof;
             _publisher.Publish(
                 new ProjectionSubscriptionManagement.Subscribe(
                     _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,

@@ -40,9 +40,9 @@ namespace EventStore.Core.Bus
     /// to the consumer. It also tracks statistics about the message processing to help
     /// in identifying bottlenecks
     /// </summary>
-    public class QueuedHandlerSleep : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue, IThreadSafePublisher
+    public class QueuedHandlerThreadPool : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue, IThreadSafePublisher
     {
-        private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandlerSleep>();
+        private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandlerThreadPool>();
 
         public int MessageCount { get { return _queue.Count; } }
         public string Name { get { return _name; } }
@@ -55,7 +55,6 @@ namespace EventStore.Core.Bus
 
         private readonly Common.Concurrent.ConcurrentQueue<Message> _queue = new Common.Concurrent.ConcurrentQueue<Message>();
 
-        private Thread _thread;
         private volatile bool _stop;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
         private readonly TimeSpan _threadStopWaitTimeout;
@@ -79,12 +78,14 @@ namespace EventStore.Core.Bus
         private int _currentQueueLengthPeak;
         private Type _lastProcessedMsgType;
         private Type _inProgressMsgType;
-        
-        public QueuedHandlerSleep(IHandle<Message> consumer,
-                                  string name,
-                                  bool watchSlowMsg = true,
-                                  TimeSpan? slowMsgThreshold = null,
-                                  TimeSpan? threadStopWaitTimeout = null)
+
+        private int _isRunning;
+
+        public QueuedHandlerThreadPool(IHandle<Message> consumer,
+                                       string name,
+                                       bool watchSlowMsg = true,
+                                       TimeSpan? slowMsgThreshold = null,
+                                       TimeSpan? threadStopWaitTimeout = null)
         {
             Ensure.NotNull(consumer, "consumer");
             Ensure.NotNull(name, "name");
@@ -100,15 +101,8 @@ namespace EventStore.Core.Bus
 
         public void Start()
         {
-            if (_thread != null)
-                throw new InvalidOperationException("Already a thread running.");
-
             _queueMonitor.Register(this);
-
-            _thread = new Thread(ReadFromQueue) {IsBackground = true, Name = _name};
-            _thread.Start();
-
-            _stopped.Reset();
+            _totalTimeWatch.Start();
         }
 
         public void Stop()
@@ -121,29 +115,22 @@ namespace EventStore.Core.Bus
 
         private void ReadFromQueue(object o)
         {
-            Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
-            _totalTimeWatch.Start();
-            var wasEmpty = true;
-            while (!_stop)
+            bool proceed = true;
+            while (proceed)
             {
-                Message msg = null;
-                try
-                {
-                    if (!_queue.TryDequeue(out msg))
-                    {
-                        if (!wasEmpty)
-                            EnterIdle();
-                        wasEmpty = true;
+                _stopped.Reset();
 
-                        Thread.Sleep(0);
-                    }
-                    else
+                bool wasEmpty = true;
+                Message msg;
+                while (!_stop && _queue.TryDequeue(out msg))
+                {
+                    try
                     {
-                        //NOTE: the following locks are primarily acquired in this thread, 
-                        //      so not too high performance penalty
                         if (wasEmpty)
+                        {
                             EnterNonIdle();
-                        wasEmpty = false;
+                            wasEmpty = false;
+                        }
 
                         var cnt = _queue.Count;
                         _lifetimeQueueLengthPeak = _lifetimeQueueLengthPeak > cnt ? _lifetimeQueueLengthPeak : cnt;
@@ -159,7 +146,12 @@ namespace EventStore.Core.Bus
 
                             var elapsed = DateTime.UtcNow - start;
                             if (elapsed > _slowMsgThreshold)
-                                Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.", _name, _inProgressMsgType.Name, (int)elapsed.TotalMilliseconds, cnt, _queue.Count);
+                                Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
+                                            _name,
+                                            _inProgressMsgType.Name,
+                                            (int) elapsed.TotalMilliseconds,
+                                            cnt,
+                                            _queue.Count);
                         }
                         else
                         {
@@ -170,18 +162,28 @@ namespace EventStore.Core.Bus
                         _lastProcessedMsgType = _inProgressMsgType;
                         _inProgressMsgType = null;
                     }
+                    catch (Exception ex)
+                    {
+                        Log.ErrorException(ex, "Error while processing message {0} in queued handler '{1}'.", msg, _name);
+                    }
                 }
-                catch (Exception ex)
+
+                if (!wasEmpty)
                 {
-                    Log.ErrorException(ex, "Error while processing message {0} in queued handler '{1}'.", msg, _name);
+                    EnterIdle();
+                    wasEmpty = true;
                 }
+                _stopped.Set();
+
+                Interlocked.CompareExchange(ref _isRunning, 0, 1);
+                proceed = _queue.Count > 0 && Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0; // try to reacquire lock if needed
             }
-            _stopped.Set();
-            Thread.EndThreadAffinity();
         }
 
         private void EnterIdle()
         {
+            //NOTE: the following locks are primarily acquired in this thread, 
+            //      so not too high performance penalty
             lock (_statisticsLock)
             {
                 _totalIdleWatch.Start();
@@ -208,6 +210,8 @@ namespace EventStore.Core.Bus
         {
             Ensure.NotNull(message, "message");
             _queue.Enqueue(message);
+            if (Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0)
+                ThreadPool.QueueUserWorkItem(ReadFromQueue);
         }
 
         public void Handle(Message message)

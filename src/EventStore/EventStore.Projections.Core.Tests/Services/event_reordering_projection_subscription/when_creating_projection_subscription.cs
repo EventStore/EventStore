@@ -115,7 +115,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
             var result = new CheckpointStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(ProjectionMode.Persistent);
+            return result.Build(ProjectionConfig.GetTest());
         }
     }
 }

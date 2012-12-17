@@ -27,24 +27,25 @@
 // 
 
 using System;
+using EventStore.Core.Bus;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Bus
 {
     [TestFixture]
-    public class when_starting_queued_handler : QueuedHandlerTestWithNoopConsumer
+    public abstract class when_starting_queued_handler : QueuedHandlerTestWithNoopConsumer
     {
+        protected when_starting_queued_handler(Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
+                : base(queuedHandlerFactory)
+        {
+        }
+
         public override void SetUp()
         {
             base.SetUp();
             Queue.Start();
-        }
-
-        public override void TearDown()
-        {
-            Queue.Stop();
-            base.TearDown();
         }
 
         [Test]
@@ -64,6 +65,51 @@ namespace EventStore.Core.Tests.Bus
         {
             Queue.Stop();
             Assert.Throws<InvalidOperationException>(() => Queue.Start());
+        }
+    }
+
+    [TestFixture]
+    public class when_starting_queued_handler_mres_should : when_starting_queued_handler
+    {
+        public when_starting_queued_handler_mres_should()
+            : base((consumer, name, timeout) => new QueuedHandlerMRES(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_starting_queued_handler_autoreset : when_starting_queued_handler
+    {
+        public when_starting_queued_handler_autoreset()
+            : base((consumer, name, timeout) => new QueuedHandlerAutoReset(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_starting_queued_handler_sleep : when_starting_queued_handler
+    {
+        public when_starting_queued_handler_sleep()
+            : base((consumer, name, timeout) => new QueuedHandlerSleep(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_starting_queued_handler_pulse : when_starting_queued_handler
+    {
+        public when_starting_queued_handler_pulse()
+            : base((consumer, name, timeout) => new QueuedHandlerPulse(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture, Ignore]
+    public class when_starting_queued_handler_threadpool : when_starting_queued_handler
+    {
+        public when_starting_queued_handler_threadpool()
+            : base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, false, null, timeout))
+        {
         }
     }
 }

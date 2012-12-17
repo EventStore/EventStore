@@ -95,15 +95,44 @@ function scope($on, $notify) {
         }
     }
 
+
+    function emitStateUpdated() {
+        eventProcessor.emit_state_updated();
+    }
+
+    function when(handlers) {
+        translateOn(handlers);
+        return {
+            emitStateUpdated: emitStateUpdated,
+        };
+    }
+
+    function whenAny(handler) {
+        eventProcessor.on_any(handler);
+        return {
+            emitStateUpdated: emitStateUpdated,
+        };
+    }
+
+    function foreachStream() {
+        eventProcessor.byStream();
+        // NOTE: this may be removed in the future
+        // currently we do not support foreach projections without emitStateUpdated
+        eventProcessor.emit_state_updated();
+        return {
+            when: when,
+            whenAny: whenAny,
+        };
+    }
+
     function partitionBy(byHandler) {
         eventProcessor.partitionBy(byHandler);
+        // NOTE: this may be removed in the future
+        // currently we do not support foreach projections without emitStateUpdated
+        eventProcessor.emit_state_updated();
         return {
-            when: function (handlers) {
-                translateOn(handlers);
-            },
-            whenAny: function (handler) {
-                eventProcessor.on_any(handler);
-            }
+            when: when,
+            whenAny: whenAny,
         };
     }
 
@@ -111,23 +140,9 @@ function scope($on, $notify) {
         eventProcessor.fromCategory(category);
         return {
             partitionBy: partitionBy,
-            foreachStream: function () {
-                eventProcessor.byStream();
-                return {
-                    when: function (handlers) {
-                        translateOn(handlers);
-                    },
-                    whenAny: function (handler) {
-                        eventProcessor.on_any(handler);
-                    }
-                };
-            },
-            when: function (handlers) {
-                translateOn(handlers);
-            },
-            whenAny: function (handler) {
-                eventProcessor.on_any(handler);
-            }
+            foreachStream: foreachStream,
+            when: when,
+            whenAny: whenAny,
         };
     }
 
@@ -135,23 +150,9 @@ function scope($on, $notify) {
         eventProcessor.fromAll();
         return {
             partitionBy: partitionBy,
-            foreachStream: function () {
-                eventProcessor.byStream();
-                return {
-                    when: function (handlers) {
-                        translateOn(handlers);
-                    },
-                    whenAny: function (handler) {
-                        eventProcessor.on_any(handler);
-                    }
-                };
-            },
-            when: function (handlers) {
-                translateOn(handlers);
-            },
-            whenAny: function (handler) {
-                eventProcessor.on_any(handler);
-            }
+            when: when,
+            whenAny: whenAny,
+            foreachStream: foreachStream,
         };
     }
 
@@ -159,12 +160,8 @@ function scope($on, $notify) {
         eventProcessor.fromStream(stream);
         return {
             partitionBy: partitionBy,
-            when: function (handlers) {
-                translateOn(handlers);
-            },
-            whenAny: function (handler) {
-                eventProcessor.on_any(handler);
-            }
+            when: when,
+            whenAny: whenAny,
         };
     }
 
@@ -173,12 +170,8 @@ function scope($on, $notify) {
             eventProcessor.fromStream(streams[i]);
         return {
             partitionBy: partitionBy,
-            when: function (handlers) {
-                translateOn(handlers);
-            },
-            whenAny: function (handler) {
-                eventProcessor.on_any(handler);
-            }
+            when: when,
+            whenAny: whenAny,
         };
     }
 

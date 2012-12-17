@@ -55,19 +55,9 @@ namespace EventStore.Padmin
                     manager.CreateOneTime(query);
                     Log("Created");
                     break;
-                case "adhoc":
-                    Log("Creating adhoc projection {0}...", pname);
-                    manager.CreateAdHoc(pname, query);
-                    Log("Created");
-                    break;
                 case "continuous":
                     Log("Creating continuous projection {0}...", pname);
                     manager.CreateContinuous(pname, query);
-                    Log("Created");
-                    break;
-                case "persistent":
-                    Log("Creating persistent projection {0}...", pname);
-                    manager.CreatePersistent(pname, query);
                     Log("Created");
                     break;
                 default:
@@ -97,20 +87,10 @@ namespace EventStore.Padmin
                     LogUnformatted(manager.ListOneTime());
                     Log("Onetime projections listed");
                     break;
-                case "adhoc":
-                    Log("Listing adhoc projections...");
-                    LogUnformatted(manager.ListAdHoc());
-                    Log("Adhoc projections listed");
-                    break;
                 case "continuous":
                     Log("Listing continuous projections...");
                     LogUnformatted(manager.ListContinuous());
                     Log("Continuous projections listed");
-                    break;
-                case "persistent":
-                    Log("Listing persistent projections...");
-                    LogUnformatted(manager.ListPersistent());
-                    Log("Persistent projections listed");
                     break;
                 default:
                     Log("List mode not recognized");

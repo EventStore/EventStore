@@ -50,6 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.FromAll();
                     source.AllEvents();
                     source.SetByCustomPartitions();
+                    source.SetEmitStateUpdated();
                 };
             TicksAreHandledImmediately();
             NoStream("$projections-projection-state");

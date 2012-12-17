@@ -54,7 +54,7 @@ namespace EventStore.Core
     public class SingleVNode
     {
         public QueuedHandler MainQueue { get { return _mainQueue; } }
-        public InMemoryBus Bus { get { return _outputBus; } } 
+        public InMemoryBus Bus { get { return _mainBus; } } 
         public HttpService HttpService { get { return _httpService; } }
         public TimerService TimerService { get { return _timerService; } }
         public IPublisher NetworkSendService { get { return _networkSendService; } }
@@ -63,7 +63,7 @@ namespace EventStore.Core
         private readonly IPEndPoint _httpEndPoint;
 
         private readonly QueuedHandler _mainQueue;
-        private readonly InMemoryBus _outputBus;
+        private readonly InMemoryBus _mainBus;
 
         private readonly SingleVNodeController _controller;
         private readonly HttpService _httpService;
@@ -84,7 +84,7 @@ namespace EventStore.Core
             _tcpEndPoint = vNodeSettings.ExternalTcpEndPoint;
             _httpEndPoint = vNodeSettings.ExternalHttpEndPoint;
 
-            _outputBus = new InMemoryBus("OutputBus");
+            _mainBus = new InMemoryBus("MainBus");
             _controller = new SingleVNodeController(Bus, _httpEndPoint);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             _controller.SetMainQueue(MainQueue);
@@ -126,22 +126,21 @@ namespace EventStore.Core
                                           new XXHashUnsafe(),
                                           new LRUCache<string, StreamCacheInfo>(TFConsts.MetadataCacheCapacity));
             var writer = new TFChunkWriter(db);
-            var storageWriter = new StorageWriterService(_mainQueue, _outputBus, writer, readIndex);
-            var storageReader = new StorageReaderService(_mainQueue, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
-            _outputBus.Subscribe<SystemMessage.SystemInit>(storageReader);
-            _outputBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
-            _outputBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
-            _outputBus.Subscribe<Message>(storageReader); 
+            var storageWriter = new StorageWriterService(_mainQueue, _mainBus, writer, readIndex);
+            var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
+            _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
+            _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
+            _mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
             var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
             var storageChaser = new StorageChaser(_mainQueue, chaser, readIndex, _tcpEndPoint);
-            _outputBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
-            _outputBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
-            _outputBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
+            _mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
+            _mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
+            _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
 
             var storageScavenger = new StorageScavenger(db, readIndex);
-            _outputBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
+            _mainBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
 
             // NETWORK SEND
             _networkSendService = new NetworkSendService(tcpQueueCount: 1, httpQueueCount: 3);

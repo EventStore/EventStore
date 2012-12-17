@@ -111,7 +111,7 @@ namespace EventStore.Projections.Core.Tests.Services
             var result = new CheckpointStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(ProjectionMode.Persistent);
+            return result.Build(ProjectionConfig.GetTest());
         }
 
         protected static ResolvedEvent CreateEvent()

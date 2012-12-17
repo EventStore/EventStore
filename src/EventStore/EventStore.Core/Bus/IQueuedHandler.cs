@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,31 +25,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-
-using System.Linq;
-using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Management;
-using NUnit.Framework;
+using EventStore.Core.Services.Monitoring.Stats;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager
+namespace EventStore.Core.Bus
 {
-    [TestFixture]
-    public class when_posting_an_adhoc_projection: TestFixtureWithProjectionCoreAndManagementServices
+    public interface IQueuedHandler
     {
-        protected override void When()
-        {
-            _manager.Handle(
-                new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
-        }
-
-        [Test, Category("v8")]
-        public void projection_updated_is_published()
-        {
-            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Count());
-        }
+        string Name { get; }
+        void Start();
+        void Stop();
+        void Publish(Message message);
+        QueueStats GetStatistics();
     }
 }

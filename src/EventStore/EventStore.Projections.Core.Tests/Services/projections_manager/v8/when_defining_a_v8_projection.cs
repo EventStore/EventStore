@@ -190,7 +190,48 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
-        public class with_options : TestFixtureWithJsProjection
+        public class with_emit_state_updated_1 : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromAll().whenAny(
+                        function(state, event) {
+                            return state;
+                        }).emitStateUpdated();
+                ";
+                _state = @"{""count"": 0}";
+            }
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.Options.EmitStateUpdated);
+            }
+        }
+
+        public class with_emit_state_updated_2 : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromAll().when({
+                        some: function(state, event) {
+                            return state;
+                        }
+                    }).emitStateUpdated();
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.Options.EmitStateUpdated);
+            }
+        }
+
+        [TestFixture]
+        public class with_state_stream_name_option : TestFixtureWithJsProjection
         {
             protected override void Given()
             {
@@ -230,7 +271,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 _state = @"{""count"": 0}";
             }
 
-            [Test]
+            [Test, Category("v8")]
             public void source_definition_is_correct()
             {
                 Assert.AreEqual(true, _source.Options.UseEventIndexes);
@@ -255,11 +296,35 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 _state = @"{""count"": 0}";
             }
 
-            [Test]
+            [Test, Category("v8")]
             public void source_definition_is_correct()
             {
                 Assert.AreEqual(500, _source.Options.ProcessingLag);
                 Assert.AreEqual(true, _source.Options.ReorderEvents);
+            }
+        }
+
+        [TestFixture]
+        public class with_emit_state_updated_option : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    options({
+                        emitStateUpdated: true,
+                    });
+                    fromAll().whenAny(
+                        function(state, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.Options.EmitStateUpdated);
             }
         }
     }

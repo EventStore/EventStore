@@ -84,22 +84,6 @@ namespace EventStore.ClientAPI
             return _client.CreateOneTime(_httpEndPoint, query);
         }
 
-        public void CreateAdHoc(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            CreateAdHocAsync(name, query).Wait();
-        }
-
-        public Task CreateAdHocAsync(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            return _client.CreateAdHoc(_httpEndPoint, name, query);
-        }
-
         public void CreateContinuous(string name, string query)
         {
             Ensure.NotNullOrEmpty(name, "name");
@@ -114,22 +98,6 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(query, "query");
 
             return _client.CreateContinious(_httpEndPoint, name, query);
-        }
-
-        public void CreatePersistent(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            CreatePersistentAsync(name, query).Wait();
-        }
-
-        public Task CreatePersistentAsync(string name, string query)
-        {
-            Ensure.NotNullOrEmpty(name, "name");
-            Ensure.NotNullOrEmpty(query, "query");
-
-            return _client.CreatePersistent(_httpEndPoint, name, query);
         }
 
         public string ListAll()
@@ -152,16 +120,6 @@ namespace EventStore.ClientAPI
             return _client.ListOneTime(_httpEndPoint);
         }
 
-        public string ListAdHoc()
-        {
-            return ListAdHocAsync().Result;
-        }
-
-        public Task<string> ListAdHocAsync()
-        {
-            return _client.ListAdHoc(_httpEndPoint);
-        }
-
         public string ListContinuous()
         {
             return ListContinuousAsync().Result;
@@ -170,16 +128,6 @@ namespace EventStore.ClientAPI
         public Task<string> ListContinuousAsync()
         {
             return _client.ListContinuous(_httpEndPoint);
-        }
-
-        public string ListPersistent()
-        {
-            return ListPersistentAsync().Result;
-        }
-
-        public Task<string> ListPersistentAsync()
-        {
-            return _client.ListPersistent(_httpEndPoint);
         }
 
         public string GetStatus(string name)
@@ -278,19 +226,9 @@ namespace EventStore.ClientAPI
             return SendPost(endPoint.ToHttpUrl("/projections/onetime?type=JS"), query, HttpStatusCode.Created);
         }
 
-        public Task CreateAdHoc(IPEndPoint endPoint, string name, string query)
-        {
-            return SendPost(endPoint.ToHttpUrl("/projections/adhoc?name={0}&type=JS", name), query, HttpStatusCode.Created);
-        }
-
         public Task CreateContinious(IPEndPoint endPoint, string name, string query)
         {
             return SendPost(endPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS", name), query, HttpStatusCode.Created);
-        }
-
-        public Task CreatePersistent(IPEndPoint endPoint, string name, string query)
-        {
-            return SendPost(endPoint.ToHttpUrl("/projections/persistent?name={0}&type=JS", name), query, HttpStatusCode.Created);
         }
 
         public Task<string> ListAll(IPEndPoint endPoint)
@@ -303,19 +241,9 @@ namespace EventStore.ClientAPI
             return SendGet(endPoint.ToHttpUrl("/projections/onetime"), HttpStatusCode.OK);
         }
 
-        public Task<string> ListAdHoc(IPEndPoint endPoint)
-        {
-            return SendGet(endPoint.ToHttpUrl("/projections/adhoc"), HttpStatusCode.OK);
-        }
-
         public Task<string> ListContinuous(IPEndPoint endPoint)
         {
             return SendGet(endPoint.ToHttpUrl("/projections/continuous"), HttpStatusCode.OK);
-        }
-
-        public Task<string> ListPersistent(IPEndPoint endPoint)
-        {
-            return SendGet(endPoint.ToHttpUrl("/projections/persistent"), HttpStatusCode.OK);
         }
 
         public Task<string> GetStatus(IPEndPoint endPoint, string name)

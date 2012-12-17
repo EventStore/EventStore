@@ -55,13 +55,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _projectionName = "test-projection";
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
-                    new PublishEnvelope(_bus), ProjectionMode.Persistent, _projectionName, "JS",
-                    @"fromAll(); on_any(function(){});log(1);", enabled: false));
+                    new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS",
+                    @"fromAll(); on_any(function(){});log(1);", enabled: false, emitEnabled: true));
             // when
             _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
             _manager.Handle(
                 new ProjectionManagementMessage.UpdateQuery(
-                    new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource));
+                    new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource, emitEnabled: null));
         }
 
         [TearDown]

@@ -202,6 +202,7 @@
     <Compile Include="Services\projections_manager\when_requesting_partition_state_from_a_stopped_foreach_projection.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_disabled_projection_query_text.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_faulted_projection_query_text_invalid_defintion.cs" />
+    <Compile Include="Services\projections_manager\when_updating_a_persistent_projection_emit_enabled_option.cs" />
     <Compile Include="Services\projection_subscription\when_handling_multiple_committed_event_passing_the_filter.cs" />
     <Compile Include="Services\staged_processing_queue.cs" />
     <Compile Include="Services\event_reader\stream_reader\when_creating_stream_event_reader.cs" />
@@ -256,13 +257,13 @@
     <Compile Include="Services\projections_manager\v8\when_running_counting_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_reflecting_v8_projection.cs" />
     <Compile Include="Services\projections_manager\when_creating_projection_manager.cs" />
-    <Compile Include="Services\projections_manager\when_the_adhoc_projection_has_been_posted.cs" />
+    <Compile Include="Services\projections_manager\when_the_onetime_projection_has_been_posted.cs" />
     <Compile Include="Services\projections_manager\when_posting_a_persistent_projection_and_writes_succeed.cs" />
-    <Compile Include="Services\projections_manager\when_posting_an_adhoc_projection.cs" />
+    <Compile Include="Services\projections_manager\when_posting_an_onetime_projection.cs" />
     <Compile Include="Services\projections_manager\when_posting_a_persistent_projection.cs" />
     <Compile Include="Services\projections_manager\when_starting_the_projection_manager_with_existing_projection.cs" />
     <Compile Include="Services\projections_manager\when_starting_the_projection_manager_with_existing_projections.cs" />
-    <Compile Include="Services\projections_manager\when_updating_an_adhoc_projection_query_text.cs" />
+    <Compile Include="Services\projections_manager\when_updating_an_onetime_projection_query_text.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_persistent_projection_query_text.cs" />
     <Compile Include="Services\projections_manager\v8\when_v8_projection_loading_state.cs" />
     <Compile Include="Services\not_started_event_distribution_point_should.cs" />

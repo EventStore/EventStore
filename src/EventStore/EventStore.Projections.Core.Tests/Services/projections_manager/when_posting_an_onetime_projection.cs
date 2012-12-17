@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,29 +26,27 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
+using System.Linq;
 using EventStore.Core.Messaging;
+using EventStore.Projections.Core.Messages;
+using NUnit.Framework;
 
-namespace EventStore.Core.Bus
+namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
-    // on Windows AutoReset version is much slower, but on Linux ManualResetEventSlim version is much slower
-    public class QueuedHandler: 
-#if __MonoCS__
-        QueuedHandlerAutoReset,
-#else
-        QueuedHandlerMRES,
-#endif
-        IQueuedHandler
+    [TestFixture]
+    public class when_posting_an_onetime_projection: TestFixtureWithProjectionCoreAndManagementServices
     {
-        public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
-
-        public QueuedHandler(IHandle<Message> consumer,
-                             string name,
-                             bool watchSlowMsg = true,
-                             TimeSpan? slowMsgThreshold = null,
-                             TimeSpan? threadStopWaitTimeout = null)
-                : base(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout)
+        protected override void When()
         {
+            _manager.Handle(
+                new ProjectionManagementMessage.Post(
+                    new PublishEnvelope(_bus), @"fromAll().whenAny(function(s,e){return s;});", enabled: true));
+        }
+
+        [Test, Category("v8")]
+        public void projection_updated_is_published()
+        {
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Count());
         }
     }
 }

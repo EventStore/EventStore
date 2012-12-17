@@ -25,6 +25,7 @@ var $projections = {
                 useEventIndexes: false,
                 reorderEvents: false,
                 processingLag: 0,
+                emitStateUpdated: false,
             }, 
         };
 
@@ -192,6 +193,10 @@ var $projections = {
             sources.by_custom_partitions = true;
         }
 
+        function emit_state_updated() {
+            sources.options.emitStateUpdated = true;
+        }
+
         function fromAll() {
             sources.all_streams = true;
         }
@@ -220,6 +225,7 @@ var $projections = {
 
             byStream: byStream,
             partitionBy: partitionBy,
+            emit_state_updated: emit_state_updated,
 
             emit: emit,
             options: options,

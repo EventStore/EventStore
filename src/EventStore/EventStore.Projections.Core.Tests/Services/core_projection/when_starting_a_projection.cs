@@ -49,6 +49,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
         private RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
         private RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
+        private ProjectionConfig _projectionConfig;
 
         [SetUp]
         public void setup()
@@ -64,8 +65,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
             IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
-            _coreProjection = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), _bus, projectionStateHandler,
-                                                   new ProjectionConfig(ProjectionMode.AdHoc, 5, 10, 1000, 250, true, true, true), _readDispatcher, _writeDispatcher, null);
+            _projectionConfig = new ProjectionConfig(5, 10, 1000, 250, true, true, false, false);
+            _coreProjection = CoreProjection.CreateAndPrepapre(
+                "projection", Guid.NewGuid(), _bus, projectionStateHandler, _projectionConfig, _readDispatcher,
+                _writeDispatcher, null);
             _coreProjection.Start();
         }
 

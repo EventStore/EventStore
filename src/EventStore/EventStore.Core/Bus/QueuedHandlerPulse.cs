@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Log;
@@ -41,7 +40,7 @@ namespace EventStore.Core.Bus
     /// to the consumer. It also tracks statistics about the message processing to help
     /// in identifying bottlenecks
     /// </summary>
-    public class QueuedHandlerPulse : IHandle<Message>, IPublisher, IMonitoredQueue, IThreadSafePublisher
+    public class QueuedHandlerPulse : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue, IThreadSafePublisher
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandlerPulse>();
 
@@ -52,7 +51,6 @@ namespace EventStore.Core.Bus
         private readonly string _name;
 
         private readonly bool _watchSlowMsg;
-        private readonly Stopwatch _slowMsgWatch = new Stopwatch();
         private readonly TimeSpan _slowMsgThreshold;
 
         private readonly Common.Concurrent.ConcurrentQueue<Message> _queue = new Common.Concurrent.ConcurrentQueue<Message>();
@@ -156,28 +154,22 @@ namespace EventStore.Core.Bus
 
                     _inProgressMsgType = msg.GetType();
 
-                    if (!_watchSlowMsg)
+                    if (_watchSlowMsg)
                     {
+                        var start = DateTime.UtcNow;
+
                         _consumer.Handle(msg);
-                        Interlocked.Increment(ref _totalItems);
+
+                        var elapsed = DateTime.UtcNow - start;
+                        if (elapsed > _slowMsgThreshold)
+                            Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.", _name, _inProgressMsgType.Name, (int)elapsed.TotalMilliseconds, cnt, _queue.Count);
                     }
                     else
                     {
-                        _slowMsgWatch.Restart();
                         _consumer.Handle(msg);
-                        Interlocked.Increment(ref _totalItems);
-
-                        if (_slowMsgWatch.Elapsed > _slowMsgThreshold)
-                        {
-                            Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.",
-                                        _name,
-                                        _inProgressMsgType.Name,
-                                        _slowMsgWatch.ElapsedMilliseconds,
-                                        cnt,
-                                        _queue.Count);
-                        }
                     }
 
+                    Interlocked.Increment(ref _totalItems);
                     _lastProcessedMsgType = _inProgressMsgType;
                     _inProgressMsgType = null;
                 }
