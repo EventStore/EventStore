@@ -35,19 +35,19 @@ namespace EventStore.Core.Bus
 {
     public class MultiQueuedHandler: IHandle<Message>, IPublisher, IThreadSafePublisher
     {
-        public readonly QueuedHandler[] Queues;
+        public readonly IQueuedHandler[] Queues;
 
         private readonly Func<Message, int> _queueHash;
         private int _nextQueueNum = -1;
 
         public MultiQueuedHandler(int queueCount, 
-                                  Func<int, QueuedHandler> queueFactory, 
+                                  Func<int, IQueuedHandler> queueFactory, 
                                   Func<Message, int> queueHash = null)
         {
             Ensure.Positive(queueCount, "queueCount");
             Ensure.NotNull(queueFactory, "queueFactory");
 
-            Queues = new QueuedHandler[queueCount];
+            Queues = new IQueuedHandler[queueCount];
             for (int i = 0; i < Queues.Length; ++i)
             {
                 Queues[i] = queueFactory(i);
@@ -102,7 +102,7 @@ namespace EventStore.Core.Bus
         {
             var queueHash = _queueHash(message);
             var queueNum = (int) ((uint)queueHash % Queues.Length);
-            Queues[queueNum].Handle(message);
+            Queues[queueNum].Publish(message);
         }
 
         public void PublishToAll(Message message)

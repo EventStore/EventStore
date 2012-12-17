@@ -65,6 +65,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bus\AdHocHandler.cs" />
+    <Compile Include="Bus\IQueuedHandler.cs" />
+    <Compile Include="Bus\QueuedHandlerThreadPool.cs" />
     <Compile Include="Bus\MultiQueuedHandler.cs" />
     <Compile Include="Bus\QueuedHandlerSleep.cs" />
     <Compile Include="Bus\QueuedHandlerMRES.cs" />

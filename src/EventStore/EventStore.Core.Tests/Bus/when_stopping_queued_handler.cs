@@ -29,14 +29,21 @@
 using System;
 using System.Threading;
 using EventStore.Core.Bus;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Bus
 {
     [TestFixture]
-    public class when_stopping_queued_handler : QueuedHandlerTestWithNoopConsumer
+    public abstract class when_stopping_queued_handler : QueuedHandlerTestWithNoopConsumer
     {
+        protected when_stopping_queued_handler(Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
+                : base(queuedHandlerFactory)
+        {
+        }
+
+
         [Test]
         public void gracefully_should_not_throw()
         {
@@ -114,6 +121,51 @@ namespace EventStore.Core.Tests.Bus
                 handledEvent.Dispose();
                 consumer.Dispose();
             }
+        }
+    }
+
+    [TestFixture]
+    public class when_stopping_queued_handler_mres_should : when_stopping_queued_handler
+    {
+        public when_stopping_queued_handler_mres_should()
+            : base((consumer, name, timeout) => new QueuedHandlerMRES(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_stopping_queued_handler_autoreset : when_stopping_queued_handler
+    {
+        public when_stopping_queued_handler_autoreset()
+            : base((consumer, name, timeout) => new QueuedHandlerAutoReset(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_stopping_queued_handler_sleep : when_stopping_queued_handler
+    {
+        public when_stopping_queued_handler_sleep()
+            : base((consumer, name, timeout) => new QueuedHandlerSleep(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_stopping_queued_handler_pulse : when_stopping_queued_handler
+    {
+        public when_stopping_queued_handler_pulse()
+            : base((consumer, name, timeout) => new QueuedHandlerPulse(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_stopping_queued_handler_threadpool : when_stopping_queued_handler
+    {
+        public when_stopping_queued_handler_threadpool()
+            : base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, false, null, timeout))
+        {
         }
     }
 }
