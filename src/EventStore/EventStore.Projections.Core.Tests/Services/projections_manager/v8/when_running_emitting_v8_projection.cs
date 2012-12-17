@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.AreEqual(@"{""a"":""b""}", Encoding.UTF8.GetString(emittedEvents[0].Data));
         }
 
-        [Test, Explicit, Category("LongRunning"), Category("v8")]
+        [Test, Explicit, Category("LongRunning"), Category("v8"), Ignore]
         public void can_pass_though_millions_of_events()
         {
             for (var i = 0; i < 100000000; i++)
