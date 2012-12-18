@@ -27,7 +27,9 @@
 // 
 
 using System;
+using System.Diagnostics;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
 
@@ -35,9 +37,13 @@ namespace EventStore.Core.Services.RequestManager.Managers
 {
     class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.WriteRequestCreated>
     {
-        public WriteStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
-            base(publisher, prepareCount, commitCount)
-        {}
+        private int _expectedVersion;
+        private StorageMessage.WriteRequestCreated _request;
+
+        public WriteStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount)
+                : base(publisher, prepareCount, commitCount)
+        {
+        }
 
         public void Handle(StorageMessage.WriteRequestCreated request)
         {
@@ -49,10 +55,14 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _correlationId = request.CorrelationId;
             _eventStreamId = request.EventStreamId;
 
-            Publisher.Publish(new StorageMessage.WritePrepares(request.CorrelationId,
+            _expectedVersion = request.ExpectedVersion;
+            if (_expectedVersion == ExpectedVersion.Any)
+                _request = request;
+
+            Publisher.Publish(new StorageMessage.WritePrepares(_correlationId,
                                                                _publishEnvelope,
-                                                               request.EventStreamId,
-                                                               request.ExpectedVersion,
+                                                               _eventStreamId,
+                                                               _expectedVersion,
                                                                request.Events,
                                                                allowImplicitStreamCreation: true,
                                                                liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
@@ -72,8 +82,17 @@ namespace EventStore.Core.Services.RequestManager.Managers
         protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
         {
             base.CompleteFailedRequest(correlationId, eventStreamId, errorCode, error);
-            var responseMsg = new ClientMessage.WriteEventsCompleted(
-                correlationId, eventStreamId, errorCode, error);
+
+            if (errorCode == OperationErrorCode.WrongExpectedVersion && _expectedVersion == ExpectedVersion.Any)
+            {
+                // with ExpectedVersion.Any WrongExpectedVersion could happen only when multiple requests create implicitly streams
+                // so just one retry should be enough
+                Debug.Assert(_request != null);
+                Publisher.Publish(_request);
+                return;
+            }
+            
+            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, eventStreamId, errorCode, error);
             _responseEnvelope.ReplyWith(responseMsg);
         }
 
