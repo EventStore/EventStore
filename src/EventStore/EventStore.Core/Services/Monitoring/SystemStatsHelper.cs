@@ -160,6 +160,8 @@ namespace EventStore.Core.Services.Monitoring
                 stats[queueStat(queue.Name, "lengthLifetimePeak")] = queue.LengthLifetimePeak;
                 stats[queueStat(queue.Name, "totalItemsProcessed")] = queue.TotalItemsProcessed;
                 stats[queueStat(queue.Name, "lengthLifetimePeakFriendly")] = queue.LengthLifetimePeakFriendly;
+                stats[queueStat(queue.Name, "inProgressMessage")] = queue.InProgressMessageType != null ? queue.InProgressMessageType.Name : "<none>";
+                stats[queueStat(queue.Name, "lastProcessedMessage")] = queue.LastProcessedMessageType != null ? queue.LastProcessedMessageType.Name : "<none>";
             }
 
             return stats;
