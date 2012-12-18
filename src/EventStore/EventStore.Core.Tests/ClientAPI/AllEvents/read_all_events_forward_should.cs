@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             base.TearDown();
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void return_empty_slice_if_asked_to_read_from_end()
         {
             const string stream = "read_all_events_forward_should_return_empty_slice_if_asked_to_read_from_end";
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void return_empty_slice_if_no_events_present()
         {
             using (var store = EventStoreConnection.Create())
@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void return_events_in_same_order_as_written()
         {
             const string stream = "read_all_events_forward_should_return_events_in_same_order_as_written";
@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void read_stream_created_events_as_well()
         {
             const string stream = "read_all_events_forward_should_read_system_events_as_well";
@@ -150,7 +150,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void be_able_to_read_all_one_by_one_and_return_empty_slice_at_last()
         {
             const string stream = "read_all_events_forward_should_be_able_to_read_all_one_by_one_and_return_empty_slice_at_last";
@@ -179,7 +179,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void be_able_to_read_events_slice_at_time()
         {
             const string stream = "read_all_events_forward_should_be_able_to_read_events_slice_at_time";
@@ -208,7 +208,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void return_partial_slice_if_not_enough_events()
         {
             const string stream = "read_all_events_forward_should_return_partial_slice_if_not_enough_events";
@@ -230,7 +230,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void not_return_events_from_deleted_streams()
         {
             Assert.Inconclusive();
@@ -270,7 +270,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void not_return_stream_deleted_records()
         {
             Assert.Inconclusive();
@@ -295,7 +295,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void return_no_records_if_stream_created_than_deleted()
         {
             Assert.Inconclusive();
@@ -323,7 +323,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void recover_from_dropped_subscription_state_using_last_known_position()
         {
             const string stream = "read_all_events_forward_should_recover_from_dropped_subscription_state_using_last_known_position";
