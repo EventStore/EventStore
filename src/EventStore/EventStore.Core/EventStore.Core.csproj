@@ -17,7 +17,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\..\bin\eventstore\debug\anycpu\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;DO_NOT_TIMEOUT_REQUESTS </DefineConstants>
+    <DefineConstants>TRACE;DEBUG;DO_NOT_TIMEOUT_REQUESTS1 </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
