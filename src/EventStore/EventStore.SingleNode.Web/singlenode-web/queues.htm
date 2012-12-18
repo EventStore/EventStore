@@ -112,7 +112,7 @@
                       <td>{{>lengthCurrentTryPeak}}</td>
                       <td>{{>lengthLifetimePeak}}</td>
                       <td>{{>totalItemsProcessed}}</td>
-                      <td>{{if isGroup}}n/a{{else}}{{>inProgressMessage}}/{{>lastProcessedMessage}}{{/else}}</td>
+                      <td>{{if isGroup}}n/a{{else}}{{>inProgressMessage}} / {{>lastProcessedMessage}}{{/else}}</td>
                     </tr>
                     {{/for}}
                 </tbody>
@@ -133,7 +133,7 @@ Snapshot taken at: {{>~timestamp()}}
                           lengthCurrentTryPeak, 
                           lengthLifetimePeak,
                           totalItemsProcessed,
-                          (inProgressMessage || "n/a") + " / " + (lastProcessedMessage || "n/a"))}}
+                          isGroup ? "n/a" : inProgressMessage + " / " + lastProcessedMessage)}}
 {{/for}}
 </pre>
         </script>
