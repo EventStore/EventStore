@@ -149,6 +149,7 @@ namespace EventStore.Core.Services.Monitoring
             foreach (var queue in queues)
             {
                 stats[queueStat(queue.Name, "queueName")] = queue.Name;
+                stats[queueStat(queue.Name, "groupName")] = queue.GroupName ?? string.Empty;
                 stats[queueStat(queue.Name, "avgItemsPerSecond")] = queue.AvgItemsPerSecond;
                 stats[queueStat(queue.Name, "avgProcessingTime")] = new StatMetadata(queue.AvgProcessingTime, "Queue Stats", queue.Name +  " Avg Proc Time");
                 stats[queueStat(queue.Name, "currentIdleTime")] = queue.CurrentIdleTime.HasValue ? queue.CurrentIdleTime.Value.ToString("G", CultureInfo.InvariantCulture) : null;

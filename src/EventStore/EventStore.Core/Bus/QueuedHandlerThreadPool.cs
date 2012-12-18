@@ -49,6 +49,7 @@ namespace EventStore.Core.Bus
 
         private readonly IHandle<Message> _consumer;
         private readonly string _name;
+        private readonly string _groupName;
 
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
@@ -85,13 +86,15 @@ namespace EventStore.Core.Bus
                                        string name,
                                        bool watchSlowMsg = true,
                                        TimeSpan? slowMsgThreshold = null,
-                                       TimeSpan? threadStopWaitTimeout = null)
+                                       TimeSpan? threadStopWaitTimeout = null,
+                                       string groupName = null)
         {
             Ensure.NotNull(consumer, "consumer");
             Ensure.NotNull(name, "name");
 
             _consumer = consumer;
             _name = name;
+            _groupName = groupName;
             _watchSlowMsg = watchSlowMsg;
             _slowMsgThreshold = slowMsgThreshold ?? InMemoryBus.DefaultSlowMessageThreshold;
             _threadStopWaitTimeout = threadStopWaitTimeout ?? QueuedHandler.DefaultStopWaitTimeout;
@@ -103,6 +106,7 @@ namespace EventStore.Core.Bus
         {
             _queueMonitor.Register(this);
             _totalTimeWatch.Start();
+            EnterIdle();
         }
 
         public void Stop()
@@ -119,19 +123,13 @@ namespace EventStore.Core.Bus
             while (proceed)
             {
                 _stopped.Reset();
+                EnterNonIdle();
 
-                bool wasEmpty = true;
                 Message msg;
                 while (!_stop && _queue.TryDequeue(out msg))
                 {
                     try
                     {
-                        if (wasEmpty)
-                        {
-                            EnterNonIdle();
-                            wasEmpty = false;
-                        }
-
                         var cnt = _queue.Count;
                         _lifetimeQueueLengthPeak = _lifetimeQueueLengthPeak > cnt ? _lifetimeQueueLengthPeak : cnt;
                         _currentQueueLengthPeak = _currentQueueLengthPeak > cnt ? _currentQueueLengthPeak : cnt;
@@ -168,11 +166,7 @@ namespace EventStore.Core.Bus
                     }
                 }
 
-                if (!wasEmpty)
-                {
-                    EnterIdle();
-                    wasEmpty = true;
-                }
+                EnterIdle();
                 _stopped.Set();
 
                 Interlocked.CompareExchange(ref _isRunning, 0, 1);
@@ -236,6 +230,7 @@ namespace EventStore.Core.Bus
 
                 var stats = new QueueStats(
                     _name,
+                    _groupName,
                     _queue.Count,
                     avgItemsPerSecond,
                     avgProcessingTime,

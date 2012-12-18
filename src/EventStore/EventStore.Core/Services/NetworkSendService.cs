@@ -48,7 +48,8 @@ namespace EventStore.Core.Services
             _tcpMultiHandler = new MultiQueuedHandler(
                 tcpQueueCount,
                 queueNum => new QueuedHandlerThreadPool(new NarrowingHandler<Message, TcpMessage.TcpSend>(new TcpSendSubservice()),
-                                                        string.Format("Outgoing TCP #{0}", queueNum + 1),
+                                                        name: string.Format("Outgoing TCP #{0}", queueNum + 1),
+                                                        groupName: "Outgoing TCP",
                                                         watchSlowMsg: true,
                                                         slowMsgThreshold: TimeSpan.FromMilliseconds(50)),
                 //NOTE: all messages for same connection should go to one thread
@@ -68,7 +69,8 @@ namespace EventStore.Core.Services
                     bus.Subscribe<HttpMessage.HttpEndSend>(subservice);
 
                     return new QueuedHandlerThreadPool(bus,
-                                                       string.Format("Outgoing HTTP #{0}", queueNum + 1),
+                                                       name: string.Format("Outgoing HTTP #{0}", queueNum + 1),
+                                                       groupName: "Outgoing HTTP",
                                                        watchSlowMsg: true,
                                                        slowMsgThreshold: TimeSpan.FromMilliseconds(50));
                 },

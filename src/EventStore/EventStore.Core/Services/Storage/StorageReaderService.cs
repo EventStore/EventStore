@@ -73,7 +73,7 @@ namespace EventStore.Core.Services.Storage
 
             _workersMultiHandler = new MultiQueuedHandler(
                 _threadCount,
-                queueNum => new QueuedHandler(storageReaderBus, string.Format("StorageReaderQueue #{0}", queueNum + 1)));
+                queueNum => new QueuedHandler(storageReaderBus, string.Format("StorageReaderQueue #{0}", queueNum + 1), groupName: "StorageReaderQueue"));
             _workersMultiHandler.Start();
 
             subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadEvent, Message>());

@@ -304,11 +304,8 @@ namespace EventStore.Core.Services.Monitoring
                 stats = null;
                 return false;
             }
-            else
-            {
-                stats = _memoizedStats;
-                return true;
-            }
+            stats = _memoizedStats;
+            return true;
         }
     }
 }

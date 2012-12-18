@@ -46,8 +46,9 @@ namespace EventStore.Core.Bus
                              string name,
                              bool watchSlowMsg = true,
                              TimeSpan? slowMsgThreshold = null,
-                             TimeSpan? threadStopWaitTimeout = null)
-                : base(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout)
+                             TimeSpan? threadStopWaitTimeout = null,
+                             string groupName = null)
+                : base(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout, groupName)
         {
         }
     }
