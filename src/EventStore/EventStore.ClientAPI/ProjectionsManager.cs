@@ -347,9 +347,10 @@ namespace EventStore.ClientAPI
                                  source.SetResult(null);
                              else
                                  source.SetException(new ProjectionCommandFailedException(
-                                                             string.Format("Server returned : {0} ({1})",
+                                                             string.Format("Server returned {0} ({1}) for {2}",
                                                                            response.HttpStatusCode,
-                                                                           response.StatusDescription)));
+                                                                           response.StatusDescription,
+                                                                           url)));
                          },
                          source.SetException);
 
