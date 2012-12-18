@@ -93,6 +93,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             {
                 result.FromAll();
                 result.AllEvents();
+                result.SetEmitStateUpdated();
             }
             return result.Build(ProjectionConfig.GetTest());
         }

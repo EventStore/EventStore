@@ -38,6 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_filter
             _builder.FromStream("a");
             _builder.FromStream("b");
             _builder.AllEvents();
+            _builder.SetEmitStateUpdated();
         }
 
         [Test]
