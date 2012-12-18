@@ -37,6 +37,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal class MassProjectionsScenario : ProjectionsKillScenario
     {
+        private readonly Random _random = new Random();
+
         public MassProjectionsScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath) 
             : base(directSendOverTcp, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep, dbParentPath)
         {
@@ -83,16 +85,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 Log.Info("Stop and start projection, remaining iterations {0}, waiting for data to be written.", count);
 
-                var t1 = StartOrStopProjection(countProjections, false);
-                var t2 = StartOrStopProjection(bankProjections, false);
+                StartOrStopProjection(countProjections, false);
+                StartOrStopProjection(bankProjections, false);
 
-                Task.WaitAll(new[] { t1, t2 });
                 Thread.Sleep(TimeSpan.FromSeconds(10));
 
-                var t3 = StartOrStopProjection(countProjections, true);
-                var t4 = StartOrStopProjection(bankProjections, true);
-
-                Task.WaitAll(new[] { t3, t4 });
+                StartOrStopProjection(countProjections, true);
+                StartOrStopProjection(bankProjections, true);
 
                 if (writeTask.IsCompleted)
                     count -= 1;
@@ -141,26 +140,67 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 throw new ApplicationException("Last bank projection failed");
         }
 
-        private Task StartOrStopProjection(IEnumerable<string> projections, bool enable)
+        private class ProjectionTask
         {
-            var tasks = new List<Task>();
-            var manager = GetProjectionsManager();
+            public string Name;
+            public Task Task;
 
-            foreach (string projection in projections)
+            public ProjectionTask(string name, Task task)
             {
-
-                //var isRunning = store.Projections.GetStatus(projection) == "Enabled";
-
-                tasks.Add(enable
-                              ? manager.EnableAsync(projection)
-                              : manager.DisableAsync(projection));
-
-                while (tasks.Count(x => !x.IsCompleted) > 4)
-                    Thread.Sleep(50);
+                Name = name;
+                Task = task;
             }
+        }
 
-            var task = Task.Factory.ContinueWhenAll(tasks.ToArray(), ts => { Task.WaitAll(ts); Log.Info("Projections enable/disable finished."); });
-            return task;
+        private void StartOrStopProjection(IEnumerable<string> projections, bool enable)
+        {
+            var manager = GetProjectionsManager();
+            const int retriesNumber = 5;
+
+            foreach (var projection in projections.ToArray())
+            {
+                var retry = 0;
+
+                while (retry <= retriesNumber)
+                {
+                    //var isRunning = store.Projections.GetStatus(projection) == "Enabled";
+
+                    try
+                    {
+                        if (enable)
+                            manager.Enable(projection);
+                        else
+                            manager.Disable(projection);
+
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        var waitForMs = retry * (500 + _random.Next(2000));
+
+                        Log.InfoException(ex, "Failed to StartOrStopProjection (enable:{0}) projection {1}, retry #{2}, wait {3}ms", 
+                                              enable, 
+                                              projection,
+                                              retry,
+                                              waitForMs);
+
+                        if (retry != 0)
+                            Thread.Sleep(waitForMs);
+
+                        if (retry == retriesNumber)
+                            throw new ApplicationException(string.Format("Failed to StartOrStopProjection (enable:{0}) projection {1}," +
+                                                                         " max number ({2}) of retries reached.", 
+                                                                         enable, 
+                                                                         projection, 
+                                                                         retry), 
+                                                           ex);
+                        
+                    }
+
+
+                    retry++;
+                }
+            }
         }
 
         private int _iterationCode;

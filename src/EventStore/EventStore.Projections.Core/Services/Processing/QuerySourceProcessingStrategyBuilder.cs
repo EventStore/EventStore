@@ -170,8 +170,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
 
             if (!_options.EmitStateUpdated && 
-                (_allStreams && _options.UseEventIndexes && _events != null && _events.Count > 1)
-                || (_streams != null && _streams.Count > 1))
+                ((_allStreams && _options.UseEventIndexes && _events != null && _events.Count > 1)
+                || (_streams != null && _streams.Count > 1)))
             {
                 throw new InvalidOperationException("EmitStateUpdated is required for multi-stream sources");
             }

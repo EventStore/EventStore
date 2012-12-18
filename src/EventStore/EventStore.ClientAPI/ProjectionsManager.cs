@@ -286,9 +286,10 @@ namespace EventStore.ClientAPI
                                 source.SetResult(response.Body);
                             else
                                 source.SetException(new ProjectionCommandFailedException(
-                                                            string.Format("Server returned : {0} ({1})",
-                                                                          response.HttpStatusCode,
-                                                                          response.StatusDescription)));
+                                                            string.Format("Server returned {0} ({1}) for GET on {2}",
+                                                                           response.HttpStatusCode,
+                                                                           response.StatusDescription,
+                                                                           url)));
                         },
                         source.SetException);
 
@@ -305,9 +306,10 @@ namespace EventStore.ClientAPI
                                    source.SetResult(response.Body);
                                else
                                    source.SetException(new ProjectionCommandFailedException(
-                                                               string.Format("Server returned : {0} ({1})",
-                                                                             response.HttpStatusCode,
-                                                                             response.StatusDescription)));
+                                                            string.Format("Server returned {0} ({1}) for DELETE on {2}",
+                                                                           response.HttpStatusCode,
+                                                                           response.StatusDescription,
+                                                                           url)));
                            },
                            source.SetException);
 
@@ -326,9 +328,10 @@ namespace EventStore.ClientAPI
                                 source.SetResult(null);
                             else
                                 source.SetException(new ProjectionCommandFailedException(
-                                                            string.Format("Server returned : {0} ({1})",
-                                                                          response.HttpStatusCode,
-                                                                          response.StatusDescription)));
+                                                            string.Format("Server returned {0} ({1}) for PUT on {2}",
+                                                                           response.HttpStatusCode,
+                                                                           response.StatusDescription,
+                                                                           url)));
                         },
                         source.SetException);
 
@@ -347,7 +350,7 @@ namespace EventStore.ClientAPI
                                  source.SetResult(null);
                              else
                                  source.SetException(new ProjectionCommandFailedException(
-                                                             string.Format("Server returned {0} ({1}) for {2}",
+                                                             string.Format("Server returned {0} ({1}) for POST {2}",
                                                                            response.HttpStatusCode,
                                                                            response.StatusDescription,
                                                                            url)));

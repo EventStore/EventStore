@@ -47,6 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
                     builder.FromStream("a");
                     builder.FromStream("b");
                     builder.IncludeEvent("specific-event");
+                    builder.SetEmitStateUpdated();
                     builder.SetReorderEvents(true);
                     builder.SetProcessingLag(1000); // ms
                 };
