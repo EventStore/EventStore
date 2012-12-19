@@ -34,7 +34,8 @@ namespace EventStore.Projections.Core.Services.Processing
     /// <summary>
     /// Staged processing queue allows queued processing of multi-step tasks.  The 
     /// processing order allows multiple tasks to be processed at the same time with a constraint
-    /// that all preceding tasks in the queue has already started processing at the given stage. 
+    /// a) ordered stage: all preceding tasks in the queue has already started processing at the given stage. 
+    /// b) unordered stage: no items with the same correlation_id are in the queue before current item
     /// 
     /// For instance:  multiple foreach sub-projections can request state to be loaded, then they can process
     /// it and store.  But no subprojection can process events prior to preceding projections has completed processing. 
