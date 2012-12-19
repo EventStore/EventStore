@@ -587,8 +587,19 @@ namespace EventStore.Projections.Core.Services.Processing
         private EmittedEvent[] InternalProcessCommittedEvent(string partition,
             ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
-            string newState = null;
-            EmittedEvent[] emittedEvents = null;
+            string newState;
+            EmittedEvent[] emittedEvents;
+            var hasBeenProcessed = SafeProcessEventByHandler(partition, message, out newState, out emittedEvents);
+            if (hasBeenProcessed)
+            {
+                return InternalCommittedEventProcessed(partition, message, emittedEvents, newState);
+            }
+            return null;
+        }
+
+        private bool SafeProcessEventByHandler(
+            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, out string newState, out EmittedEvent[] emittedEvents)
+        {
 
             //TODO: not emitting (optimized) projection handlers can skip serializing state on each processed event
             bool hasBeenProcessed;
@@ -609,33 +620,35 @@ namespace EventStore.Projections.Core.Services.Processing
                 hasBeenProcessed = false;
             }
             newState = newState ?? "";
-            if (hasBeenProcessed)
+            return hasBeenProcessed;
+        }
+
+        private EmittedEvent[] InternalCommittedEventProcessed(
+            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, EmittedEvent[] emittedEvents, string newState)
+        {
+            if (!ValidateEmittedEvents(emittedEvents))
+                return null;
+            List<EmittedEvent> result = null;
+            if (emittedEvents != null)
             {
-                if (!ValidateEmittedEvents(emittedEvents))
-                    return null;
-                List<EmittedEvent> result = null;
-                if (emittedEvents != null)
-                {
-                    result = new List<EmittedEvent>();
-                    result.AddRange(emittedEvents);
-                }
-                var oldState = _partitionStateCache.GetLockedPartitionState(partition);
-                if (oldState.Data != newState)
-                    // ensure state actually changed
-                {
-                    var lockPartitionStateAt = partition != "" ? message.CheckpointTag : null;
-                    var partitionState = new PartitionStateCache.State(newState, message.CheckpointTag);
-                    _partitionStateCache.CacheAndLockPartitionState(partition, partitionState, lockPartitionStateAt);
-                    if (_checkpointStrategy.EmitStateUpdated)
-                    {
-                        if (result == null)
-                            result = new List<EmittedEvent>();
-                        result.AddRange(CreateStateUpdatedEvents(partition, oldState, partitionState));
-                    }
-                }
-                return result != null ? result.ToArray() : null;
+                result = new List<EmittedEvent>();
+                result.AddRange(emittedEvents);
             }
-            return null;
+            var oldState = _partitionStateCache.GetLockedPartitionState(partition);
+            if (oldState.Data != newState)
+                // ensure state actually changed
+            {
+                var lockPartitionStateAt = partition != "" ? message.CheckpointTag : null;
+                var partitionState = new PartitionStateCache.State(newState, message.CheckpointTag);
+                _partitionStateCache.CacheAndLockPartitionState(partition, partitionState, lockPartitionStateAt);
+                if (_checkpointStrategy.EmitStateUpdated)
+                {
+                    if (result == null)
+                        result = new List<EmittedEvent>();
+                    result.AddRange(CreateStateUpdatedEvents(partition, oldState, partitionState));
+                }
+            }
+            return result != null ? result.ToArray() : null;
         }
 
         private List<EmittedEvent> CreateStateUpdatedEvents(
