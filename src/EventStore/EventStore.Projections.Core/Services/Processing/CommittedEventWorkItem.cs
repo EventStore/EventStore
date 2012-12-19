@@ -72,7 +72,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override void ProcessEvent()
         {
-            Projection.ProcessCommittedEvent(this, _message, _partition);
+            var emittedEvents = Projection.ProcessCommittedEvent(_message, _partition);
+            if (emittedEvents != null)
+                ScheduleEmitEvents(emittedEvents);
             NextStage();
         }
 
@@ -82,7 +84,7 @@ namespace EventStore.Projections.Core.Services.Processing
             NextStage();
         }
 
-        public void ScheduleEmitEvents(EmittedEvent[] emittedEvents)
+        private void ScheduleEmitEvents(EmittedEvent[] emittedEvents)
         {
             if (_scheduledWrites == null)
                 _scheduledWrites = new List<EmittedEvent[]>();

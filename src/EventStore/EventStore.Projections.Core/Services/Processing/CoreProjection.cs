@@ -549,21 +549,19 @@ namespace EventStore.Projections.Core.Services.Processing
             return _projectionStateHandler.GetType().Namespace + "." + _projectionStateHandler.GetType().Name;
         }
 
-        internal void ProcessCommittedEvent(
-            CommittedEventWorkItem committedEventWorkItem, ProjectionSubscriptionMessage.CommittedEventReceived message,
+        internal EmittedEvent[] ProcessCommittedEvent(ProjectionSubscriptionMessage.CommittedEventReceived message,
             string partition)
         {
             switch (_state)
             {
                 case State.Running:
-                    InternalProcessCommittedEvent(committedEventWorkItem, partition, message);
-                    break;
+                    return InternalProcessCommittedEvent(partition, message);
                 case State.FaultedStopping:
                 case State.Stopping:
                 case State.Faulted:
                 case State.Stopped:
-                    InternalCollectEventForDebugging(committedEventWorkItem, partition, message);
-                    break;
+                    InternalCollectEventForDebugging(partition, message);
+                    return null;
                 default:
                     throw new NotSupportedException();
             }
@@ -573,15 +571,14 @@ namespace EventStore.Projections.Core.Services.Processing
             new List<CoreProjectionManagementMessage.DebugState.Event>();
 
 
-        private void InternalCollectEventForDebugging(CommittedEventWorkItem committedEventWorkItem, string partition, ProjectionSubscriptionMessage.CommittedEventReceived message)
+        private void InternalCollectEventForDebugging(string partition, ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
             if (_eventsForDebugging.Count >= 10)
                 EnsureUnsubscribed();
             _eventsForDebugging.Add(CoreProjectionManagementMessage.DebugState.Event.Create(message, partition));
         }
 
-        private void InternalProcessCommittedEvent(
-            CommittedEventWorkItem committedEventWorkItem, string partition,
+        private EmittedEvent[] InternalProcessCommittedEvent(string partition,
             ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
             string newState = null;
@@ -608,48 +605,61 @@ namespace EventStore.Projections.Core.Services.Processing
             newState = newState ?? "";
             if (hasBeenProcessed)
             {
-                if (!ProcessEmittedEvents(committedEventWorkItem, emittedEvents))
-                    return;
-
+                if (!ValidateEmittedEvents(emittedEvents))
+                    return null;
+                List<EmittedEvent> result = null;
+                if (emittedEvents != null)
+                {
+                    result = new List<EmittedEvent>();
+                    result.AddRange(emittedEvents);
+                }
                 var oldState = _partitionStateCache.GetLockedPartitionState(partition);
                 if (oldState.Data != newState)
                     // ensure state actually changed
                 {
                     var lockPartitionStateAt = partition != "" ? message.CheckpointTag : null;
-                    _partitionStateCache.CacheAndLockPartitionState(partition, new PartitionStateCache.State(newState, message.CheckpointTag), lockPartitionStateAt);
+                    var partitionState = new PartitionStateCache.State(newState, message.CheckpointTag);
+                    _partitionStateCache.CacheAndLockPartitionState(partition, partitionState, lockPartitionStateAt);
                     if (_checkpointStrategy.EmitStateUpdated)
                     {
-                        PublishStateUpdate(committedEventWorkItem, partition, message, newState, oldState);
+                        if (result == null)
+                            result = new List<EmittedEvent>();
+                        result.AddRange(CreateStateUpdatedEvents(partition, oldState, partitionState));
                     }
                 }
+                return result != null ? result.ToArray() : null;
             }
+            return null;
         }
 
-        private void PublishStateUpdate(
-            CommittedEventWorkItem committedEventWorkItem, string partition,
-            ProjectionSubscriptionMessage.CommittedEventReceived message, string newState,
-            PartitionStateCache.State oldState)
+        private List<EmittedEvent> CreateStateUpdatedEvents(
+            string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState)
         {
-            if (!string.IsNullOrEmpty(partition) && (oldState.CausedBy == null || oldState.CausedBy == _zeroCheckpointTag))
+            var result = new List<EmittedEvent>();
+            if (!string.IsNullOrEmpty(partition)
+                && (oldState.CausedBy == null || oldState.CausedBy == _zeroCheckpointTag))
             {
-                committedEventWorkItem.ScheduleEmitEvents(
-                    new[]
-                    {
-                        //TODO: is it safe not to pass expected checkpoint tag here? 
-                        new EmittedEvent(_partitionCatalogStreamName, Guid.NewGuid(), "PartitionCreated", partition, message.CheckpointTag, null)
-                    });
+                result.Add(
+                    new EmittedEvent(
+                        _partitionCatalogStreamName, Guid.NewGuid(), "PartitionCreated", partition, newState.CausedBy,
+                        null));
             }
-            EmitStateUpdated(committedEventWorkItem, partition, newState, message.CheckpointTag, oldState.CausedBy);
+            result.Add(
+                new EmittedEvent(
+                    MakePartitionStateStreamName(partition), Guid.NewGuid(), "StateUpdated", newState.Data,
+                    newState.CausedBy, oldState.CausedBy));
+            return result;
         }
 
-        private bool ProcessEmittedEvents(CommittedEventWorkItem committedEventWorkItem, EmittedEvent[] emittedEvents)
+        private bool ValidateEmittedEvents(EmittedEvent[] emittedEvents)
         {
-            if (_projectionConfig.EmitEventEnabled && _checkpointStrategy.IsEmiEnabled())
-                EmitEmittedEvents(committedEventWorkItem, emittedEvents);
-            else if (emittedEvents != null && emittedEvents.Length > 0)
+            if (!_projectionConfig.EmitEventEnabled || !_checkpointStrategy.IsEmiEnabled())
             {
-                ProcessEventFaulted("'emit' is not allowed by the projection/configuration/mode");
-                return false;
+                if (emittedEvents != null && emittedEvents.Length > 0)
+                {
+                    ProcessEventFaulted("'emit' is not allowed by the projection/configuration/mode");
+                    return false;
+                }
             }
             return true;
         }
@@ -664,22 +674,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 message.EventCategory, message.Data.EventId, message.EventSequenceNumber,
                 Encoding.UTF8.GetString(message.Data.Metadata), Encoding.UTF8.GetString(message.Data.Data), out newState,
                 out emittedEvents);
-        }
-
-        private void EmitEmittedEvents(CommittedEventWorkItem committedEventWorkItem, EmittedEvent[] emittedEvents)
-        {
-            bool result = emittedEvents != null && emittedEvents.Length > 0;
-            if (result)
-                committedEventWorkItem.ScheduleEmitEvents(emittedEvents);
-        }
-
-        private void EmitStateUpdated(CommittedEventWorkItem committedEventWorkItem, string partition, string newState, CheckpointTag eventTag, CheckpointTag expectedTag)
-        {
-            committedEventWorkItem.ScheduleEmitEvents(
-                new[]
-                    {
-                        new EmittedEvent(MakePartitionStateStreamName(partition), Guid.NewGuid(), "StateUpdated", newState, eventTag, expectedTag)
-                    });
         }
 
         private void ProcessEventFaulted(string faultedReason, Exception ex = null)
