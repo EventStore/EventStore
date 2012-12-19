@@ -56,13 +56,13 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        //NOTE: _partitionStates is locked only to allow statistics retrieval from another thread 
         private readonly int _maxCachedPartitions;
 
         private readonly List<Tuple<CheckpointTag, string>> _cacheOrder = new List<Tuple<CheckpointTag, string>>();
 
         private readonly Dictionary<string, Tuple<State, CheckpointTag>> _partitionStates =
             new Dictionary<string, Tuple<State, CheckpointTag>>();
+        private int _cachedItemCount;
 
         private CheckpointTag _unlockedBefore;
         private readonly CheckpointTag _zeroPosition;
@@ -76,17 +76,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public int CachedItemCount
         {
-            get
-            {
-                lock (_partitionStates)
-                    return _partitionStates.Count;
-            }
+            get { return _cachedItemCount; }
         }
 
         public void Initialize()
         {
-            lock(_partitionStates)
-                _partitionStates.Clear();
+            _partitionStates.Clear();
+            _cachedItemCount = 0;
+
             _cacheOrder.Clear();
             _unlockedBefore = _zeroPosition;
         }
@@ -96,8 +93,10 @@ namespace EventStore.Projections.Core.Services.Processing
             if (partition == null) throw new ArgumentNullException("partition");
             if (data == null) throw new ArgumentNullException("data");
             EnsureCanLockPartitionAt(partition, at);
-            lock (_partitionStates)
-                _partitionStates[partition] = Tuple.Create(data, at);
+
+            _partitionStates[partition] = Tuple.Create(data, at);
+            _cachedItemCount = _partitionStates.Count;
+
             if (!string.IsNullOrEmpty(partition)) // cached forever - for root state
                 _cacheOrder.Add(Tuple.Create(at, partition));
             CleanUp();
@@ -108,8 +107,10 @@ namespace EventStore.Projections.Core.Services.Processing
             if (partition == null) throw new ArgumentNullException("partition");
             if (data == null) throw new ArgumentNullException("data");
             if (partition == null) throw new ArgumentException("Root partition must be locked", "partition");
-            lock (_partitionStates)
-                _partitionStates[partition] = Tuple.Create(data, _zeroPosition);
+
+            _partitionStates[partition] = Tuple.Create(data, _zeroPosition);
+            _cachedItemCount = _partitionStates.Count;
+
             _cacheOrder.Insert(0, Tuple.Create(_zeroPosition, partition));
             CleanUp();
         }
@@ -118,20 +119,20 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (partition == null) throw new ArgumentNullException("partition");
             Tuple<State, CheckpointTag> stateData;
-            lock (_partitionStates)
-            {
-                if (!_partitionStates.TryGetValue(partition, out stateData))
-                    return null;
-                EnsureCanLockPartitionAt(partition, lockAt);
-                if (lockAt != null && lockAt <= stateData.Item2)
-                    throw new InvalidOperationException(
-                        string.Format(
-                            "Attempt to relock the '{0}' partition state locked at the '{1}' position at the earlier position '{2}'",
-                            partition, stateData.Item2, lockAt));
-                _partitionStates[partition] = Tuple.Create(stateData.Item1, lockAt);
-            }
+            if (!_partitionStates.TryGetValue(partition, out stateData))
+                return null;
+            EnsureCanLockPartitionAt(partition, lockAt);
+            if (lockAt != null && lockAt <= stateData.Item2)
+                throw new InvalidOperationException(
+                    string.Format(
+                        "Attempt to relock the '{0}' partition state locked at the '{1}' position at the earlier position '{2}'",
+                        partition, stateData.Item2, lockAt));
+
+            _partitionStates[partition] = Tuple.Create(stateData.Item1, lockAt);
+            _cachedItemCount = _partitionStates.Count;
+
             if (!string.IsNullOrEmpty(partition)) // cached forever - for root state
-                _cacheOrder.Add(Tuple.Create(lockAt, partition));
+            _cacheOrder.Add(Tuple.Create(lockAt, partition));
             CleanUp();
             return stateData.Item1;
         }
@@ -140,24 +141,20 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (partition == null) throw new ArgumentNullException("partition");
             Tuple<State, CheckpointTag> stateData;
-            lock (_partitionStates)
-            {
-                if (!_partitionStates.TryGetValue(partition, out stateData))
-                    return null;
-            }
+            if (!_partitionStates.TryGetValue(partition, out stateData))
+                return null;
             return stateData.Item1;
         }
 
         public State GetLockedPartitionState(string partition)
         {
             Tuple<State, CheckpointTag> stateData;
-            lock (_partitionStates)
-                if (!_partitionStates.TryGetValue(partition, out stateData))
-                {
-                    throw new InvalidOperationException(
-                        string.Format(
-                            "Partition '{0}' state was requested as locked but it is missing in the cache.", partition));
-                }
+            if (!_partitionStates.TryGetValue(partition, out stateData))
+            {
+                throw new InvalidOperationException(
+                    string.Format(
+                        "Partition '{0}' state was requested as locked but it is missing in the cache.", partition));
+            }
             if (stateData.Item2 != null && stateData.Item2 <= _unlockedBefore)
                 throw new InvalidOperationException(
                     string.Format(
@@ -182,13 +179,13 @@ namespace EventStore.Projections.Core.Services.Processing
                     break; // other entries were locked after the checkpoint (or almost .. order is not very strong)
                 _cacheOrder.RemoveAt(0);
                 Tuple<State, CheckpointTag> entry;
-                lock (_partitionStates)
-                    if (!_partitionStates.TryGetValue(top.Item2, out entry))
-                        continue; // already removed
+                if (!_partitionStates.TryGetValue(top.Item2, out entry))
+                    continue; // already removed
                 if (entry.Item2 >= _unlockedBefore)
                     continue; // was relocked
-                lock (_partitionStates)
-                    _partitionStates.Remove(top.Item2);
+
+                _partitionStates.Remove(top.Item2);
+                _cachedItemCount = _partitionStates.Count;
             }
         }
 
