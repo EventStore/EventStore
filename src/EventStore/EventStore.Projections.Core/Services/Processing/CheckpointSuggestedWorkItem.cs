@@ -30,7 +30,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class CheckpointSuggestedWorkItem : WorkItem
+    class CheckpointSuggestedWorkItem : CheckpointWorkItemBase
     {
         private readonly ProjectionSubscriptionMessage.CheckpointSuggested _message;
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public CheckpointSuggestedWorkItem(
             CoreProjection projection, ProjectionSubscriptionMessage.CheckpointSuggested message,
             ICoreProjectionCheckpointManager checkpointManager)
-            : base(projection, "") // checkpoints are serialized based on string.empty token stream name
+            : base(projection) 
         {
             _message = message;
             _checkpointManager = checkpointManager;

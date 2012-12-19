@@ -28,23 +28,13 @@
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class ProgressWorkItem : CheckpointWorkItemBase
+    class CheckpointWorkItemBase : WorkItem
     {
-        private readonly ICoreProjectionCheckpointManager _checkpointManager;
-        private readonly float _progress;
+        private static readonly object _correlationId = new object();
 
-        public ProgressWorkItem(
-            CoreProjection projection, ICoreProjectionCheckpointManager checkpointManager, float progress)
-            : base(projection) 
+        protected CheckpointWorkItemBase(CoreProjection projection)
+            : base(projection, _correlationId)
         {
-            _checkpointManager = checkpointManager;
-            _progress = progress;
-        }
-
-        protected override void WriteOutput()
-        {
-            _checkpointManager.Progress(_progress);
-            NextStage();
         }
     }
 }

@@ -201,7 +201,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void UpdateState(string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState)
         {
-            if (partition == "" && newState != null) // inore non-root partitions and non-changed states
+            if (partition == "" && newState != null) // ignore non-root partitions and non-changed states
                 _currentProjectionState = newState.Data;
             EnsureStarted();
             if (_stopping)
