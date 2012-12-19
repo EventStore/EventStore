@@ -8,7 +8,8 @@ namespace EventStore.Projections.Core.Messages
                                        IHandle<ProjectionSubscriptionMessage.ProgressChanged>,
                                        IHandle<ProjectionSubscriptionMessage.EofReached>,
                                        IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
-                                       IHandle<CoreProjectionProcessingMessage.RestartRequested>
+                                       IHandle<CoreProjectionProcessingMessage.RestartRequested>,
+                                       IHandle<CoreProjectionProcessingMessage.CheckpointPartitions>
     {
     }
 }

@@ -107,5 +107,9 @@ namespace EventStore.Projections.Core.Messages
                 get { return _reason; }
             }
         }
+
+        public class CheckpointPartitions : Message
+        {
+        }
     }
 }

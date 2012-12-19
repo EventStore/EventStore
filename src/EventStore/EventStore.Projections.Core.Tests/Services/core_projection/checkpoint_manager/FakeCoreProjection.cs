@@ -45,6 +45,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public readonly List<CoreProjectionProcessingMessage.CheckpointLoaded> _checkpointLoadedMessages =
             new List<CoreProjectionProcessingMessage.CheckpointLoaded>();
 
+        public readonly List<CoreProjectionProcessingMessage.CheckpointPartitions> _checkpointPartitionsMessages =
+            new List<CoreProjectionProcessingMessage.CheckpointPartitions>();
+
         public readonly List<ProjectionSubscriptionMessage.ProgressChanged> _progresschangedMessages =
             new List<ProjectionSubscriptionMessage.ProgressChanged>();
 
@@ -84,6 +87,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             throw new System.NotImplementedException();
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.CheckpointPartitions message)
+        {
+            _checkpointPartitionsMessages.Add(message);
         }
     }
 }

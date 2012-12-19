@@ -369,6 +369,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        public void Handle(CoreProjectionProcessingMessage.CheckpointPartitions message)
+        {
+            //TODO: EnsureState(State.LoadStateRequsted);
+
+        }
+
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             _logger.Info(
@@ -906,8 +912,8 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 //TODO: move to separate projection method and cache result in work item
                 var checkpointTag = eventCheckpointTag;
-                _checkpointManager.EventProcessed(
-                    GetProjectionState().Data, scheduledWrites, checkpointTag, progress);
+                _checkpointManager.EmitEvents(scheduledWrites);
+                _checkpointManager.EventProcessed(GetProjectionState().Data, checkpointTag, progress);
             }
         }
 

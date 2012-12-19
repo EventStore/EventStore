@@ -90,6 +90,11 @@ namespace EventStore.Projections.Core.Tests.Services
             {
                 throw new NotImplementedException();
             }
+
+            public void Handle(CoreProjectionProcessingMessage.CheckpointPartitions message)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         protected TestHandler<Message> _consumer;

@@ -199,8 +199,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new CoreProjectionProcessingMessage.CheckpointCompleted(_lastCompletedCheckpointPosition));
         }
 
-        public void EventProcessed(
-            string state, List<EmittedEvent[]> scheduledWrites, CheckpointTag checkpointTag, float progress)
+        public void EventProcessed(string state, CheckpointTag checkpointTag, float progress)
         {
             EnsureStarted();
             if (_stopping)
@@ -209,12 +208,19 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointTag);
             _lastProcessedEventProgress = progress;
             // running state only
-            if (scheduledWrites != null)
-                foreach (var scheduledWrite in scheduledWrites)
-                    _currentCheckpoint.EmitEvents(scheduledWrite);
             _handledEventsAfterCheckpoint++;
             _currentProjectionState = state;
             ProcessCheckpoints();
+        }
+
+        public void EmitEvents(List<EmittedEvent[]> scheduledWrites)
+        {
+            EnsureStarted();
+            if (_stopping)
+                throw new InvalidOperationException("Stopping");
+            if (scheduledWrites != null)
+                foreach (var scheduledWrite in scheduledWrites)
+                    _currentCheckpoint.EmitEvents(scheduledWrite);
         }
 
         public void CheckpointSuggested(CheckpointTag checkpointTag, float progress)
@@ -264,14 +270,17 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_useCheckpoints)
                 throw new InvalidOperationException("Checkpoints are not allowed");
             if (!_inCheckpoint)
-                CompleteCheckpoint(lastProcessedEventPosition, _currentProjectionState);
+                StartCheckpoint(lastProcessedEventPosition, _currentProjectionState);
         }
 
-        private void CompleteCheckpoint(PositionTracker lastProcessedEventPosition, string projectionState)
+        private void StartCheckpoint(PositionTracker lastProcessedEventPosition, string projectionState)
         {
             CheckpointTag requestedCheckpointPosition = lastProcessedEventPosition.LastTag;
             if (requestedCheckpointPosition == _lastCompletedCheckpointPosition)
                 return; // either suggested or requested to stop
+
+            _coreProjection.Handle(new CoreProjectionProcessingMessage.CheckpointPartitions());
+
             _inCheckpoint = true;
             _requestedCheckpointPosition = requestedCheckpointPosition;
             _requestedCheckpointState = projectionState;
