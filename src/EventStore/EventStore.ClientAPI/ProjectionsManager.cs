@@ -350,7 +350,7 @@ namespace EventStore.ClientAPI
                                  source.SetResult(null);
                              else
                                  source.SetException(new ProjectionCommandFailedException(
-                                                             string.Format("Server returned {0} ({1}) for POST {2}",
+                                                             string.Format("Server returned {0} ({1}) for POST on {2}",
                                                                            response.HttpStatusCode,
                                                                            response.StatusDescription,
                                                                            url)));
