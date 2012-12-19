@@ -28,6 +28,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.Data;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
@@ -80,8 +81,8 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void there_are_thirty_six_records_in_merged_index_because_collisions_are_not_deleted()
         {
-            // 40 data records + 4 delete records - 8 deleted records (with 2 and 3 as a hash)
-            Assert.AreEqual(36, _newtable.Count);
+            // 40 data records + 4 delete records - 6 deleted records (with 2 and 3 as a hash, but not those for 0th event)
+            Assert.AreEqual(38, _newtable.Count);
         }
 
         [Test]
@@ -107,7 +108,11 @@ namespace EventStore.Core.Tests.Index
             long position;
             for (uint i = 2; i <= 3; i++)
             {
-                Assert.IsFalse(_newtable.TryGetOneValue(i, 0, out position));
+                Assert.IsTrue(_newtable.TryGetOneValue(i, 0, out position)); // 0th events are left to allow reliable collision detection
+                Assert.IsFalse(_newtable.TryGetOneValue(i, 1, out position));
+                Assert.IsFalse(_newtable.TryGetOneValue(i, 2, out position));
+                Assert.IsFalse(_newtable.TryGetOneValue(i, 3, out position));
+                Assert.IsTrue(_newtable.TryGetOneValue(i, EventNumber.DeletedStream, out position)); // delete tombstones are left
             }
         }
 

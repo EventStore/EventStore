@@ -99,10 +99,10 @@ namespace EventStore.Core.Index
 
         }
 
-        public bool TryGetOneValue(uint stream, int version, out long position)
+        public bool TryGetOneValue(uint stream, int number, out long position)
         {
-            if (version < 0)
-                throw new ArgumentOutOfRangeException("version");
+            if (number < 0)
+                throw new ArgumentOutOfRangeException("number");
 
             position = 0;
 
@@ -112,12 +112,12 @@ namespace EventStore.Core.Index
                 if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
                 try
                 {
-                    int endIdx = list.UpperBound(Tuple.Create(version, long.MaxValue));
+                    int endIdx = list.UpperBound(Tuple.Create(number, long.MaxValue));
                     if (endIdx == -1)
                         return false;
 
                     var key = list.Keys[endIdx];
-                    if (key.Item1 == version)
+                    if (key.Item1 == number)
                     {
                         position = key.Item2;
                         return true;
@@ -178,12 +178,12 @@ namespace EventStore.Core.Index
             _hash.Clear();
         }
 
-        public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion)
+        public IEnumerable<IndexEntry> GetRange(uint stream, int startNumber, int endNumber)
         {
-            if (startVersion < 0)
-                throw new ArgumentOutOfRangeException("startVersion");
-            if (endVersion < 0)
-                throw new ArgumentOutOfRangeException("endVersion");
+            if (startNumber < 0)
+                throw new ArgumentOutOfRangeException("startNumber");
+            if (endNumber < 0)
+                throw new ArgumentOutOfRangeException("endNumber");
 
             var ret = new List<IndexEntry>();
 
@@ -193,11 +193,11 @@ namespace EventStore.Core.Index
                 if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
                 try
                 {
-                    var endIdx = list.UpperBound(Tuple.Create(endVersion, long.MaxValue));
+                    var endIdx = list.UpperBound(Tuple.Create(endNumber, long.MaxValue));
                     for (int i = endIdx; i >= 0; i--)
                     {
                         var key = list.Keys[i];
-                        if (key.Item1 < startVersion)
+                        if (key.Item1 < startNumber)
                             break;
                         ret.Add(new IndexEntry(stream, version: key.Item1, position: key.Item2));
                     }

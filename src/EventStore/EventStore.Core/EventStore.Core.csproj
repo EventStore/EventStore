@@ -98,7 +98,7 @@
     <Compile Include="Data\TFPos.cs" />
     <Compile Include="Exceptions\BadChunkInDatabaseException.cs" />
     <Compile Include="Exceptions\ChunkNotFoundException.cs" />
-    <Compile Include="Exceptions\WrongTFChunkVersionException.cs" />
+    <Compile Include="Exceptions\WrongFileVersionException.cs" />
     <Compile Include="Exceptions\CorruptIndexException.cs" />
     <Compile Include="Exceptions\ExtraneousFileFoundException.cs" />
     <Compile Include="Exceptions\FileBeingDeletedException.cs" />
@@ -123,6 +123,7 @@
     <Compile Include="Index\HashListMemTable.cs" />
     <Compile Include="Index\MergeResult.cs" />
     <Compile Include="Index\PTable.cs" />
+    <Compile Include="Index\PTableConstruction.cs" />
     <Compile Include="Index\PTableHeader.cs" />
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />

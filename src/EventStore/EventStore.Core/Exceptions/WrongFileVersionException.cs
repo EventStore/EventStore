@@ -29,15 +29,14 @@ using System;
 
 namespace EventStore.Core.Exceptions
 {
-    public class WrongTFChunkVersionException : Exception
+    public class WrongFileVersionException : Exception
     {
-        public WrongTFChunkVersionException(string chunkFileName, byte chunkVersion, byte currentVersion)
-            :base(string.Format("TFChunk {0} has wrong version: {1}, while current version is: {2}.", 
-                                chunkFileName, 
-                                chunkVersion, 
-                                currentVersion))
+        public WrongFileVersionException(string filename, byte fileVersion, byte expectedVersion)
+                : base(string.Format("File {0} has wrong version: {1}, while expected version is: {2}.",
+                                     filename,
+                                     fileVersion,
+                                     expectedVersion))
         {
-            
         }
     }
 }

@@ -51,8 +51,8 @@ namespace EventStore.Core.Tests.Index
             mtable.Add(0x0101, 0x0001, 0x0001);
             mtable.Add(0x0105, 0x0001, 0x0002);
             _table = PTable.FromMemtable(mtable, _filename);
+            _table.Dispose();
             File.Copy(_filename, _copiedfilename);
-            _table.MarkForDestruction();
             using (var f = new FileStream(_copiedfilename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 f.Seek(22, SeekOrigin.Begin);
