@@ -59,15 +59,18 @@ namespace EventStore.Projections.Core.Services.Processing
         //NOTE: _partitionStates is locked only to allow statistics retrieval from another thread 
         private readonly int _maxCachedPartitions;
 
-        private readonly Queue<Tuple<CheckpointTag, string>> _cacheOrder = new Queue<Tuple<CheckpointTag, string>>();
+        private readonly List<Tuple<CheckpointTag, string>> _cacheOrder = new List<Tuple<CheckpointTag, string>>();
 
         private readonly Dictionary<string, Tuple<State, CheckpointTag>> _partitionStates =
             new Dictionary<string, Tuple<State, CheckpointTag>>();
 
         private CheckpointTag _unlockedBefore;
+        private readonly CheckpointTag _zeroPosition;
 
-        public PartitionStateCache(int maxCachedPartitions = 1000)
+        public PartitionStateCache(CheckpointTag zeroPosition, int maxCachedPartitions = 1000)
         {
+            _zeroPosition = zeroPosition;
+            _unlockedBefore = zeroPosition;
             _maxCachedPartitions = maxCachedPartitions;
         }
 
@@ -85,22 +88,33 @@ namespace EventStore.Projections.Core.Services.Processing
             lock(_partitionStates)
                 _partitionStates.Clear();
             _cacheOrder.Clear();
-            _unlockedBefore = null;
+            _unlockedBefore = _zeroPosition;
         }
 
         public void CacheAndLockPartitionState(string partition, State data, CheckpointTag at)
         {
             if (partition == null) throw new ArgumentNullException("partition");
             if (data == null) throw new ArgumentNullException("data");
-            EnsureCanLockPartitionAt(partition, at, false);
+            EnsureCanLockPartitionAt(partition, at);
             lock (_partitionStates)
                 _partitionStates[partition] = Tuple.Create(data, at);
             if (!string.IsNullOrEmpty(partition)) // cached forever - for root state
-                _cacheOrder.Enqueue(Tuple.Create(at, partition));
+                _cacheOrder.Add(Tuple.Create(at, partition));
             CleanUp();
         }
 
-        public State TryGetAndLockPartitionState(string partition, CheckpointTag at, bool allowRelockAtTheSamePosition)
+        public void CachePartitionState(string partition, State data)
+        {
+            if (partition == null) throw new ArgumentNullException("partition");
+            if (data == null) throw new ArgumentNullException("data");
+            if (partition == null) throw new ArgumentException("Root partition must be locked", "partition");
+            lock (_partitionStates)
+                _partitionStates[partition] = Tuple.Create(data, _zeroPosition);
+            _cacheOrder.Insert(0, Tuple.Create(_zeroPosition, partition));
+            CleanUp();
+        }
+
+        public State TryGetAndLockPartitionState(string partition, CheckpointTag lockAt)
         {
             if (partition == null) throw new ArgumentNullException("partition");
             Tuple<State, CheckpointTag> stateData;
@@ -108,18 +122,29 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (!_partitionStates.TryGetValue(partition, out stateData))
                     return null;
-                EnsureCanLockPartitionAt(partition, at, allowRelockAtTheSamePosition);
-                if (at != null && at < stateData.Item2
-                    || (!allowRelockAtTheSamePosition && at != null && at <= stateData.Item2))
+                EnsureCanLockPartitionAt(partition, lockAt);
+                if (lockAt != null && lockAt <= stateData.Item2)
                     throw new InvalidOperationException(
                         string.Format(
                             "Attempt to relock the '{0}' partition state locked at the '{1}' position at the earlier position '{2}'",
-                            partition, stateData.Item2, at));
-                _partitionStates[partition] = Tuple.Create(stateData.Item1, at);
+                            partition, stateData.Item2, lockAt));
+                _partitionStates[partition] = Tuple.Create(stateData.Item1, lockAt);
             }
             if (!string.IsNullOrEmpty(partition)) // cached forever - for root state
-                _cacheOrder.Enqueue(Tuple.Create(at, partition));
+                _cacheOrder.Add(Tuple.Create(lockAt, partition));
             CleanUp();
+            return stateData.Item1;
+        }
+
+        public State TryGetPartitionState(string partition)
+        {
+            if (partition == null) throw new ArgumentNullException("partition");
+            Tuple<State, CheckpointTag> stateData;
+            lock (_partitionStates)
+            {
+                if (!_partitionStates.TryGetValue(partition, out stateData))
+                    return null;
+            }
             return stateData.Item1;
         }
 
@@ -155,7 +180,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 Tuple<CheckpointTag, string> top = _cacheOrder.FirstOrDefault();
                 if (top.Item1 >= _unlockedBefore)
                     break; // other entries were locked after the checkpoint (or almost .. order is not very strong)
-                _cacheOrder.Dequeue();
+                _cacheOrder.RemoveAt(0);
                 Tuple<State, CheckpointTag> entry;
                 lock (_partitionStates)
                     if (!_partitionStates.TryGetValue(top.Item2, out entry))
@@ -167,15 +192,14 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void EnsureCanLockPartitionAt(string partition, CheckpointTag at, bool allowRelockAtTheSamePosition)
+        private void EnsureCanLockPartitionAt(string partition, CheckpointTag at)
         {
             if (partition == null) throw new ArgumentNullException("partition");
             if (at == null && partition != "")
                 throw new InvalidOperationException("Only the root partition can be locked forever");
             if (partition == "" && at != null)
                 throw new InvalidOperationException("Root partition must be locked forever");
-            if (at != null && at < _unlockedBefore
-                || (!allowRelockAtTheSamePosition && at != null && at <= _unlockedBefore))
+            if (at != null && at <= _unlockedBefore)
                 throw new InvalidOperationException(
                     string.Format(
                         "Attempt to lock the '{0}' partition state at the position '{1}' before the unlocked position '{2}'",
