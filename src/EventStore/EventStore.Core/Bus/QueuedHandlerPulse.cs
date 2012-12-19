@@ -95,7 +95,7 @@ namespace EventStore.Core.Bus
 
             _consumer = consumer;
             _name = name;
-            _groupName = name;
+            _groupName = groupName;
             _watchSlowMsg = watchSlowMsg;
             _slowMsgThreshold = slowMsgThreshold ?? InMemoryBus.DefaultSlowMessageThreshold;
             _threadStopWaitTimeout = threadStopWaitTimeout ?? QueuedHandler.DefaultStopWaitTimeout;
