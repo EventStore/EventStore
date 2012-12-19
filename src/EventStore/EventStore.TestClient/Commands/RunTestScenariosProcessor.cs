@@ -105,7 +105,16 @@ namespace EventStore.TestClient.Commands
                     executionPeriodMinutes = int.Parse(args[6]);
 
                     if (args.Length == 8)
+                    {
                         dbParentPath = args[7];
+                    }
+                    else
+                    {
+                        var envDbPath = Environment.GetEnvironmentVariable("EVENTSTORE_DATABASEPATH");
+                        if (!string.IsNullOrEmpty(envDbPath))
+                            dbParentPath = envDbPath;
+                    }
+
                 }
                 catch (Exception e)
                 {
