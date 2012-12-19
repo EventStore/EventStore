@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         private readonly Js1.LogDelegate _logDelegate = Console.WriteLine;
         private Js1.LoadModuleDelegate _loadModuleDelegate;
 
-        [Test, Category("v8"), Ignore]
+        [Test, Category("v8"), Category("Manual"), Explicit]
         public void can_compile_million_times()
         {
             for (var i = 0; i < 10000000; i++)
@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             }
         }
 
-        [Test, Category("v8"), Ignore]
+        [Test, Category("v8"), Category("Manual"), Explicit]
         public void can_compile_prelude_million_times()
         {
             _logger = s =>
@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             }
         }
 
-        [Test, Category("v8"), Ignore]
+        [Test, Category("v8"), Category("Manual"), Explicit]
         public void can_compile_script_million_times()
         {
             _loadModuleDelegate = name => IntPtr.Zero;
