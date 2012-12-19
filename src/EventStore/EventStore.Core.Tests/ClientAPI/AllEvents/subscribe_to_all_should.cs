@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             base.TearDown();
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void allow_multiple_subscriptions()
         {
             const string stream = "subscribe_to_all_should_allow_multiple_subscriptions";
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void drop_all_global_subscribers_when_unsubscribe_from_all_called()
         {
             using (var store = EventStoreConnection.Create())
@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             }
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void catch_created_and_deleted_events_as_well()
         {
             const string stream = "subscribe_to_all_should_catch_created_and_deleted_events_as_well";

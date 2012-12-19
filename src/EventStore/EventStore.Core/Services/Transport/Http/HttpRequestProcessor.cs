@@ -58,7 +58,7 @@ namespace EventStore.Core.Services.Transport.Http
     internal class HttpRequestProcessor : IHandle<IncomingHttpRequestMessage>, 
                                           IHandle<HttpMessage.PurgeTimedOutRequests>
     {
-        private static readonly TimeSpan MaxRequestDuration = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan MaxRequestDuration = TimeSpan.FromSeconds(10);
         private static readonly string[] Empty = new string[0];
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<HttpRequestProcessor>();
