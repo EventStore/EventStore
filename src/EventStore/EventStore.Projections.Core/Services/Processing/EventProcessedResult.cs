@@ -26,25 +26,51 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Collections.Generic;
-
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public interface ICoreProjectionCheckpointManager
+    class EventProcessedResult
     {
-        void Initialize();
-        void Start(CheckpointTag checkpointTag);
-        void Stopping();
-        void Stopped();
-        void GetStatistics(ProjectionStatistics info);
-        void RequestCheckpointToStop();
+        private readonly EmittedEvent[] _emittedEvents;
+        private readonly PartitionStateCache.State _oldState;
+        private readonly PartitionStateCache.State _newState;
+        private readonly string _partition;
+        private readonly CheckpointTag _checkpointTag;
 
-        void EmitEvents(EmittedEvent[] scheduledWrites);
-        void UpdateState(string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState);
-        void EventProcessed(CheckpointTag checkpointTag, float progress);
+        public EventProcessedResult(
+            string partition, CheckpointTag checkpointTag, PartitionStateCache.State oldState,
+            PartitionStateCache.State newState, EmittedEvent[] emittedEvents)
+        {
+            _emittedEvents = emittedEvents;
+            _oldState = oldState;
+            _newState = newState;
+            _partition = partition;
+            _checkpointTag = checkpointTag;
+        }
 
-        void CheckpointSuggested(CheckpointTag checkpointTag, float progress);
-        void Progress(float progress);
-        void BeginLoadState();
+        public EmittedEvent[] EmittedEvents
+        {
+            get { return _emittedEvents; }
+        }
+
+        public PartitionStateCache.State OldState
+        {
+            get { return _oldState; }
+        }
+
+        public PartitionStateCache.State NewState
+        {
+            get { return _newState; }
+        }
+
+        public string Partition
+        {
+            get { return _partition; }
+        }
+
+        public CheckpointTag CheckpointTag
+        {
+            get { return _checkpointTag; }
+        }
+
     }
 }

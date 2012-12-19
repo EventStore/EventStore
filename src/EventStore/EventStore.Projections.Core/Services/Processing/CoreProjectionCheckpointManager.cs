@@ -199,7 +199,16 @@ namespace EventStore.Projections.Core.Services.Processing
                 new CoreProjectionProcessingMessage.CheckpointCompleted(_lastCompletedCheckpointPosition));
         }
 
-        public void EventProcessed(string state, CheckpointTag checkpointTag, float progress)
+        public void UpdateState(string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState)
+        {
+            if (partition == "" && newState != null) // inore non-root partitions and non-changed states
+                _currentProjectionState = newState.Data;
+            EnsureStarted();
+            if (_stopping)
+                throw new InvalidOperationException("Stopping");
+        }
+
+        public void EventProcessed(CheckpointTag checkpointTag, float progress)
         {
             EnsureStarted();
             if (_stopping)
@@ -209,18 +218,16 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastProcessedEventProgress = progress;
             // running state only
             _handledEventsAfterCheckpoint++;
-            _currentProjectionState = state;
             ProcessCheckpoints();
         }
 
-        public void EmitEvents(List<EmittedEvent[]> scheduledWrites)
+        public void EmitEvents(EmittedEvent[] scheduledWrites)
         {
             EnsureStarted();
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
             if (scheduledWrites != null)
-                foreach (var scheduledWrite in scheduledWrites)
-                    _currentCheckpoint.EmitEvents(scheduledWrite);
+                _currentCheckpoint.EmitEvents(scheduledWrites);
         }
 
         public void CheckpointSuggested(CheckpointTag checkpointTag, float progress)

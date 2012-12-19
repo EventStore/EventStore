@@ -240,13 +240,6 @@ namespace EventStore.Projections.Core.Services.Processing
             SetFaulted("Killed");
         }
 
-        private PartitionStateCache.State GetProjectionState()
-        {
-            //TODO: separate requesting valid only state (not catching-up, non-stopped etc)
-            //EnsureState(State.StateLoadedSubscribed | State.Stopping | State.Subscribed | State.Paused | State.Resumed | State.Running);
-            return _partitionStateCache.GetLockedPartitionState("");
-        }
-
         private void GetStatistics(ProjectionStatistics info)
         {
             _checkpointManager.GetStatistics(info);
@@ -555,7 +548,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return _projectionStateHandler.GetType().Namespace + "." + _projectionStateHandler.GetType().Name;
         }
 
-        internal EmittedEvent[] ProcessCommittedEvent(ProjectionSubscriptionMessage.CommittedEventReceived message,
+        internal EventProcessedResult ProcessCommittedEvent(ProjectionSubscriptionMessage.CommittedEventReceived message,
             string partition)
         {
             switch (_state)
@@ -584,7 +577,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsForDebugging.Add(CoreProjectionManagementMessage.DebugState.Event.Create(message, partition));
         }
 
-        private EmittedEvent[] InternalProcessCommittedEvent(string partition,
+        private EventProcessedResult InternalProcessCommittedEvent(string partition,
             ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
             string newState;
@@ -623,32 +616,44 @@ namespace EventStore.Projections.Core.Services.Processing
             return hasBeenProcessed;
         }
 
-        private EmittedEvent[] InternalCommittedEventProcessed(
+        private EventProcessedResult InternalCommittedEventProcessed(
             string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, EmittedEvent[] emittedEvents, string newState)
         {
             if (!ValidateEmittedEvents(emittedEvents))
                 return null;
-            List<EmittedEvent> result = null;
-            if (emittedEvents != null)
-            {
-                result = new List<EmittedEvent>();
-                result.AddRange(emittedEvents);
-            }
+            List<EmittedEvent> finalEmittedEvents = null;
             var oldState = _partitionStateCache.GetLockedPartitionState(partition);
-            if (oldState.Data != newState)
+
+            bool eventsWereEmitted = emittedEvents != null;
+            bool stateWasChanged = oldState.Data != newState;
+
+            if (stateWasChanged || eventsWereEmitted)
+            {
+                finalEmittedEvents = new List<EmittedEvent>();
+            }
+
+            if (eventsWereEmitted)
+            {
+                finalEmittedEvents.AddRange(emittedEvents);
+            }
+
+            PartitionStateCache.State partitionState = null;
+            if (stateWasChanged)
                 // ensure state actually changed
             {
                 var lockPartitionStateAt = partition != "" ? message.CheckpointTag : null;
-                var partitionState = new PartitionStateCache.State(newState, message.CheckpointTag);
+                partitionState = new PartitionStateCache.State(newState, message.CheckpointTag);
                 _partitionStateCache.CacheAndLockPartitionState(partition, partitionState, lockPartitionStateAt);
                 if (_checkpointStrategy.EmitStateUpdated)
                 {
-                    if (result == null)
-                        result = new List<EmittedEvent>();
-                    result.AddRange(CreateStateUpdatedEvents(partition, oldState, partitionState));
+                    //TODO: move it our to writeoutput stage (currently in CheckpointManager, so it can decide if it needs to generate stateupdated)
+                    finalEmittedEvents.AddRange(CreateStateUpdatedEvents(partition, oldState, partitionState));
                 }
             }
-            return result != null ? result.ToArray() : null;
+            if (stateWasChanged || eventsWereEmitted)
+                return new EventProcessedResult(
+                    partition, message.CheckpointTag, oldState, partitionState, finalEmittedEvents.ToArray());
+            else return null;
         }
 
         private List<EmittedEvent> CreateStateUpdatedEvents(
@@ -919,14 +924,18 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         internal void FinalizeEventProcessing(
-            List<EmittedEvent[]> scheduledWrites, CheckpointTag eventCheckpointTag, float progress)
+            EventProcessedResult eventProcessedResult, CheckpointTag eventCheckpointTag, float progress)
         {
             if (_state == State.Running)
             {
                 //TODO: move to separate projection method and cache result in work item
-                var checkpointTag = eventCheckpointTag;
-                _checkpointManager.EmitEvents(scheduledWrites);
-                _checkpointManager.EventProcessed(GetProjectionState().Data, checkpointTag, progress);
+                if (eventProcessedResult != null)
+                {
+                    if (eventProcessedResult.EmittedEvents != null)
+                        _checkpointManager.EmitEvents(eventProcessedResult.EmittedEvents);
+                    _checkpointManager.UpdateState(eventProcessedResult.Partition, eventProcessedResult.OldState, eventProcessedResult.NewState);
+                }
+                _checkpointManager.EventProcessed(eventCheckpointTag, progress);
             }
         }
 

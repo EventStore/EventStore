@@ -111,6 +111,7 @@
     <Compile Include="Services\Processing\CommittedEventWorkItem.cs" />
     <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\DefaultCheckpointManager.cs" />
+    <Compile Include="Services\Processing\EventProcessedResult.cs" />
     <Compile Include="Services\Processing\EventReorderingProjectionSubscription.cs" />
     <Compile Include="Services\Processing\GetStateWorkItem.cs" />
     <Compile Include="Services\Processing\ICoreProjectionCheckpointManager.cs" />
