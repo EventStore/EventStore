@@ -78,7 +78,7 @@ namespace EventStore.SingleNode
             var dbVerifyHashes = !options.DoNotVerifyDbHashesOnStartup;
             _node = new SingleVNode(db, vnodeSettings, appSettings, dbVerifyHashes);
 
-            if (!options.NoProjections)
+            if (options.RunProjections)
             {
                 _projections = new Projections.Core.Projections(db,
                                                                 _node.MainQueue,
