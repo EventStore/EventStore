@@ -48,11 +48,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         private string _projectionCheckpointStreamId;
         protected bool _createTempStreams;
         protected bool _stopOnEof;
+        protected ProjectionNamesBuilder _namingBuilder;
 
         [SetUp]
         public void setup()
         {
             Given();
+            _namingBuilder = new ProjectionNamesBuilder("projection");
             _config = new ProjectionConfig(_checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
                 _pendingEventsThreshold, _maxWriteBatchLength, _emitEventEnabled,
                 _checkpointsEnabled, _createTempStreams, _stopOnEof);
@@ -63,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, _projectionCheckpointStreamId, "projection",
-                new StreamPositionTagger("stream"), _checkpointsEnabled);
+                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled, true);
         }
 
         protected new virtual void Given()

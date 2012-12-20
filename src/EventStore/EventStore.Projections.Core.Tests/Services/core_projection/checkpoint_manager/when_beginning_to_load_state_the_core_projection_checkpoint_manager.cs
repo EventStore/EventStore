@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void event_processed_throws_invalid_operation_exception()
         {
-//            _manager.UpdateState("", @"{""state"":""state""}");
+//            _manager.StateUpdated("", @"{""state"":""state""}");
             _manager.EventProcessed(CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
         }
 

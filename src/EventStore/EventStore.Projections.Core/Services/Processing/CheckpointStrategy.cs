@@ -244,14 +244,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 return new MultiStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints);
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated);
             }
             else if (_streams != null && _streams.Count > 1)
             {
 
                 return new MultiStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints);
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated);
             }
             else
             {
@@ -259,7 +259,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 return new DefaultCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, projectionCheckpointStreamId, name, PositionTagger, UseCheckpoints);
+                    projectionConfig, projectionCheckpointStreamId, name, PositionTagger, namingBuilder, UseCheckpoints,
+                    EmitStateUpdated);
             }
         }
 

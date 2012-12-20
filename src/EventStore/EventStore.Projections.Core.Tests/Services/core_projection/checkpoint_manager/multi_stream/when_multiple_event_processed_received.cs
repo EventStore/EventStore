@@ -53,9 +53,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             {
                 _manager.BeginLoadState();
                 _manager.Start(CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 2}, {"b", 2}}));
-//                _manager.UpdateState("", @"{""state"":""state1""}");
+//                _manager.StateUpdated("", @"{""state"":""state1""}");
                 _manager.EventProcessed(CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 2}, {"b", 3}}), 77.7f);
-//                _manager.UpdateState("", @"{""state"":""state2""}");
+//                _manager.StateUpdated("", @"{""state"":""state2""}");
                 _manager.EventProcessed(CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 2}, {"b", 4}}), 77.7f);
             }
             catch (Exception ex)
@@ -91,14 +91,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test]
         public void accepts_event_processed()
         {
-//            _manager.UpdateState("", @"{""state"":""state""}");
+//            _manager.StateUpdated("", @"{""state"":""state""}");
             _manager.EventProcessed(CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 3}, {"b", 4}}), 77.7f);
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void event_processed_at_the_start_position_throws_invalid_operation_exception()
         {
-//            _manager.UpdateState("", @"{""state"":""state""}");
+//            _manager.StateUpdated("", @"{""state"":""state""}");
             _manager.EventProcessed(CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 2}, {"b", 2}}), 77.7f);
         }
 

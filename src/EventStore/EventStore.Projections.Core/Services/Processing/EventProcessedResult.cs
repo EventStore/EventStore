@@ -28,7 +28,7 @@
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class EventProcessedResult
+    public class EventProcessedResult
     {
         private readonly EmittedEvent[] _emittedEvents;
         private readonly PartitionStateCache.State _oldState;

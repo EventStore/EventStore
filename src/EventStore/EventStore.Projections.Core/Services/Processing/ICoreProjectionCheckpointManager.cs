@@ -39,8 +39,8 @@ namespace EventStore.Projections.Core.Services.Processing
         void GetStatistics(ProjectionStatistics info);
         void RequestCheckpointToStop();
 
-        void EmitEvents(EmittedEvent[] scheduledWrites);
-        void UpdateState(string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState);
+        void EventsEmitted(EmittedEvent[] scheduledWrites);
+        void StateUpdated(string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState);
         void EventProcessed(CheckpointTag checkpointTag, float progress);
 
         void CheckpointSuggested(CheckpointTag checkpointTag, float progress);
