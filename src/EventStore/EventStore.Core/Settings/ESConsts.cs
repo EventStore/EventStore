@@ -30,10 +30,6 @@ namespace EventStore.Core.Settings
 {
     public static class ESConsts
     {
-        public const int IncomingHttpQueues = 6;
-        public const int OutgoingHttpQueues = 3;
-        public const int OugoingTcpQueues = 3;
-
         public const int StorageReaderHandlerCount = 4;
 
         public const int ReadIndexReaderCount = 1   /*StorageWriter*/
