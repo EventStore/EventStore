@@ -615,21 +615,10 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!ValidateEmittedEvents(emittedEvents))
                 return null;
-            List<EmittedEvent> finalEmittedEvents = null;
             var oldState = _partitionStateCache.GetLockedPartitionState(partition);
 
             bool eventsWereEmitted = emittedEvents != null;
             bool stateWasChanged = oldState.Data != newState;
-
-            if (stateWasChanged || eventsWereEmitted)
-            {
-                finalEmittedEvents = new List<EmittedEvent>();
-            }
-
-            if (eventsWereEmitted)
-            {
-                finalEmittedEvents.AddRange(emittedEvents);
-            }
 
             PartitionStateCache.State partitionState = null;
             if (stateWasChanged)
@@ -641,7 +630,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             if (stateWasChanged || eventsWereEmitted)
                 return new EventProcessedResult(
-                    partition, message.CheckpointTag, oldState, partitionState, finalEmittedEvents.ToArray());
+                    partition, message.CheckpointTag, oldState, partitionState, emittedEvents);
             else return null;
         }
 
