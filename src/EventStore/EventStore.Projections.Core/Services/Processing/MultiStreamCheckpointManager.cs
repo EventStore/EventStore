@@ -38,6 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class MultiStreamCheckpointManager : CoreProjectionCheckpointManager
     {
+        private readonly ProjectionNamesBuilder _namingbBuilder;
         private readonly string _projectionStateUpdatesStreamId;
         private int _nextStateIndexToRequest;
         private Guid _readRequestId;
@@ -48,12 +49,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name,
-            PositionTagger positionTagger, string projectionStateUpdatesStreamId, bool useCheckpoints)
+            PositionTagger positionTagger, ProjectionNamesBuilder namingbBuilder, bool useCheckpoints)
             : base(
                 coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
                 name, positionTagger, useCheckpoints)
         {
-            _projectionStateUpdatesStreamId = projectionStateUpdatesStreamId;
+            _namingbBuilder = namingbBuilder;
+            _projectionStateUpdatesStreamId = namingbBuilder.GetStateStreamName();
         }
 
         protected override void BeginWriteCheckpoint(

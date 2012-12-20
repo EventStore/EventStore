@@ -237,28 +237,25 @@ namespace EventStore.Projections.Core.Services.Processing
             ICoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
             RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> requestResponseDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> responseDispatcher,
-            ProjectionConfig projectionConfig, string name, string stateUpdatesStreamId)
+            ProjectionConfig projectionConfig, string name, ProjectionNamesBuilder namingBuilder)
         {
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
-                string projectionStateUpdatesStreamId = stateUpdatesStreamId;
 
                 return new MultiStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, name, PositionTagger, projectionStateUpdatesStreamId, UseCheckpoints);
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints);
             }
             else if (_streams != null && _streams.Count > 1)
             {
-                string projectionStateUpdatesStreamId = stateUpdatesStreamId;
 
                 return new MultiStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, name, PositionTagger, projectionStateUpdatesStreamId, UseCheckpoints);
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints);
             }
             else
             {
-                string projectionCheckpointStreamId = ProjectionNamesBuilder.ProjectionsStreamPrefix + name
-                                                      + ProjectionNamesBuilder.ProjectionCheckpointStreamSuffix;
+                string projectionCheckpointStreamId = namingBuilder.MakeCheckpointStreamName();
 
                 return new DefaultCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
