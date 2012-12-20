@@ -35,13 +35,13 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public class TwoPhaseRequestManagerBase :           IHandle<StorageMessage.AlreadyCommitted>,
-                                                        IHandle<StorageMessage.PrepareAck>,
-                                                        IHandle<StorageMessage.CommitAck>,
-                                                        IHandle<StorageMessage.WrongExpectedVersion>,
-                                                        IHandle<StorageMessage.StreamDeleted>,
-                                                        IHandle<StorageMessage.PreparePhaseTimeout>,
-                                                        IHandle<StorageMessage.CommitPhaseTimeout>
+    public class TwoPhaseRequestManagerBase : IHandle<StorageMessage.AlreadyCommitted>,
+                                              IHandle<StorageMessage.PrepareAck>,
+                                              IHandle<StorageMessage.CommitAck>,
+                                              IHandle<StorageMessage.WrongExpectedVersion>,
+                                              IHandle<StorageMessage.StreamDeleted>,
+                                              IHandle<StorageMessage.PreparePhaseTimeout>,
+                                              IHandle<StorageMessage.CommitPhaseTimeout>
     {
          
         protected readonly IPublisher Publisher;

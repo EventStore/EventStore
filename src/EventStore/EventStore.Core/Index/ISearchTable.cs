@@ -35,9 +35,9 @@ namespace EventStore.Core.Index
         Guid Id { get; }
         int Count { get; }
 
-        bool TryGetOneValue(uint stream, int version, out long position);
+        bool TryGetOneValue(uint stream, int number, out long position);
         bool TryGetLatestEntry(uint stream, out IndexEntry entry);
-        IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion);
+        IEnumerable<IndexEntry> GetRange(uint stream, int startNumber, int endNumber);
         IEnumerable<IndexEntry> IterateAllInOrder();
     }
 }
