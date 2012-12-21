@@ -26,8 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Net;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.Monitoring;
 
 namespace EventStore.Core.Settings
 {
@@ -40,34 +42,54 @@ namespace EventStore.Core.Settings
         public readonly int HttpReceivingThreads;
         public readonly int TcpSendingThreads;
 
+        public readonly TimeSpan StatsPeriod;
+        public readonly StatsStorage StatsStorage;
+
         public SingleVNodeSettings(IPEndPoint externalTcpEndPoint, 
                                    IPEndPoint externalHttpEndPoint, 
                                    string[] httpPrefixes,
                                    int httpSendingThreads, 
                                    int httpReceivingThreads, 
-                                   int tcpSendingThreads)
+                                   int tcpSendingThreads,
+                                   TimeSpan statsPeriod, 
+                                   StatsStorage statsStorage = StatsStorage.StreamAndCsv)
         {
             Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
             Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
             Ensure.NotNull(httpPrefixes, "httpPrefixes");
-            Ensure.Nonnegative(httpReceivingThreads, "httpReceivingThreads");
-            Ensure.Nonnegative(httpSendingThreads, "httpSendingThreads");
-            Ensure.Nonnegative(tcpSendingThreads, "tcpSendingThreads");
+            Ensure.Positive(httpReceivingThreads, "httpReceivingThreads");
+            Ensure.Positive(httpSendingThreads, "httpSendingThreads");
+            Ensure.Positive(tcpSendingThreads, "tcpSendingThreads");
+            
             ExternalTcpEndPoint = externalTcpEndPoint;
             ExternalHttpEndPoint = externalHttpEndPoint;
             HttpPrefixes = httpPrefixes;
             HttpSendingThreads = httpSendingThreads;
             HttpReceivingThreads = httpReceivingThreads;
             TcpSendingThreads = tcpSendingThreads;
+
+            StatsPeriod = statsPeriod;
+            StatsStorage = statsStorage;
         }
 
         public override string ToString()
         {
-            return string.Format("#{0}[tcp-{1}, http-{2}, http-prefixes-{3}], ",
-                                 ExternalTcpEndPoint.Address,
-                                 ExternalTcpEndPoint.Port,
-                                 ExternalHttpEndPoint.Port,
-                                 string.Join(",", HttpPrefixes));
+            return string.Format("ExternalTcpEndPoint: {0},\n"
+                                 + "ExternalHttpEndPoint: {1},\n"
+                                 + "HttpPrefixes: {2},\n"
+                                 + "HttpSendingThreads: {3}\n" 
+                                 + "HttpReceivingThreads: {4}\n"
+                                 + "TcpSendingThreads: {5}\n"
+                                 + "StatsPeriod: {6}\n"
+                                 + "StatsStorage: {7}",
+                                 ExternalTcpEndPoint,
+                                 ExternalHttpEndPoint,
+                                 string.Join(", ", HttpPrefixes),
+                                 HttpSendingThreads,
+                                 HttpReceivingThreads,
+                                 TcpSendingThreads,
+                                 StatsPeriod,
+                                 StatsStorage);
         }
     }
 

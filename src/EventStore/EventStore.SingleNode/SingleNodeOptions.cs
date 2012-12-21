@@ -34,14 +34,14 @@ namespace EventStore.SingleNode
 {
     public class SingleNodeOptions : EventStoreCmdLineOptionsBase
     {
+        [Option("i", "ip", Required = true, HelpText="The IP address to bind to.")]
+        public IPAddress Ip { get; set; }
+
         [Option("t", "tcp-port", Required = true, HelpText="The port to run the TCP server on.")]
         public int TcpPort { get; set; }
 
         [Option("h", "http-port", Required = true, HelpText="The port to run the HTTP server on.")]
         public int HttpPort { get; set; }
-
-        [Option("i", "ip", Required = true, HelpText="The IP address to bind to.")]
-        public IPAddress Ip { get; set; }
 
         [Option("s", "stats-period-sec", DefaultValue = 30, HelpText="The number of seconds between statistics gathers.")]
         public int StatsPeriodSec { get; set; }
@@ -52,11 +52,11 @@ namespace EventStore.SingleNode
         [Option(null, "db", HelpText = "The path the db should be loaded/saved to.")]
         public string DbPath { get; set; }
 
-        [Option(null, "run-projections", DefaultValue = false, HelpText = "Enables the running of Javascript projections (experimental)")]
-        public bool RunProjections { get; set; }
-
-        [Option(null, "do-not-verify-db-hashes-on-startup", DefaultValue = false, HelpText = "Bypasses the checking of file hashes of database during startup (allows for faster startup)")]
+        [Option(null, "do-not-verify-db-hashes-on-startup", DefaultValue = false, HelpText = "Bypasses the checking of file hashes of database during startup (allows for faster startup).")]
         public bool DoNotVerifyDbHashesOnStartup { get; set; }
+
+        [Option(null, "run-projections", DefaultValue = false, HelpText = "Enables the running of Javascript projections (experimental).")]
+        public bool RunProjections { get; set; }
 
         [Option(null, "projection-threads", DefaultValue = 3, HelpText = "The number of threads to use for projections.")]
         public int ProjectionThreads { get; set; }
@@ -81,10 +81,15 @@ namespace EventStore.SingleNode
             yield return new KeyValuePair<string, string>("TCP PORT", TcpPort.ToString());
             yield return new KeyValuePair<string, string>("HTTP PORT", HttpPort.ToString());
             yield return new KeyValuePair<string, string>("STATS PERIOD SEC", StatsPeriodSec.ToString());
-            yield return new KeyValuePair<string, string>("CHUNK CACHE", ChunksToCache.ToString());
+            yield return new KeyValuePair<string, string>("CHUNKS TO CACHE", ChunksToCache.ToString());
             yield return new KeyValuePair<string, string>("DB PATH", string.IsNullOrEmpty(DbPath) ? "<DEFAULT>" : DbPath);
-            yield return new KeyValuePair<string, string>("Run PROJECTIONS", RunProjections.ToString());
+            yield return new KeyValuePair<string, string>("DO NOT VERIFY DB HASHES ON STARTUP", DoNotVerifyDbHashesOnStartup.ToString());
+            yield return new KeyValuePair<string, string>("RUN PROJECTIONS", RunProjections.ToString());
             yield return new KeyValuePair<string, string>("PROJECTION THREADS", ProjectionThreads.ToString());
+            yield return new KeyValuePair<string, string>("TCP SEND THREADS", TcpSendThreads.ToString());
+            yield return new KeyValuePair<string, string>("HTTP RECEIVE THREADS", HttpReceiveThreads.ToString());
+            yield return new KeyValuePair<string, string>("HTTP SEND THREADS", HttpSendThreads.ToString());
+            yield return new KeyValuePair<string, string>("PREFIXES", PrefixesString);
         }
     }
 }

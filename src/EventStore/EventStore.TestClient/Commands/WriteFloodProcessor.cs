@@ -40,7 +40,7 @@ namespace EventStore.TestClient.Commands
 {
     internal class WriteFloodProcessor : ICmdProcessor
     {
-        public string Usage { get { return "WRFL [<clients> <requests> [<streams-cnt> <size>]]"; } }
+        public string Usage { get { return "WRFL [<clients> <requests> [<streams-cnt> [<size>]]]"; } }
         public string Keyword { get { return "WRFL"; } }
 
         public bool Execute(CommandProcessorContext context, string[] args)
@@ -48,20 +48,20 @@ namespace EventStore.TestClient.Commands
             int clientsCnt = 1;
             long requestsCnt = 5000;
             int streamsCnt = 1000;
-            int size = 100;
+            int size = 256;
             if (args.Length > 0)
             {
-                if (args.Length != 2 && args.Length != 4)
+                if (args.Length < 2 || args.Length > 4)
                     return false;
 
                 try
                 {
                     clientsCnt = int.Parse(args[0]);
                     requestsCnt = long.Parse(args[1]);
-                    if (args.Length >= 3) {
+                    if (args.Length >= 3)
                         streamsCnt = int.Parse(args[2]);
+                    if (args.Length >= 4)
                         size = int.Parse(args[3]);
-                    }
                 }
                 catch
                 {

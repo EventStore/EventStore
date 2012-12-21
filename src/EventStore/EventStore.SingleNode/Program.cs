@@ -29,6 +29,7 @@ using System;
 using System.IO;
 using System.Net;
 using EventStore.Core;
+using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Common.Utils;
@@ -74,9 +75,8 @@ namespace EventStore.SingleNode
             Log.Info("\nDATABASE: {0}", dbPath);
             var db = new TFChunkDb(CreateDbConfig(dbPath, options.ChunksToCache));
             var vnodeSettings = GetVNodeSettings(options);
-            var appSettings = new SingleVNodeAppSettings(TimeSpan.FromSeconds(options.StatsPeriodSec));
             var dbVerifyHashes = !options.DoNotVerifyDbHashesOnStartup;
-            _node = new SingleVNode(db, vnodeSettings, appSettings, dbVerifyHashes);
+            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes);
 
             if (options.RunProjections)
             {
@@ -103,7 +103,9 @@ namespace EventStore.SingleNode
                                                         prefixes.Select(p => p.Trim()).ToArray(),
                                                         options.HttpSendThreads,
                                                         options.HttpReceiveThreads,
-                                                        options.TcpSendThreads);
+                                                        options.TcpSendThreads,
+                                                        TimeSpan.FromSeconds(options.StatsPeriodSec),
+                                                        StatsStorage.StreamAndCsv);
             return vnodeSettings;
         }
 

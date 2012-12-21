@@ -72,7 +72,6 @@ namespace EventStore.Core
         
         public SingleVNode(TFChunkDb db, 
                            SingleVNodeSettings vNodeSettings, 
-                           SingleVNodeAppSettings appSettings, 
                            bool dbVerifyHashes,
                            int memTableEntryCount = ESConsts.MemTableEntryCount)
         {
@@ -98,9 +97,9 @@ namespace EventStore.Core
                                                    MainQueue, 
                                                    db.Config.WriterCheckpoint, 
                                                    db.Config.Path, 
-                                                   appSettings.StatsPeriod, 
+                                                   vNodeSettings.StatsPeriod, 
                                                    _httpEndPoint,
-                                                   appSettings.StatsStorage);
+                                                   vNodeSettings.StatsStorage);
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
