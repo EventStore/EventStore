@@ -42,6 +42,34 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return isRunning;
         }
 
+        protected long GetProjectionPosition(string projectionName)
+        {
+            var dic = GetProjectionStatistics(projectionName);
+
+            long result = -1;
+
+            string value;
+            if (dic.TryGetValue("position", out value))
+                result = long.Parse(value.Split(':')[1]);
+
+            return result;
+        }
+
+        protected bool GetProjectionIsFaulted(string projectionName, out string reason)
+        {
+            var dic = GetProjectionStatistics(projectionName);
+
+            string status;
+            var isFaulted = dic.TryGetValue("status", out status) && status.StartsWith("Faulted");
+
+            if (isFaulted)
+                dic.TryGetValue("stateReason", out reason);
+            else
+                reason = null;
+
+            return isFaulted;
+        }
+
         private Dictionary<string, string> GetProjectionStatistics(string projectionName)
         {
             string rawState;
@@ -54,6 +82,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 Log.InfoException(ex, "Failed to read projection statistics. Will continue.");
                 rawState = null;
             }
+
+            Log.Info("Raw {0} stats: {1}", projectionName, rawState);
 
             if (string.IsNullOrEmpty(rawState))
                 return null;

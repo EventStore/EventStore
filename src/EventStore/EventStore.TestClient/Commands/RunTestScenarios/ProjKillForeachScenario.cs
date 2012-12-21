@@ -67,11 +67,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var writeTask = WriteData();
 
-            string failStatus = null;
+            bool failed = false;
+            string failReason = null;
 
             var isWatchStarted = false;
-            var manager = GetProjectionsManager();
-
+            var expectedAllEventsCount = Streams + (Streams * EventsPerStream);
+            
             var stopWatch = new Stopwatch();
 
             var waitDuration = TimeSpan.FromMilliseconds(20 * 1000 + 5 * Streams * EventsPerStream);
@@ -86,9 +87,18 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     isWatchStarted = true;
                 }
 
-                string stats = null;// GetProjectionStatistics(sumCheckForBankAccounts);
-                Log.Info("STATS: {0}", stats);
+                failed = GetProjectionIsFaulted(sumCheckForBankAccounts, out failReason);
 
+                if (failed)
+                    break;
+
+                var position = GetProjectionPosition(sumCheckForBankAccounts);
+                if (position == expectedAllEventsCount)
+                {
+                    Log.Debug("Expected position reached, done.");
+                    break;
+                }
+                
                 if (isWatchStarted)
                     stopWatch.Stop();
 
@@ -105,8 +115,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             KillNode(nodeProcessId);
 
-            if (!string.IsNullOrEmpty(failStatus))
-                throw new ApplicationException(string.Format("Projection failed with status {0}.", failStatus));
+            if (failed)
+                throw new ApplicationException(string.Format("Projection failed due to reason: {0}.", failReason));
         }
 
         protected Task WriteData()
