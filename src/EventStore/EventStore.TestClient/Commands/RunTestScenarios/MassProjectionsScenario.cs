@@ -99,10 +99,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 if (writeTask.IsFaulted)
                     throw new ApplicationException("Failed to write data", writeTask.Exception);
 
-                success = CheckProjectionState(GetProjectionsManager(), 
-                                                        bankProjections[bankProjections.Count - 1], 
-                                                        "success", 
-                                                        x => x == EventsPerStream.ToString());
+                success = CheckProjectionState(bankProjections[bankProjections.Count - 1], 
+                                               "success", 
+                                               x => x == EventsPerStream.ToString());
                 if (success)
                     break;
 
@@ -121,10 +120,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 KillNode(nodeProcessId);
                 nodeProcessId = StartNode();
 
-                success = CheckProjectionState(GetProjectionsManager(),
-                                                        bankProjections[bankProjections.Count - 1],
-                                                        "success",
-                                                        x => x == EventsPerStream.ToString());
+                success = CheckProjectionState(bankProjections[bankProjections.Count - 1],
+                                               "success",
+                                               x => x == EventsPerStream.ToString());
 
                 if (success)
                     break;
@@ -163,11 +161,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 while (retry <= retriesNumber)
                 {
-                    //var isRunning = store.Projections.GetStatus(projection) == "Enabled";
+                    var isRunning = GetProjectionIsRunning(projection);
 
                     try
                     {
-                        if (enable)
+                        if (enable && !isRunning)
                             manager.Enable(projection);
                         else
                             manager.Disable(projection);
@@ -176,10 +174,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     }
                     catch (Exception ex)
                     {
-                        var waitForMs = retry * (500 + _random.Next(2000));
+                        var waitForMs = retry * (1000 + _random.Next(2000));
 
-                        Log.InfoException(ex, "Failed to StartOrStopProjection (enable:{0}) projection {1}, retry #{2}, wait {3}ms", 
+                        Log.InfoException(ex, "Failed to StartOrStopProjection (enable:{0}; isRunning:{1}) projection {2}, retry #{3}, wait {4}ms", 
                                               enable, 
+                                              isRunning,
                                               projection,
                                               retry,
                                               waitForMs);

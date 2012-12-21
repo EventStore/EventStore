@@ -39,7 +39,7 @@ using EventStore.TestClient.Commands.DvuBasic;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {
-    internal class ProjKillForeachScenario : ScenarioBase
+    internal class ProjKillForeachScenario : ProjectionsScenarioBase
     {
         public ProjKillForeachScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath)
             : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
@@ -86,7 +86,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     isWatchStarted = true;
                 }
 
-                var stats = GetProjectionStatistics(manager, sumCheckForBankAccounts);
+                string stats = null;// GetProjectionStatistics(sumCheckForBankAccounts);
                 Log.Info("STATS: {0}", stats);
 
                 if (isWatchStarted)
@@ -120,116 +120,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var task = Task.Factory.ContinueWhenAll(new[] { w1, w2, w3 }, Task.WaitAll);
             return task.ContinueWith(x => Log.Info("Data written for iteration {0}.", GetIterationCode()));
-        }
-
-        protected bool CheckProjectionState(ProjectionsManager manager, string projectionName, string key, Func<string, bool> checkValue)
-        {
-            var state = GetProjectionState(manager, projectionName);
-            string value;
-            return state != null && state.Count > 0 && state.TryGetValue(key, out value) && checkValue(value);
-        }
-
-        protected T GetProjectionStateValue<T>(ProjectionsManager manager, string projectionName, string key, Func<string, T> convert, T defaultValue)
-        {
-            var result = defaultValue;
-
-            var state = GetProjectionState(manager, projectionName);
-            string value;
-            if (state != null && state.Count > 0 && state.TryGetValue(key, out value))
-                result = convert(value);
-
-            return result;
-        }
-
-        protected static Dictionary<string, string> GetProjectionState(ProjectionsManager manager, string projectionName)
-        {
-            var rawState = GetProjectionStateSafe(manager, projectionName);
-
-            Log.Info("Raw {0} state: {1}", projectionName, rawState);
-
-            if (string.IsNullOrEmpty(rawState))
-                return null;
-
-            if (rawState == "*** UNKNOWN ***")
-                return null;
-
-            var state = Codec.Json.From<Dictionary<string, string>>(rawState);
-            return state;
-        }
-
-
-        protected static string GetProjectionStatisticsSafe(ProjectionsManager manager, string projectionName)
-        {
-            string rawState;
-            try
-            {
-                rawState = manager.GetStatistics(projectionName);
-            }
-            catch (Exception ex)
-            {
-                rawState = null;
-                Log.InfoException(ex, "Failed to get projection state");
-            }
-            return rawState;
-        }
-
-        protected static Dictionary<string, string> GetProjectionStatistics(ProjectionsManager manager, string projectionName)
-        {
-            var rawState = GetProjectionStatisticsSafe(manager, projectionName);
-
-            Log.Info("Raw {0} statistics: {1}", projectionName, rawState);
-
-            if (string.IsNullOrEmpty(rawState))
-                return null;
-
-            if (rawState == "*** UNKNOWN ***")
-                return null;
-
-            var state = Codec.Json.From<Dictionary<string, string>>(rawState);
-            return state;
-        }
-
-        protected static string GetProjectionStateSafe(ProjectionsManager manager, string projectionName)
-        {
-            string rawState;
-            try
-            {
-                rawState = manager.GetState(projectionName);
-            }
-            catch (Exception ex)
-            {
-                rawState = null;
-                Log.InfoException(ex, "Failed to get projection state");
-            }
-            return rawState;
-        }
-
-        protected void EnableProjectionByCategory()
-        {
-            var retryCount = 0;
-            Exception exception = null;
-            while (retryCount < 5)
-            {
-                int sleepMs = 250*(retryCount*retryCount);
-                Log.Debug("Sleep for {0}ms", sleepMs);
-                Thread.Sleep(sleepMs);
-                try
-                {
-                    Log.Debug("Enable *$by_category* projection");
-                    GetProjectionsManager().Enable("$by_category");
-                    exception = null;
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    exception = new ApplicationException("Failed to enable by_category.", ex);
-                    Log.ErrorException(ex, "Failed to enable *$by_category* projection, retry #{0}.", retryCount);
-                }
-                retryCount += 1;
-            }
-
-            if (exception != null)
-                throw exception;
         }
 
         protected string CreateSumCheckForBankAccounts()

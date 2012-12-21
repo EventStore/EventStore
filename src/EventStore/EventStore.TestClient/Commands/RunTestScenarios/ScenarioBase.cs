@@ -307,7 +307,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 argumentsHead = "";
             }
 
-            var arguments = string.Format("{0} --ip {1} -t {2} -h {3} --db {4}",
+            var arguments = string.Format("{0} --run-projections --ip {1} -t {2} -h {3} --db {4}",
                                           argumentsHead,
                                           _tcpEndPoint.Address,
                                           _tcpEndPoint.Port,

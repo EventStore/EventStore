@@ -60,6 +60,7 @@
     <Compile Include="Commands\RunTestScenarios\BankAccountEvent.cs" />
     <Compile Include="Commands\RunTestScenarios\LoopingProjectionKillScenario.cs" />
     <Compile Include="Commands\RunTestScenarios\MassProjectionsScenario.cs" />
+    <Compile Include="Commands\RunTestScenarios\ProjectionsScenarioBase.cs" />
     <Compile Include="Commands\RunTestScenarios\ProjectionWrongTagCheck.cs">
       <SubType>Code</SubType>
     </Compile>

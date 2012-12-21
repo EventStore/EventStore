@@ -97,7 +97,7 @@ namespace EventStore.ClientAPI
             Ensure.NotNullOrEmpty(name, "name");
             Ensure.NotNullOrEmpty(query, "query");
 
-            return _client.CreateContinious(_httpEndPoint, name, query);
+            return _client.CreateContinuous(_httpEndPoint, name, query);
         }
 
         public string ListAll()
@@ -226,9 +226,11 @@ namespace EventStore.ClientAPI
             return SendPost(endPoint.ToHttpUrl("/projections/onetime?type=JS"), query, HttpStatusCode.Created);
         }
 
-        public Task CreateContinious(IPEndPoint endPoint, string name, string query)
+        public Task CreateContinuous(IPEndPoint endPoint, string name, string query)
         {
-            return SendPost(endPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS", name), query, HttpStatusCode.Created);
+            return SendPost(endPoint.ToHttpUrl("/projections/continuous?name={0}&type=JS&emit=1", name), 
+                                               query, 
+                                               HttpStatusCode.Created);
         }
 
         public Task<string> ListAll(IPEndPoint endPoint)
