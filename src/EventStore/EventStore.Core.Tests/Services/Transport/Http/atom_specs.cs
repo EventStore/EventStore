@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _feed.SetId(FeedUrl);
             _feed.SetUpdated(DateTime.UtcNow);
             _feed.SetAuthor(AtomSpecs.Author);
-            _feed.AddLink(FeedUrl, "self", null);
+            _feed.AddLink("self", FeedUrl, null);
 
             Assert.Throws<ArgumentNullException>(() => _feed.SetTitle(null));
             Assert.Throws<AtomSpecificationViolationException>(() => _feed.WriteXml(_writer));
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             //_feed.SetId(FeedUrl);
             _feed.SetUpdated(DateTime.UtcNow);
             _feed.SetAuthor(AtomSpecs.Author);
-            _feed.AddLink(FeedUrl, "self", null);
+            _feed.AddLink("self", FeedUrl, null);
 
             Assert.Throws<ArgumentNullException>(() => _feed.SetId(null));
             Assert.Throws<AtomSpecificationViolationException>(() => _feed.WriteXml(_writer));
@@ -88,7 +88,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _feed.SetId(FeedUrl);
             //_feed.SetUpdated(DateTime.UtcNow);
             _feed.SetAuthor(AtomSpecs.Author);
-            _feed.AddLink(FeedUrl, "self", null);
+            _feed.AddLink("self", FeedUrl, null);
 
             Assert.Throws<AtomSpecificationViolationException>(() => _feed.WriteXml(_writer));
         }
@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _feed.SetId(FeedUrl);
             _feed.SetUpdated(DateTime.UtcNow);
             _feed.SetAuthor(AtomSpecs.Author);
-            _feed.AddLink(FeedUrl, "self", null);
+            _feed.AddLink("self", FeedUrl, null);
 
             Assert.DoesNotThrow(() => _feed.WriteXml(_writer));
         }
@@ -112,7 +112,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _feed.SetId(FeedUrl);
             _feed.SetUpdated(DateTime.UtcNow);
             _feed.SetAuthor(AtomSpecs.Author);
-            _feed.AddLink(FeedUrl, "self", null);
+            _feed.AddLink("self", FeedUrl, null);
 
             Assert.DoesNotThrow(() => _feed.WriteXml(_writer));
         }
@@ -124,7 +124,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _feed.SetId(FeedUrl);
             _feed.SetUpdated(DateTime.UtcNow);
             //_feed.SetAuthor(AtomSpecs.Author);
-            _feed.AddLink(FeedUrl, "self", null);
+            _feed.AddLink("self", FeedUrl, null);
 
             Assert.Throws<ArgumentNullException>(() => _feed.SetAuthor(null));
             Assert.Throws<AtomSpecificationViolationException>(() => _feed.WriteXml(_writer));
@@ -137,7 +137,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             _feed.SetId(FeedUrl);
             _feed.SetUpdated(DateTime.UtcNow);
             _feed.SetAuthor(AtomSpecs.Author);
-            //_feed.AddLink(FeedUrl, "self", null);
+            //_feed.AddLink("self", FeedUrl, null);
 
             Assert.Throws<AtomSpecificationViolationException>(() => _feed.WriteXml(_writer));
         }

@@ -242,7 +242,7 @@
     <Compile Include="Services\Transport\Http\Controllers\PingController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\ReadEventDataController.cs" />
     <Compile Include="Services\Transport\Http\Controllers\StatController.cs" />
-    <Compile Include="Services\Transport\Http\Controllers\AtomControllerDefinitions.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\AtomController.cs" />
     <Compile Include="Services\Transport\Http\Convert.cs" />
     <Compile Include="Services\Transport\Http\HttpMessagePipe.cs" />
     <Compile Include="Services\Transport\Http\IController.cs" />

@@ -162,6 +162,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                             new ClientMessage.ReadStreamEventsBackwardCompleted(
                                     message.CorrelationId,
                                     message.EventStreamId,
+                                    message.FromEventNumber == -1 ? list.Last().EventNumber : message.FromEventNumber,
+                                    message.MaxCount,
                                     records,
                                     RangeReadResult.Success,
                                     nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber - 1 : -1,

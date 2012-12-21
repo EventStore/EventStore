@@ -141,14 +141,16 @@ namespace EventStore.Core.Services.Storage
             }
             var resolvedPairs = ResolveLinkToEvents(result.Records, message.ResolveLinks);
             message.Envelope.ReplyWith(
-                                       new ClientMessage.ReadStreamEventsBackwardCompleted(message.CorrelationId,
-                                                                                           message.EventStreamId,
-                                                                                           resolvedPairs,
-                                                                                           result.Result,
-                                                                                           result.NextEventNumber,
-                                                                                           result.LastEventNumber,
-                                                                                           result.IsEndOfStream,
-                                                                                           result.IsEndOfStream ? lastCommitPosition : (long?)null));
+                new ClientMessage.ReadStreamEventsBackwardCompleted(message.CorrelationId,
+                                                                    message.EventStreamId,
+                                                                    result.FromEventNumber,
+                                                                    result.MaxCount,
+                                                                    resolvedPairs,
+                                                                    result.Result,
+                                                                    result.NextEventNumber,
+                                                                    result.LastEventNumber,
+                                                                    result.IsEndOfStream,
+                                                                    result.IsEndOfStream ? lastCommitPosition : (long?)null));
         }
 
         private EventLinkPair[] ResolveLinkToEvents(EventRecord[] records, bool resolveLinks)

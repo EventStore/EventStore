@@ -296,7 +296,7 @@ namespace EventStore.Projections.Core.Services.Http
         private ResponseConfiguration StateConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionState state)
         {
             if (state.Exception != null)
-                return Configure.InternalServerEror();
+                return Configure.InternalServerError();
             else
                 return Configure.OkNoCache("application/json");
         }

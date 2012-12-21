@@ -33,7 +33,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Transport.Http;
-using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -68,15 +67,15 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration OkNoCache(string contentType, params KeyValuePair<string, string>[] headers)
         {
-            return new ResponseConfiguration(HttpStatusCode.OK,
-                                             "OK",
-                                             contentType,
-                                             new List<KeyValuePair<string, string>>(headers)
-                                             {
-                                                 new KeyValuePair<string, string>("Cache-Control",
-                                                                                  string.Format("no-cache, max-age={0}", 0)),
-                                                 new KeyValuePair<string, string>("Expires", "-1")
-                                             }.ToArray());
+            return new ResponseConfiguration(
+                    HttpStatusCode.OK,
+                    "OK",
+                    contentType,
+                    new List<KeyValuePair<string, string>>(headers)
+                    {
+                            new KeyValuePair<string, string>("Cache-Control", string.Format("no-cache, max-age={0}", 0)),
+                            new KeyValuePair<string, string>("Expires", "-1")
+                    }.ToArray());
         }
 
         public static ResponseConfiguration NotFound(HttpResponseConfiguratorArgs entity, Message message)
@@ -89,7 +88,7 @@ namespace EventStore.Core.Services.Transport.Http
             return new ResponseConfiguration(HttpStatusCode.Gone, "Deleted", null);
         }
 
-        public static ResponseConfiguration InternalServerEror()
+        public static ResponseConfiguration InternalServerError()
         {
             return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Internal Server Error", null);
         }
@@ -100,7 +99,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.ReadEventCompleted;
             if (completed == null)
-                return InternalServerEror();
+                return InternalServerError();
 
             switch (completed.Result)
             {
@@ -122,7 +121,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.ReadStreamEventsBackwardCompleted;
             if (completed == null)
-                return InternalServerEror();
+                return InternalServerError();
 
             switch (completed.Result)
             {
@@ -143,19 +142,22 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.WriteEventsCompleted;
             if (completed == null)
-                return InternalServerEror();
+                return InternalServerError();
 
             switch (completed.ErrorCode)
             {
                 case OperationErrorCode.Success:
-                    return new ResponseConfiguration(HttpStatusCode.Created,
-                                                     "Created",
-                                                     null,
-                                                     new KeyValuePair<string, string>("Location",
-                                                                                      HostName.Combine(entity.UserHostName,
-                                                                                                  "/streams/{0}/{1}",
-                                                                                                  completed.EventStreamId,
-                                                                                                  completed.EventNumber == 0 ? 1 : completed.EventNumber)));
+                {
+                    return new ResponseConfiguration(
+                        HttpStatusCode.Created,
+                        "Created",
+                        null,
+                        new KeyValuePair<string, string>("Location",
+                                                         HostName.Combine(entity.UserHostName,
+                                                                          "/streams/{0}/{1}",
+                                                                          completed.EventStreamId,
+                                                                          completed.EventNumber == 0 ? 1 : completed.EventNumber)));
+                }
                 case OperationErrorCode.PrepareTimeout:
                 case OperationErrorCode.CommitTimeout:
                 case OperationErrorCode.ForwardTimeout:
@@ -177,7 +179,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as MonitoringMessage.GetFreshStatsCompleted;
             if (completed == null)
-                return InternalServerEror();
+                return InternalServerError();
 
             return completed.Success ? OkNoCache(entity, message) : NotFound(entity, message);
         }
@@ -188,7 +190,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.CreateStreamCompleted;
             if (completed == null)
-                return InternalServerEror();
+                return InternalServerError();
 
             switch (completed.ErrorCode)
             {
@@ -221,7 +223,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.DeleteStreamCompleted;
             if (completed == null)
-                return InternalServerEror();
+                return InternalServerError();
 
             switch (completed.ErrorCode)
             {
@@ -249,7 +251,7 @@ namespace EventStore.Core.Services.Transport.Http
             var completed = message as ClientMessage.ListStreamsCompleted;
             return completed != null && completed.Success
                        ? Ok(entity, message)
-                       : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Couldn't get streams list. Try turning projection 'Index By Streams' on", null);
+                       : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Couldn't get streams list. Try turning projection 'Index By Streams' on.", null);
         }
 
         public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message)
@@ -258,9 +260,8 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.ReadAllEventsBackwardCompleted;
             return completed != null
-                       ? OkCache(entity,message, MinPossibleAge)
-                       : new ResponseConfiguration(HttpStatusCode.InternalServerError,
-                                                   "Failed to read all events backward", null);
+                       ? OkCache(entity, message, MinPossibleAge)
+                       : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Failed to read all events backward.", null);
         }
 
         public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity, Message message)
@@ -270,7 +271,7 @@ namespace EventStore.Core.Services.Transport.Http
             var completed = message as ClientMessage.ReadAllEventsForwardCompleted;
             return completed != null
                        ? OkCache(entity, message, MinPossibleAge)
-                       : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Failed to read all events forward", null);
+                       : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Failed to read all events forward.", null);
         }
     }
 }
