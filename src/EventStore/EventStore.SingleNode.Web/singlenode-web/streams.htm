@@ -1,0 +1,64 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Projections</title>
+    <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
+    <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
+    <script id="r-head">
+        es.tmpl.renderHead();
+    </script>
+    <style type="text/css">
+		.content table { table-layout: fixed; }
+        .content table .r { text-align: right; }
+        .content table .c { text-align: center; }
+        .content table thead th { vertical-align: middle; }
+		
+		.content table td { word-wrap: break-word; }
+		.content table .name { width: 150px; }
+		.content table .status { width: 75px; }
+		.content table .mode { width: 70px; }
+		.content table .progress { width: 50px; }
+		.content table .position { width: 165px; }
+		.content table .checkpoint { width: 165px; }
+		.content table .checkpoint-status { width: 75px; }
+		.content table .read-writes { width: 75px; }
+		.content table .writes { width: 60px; }
+		.content table .partitions { width: 65px; }
+		.content table .processed { width: 75px; }
+		.content table .per-second { width: 75px; }
+		.content table .buffered { width: 60px; }
+		.content table td {vertical-align: middle;}
+    </style>
+</head>
+<body>
+    <div id="content">
+        <h1>Streams</h1>
+        <div style="display: table; width: 90%;">
+            <div style="display: table-row">
+                <div style="display: table-cell; width: 50%">
+                    <h3>Recently Created Streams</h3>
+                    <div id="recent-streams"></div>
+                </div>
+                <div style="display: table-cell; width: 50%">
+                    <h3>Recently Changed Streams</h3>
+                    <div id="recent-events"></div>
+                </div>
+            </div>
+        </div>
+    <script id="r-body">
+        es.tmpl.renderBody();
+    </script>
+    </div>
+        <script>
+            $(function () {
+                $.getJSON("/streams/$streams/range/-1/100", null, function (data) {
+                    alert(JSON.stringify(data.entries[0]).substr(0, 1000));
+                });
+                $.getJSON("/streams/$all/100", null, function (data) {
+                    alert(JSON.stringify(data.entries).substr(0, 1000));
+                });
+            });
+        </script>
+</body>
+</html>

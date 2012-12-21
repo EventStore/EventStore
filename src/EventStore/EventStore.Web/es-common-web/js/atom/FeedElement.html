@@ -1,0 +1,17 @@
+﻿<h1>{{:Title}}</h1>
+<div>
+    {{for Links}}
+    <div style="display: inline-block"><a href="{{:Uri}}">{{:Relation}}</a></div>
+    {{/for}}
+</div>
+<table class="table table-bordered table-striped">
+{{for Entries}}
+    <tr>
+        <td>{{:EventNumber}}</td>
+        <td><a href="{{:Id}}">{{:Title}}</a></td>
+        <td>{{:Summary}}</td>
+        <td>{{:~formatDate(Updated)}}</td>
+        <td>{{:EventType}}</td>
+    </tr>
+{{/for}}
+</table>

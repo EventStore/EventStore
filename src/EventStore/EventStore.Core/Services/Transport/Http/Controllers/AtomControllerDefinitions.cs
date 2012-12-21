@@ -35,11 +35,13 @@ using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.EntityManagement;
+using Newtonsoft.Json;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public class AtomController : CommunicationController
     {
+        private static readonly HtmlFeedCodec _htmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
         private static readonly ICodec[] ServiceDocCodecs = new[]
                                                             {
                                                                 Codec.Xml,
@@ -56,7 +58,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Codec.Json,
                                                           Codec.CreateCustom(Codec.Json, ContentType.AtomJson)
                                                       };
+        private static readonly ICodec[] AtomFeedCodecs = new[]
+                                                      {
+                                                          Codec.Xml,
+                                                          Codec.ApplicationXml,
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom),
+                                                          Codec.Json,
+                                                          Codec.CreateCustom(Codec.Json, ContentType.AtomJson),
+                                                          _htmlFeedCodec // initialization order matters
+                                                      };
+
         private static readonly ICodec DefaultResponseCodec = Codec.Xml;
+        private static readonly ICodec DefaultFeedResponseCodec = _htmlFeedCodec; // initialization order matters
 
         private readonly GenericController _genericController;
         private readonly AllEventsController _allEventsController;
@@ -93,14 +106,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             service.RegisterControllerAction(new ControllerAction("/streams/{stream}", 
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
-                                                                  AtomCodecs,
-                                                                  DefaultResponseCodec),
+                                                                  AtomFeedCodecs,
+                                                                  DefaultFeedResponseCodec),
                                              OnGetFeedLatest);
             service.RegisterControllerAction(new ControllerAction("/streams/{stream}/range/{start}/{count}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
-                                                                  AtomCodecs,
-                                                                  DefaultResponseCodec),
+                                                                  AtomFeedCodecs,
+                                                                  DefaultFeedResponseCodec),
                                              OnGetFeedPage);
             service.RegisterControllerAction(new ControllerAction("/streams/{stream}/{id}",
                                                                   HttpMethod.Get,
@@ -300,6 +313,73 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         }
     }
 
+    class HtmlFeedCodec : ICodec, IRichAtomCodec
+    {
+        public string ContentType {
+            get { return "text/html"; }
+        }
+
+        public bool CanParse(string format)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SuitableForReponse(AcceptComponent component)
+        {
+            return component.MediaType == "*"
+                   || (component.MediaType == "text"
+                       && (component.MediaSubtype == "*" || component.MediaSubtype == "html"));
+        }
+
+        public T From<T>(string text)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string To<T>(T value)
+        {
+            return @"
+<!DOCTYPE html>
+<html>
+<head>
+    <script src='/web/es/lib/jquery/jquery-1.8.0.min.js'></script>
+    <script src='/web/es/lib/jsrender/jsrender.js'></script>
+    <script src='/web/es/js/atom/render.js'></script>
+    <script src='/web/es/js/es.tmpl.js'></script>
+    <script id='r-head'>
+        es.tmpl.renderHead();
+    </script>
+</head>
+<body>
+<script>
+    var data = " + JsonConvert.SerializeObject(value, Formatting.Indented) + @";
+    var templateJs = '/web/es/js/atom/" + value.GetType().Name + @".html';
+    $(function() {
+        renderHtmlBy(data, templateJs);
+    }); 
+</script>
+
+<div id='content'>
+    <div id='data'></div>
+    <script id='r-body'>
+    es.tmpl.renderBody();
+    </script>
+</div>
+
+
+</body>
+</html>
+";
+        }
+    }
+
+    interface IRichAtomCodec
+    {
+    }
+
+
+    /*
+     * */
     public class GenericController : CommunicationController
     {
         private readonly IPublisher _networkSendQueue;

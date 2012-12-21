@@ -93,9 +93,10 @@ namespace EventStore.Core.Services.Transport.Http
                                          int start, 
                                          int count, 
                                          DateTime updateTime,
-                                         EventRecord[] items, 
-                                         Func<EventRecord, string, EntryElement> itemToEntry,
-                                         string userHostName)
+                                         EventRecord[] items,
+                                         Func<EventRecord, string, bool, EntryElement> itemToEntry,
+                                         string userHostName,
+            bool embedContent)
         {
             if (string.IsNullOrEmpty(eventStreamId) || items == null || userHostName == null)
                 return null;
@@ -134,14 +135,14 @@ namespace EventStore.Core.Services.Transport.Http
 
             foreach (var item in items)
             {
-                feed.AddEntry(itemToEntry(item, userHostName));
+                feed.AddEntry(itemToEntry(item, userHostName, embedContent));
             }
             return feed;
         }
 
         public static FeedElement ToAllEventsBackwardFeed(ReadAllResult result,
-                                                          Func<EventRecord, string, EntryElement> itemToEntry,
-                                                          string userHostName)
+                                                          Func<EventRecord, string, bool, EntryElement> itemToEntry,
+                                                          string userHostName, bool embedContent)
         {
             var self = HostName.Combine(userHostName, "/streams/$all");
             var feed = new FeedElement();
@@ -180,14 +181,14 @@ namespace EventStore.Core.Services.Transport.Http
 
             foreach (var item in items)
             {
-                feed.AddEntry(itemToEntry(item, userHostName));
+                feed.AddEntry(itemToEntry(item, userHostName, embedContent));
             }
             return feed;
         }
 
         public static FeedElement ToAllEventsForwardFeed(ReadAllResult result,
-                                                         Func<EventRecord, string, EntryElement> itemToEntry,
-                                                         string userHostName)
+                                                         Func<EventRecord, string, bool, EntryElement> itemToEntry,
+                                                         string userHostName, bool embedContent)
         {
             var self = HostName.Combine(userHostName, "/streams/$all");
             var feed = new FeedElement();
@@ -225,7 +226,7 @@ namespace EventStore.Core.Services.Transport.Http
                          null);
             foreach (var item in items)
             {
-                feed.AddEntry(itemToEntry(item, userHostName));
+                feed.AddEntry(itemToEntry(item, userHostName, embedContent));
             }
             return feed;
         }
@@ -248,12 +249,26 @@ namespace EventStore.Core.Services.Transport.Http
             return items.Max(e => e.EventNumber);
         }
 
-        public static EntryElement ToEntry(EventRecord evnt, string userHostName)
+        public static EntryElement ToEntry(EventRecord evnt, string userHostName, bool embedContent)
         {
             if (evnt == null || userHostName == null)
                 return null;
 
-            var entry = new EntryElement();
+
+            EntryElement entry;
+            RichEntryElement richEntry;
+            if (embedContent)
+            {
+                richEntry = new RichEntryElement();
+                entry = richEntry;
+
+                richEntry.EventType = evnt.EventType;
+                richEntry.EventNumber = evnt.EventNumber;
+            }
+            else
+            {
+                entry = new EntryElement();
+            }
 
             entry.SetTitle(string.Format("{0} #{1}", evnt.EventStreamId, evnt.EventNumber));
 
@@ -281,4 +296,5 @@ namespace EventStore.Core.Services.Transport.Http
             return entry;
         }
     }
+
 }

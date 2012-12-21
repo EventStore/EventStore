@@ -31,6 +31,7 @@ using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http
@@ -61,7 +62,7 @@ namespace EventStore.Core.Services.Transport.Http
                     switch (completed.Result)
                     {
                         case SingleReadResult.Success:
-                            return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.UserHostName));
+                            return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.UserHostName, false));
                         case SingleReadResult.NotFound:
                         case SingleReadResult.NoStream:
                         case SingleReadResult.StreamDeleted:
@@ -93,7 +94,7 @@ namespace EventStore.Core.Services.Transport.Http
                                                                           updateTime,
                                                                           completed.Events.Select(x => x.Event).ToArray(),
                                                                           Convert.ToEntry,
-                                                                          entity.UserHostName));
+                                                                          entity.UserHostName, entity.ResponseCodec is IRichAtomCodec));
                         case RangeReadResult.NoStream:
                         case RangeReadResult.StreamDeleted:
                             return string.Empty;
@@ -110,7 +111,7 @@ namespace EventStore.Core.Services.Transport.Http
 
                 var completed = message as ClientMessage.ReadAllEventsBackwardCompleted;
                 return completed != null
-                    ? entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName)) 
+                    ? entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName, false)) 
                     : string.Empty;
             }
 
@@ -120,7 +121,7 @@ namespace EventStore.Core.Services.Transport.Http
 
                 var completed = message as ClientMessage.ReadAllEventsForwardCompleted;
                 return completed != null
-                    ? entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName)) 
+                    ? entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName, false)) 
                     : string.Empty;
             }
 

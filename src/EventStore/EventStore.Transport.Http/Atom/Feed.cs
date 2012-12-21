@@ -218,6 +218,12 @@ namespace EventStore.Transport.Http.Atom
         }
     }
 
+    public class RichEntryElement : EntryElement
+    {
+        public string EventType { get; set; }
+        public int EventNumber { get; set; }
+    }
+
     public class LinkElement : IXmlSerializable
     {
         public string Uri { get; set; }

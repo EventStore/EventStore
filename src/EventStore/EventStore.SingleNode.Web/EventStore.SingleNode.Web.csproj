@@ -54,6 +54,9 @@
     <Content Include="singlenode-web\chat.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="singlenode-web\streams.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="singlenode-web\debug-projection.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
