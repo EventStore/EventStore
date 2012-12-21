@@ -78,7 +78,7 @@ namespace EventStore.SingleNode
             var dbVerifyHashes = !options.DoNotVerifyDbHashesOnStartup;
             _node = new SingleVNode(db, vnodeSettings, appSettings, dbVerifyHashes);
 
-            if (!options.NoProjections)
+            if (options.RunProjections)
             {
                 _projections = new Projections.Core.Projections(db,
                                                                 _node.MainQueue,
@@ -92,13 +92,18 @@ namespace EventStore.SingleNode
 
         private static SingleVNodeSettings GetVNodeSettings(SingleNodeOptions options)
         {
-            var tcp = new IPEndPoint(options.Ip, options.TcpPort);
-            var http = new IPEndPoint(options.Ip, options.HttpPort);
+            var tcpEndPoint = new IPEndPoint(options.Ip, options.TcpPort);
+            var httpEndPoint = new IPEndPoint(options.Ip, options.HttpPort);
             var prefixes = options.PrefixesString.IsNotEmptyString()
                                    ? options.PrefixesString.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)
-                                   : new[] {http.ToHttpUrl()};
+                                   : new[] {httpEndPoint.ToHttpUrl()};
 
-            var vnodeSettings = new SingleVNodeSettings(tcp, http, prefixes.Select(p => p.Trim()).ToArray());
+            var vnodeSettings = new SingleVNodeSettings(tcpEndPoint,
+                                                        httpEndPoint, 
+                                                        prefixes.Select(p => p.Trim()).ToArray(),
+                                                        options.HttpSendThreads,
+                                                        options.HttpReceiveThreads,
+                                                        options.TcpSendThreads);
             return vnodeSettings;
         }
 
