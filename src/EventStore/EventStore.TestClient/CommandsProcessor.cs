@@ -87,9 +87,15 @@ namespace EventStore.TestClient
                 try
                 {
                     var syntaxOk = commandProcessor.Execute(context, commandArgs);
-                    if (!syntaxOk)
+                    if (syntaxOk)
+                    {
+                        exitC = context.ExitCode;
+                    }
+                    else
+                    {
+                        exitC = 1;
                         _log.Info("Usage of {0}:{1}{2}", commandName, Environment.NewLine, commandProcessor.Usage);
-                    exitC = context.ExitCode;
+                    }
                     executedEvent.Set();
                 }
                 catch (Exception exc)

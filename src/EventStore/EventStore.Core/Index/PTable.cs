@@ -374,7 +374,6 @@ namespace EventStore.Core.Index
         private static IndexEntry ReadNextNoSeek(WorkItem workItem)
         {
             //workItem.Stream.Read(workItem.Buffer, 0, IndexEntrySize);
-            // TODO AN: check if just creating IndexEntry by hand is faster (no boxing)
             //var entry = (IndexEntry)Marshal.PtrToStructure(workItem.BufferHandle.AddrOfPinnedObject(), typeof(IndexEntry));
             //return entry;
             return new IndexEntry(workItem.Reader.ReadUInt64(), workItem.Reader.ReadInt64());

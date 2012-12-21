@@ -60,19 +60,17 @@ namespace EventStore.Core.Index
                 using (var md5 = MD5.Create())
                 using (var cs = new CryptoStream(fs, md5, CryptoStreamMode.Write))
                 using (var bs = new BufferedStream(cs, 65536))
-                using (var writer = new BinaryWriter(bs))
                 {
                     // WRITE HEADER
                     var headerBytes = new PTableHeader(Version).AsByteArray();
                     cs.Write(headerBytes, 0, headerBytes.Length);
 
-                    var buffer = new byte[IndexEntrySize];
                     // WRITE INDEX ENTRIES
+                    var buffer = new byte[IndexEntrySize];
                     foreach (var record in table.IterateAllInOrder())
                     {
                         var rec = record;
                         AppendRecordTo(bs, rec.Bytes, buffer);
-                        //AppendRecordTo(writer, record);
                     }
                     bs.Flush();
                     cs.FlushFinalBlock();
@@ -122,14 +120,13 @@ namespace EventStore.Core.Index
                 using (var md5 = MD5.Create())
                 using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
                 using (var bs = new BufferedStream(cs, 65536))
-                using (var writer = new BinaryWriter(bs))
                 {
                     // WRITE HEADER
                     var headerBytes = new PTableHeader(Version).AsByteArray();
                     cs.Write(headerBytes, 0, headerBytes.Length);
 
-                    var bytes = new byte[IndexEntrySize];
                     uint lastDeleted = uint.MaxValue;
+                    var buffer = new byte[IndexEntrySize];
                     // WRITE INDEX ENTRIES
                     while (enumerators.Count > 0)
                     {
@@ -138,14 +135,12 @@ namespace EventStore.Core.Index
                         if (current.Version == EventNumber.DeletedStream && !isHashCollision(current))
                         {
                             lastDeleted = current.Stream;
-                            AppendRecordTo(bs, current.Bytes, bytes);
-                            //AppendRecordTo(writer, current);
+                            AppendRecordTo(bs, current.Bytes, buffer);
                         }
                         else
                         {
                             if (lastDeleted != current.Stream || current.Version == 0) // we keep 0th event for hash collision detection
-                                AppendRecordTo(bs, current.Bytes, bytes);
-                                //AppendRecordTo(writer, current);
+                                AppendRecordTo(bs, current.Bytes, buffer);
                         }
                         if (!enumerators[idx].MoveNext())
                         {
@@ -184,15 +179,14 @@ namespace EventStore.Core.Index
                 using (var md5 = MD5.Create())
                 using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
                 using (var bs = new BufferedStream(cs, 65536))
-                using (var writer = new BinaryWriter(bs))
                 {
                     // WRITE HEADER
                     var headerBytes = new PTableHeader(Version).AsByteArray();
                     cs.Write(headerBytes, 0, headerBytes.Length);
 
                     // WRITE INDEX ENTRIES
-                    var bytes = new byte[IndexEntrySize];
                     uint lastDeleted = uint.MaxValue;
+                    var buffer = new byte[IndexEntrySize];
                     var enum1 = enumerators[0];
                     var enum2 = enumerators[1];
                     bool available1 = enum1.MoveNext();
@@ -214,14 +208,12 @@ namespace EventStore.Core.Index
                         if (current.Version == EventNumber.DeletedStream && !isHashCollision(current))
                         {
                             lastDeleted = current.Stream;
-                            AppendRecordTo(bs, current.Bytes, bytes);
-                            //AppendRecordTo(writer, current);
+                            AppendRecordTo(bs, current.Bytes, buffer);
                         }
                         else
                         {
                             if (lastDeleted != current.Stream || current.Version == 0) // we keep 0th event for hash collision detection
-                                AppendRecordTo(bs, current.Bytes, bytes);
-                                //AppendRecordTo(writer, current);
+                                AppendRecordTo(bs, current.Bytes, buffer);
                         }
                     }
                     bs.Flush();
@@ -234,7 +226,7 @@ namespace EventStore.Core.Index
                     f.Write(hash, 0, hash.Length);
                 }
             }
-            Log.Trace("PTables merge finished in " + watch.Elapsed);
+            Log.Trace("PTables merge finished in {0}.", watch.Elapsed);
             return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);
         }
 
