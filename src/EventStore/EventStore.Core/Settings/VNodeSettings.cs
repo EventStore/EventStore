@@ -36,16 +36,29 @@ namespace EventStore.Core.Settings
         public readonly IPEndPoint ExternalTcpEndPoint;
         public readonly IPEndPoint ExternalHttpEndPoint;
         public readonly string[] HttpPrefixes;
+        public readonly int HttpSendingThreads;
+        public readonly int HttpReceivingThreads;
+        public readonly int TcpSendingThreads;
 
-        public SingleVNodeSettings(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint, string[] httpPrefixes)
+        public SingleVNodeSettings(IPEndPoint externalTcpEndPoint, 
+                                   IPEndPoint externalHttpEndPoint, 
+                                   string[] httpPrefixes,
+                                   int httpSendingThreads, 
+                                   int httpReceivingThreads, 
+                                   int tcpSendingThreads)
         {
             Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
             Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
             Ensure.NotNull(httpPrefixes, "httpPrefixes");
-
+            Ensure.Nonnegative(httpReceivingThreads, "httpReceivingThreads");
+            Ensure.Nonnegative(httpSendingThreads, "httpSendingThreads");
+            Ensure.Nonnegative(tcpSendingThreads, "tcpSendingThreads");
             ExternalTcpEndPoint = externalTcpEndPoint;
             ExternalHttpEndPoint = externalHttpEndPoint;
             HttpPrefixes = httpPrefixes;
+            HttpSendingThreads = httpSendingThreads;
+            HttpReceivingThreads = httpReceivingThreads;
+            TcpSendingThreads = tcpSendingThreads;
         }
 
         public override string ToString()

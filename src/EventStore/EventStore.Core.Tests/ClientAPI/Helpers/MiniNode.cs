@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             TcpEndPoint = new IPEndPoint(ip, extTcpPort);
             HttpEndPoint = new IPEndPoint(ip, extHttpPort);
 
-            var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint, HttpEndPoint, new[] {HttpEndPoint.ToHttpUrl()});
+            var singleVNodeSettings = new SingleVNodeSettings(TcpEndPoint, HttpEndPoint, new[] {HttpEndPoint.ToHttpUrl()}, 1,1,1);
             var appSettings = new SingleVNodeAppSettings(TimeSpan.FromHours(1), StatsStorage.None);
 
             _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, appSettings, dbVerifyHashes: true, memTableEntryCount: 1000);
