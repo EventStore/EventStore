@@ -337,19 +337,22 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
+                var subscribed = new ManualResetEventSlim();
                 store.SubscribeAsync(stream, 
                                      (@event, position) =>
                                      {
                                          catched.Add(@event);
                                          lastKnonwPosition = position;
+                                         subscribed.Set();
                                      },
                                      () => dropped.Set());
-
 
                 var testEvents = Enumerable.Range(1, 5).Select(x => new TestEvent(x.ToString())).ToArray();
 
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.That(write.Wait(Timeout));
+
+                Assert.IsTrue(subscribed.Wait(2000), "Subscription haven't happened in time.");
 
                 store.UnsubscribeAsync(stream);
                 Assert.That(dropped.WaitOne(Timeout));
