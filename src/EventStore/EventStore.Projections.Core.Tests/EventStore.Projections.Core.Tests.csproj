@@ -127,6 +127,12 @@
     <Compile Include="Services\event_reader\transaction_file_reader\when_handling_eof_and_idle_eof.cs" />
     <Compile Include="Services\event_reader\transaction_file_reader\when_onetime_reader_handles_eof.cs" />
     <Compile Include="Services\partition_state_cache\when_caching_a_parition_state.cs" />
+    <Compile Include="Services\partition_state_update_manager\FakeEventWriter.cs" />
+    <Compile Include="Services\partition_state_update_manager\when_created.cs" />
+    <Compile Include="Services\partition_state_update_manager\when_creating.cs" />
+    <Compile Include="Services\partition_state_update_manager\when_state_updated.cs" />
+    <Compile Include="Services\partition_state_update_manager\when_state_updated_twice.cs" />
+    <Compile Include="Services\partition_state_update_manager\when_two_states_were_updated.cs" />
     <Compile Include="Services\position_tagging\prepare_position_tagger\prepare_position_tagger.cs" />
     <Compile Include="Services\position_tagging\prepare_position_tagger\when_creating_prepare_postion_tracker.cs" />
     <Compile Include="Services\position_tagging\prepare_position_tagger\when_reinitializing_prepapre_postion_tracker.cs" />
@@ -336,6 +342,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="BeforeBuild">
     <Copy SourceFiles="..\libs\libjs1.so" DestinationFolder="$(OutDir)" Condition=" '$(OS)' != 'Windows_NT' " />

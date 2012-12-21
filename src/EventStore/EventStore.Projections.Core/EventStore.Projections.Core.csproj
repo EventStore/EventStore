@@ -116,6 +116,7 @@
     <Compile Include="Services\Processing\EventReorderingProjectionSubscription.cs" />
     <Compile Include="Services\Processing\GetStateWorkItem.cs" />
     <Compile Include="Services\Processing\ICoreProjectionCheckpointManager.cs" />
+    <Compile Include="Services\Processing\IEventWriter.cs" />
     <Compile Include="Services\Processing\IndexedEventTypeEventFilter.cs" />
     <Compile Include="Services\Processing\IndexedEventTypesEventFilter.cs" />
     <Compile Include="Services\Processing\MultiStreamCheckpointManager.cs" />
@@ -127,6 +128,7 @@
     <Compile Include="Services\Processing\MultiStreamEventReader.cs" />
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\PartitionStateCache.cs" />
+    <Compile Include="Services\Processing\PartitionStateUpdateManager.cs" />
     <Compile Include="Services\Processing\PositionTracker.cs" />
     <Compile Include="Services\Processing\PreparePositionTagger.cs" />
     <Compile Include="Services\Processing\ProgressWorkItem.cs" />
