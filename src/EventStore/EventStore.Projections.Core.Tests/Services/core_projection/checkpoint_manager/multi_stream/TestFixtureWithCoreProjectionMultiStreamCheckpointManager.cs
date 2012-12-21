@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 
         protected virtual void When()
         {
-            _manager = new MultiStreamCheckpointManager(
+            _manager = new MultiStreamSingleOutputStreamCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
                 new MultiStreamPositionTagger(new[] {"a", "b"}), _namingBuilder, _checkpointsEnabled, true);
         }

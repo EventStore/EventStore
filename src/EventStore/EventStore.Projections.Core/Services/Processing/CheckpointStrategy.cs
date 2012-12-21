@@ -242,14 +242,14 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
 
-                return new MultiStreamCheckpointManager(
+                return new MultiStreamSingleOutputStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
                     projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated);
             }
             else if (_streams != null && _streams.Count > 1)
             {
 
-                return new MultiStreamCheckpointManager(
+                return new MultiStreamSingleOutputStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
                     projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated);
             }
