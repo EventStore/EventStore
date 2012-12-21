@@ -52,7 +52,7 @@
     </div>
         <script>
             $(function () {
-                $.getJSON("/streams/$streams/range/-1/100", null, function (data) {
+                $.getJSON("/streams/$streams/range/-1/100?embed=yes", null, function (data) {
                     alert(JSON.stringify(data.entries[0]).substr(0, 1000));
                 });
                 $.getJSON("/streams/$all/100", null, function (data) {

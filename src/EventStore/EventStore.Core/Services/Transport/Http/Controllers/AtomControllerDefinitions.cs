@@ -103,13 +103,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   AtomCodecs,
                                                                   DefaultResponseCodec),
                                              OnDeleteStream);
-            service.RegisterControllerAction(new ControllerAction("/streams/{stream}", 
+            service.RegisterControllerAction(new ControllerAction("/streams/{stream}?embed={embed}", 
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
                                                                   AtomFeedCodecs,
                                                                   DefaultFeedResponseCodec),
                                              OnGetFeedLatest);
-            service.RegisterControllerAction(new ControllerAction("/streams/{stream}/range/{start}/{count}",
+            service.RegisterControllerAction(new ControllerAction("/streams/{stream}/range/{start}/{count}?embed={embed}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
                                                                   AtomFeedCodecs,
@@ -187,13 +187,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void OnGetFeedLatest(HttpEntity entity, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
+            var embed = IsOn(match, "embed", false);
             if (string.IsNullOrEmpty(stream))
             {
                 SendBadRequest(entity, string.Format("Invalid stream name '{0}'", stream));
                 return;
             }
 
-            OnGetFeedCore(entity, stream, -1, AtomSpecs.FeedPageSize);
+            OnGetFeedCore(entity, stream, -1, AtomSpecs.FeedPageSize, embed);
         }
 
         private void OnGetFeedPage(HttpEntity entity, UriTemplateMatch match)
@@ -201,6 +202,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var stream = match.BoundVariables["stream"];
             var start = match.BoundVariables["start"];
             var count = match.BoundVariables["count"];
+            var embed = IsOn(match, "embed", false);
 
             int startIdx;
             int cnt;
@@ -221,12 +223,21 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
 
-            OnGetFeedCore(entity, stream, startIdx, cnt);
+            OnGetFeedCore(entity, stream, startIdx, cnt, embed);
         }
 
-        private void OnGetFeedCore(HttpEntity entity, string stream, int start, int count)
+        private void OnGetFeedCore(HttpEntity entity, string stream, int start, int count, bool embed)
         {
-            _genericController.GetFeedPage(entity, stream, start, count);
+            _genericController.GetFeedPage(entity, stream, start, count, embed);
+        }
+
+        private static bool IsOn(UriTemplateMatch match, string option, bool def)
+        {
+            var rawValue = match.BoundVariables[option];
+            if (string.IsNullOrEmpty(rawValue))
+                return def;
+            var value = rawValue.ToLowerInvariant();
+            return "yes" == value || "true" == value || "1" == value;
         }
 
         //$ALL
@@ -458,12 +469,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             Publish(msg);
         }
 
-        public void GetFeedPage(HttpEntity entity, string stream, int start, int count)
+        public void GetFeedPage(HttpEntity entity, string stream, int start, int count, bool embed)
         {
             entity.Manager.AsyncState = start;
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
-                                                  (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, start, count),
+                                                  (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, start, count, embed),
                                                   Configure.ReadStreamEventsBackwardCompleted);
             Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), envelope, stream, start, count, resolveLinks: true));
         }
@@ -545,5 +556,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                            count,
                                                            true));
         }
+
+
     }
 }

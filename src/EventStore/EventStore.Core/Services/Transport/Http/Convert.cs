@@ -28,9 +28,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
 
@@ -264,6 +266,8 @@ namespace EventStore.Core.Services.Transport.Http
 
                 richEntry.EventType = evnt.EventType;
                 richEntry.EventNumber = evnt.EventNumber;
+                if ((evnt.Flags & PrepareFlags.IsJson) != 0)
+                    richEntry.Body = Encoding.UTF8.GetString(evnt.Data);
             }
             else
             {
