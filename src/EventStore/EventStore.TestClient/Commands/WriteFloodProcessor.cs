@@ -229,12 +229,21 @@ namespace EventStore.TestClient.Commands
                               PerfUtils.Col("ElapsedMilliseconds", sw.ElapsedMilliseconds)),
                 PerfUtils.Row(PerfUtils.Col("successes", succ), PerfUtils.Col("failures", fail)));
 
+            var failuresRate = (int) (100 * fail / (fail + succ));
+            
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt),
-                                           (int) reqPerSec);
+                                           (int)reqPerSec);
 
             PerfUtils.LogTeamCityGraphData(
                 string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt),
-                100*fail/(fail + succ));
+                failuresRate);
+
+            PerfUtils.LogTeamCityGraphData(string.Format("{0}-c{1}-r{2}-st{3}-s{4}-reqPerSec", Keyword, clientsCnt, requestsCnt, streamsCnt, size),
+                                           (int)reqPerSec);
+
+            PerfUtils.LogTeamCityGraphData(
+                string.Format("{0}-c{1}-r{2}-st{3}-s{4}-failureSuccessRate", Keyword, clientsCnt, requestsCnt, streamsCnt, size),
+                              failuresRate);
 
             if (succ < prepTimeout+commitTimeout+forwardTimeout)
                 context.Fail(reason: "Number of timeout is greater than number of successes");
