@@ -83,14 +83,13 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void CompleteChunk()
         {
-            _writerChunk.Flush();
             _writerChunk.Complete();
+
+            _writerPos = (_writerChunk.ChunkHeader.ChunkEndNumber + 1) * (long)_db.Config.ChunkSize;
+            _writerCheckpoint.Write(_writerPos);
             _writerCheckpoint.Flush(); //flush our checkpoint
 
             _writerChunk = _db.Manager.AddNewChunk();
-            _writerPos = _writerChunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize;
-            
-            _writerCheckpoint.Write(_writerPos);
         }
 
         public void CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk)
