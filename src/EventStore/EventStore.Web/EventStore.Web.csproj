@@ -46,6 +46,9 @@
     <Content Include="es-common-web\css\es.charts.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="es-common-web\js\atom\RichEntryElement.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="es-common-web\js\atom\FeedElement.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

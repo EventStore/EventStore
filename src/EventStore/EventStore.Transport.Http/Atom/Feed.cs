@@ -225,6 +225,8 @@ namespace EventStore.Transport.Http.Atom
         public string Body { get; set; }
 
         public string StreamId { get; set; }
+
+        public bool IsJson { get; set; }
     }
 
     public class LinkElement : IXmlSerializable

@@ -32,9 +32,12 @@ using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -96,9 +99,9 @@ namespace EventStore.Core.Services.Transport.Http
                                          int count, 
                                          DateTime updateTime,
                                          EventRecord[] items,
-                                         Func<EventRecord, string, bool, EntryElement> itemToEntry,
+                                         Func<EventRecord, string, EmbedLevel, EntryElement> itemToEntry,
                                          string userHostName,
-            bool embedContent)
+            EmbedLevel embedContent)
         {
             if (string.IsNullOrEmpty(eventStreamId) || items == null || userHostName == null)
                 return null;
@@ -143,8 +146,8 @@ namespace EventStore.Core.Services.Transport.Http
         }
 
         public static FeedElement ToAllEventsBackwardFeed(ReadAllResult result,
-                                                          Func<EventRecord, string, bool, EntryElement> itemToEntry,
-                                                          string userHostName, bool embedContent)
+                                                          Func<EventRecord, string, EmbedLevel, EntryElement> itemToEntry,
+                                                          string userHostName, EmbedLevel embedContent)
         {
             var self = HostName.Combine(userHostName, "/streams/$all");
             var feed = new FeedElement();
@@ -189,8 +192,8 @@ namespace EventStore.Core.Services.Transport.Http
         }
 
         public static FeedElement ToAllEventsForwardFeed(ReadAllResult result,
-                                                         Func<EventRecord, string, bool, EntryElement> itemToEntry,
-                                                         string userHostName, bool embedContent)
+                                                         Func<EventRecord, string, EmbedLevel, EntryElement> itemToEntry,
+                                                         string userHostName, EmbedLevel embedContent)
         {
             var self = HostName.Combine(userHostName, "/streams/$all");
             var feed = new FeedElement();
@@ -251,24 +254,49 @@ namespace EventStore.Core.Services.Transport.Http
             return items.Max(e => e.EventNumber);
         }
 
-        public static EntryElement ToEntry(EventRecord evnt, string userHostName, bool embedContent)
+        public static EntryElement ToEntry(EventRecord evnt, string userHostName, EmbedLevel embedContent)
         {
             if (evnt == null || userHostName == null)
                 return null;
 
 
             EntryElement entry;
-            RichEntryElement richEntry;
-            if (embedContent)
+            if (embedContent > EmbedLevel.None)
             {
-                richEntry = new RichEntryElement();
+                var richEntry = new RichEntryElement();
                 entry = richEntry;
 
                 richEntry.EventType = evnt.EventType;
                 richEntry.EventNumber = evnt.EventNumber;
                 richEntry.StreamId = evnt.EventStreamId;
-                if ((evnt.Flags & PrepareFlags.IsJson) != 0)
-                    richEntry.Body = Encoding.UTF8.GetString(evnt.Data);
+                richEntry.IsJson = (evnt.Flags & PrepareFlags.IsJson) != 0;
+                if (embedContent >= EmbedLevel.Body)
+                {
+                    if (richEntry.IsJson)
+                    {
+                        if (embedContent >= EmbedLevel.PrettyBody)
+                        {
+                            richEntry.Body = FormatJson(Encoding.UTF8.GetString(evnt.Data));
+                        }
+                        else 
+                            richEntry.Body = Encoding.UTF8.GetString(evnt.Data);
+                    }
+                    else if (embedContent >= EmbedLevel.TryHarder)
+                    {
+                        try
+                        {
+                            richEntry.Body = Encoding.UTF8.GetString(evnt.Data);
+                            // next step may fail, so we have already assigned body
+                            richEntry.Body = FormatJson(richEntry.Body);
+                            // it is json if successed
+                            richEntry.IsJson = true;
+                        }
+                        catch 
+                        {
+                            // ignore - we tried
+                        }
+                    }
+                }
             }
             else
             {
@@ -299,6 +327,13 @@ namespace EventStore.Core.Services.Transport.Http
                 ContentType.Xml);
 
             return entry;
+        }
+
+        private static string FormatJson(string unformattedjson)
+        {
+            var jo = JObject.Parse(unformattedjson);
+            var json = JsonConvert.SerializeObject(jo, Formatting.Indented);
+            return json;
         }
     }
 

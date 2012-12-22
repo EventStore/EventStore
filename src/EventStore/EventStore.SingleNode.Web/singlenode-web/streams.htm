@@ -65,13 +65,13 @@
     </div>
         <script>
             $(function () {
-                $.getJSON("/streams/$streams/range/-1/50?embed=yes", null, function (data) {
+                $.getJSON("/streams/$streams/range/-1/50?embed=rich", null, function (data) {
                     var streams = [];
                     for (var i = 0; i < data.entries.length; i++) 
                         streams.push({ streamId: data.entries[i].streamId });
                     $("#recent-streams").html($("#streams-template").render({ streams: streams }));
                 });
-                $.getJSON("/streams/$all/100?embed=yes", null, function (data) {
+                $.getJSON("/streams/$all/100?embed=rich", null, function (data) {
                     var streams = {};
                     for (var i = 0; i < data.entries.length; i++) {
                         streams[data.entries[i].streamId] = { streamId: data.entries[i].streamId };

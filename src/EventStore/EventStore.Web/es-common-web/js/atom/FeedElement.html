@@ -7,20 +7,20 @@
 <table class="table table-bordered table-striped">
     {{for Entries}}
     <tr>
-        <td><a href="#" class="json-expand">{{:EventNumber}} >> </a></td>
-        <td><a href="{{:Id}}">{{:Title}}</a></td>
-        <td>{{:Summary}}</td>
-        <td>{{:~formatDate(Updated)}}</td>
+        <td>{{:EventNumber}}</td>
+        <td><a href="{{:Id}}">{{:EventNumber}}@{{>StreamId}}</a></td>
         <td>{{:EventType}}</td>
+        <td>{{:~formatDate(Updated)}}</td>
+        <td>{{if IsJson}}<a href="#" class="json-expand">json >></a>{{/if}}</td>
     </tr>
     <tr style="display: none;">
-        <td colspan="5">{{:Body}}</td>
+        <td colspan="5"><pre>{{:Body}}</pre></td>
     </tr>
     {{/for}}
 </table>
 
 <script>
-    $(".json-expand").click(function() {
+    $(".json-expand").click(function () {
         $(this).parent().parent().next().slideToggle();
     });
 </script>

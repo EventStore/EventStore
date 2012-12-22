@@ -1,0 +1,26 @@
+﻿<h1>{{:Title}}</h1>
+<div>
+    {{for Links}}
+    <div style="display: inline-block"><a href="{{:Uri}}">[{{>Relation}}{{if Relation!=null && Type!=null}}: {{/if}}{{>Type}}]</a></div>
+    {{/for}}
+</div>
+<table class="table table-bordered table-striped">
+    <tr>
+        <th>No:</th>
+        <td>{{:EventNumber}} <a href="/streams/{{attr:StreamId}}/{{attr:EventNumber - 1}}">[Previous]</a> <a href="/streams/{{attr:StreamId}}/{{attr:EventNumber + 1}}">[Next]</a></td>
+    </tr>
+    <tr>
+        <th>Stream:</th>
+        <td><a href="/streams/{{attr:StreamId}}">{{>StreamId}}</a></td>
+    </tr>
+    <tr>
+        <th>Type:</th>
+        <td>{{:EventType}}</td>
+    </tr>
+    <tr>
+        <th>Timestamp:</th>
+        <td>{{:~formatDate(Updated)}}</td>
+    </tr>
+</table>
+<pre>{{:Body}}</pre>
+
