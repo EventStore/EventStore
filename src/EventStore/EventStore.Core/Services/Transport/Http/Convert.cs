@@ -266,6 +266,7 @@ namespace EventStore.Core.Services.Transport.Http
 
                 richEntry.EventType = evnt.EventType;
                 richEntry.EventNumber = evnt.EventNumber;
+                richEntry.StreamId = evnt.EventStreamId;
                 if ((evnt.Flags & PrepareFlags.IsJson) != 0)
                     richEntry.Body = Encoding.UTF8.GetString(evnt.Data);
             }

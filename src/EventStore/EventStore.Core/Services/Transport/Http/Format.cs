@@ -105,23 +105,23 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
             }
 
-            public static string ReadAllEventsBackwardCompleted(HttpResponseFormatterArgs entity, Message message)
+            public static string ReadAllEventsBackwardCompleted(HttpResponseFormatterArgs entity, Message message, bool embed)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
 
                 var completed = message as ClientMessage.ReadAllEventsBackwardCompleted;
                 return completed != null
-                    ? entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName, false)) 
+                    ? entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName, embed)) 
                     : string.Empty;
             }
 
-            public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message)
+            public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message, bool embed)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
 
                 var completed = message as ClientMessage.ReadAllEventsForwardCompleted;
                 return completed != null
-                    ? entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName, false)) 
+                    ? entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName, embed)) 
                     : string.Empty;
             }
 

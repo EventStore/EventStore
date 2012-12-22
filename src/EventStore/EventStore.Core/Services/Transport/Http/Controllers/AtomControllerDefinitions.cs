@@ -128,25 +128,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   DefaultResponseCodec),
                                              OnPostEntry);
 
-            service.RegisterControllerAction(new ControllerAction("/streams/$all",
+            service.RegisterControllerAction(new ControllerAction("/streams/$all?embed={embed}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
                                                                   AtomCodecs,
                                                                   DefaultResponseCodec),
                                              OnGetAllBefore);
-            service.RegisterControllerAction(new ControllerAction("/streams/$all/{count}",
+            service.RegisterControllerAction(new ControllerAction("/streams/$all/{count}?embed={embed}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
                                                                   AtomCodecs,
                                                                   DefaultResponseCodec),
                                              OnGetAllBefore);
-            service.RegisterControllerAction(new ControllerAction("/streams/$all/before/{pos}/{count}",
+            service.RegisterControllerAction(new ControllerAction("/streams/$all/before/{pos}/{count}?embed={embed}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
                                                                   AtomCodecs,
                                                                   DefaultResponseCodec),
                                              OnGetAllBefore);
-            service.RegisterControllerAction(new ControllerAction("/streams/$all/after/{pos}/{count}",
+            service.RegisterControllerAction(new ControllerAction("/streams/$all/after/{pos}/{count}?embed={embed}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
                                                                   AtomCodecs,
@@ -246,6 +246,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var p = match.BoundVariables["pos"];
             var c = match.BoundVariables["count"];
+            var embed = IsOn(match, "embed", false);
 
             TFPos position;
             int count;
@@ -270,13 +271,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 count = AtomSpecs.FeedPageSize;
             }
 
-            _allEventsController.GetAllBefore(entity, position, count);
+            _allEventsController.GetAllBefore(entity, position, count, embed);
         }
 
         private void OnGetAllAfter(HttpEntity entity, UriTemplateMatch match)
         {
             var p = match.BoundVariables["pos"];
             var c = match.BoundVariables["count"];
+            var embed = IsOn(match, "embed", false);
 
             TFPos position;
             int count;
@@ -292,7 +294,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
 
-            _allEventsController.GetAllAfter(entity, position, count);
+            _allEventsController.GetAllAfter(entity, position, count, embed);
         }
 
         //ENTRY MANIPULATION
@@ -529,11 +531,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             //no direct subscriptions
         }
 
-        public void GetAllBefore(HttpEntity entity, TFPos position, int count)
+        public void GetAllBefore(HttpEntity entity, TFPos position, int count, bool embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                  entity, 
-                                                  Format.Atom.ReadAllEventsBackwardCompleted, 
+                                                  entity,
+                                                  (args, message) =>
+                                                  Format.Atom.ReadAllEventsBackwardCompleted(args, message, embed), 
                                                   Configure.ReadAllEventsBackwardCompleted);
             Publish(new ClientMessage.ReadAllEventsBackward(Guid.NewGuid(),
                                                             envelope,
@@ -543,11 +546,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                             true));
         }
 
-        public void GetAllAfter(HttpEntity entity, TFPos position, int count)
+        public void GetAllAfter(HttpEntity entity, TFPos position, int count, bool embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                  entity, 
-                                                  Format.Atom.ReadAllEventsForwardCompleted,
+                                                  entity,
+                                                  (args, message) =>
+                                                  Format.Atom.ReadAllEventsForwardCompleted(args, message, embed),
                                                   Configure.ReadAllEventsForwardCompleted);
             Publish(new ClientMessage.ReadAllEventsForward(Guid.NewGuid(),
                                                            envelope,

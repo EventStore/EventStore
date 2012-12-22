@@ -223,6 +223,8 @@ namespace EventStore.Transport.Http.Atom
         public string EventType { get; set; }
         public int EventNumber { get; set; }
         public string Body { get; set; }
+
+        public string StreamId { get; set; }
     }
 
     public class LinkElement : IXmlSerializable

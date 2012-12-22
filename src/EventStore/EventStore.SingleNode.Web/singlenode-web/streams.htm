@@ -36,27 +36,50 @@
         <h1>Streams</h1>
         <div style="display: table; width: 90%;">
             <div style="display: table-row">
-                <div style="display: table-cell; width: 50%">
-                    <h3>Recently Created Streams</h3>
-                    <div id="recent-streams"></div>
+                <div style="display: table-cell; width: 50%;">
+                    <div style="padding: 0px 10px 0px 0px">
+                        <h3>Recently Created Streams</h3>
+                        <div id="recent-streams"></div>
+                        </div>
                 </div>
                 <div style="display: table-cell; width: 50%">
-                    <h3>Recently Changed Streams</h3>
-                    <div id="recent-events"></div>
+                    <div style="padding: 0px 0px 0px 10px">
+                        <h3>Recently Changed Streams</h3>
+                        <div id="recent-events"></div>
+                        </div>
                 </div>
             </div>
         </div>
-    <script id="r-body">
-        es.tmpl.renderBody();
-    </script>
+        <script id="r-body">
+            es.tmpl.renderBody();
+        </script>
+        <script id="streams-template" type="text/x-jsrender">
+            <table class="table table-bordered table-striped">
+            {{for streams}}
+            <tr><td>
+            <a href="/streams/{{attr:streamId}}">{{:streamId}}</a>
+            </td></tr>
+            {{/for}}
+            </table>
+        </script>
     </div>
         <script>
             $(function () {
-                $.getJSON("/streams/$streams/range/-1/100?embed=yes", null, function (data) {
-                    alert(JSON.stringify(data.entries[0]).substr(0, 1000));
+                $.getJSON("/streams/$streams/range/-1/50?embed=yes", null, function (data) {
+                    var streams = [];
+                    for (var i = 0; i < data.entries.length; i++) 
+                        streams.push({ streamId: data.entries[i].streamId });
+                    $("#recent-streams").html($("#streams-template").render({ streams: streams }));
                 });
-                $.getJSON("/streams/$all/100", null, function (data) {
-                    alert(JSON.stringify(data.entries).substr(0, 1000));
+                $.getJSON("/streams/$all/100?embed=yes", null, function (data) {
+                    var streams = {};
+                    for (var i = 0; i < data.entries.length; i++) {
+                        streams[data.entries[i].streamId] = { streamId: data.entries[i].streamId };
+                    }
+                    var streamsArray = [];
+                    for (var p in streams) 
+                        streamsArray.push(streams[p]);
+                    $("#recent-events").html($("#streams-template").render({ streams: streamsArray }));
                 });
             });
         </script>
