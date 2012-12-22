@@ -73,7 +73,7 @@ namespace EventStore.Transport.Http.Atom
             Author = new PersonElement(name);
         }
 
-        public void AddLink(string uri, string relation, string contentType)
+        public void AddLink(string relation, string uri, string contentType = null)
         {
             Ensure.NotNull(uri, "uri");
             Links.Add(new LinkElement(uri, relation, contentType));
@@ -167,7 +167,7 @@ namespace EventStore.Transport.Http.Atom
             Summary = summary;
         }
 
-        public void AddLink(string uri, string relation, string type)
+        public void AddLink(string relation, string uri, string type = null)
         {
             Ensure.NotNull(uri, "uri");
             Links.Add(new LinkElement(uri, relation, type));

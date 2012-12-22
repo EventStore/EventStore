@@ -60,6 +60,7 @@
     <Compile Include="Commands\RunTestScenarios\BankAccountEvent.cs" />
     <Compile Include="Commands\RunTestScenarios\LoopingProjectionKillScenario.cs" />
     <Compile Include="Commands\RunTestScenarios\MassProjectionsScenario.cs" />
+    <Compile Include="Commands\RunTestScenarios\ProjectionsScenarioBase.cs" />
     <Compile Include="Commands\RunTestScenarios\ProjectionWrongTagCheck.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -67,6 +68,7 @@
     <Compile Include="Commands\RunTestScenarios\IScenario.cs" />
     <Compile Include="Commands\RunTestScenarios\ClientApiLogger.cs" />
     <Compile Include="Commands\RunTestScenarios\LoopingScenario.cs" />
+    <Compile Include="Commands\RunTestScenarios\ProjKillForeachScenario.cs" />
     <Compile Include="Commands\RunTestScenarios\ScenarioBase.cs" />
     <Compile Include="Commands\RunTestScenarios\TestEvent.cs" />
     <Compile Include="Commands\RunTestScenarios\WriteMode.cs" />

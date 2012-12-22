@@ -69,10 +69,9 @@ namespace EventStore.Core
         private readonly HttpService _httpService;
         private readonly TimerService _timerService;
         private readonly NetworkSendService _networkSendService;
-
+        
         public SingleVNode(TFChunkDb db, 
                            SingleVNodeSettings vNodeSettings, 
-                           SingleVNodeAppSettings appSettings, 
                            bool dbVerifyHashes,
                            int memTableEntryCount = ESConsts.MemTableEntryCount)
         {
@@ -98,9 +97,9 @@ namespace EventStore.Core
                                                    MainQueue, 
                                                    db.Config.WriterCheckpoint, 
                                                    db.Config.Path, 
-                                                   appSettings.StatsPeriod, 
+                                                   vNodeSettings.StatsPeriod, 
                                                    _httpEndPoint,
-                                                   appSettings.StatsStorage);
+                                                   vNodeSettings.StatsStorage);
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
@@ -143,7 +142,7 @@ namespace EventStore.Core
             _mainBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
 
             // NETWORK SEND
-            _networkSendService = new NetworkSendService(tcpQueueCount: ESConsts.OugoingTcpQueues, httpQueueCount: ESConsts.OutgoingHttpQueues);
+            _networkSendService = new NetworkSendService(tcpQueueCount: vNodeSettings.TcpSendingThreads, httpQueueCount: vNodeSettings.HttpSendingThreads);
 
             //TCP
             var tcpService = new TcpService(MainQueue, _tcpEndPoint, _networkSendService);
@@ -152,7 +151,7 @@ namespace EventStore.Core
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             //HTTP
-            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, ESConsts.IncomingHttpQueues, vNodeSettings.HttpPrefixes);
+            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);

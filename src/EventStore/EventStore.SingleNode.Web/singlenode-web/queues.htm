@@ -159,7 +159,7 @@ Snapshot taken at: {{>~timestamp()}}
         });
 
         (function () {
-            var hiddenGroups = {};
+            var shownGroups = {};
             var currentQueues = [];
 
             $(function () {
@@ -225,7 +225,7 @@ Snapshot taken at: {{>~timestamp()}}
                         group.totalItemsProcessed += queue.totalItemsProcessed;
                         group.groupQueues += 1;
                         
-                        queue.isHidden = queue.groupName in hiddenGroups;
+                        queue.isHidden = !(queue.groupName in shownGroups);
                     }
 
                     queue.busy = queue.idleTimePercent < 30 ? "busy" : (queue.idleTimePercent > 90 ? "idle" : "normal");
@@ -238,16 +238,16 @@ Snapshot taken at: {{>~timestamp()}}
                 function onGroupClick() {
                     var groupName = $(this).data("groupname");
 
-                    if (groupName in hiddenGroups) {
-                        delete hiddenGroups[groupName];
+                    if (groupName in shownGroups) {
+                        delete shownGroups[groupName];
                     } else {
-                        hiddenGroups[groupName] = true;
+                        shownGroups[groupName] = true;
                     }
 
                     for (var queueName in data.es.queue) {
                         var queue = data.es.queue[queueName];
                         if (queue.groupName && !queue.isGroup) {
-                            queue.isHidden = queue.groupName in hiddenGroups;
+                            queue.isHidden = !(queue.groupName in shownGroups);
                         }
                     }
 

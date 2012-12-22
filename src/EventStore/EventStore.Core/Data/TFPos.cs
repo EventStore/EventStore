@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Diagnostics.Contracts;
 
 namespace EventStore.Core.Data
 {
@@ -42,6 +43,7 @@ namespace EventStore.Core.Data
             PreparePosition = preparePosition;
         }
 
+        [Pure]
         public string AsString()
         {
             return string.Format("{0:X16}{1:X16}", CommitPosition, PreparePosition);

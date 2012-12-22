@@ -39,9 +39,9 @@ using EventStore.TestClient.Commands.DvuBasic;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {
-    internal class ProjectionsKillScenario : ProjectionsScenarioBase
+    internal class ProjKillForeachScenario : ProjectionsScenarioBase
     {
-        public ProjectionsKillScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath)
+        public ProjKillForeachScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath)
             : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
         {
         }
@@ -63,20 +63,18 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var nodeProcessId = StartNode();
             EnableProjectionByCategory();
 
-            var countItem = CreateCountItem();
-            var sumCheckForBankAccount0 = CreateSumCheckForBankAccount0();
+            var sumCheckForBankAccounts = CreateSumCheckForBankAccounts();
 
             var writeTask = WriteData();
 
-            var success = false;
-            var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
-            var expectedEventsPerStream = EventsPerStream.ToString();
+            bool failed = false;
+            string failReason = null;
 
             var isWatchStarted = false;
-            var manager = GetProjectionsManager();
+            var expectedAllEventsCount = Streams + (Streams * EventsPerStream);
             
             var stopWatch = new Stopwatch();
-            
+
             var waitDuration = TimeSpan.FromMilliseconds(20 * 1000 + 5 * Streams * EventsPerStream);
             while (stopWatch.Elapsed < waitDuration)
             {
@@ -89,12 +87,18 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     isWatchStarted = true;
                 }
 
-                success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
-                       && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
+                failed = GetProjectionIsFaulted(sumCheckForBankAccounts, out failReason);
 
-                if (success)
+                if (failed)
                     break;
 
+                var position = GetProjectionPosition(sumCheckForBankAccounts);
+                if (position == expectedAllEventsCount)
+                {
+                    Log.Debug("Expected position reached, done.");
+                    break;
+                }
+                
                 if (isWatchStarted)
                     stopWatch.Stop();
 
@@ -111,8 +115,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             KillNode(nodeProcessId);
 
-            if (!success)
-                throw new ApplicationException(string.Format("Projections did not complete with expected result in time"));
+            if (failed)
+                throw new ApplicationException(string.Format("Projection failed due to reason: {0}.", failReason));
         }
 
         protected Task WriteData()
@@ -128,35 +132,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return task.ContinueWith(x => Log.Info("Data written for iteration {0}.", GetIterationCode()));
         }
 
-        protected string CreateCountItem()
-        {
-            var projectionManager = GetProjectionsManager();
-
-            string countItemsProjectionName = string.Format("CountItems_it{0}", GetIterationCode());
-            string countItemsProjection = string.Format(@"
-                fromCategory('bank_account_it{0}').when({{
-                $init: function() {{ return {{count:0}}; }},
-                AccountCredited: function (state, event) {{ 
-                                        state.count += 1; 
-                                    }},
-                AccountDebited: function (state, event) {{ 
-                                        state.count += 1; 
-                                    }},
-                AccountCheckPoint: function (state, event) {{ 
-                                        state.count += 1; 
-                                    }}
-                }})
-", GetIterationCode());
-
-            projectionManager.CreateContinuous(countItemsProjectionName, countItemsProjection);
-            return countItemsProjectionName;
-        }
-
-        protected string CreateSumCheckForBankAccount0()
+        protected string CreateSumCheckForBankAccounts()
         {
             string countItemsProjectionName = string.Format("CheckSumsInAccounts_it{0}", GetIterationCode());
             string countItemsProjection = string.Format(@"
-                fromStream('bank_account_it{0}-0').when({{
+                fromCategory('bank_account_it{0}').foreachStream().when({{
                     $init: function() {{ 
                         return {{credited:0, credsum:'', debited:0, debsum:''}}; 
                     }},
@@ -191,7 +171,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     }}
                 }})                
 ", GetIterationCode());
-            
+
             GetProjectionsManager().CreateContinuous(countItemsProjectionName, countItemsProjection);
 
             return countItemsProjectionName;

@@ -236,6 +236,7 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (Enabled)
             {
+                _logger.Error("DBG: *{0}* ALREADY ENABLED!!!", _name);
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Not disabled"));
                 return;
             }

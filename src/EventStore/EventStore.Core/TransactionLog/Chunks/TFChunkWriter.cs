@@ -83,27 +83,25 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void CompleteChunk()
         {
-            _writerChunk.Flush();
             _writerChunk.Complete();
-            _writerCheckpoint.Flush(); //flush our checkpoint
+
+            _writerPos = (_writerChunk.ChunkHeader.ChunkEndNumber + 1) * (long)_db.Config.ChunkSize;
+            _writerCheckpoint.Write(_writerPos);
+            _writerCheckpoint.Flush();
 
             _writerChunk = _db.Manager.AddNewChunk();
-            _writerPos = _writerChunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize;
-            
-            _writerCheckpoint.Write(_writerPos);
         }
 
         public void CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk)
         {
-            rawChunk.Flush();
             rawChunk.CompleteRaw();
             _db.Manager.SwitchChunk(rawChunk, verifyHash: true, replaceChunksWithGreaterNumbers: true);
 
-            _writerChunk = _db.Manager.AddNewChunk();
-            _writerPos = _writerChunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize;
-
+            _writerPos = (rawChunk.ChunkHeader.ChunkEndNumber+1) * (long)_db.Config.ChunkSize;
             _writerCheckpoint.Write(_writerPos);
             _writerCheckpoint.Flush();
+
+            _writerChunk = _db.Manager.AddNewChunk();
         }
 
         public void Dispose()

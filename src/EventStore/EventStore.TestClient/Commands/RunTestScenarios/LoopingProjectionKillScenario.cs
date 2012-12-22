@@ -121,8 +121,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                             stopWatch.Start();
                         }
 
-                        success = CheckProjectionState(manager, countItem, "count", x => x == expectedAllEventsCount)
-                               && CheckProjectionState(manager, sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
+                        success = CheckProjectionState(countItem, "count", x => x == expectedAllEventsCount)
+                               && CheckProjectionState(sumCheckForBankAccount0, "success", x => x == expectedEventsPerStream);
 
                         if (success)
                             break;

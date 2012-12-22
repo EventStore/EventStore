@@ -68,7 +68,7 @@ namespace EventStore.Core.Index
 
         public TableIndex(string directory, 
                           Func<IMemTable> memTableFactory, 
-                          int maxSizeForMemory = 1000000, 
+                          int maxSizeForMemory = 1000000,
                           int maxTablesPerLevel = 4,
                           bool additionalReclaim = false)
         {

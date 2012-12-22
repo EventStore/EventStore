@@ -532,6 +532,8 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
+            public readonly int FromEventNumber;
+            public readonly int MaxCount;
             public readonly EventLinkPair[] Events;
             public readonly RangeReadResult Result;
             public readonly int NextEventNumber;
@@ -539,8 +541,11 @@ namespace EventStore.Core.Messages
             public readonly bool IsEndOfStream;
             public readonly long? LastCommitPosition;
 
+
             public ReadStreamEventsBackwardCompleted(Guid correlationId,
                                                      string eventStreamId,
+                                                     int fromEventNumber,
+                                                     int maxCount,
                                                      EventLinkPair[] events,
                                                      RangeReadResult result,
                                                      int nextEventNumber,
@@ -552,6 +557,8 @@ namespace EventStore.Core.Messages
 
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
+                FromEventNumber = fromEventNumber;
+                MaxCount = maxCount;
                 Events = events;
                 Result = result;
                 NextEventNumber = nextEventNumber;
