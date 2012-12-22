@@ -222,11 +222,14 @@ namespace EventStore.Transport.Http.Atom
     {
         public string EventType { get; set; }
         public int EventNumber { get; set; }
-        public string Body { get; set; }
+        public string Data { get; set; }
+        public string MetaData { get; set; }
 
         public string StreamId { get; set; }
 
         public bool IsJson { get; set; }
+
+        public bool IsMetaData { get; set; }
     }
 
     public class LinkElement : IXmlSerializable

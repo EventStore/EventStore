@@ -200,18 +200,18 @@ namespace EventStore.Core.Services.Transport.Http
                     {
                         if (embedContent >= EmbedLevel.PrettyBody)
                         {
-                            richEntry.Body = FormatJson(Encoding.UTF8.GetString(evnt.Data));
+                            richEntry.Data = FormatJson(Encoding.UTF8.GetString(evnt.Data));
                         }
                         else 
-                            richEntry.Body = Encoding.UTF8.GetString(evnt.Data);
+                            richEntry.Data = Encoding.UTF8.GetString(evnt.Data);
                     }
                     else if (embedContent >= EmbedLevel.TryHarder)
                     {
                         try
                         {
-                            richEntry.Body = Encoding.UTF8.GetString(evnt.Data);
+                            richEntry.Data = Encoding.UTF8.GetString(evnt.Data);
                             // next step may fail, so we have already assigned body
-                            richEntry.Body = FormatJson(richEntry.Body);
+                            richEntry.Data = FormatJson(richEntry.Data);
                             // it is json if successed
                             richEntry.IsJson = true;
                         }
@@ -220,6 +220,18 @@ namespace EventStore.Core.Services.Transport.Http
                             // ignore - we tried
                         }
                     }
+                    if (embedContent >= EmbedLevel.PrettyBody)
+                        try
+                        {
+                            richEntry.MetaData = Encoding.UTF8.GetString(evnt.Metadata);
+                            richEntry.IsMetaData = !string.IsNullOrEmpty(richEntry.MetaData);
+                            // next step may fail, so we have already assigned body
+                            richEntry.MetaData = FormatJson(richEntry.MetaData);
+                        }
+                        catch
+                        {
+                            // ignore - we tried
+                        }
                 }
             }
             else
