@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (message.Result)
             {
                 case RangeReadResult.NoStream:
-                    DeliverSafeJoinPosition(message.LastCommitPosition.Value); // allow joining heading distribution
+                    DeliverSafeJoinPosition(message.LastCommitPosition); // allow joining heading distribution
                     if (_pauseRequested)
                         _paused = true;
                     else 
@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (message.Events.Length == 0)
                     {
                         // the end
-                        DeliverSafeJoinPosition(message.LastCommitPosition.Value);
+                        DeliverSafeJoinPosition(message.LastCommitPosition);
                         SendIdle();
                         SendEof();
                     }
@@ -171,9 +171,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 _maxReadCount, _resolveLinkTos);
         }
 
-        private void DeliverSafeJoinPosition(long safeJoinPosition)
+        private void DeliverSafeJoinPosition(long? safeJoinPosition)
         {
-            if (_stopOnEof || safeJoinPosition == -1)
+            if (_stopOnEof || safeJoinPosition == null || safeJoinPosition == -1)
                 return; //TODO: this should not happen, but StorageReader does not return it now
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
