@@ -7,7 +7,7 @@
 <table class="table table-bordered table-striped">
     {{for Entries}}
     <tr>
-        <td>{{:EventNumber}}</td>
+        <td><a href="/streams/{{attr:PositionStreamId}}/{{attr:PositionEventNumber}}">{{:PositionEventNumber}}</a></td>
         <td><a href="{{:Id}}">{{:EventNumber}}@{{>StreamId}}</a></td>
         <td>{{:EventType}}</td>
         <td>{{:~formatDate(Updated)}}</td>

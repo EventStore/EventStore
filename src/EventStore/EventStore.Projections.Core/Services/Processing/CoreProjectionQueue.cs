@@ -38,6 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing
             new StagedProcessingQueue(
                 new[]
                     {
+                        //TODO: true!!
                         false /* get state partition */, false /* load foreach state */, false /* process Js */, true
                         /* write emits */
                     });

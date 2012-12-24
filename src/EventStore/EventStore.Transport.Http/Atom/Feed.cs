@@ -230,6 +230,10 @@ namespace EventStore.Transport.Http.Atom
         public bool IsJson { get; set; }
 
         public bool IsMetaData { get; set; }
+
+        public int PositionEventNumber { get; set; }
+
+        public string PositionStreamId { get; set; }
     }
 
     public class LinkElement : IXmlSerializable

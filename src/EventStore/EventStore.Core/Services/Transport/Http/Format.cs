@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.Transport.Http
                     switch (completed.Result)
                     {
                         case SingleReadResult.Success:
-                            return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.UserHostName, embed));
+                            return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, completed.Link, entity.UserHostName, embed));
                         case SingleReadResult.NotFound:
                         case SingleReadResult.NoStream:
                         case SingleReadResult.StreamDeleted:
