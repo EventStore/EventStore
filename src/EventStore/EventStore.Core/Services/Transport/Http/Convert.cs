@@ -126,7 +126,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             for (int i = 0; i < msg.Events.Length; ++i)
             {
-                feed.AddEntry(ToEntry(msg.Events[i].Event, userHostName, embedContent));
+                feed.AddEntry(ToEntry(msg.Events[i].Event, msg.Events[i].Link, userHostName, embedContent));
             }
 
             return feed;
@@ -149,7 +149,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             for (int i = result.Records.Length - 1; i >= 0; --i)
             {
-                feed.AddEntry(ToEntry(result.Records[i].Event, userHostName, embedContent));
+                feed.AddEntry(ToEntry(result.Records[i].Event, result.Records[i].Link, userHostName, embedContent));
             }
             return feed;
         }
@@ -172,12 +172,12 @@ namespace EventStore.Core.Services.Transport.Http
 
             for (int i = 0; i < result.Records.Length; ++i)
             {
-                feed.AddEntry(ToEntry(result.Records[i].Event, userHostName, embedContent));
+                feed.AddEntry(ToEntry(result.Records[i].Event, result.Records[i].Link, userHostName, embedContent));
             }
             return feed;
         }
 
-        public static EntryElement ToEntry(EventRecord evnt, string userHostName, EmbedLevel embedContent)
+        public static EntryElement ToEntry(EventRecord evnt, EventRecord link, string userHostName, EmbedLevel embedContent)
         {
             if (evnt == null || userHostName == null)
                 return null;
@@ -191,6 +191,8 @@ namespace EventStore.Core.Services.Transport.Http
                 richEntry.EventType = evnt.EventType;
                 richEntry.EventNumber = evnt.EventNumber;
                 richEntry.StreamId = evnt.EventStreamId;
+                richEntry.PositionEventNumber = (link ?? evnt).EventNumber;
+                richEntry.PositionStreamId = (link ?? evnt).EventStreamId;
                 richEntry.IsJson = (evnt.Flags & PrepareFlags.IsJson) != 0;
                 if (embedContent >= EmbedLevel.Body)
                 {

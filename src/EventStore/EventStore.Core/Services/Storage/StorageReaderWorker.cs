@@ -66,10 +66,16 @@ namespace EventStore.Core.Services.Storage
             var result = _readIndex.ReadEvent(message.EventStreamId, message.EventNumber);
 
             EventRecord record = result.Record;
+            EventRecord link = null;
             if (result.Result == SingleReadResult.Success && message.ResolveLinkTos)
             {
                 Debug.Assert(result.Record != null);
-                record = ResolveLinkToEvent(record) ?? record;
+                var resolved = ResolveLinkToEvent(record);
+                if (resolved != null)
+                {
+                    link = record;
+                    record = resolved;
+                }
             }
 
             //TODO: consider returning redirected stream and ChunkNumber number
@@ -77,7 +83,7 @@ namespace EventStore.Core.Services.Storage
                                                                             message.EventStreamId,
                                                                             message.EventNumber,
                                                                             result.Result,
-                                                                            record));
+                                                                            record, link));
         }
 
         void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward message)

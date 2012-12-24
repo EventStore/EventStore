@@ -394,7 +394,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                                             PrepareFlags.IsJson,
                                                             "type",
                                                             data,
-                                                            metadata));
+                                                            metadata), null);
         }
     }
 
@@ -548,7 +548,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                                             PrepareFlags.IsJson,
                                                             "type",
                                                             data,
-                                                            metadata));
+                                                            metadata), null);
         }
     }
 }
