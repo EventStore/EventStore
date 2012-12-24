@@ -31,7 +31,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -71,7 +70,7 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
             }
 
-            public static string ReadStreamEventsBackwardCompletedFeed(HttpResponseFormatterArgs entity, Message message, int start, int count, EmbedLevel embed)
+            public static string ReadStreamEventsBackwardCompletedFeed(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 

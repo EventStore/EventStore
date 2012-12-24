@@ -344,9 +344,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
     class HtmlFeedCodec : ICodec, IRichAtomCodec
     {
-        public string ContentType {
-            get { return "text/html"; }
-        }
+        public string ContentType  { get { return "text/html"; } }
 
         public bool CanParse(string format)
         {
@@ -356,8 +354,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public bool SuitableForReponse(AcceptComponent component)
         {
             return component.MediaType == "*"
-                   || (component.MediaType == "text"
-                       && (component.MediaSubtype == "*" || component.MediaSubtype == "html"));
+                   || (string.Equals(component.MediaType, "text", StringComparison.OrdinalIgnoreCase)
+                       && (component.MediaSubtype == "*" || string.Equals(component.MediaSubtype, "html", StringComparison.OrdinalIgnoreCase)));
         }
 
         public T From<T>(string text)
@@ -396,7 +394,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     </script>
 </div>
 
-
 </body>
 </html>
 ";
@@ -407,13 +404,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
     }
 
-
-    /*
-     * */
     public class GenericController : CommunicationController
     {
-        private readonly IPublisher _networkSendQueue;
         private static readonly ILogger Log = LogManager.GetLoggerFor<GenericController>();
+        
+        private readonly IPublisher _networkSendQueue;
 
         public GenericController(IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
@@ -429,7 +424,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public void CreateStream(HttpEntity entity)
         {
             entity.Manager.ReadTextRequestAsync(CreateStreamBodyRead,
-                                            e => Log.ErrorException(e, "Error while reading request (CREATE stream)"));
+                                                e => Log.ErrorException(e, "Error while reading request (CREATE stream)."));
         }
 
         private void CreateStreamBodyRead(HttpEntityManager manager, string body)
@@ -461,7 +456,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             entity.Manager.AsyncState = stream;
             entity.Manager.ReadTextRequestAsync(DeleteStreamBodyRead,
-                                            e => Log.ErrorException(e, "Error while reading request (DELETE stream)"));
+                                                e => Log.ErrorException(e, "Error while reading request (DELETE stream)."));
         }
 
         private void DeleteStreamBodyRead(HttpEntityManager manager, string body)
@@ -480,11 +475,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   entity,
                                                   Format.Atom.DeleteStreamCompleted,
                                                   Configure.DeleteStreamCompleted);
-            var msg = new ClientMessage.DeleteStream(Guid.NewGuid(),
-                                                     envelope,
-                                                     true, 
-                                                     stream, 
-                                                     delete.ExpectedVersion);
+            var msg = new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, true, stream, delete.ExpectedVersion);
             Publish(msg);
         }
 
@@ -493,8 +484,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             entity.Manager.AsyncState = start;
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
-                                                  (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, start, count, 
-                                                      embed),
+                                                  (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, embed),
                                                   Configure.ReadStreamEventsBackwardCompleted);
             Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), envelope, stream, start, count, resolveLinks: true));
         }
@@ -502,7 +492,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public void GetEntry(HttpEntity entity, string stream, int version, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue, entity,
-                                                  (args, message) => Format.Atom.ReadEventCompletedEntry(args, message, embed), Configure.ReadEventCompleted);
+                                                  (args, message) => Format.Atom.ReadEventCompletedEntry(args, message, embed), 
+                                                  Configure.ReadEventCompleted);
             Publish(new ClientMessage.ReadEvent(Guid.NewGuid(), envelope, stream, version, true));
         }
 
@@ -510,7 +501,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             entity.Manager.AsyncState = stream;
             entity.Manager.ReadTextRequestAsync(OnPostEntryRequestRead, 
-                                            e => Log.ErrorException(e, "Error while reading request (POST entry)"));
+                                                e => Log.ErrorException(e, "Error while reading request (POST entry)."));
         }
 
         private void OnPostEntryRequestRead(HttpEntityManager manager, string body)
@@ -554,8 +545,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
-                                                  (args, message) =>
-                                                  Format.Atom.ReadAllEventsBackwardCompleted(args, message, embed), 
+                                                  (args, message) => Format.Atom.ReadAllEventsBackwardCompleted(args, message, embed), 
                                                   Configure.ReadAllEventsBackwardCompleted);
             Publish(new ClientMessage.ReadAllEventsBackward(Guid.NewGuid(),
                                                             envelope,
@@ -569,8 +559,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
-                                                  (args, message) =>
-                                                  Format.Atom.ReadAllEventsForwardCompleted(args, message, embed),
+                                                  (args, message) => Format.Atom.ReadAllEventsForwardCompleted(args, message, embed),
                                                   Configure.ReadAllEventsForwardCompleted);
             Publish(new ClientMessage.ReadAllEventsForward(Guid.NewGuid(),
                                                            envelope,
@@ -579,7 +568,5 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                            count,
                                                            true));
         }
-
-
     }
 }

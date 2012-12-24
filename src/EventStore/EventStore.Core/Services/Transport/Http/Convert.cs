@@ -111,11 +111,11 @@ namespace EventStore.Core.Services.Transport.Http
             feed.AddLink("self", self);
             feed.AddLink("first", HostName.Combine(userHostName, "/streams/{0}", msg.EventStreamId)); // TODO AN: should account for msg.MaxCount
             feed.AddLink("last", HostName.Combine(userHostName, "/streams/{0}/range/{1}/{2}", msg.EventStreamId, msg.MaxCount - 1, msg.MaxCount));
-            feed.AddLink("prev", HostName.Combine(userHostName, 
-                                                  "/streams/{0}/range/{1}/{2}", 
-                                                  msg.EventStreamId, 
-                                                  Math.Min(msg.FromEventNumber, msg.LastEventNumber) + msg.MaxCount, 
-                                                  msg.MaxCount));
+            feed.AddLink("previous", HostName.Combine(userHostName, 
+                                                      "/streams/{0}/range/{1}/{2}", 
+                                                      msg.EventStreamId, 
+                                                      Math.Min(msg.FromEventNumber, msg.LastEventNumber) + msg.MaxCount, 
+                                                      msg.MaxCount));
 
             if (msg.FromEventNumber - msg.MaxCount >= 0)
             {
@@ -146,7 +146,7 @@ namespace EventStore.Core.Services.Transport.Http
             feed.AddLink("self", self);
             feed.AddLink("first", HostName.Combine(userHostName, "/streams/$all/{0}", result.MaxCount));
             feed.AddLink("last", HostName.Combine(userHostName, "/streams/$all/after/{0}/{1}", new TFPos(0, 0).AsString(), result.MaxCount));
-            feed.AddLink("prev", HostName.Combine(userHostName, "/streams/$all/after/{0}/{1}", result.NextPos.AsString(), result.MaxCount));
+            feed.AddLink("previous", HostName.Combine(userHostName, "/streams/$all/after/{0}/{1}", result.NextPos.AsString(), result.MaxCount));
             feed.AddLink("next", HostName.Combine(userHostName, "/streams/$all/before/{0}/{1}", result.PrevPos.AsString(), result.MaxCount));
 
             for (int i = result.Records.Length - 1; i >= 0; --i)
@@ -169,7 +169,7 @@ namespace EventStore.Core.Services.Transport.Http
             feed.AddLink("self", self);
             feed.AddLink("first", HostName.Combine(userHostName, "/streams/$all/{0}", result.MaxCount));
             feed.AddLink("last", HostName.Combine(userHostName, "/streams/$all/after/{0}/{1}", new TFPos(0, 0).AsString(), result.MaxCount));
-            feed.AddLink("prev", HostName.Combine(userHostName, "/streams/$all/after/{0}/{1}", result.PrevPos.AsString(), result.MaxCount));
+            feed.AddLink("previous", HostName.Combine(userHostName, "/streams/$all/after/{0}/{1}", result.PrevPos.AsString(), result.MaxCount));
             feed.AddLink("next", HostName.Combine(userHostName, "/streams/$all/before/{0}/{1}", result.NextPos.AsString(), result.MaxCount));
 
             for (int i = 0; i < result.Records.Length; ++i)
