@@ -299,7 +299,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 Log.Info("Mono at {0} will be used.", pathToMono);
                 fileName = pathToMono;
-                argumentsHead = string.Format("{0} --gc=sgen --debug", Path.Combine(clientFolder, "EventStore.SingleNode.exe"));
+                argumentsHead = string.Format("--debug --gc=sgen {0}", Path.Combine(clientFolder, "EventStore.SingleNode.exe"));
             }
             else
             {
