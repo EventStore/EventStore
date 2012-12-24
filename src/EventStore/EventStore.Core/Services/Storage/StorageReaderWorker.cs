@@ -65,25 +65,20 @@ namespace EventStore.Core.Services.Storage
         {
             var result = _readIndex.ReadEvent(message.EventStreamId, message.EventNumber);
 
-            EventRecord record = result.Record;
-            EventRecord link = null;
+            EventLinkPair record;
             if (result.Result == SingleReadResult.Success && message.ResolveLinkTos)
             {
                 Debug.Assert(result.Record != null);
-                var resolved = ResolveLinkToEvent(record);
-                if (resolved != null)
-                {
-                    link = record;
-                    record = resolved;
-                }
+                record = ResolveLinkToEvent(result.Record);
             }
+            else
+                record = new EventLinkPair(result.Record);
 
-            //TODO: consider returning redirected stream and ChunkNumber number
             message.Envelope.ReplyWith(new ClientMessage.ReadEventCompleted(message.CorrelationId,
                                                                             message.EventStreamId,
                                                                             message.EventNumber,
                                                                             result.Result,
-                                                                            record, link));
+                                                                            record));
         }
 
         void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward message)
@@ -166,48 +161,39 @@ namespace EventStore.Core.Services.Storage
             {
                 for (int i = 0; i < records.Length; i++)
                 {
-                    EventRecord eventRecord = records[i];
-                    EventRecord resolvedRecord = ResolveLinkToEvent(eventRecord);
-                    resolved[i] = resolvedRecord != null
-                                          ? new EventLinkPair(resolvedRecord, eventRecord)
-                                          : new EventLinkPair(eventRecord, null);
+                    resolved[i] = ResolveLinkToEvent(records[i]);
                 }
             }
             else
             {
                 for (int i = 0; i < records.Length; ++i)
                 {
-                    resolved[i] = new EventLinkPair(records[i], null);
+                    resolved[i] = new EventLinkPair(records[i]);
                 }
             }
             return resolved;
         }
 
-        private EventRecord ResolveLinkToEvent(EventRecord eventRecord)
+        private EventLinkPair ResolveLinkToEvent(EventRecord eventRecord)
         {
-            EventRecord record = null;
             if (eventRecord.EventType == SystemEventTypes.LinkTo)
             {
-                bool faulted = false;
-                int eventNumber = -1;
-                string streamId = null;
                 try
                 {
                     string[] parts = Encoding.UTF8.GetString(eventRecord.Data).Split('@');
-                    eventNumber = int.Parse(parts[0]);
-                    streamId = parts[1];
+                    int eventNumber = int.Parse(parts[0]);
+                    string streamId = parts[1];
+
+                    var res = _readIndex.ReadEvent(streamId, eventNumber);
+                    if (res.Result == SingleReadResult.Success)
+                        return new EventLinkPair(res.Record, eventRecord);
                 }
                 catch (Exception exc)
                 {
-                    faulted = true;
                     Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
                 }
-                if (faulted)
-                    return null;
-
-                record = _readIndex.ReadEvent(streamId, eventNumber).Record; // we don't care if unsuccessful
             }
-            return record;
+            return new EventLinkPair(eventRecord);
         }
 
         void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward message)
@@ -261,10 +247,8 @@ namespace EventStore.Core.Services.Storage
                 for (int i = 0; i < resolved.Length; ++i)
                 {
                     var record = res.Records[i];
-                    var resolvedRecord = ResolveLinkToEvent(record.Event);
-                    resolved[i] = new ResolvedEventRecord(resolvedRecord == null ? record.Event : resolvedRecord,
-                                                          resolvedRecord == null ? null : record.Event,
-                                                          record.CommitPosition);
+                    var resolvedPair = ResolveLinkToEvent(record.Event);
+                    resolved[i] = new ResolvedEventRecord(resolvedPair.Event, resolvedPair.Link, record.CommitPosition);
                 }
             }
             else

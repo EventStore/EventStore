@@ -311,12 +311,9 @@ namespace EventStore.Core.Services.Transport.Tcp
         private static TcpPackage WrapReadEventsCompleted(ClientMessage.ReadEventCompleted msg)
         {
             var dto = new TcpClientMessageDto.ReadEventCompleted(msg.EventStreamId,
-                                                              msg.EventNumber,
-                                                              (int)msg.Result,
-                                                              msg.Record == null ? null : msg.Record.EventType,
-                                                              msg.Record == null ? null : msg.Record.Data,
-                                                              msg.Record == null ? null : msg.Record.Metadata,
-                                                              msg.Record == null ? -1 : msg.Record.LogPosition);
+                                                                 msg.EventNumber,
+                                                                 (int) msg.Result,
+                                                                 new TcpClientMessageDto.EventLinkPair(msg.Record.Event, msg.Record.Link));
             return new TcpPackage(TcpCommand.ReadEventCompleted, msg.CorrelationId, dto.Serialize());
         }
 
