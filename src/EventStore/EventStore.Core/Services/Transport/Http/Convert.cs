@@ -202,7 +202,16 @@ namespace EventStore.Core.Services.Transport.Http
                     {
                         if (embedContent >= EmbedLevel.PrettyBody)
                         {
-                            richEntry.Data = FormatJson(Encoding.UTF8.GetString(evnt.Data));
+                            try
+                            {
+                                richEntry.Data = Encoding.UTF8.GetString(evnt.Data);
+                                // next step may fail, so we have already assigned body
+                                richEntry.Data = FormatJson(Encoding.UTF8.GetString(evnt.Data));
+                            }
+                            catch
+                            {
+                                // ignore - we tried
+                            }
                         }
                         else 
                             richEntry.Data = Encoding.UTF8.GetString(evnt.Data);
@@ -222,6 +231,7 @@ namespace EventStore.Core.Services.Transport.Http
                             // ignore - we tried
                         }
                     }
+                    // metadata
                     if (embedContent >= EmbedLevel.PrettyBody)
                         try
                         {
