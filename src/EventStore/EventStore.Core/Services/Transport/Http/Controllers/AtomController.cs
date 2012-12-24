@@ -251,6 +251,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 case "rich": return EmbedLevel.Rich;
                 case "body": return EmbedLevel.Body;
                 case "pretty": return EmbedLevel.PrettyBody;
+                case "tryharder": return EmbedLevel.TryHarder;
                 default: return EmbedLevel.None;
             }
         }

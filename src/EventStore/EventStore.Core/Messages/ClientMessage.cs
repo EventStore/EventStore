@@ -410,12 +410,14 @@ namespace EventStore.Core.Messages
             public readonly int EventNumber;
             public readonly SingleReadResult Result;
             public readonly EventRecord Record;
+            public readonly EventRecord Link;
 
             public ReadEventCompleted(Guid correlationId, 
                                       string eventStreamId, 
                                       int eventNumber, 
                                       SingleReadResult result, 
-                                      EventRecord record)
+                                      EventRecord record,
+                                      EventRecord link)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 Ensure.Nonnegative(eventNumber, "EventNumber");
@@ -427,6 +429,7 @@ namespace EventStore.Core.Messages
                 EventNumber = eventNumber;
                 Result = result;
                 Record = record;
+                Link = link;
             }
         }
 
