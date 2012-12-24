@@ -153,10 +153,10 @@ namespace EventStore.Core.Services.Transport.Http
                         "Created",
                         null,
                         new KeyValuePair<string, string>("Location",
-                                                         HostName.Combine(entity.UserHostName,
-                                                                          "/streams/{0}/{1}",
-                                                                          completed.EventStreamId,
-                                                                          completed.EventNumber == 0 ? 1 : completed.EventNumber)));
+                                                            HostName.Combine(entity.UserHostName,
+                                                                            "/streams/{0}/{1}",
+                                                                            Uri.EscapeDataString(completed.EventStreamId),
+                                                                            completed.EventNumber == 0 ? 1 : completed.EventNumber)));
                 }
                 case OperationErrorCode.PrepareTimeout:
                 case OperationErrorCode.CommitTimeout:
@@ -195,17 +195,21 @@ namespace EventStore.Core.Services.Transport.Http
             switch (completed.ErrorCode)
             {
                 case OperationErrorCode.Success:
-                    return new ResponseConfiguration(HttpStatusCode.Created,
-                                                     "Stream created",
-                                                     null,
-                                                     new KeyValuePair<string, string>("Location",
-                                                                                      HostName.Combine(entity.UserHostName,
-                                                                                                  "/streams/{0}",
-                                                                                                  completed.EventStreamId)));
+                {
+                    return new ResponseConfiguration(
+                        HttpStatusCode.Created,
+                        "Stream created",
+                        null,
+                        new KeyValuePair<string, string>("Location",
+                                                            HostName.Combine(entity.UserHostName,
+                                                                            "/streams/{0}",
+                                                                            Uri.EscapeDataString(completed.EventStreamId))));
+                }
                 case OperationErrorCode.PrepareTimeout:
                 case OperationErrorCode.CommitTimeout:
                 case OperationErrorCode.ForwardTimeout:
                     return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Create timeout", null);
+
                 case OperationErrorCode.WrongExpectedVersion:
                 case OperationErrorCode.StreamDeleted:
                 case OperationErrorCode.InvalidTransaction:
