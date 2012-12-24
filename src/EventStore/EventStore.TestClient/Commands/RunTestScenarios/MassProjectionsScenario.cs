@@ -106,7 +106,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     break;
 
                 var sleepTimeSeconds = 10 + Streams * EventsPerStream / 1000.0;
-                Log.Info("Sleep 1 for {0} seconds, remianing count {1}", sleepTimeSeconds, count);
+                Log.Info("Sleep 1 for {0} seconds, remaining count {1}", sleepTimeSeconds, count);
                 Thread.Sleep(TimeSpan.FromSeconds(sleepTimeSeconds));
             }
 
@@ -159,6 +159,10 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 var retry = 0;
 
+                int shortWait = 50 + _random.Next(100);
+                Log.Debug("Wait for {0}ms before next enable/disable projection", shortWait);
+                Thread.Sleep(shortWait);
+                
                 while (retry <= retriesNumber)
                 {
                     var isRunning = GetProjectionIsRunning(projection);
@@ -174,7 +178,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     }
                     catch (Exception ex)
                     {
-                        var waitForMs = retry * (1000 + _random.Next(2000));
+                        var waitForMs = 5000 + (retry * (3000 + _random.Next(2000)));
 
                         Log.InfoException(ex, "Failed to StartOrStopProjection (enable:{0}; isRunning:{1}) projection {2}, retry #{3}, wait {4}ms", 
                                               enable, 
