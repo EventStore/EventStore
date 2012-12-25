@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionNamesBuilder namingBuilder, bool useCheckpoints, bool emitStateUpdated)
             : base(
                 coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
-                name, positionTagger, namingBuilder, useCheckpoints, emitStateUpdated)
+                name, positionTagger, namingBuilder, useCheckpoints, emitStateUpdated, false)
         {
             _projectionStateUpdatesStreamId = namingBuilder.GetStateStreamName();
         }

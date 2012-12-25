@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -77,7 +78,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     var expectedTag = entry.Value.ExpectedTag;
                     list.Add(new EmittedEvent(streamId, Guid.NewGuid(), "StateUpdated", data, causedBy, expectedTag));
                 }
-                eventWriter.EmitEvents(list.ToArray());
+                //NOTE: order yb is required to satisfy internal emit events validation
+                // whih ensures that events are ordered by causeby tag.  
+                // it is too strong check, but ...
+                eventWriter.EmitEvents(list.OrderBy(v => v.CausedByTag).ToArray());
             }
         }
     }

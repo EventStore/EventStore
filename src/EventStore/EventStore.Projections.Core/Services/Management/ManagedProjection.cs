@@ -264,6 +264,11 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.Stopped message)
         {
             _state = ManagedProjectionState.Stopped;
+            FireStoppedOrFaulted();
+        }
+
+        private void FireStoppedOrFaulted()
+        {
             var stopCompleted = _onStopped;
             _onStopped = null;
             if (stopCompleted != null) stopCompleted();
@@ -278,6 +283,7 @@ namespace EventStore.Projections.Core.Services.Management
                 _persistedState.SourceDefintion = null;
                 OnPrepared();
             }
+            FireStoppedOrFaulted();
         }
 
         public void Handle(CoreProjectionManagementMessage.Prepared message)

@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return new CheckpointStrategy(
                     _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream,
                     _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag,
-                    _options.EmitStateUpdated, config.CheckpointsEnabled && config.EmitEventEnabled);
+                    _options.EmitStateUpdated, config.CheckpointsEnabled);
             }
         }
 
@@ -239,16 +239,19 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> responseDispatcher,
             ProjectionConfig projectionConfig, string name, ProjectionNamesBuilder namingBuilder)
         {
+            var emitPartitionCheckpoints = UseCheckpoints && !EmitStateUpdated && (_byCustomPartitions || _byStream);
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
-
+                if (emitPartitionCheckpoints)
+                    throw new InvalidOperationException("Partition checkpoints cannot be used");
                 return new MultiStreamSingleOutputStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
                     projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated);
             }
             else if (_streams != null && _streams.Count > 1)
             {
-
+                if (emitPartitionCheckpoints)
+                    throw new InvalidOperationException("Partition checkpoints cannot be used");
                 return new MultiStreamSingleOutputStreamCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
                     projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated);
@@ -260,7 +263,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return new DefaultCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
                     projectionConfig, projectionCheckpointStreamId, name, PositionTagger, namingBuilder, UseCheckpoints,
-                    EmitStateUpdated);
+                    EmitStateUpdated, emitPartitionCheckpoints);
             }
         }
 

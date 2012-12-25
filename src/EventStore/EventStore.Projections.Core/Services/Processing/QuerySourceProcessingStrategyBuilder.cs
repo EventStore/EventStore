@@ -159,12 +159,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (_byStream && _streams != null)
                 throw new InvalidOperationException("Partitioned projections are not supported on stream based sources");
-            if (_byStream && !_options.EmitStateUpdated)  // TODO: JUST or AND emit state updates? - see CheckpointStrategy
-                throw new InvalidOperationException("Partitioned (foreachStream) projections require emitStateUpdated option");
             if (_byCustomPartitions && _streams != null && _streams.Count > 1)
                 throw new InvalidOperationException("Partitioned projections are not supported on multi-stream based sources");
-            if (_byCustomPartitions && !_options.EmitStateUpdated)  // TODO: JUST or AND emit state updates? - see CheckpointStrategy
-                throw new InvalidOperationException("Partitioned (foreachStream) projections require emitStateUpdated option");
             if (_options.UseEventIndexes && (_byStream || _byCustomPartitions))
                 throw new InvalidOperationException("Partitioned projections are not supported with useEventIndexes option");
             if (_options.UseEventIndexes && !_allStreams)

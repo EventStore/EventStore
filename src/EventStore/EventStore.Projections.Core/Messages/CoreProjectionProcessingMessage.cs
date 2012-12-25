@@ -108,8 +108,5 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class CheckpointPartitions : Message
-        {
-        }
     }
 }

@@ -223,10 +223,17 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Stop()
         {
             EnsureState(State.LoadStateRequsted | State.StateLoadedSubscribed | State.Running);
-            if (_state == State.LoadStateRequsted)
-                GoToState(State.Stopped);
-            else
-                GoToState(State.Stopping);
+            try
+            {
+                if (_state == State.LoadStateRequsted)
+                    GoToState(State.Stopped);
+                else
+                    GoToState(State.Stopping);
+            }
+            catch (Exception ex)
+            {
+                SetFaulted(ex);
+            }
         }
 
         public void Kill()
@@ -354,12 +361,6 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 SetFaulted(ex);
             }
-        }
-
-        public void Handle(CoreProjectionProcessingMessage.CheckpointPartitions message)
-        {
-            //TODO: EnsureState(State.LoadStateRequsted);
-
         }
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
