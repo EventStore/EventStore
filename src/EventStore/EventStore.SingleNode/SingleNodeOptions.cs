@@ -61,13 +61,13 @@ namespace EventStore.SingleNode
         [Option(null, "projection-threads", DefaultValue = 3, HelpText = "The number of threads to use for projections.")]
         public int ProjectionThreads { get; set; }
 
-        [Option(null, "tcp-send-threads", DefaultValue = 5, HelpText = "The number of threads to use for sending to TCP sockets.")]
+        [Option(null, "tcp-send-threads", DefaultValue = 3, HelpText = "The number of threads to use for sending to TCP sockets.")]
         public int TcpSendThreads { get; set; }
 
         [Option(null, "http-receive-threads", DefaultValue = 5, HelpText = "The number of threads to use for receiving from HTTP.")]
         public int HttpReceiveThreads { get; set; }
 
-        [Option(null, "http-send-threads", DefaultValue = 5, HelpText = "The number of threads for sending over HTTP.")]
+        [Option(null, "http-send-threads", DefaultValue = 3, HelpText = "The number of threads for sending over HTTP.")]
         public int HttpSendThreads { get; set; }
 
         [Option(null, "prefixes", HelpText = "The prefixes that the http server should respond to.")]
