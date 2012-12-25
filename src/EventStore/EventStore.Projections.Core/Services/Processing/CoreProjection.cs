@@ -782,7 +782,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _readDispatcher.Publish(
                         new ClientMessage.ReadStreamEventsBackward(
                             Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, -1, 1,
-                            resolveLinks: false),
+                            resolveLinks: false, validationStreamVersion: null),
                         m => OnLoadStatePartitionCompleted(statePartition, m, loadCompleted, eventCheckpointTag));
                 if (requestId != Guid.Empty)
                     _loadStateRequests.Add(requestId);
@@ -832,7 +832,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             string partitionStateStreamName = MakePartitionStateStreamName(partition);
             _readRequestsInProgress++;
-            var requestId = _readDispatcher.Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, message.NextEventNumber, 1, resolveLinks: false), m => OnLoadStatePartitionCompleted(partition, m, loadCompleted, eventCheckpointTag));
+            var requestId = _readDispatcher.Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, message.NextEventNumber, 1, resolveLinks: false, validationStreamVersion: null), m => OnLoadStatePartitionCompleted(partition, m, loadCompleted, eventCheckpointTag));
             if (requestId != Guid.Empty)
                 _loadStateRequests.Add(requestId);
         }

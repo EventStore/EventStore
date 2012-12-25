@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Diagnostics;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -79,10 +80,12 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     switch (completed.Result)
                     {
-                        case RangeReadResult.Success:
+                        case StreamResult.Success:
                             return entity.ResponseCodec.To(Convert.ToReadStreamFeed(completed, entity.UserHostName, embed));
-                        case RangeReadResult.NoStream:
-                        case RangeReadResult.StreamDeleted:
+                        case StreamResult.NoStream:
+                        case StreamResult.StreamDeleted:
+                        case StreamResult.NotModified:
+                        case StreamResult.Error:
                             return string.Empty;
                         default:
                             throw new ArgumentOutOfRangeException();

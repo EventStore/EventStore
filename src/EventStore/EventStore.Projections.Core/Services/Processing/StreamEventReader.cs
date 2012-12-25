@@ -90,7 +90,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested = false;
             switch (message.Result)
             {
-                case RangeReadResult.NoStream:
+                case StreamResult.NoStream:
                     DeliverSafeJoinPosition(message.LastCommitPosition.Value); // allow joining heading distribution
                     if (_pauseRequested)
                         _paused = true;
@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendIdle();
                     SendEof();
                     break;
-                case RangeReadResult.Success:
+                case StreamResult.Success:
                     if (message.Events.Length == 0)
                     {
                         // the end

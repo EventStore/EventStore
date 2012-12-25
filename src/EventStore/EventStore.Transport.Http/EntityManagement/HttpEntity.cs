@@ -42,7 +42,7 @@ namespace EventStore.Transport.Http.EntityManagement
         public readonly ICodec ResponseCodec;
         private readonly HttpListenerContext _context;
 
-        internal readonly HttpListenerRequest Request;
+        public readonly HttpListenerRequest Request;
         internal readonly HttpListenerResponse Response;
 
         public HttpEntity(DateTime timeStamp,

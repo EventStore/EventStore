@@ -73,6 +73,7 @@ namespace EventStore.Core.Messages
 
         public abstract class ReadResponseMessage : Message
         {
+            internal static readonly EventLinkPair[] EmptyRecords = new EventLinkPair[0];
         }
 
         public class ForwardMessage: Message
@@ -439,12 +440,26 @@ namespace EventStore.Core.Messages
             public readonly int MaxCount;
             public readonly bool ResolveLinks;
 
+            public readonly int? ValidationStreamVersion;
+
             public ReadStreamEventsForward(Guid correlationId,
                                            IEnvelope envelope,
                                            string eventStreamId,
                                            int fromEventNumber,
                                            int maxCount,
                                            bool resolveLinks)
+                : this(correlationId, envelope, eventStreamId, fromEventNumber, maxCount, resolveLinks, null)
+            {
+                
+            }
+
+            public ReadStreamEventsForward(Guid correlationId,
+                                           IEnvelope envelope,
+                                           string eventStreamId,
+                                           int fromEventNumber,
+                                           int maxCount,
+                                           bool resolveLinks,
+                                           int? validationStreamVersion)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
@@ -452,16 +467,18 @@ namespace EventStore.Core.Messages
                 FromEventNumber = fromEventNumber;
                 MaxCount = maxCount;
                 ResolveLinks = resolveLinks;
+                ValidationStreamVersion = validationStreamVersion;
             }
 
             public override string ToString()
             {
-                return string.Format(GetType().Name + " CorrelationId: {0}, EventStreamId: {1}, FromEventNumber: {2}, MaxCount: {3}, ResolveLinks: {4}",
+                return string.Format(GetType().Name + " CorrelationId: {0}, EventStreamId: {1}, FromEventNumber: {2}, MaxCount: {3}, ResolveLinks: {4}, ValidationStreamVersion: {5}",
                                      CorrelationId,
                                      EventStreamId,
                                      FromEventNumber,
                                      MaxCount,
-                                     ResolveLinks);
+                                     ResolveLinks,
+                                     ValidationStreamVersion);
             }
         }
 
@@ -469,8 +486,12 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
+            public readonly int FromEventNumber;
+            public readonly int MaxCount;
+            
+            public readonly StreamResult Result;
             public readonly EventLinkPair[] Events;
-            public readonly RangeReadResult Result;
+            public readonly string Error;
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
             public readonly bool IsEndOfStream;
@@ -478,8 +499,11 @@ namespace EventStore.Core.Messages
 
             public ReadStreamEventsForwardCompleted(Guid correlationId,
                                                     string eventStreamId,
+                                                    int fromEventNumber,
+                                                    int maxCount,
+                                                    StreamResult result,
                                                     EventLinkPair[] events,
-                                                    RangeReadResult result,
+                                                    string error,
                                                     int nextEventNumber,
                                                     int lastEventNumber,
                                                     bool isEndOfStream,
@@ -489,12 +513,29 @@ namespace EventStore.Core.Messages
 
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
-                Events = events;
+                FromEventNumber = fromEventNumber;
+                MaxCount = maxCount;
+
                 Result = result;
+                Events = events;
+                Error = error;
                 NextEventNumber = nextEventNumber;
                 LastEventNumber = lastEventNumber;
                 IsEndOfStream = isEndOfStream;
                 LastCommitPosition = lastCommitPosition;
+            }
+
+            public static ReadStreamEventsForwardCompleted NotModified(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount)
+            {
+                return new ReadStreamEventsForwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount, 
+                                                            StreamResult.NotModified, EmptyRecords, string.Empty, -1, -1, false, null);
+            }
+
+            public static ReadStreamEventsForwardCompleted Faulted(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount, string error)
+            {
+                Ensure.NotNullOrEmpty(error, "error");
+                return new ReadStreamEventsForwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
+                                                            StreamResult.Error, EmptyRecords, error, -1, -1, false, null);
             }
         }
 
@@ -507,12 +548,15 @@ namespace EventStore.Core.Messages
             public readonly int MaxCount;
             public readonly bool ResolveLinks;
 
+            public readonly int? ValidationStreamVersion;
+
             public ReadStreamEventsBackward(Guid correlationId,
-                                             IEnvelope envelope,
-                                             string eventStreamId,
-                                             int fromEventNumber,
-                                             int maxCount,
-                                             bool resolveLinks)
+                                            IEnvelope envelope,
+                                            string eventStreamId,
+                                            int fromEventNumber,
+                                            int maxCount,
+                                            bool resolveLinks,
+                                            int? validationStreamVersion)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
@@ -520,11 +564,12 @@ namespace EventStore.Core.Messages
                 FromEventNumber = fromEventNumber;
                 MaxCount = maxCount;
                 ResolveLinks = resolveLinks;
+                ValidationStreamVersion = validationStreamVersion;
             }
 
             public override string ToString()
             {
-                return string.Format(GetType().Name + " CorrelationId: {0}, EventStreamId: {1}, FromEventNumber: {2}, MaxCount: {3}, ResolveLinks: {4}", CorrelationId, EventStreamId, FromEventNumber, MaxCount, ResolveLinks);
+                return string.Format(GetType().Name + " CorrelationId: {0}, EventStreamId: {1}, FromEventNumber: {2}, MaxCount: {3}, ResolveLinks: {4}, ValidationStreamVersion: {5}", CorrelationId, EventStreamId, FromEventNumber, MaxCount, ResolveLinks, ValidationStreamVersion);
             }
         }
 
@@ -534,20 +579,22 @@ namespace EventStore.Core.Messages
             public readonly string EventStreamId;
             public readonly int FromEventNumber;
             public readonly int MaxCount;
+
+            public readonly StreamResult Result;
             public readonly EventLinkPair[] Events;
-            public readonly RangeReadResult Result;
+            public readonly string Error;
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
             public readonly bool IsEndOfStream;
             public readonly long? LastCommitPosition;
 
-
             public ReadStreamEventsBackwardCompleted(Guid correlationId,
                                                      string eventStreamId,
                                                      int fromEventNumber,
                                                      int maxCount,
+                                                     StreamResult result,
                                                      EventLinkPair[] events,
-                                                     RangeReadResult result,
+                                                     string error,
                                                      int nextEventNumber,
                                                      int lastEventNumber,
                                                      bool isEndOfStream,
@@ -559,12 +606,27 @@ namespace EventStore.Core.Messages
                 EventStreamId = eventStreamId;
                 FromEventNumber = fromEventNumber;
                 MaxCount = maxCount;
-                Events = events;
+
                 Result = result;
+                Events = events;
+                Error = error;
                 NextEventNumber = nextEventNumber;
                 LastEventNumber = lastEventNumber;
                 IsEndOfStream = isEndOfStream;
                 LastCommitPosition = lastCommitPosition;
+            }
+
+            public static ReadStreamEventsBackwardCompleted NotModified(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount)
+            {
+                return new ReadStreamEventsBackwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
+                                                             StreamResult.NotModified, EmptyRecords, string.Empty, -1, -1, false, null);
+            }
+
+            public static ReadStreamEventsBackwardCompleted Faulted(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount, string error)
+            {
+                Ensure.NotNullOrEmpty(error, "error");
+                return new ReadStreamEventsBackwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
+                                                             StreamResult.Error, EmptyRecords, error, -1, -1, false, null);
             }
         }
 

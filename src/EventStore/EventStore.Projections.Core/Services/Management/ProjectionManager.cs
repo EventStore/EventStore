@@ -352,13 +352,13 @@ namespace EventStore.Projections.Core.Services.Management
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, "$projections-$all", from, _readEventsBatchSize,
-                    resolveLinks: false), m => LoadProjectionListCompleted(m, from));
+                    resolveLinks: false, validationStreamVersion: null), m => LoadProjectionListCompleted(m, from));
         }
 
         private void LoadProjectionListCompleted(
             ClientMessage.ReadStreamEventsBackwardCompleted completed, int requestedFrom)
         {
-            if (completed.Result == RangeReadResult.Success && completed.Events.Length > 0)
+            if (completed.Result == StreamResult.Success && completed.Events.Length > 0)
             {
                 if (completed.NextEventNumber != -1)
                     BeginLoadProjectionList(@from: completed.NextEventNumber);

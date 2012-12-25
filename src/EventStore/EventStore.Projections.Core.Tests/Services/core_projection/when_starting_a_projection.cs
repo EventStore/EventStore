@@ -90,8 +90,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Handle(
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
-                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, new EventLinkPair[0], 
-                    RangeReadResult.NoStream, -1, -1, false, 1000));
+                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, StreamResult.NoStream, 
+                    new EventLinkPair[0], string.Empty, -1, -1, false, 1000));
         }
 
         [Test]
@@ -100,8 +100,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Handle(
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
-                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, new EventLinkPair[0],
-                    RangeReadResult.Success, -1, -1, false, 1000));
+                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, StreamResult.Success,
+                    new EventLinkPair[0], string.Empty, -1, -1, false, 1000));
         }
     }
 }

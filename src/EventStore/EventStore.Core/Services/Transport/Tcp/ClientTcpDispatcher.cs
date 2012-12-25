@@ -328,7 +328,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                              dto.EventStreamId,
                                                              dto.StartIndex,
                                                              dto.MaxCount,
-                                                             dto.ResolveLinkTos);
+                                                             dto.ResolveLinkTos,
+                                                             null);
         }
 
         private static TcpPackage WrapReadStreamEventsForwardCompleted(ClientMessage.ReadStreamEventsForwardCompleted msg)
@@ -354,7 +355,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                               dto.EventStreamId,
                                                               dto.StartIndex,
                                                               dto.MaxCount,
-                                                              dto.ResolveLinkTos);
+                                                              dto.ResolveLinkTos,
+                                                              null);
         }
 
         private static TcpPackage WrapReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted msg)

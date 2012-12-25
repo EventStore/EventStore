@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _secondEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream",
+                    _distibutionPointCorrelationId, "stream", 100, 100, StreamResult.Success, 
                     new[]
                     {
                         new EventLinkPair( 
@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                                 11, 100, Guid.NewGuid(), _secondEventId, 100, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                                 "event_type2", new byte[] {3}, new byte[] {4}), null)
-                    }, RangeReadResult.Success, 12, 11, true, 200));
+                    }, "", 12, 11, true, 200));
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
@@ -135,7 +135,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream",
+                    _distibutionPointCorrelationId, "stream", 100, 100, StreamResult.Success, 
                     new[]
                     {
                         new EventLinkPair( 
@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                         10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
                         PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                         "event_type", new byte[0], new byte[0]), null)
-                    }, RangeReadResult.Success, 11, 10, true, 100));
+                    }, "", 11, 10, true, 100));
         }
 
         [Test]
@@ -151,7 +151,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream",
+                    _distibutionPointCorrelationId, "stream", 100, 100, StreamResult.Success, 
                     new[]
                     {
                         new EventLinkPair( 
@@ -159,7 +159,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                                 12, 250, Guid.NewGuid(), Guid.NewGuid(), 250, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                                 "event_type", new byte[0], new byte[0]), null)
-                    }, RangeReadResult.Success, 13, 11, true, 300));
+                    }, "", 13, 11, true, 300));
         }
     }
 }

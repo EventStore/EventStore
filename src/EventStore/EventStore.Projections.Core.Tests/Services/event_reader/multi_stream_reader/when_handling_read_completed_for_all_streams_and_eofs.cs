@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _fourthEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a",
+                    _distibutionPointCorrelationId, "a", 100, 100, StreamResult.Success, 
                     new[]
                         {
                             new EventLinkPair(
@@ -90,11 +90,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, RangeReadResult.Success, 3, 2, true,
-                    200));
+                        }, "", 3, 2, true, 200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b",
+                    _distibutionPointCorrelationId, "b", 100, 100, StreamResult.Success, 
                     new[]
                         {
                             new EventLinkPair(
@@ -107,15 +106,15 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             3, 200, Guid.NewGuid(), _fourthEventId, 200, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, RangeReadResult.Success, 4, 3, true,
+                        }, "", 4, 3, true,
                     200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", new EventLinkPair[] {}, RangeReadResult.Success, 3, 2, true,
+                    _distibutionPointCorrelationId, "a", 100, 100, StreamResult.Success, new EventLinkPair[0], "", 3, 2, true,
                     400));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b", new EventLinkPair[] {}, RangeReadResult.Success, 4, 3, true,
+                    _distibutionPointCorrelationId, "b", 100, 100, StreamResult.Success, new EventLinkPair[0], "", 4, 3, true,
                     400));
         }
 

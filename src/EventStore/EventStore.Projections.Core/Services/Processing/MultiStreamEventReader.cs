@@ -119,7 +119,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested.Remove(message.EventStreamId);
             switch (message.Result)
             {
-                case RangeReadResult.NoStream:
+                case StreamResult.NoStream:
                     _eofs[message.EventStreamId] = true;
                     UpdateSafePositionToJoin(message.EventStreamId, message.LastCommitPosition);
                     ProcessBuffers();
@@ -131,7 +131,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     CheckIdle();
                     CheckEof();
                     break;
-                case RangeReadResult.Success:
+                case StreamResult.Success:
                     if (message.Events.Length == 0)
                     {
                         // the end
