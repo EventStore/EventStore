@@ -35,6 +35,8 @@ namespace EventStore.Core.Bus
 {
     public class QueueStatsCollector
     {
+        private static readonly TimeSpan MinRefreshPeriod = TimeSpan.FromMilliseconds(100);
+
         public readonly string Name;
         public readonly string GroupName;
 
@@ -73,7 +75,7 @@ namespace EventStore.Core.Bus
 
         public void Stop()
         {
-            //_totalTimeWatch.Stop();
+            _totalTimeWatch.Stop();
         }
 
         public void ProcessingStarted<T>(int queueLength)
@@ -152,7 +154,7 @@ namespace EventStore.Core.Bus
                     _lastProcessedMsgType,
                     _inProgressMsgType);
 
-                if ((totalTime - _lastTotalTime).TotalMilliseconds > 500)
+                if (totalTime - _lastTotalTime >= MinRefreshPeriod)
                 {
                     _lastTotalTime = totalTime;
                     _lastTotalIdleTime = totalIdleTime;
