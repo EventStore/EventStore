@@ -195,7 +195,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _awaitingListEventsCompleted = true;
             _publisher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), new SendToThisEnvelope(this), _streamId, -1, 1, resolveLinks: false));
+                    Guid.NewGuid(), new SendToThisEnvelope(this), _streamId, -1, 1, resolveLinks: false, validationStreamVersion: null));
         }
 
         private void SubmitWriteEvents()

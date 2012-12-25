@@ -36,10 +36,10 @@ using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
-
     public enum EmbedLevel
     {
         None,
@@ -51,7 +51,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
     public class AtomController : CommunicationController
     {
-        private static readonly HtmlFeedCodec _htmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
+        private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
+
         private static readonly ICodec[] ServiceDocCodecs = new[]
                                                             {
                                                                 Codec.Xml,
@@ -69,17 +70,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                           Codec.CreateCustom(Codec.Json, ContentType.AtomJson)
                                                       };
         private static readonly ICodec[] AtomWithHtmlCodecs = new[]
-                                                      {
-                                                          Codec.Xml,
-                                                          Codec.ApplicationXml,
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom),
-                                                          Codec.Json,
-                                                          Codec.CreateCustom(Codec.Json, ContentType.AtomJson),
-                                                          _htmlFeedCodec // initialization order matters
-                                                      };
+                                                              {
+                                                                  Codec.Xml,
+                                                                  Codec.ApplicationXml,
+                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom),
+                                                                  Codec.Json,
+                                                                  Codec.CreateCustom(Codec.Json, ContentType.AtomJson),
+                                                                  HtmlFeedCodec // initialization order matters
+                                                              };
 
         private static readonly ICodec DefaultResponseCodec = Codec.Xml;
-        private static readonly ICodec DefaultFeedResponseCodec = _htmlFeedCodec; // initialization order matters
+        private static readonly ICodec DefaultFeedResponseCodec = HtmlFeedCodec; // initialization order matters
 
         private readonly GenericController _genericController;
         private readonly AllEventsController _allEventsController;
@@ -118,13 +119,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   Codec.NoCodecs,
                                                                   AtomWithHtmlCodecs,
                                                                   DefaultFeedResponseCodec),
-                                             OnGetFeedLatest);
+                                             OnGetStreamFeedLatest);
             service.RegisterControllerAction(new ControllerAction("/streams/{stream}/range/{start}/{count}?embed={embed}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
                                                                   AtomWithHtmlCodecs,
                                                                   DefaultFeedResponseCodec),
-                                             OnGetFeedPage);
+                                             OnGetStreamRangeFeedPage);
             service.RegisterControllerAction(new ControllerAction("/streams/{stream}/{id}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
@@ -143,25 +144,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   Codec.NoCodecs,
                                                                   AtomWithHtmlCodecs,
                                                                   DefaultResponseCodec),
-                                             OnGetAllBefore);
+                                             OnGetAllFeedBeforeHead);
             service.RegisterControllerAction(new ControllerAction("/streams/$all/{count}?embed={embed}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
                                                                   AtomWithHtmlCodecs,
                                                                   DefaultResponseCodec),
-                                             OnGetAllBefore);
+                                             OnGetAllFeedBeforeHead);
             service.RegisterControllerAction(new ControllerAction("/streams/$all/before/{pos}/{count}?embed={embed}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
                                                                   AtomWithHtmlCodecs,
                                                                   DefaultResponseCodec),
-                                             OnGetAllBefore);
+                                             OnGetAllFeedBefore);
             service.RegisterControllerAction(new ControllerAction("/streams/$all/after/{pos}/{count}?embed={embed}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
                                                                   AtomWithHtmlCodecs,
                                                                   DefaultResponseCodec),
-                                             OnGetAllAfter);
+                                             OnGetAllAfterFeed);
         }
 
         //SERVICE DOCUMENT
@@ -194,7 +195,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             _genericController.DeleteStream(entity, stream);
         }
 
-        private void OnGetFeedLatest(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetStreamFeedLatest(HttpEntity entity, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
             var embed = GetEmbed(entity, match);
@@ -204,16 +205,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
 
-            OnGetFeedCore(entity, stream, -1, AtomSpecs.FeedPageSize, embed);
+            OnGetStreamFeedCore(entity, stream, -1, AtomSpecs.FeedPageSize, embed, headOfStream: true);
         }
 
-        private void OnGetFeedPage(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetStreamRangeFeedPage(HttpEntity entity, UriTemplateMatch match)
         {
             var stream = match.BoundVariables["stream"];
             var start = match.BoundVariables["start"];
             var count = match.BoundVariables["count"];
             var embed = GetEmbed(entity, match);
-
+            
             int startIdx;
             int cnt;
 
@@ -232,13 +233,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 SendBadRequest(entity, string.Format("'{0}' is not valid count. Should be positive integer", count));
                 return;
             }
-
-            OnGetFeedCore(entity, stream, startIdx, cnt, embed);
+            OnGetStreamFeedCore(entity, stream, startIdx, cnt, embed, headOfStream: false);
         }
 
-        private void OnGetFeedCore(HttpEntity entity, string stream, int start, int count, EmbedLevel embed)
+        private void OnGetStreamFeedCore(HttpEntity entity, string stream, int start, int count, EmbedLevel embed, bool headOfStream)
         {
-            _genericController.GetFeedPage(entity, stream, start, count, embed);
+            int streamVersion;
+            var etag = entity.Request.Headers["If-None-Match"];
+            int? validationStreamVersion = etag.IsNotEmptyString() && int.TryParse(etag.Trim('\"'), out streamVersion)
+                                                   ? (int?)streamVersion
+                                                   : null;
+            _genericController.GetStreamFeedPage(entity, stream, start, count, embed, validationStreamVersion, headOfStream);
         }
 
         private static EmbedLevel GetEmbed(HttpEntity entity, UriTemplateMatch match, EmbedLevel htmlLevel = EmbedLevel.PrettyBody)
@@ -258,7 +263,26 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         //$ALL
 
-        private void OnGetAllBefore(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetAllFeedBeforeHead(HttpEntity entity, UriTemplateMatch match)
+        {
+            var c = match.BoundVariables["count"];
+            var embed = GetEmbed(entity, match);
+
+            int count;
+            if (!string.IsNullOrEmpty(c))
+            {
+                if (!int.TryParse(c, out count))
+                    SendBadRequest(entity, string.Format("Invalid count argument : {0}", c));
+            }
+            else
+            {
+                count = AtomSpecs.FeedPageSize;
+            }
+
+            _allEventsController.GetAllBeforeFeed(entity, TFPos.Invalid, count, embed, headOfTf: true);
+        }
+
+        private void OnGetAllFeedBefore(HttpEntity entity, UriTemplateMatch match)
         {
             var p = match.BoundVariables["pos"];
             var c = match.BoundVariables["count"];
@@ -287,10 +311,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 count = AtomSpecs.FeedPageSize;
             }
 
-            _allEventsController.GetAllBefore(entity, position, count, embed);
+            _allEventsController.GetAllBeforeFeed(entity, position, count, embed, headOfTf: false);
         }
 
-        private void OnGetAllAfter(HttpEntity entity, UriTemplateMatch match)
+        private void OnGetAllAfterFeed(HttpEntity entity, UriTemplateMatch match)
         {
             var p = match.BoundVariables["pos"];
             var c = match.BoundVariables["count"];
@@ -310,7 +334,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
 
-            _allEventsController.GetAllAfter(entity, position, count, embed);
+            _allEventsController.GetAllAfterFeed(entity, position, count, embed, headOfTf: false);
         }
 
         //ENTRY MANIPULATION
@@ -345,9 +369,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
     class HtmlFeedCodec : ICodec, IRichAtomCodec
     {
-        public string ContentType {
-            get { return "text/html"; }
-        }
+        public string ContentType  { get { return "text/html"; } }
 
         public bool CanParse(string format)
         {
@@ -357,8 +379,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public bool SuitableForReponse(AcceptComponent component)
         {
             return component.MediaType == "*"
-                   || (component.MediaType == "text"
-                       && (component.MediaSubtype == "*" || component.MediaSubtype == "html"));
+                   || (string.Equals(component.MediaType, "text", StringComparison.OrdinalIgnoreCase)
+                       && (component.MediaSubtype == "*" || string.Equals(component.MediaSubtype, "html", StringComparison.OrdinalIgnoreCase)));
         }
 
         public T From<T>(string text)
@@ -397,7 +419,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     </script>
 </div>
 
-
 </body>
 </html>
 ";
@@ -408,13 +429,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
     }
 
-
-    /*
-     * */
     public class GenericController : CommunicationController
     {
-        private readonly IPublisher _networkSendQueue;
         private static readonly ILogger Log = LogManager.GetLoggerFor<GenericController>();
+        
+        private readonly IPublisher _networkSendQueue;
 
         public GenericController(IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
@@ -430,7 +449,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         public void CreateStream(HttpEntity entity)
         {
             entity.Manager.ReadTextRequestAsync(CreateStreamBodyRead,
-                                            e => Log.ErrorException(e, "Error while reading request (CREATE stream)"));
+                                                e => Log.ErrorException(e, "Error while reading request (CREATE stream)."));
         }
 
         private void CreateStreamBodyRead(HttpEntityManager manager, string body)
@@ -462,7 +481,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             entity.Manager.AsyncState = stream;
             entity.Manager.ReadTextRequestAsync(DeleteStreamBodyRead,
-                                            e => Log.ErrorException(e, "Error while reading request (DELETE stream)"));
+                                                e => Log.ErrorException(e, "Error while reading request (DELETE stream)."));
         }
 
         private void DeleteStreamBodyRead(HttpEntityManager manager, string body)
@@ -481,29 +500,37 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                   entity,
                                                   Format.Atom.DeleteStreamCompleted,
                                                   Configure.DeleteStreamCompleted);
-            var msg = new ClientMessage.DeleteStream(Guid.NewGuid(),
-                                                     envelope,
-                                                     true, 
-                                                     stream, 
-                                                     delete.ExpectedVersion);
+            var msg = new ClientMessage.DeleteStream(Guid.NewGuid(), envelope, true, stream, delete.ExpectedVersion);
             Publish(msg);
         }
 
-        public void GetFeedPage(HttpEntity entity, string stream, int start, int count, EmbedLevel embed)
+        public void GetStreamFeedPage(HttpEntity entity, 
+                                      string stream, 
+                                      int start, 
+                                      int count, 
+                                      EmbedLevel embed, 
+                                      int? validationStreamVersion,
+                                      bool headOfStream)
         {
             entity.Manager.AsyncState = start;
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
-                                                  (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, start, count, 
-                                                      embed),
-                                                  Configure.ReadStreamEventsBackwardCompleted);
-            Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(), envelope, stream, start, count, resolveLinks: true));
+                                                  (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, embed),
+                                                  (args, msg) => Configure.ReadStreamEventsBackwardCompleted(args, msg, headOfStream));
+            Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(),
+                                                               envelope,
+                                                               stream,
+                                                               start,
+                                                               count,
+                                                               resolveLinks: true,
+                                                               validationStreamVersion: validationStreamVersion));
         }
 
         public void GetEntry(HttpEntity entity, string stream, int version, EmbedLevel embed)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue, entity,
-                                                  (args, message) => Format.Atom.ReadEventCompletedEntry(args, message, embed), Configure.ReadEventCompleted);
+                                                  (args, message) => Format.Atom.ReadEventCompletedEntry(args, message, embed), 
+                                                  Configure.ReadEventCompleted);
             Publish(new ClientMessage.ReadEvent(Guid.NewGuid(), envelope, stream, version, true));
         }
 
@@ -511,7 +538,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             entity.Manager.AsyncState = stream;
             entity.Manager.ReadTextRequestAsync(OnPostEntryRequestRead, 
-                                            e => Log.ErrorException(e, "Error while reading request (POST entry)"));
+                                                e => Log.ErrorException(e, "Error while reading request (POST entry)."));
         }
 
         private void OnPostEntryRequestRead(HttpEntityManager manager, string body)
@@ -523,7 +550,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             var expectedVersion = parsed.Item1;
             var events = parsed.Item2;
 
-            if (events == null || events.Length == 0)
+            if (events.IsEmpty())
             {
                 SendBadRequest(entity, "Write request body invalid");
                 return;
@@ -551,36 +578,43 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             //no direct subscriptions
         }
 
-        public void GetAllBefore(HttpEntity entity, TFPos position, int count, EmbedLevel embed)
+        public void GetAllBeforeFeed(HttpEntity entity, TFPos position, int count, EmbedLevel embed, bool headOfTf)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
-                                                  (args, message) =>
-                                                  Format.Atom.ReadAllEventsBackwardCompleted(args, message, embed), 
-                                                  Configure.ReadAllEventsBackwardCompleted);
+                                                  (args, msg) => Format.Atom.ReadAllEventsBackwardCompleted(args, msg, embed), 
+                                                  (args, msg) => Configure.ReadAllEventsBackwardCompleted(args, msg, headOfTf));
             Publish(new ClientMessage.ReadAllEventsBackward(Guid.NewGuid(),
                                                             envelope,
                                                             position.CommitPosition,
                                                             position.PreparePosition,
                                                             count,
-                                                            true));
+                                                            resolveLinks: true,
+                                                            validationTfEofPosition: GetValidationTfEofPosition(entity, headOfTf)));
         }
 
-        public void GetAllAfter(HttpEntity entity, TFPos position, int count, EmbedLevel embed)
+        public void GetAllAfterFeed(HttpEntity entity, TFPos position, int count, EmbedLevel embed, bool headOfTf)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
-                                                  (args, message) =>
-                                                  Format.Atom.ReadAllEventsForwardCompleted(args, message, embed),
-                                                  Configure.ReadAllEventsForwardCompleted);
+                                                  (args, msg) => Format.Atom.ReadAllEventsForwardCompleted(args, msg, embed),
+                                                  (args, msg) => Configure.ReadAllEventsForwardCompleted(args, msg, headOfTf));
             Publish(new ClientMessage.ReadAllEventsForward(Guid.NewGuid(),
                                                            envelope,
                                                            position.CommitPosition,
                                                            position.PreparePosition,
                                                            count,
-                                                           true));
+                                                           resolveLinks: true,
+                                                           validationTfEofPosition: GetValidationTfEofPosition(entity, headOfTf)));
         }
 
-
+        private static long? GetValidationTfEofPosition(HttpEntity entity, bool headOfTf)
+        {
+            if (headOfTf)
+                return null;
+            long tfEofPosition;
+            var etag = entity.Request.Headers["If-None-Match"];
+            return etag.IsNotEmptyString() && long.TryParse(etag.Trim('\"'), out tfEofPosition) ? (long?) tfEofPosition : null;
+        }
     }
 }

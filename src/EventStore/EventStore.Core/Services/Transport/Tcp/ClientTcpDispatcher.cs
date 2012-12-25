@@ -311,12 +311,9 @@ namespace EventStore.Core.Services.Transport.Tcp
         private static TcpPackage WrapReadEventsCompleted(ClientMessage.ReadEventCompleted msg)
         {
             var dto = new TcpClientMessageDto.ReadEventCompleted(msg.EventStreamId,
-                                                              msg.EventNumber,
-                                                              (int)msg.Result,
-                                                              msg.Record == null ? null : msg.Record.EventType,
-                                                              msg.Record == null ? null : msg.Record.Data,
-                                                              msg.Record == null ? null : msg.Record.Metadata,
-                                                              msg.Record == null ? -1 : msg.Record.LogPosition);
+                                                                 msg.EventNumber,
+                                                                 (int) msg.Result,
+                                                                 new TcpClientMessageDto.EventLinkPair(msg.Record.Event, msg.Record.Link));
             return new TcpPackage(TcpCommand.ReadEventCompleted, msg.CorrelationId, dto.Serialize());
         }
 
@@ -331,7 +328,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                              dto.EventStreamId,
                                                              dto.StartIndex,
                                                              dto.MaxCount,
-                                                             dto.ResolveLinkTos);
+                                                             dto.ResolveLinkTos,
+                                                             null);
         }
 
         private static TcpPackage WrapReadStreamEventsForwardCompleted(ClientMessage.ReadStreamEventsForwardCompleted msg)
@@ -357,7 +355,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                               dto.EventStreamId,
                                                               dto.StartIndex,
                                                               dto.MaxCount,
-                                                              dto.ResolveLinkTos);
+                                                              dto.ResolveLinkTos,
+                                                              null);
         }
 
         private static TcpPackage WrapReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted msg)
@@ -391,7 +390,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                           dto.CommitPosition,
                                                           dto.PreparePosition,
                                                           dto.MaxCount,
-                                                          dto.ResolveLinkTos);
+                                                          dto.ResolveLinkTos,
+                                                          validationTfEofPosition: null);
         }
 
         private static TcpPackage WrapReadAllEventsForwardCompleted(ClientMessage.ReadAllEventsForwardCompleted msg)
@@ -413,7 +413,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                            dto.CommitPosition,
                                                            dto.PreparePosition,
                                                            dto.MaxCount,
-                                                           dto.ResolveLinkTos);
+                                                           dto.ResolveLinkTos,
+                                                           validationTfEofPosition: null);
         }
 
         private static TcpPackage WrapReadAllEventsBackwardCompleted(ClientMessage.ReadAllEventsBackwardCompleted msg)

@@ -29,6 +29,8 @@ namespace EventStore.Core.Data
 {
     public struct ResolvedEventRecord
     {
+        public static readonly ResolvedEventRecord[] EmptyArray = new ResolvedEventRecord[0];
+
         public readonly EventRecord Event;
         public readonly EventRecord Link;
         public readonly long CommitPosition;

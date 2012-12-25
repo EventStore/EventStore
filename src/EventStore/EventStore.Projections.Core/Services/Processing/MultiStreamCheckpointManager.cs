@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readRequestId = _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, _projectionStateUpdatesStreamId, _nextStateIndexToRequest,
-                    recordsToRequest, resolveLinks: false), OnLoadStateReadRequestCompleted);
+                    recordsToRequest, resolveLinks: false, validationStreamVersion: null), OnLoadStateReadRequestCompleted);
         }
 
         private void OnLoadStateReadRequestCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message)

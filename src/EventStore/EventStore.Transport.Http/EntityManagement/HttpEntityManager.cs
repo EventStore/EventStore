@@ -179,7 +179,7 @@ namespace EventStore.Transport.Http.EntityManagement
             copier.Start();
         }
 
-        public bool BeginReply(int code, string description, string contentType, KeyValuePair<string, string>[] headers)
+        public bool BeginReply(int code, string description, string contentType, IEnumerable<KeyValuePair<string, string>> headers)
         {
             bool isAlreadyProcessing = Interlocked.CompareExchange(ref _processing, 1, 0) == 1;
             if (isAlreadyProcessing)
@@ -189,7 +189,7 @@ namespace EventStore.Transport.Http.EntityManagement
             SetResponseDescription(description);
             SetContentType(contentType);
             SetRequiredHeaders();
-            SetAdditionalHeaders(headers ?? Enumerable.Empty<KeyValuePair<string, string>>());
+            SetAdditionalHeaders(headers.Safe());
             return true;
         }
 
@@ -214,9 +214,12 @@ namespace EventStore.Transport.Http.EntityManagement
             EndWriteResponse();
         }
 
-        public void Reply(
-            byte[] response, int code, string description, string contentType, KeyValuePair<string, string>[] headers,
-            Action<Exception> onError)
+        public void Reply(byte[] response, 
+                          int code,
+                          string description, 
+                          string contentType, 
+                          IEnumerable<KeyValuePair<string, string>> headers,
+                          Action<Exception> onError)
         {
             Ensure.NotNull(onError, "onError");
 

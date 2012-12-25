@@ -79,10 +79,7 @@ message ReadEventCompleted {
 	required string event_stream_id = 1;
 	required int32 event_number = 2;
 	required int32 result = 3;
-	required string event_type = 4;
-	required bytes data = 5;
-	required bytes metadata = 6;
-	required int64 log_position = 7;
+	required EventLinkPair event = 4;
 }
 
 message ReadStreamEventsForward {

@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _secondEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a",
+                    _distibutionPointCorrelationId, "a", 100, 100, StreamResult.Success, 
                     new[]
                         {
                             new EventLinkPair(
@@ -81,11 +81,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, _fakeTimeProvider.Now,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type1", new byte[] {1}, new byte[] {2}), null),
-                        }, RangeReadResult.Success, 2, 1, true,
-                    200));
+                        }, "", 2, 1, true, 200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b",
+                    _distibutionPointCorrelationId, "b", 100, 100, StreamResult.Success, 
                     new[]
                         {
                             new EventLinkPair(
@@ -93,21 +92,17 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             2, 100, Guid.NewGuid(), _secondEventId, 100, 0, "b", ExpectedVersion.Any, _fakeTimeProvider.Now,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type1", new byte[] {1}, new byte[] {2}), null),
-                        }, RangeReadResult.Success, 3, 2, true,
-                    200));
+                        }, "", 3, 2, true, 200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", new EventLinkPair[] {}, RangeReadResult.Success, 2, 1, true,
-                    400));
+                    _distibutionPointCorrelationId, "a", 100, 100, StreamResult.Success, new EventLinkPair[] { }, "", 2, 1, true, 400));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b", new EventLinkPair[] {}, RangeReadResult.Success, 3, 2, true,
-                    400));
+                    _distibutionPointCorrelationId, "b", 100, 100, StreamResult.Success, new EventLinkPair[] { }, "", 3, 2, true, 400));
             _fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(500));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", new EventLinkPair[] { }, RangeReadResult.Success, 2, 1, true,
-                    600));
+                    _distibutionPointCorrelationId, "a", 100, 100, StreamResult.Success, new EventLinkPair[] { }, "", 2, 1, true, 600));
         }
 
         [Test]

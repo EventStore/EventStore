@@ -34,15 +34,18 @@ namespace EventStore.Transport.Http.EntityManagement
 {
     public static class HttpEntityManagerExtensions
     {
-        public static void ReplyStatus(
-            this HttpEntityManager self, int code, string description, Action<Exception> onError)
+        public static void ReplyStatus(this HttpEntityManager self, int code, string description, Action<Exception> onError)
         {
             self.Reply(null, code, description, null, null, onError);
         }
 
-        public static void ReplyTextContent(
-            this HttpEntityManager self, string response, int code, string description, string type,
-            KeyValuePair<string, string>[] headers, Action<Exception> onError)
+        public static void ReplyTextContent(this HttpEntityManager self, 
+                                            string response, 
+                                            int code, 
+                                            string description, 
+                                            string type,
+                                            IEnumerable<KeyValuePair<string, string>> headers, 
+                                            Action<Exception> onError)
         {
             //TODO: add encoding header???
             self.Reply(Encoding.UTF8.GetBytes(response ?? string.Empty), code, description, type, headers, onError);
@@ -61,15 +64,16 @@ namespace EventStore.Transport.Http.EntityManagement
         {
             self.ReadRequestAsync(
                 (manager, bytes) =>
-                    {
-                        int offset = 0;
+                {
+                    int offset = 0;
 
-                        // check for UTF-8 BOM (0xEF, 0xBB, 0xBF) and skip it safely, if any
-                        if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
-                            offset = 3;
+                    // check for UTF-8 BOM (0xEF, 0xBB, 0xBF) and skip it safely, if any
+                    if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+                        offset = 3;
 
-                        onSuccess(manager, Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset));
-                    }, onError);
+                    onSuccess(manager, Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset));
+                }, 
+                onError);
         }
     }
 }

@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _secondEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream",
+                    _distibutionPointCorrelationId, "stream", 100, 100, StreamResult.Success, 
                     new[]
                         {
                             new EventLinkPair(
@@ -51,13 +51,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                             DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, RangeReadResult.Success, 12, 11, true, 200));
+                        }, "", 12, 11, true, 200));
             _edp.Pause();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream",
-                    new EventLinkPair[0], 
-                    RangeReadResult.Success, 12, 11, true, 400));
+                    _distibutionPointCorrelationId, "stream", 100, 100, StreamResult.Success, 
+                    new EventLinkPair[0], "", 12, 11, true, 400));
         }
 
         [Test]

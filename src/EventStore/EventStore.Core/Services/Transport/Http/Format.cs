@@ -27,11 +27,11 @@
 // 
 using System;
 using System.Diagnostics;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.Transport.Http
                     switch (completed.Result)
                     {
                         case SingleReadResult.Success:
-                            return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, completed.Link, entity.UserHostName, embed));
+                            return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.UserHostName, embed));
                         case SingleReadResult.NotFound:
                         case SingleReadResult.NoStream:
                         case SingleReadResult.StreamDeleted:
@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
             }
 
-            public static string ReadStreamEventsBackwardCompletedFeed(HttpResponseFormatterArgs entity, Message message, int start, int count, EmbedLevel embed)
+            public static string ReadStreamEventsBackwardCompletedFeed(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 
@@ -80,10 +80,12 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     switch (completed.Result)
                     {
-                        case RangeReadResult.Success:
+                        case StreamResult.Success:
                             return entity.ResponseCodec.To(Convert.ToReadStreamFeed(completed, entity.UserHostName, embed));
-                        case RangeReadResult.NoStream:
-                        case RangeReadResult.StreamDeleted:
+                        case StreamResult.NoStream:
+                        case StreamResult.StreamDeleted:
+                        case StreamResult.NotModified:
+                        case StreamResult.Error:
                             return string.Empty;
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -96,20 +98,20 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
 
-                var completed = message as ClientMessage.ReadAllEventsBackwardCompleted;
-                return completed != null
-                    ? entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(completed.Result, entity.UserHostName, embed)) 
-                    : string.Empty;
+                var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
+                if (msg == null || msg.NotModified)
+                    return string.Empty;
+                return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg.Result, entity.UserHostName, embed));
             }
 
             public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
 
-                var completed = message as ClientMessage.ReadAllEventsForwardCompleted;
-                return completed != null
-                    ? entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(completed.Result, entity.UserHostName, embed)) 
-                    : string.Empty;
+                var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
+                if (msg == null || msg.NotModified)
+                    return string.Empty;
+                return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg.Result, entity.UserHostName, embed)); 
             }
 
             public static string CreateStreamCompleted(HttpResponseFormatterArgs entity, Message message)

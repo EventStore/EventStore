@@ -184,7 +184,7 @@ es.projection = function (settings) {
                     'Accept': 'application/json'
                 },
                 success: function (page) {
-                    var nextPage = $.grep(page.links, function (link) { return link.relation === 'prev'; })[0].uri;
+                    var nextPage = $.grep(page.links, function (link) { return link.relation === 'previous'; })[0].uri;
                     var entries = $.grep(page.entries, function (entry) {
                         // if we've read more entries then we were asked to - it's ok - just set lastEntry correctly
                         return fromEntry === null || Entry.isNewer(entry, fromEntry);

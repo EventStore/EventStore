@@ -66,11 +66,11 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public static string GetJsonReadResult(ClientMessage.ReadEventCompleted completed, bool dataJson = true, bool metadataJson = true)
         {
             return string.Format(JsonReadFormat,
-                                 WrapIntoQuotes(completed.Record.EventStreamId),
-                                 completed.Record.EventNumber,
-                                 WrapIntoQuotes(completed.Record.EventType),
-                                 dataJson ? JsonData : WrapIntoQuotes(AsString(completed.Record.Data)),
-                                 metadataJson ? JsonMetadata : WrapIntoQuotes(AsString(completed.Record.Metadata)));
+                                 WrapIntoQuotes(completed.Record.Event.EventStreamId),
+                                 completed.Record.Event.EventNumber,
+                                 WrapIntoQuotes(completed.Record.Event.EventType),
+                                 dataJson ? JsonData : WrapIntoQuotes(AsString(completed.Record.Event.Data)),
+                                 metadataJson ? JsonMetadata : WrapIntoQuotes(AsString(completed.Record.Event.Metadata)));
         }
 
         public static string GetXmlWrite(string data, string metadata)
@@ -81,11 +81,11 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public static string GetXmlReadResult(ClientMessage.ReadEventCompleted completed, bool dataJson = true, bool metadataJson = true)
         {
             return string.Format(XmlReadFormat,
-                                 completed.Record.EventStreamId,
-                                 completed.Record.EventNumber,
-                                 completed.Record.EventType,
-                                 dataJson ? XmlData : AsString(completed.Record.Data),
-                                 metadataJson ? XmlMetadata : AsString(completed.Record.Metadata));
+                                 completed.Record.Event.EventStreamId,
+                                 completed.Record.Event.EventNumber,
+                                 completed.Record.Event.EventType,
+                                 dataJson ? XmlData : AsString(completed.Record.Event.Data),
+                                 metadataJson ? XmlMetadata : AsString(completed.Record.Event.Metadata));
         }
 
         public static string AsString(byte[] bytes)
@@ -381,20 +381,21 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                                         "stream",
                                                         0,
                                                         SingleReadResult.Success,
-                                                        new EventRecord(
-                                                            0,
-                                                            0,
-                                                            Guid.NewGuid(),
-                                                            Guid.NewGuid(),
-                                                            0,
-                                                            0,
-                                                            "stream",
-                                                            0,
-                                                            DateTime.MinValue,
-                                                            PrepareFlags.IsJson,
-                                                            "type",
-                                                            data,
-                                                            metadata), null);
+                                                        new EventLinkPair(
+                                                            new EventRecord(
+                                                                0,
+                                                                0,
+                                                                Guid.NewGuid(),
+                                                                Guid.NewGuid(),
+                                                                0,
+                                                                0,
+                                                                "stream",
+                                                                0,
+                                                                DateTime.MinValue,
+                                                                PrepareFlags.IsJson,
+                                                                "type",
+                                                                data,
+                                                                metadata)));
         }
     }
 
@@ -535,20 +536,21 @@ namespace EventStore.Core.Tests.Services.Transport.Http
                                                         "stream",
                                                         0,
                                                         SingleReadResult.Success,
-                                                        new EventRecord(
-                                                            0,
-                                                            0,
-                                                            Guid.NewGuid(),
-                                                            Guid.NewGuid(),
-                                                            0,
-                                                            0,
-                                                            "stream",
-                                                            0,
-                                                            DateTime.MinValue,
-                                                            PrepareFlags.IsJson,
-                                                            "type",
-                                                            data,
-                                                            metadata), null);
+                                                        new EventLinkPair(
+                                                            new EventRecord(
+                                                                0,
+                                                                0,
+                                                                Guid.NewGuid(),
+                                                                Guid.NewGuid(),
+                                                                0,
+                                                                0,
+                                                                "stream",
+                                                                0,
+                                                                DateTime.MinValue,
+                                                                PrepareFlags.IsJson,
+                                                                "type",
+                                                                data,
+                                                                metadata)));
         }
     }
 }

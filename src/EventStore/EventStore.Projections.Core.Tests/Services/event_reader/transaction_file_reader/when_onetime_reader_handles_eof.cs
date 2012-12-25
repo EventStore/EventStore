@@ -85,12 +85,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                                 "event_type1", new byte[] {1}, new byte[] {2}), null, 200),
                             }, 100, new TFPos(200, 150),
-                        new TFPos(500, -1), new TFPos(100, 50), 500)));
+                        new TFPos(500, -1), new TFPos(100, 50), 500), notModified: false));
 
             _edp.Handle(
                 new ClientMessage.ReadAllEventsForwardCompleted(
                     _distibutionPointCorrelationId,
-                    new ReadAllResult(new ResolvedEventRecord[0], 100, new TFPos(), new TFPos(), new TFPos(), 500)));
+                    new ReadAllResult(new ResolvedEventRecord[0], 100, new TFPos(), new TFPos(), new TFPos(), 500), notModified: false));
         }
 
         [Test]

@@ -28,7 +28,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -38,59 +40,61 @@ namespace EventStore.Core.Services.Transport.Http
 {
     public static class Configure
     {
-        private const int MaxPossibleAge = 31556926;
-        private const int MinPossibleAge = 1;
+        private const int MaxPossibleAge = 31536000;
 
-        public static ResponseConfiguration Ok(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration Ok(string contentType)
         {
-            return new ResponseConfiguration(HttpStatusCode.OK, "OK", entity.ResponseCodec.ContentType);
-        }
-
-        public static ResponseConfiguration OkCache(HttpResponseConfiguratorArgs entity, Message message, int seconds)
-        {
-            return OkCache(entity.ResponseCodec.ContentType, seconds);
+            return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType);
         }
 
         public static ResponseConfiguration OkCache(string contentType, int seconds)
         {
-            // note MM: in old browsers Expires header maybe be required
-            return new ResponseConfiguration(HttpStatusCode.OK,
-                                             "OK",
-                                             contentType,
-                                             new KeyValuePair<string, string>("Cache-Control", string.Format("max-age={0}", seconds)));
-        }
-
-        public static ResponseConfiguration OkNoCache(HttpResponseConfiguratorArgs entity, Message message, params KeyValuePair<string, string>[] headers)
-        {
-            return OkNoCache(entity.ResponseCodec.ContentType, headers);
+            return new ResponseConfiguration(
+                HttpStatusCode.OK,
+                "OK",
+                contentType,
+                new KeyValuePair<string, string>("Cache-Control", string.Format("max-age={0}, public", seconds)),
+                new KeyValuePair<string, string>("Vary", "Accept"));
         }
 
         public static ResponseConfiguration OkNoCache(string contentType, params KeyValuePair<string, string>[] headers)
         {
-            return new ResponseConfiguration(
-                    HttpStatusCode.OK,
-                    "OK",
-                    contentType,
-                    new List<KeyValuePair<string, string>>(headers)
-                    {
-                            new KeyValuePair<string, string>("Cache-Control", string.Format("no-cache, max-age={0}", 0)),
-                            new KeyValuePair<string, string>("Expires", "-1")
-                    }.ToArray());
+            return OkNoCache(contentType, null, headers);
         }
 
-        public static ResponseConfiguration NotFound(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration OkNoCache(string contentType, string etag, params KeyValuePair<string, string>[] headers)
+        {
+            var headrs = new List<KeyValuePair<string, string>>(headers);
+            headrs.Add(new KeyValuePair<string, string>("Cache-Control", "max-age=0, no-cache, must-revalidate"));
+            headrs.Add(new KeyValuePair<string, string>("Vary", "Accept"));
+            if (etag.IsNotEmptyString())
+                headrs.Add(new KeyValuePair<string, string>("ETag", string.Format("\"{0}\"", etag)));
+            return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType, headrs);
+        }
+
+        public static ResponseConfiguration NotFound()
         {
             return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", null);
         }
 
-        public static ResponseConfiguration Gone(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration Gone(string description = null)
         {
-            return new ResponseConfiguration(HttpStatusCode.Gone, "Deleted", null);
+            return new ResponseConfiguration(HttpStatusCode.Gone, description ?? "Deleted", null);
         }
 
-        public static ResponseConfiguration InternalServerError()
+        public static ResponseConfiguration NotModified()
         {
-            return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Internal Server Error", null);
+            return new ResponseConfiguration(HttpStatusCode.NotModified, "Not Modified", null);
+        }
+
+        public static ResponseConfiguration BadRequest(string description = null)
+        {
+            return new ResponseConfiguration(HttpStatusCode.BadRequest, description ?? "Bad Request", null);
+        }
+
+        public static ResponseConfiguration InternalServerError(string description = null)
+        {
+            return new ResponseConfiguration(HttpStatusCode.InternalServerError, description ?? "Internal Server Error", null);
         }
 
         public static ResponseConfiguration ReadEventCompleted(HttpResponseConfiguratorArgs entity, Message message)
@@ -104,33 +108,42 @@ namespace EventStore.Core.Services.Transport.Http
             switch (completed.Result)
             {
                 case SingleReadResult.Success:
-                    return OkCache(entity, message, MaxPossibleAge);
+                    return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
                 case SingleReadResult.NotFound:
                 case SingleReadResult.NoStream:
-                    return NotFound(entity, completed);
+                    return NotFound();
                 case SingleReadResult.StreamDeleted:
-                    return Gone(entity, completed);
+                    return Gone();
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        public static ResponseConfiguration ReadStreamEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration ReadStreamEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfStream)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 
-            var completed = message as ClientMessage.ReadStreamEventsBackwardCompleted;
-            if (completed == null)
+            var msg = message as ClientMessage.ReadStreamEventsBackwardCompleted;
+            if (msg == null)
                 return InternalServerError();
 
-            switch (completed.Result)
+            switch (msg.Result)
             {
-                case RangeReadResult.Success:
-                    return OkCache(entity, message, MinPossibleAge);
-                case RangeReadResult.NoStream:
-                    return NotFound(entity, completed);
-                case RangeReadResult.StreamDeleted:
-                    return Gone(entity, completed);
+                case StreamResult.Success:
+                {
+                    if (msg.LastEventNumber >= msg.FromEventNumber && !headOfStream)
+                        return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
+                    else
+                        return OkNoCache(entity.ResponseCodec.ContentType, msg.LastEventNumber.ToString(CultureInfo.InvariantCulture));
+                }
+                case StreamResult.NoStream:
+                    return NotFound();
+                case StreamResult.StreamDeleted:
+                    return Gone();
+                case StreamResult.NotModified:
+                    return NotModified();
+                case StreamResult.Error:
+                    return InternalServerError(msg.Error);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -155,19 +168,19 @@ namespace EventStore.Core.Services.Transport.Http
                         new KeyValuePair<string, string>("Location",
                                                          HostName.Combine(entity.UserHostName,
                                                                           "/streams/{0}/{1}",
-                                                                          completed.EventStreamId,
+                                                                          Uri.EscapeDataString(completed.EventStreamId),
                                                                           completed.EventNumber == 0 ? 1 : completed.EventNumber)));
                 }
                 case OperationErrorCode.PrepareTimeout:
                 case OperationErrorCode.CommitTimeout:
                 case OperationErrorCode.ForwardTimeout:
-                    return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Write timeout", null);
+                    return InternalServerError("Write timeout");
                 case OperationErrorCode.WrongExpectedVersion:
-                    return new ResponseConfiguration(HttpStatusCode.BadRequest, "Wrong expected eventNumber", null);
+                    return BadRequest("Wrong expected EventNumber");
                 case OperationErrorCode.StreamDeleted:
-                    return new ResponseConfiguration(HttpStatusCode.Gone, "Stream deleted", null);
+                    return Gone("Stream deleted");
                 case OperationErrorCode.InvalidTransaction:
-                    return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Invalid transaction", null);
+                    return InternalServerError("Invalid transaction");
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -181,7 +194,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (completed == null)
                 return InternalServerError();
 
-            return completed.Success ? OkNoCache(entity, message) : NotFound(entity, message);
+            return completed.Success ? OkNoCache(entity.ResponseCodec.ContentType) : NotFound();
         }
 
         public static ResponseConfiguration CreateStreamCompleted(HttpResponseConfiguratorArgs entity, Message message)
@@ -195,23 +208,25 @@ namespace EventStore.Core.Services.Transport.Http
             switch (completed.ErrorCode)
             {
                 case OperationErrorCode.Success:
-                    return new ResponseConfiguration(HttpStatusCode.Created,
-                                                     "Stream created",
-                                                     null,
-                                                     new KeyValuePair<string, string>("Location",
-                                                                                      HostName.Combine(entity.UserHostName,
-                                                                                                  "/streams/{0}",
-                                                                                                  completed.EventStreamId)));
+                {
+                    return new ResponseConfiguration(
+                        HttpStatusCode.Created,
+                        "Stream created",
+                        null,
+                        new KeyValuePair<string, string>("Location",
+                                                         HostName.Combine(entity.UserHostName,
+                                                                          "/streams/{0}",
+                                                                          Uri.EscapeDataString(completed.EventStreamId))));
+                }
                 case OperationErrorCode.PrepareTimeout:
                 case OperationErrorCode.CommitTimeout:
                 case OperationErrorCode.ForwardTimeout:
-                    return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Create timeout", null);
+                    return InternalServerError("Create timeout");
+
                 case OperationErrorCode.WrongExpectedVersion:
                 case OperationErrorCode.StreamDeleted:
                 case OperationErrorCode.InvalidTransaction:
-                    return new ResponseConfiguration(HttpStatusCode.BadRequest,
-                                                     string.Format("Error code : {0}. Reason : {1}", completed.ErrorCode, completed.Error),
-                                                     null);
+                    return BadRequest(string.Format("Error code : {0}. Reason : {1}", completed.ErrorCode, completed.Error));
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -229,16 +244,17 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 case OperationErrorCode.Success:
                     return new ResponseConfiguration(HttpStatusCode.NoContent, "Stream deleted", null);
+
                 case OperationErrorCode.PrepareTimeout:
                 case OperationErrorCode.CommitTimeout:
                 case OperationErrorCode.ForwardTimeout:
-                    return new ResponseConfiguration(HttpStatusCode.InternalServerError, "Delete timeout", null);
+                    return InternalServerError("Delete timeout");
+
                 case OperationErrorCode.WrongExpectedVersion:
                 case OperationErrorCode.StreamDeleted:
                 case OperationErrorCode.InvalidTransaction:
-                    return new ResponseConfiguration(HttpStatusCode.BadRequest,
-                                                     string.Format("Error code : {0}. Reason : {1}", completed.ErrorCode, completed.Error),
-                                                     null);
+                    return BadRequest(string.Format("Error code : {0}. Reason : {1}", completed.ErrorCode, completed.Error));
+
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -250,28 +266,36 @@ namespace EventStore.Core.Services.Transport.Http
 
             var completed = message as ClientMessage.ListStreamsCompleted;
             return completed != null && completed.Success
-                       ? Ok(entity, message)
-                       : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Couldn't get streams list. Try turning projection 'Index By Streams' on.", null);
+                       ? Ok(entity.ResponseCodec.ContentType)
+                       : InternalServerError("Couldn't get streams list. Try turning projection 'Index By Streams' on.");
         }
 
-        public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
 
-            var completed = message as ClientMessage.ReadAllEventsBackwardCompleted;
-            return completed != null
-                       ? OkCache(entity, message, MinPossibleAge)
-                       : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Failed to read all events backward.", null);
+            var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
+            if (msg == null)
+                return InternalServerError("Failed to read all events backward.");
+            if (msg.NotModified)
+                return NotModified();
+            if (!headOfTf && msg.Result.CurrentPos.CommitPosition <= msg.Result.TfEofPosition)
+                return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
+            return OkNoCache(entity.ResponseCodec.ContentType, msg.Result.TfEofPosition.ToString(CultureInfo.InvariantCulture));
         }
 
-        public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
 
-            var completed = message as ClientMessage.ReadAllEventsForwardCompleted;
-            return completed != null
-                       ? OkCache(entity, message, MinPossibleAge)
-                       : new ResponseConfiguration(HttpStatusCode.InternalServerError, "Failed to read all events forward.", null);
+            var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
+            if (msg == null)
+                return InternalServerError("Failed to read all events forward.");
+            if (msg.NotModified)
+                return NotModified();
+            if (!headOfTf && msg.Result.Records.Length == msg.Result.MaxCount)
+                return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
+            return OkNoCache(entity.ResponseCodec.ContentType, msg.Result.TfEofPosition.ToString(CultureInfo.InvariantCulture));
         }
     }
 }

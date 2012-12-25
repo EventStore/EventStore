@@ -35,14 +35,18 @@ namespace EventStore.Core.Services.Transport.Http
         public readonly string Description;
         public readonly string ContentType;
 
-        public readonly KeyValuePair<string, string>[] Headers;
+        public readonly IEnumerable<KeyValuePair<string, string>> Headers;
 
-        public ResponseConfiguration(int code, string description , string type , 
-            params KeyValuePair<string, string>[] headers)
+        public ResponseConfiguration(int code, string description, string contentType, params KeyValuePair<string, string>[] headers)
+                : this(code, description, contentType, headers as IEnumerable<KeyValuePair<string, string>>)
+        {
+        }
+
+        public ResponseConfiguration(int code, string description, string contentType, IEnumerable<KeyValuePair<string, string>> headers)
         {
             Code = code;
             Description = description;
-            ContentType = type;
+            ContentType = contentType;
             Headers = headers;
         }
     }

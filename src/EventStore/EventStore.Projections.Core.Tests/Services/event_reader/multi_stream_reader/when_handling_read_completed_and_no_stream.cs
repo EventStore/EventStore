@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _fourthEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a",
+                    _distibutionPointCorrelationId, "a", 100, 100, StreamResult.Success, 
                     new[]
                         {
                             new EventLinkPair(
@@ -63,11 +63,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             2, 100, Guid.NewGuid(), _secondEventId, 100, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type2", new byte[] {3}, new byte[] {4}), null)
-                        }, RangeReadResult.Success, 3, 2, true, 200));
+                        }, "", 3, 2, true, 200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b",
-                    new EventLinkPair[0], RangeReadResult.NoStream, -1, ExpectedVersion.NoStream, false, 200));
+                    _distibutionPointCorrelationId, "b", 100, 100, StreamResult.Success, 
+                    new EventLinkPair[0], "", -1, ExpectedVersion.NoStream, false, 200));
         }
 
         [Test]
@@ -136,7 +136,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         {
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a",
+                    _distibutionPointCorrelationId, "a", 100, 100, StreamResult.Success, 
                     new[]
                     {
                         new EventLinkPair( 
@@ -144,7 +144,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                                 3, 250, Guid.NewGuid(), Guid.NewGuid(), 250, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                                 PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                                 "event_type", new byte[0], new byte[0]), null)
-                    }, RangeReadResult.Success, 4, 3, true, 300));
+                    }, "", 4, 3, true, 300));
         }
 
 

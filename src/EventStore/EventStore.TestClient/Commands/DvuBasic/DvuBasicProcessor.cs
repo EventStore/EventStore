@@ -361,7 +361,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 switch ((SingleReadResult)dto.Result)
                 {
                     case SingleReadResult.Success:
-                        if (Equal(_streams[streamIdx], eventidx, dto.EventType, dto.Data))
+                        if (Equal(_streams[streamIdx], eventidx, dto.Event.Event.EventType, dto.Event.Event.Data))
                         {
                             successes++;
                             if (successes % 1000 == 0)

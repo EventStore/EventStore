@@ -307,29 +307,17 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(3, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
     public readonly int Result;
   
-    [ProtoMember(4, IsRequired = true, Name=@"event_type", DataFormat = DataFormat.Default)]
-    public readonly string EventType;
-  
-    [ProtoMember(5, IsRequired = true, Name=@"data", DataFormat = DataFormat.Default)]
-    public readonly byte[] Data;
-  
-    [ProtoMember(6, IsRequired = true, Name=@"metadata", DataFormat = DataFormat.Default)]
-    public readonly byte[] Metadata;
-  
-    [ProtoMember(7, IsRequired = true, Name=@"log_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long LogPosition;
+    [ProtoMember(4, IsRequired = true, Name=@"event", DataFormat = DataFormat.Default)]
+    public readonly EventLinkPair Event;
   
     private ReadEventCompleted() {}
   
-    public ReadEventCompleted(string eventStreamId, int eventNumber, int result, string eventType, byte[] data, byte[] metadata, long logPosition)
+    public ReadEventCompleted(string eventStreamId, int eventNumber, int result, EventLinkPair @event)
     {
         EventStreamId = eventStreamId;
         EventNumber = eventNumber;
         Result = result;
-        EventType = eventType;
-        Data = data;
-        Metadata = metadata;
-        LogPosition = logPosition;
+        Event = @event;
     }
   }
   

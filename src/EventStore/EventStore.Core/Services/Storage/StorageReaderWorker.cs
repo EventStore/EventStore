@@ -65,98 +65,143 @@ namespace EventStore.Core.Services.Storage
         {
             var result = _readIndex.ReadEvent(message.EventStreamId, message.EventNumber);
 
-            EventRecord record = result.Record;
-            EventRecord link = null;
+            EventLinkPair record;
             if (result.Result == SingleReadResult.Success && message.ResolveLinkTos)
             {
                 Debug.Assert(result.Record != null);
-                var resolved = ResolveLinkToEvent(record);
-                if (resolved != null)
-                {
-                    link = record;
-                    record = resolved;
-                }
+                record = ResolveLinkToEvent(result.Record);
             }
+            else
+                record = new EventLinkPair(result.Record);
 
-            //TODO: consider returning redirected stream and ChunkNumber number
             message.Envelope.ReplyWith(new ClientMessage.ReadEventCompleted(message.CorrelationId,
                                                                             message.EventStreamId,
                                                                             message.EventNumber,
                                                                             result.Result,
-                                                                            record, link));
+                                                                            record));
         }
 
         void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward message)
         {
-            var lastCommitPosition = _readIndex.LastCommitPosition;
-
-            var result = _readIndex.ReadStreamEventsForward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
-            if (result.Result == RangeReadResult.Success && result.Records.Length > 1)
+            try
             {
-                var records = result.Records;
-                for (var index = 1; index < records.Length; index++)
+                if (message.ValidationStreamVersion.HasValue
+                    && _readIndex.GetLastStreamEventNumber(message.EventStreamId) == message.ValidationStreamVersion)
                 {
-                    if (records[index].EventNumber != records[index - 1].EventNumber + 1)
+                    message.Envelope.ReplyWith(
+                        ClientMessage.ReadStreamEventsForwardCompleted.NotModified(message.CorrelationId,
+                                                                                   message.EventStreamId,
+                                                                                   message.FromEventNumber,
+                                                                                   message.MaxCount));
+                    return;
+                }
+
+                var lastCommitPosition = _readIndex.LastCommitPosition;
+
+                var result = _readIndex.ReadStreamEventsForward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
+                if (result.Result == RangeReadResult.Success && result.Records.Length > 1)
+                {
+                    var records = result.Records;
+                    for (var index = 1; index < records.Length; index++)
                     {
-                        throw new Exception(string.Format(
-                                                          "Invalid order of events has been detected in read index for the event stream '{0}'. "
-                                                          + "The event {1} at position {2} goes after the event {3} at position {4}",
-                                                          message.EventStreamId,
-                                                          records[index].EventNumber,
-                                                          records[index].LogPosition,
-                                                          records[index - 1].EventNumber,
-                                                          records[index - 1].LogPosition));
+                        if (records[index].EventNumber != records[index - 1].EventNumber + 1)
+                        {
+                            throw new Exception(string.Format("Invalid order of events has been detected in read index for the event stream '{0}'. "
+                                                              + "The event {1} at position {2} goes after the event {3} at position {4}",
+                                                              message.EventStreamId,
+                                                              records[index].EventNumber,
+                                                              records[index].LogPosition,
+                                                              records[index - 1].EventNumber,
+                                                              records[index - 1].LogPosition));
+                        }
                     }
                 }
-            }
 
-            var resolvedPairs = ResolveLinkToEvents(result.Records, message.ResolveLinks);
-            message.Envelope.ReplyWith(
-                                       new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId,
-                                                                                          message.EventStreamId,
-                                                                                          resolvedPairs,
-                                                                                          result.Result,
-                                                                                          result.NextEventNumber,
-                                                                                          result.LastEventNumber,
-                                                                                          result.IsEndOfStream,
-                                                                                          result.IsEndOfStream ? lastCommitPosition : (long?)null));
+                var resolvedPairs = ResolveLinkToEvents(result.Records, message.ResolveLinks);
+                message.Envelope.ReplyWith(
+                    new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId,
+                                                                       message.EventStreamId,
+                                                                       message.FromEventNumber,
+                                                                       message.MaxCount,
+                                                                       (StreamResult)result.Result,
+                                                                       resolvedPairs,
+                                                                       string.Empty,
+                                                                       result.NextEventNumber,
+                                                                       result.LastEventNumber,
+                                                                       result.IsEndOfStream,
+                                                                       result.IsEndOfStream ? lastCommitPosition : (long?)null));
+            }
+            catch (Exception exc)
+            {
+                message.Envelope.ReplyWith(
+                    ClientMessage.ReadStreamEventsForwardCompleted.Faulted(message.CorrelationId,
+                                                                           message.EventStreamId,
+                                                                           message.FromEventNumber,
+                                                                           message.MaxCount,
+                                                                           exc.Message));
+                Log.ErrorException(exc, "Error during processing ReadStreamEventsForward request.");
+            }
         }
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)
         {
-            var lastCommitPosition = _readIndex.LastCommitPosition;
-
-            var result = _readIndex.ReadStreamEventsBackward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
-            if (result.Result == RangeReadResult.Success && result.Records.Length > 1)
+            try
             {
-                var records = result.Records;
-                for (var index = 1; index < records.Length; index++)
+                if (message.ValidationStreamVersion.HasValue
+                    && _readIndex.GetLastStreamEventNumber(message.EventStreamId) == message.ValidationStreamVersion)
                 {
-                    if (records[index].EventNumber != records[index - 1].EventNumber - 1)
+                    message.Envelope.ReplyWith(
+                        ClientMessage.ReadStreamEventsBackwardCompleted.NotModified(message.CorrelationId,
+                                                                                    message.EventStreamId,
+                                                                                    message.FromEventNumber,
+                                                                                    message.MaxCount));
+                    return;
+                }
+
+                var lastCommitPosition = _readIndex.LastCommitPosition;
+                var result = _readIndex.ReadStreamEventsBackward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
+                if (result.Result == RangeReadResult.Success && result.Records.Length > 1)
+                {
+                    var records = result.Records;
+                    for (var index = 1; index < records.Length; index++)
                     {
-                        throw new Exception(string.Format(
-                                                          "Invalid order of events has been detected in read index for the event stream '{0}'. "
-                                                          + "The event {1} at position {2} goes after the event {3} at position {4}",
-                                                          message.EventStreamId,
-                                                          records[index].EventNumber,
-                                                          records[index].LogPosition,
-                                                          records[index - 1].EventNumber,
-                                                          records[index - 1].LogPosition));
+                        if (records[index].EventNumber != records[index - 1].EventNumber - 1)
+                        {
+                            throw new Exception(string.Format(
+                                                              "Invalid order of events has been detected in read index for the event stream '{0}'. "
+                                                              + "The event {1} at position {2} goes after the event {3} at position {4}",
+                                                              message.EventStreamId,
+                                                              records[index].EventNumber,
+                                                              records[index].LogPosition,
+                                                              records[index - 1].EventNumber,
+                                                              records[index - 1].LogPosition));
+                        }
                     }
                 }
+                var resolvedPairs = ResolveLinkToEvents(result.Records, message.ResolveLinks);
+                message.Envelope.ReplyWith(
+                    new ClientMessage.ReadStreamEventsBackwardCompleted(message.CorrelationId,
+                                                                        message.EventStreamId,
+                                                                        result.FromEventNumber,
+                                                                        result.MaxCount,
+                                                                        (StreamResult)result.Result,
+                                                                        resolvedPairs,
+                                                                        string.Empty,
+                                                                        result.NextEventNumber,
+                                                                        result.LastEventNumber,
+                                                                        result.IsEndOfStream,
+                                                                        result.IsEndOfStream ? lastCommitPosition : (long?)null));
             }
-            var resolvedPairs = ResolveLinkToEvents(result.Records, message.ResolveLinks);
-            message.Envelope.ReplyWith(
-                new ClientMessage.ReadStreamEventsBackwardCompleted(message.CorrelationId,
-                                                                    message.EventStreamId,
-                                                                    result.FromEventNumber,
-                                                                    result.MaxCount,
-                                                                    resolvedPairs,
-                                                                    result.Result,
-                                                                    result.NextEventNumber,
-                                                                    result.LastEventNumber,
-                                                                    result.IsEndOfStream,
-                                                                    result.IsEndOfStream ? lastCommitPosition : (long?)null));
+            catch (Exception exc)
+            {
+                message.Envelope.ReplyWith(
+                    ClientMessage.ReadStreamEventsBackwardCompleted.Faulted(message.CorrelationId,
+                                                                            message.EventStreamId,
+                                                                            message.FromEventNumber,
+                                                                            message.MaxCount,
+                                                                            exc.Message));
+                Log.ErrorException(exc, "Error during processing ReadStreamEventsForward request.");
+            }
         }
 
         private EventLinkPair[] ResolveLinkToEvents(EventRecord[] records, bool resolveLinks)
@@ -166,48 +211,39 @@ namespace EventStore.Core.Services.Storage
             {
                 for (int i = 0; i < records.Length; i++)
                 {
-                    EventRecord eventRecord = records[i];
-                    EventRecord resolvedRecord = ResolveLinkToEvent(eventRecord);
-                    resolved[i] = resolvedRecord != null
-                                          ? new EventLinkPair(resolvedRecord, eventRecord)
-                                          : new EventLinkPair(eventRecord, null);
+                    resolved[i] = ResolveLinkToEvent(records[i]);
                 }
             }
             else
             {
                 for (int i = 0; i < records.Length; ++i)
                 {
-                    resolved[i] = new EventLinkPair(records[i], null);
+                    resolved[i] = new EventLinkPair(records[i]);
                 }
             }
             return resolved;
         }
 
-        private EventRecord ResolveLinkToEvent(EventRecord eventRecord)
+        private EventLinkPair ResolveLinkToEvent(EventRecord eventRecord)
         {
-            EventRecord record = null;
             if (eventRecord.EventType == SystemEventTypes.LinkTo)
             {
-                bool faulted = false;
-                int eventNumber = -1;
-                string streamId = null;
                 try
                 {
                     string[] parts = Encoding.UTF8.GetString(eventRecord.Data).Split('@');
-                    eventNumber = int.Parse(parts[0]);
-                    streamId = parts[1];
+                    int eventNumber = int.Parse(parts[0]);
+                    string streamId = parts[1];
+
+                    var res = _readIndex.ReadEvent(streamId, eventNumber);
+                    if (res.Result == SingleReadResult.Success)
+                        return new EventLinkPair(res.Record, eventRecord);
                 }
                 catch (Exception exc)
                 {
-                    faulted = true;
                     Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
                 }
-                if (faulted)
-                    return null;
-
-                record = _readIndex.ReadEvent(streamId, eventNumber).Record; // we don't care if unsuccessful
             }
-            return record;
+            return new EventLinkPair(eventRecord);
         }
 
         void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward message)
@@ -215,42 +251,48 @@ namespace EventStore.Core.Services.Storage
             var pos = new TFPos(message.CommitPosition, message.PreparePosition);
             if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
             {
-                var r = new ReadAllResult(new ResolvedEventRecord[0],
-                                          message.MaxCount,
-                                          pos,
-                                          TFPos.Invalid,
-                                          TFPos.Invalid,
-                                          _writerCheckpoint.Read());
-                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r));
+                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: false));
                 return;
             }
+
+            if (message.ValidationTfEofPosition.HasValue && _readIndex.LastCommitPosition == message.ValidationTfEofPosition.Value)
+            {
+                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: true));
+                return;
+            }
+
             var res = _readIndex.ReadAllEventsForward(pos, message.MaxCount);
             var result = ResolveReadAllResult(res, message.ResolveLinks);
-            message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, result));
+            message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, result, notModified: false));
         }
 
         void IHandle<ClientMessage.ReadAllEventsBackward>.Handle(ClientMessage.ReadAllEventsBackward message)
         {
             var pos = new TFPos(message.CommitPosition, message.PreparePosition);
-            if (pos == new TFPos(-1, -1))
+            if (pos == TFPos.Invalid)
             {
                 var checkpoint = _writerCheckpoint.Read();
                 pos = new TFPos(checkpoint, checkpoint);
             }
             if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
             {
-                var r = new ReadAllResult(new ResolvedEventRecord[0],
-                                          message.MaxCount,
-                                          pos,
-                                          TFPos.Invalid,
-                                          TFPos.Invalid,
-                                          _writerCheckpoint.Read());
-                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r));
+                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: false));
                 return;
             }
+
+            if (message.ValidationTfEofPosition.HasValue && _readIndex.LastCommitPosition == message.ValidationTfEofPosition.Value)
+            {
+                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsBackwardCompleted(message.CorrelationId, r, notModified: true));
+                return;
+            }
+
             var res = _readIndex.ReadAllEventsBackward(pos, message.MaxCount);
             var result = ResolveReadAllResult(res, message.ResolveLinks);
-            message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsBackwardCompleted(message.CorrelationId, result));
+            message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsBackwardCompleted(message.CorrelationId, result, notModified: false));
         }
 
         private ReadAllResult ResolveReadAllResult(IndexReadAllResult res, bool resolveLinks)
@@ -261,10 +303,8 @@ namespace EventStore.Core.Services.Storage
                 for (int i = 0; i < resolved.Length; ++i)
                 {
                     var record = res.Records[i];
-                    var resolvedRecord = ResolveLinkToEvent(record.Event);
-                    resolved[i] = new ResolvedEventRecord(resolvedRecord == null ? record.Event : resolvedRecord,
-                                                          resolvedRecord == null ? null : record.Event,
-                                                          record.CommitPosition);
+                    var resolvedPair = ResolveLinkToEvent(record.Event);
+                    resolved[i] = new ResolvedEventRecord(resolvedPair.Event, resolvedPair.Link, record.CommitPosition);
                 }
             }
             else

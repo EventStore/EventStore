@@ -101,7 +101,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
         {
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a",
+                    _distibutionPointCorrelationId, "a", 100, 100, StreamResult.Success, 
                     new[]
                         {
                             new EventLinkPair(
@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                             DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type", new byte[0], new byte[0]))
-                        }, RangeReadResult.Success, 2, 4, false, 100));
+                        }, "", 2, 4, false, 100));
         }
     }
 }
