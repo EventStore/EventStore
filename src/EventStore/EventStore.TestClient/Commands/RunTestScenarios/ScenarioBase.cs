@@ -363,7 +363,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private IPEndPoint GetTcpEndPoint()
         {
-            return new IPEndPoint(GetInterIpAddress(), 1113);
+            return new IPEndPoint(GetInterIpAddress(), 31113);
         }
 
         private bool TryGetProcessById(int processId, out Process process)
