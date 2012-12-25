@@ -159,7 +159,6 @@ namespace EventStore.Core.Services.Storage
                 }
 
                 var lastCommitPosition = _readIndex.LastCommitPosition;
-
                 var result = _readIndex.ReadStreamEventsBackward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
                 if (result.Result == RangeReadResult.Success && result.Records.Length > 1)
                 {
@@ -252,42 +251,48 @@ namespace EventStore.Core.Services.Storage
             var pos = new TFPos(message.CommitPosition, message.PreparePosition);
             if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
             {
-                var r = new ReadAllResult(new ResolvedEventRecord[0],
-                                          message.MaxCount,
-                                          pos,
-                                          TFPos.Invalid,
-                                          TFPos.Invalid,
-                                          _writerCheckpoint.Read());
-                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r));
+                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: false));
                 return;
             }
+
+            if (message.ValidationTfEofPosition.HasValue && _readIndex.LastCommitPosition == message.ValidationTfEofPosition.Value)
+            {
+                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: true));
+                return;
+            }
+
             var res = _readIndex.ReadAllEventsForward(pos, message.MaxCount);
             var result = ResolveReadAllResult(res, message.ResolveLinks);
-            message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, result));
+            message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, result, notModified: false));
         }
 
         void IHandle<ClientMessage.ReadAllEventsBackward>.Handle(ClientMessage.ReadAllEventsBackward message)
         {
             var pos = new TFPos(message.CommitPosition, message.PreparePosition);
-            if (pos == new TFPos(-1, -1))
+            if (pos == TFPos.Invalid)
             {
                 var checkpoint = _writerCheckpoint.Read();
                 pos = new TFPos(checkpoint, checkpoint);
             }
             if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
             {
-                var r = new ReadAllResult(new ResolvedEventRecord[0],
-                                          message.MaxCount,
-                                          pos,
-                                          TFPos.Invalid,
-                                          TFPos.Invalid,
-                                          _writerCheckpoint.Read());
-                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r));
+                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: false));
                 return;
             }
+
+            if (message.ValidationTfEofPosition.HasValue && _readIndex.LastCommitPosition == message.ValidationTfEofPosition.Value)
+            {
+                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsBackwardCompleted(message.CorrelationId, r, notModified: true));
+                return;
+            }
+
             var res = _readIndex.ReadAllEventsBackward(pos, message.MaxCount);
             var result = ResolveReadAllResult(res, message.ResolveLinks);
-            message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsBackwardCompleted(message.CorrelationId, result));
+            message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsBackwardCompleted(message.CorrelationId, result, notModified: false));
         }
 
         private ReadAllResult ResolveReadAllResult(IndexReadAllResult res, bool resolveLinks)

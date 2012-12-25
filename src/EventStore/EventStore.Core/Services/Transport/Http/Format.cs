@@ -98,20 +98,20 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
 
-                var completed = message as ClientMessage.ReadAllEventsBackwardCompleted;
-                return completed != null
-                    ? entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(completed.Result, entity.UserHostName, embed)) 
-                    : string.Empty;
+                var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
+                if (msg == null || msg.NotModified)
+                    return string.Empty;
+                return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg.Result, entity.UserHostName, embed));
             }
 
             public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
 
-                var completed = message as ClientMessage.ReadAllEventsForwardCompleted;
-                return completed != null
-                    ? entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(completed.Result, entity.UserHostName, embed)) 
-                    : string.Empty;
+                var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
+                if (msg == null || msg.NotModified)
+                    return string.Empty;
+                return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg.Result, entity.UserHostName, embed)); 
             }
 
             public static string CreateStreamCompleted(HttpResponseFormatterArgs entity, Message message)

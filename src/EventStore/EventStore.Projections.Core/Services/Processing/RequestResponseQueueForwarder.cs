@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _externalRequestQueue.Publish(
                 new ClientMessage.ReadAllEventsForward(
                     message.CorrelationId, new PublishToWrapEnvelop(_inputQueue, message.Envelope),
-                    message.CommitPosition, message.PreparePosition, message.MaxCount, message.ResolveLinks));
+                    message.CommitPosition, message.PreparePosition, message.MaxCount, message.ResolveLinks, message.ValidationTfEofPosition));
         }
     }
 }

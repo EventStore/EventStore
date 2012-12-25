@@ -41,7 +41,6 @@ namespace EventStore.Core.Services.Transport.Http
     public static class Configure
     {
         private const int MaxPossibleAge = 31536000;
-        private const int MinPossibleAge = 1;
 
         public static ResponseConfiguration Ok(string contentType)
         {
@@ -271,24 +270,32 @@ namespace EventStore.Core.Services.Transport.Http
                        : InternalServerError("Couldn't get streams list. Try turning projection 'Index By Streams' on.");
         }
 
-        public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
 
-            var completed = message as ClientMessage.ReadAllEventsBackwardCompleted;
-            return completed != null
-                       ? OkCache(entity.ResponseCodec.ContentType, MinPossibleAge)
-                       : InternalServerError("Failed to read all events backward.");
+            var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
+            if (msg == null)
+                return InternalServerError("Failed to read all events backward.");
+            if (msg.NotModified)
+                return NotModified();
+            if (!headOfTf && msg.Result.CurrentPos.CommitPosition <= msg.Result.TfEofPosition)
+                return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
+            return OkNoCache(entity.ResponseCodec.ContentType, msg.Result.TfEofPosition.ToString(CultureInfo.InvariantCulture));
         }
 
-        public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
 
-            var completed = message as ClientMessage.ReadAllEventsForwardCompleted;
-            return completed != null
-                       ? OkCache(entity.ResponseCodec.ContentType, MinPossibleAge)
-                       : InternalServerError("Failed to read all events forward.");
+            var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
+            if (msg == null)
+                return InternalServerError("Failed to read all events forward.");
+            if (msg.NotModified)
+                return NotModified();
+            if (!headOfTf && msg.Result.Records.Length == msg.Result.MaxCount)
+                return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
+            return OkNoCache(entity.ResponseCodec.ContentType, msg.Result.TfEofPosition.ToString(CultureInfo.InvariantCulture));
         }
     }
 }

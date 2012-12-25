@@ -390,7 +390,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                           dto.CommitPosition,
                                                           dto.PreparePosition,
                                                           dto.MaxCount,
-                                                          dto.ResolveLinkTos);
+                                                          dto.ResolveLinkTos,
+                                                          validationTfEofPosition: null);
         }
 
         private static TcpPackage WrapReadAllEventsForwardCompleted(ClientMessage.ReadAllEventsForwardCompleted msg)
@@ -412,7 +413,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                                            dto.CommitPosition,
                                                            dto.PreparePosition,
                                                            dto.MaxCount,
-                                                           dto.ResolveLinkTos);
+                                                           dto.ResolveLinkTos,
+                                                           validationTfEofPosition: null);
         }
 
         private static TcpPackage WrapReadAllEventsBackwardCompleted(ClientMessage.ReadAllEventsBackwardCompleted msg)

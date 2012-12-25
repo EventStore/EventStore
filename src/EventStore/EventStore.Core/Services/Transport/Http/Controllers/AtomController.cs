@@ -144,13 +144,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   Codec.NoCodecs,
                                                                   AtomWithHtmlCodecs,
                                                                   DefaultResponseCodec),
-                                             OnGetAllFeedBefore);
+                                             OnGetAllFeedBeforeHead);
             service.RegisterControllerAction(new ControllerAction("/streams/$all/{count}?embed={embed}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
                                                                   AtomWithHtmlCodecs,
                                                                   DefaultResponseCodec),
-                                             OnGetAllFeedBefore);
+                                             OnGetAllFeedBeforeHead);
             service.RegisterControllerAction(new ControllerAction("/streams/$all/before/{pos}/{count}?embed={embed}",
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
@@ -263,6 +263,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         //$ALL
 
+        private void OnGetAllFeedBeforeHead(HttpEntity entity, UriTemplateMatch match)
+        {
+            var c = match.BoundVariables["count"];
+            var embed = GetEmbed(entity, match);
+
+            int count;
+            if (!string.IsNullOrEmpty(c))
+            {
+                if (!int.TryParse(c, out count))
+                    SendBadRequest(entity, string.Format("Invalid count argument : {0}", c));
+            }
+            else
+            {
+                count = AtomSpecs.FeedPageSize;
+            }
+
+            _allEventsController.GetAllBeforeFeed(entity, TFPos.Invalid, count, embed, headOfTf: true);
+        }
+
         private void OnGetAllFeedBefore(HttpEntity entity, UriTemplateMatch match)
         {
             var p = match.BoundVariables["pos"];
@@ -292,7 +311,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 count = AtomSpecs.FeedPageSize;
             }
 
-            _allEventsController.GetAllBeforeFeed(entity, position, count, embed);
+            _allEventsController.GetAllBeforeFeed(entity, position, count, embed, headOfTf: false);
         }
 
         private void OnGetAllAfterFeed(HttpEntity entity, UriTemplateMatch match)
@@ -315,7 +334,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
 
-            _allEventsController.GetAllAfterFeed(entity, position, count, embed);
+            _allEventsController.GetAllAfterFeed(entity, position, count, embed, headOfTf: false);
         }
 
         //ENTRY MANIPULATION
@@ -559,32 +578,43 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             //no direct subscriptions
         }
 
-        public void GetAllBeforeFeed(HttpEntity entity, TFPos position, int count, EmbedLevel embed)
+        public void GetAllBeforeFeed(HttpEntity entity, TFPos position, int count, EmbedLevel embed, bool headOfTf)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
-                                                  (args, message) => Format.Atom.ReadAllEventsBackwardCompleted(args, message, embed), 
-                                                  Configure.ReadAllEventsBackwardCompleted);
+                                                  (args, msg) => Format.Atom.ReadAllEventsBackwardCompleted(args, msg, embed), 
+                                                  (args, msg) => Configure.ReadAllEventsBackwardCompleted(args, msg, headOfTf));
             Publish(new ClientMessage.ReadAllEventsBackward(Guid.NewGuid(),
                                                             envelope,
                                                             position.CommitPosition,
                                                             position.PreparePosition,
                                                             count,
-                                                            true));
+                                                            resolveLinks: true,
+                                                            validationTfEofPosition: GetValidationTfEofPosition(entity, headOfTf)));
         }
 
-        public void GetAllAfterFeed(HttpEntity entity, TFPos position, int count, EmbedLevel embed)
+        public void GetAllAfterFeed(HttpEntity entity, TFPos position, int count, EmbedLevel embed, bool headOfTf)
         {
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
-                                                  (args, message) => Format.Atom.ReadAllEventsForwardCompleted(args, message, embed),
-                                                  Configure.ReadAllEventsForwardCompleted);
+                                                  (args, msg) => Format.Atom.ReadAllEventsForwardCompleted(args, msg, embed),
+                                                  (args, msg) => Configure.ReadAllEventsForwardCompleted(args, msg, headOfTf));
             Publish(new ClientMessage.ReadAllEventsForward(Guid.NewGuid(),
                                                            envelope,
                                                            position.CommitPosition,
                                                            position.PreparePosition,
                                                            count,
-                                                           true));
+                                                           resolveLinks: true,
+                                                           validationTfEofPosition: GetValidationTfEofPosition(entity, headOfTf)));
+        }
+
+        private static long? GetValidationTfEofPosition(HttpEntity entity, bool headOfTf)
+        {
+            if (headOfTf)
+                return null;
+            long tfEofPosition;
+            var etag = entity.Request.Headers["If-None-Match"];
+            return etag.IsNotEmptyString() && long.TryParse(etag.Trim('\"'), out tfEofPosition) ? (long?) tfEofPosition : null;
         }
     }
 }

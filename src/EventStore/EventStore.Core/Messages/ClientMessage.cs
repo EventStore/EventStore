@@ -639,12 +639,15 @@ namespace EventStore.Core.Messages
             public readonly int MaxCount;
             public readonly bool ResolveLinks;
 
+            public readonly long? ValidationTfEofPosition;
+
             public ReadAllEventsForward(Guid correlationId,
                                         IEnvelope envelope,
                                         long commitPosition,
                                         long preparePosition,
                                         int maxCount,
-                                        bool resolveLinks)
+                                        bool resolveLinks,
+                                        long? validationTfEofPosition)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
@@ -652,6 +655,8 @@ namespace EventStore.Core.Messages
                 PreparePosition = preparePosition;
                 MaxCount = maxCount;
                 ResolveLinks = resolveLinks;
+
+                ValidationTfEofPosition = validationTfEofPosition;
             }
         }
 
@@ -659,10 +664,12 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly ReadAllResult Result;
+            public readonly bool NotModified;
 
-            public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result)
+            public ReadAllEventsForwardCompleted(Guid correlationId, ReadAllResult result, bool notModified)
             {
                 CorrelationId = correlationId;
+                NotModified = notModified;
                 Result = result;
             }
         }
@@ -676,12 +683,15 @@ namespace EventStore.Core.Messages
             public readonly int MaxCount;
             public readonly bool ResolveLinks;
 
+            public readonly long? ValidationTfEofPosition;
+
             public ReadAllEventsBackward(Guid correlationId,
                                          IEnvelope envelope,
                                          long commitPosition,
                                          long preparePosition,
                                          int maxCount,
-                                         bool resolveLinks)
+                                         bool resolveLinks,
+                                         long? validationTfEofPosition)
             {
                 CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
                 Envelope = envelope;
@@ -689,6 +699,8 @@ namespace EventStore.Core.Messages
                 PreparePosition = preparePosition;
                 MaxCount = maxCount;
                 ResolveLinks = resolveLinks;
+
+                ValidationTfEofPosition = validationTfEofPosition;
             }
         }
 
@@ -696,10 +708,12 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly ReadAllResult Result;
+            public readonly bool NotModified;
 
-            public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result)
+            public ReadAllEventsBackwardCompleted(Guid correlationId, ReadAllResult result, bool notModified)
             {
                 CorrelationId = correlationId;
+                NotModified = notModified;
                 Result = result;
             }
         }
