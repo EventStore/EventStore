@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -45,16 +44,15 @@ namespace EventStore.Core.Bus
         private static readonly ILogger Log = LogManager.GetLoggerFor<QueuedHandlerAutoReset>();
 
         public int MessageCount { get { return _queue.Count; } }
-        public string Name { get { return _name; } }
+        public string Name { get { return _queueStats.Name; } }
 
         private readonly IHandle<Message> _consumer;
-        private readonly string _name;
-        private readonly string _groupName;
 
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
 
         private readonly Common.Concurrent.ConcurrentQueue<Message> _queue = new Common.Concurrent.ConcurrentQueue<Message>();
+        private readonly AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
 
         private Thread _thread;
         private volatile bool _stop;
@@ -63,25 +61,8 @@ namespace EventStore.Core.Bus
 
         // monitoring
         private readonly QueueMonitor _queueMonitor;
-        private readonly object _statisticsLock = new object(); // this lock is mostly acquired from a single thread (+ rarely to get statistics), so performance penalty is not too high
-        
-        private readonly Stopwatch _busyWatch = new Stopwatch();
-        private readonly Stopwatch _idleWatch = new Stopwatch();
-        private readonly Stopwatch _totalIdleWatch = new Stopwatch();
-        private readonly Stopwatch _totalBusyWatch = new Stopwatch();
-        private readonly Stopwatch _totalTimeWatch = new Stopwatch();
-        private TimeSpan _lastTotalIdleTime;
-        private TimeSpan _lastTotalBusyTime;
-        private TimeSpan _lastTotalTime;
-        private readonly AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
+        private readonly QueueStatsCollector _queueStats;
 
-        private long _totalItems;
-        private long _lastTotalItems;
-        private int _lifetimeQueueLengthPeak;
-        private int _currentQueueLengthPeak;
-        private Type _lastProcessedMsgType;
-        private Type _inProgressMsgType;
-        
         public QueuedHandlerAutoReset(IHandle<Message> consumer,
                                       string name,
                                       bool watchSlowMsg = true,
@@ -93,13 +74,13 @@ namespace EventStore.Core.Bus
             Ensure.NotNull(name, "name");
 
             _consumer = consumer;
-            _name = name;
-            _groupName = groupName;
+
             _watchSlowMsg = watchSlowMsg;
             _slowMsgThreshold = slowMsgThreshold ?? InMemoryBus.DefaultSlowMessageThreshold;
             _threadStopWaitTimeout = threadStopWaitTimeout ?? QueuedHandler.DefaultStopWaitTimeout;
 
             _queueMonitor = QueueMonitor.Default;
+            _queueStats = new QueueStatsCollector(name, groupName);
         }
 
         public void Start()
@@ -109,24 +90,26 @@ namespace EventStore.Core.Bus
 
             _queueMonitor.Register(this);
 
-            _thread = new Thread(ReadFromQueue) {IsBackground = true, Name = _name};
-            _thread.Start();
-
             _stopped.Reset();
+
+            _thread = new Thread(ReadFromQueue) {IsBackground = true, Name = Name};
+            _thread.Start();
         }
 
         public void Stop()
         {
             _stop = true;
             if (!_stopped.Wait(_threadStopWaitTimeout))
-                throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", _name));
+                throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
             _queueMonitor.Unregister(this);
         }
 
         private void ReadFromQueue(object o)
         {
+            _queueStats.Start();
+            _queueStats.EnterIdle();
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
-            _totalTimeWatch.Start();
+
             var wasEmpty = true;
             const int spinmax = 5000;
             const int sleepmax = 500;
@@ -139,8 +122,10 @@ namespace EventStore.Core.Bus
                     if (!_queue.TryDequeue(out msg))
                     {
                         if (!wasEmpty)
-                            EnterIdle();
-                        wasEmpty = true;
+                        {
+                            _queueStats.EnterIdle();
+                            wasEmpty = true;
+                        }
 
                         iterationsCount += 1;
                         if (iterationsCount < spinmax)
@@ -163,14 +148,13 @@ namespace EventStore.Core.Bus
                         //NOTE: the following locks are primarily acquired in this thread, 
                         //      so not too high performance penalty
                         if (wasEmpty)
-                            EnterNonIdle();
-                        wasEmpty = false;
+                        {
+                            _queueStats.EnterNonIdle();
+                            wasEmpty = false;
+                        }
 
                         var cnt = _queue.Count;
-                        _lifetimeQueueLengthPeak = _lifetimeQueueLengthPeak > cnt ? _lifetimeQueueLengthPeak : cnt;
-                        _currentQueueLengthPeak = _currentQueueLengthPeak > cnt ? _currentQueueLengthPeak : cnt;
-
-                        _inProgressMsgType = msg.GetType();
+                        _queueStats.ProcessingStarted(msg.GetType(), cnt);
 
                         if (_watchSlowMsg)
                         {
@@ -180,49 +164,26 @@ namespace EventStore.Core.Bus
 
                             var elapsed = DateTime.UtcNow - start;
                             if (elapsed > _slowMsgThreshold)
-                                Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.", _name, _inProgressMsgType.Name, (int)elapsed.TotalMilliseconds, cnt, _queue.Count);
+                                Log.Trace("SLOW QUEUE MSG [{0}]: {1} - {2}ms. Q: {3}/{4}.", Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, cnt, _queue.Count);
                         }
                         else
                         {
                             _consumer.Handle(msg);
                         }
 
-                        Interlocked.Increment(ref _totalItems);
-                        _lastProcessedMsgType = _inProgressMsgType;
-                        _inProgressMsgType = null;
+                        _queueStats.ProcessingEnded(1);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log.ErrorException(ex, "Error while processing message {0} in queued handler '{1}'.", msg, _name);
+                    Log.ErrorException(ex, "Error while processing message {0} in queued handler '{1}'.", msg, Name);
                 }
             }
+            _queueStats.EnterIdle();
+            _queueStats.Stop();
+
             _stopped.Set();
             Thread.EndThreadAffinity();
-        }
-
-        private void EnterIdle()
-        {
-            lock (_statisticsLock)
-            {
-                _totalIdleWatch.Start();
-                _idleWatch.Restart();
-
-                _totalBusyWatch.Stop();
-                _busyWatch.Reset();
-            }
-        }
-
-        private void EnterNonIdle()
-        {
-            lock (_statisticsLock)
-            {
-                _totalIdleWatch.Stop();
-                _idleWatch.Reset();
-
-                _totalBusyWatch.Start();
-                _busyWatch.Restart();
-            }
         }
 
         public void Publish(Message message)
@@ -239,42 +200,7 @@ namespace EventStore.Core.Bus
 
         public QueueStats GetStatistics()
         {
-            lock (_statisticsLock)
-            {
-                var totalTime = _totalTimeWatch.Elapsed;
-                var totalIdleTime = _totalIdleWatch.Elapsed;
-                var totalBusyTime = _totalBusyWatch.Elapsed;
-                var totalItems = Interlocked.Read(ref _totalItems);
-
-                var lastRunMs = (long)(totalTime - _lastTotalTime).TotalMilliseconds;
-                var lastItems = totalItems - _lastTotalItems;
-                var avgItemsPerSecond = lastRunMs != 0 ? (int)(1000 * lastItems / lastRunMs) : 0;
-                var avgProcessingTime = lastItems != 0 ? (totalBusyTime - _lastTotalBusyTime).TotalMilliseconds / lastItems : 0;
-                var idleTimePercent = Math.Min(100.0, lastRunMs != 0 ? 100.0 * (totalIdleTime - _lastTotalIdleTime).TotalMilliseconds / lastRunMs : 0);
-
-                var stats = new QueueStats(
-                    _name,
-                    _groupName,
-                    _queue.Count,
-                    avgItemsPerSecond,
-                    avgProcessingTime,
-                    idleTimePercent,
-                    _busyWatch.IsRunning ? _busyWatch.Elapsed : (TimeSpan?)null,
-                    _idleWatch.IsRunning ? _idleWatch.Elapsed : (TimeSpan?)null,
-                    totalItems,
-                    _currentQueueLengthPeak,
-                    _lifetimeQueueLengthPeak,
-                    _lastProcessedMsgType,
-                    _inProgressMsgType);
-
-                _lastTotalTime = totalTime;
-                _lastTotalIdleTime = totalIdleTime;
-                _lastTotalBusyTime = totalBusyTime;
-                _lastTotalItems = totalItems;
-
-                _currentQueueLengthPeak = 0;
-                return stats;
-            }
+            return _queueStats.GetStatistics(_queue.Count);
         }
     }
 }
