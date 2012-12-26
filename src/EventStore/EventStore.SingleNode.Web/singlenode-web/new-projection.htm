@@ -81,13 +81,17 @@
         $(function () {
             var storedCheckpoints = false;
             $("#mode").change(function () {
+                debugger;
                 if ($("#mode").val() == "continuous") {
                     storedCheckpoints = $("#checkpoints").attr("checked");
-                    $("#checkpoints").attr("checked", true);
-                    $("#checkpoints").attr("enabled", false);
+                    $("#checkpoints").attr("checked", "checked");
+                    $("#checkpoints").attr("disabled", "disabled");
                 } else {
-                    $("#checkpoints").attr("checked", storedCheckpoints);
-                    $("#checkpoints").attr("enabled", true);
+                    if (storedCheckpoints)
+                        $("#checkpoints").attr("checked", storedCheckpoints);
+                    else
+                        $("#checkpoints").removeAttr("checked");
+                    $("#checkpoints").removeAttr("disabled");
                 }
             });
 
