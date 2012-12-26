@@ -83,8 +83,9 @@ namespace EventStore.Projections.Core.Services.Http
                 OnProjectionsGetContinuous);
             service.RegisterControllerAction(
                 new ControllerAction(
-                    "/projections/onetime?name={name}&type={type}&enabled={enabled}&emit={emit}", HttpMethod.Post, new ICodec[] { Codec.ManualEncoding },
-                    SupportedCodecs, DefaultResponseCodec), OnProjectionsPostOneTime);
+                    "/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}",
+                    HttpMethod.Post, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, DefaultResponseCodec),
+                OnProjectionsPostOneTime);
             service.RegisterControllerAction(
                 new ControllerAction(
                     "/projections/continuous?name={name}&type={type}&enabled={enabled}&emit={emit}", HttpMethod.Post,
@@ -281,14 +282,18 @@ namespace EventStore.Projections.Core.Services.Http
                         ProjectionManagementMessage.Post postMessage;
                         string handlerType = match.BoundVariables["type"] ?? "JS";
                         bool emitEnabled = IsOn(match, "emit", false);
+                        bool checkpointsEnabled = mode != ProjectionMode.OneTime
+                                                      ? true
+                                                      : IsOn(match, "checkpoints", false);
                         bool enabled = IsOn(match, "enabled", def: true);
                         if (mode == ProjectionMode.OneTime && string.IsNullOrEmpty(name))
                             postMessage = new ProjectionManagementMessage.Post(
                                 envelope, mode, Guid.NewGuid().ToString("D"), handlerType, s, enabled: enabled,
-                                emitEnabled: emitEnabled);
+                                checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled);
                         else
                             postMessage = new ProjectionManagementMessage.Post(
-                                envelope, mode, name, handlerType, s, enabled: enabled, emitEnabled: emitEnabled);
+                                envelope, mode, name, handlerType, s, enabled: enabled,
+                                checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled);
                         Publish(postMessage);
                     }, Console.WriteLine);
         }

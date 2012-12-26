@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -46,5 +47,9 @@ namespace EventStore.Projections.Core.Services.Processing
         void CheckpointSuggested(CheckpointTag checkpointTag, float progress);
         void Progress(float progress);
         void BeginLoadState();
+
+        void BeginLoadPartitionStateAt(
+            string statePartition, CheckpointTag requestedStateCheckpointTag,
+            Action<PartitionStateCache.State> loadCompleted);
     }
 }

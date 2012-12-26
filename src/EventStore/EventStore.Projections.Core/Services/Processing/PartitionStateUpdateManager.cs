@@ -72,11 +72,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 foreach (var entry in _states)
                 {
                     var partition = entry.Key;
-                    var streamId = _namingBuilder.MakePartitionStateStreamName(partition);
+                    var streamId = _namingBuilder.MakePartitionCheckpointStreamName(partition);
                     var data = entry.Value.Data;
                     var causedBy = entry.Value.CausedByTag;
                     var expectedTag = entry.Value.ExpectedTag;
-                    list.Add(new EmittedEvent(streamId, Guid.NewGuid(), "StateUpdated", data, causedBy, expectedTag));
+                    list.Add(new EmittedEvent(streamId, Guid.NewGuid(), "Checkpoint", data, causedBy, expectedTag));
                 }
                 //NOTE: order yb is required to satisfy internal emit events validation
                 // whih ensures that events are ordered by causeby tag.  

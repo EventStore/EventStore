@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS", _source, enabled: true,
-                    emitEnabled: true));
+                    checkpointsEnabled: true, emitEnabled: true));
             // when
             _manager.Handle(
                 new ProjectionManagementMessage.UpdateQuery(

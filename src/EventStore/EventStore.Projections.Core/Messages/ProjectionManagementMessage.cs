@@ -68,11 +68,12 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _handlerType;
             private readonly string _query;
             private readonly bool _enabled;
+            private readonly bool _checkpointsEnabled;
             private readonly bool _emitEnabled;
 
             public Post(
                 IEnvelope envelope, ProjectionMode mode, string name, string handlerType, string query, bool enabled,
-                bool emitEnabled)
+                bool checkpointsEnabled, bool emitEnabled)
             {
                 _envelope = envelope;
                 _name = name;
@@ -80,6 +81,7 @@ namespace EventStore.Projections.Core.Messages
                 _mode = mode;
                 _query = query;
                 _enabled = enabled;
+                _checkpointsEnabled = checkpointsEnabled;
                 _emitEnabled = emitEnabled;
             }
 
@@ -92,6 +94,8 @@ namespace EventStore.Projections.Core.Messages
                 _mode = ProjectionMode.OneTime;
                 _query = query;
                 _enabled = enabled;
+                _checkpointsEnabled = false;
+                _emitEnabled = false;
             }
 
             public ProjectionMode Mode
@@ -127,6 +131,11 @@ namespace EventStore.Projections.Core.Messages
             public bool EmitEnabled
             {
                 get { return _emitEnabled; }
+            }
+
+            public bool CheckpointsEnabled
+            {
+                get { return _checkpointsEnabled; }
             }
         }
 

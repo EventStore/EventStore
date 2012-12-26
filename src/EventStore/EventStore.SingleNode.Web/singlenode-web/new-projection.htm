@@ -36,14 +36,6 @@
                 </div>
             </div>
             <div class="control-group">
-                <label class="control-label" for="emit"><strong>Emit Enabled</strong></label>
-                <div class="controls"><input type="checkbox" id="emit" /></div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="enabled"><strong>Enabled</strong></label>
-                <div class="controls"><input type="checkbox" id="enabled" checked="checked" /></div>
-            </div>
-            <div class="control-group">
                 <label class="control-label" for="mode">
                     <strong>Select Mode</strong></label>
                 <div class="controls">
@@ -52,6 +44,18 @@
                         <option value="continuous">Continuous</option>
                     </select>
                 </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="emit"><strong>Checkpoints Enabled</strong></label>
+                <div class="controls"><input type="checkbox" id="checkpoints" /></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="emit"><strong>Emit Enabled</strong></label>
+                <div class="controls"><input type="checkbox" id="emit" /></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="enabled"><strong>Enabled</strong></label>
+                <div class="controls"><input type="checkbox" id="enabled" checked="checked" /></div>
             </div>
             <div class="control-group">
                 <div class="controls">
@@ -74,7 +78,19 @@
     
 
     <script type="text/javascript">
-        $(function(){
+        $(function () {
+            var storedCheckpoints = false;
+            $("#mode").change(function () {
+                if ($("#mode").val() == "continuous") {
+                    storedCheckpoints = $("#checkpoints").attr("checked");
+                    $("#checkpoints").attr("checked", true);
+                    $("#checkpoints").attr("enabled", false);
+                } else {
+                    $("#checkpoints").attr("checked", storedCheckpoints);
+                    $("#checkpoints").attr("enabled", true);
+                }
+            });
+
             $("#post").click(function () {
                 
                 var name = $("#name").val();
@@ -82,6 +98,7 @@
                 var params = $.param({
                     name: name,
                     emit: $("#emit").attr("checked") ? "yes" : "no",
+                    checkpoints: $("#checkpoints").attr("checked") ? "yes" : "no",
                     enabled: $("#enabled").attr("checked") ? "yes" : "no",
                 });
                 var url = "/projections/" + $("#mode").val() + "?" + params;

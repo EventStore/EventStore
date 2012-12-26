@@ -75,6 +75,14 @@ namespace EventStore.Projections.Core.Services.Processing
                        : GetPartitionStateStreamName(statePartition);
         }
 
+        public string MakePartitionCheckpointStreamName(string statePartition)
+        {
+            if (String.IsNullOrEmpty(statePartition))
+                throw new InvalidOperationException("Root partition cannot have a partition checkpoint stream");
+
+            return ProjectionsStreamPrefix + EffectiveProjectionName + "-" + statePartition + ProjectionCheckpointStreamSuffix;
+        }
+
 
         public string MakeCheckpointStreamName()
         {

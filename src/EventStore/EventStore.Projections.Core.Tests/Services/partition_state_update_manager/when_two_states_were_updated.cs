@@ -48,8 +48,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
             var eventWriter = new FakeEventWriter();
             _updateManager.EmitEvents(eventWriter);
             var events = eventWriter.Writes.SelectMany(write => write).ToArray();
-            Assert.IsTrue(events.Any((v => "$projections-projection-partition1-state" == v.StreamId)));
-            Assert.IsTrue(events.Any((v => "$projections-projection-partition2-state" == v.StreamId)));
+            Assert.IsTrue(events.Any((v => "$projections-projection-partition1-checkpoint" == v.StreamId)));
+            Assert.IsTrue(events.Any((v => "$projections-projection-partition2-checkpoint" == v.StreamId)));
         }
 
         [Test]
@@ -58,8 +58,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
             var eventWriter = new FakeEventWriter();
             _updateManager.EmitEvents(eventWriter);
             var events = eventWriter.Writes.SelectMany(write => write).ToArray();
-            var event1 = events.Single(v => "$projections-projection-partition1-state" == v.StreamId);
-            var event2 = events.Single(v => "$projections-projection-partition2-state" == v.StreamId);
+            var event1 = events.Single(v => "$projections-projection-partition1-checkpoint" == v.StreamId);
+            var event2 = events.Single(v => "$projections-projection-partition2-checkpoint" == v.StreamId);
 
             Assert.AreEqual("state1", Encoding.UTF8.GetString(event1.Data));
             Assert.AreEqual("state2", Encoding.UTF8.GetString(event2.Data));
@@ -71,8 +71,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
             var eventWriter = new FakeEventWriter();
             _updateManager.EmitEvents(eventWriter);
             var events = eventWriter.Writes.SelectMany(write => write).ToArray();
-            var event1 = events.Single(v => "$projections-projection-partition1-state" == v.StreamId);
-            var event2 = events.Single(v => "$projections-projection-partition2-state" == v.StreamId);
+            var event1 = events.Single(v => "$projections-projection-partition1-checkpoint" == v.StreamId);
+            var event2 = events.Single(v => "$projections-projection-partition2-checkpoint" == v.StreamId);
             Assert.AreEqual(_one, event1.CausedByTag);
             Assert.AreEqual(_two, event2.CausedByTag);
         }
@@ -83,8 +83,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
             var eventWriter = new FakeEventWriter();
             _updateManager.EmitEvents(eventWriter);
             var events = eventWriter.Writes.SelectMany(write => write).ToArray();
-            var event1 = events.Single(v => "$projections-projection-partition1-state" == v.StreamId);
-            var event2 = events.Single(v => "$projections-projection-partition2-state" == v.StreamId);
+            var event1 = events.Single(v => "$projections-projection-partition1-checkpoint" == v.StreamId);
+            var event2 = events.Single(v => "$projections-projection-partition2-checkpoint" == v.StreamId);
             Assert.AreEqual(_zero, event1.ExpectedTag);
             Assert.AreEqual(_zero, event2.ExpectedTag);
         }

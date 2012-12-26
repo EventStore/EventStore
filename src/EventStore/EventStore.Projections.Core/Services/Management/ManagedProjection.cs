@@ -313,6 +313,12 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void InitializeNew(ProjectionManagementMessage.Post message, Action completed)
         {
+            if (message.Mode >= ProjectionMode.Continuous && !message.CheckpointsEnabled)
+                throw new InvalidOperationException("Continuous mode requires checkpoints");
+
+            if (message.EmitEnabled && !message.CheckpointsEnabled)
+                throw new InvalidOperationException("Emit requires checkpoints");
+
             LoadPersistedState(
                 new PersistedState
                     {
@@ -321,6 +327,7 @@ namespace EventStore.Projections.Core.Services.Management
                         Query = message.Query,
                         Mode = message.Mode,
                         EmitEnabled = message.EmitEnabled,
+                        CheckpointsDisabled = !message.CheckpointsEnabled,
                     });
             Action completed1 = () => StartOrLoadNew(completed);
             Prepare(() => BeginWrite(completed1));

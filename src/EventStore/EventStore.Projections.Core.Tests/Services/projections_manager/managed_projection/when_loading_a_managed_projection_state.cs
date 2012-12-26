@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             _mp.InitializeNew(
                 new ProjectionManagementMessage.Post(
                     new NoopEnvelope(), ProjectionMode.OneTime, "name", null, @"log(1);", enabled: true,
-                    emitEnabled: false), () => { });
+                    checkpointsEnabled: false, emitEnabled: false), () => { });
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             _mp.InitializeNew(
                 new ProjectionManagementMessage.Post(
                     new NoopEnvelope(), ProjectionMode.OneTime, "name", "", @"log(1);", enabled: true,
-                    emitEnabled: false), () => { });
+                    checkpointsEnabled: false, emitEnabled: false), () => { });
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
             _mp.InitializeNew(
                 new ProjectionManagementMessage.Post(
                     new NoopEnvelope(), ProjectionMode.OneTime, "name", "JS", query: null, enabled: true,
-                    emitEnabled: false), () => { });
+                    checkpointsEnabled: false, emitEnabled: false), () => { });
         }
     }
 }

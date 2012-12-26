@@ -152,9 +152,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
 
         private bool _tickPending;
-        private int _readRequestsInProgress;
         private long _expectedSubscriptionMessageSequenceNumber = -1;
-        private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
         private bool _subscribed;
         private bool _startOnLoad;
         private StatePartitionSelector _statePartitionSelector;
@@ -249,7 +247,6 @@ namespace EventStore.Projections.Core.Services.Processing
             info.StateReason = "";
             info.BufferedEvents = _processingQueue.GetBufferedEventCount();
             info.PartitionsCached = _partitionStateCache.CachedItemCount;
-            info.ReadsInProgress += _readRequestsInProgress;
         }
 
         public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
@@ -437,9 +434,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterInitial()
         {
             _handlerPartition = null;
-            foreach (var requestId in _loadStateRequests)
-                _readDispatcher.Cancel(requestId);
-            _loadStateRequests.Clear();
             _partitionStateCache.Initialize();
             _processingQueue.Initialize();
             _checkpointManager.Initialize();
@@ -635,24 +629,6 @@ namespace EventStore.Projections.Core.Services.Processing
             else return null;
         }
 
-        public static List<EmittedEvent> CreateStateUpdatedEvents(ProjectionNamesBuilder projectionNamesBuilder, CheckpointTag zeroCheckpointTag, string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState)
-        {
-            var result = new List<EmittedEvent>();
-            if (!string.IsNullOrEmpty(partition)
-                && (oldState.CausedBy == null || oldState.CausedBy == zeroCheckpointTag))
-            {
-                result.Add(
-                    new EmittedEvent(
-                        projectionNamesBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "PartitionCreated", partition, newState.CausedBy,
-                        null));
-            }
-            result.Add(
-                new EmittedEvent(
-                    projectionNamesBuilder.MakePartitionStateStreamName(partition), Guid.NewGuid(), "StateUpdated", newState.Data,
-                    newState.CausedBy, oldState.CausedBy));
-            return result;
-        }
-
         private bool ValidateEmittedEvents(EmittedEvent[] emittedEvents)
         {
             if (!_projectionConfig.EmitEventEnabled || !_checkpointStrategy.IsEmiEnabled())
@@ -784,68 +760,9 @@ namespace EventStore.Projections.Core.Services.Processing
                             loadCompleted(state.CausedBy, state.Data);
                             EnsureTickPending();
                         };
-
-                    BeginLoadPartitionStateAt(statePartition, at, completed);
+                    _checkpointManager.BeginLoadPartitionStateAt(statePartition, at, completed);
                 }
             }
-        }
-
-        private void BeginLoadPartitionStateAt(
-            string statePartition, CheckpointTag requestedStateCheckpointTag, Action<PartitionStateCache.State> loadCompleted)
-        {
-            string partitionStateStreamName = _namingBuilder.MakePartitionStateStreamName(statePartition);
-            _readRequestsInProgress++;
-            var requestId =
-                _readDispatcher.Publish(
-                    new ClientMessage.ReadStreamEventsBackward(
-                        Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, -1, 1, resolveLinks: false, validationStreamVersion: null),
-                    m => OnLoadPartitionStateReadStreamEventsBackwardCompleted(statePartition, m, requestedStateCheckpointTag, loadCompleted));
-            if (requestId != Guid.Empty)
-                _loadStateRequests.Add(requestId);
-        }
-
-        private void OnLoadPartitionStateReadStreamEventsBackwardCompleted(
-            string partition, ClientMessage.ReadStreamEventsBackwardCompleted message,
-            CheckpointTag requestedStateCheckpointTag, Action<PartitionStateCache.State> loadCompleted)
-        {
-            //NOTE: the following remove may do nothing in tests as completed is raised before we return from publish. 
-            _loadStateRequests.Remove(message.CorrelationId);
-
-            _readRequestsInProgress--;
-            if (message.Events.Length == 1)
-            {
-                EventRecord @event = message.Events[0].Event;
-                if (@event.EventType == "StateUpdated")
-                {
-                    var loadedStateCheckpointTag = @event.Metadata.ParseJson<CheckpointTag>();
-                    // always recovery mode? skip until state before current event
-                    //TODO: skip event processing in case we know i has been already processed
-                    if (loadedStateCheckpointTag < requestedStateCheckpointTag)
-                    {
-                        var state = new PartitionStateCache.State(Encoding.UTF8.GetString(@event.Data), loadedStateCheckpointTag);
-                        loadCompleted(state);
-                        return;
-                    }
-                }
-            }
-            if (message.NextEventNumber == -1)
-            {
-                var state = new PartitionStateCache.State("", _checkpointStrategy.PositionTagger.MakeZeroCheckpointTag());
-                loadCompleted(state);
-                return;
-            }
-            string partitionStateStreamName = _namingBuilder.MakePartitionStateStreamName(partition);
-            _readRequestsInProgress++;
-            var requestId =
-                _readDispatcher.Publish(
-                    new ClientMessage.ReadStreamEventsBackward(
-                        Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, message.NextEventNumber, 1,
-                        resolveLinks: false, validationStreamVersion: null),
-                    m =>
-                    OnLoadPartitionStateReadStreamEventsBackwardCompleted(
-                        partition, m, requestedStateCheckpointTag, loadCompleted));
-            if (requestId != Guid.Empty)
-                _loadStateRequests.Add(requestId);
         }
 
         public void Dispose()
