@@ -52,6 +52,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         private long _lastFlushed;
         private readonly MemoryMappedViewAccessor _accessor;
 
+        private readonly object _flushLocker = new object();
+
         public MemoryMappedFileCheckpoint(string filename)
             : this(filename, Guid.NewGuid().ToString(), false)
         {
@@ -101,6 +103,11 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             FlushFileBuffers(_file.SafeMemoryMappedFileHandle.DangerousGetHandle());
 
             Interlocked.Exchange(ref _lastFlushed, last);
+
+            lock (_flushLocker)
+            {
+                Monitor.PulseAll(_flushLocker);
+            }
         }
 
         public long Read()
@@ -116,6 +123,14 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         public long ReadNonFlushed()
         {
             return Interlocked.Read(ref _last);
+        }
+
+        public bool WaitForFlush(TimeSpan timeout)
+        {
+            lock (_flushLocker)
+            {
+                return Monitor.Wait(_flushLocker, timeout);
+            }
         }
 
         public void Dispose()

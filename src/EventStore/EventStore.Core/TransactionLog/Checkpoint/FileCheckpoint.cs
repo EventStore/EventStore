@@ -44,6 +44,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         private readonly BinaryWriter _writer;
         private readonly BinaryReader _reader;
 
+        private readonly object _flushLocker = new object();
+
         public FileCheckpoint(string filename)
             : this(filename, Guid.NewGuid().ToString())
         {
@@ -105,6 +107,11 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             Win32.FlushFileBuffers(_fileStream.SafeFileHandle);
 #endif
             Interlocked.Exchange(ref _lastFlushed, last);
+
+            lock (_flushLocker)
+            {
+                Monitor.PulseAll(_flushLocker);
+            }
         }
 
         public long Read()
@@ -115,6 +122,14 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         public long ReadNonFlushed()
         {
             return Interlocked.Read(ref _last);
+        }
+
+        public bool WaitForFlush(TimeSpan timeout)
+        {
+            lock (_flushLocker)
+            {
+                return Monitor.Wait(_flushLocker, timeout);
+            }
         }
 
         public void Dispose()

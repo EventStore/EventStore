@@ -35,6 +35,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage
@@ -44,11 +45,14 @@ namespace EventStore.Core.Services.Storage
                                  IHandle<SystemMessage.SystemStart>,
                                  IHandle<SystemMessage.BecomeShuttingDown>
     {
-        private static readonly decimal MsPerTick = 1000.0M / Stopwatch.Frequency;
+        private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
+        private static readonly int MinFlushDelay = 2 * TicksPerMs;
+        private static readonly TimeSpan FlushWaitTimeout = TimeSpan.FromMilliseconds(100);
 
         public string Name { get { return _queueStats.Name; } }
 
         private readonly IPublisher _masterBus;
+        private readonly ICheckpoint _writerCheckpoint;
         private readonly ITransactionFileChaser _chaser;
         private readonly IReadIndex _readIndex;
         private readonly IPEndPoint _vnodeEndPoint;
@@ -61,7 +65,7 @@ namespace EventStore.Core.Services.Storage
         private long _flushDelay;
         private long _lastFlush;
 
-        public StorageChaser(IPublisher masterBus, ITransactionFileChaser chaser, IReadIndex readIndex, IPEndPoint vnodeEndPoint)
+        public StorageChaser(IPublisher masterBus, ICheckpoint writerCheckpoint, ITransactionFileChaser chaser, IReadIndex readIndex, IPEndPoint vnodeEndPoint)
         {
             Ensure.NotNull(masterBus, "masterBus");
             Ensure.NotNull(chaser, "chaser");
@@ -69,6 +73,7 @@ namespace EventStore.Core.Services.Storage
             Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
 
             _masterBus = masterBus;
+            _writerCheckpoint = writerCheckpoint;
             _chaser = chaser;
             _readIndex = readIndex;
             _vnodeEndPoint = vnodeEndPoint;
@@ -92,13 +97,9 @@ namespace EventStore.Core.Services.Storage
         private void ChaseTransactionLog()
         {
             _queueStats.Start();
-            _queueStats.EnterBusy();
             QueueMonitor.Default.Register(this);
 
-            _queueStats.ProcessingStarted<ChaserOpen>(0);
             _chaser.Open();
-            _queueStats.ProcessingEnded(1);
-
             while (!_stop)
             {
                 _queueStats.EnterBusy();
@@ -146,26 +147,27 @@ namespace EventStore.Core.Services.Storage
                     }
                 }
 
-                if (_watch.ElapsedTicks - _lastFlush >= _flushDelay + 2 * MsPerTick)
+                var start = _watch.ElapsedTicks;
+                if (start - _lastFlush >= _flushDelay + MinFlushDelay)
                 {
                     _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
-                    
-                    var start = _watch.ElapsedTicks;
                     _chaser.Flush();
-                    _flushDelay = _watch.ElapsedTicks - start;
-                    _lastFlush = _watch.ElapsedTicks;
-
                     _queueStats.ProcessingEnded(1);
+
+                    var end = _watch.ElapsedTicks;
+                    _flushDelay = end - start;
+                    _lastFlush = end;
                 }
 
                 if (!result.Success)
                 {
                     _queueStats.EnterIdle();
-                    Thread.Sleep(1);
+                    //Thread.Sleep(1);
+                    _writerCheckpoint.WaitForFlush(FlushWaitTimeout);
                 }
             }
             _chaser.Close();
-            _masterBus.Publish(new SystemMessage.ServiceShutdown("StorageChaser"));
+            _masterBus.Publish(new SystemMessage.ServiceShutdown(Name));
 
             _queueStats.EnterIdle();
             _queueStats.Stop();
@@ -180,10 +182,6 @@ namespace EventStore.Core.Services.Storage
         public QueueStats GetStatistics()
         {
             return _queueStats.GetStatistics(0);
-        }
-
-        private class ChaserOpen
-        {
         }
 
         private class ChaserTryReadNext
