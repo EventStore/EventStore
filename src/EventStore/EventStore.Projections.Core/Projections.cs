@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core
             while (_coreQueues.Count < _projectionWorkerThreadCount)
             {
                 var coreInputBus = new InMemoryBus("bus");
-                var coreQueue = new QueuedHandler(coreInputBus, "ProjectionCoreQueue #" + _coreQueues.Count);
+                var coreQueue = new QueuedHandler(coreInputBus, "Projection Core #" + _coreQueues.Count, groupName: "Projection Core");
                 var projectionNode = new ProjectionWorkerNode(db, coreQueue);
                 projectionNode.SetupMessaging(coreInputBus);
 
