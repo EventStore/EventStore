@@ -107,10 +107,8 @@ namespace EventStore.Core.Bus
         private void ReadFromQueue(object o)
         {
             _queueStats.Start();
-            _queueStats.EnterIdle();
             Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
             
-            var wasEmpty = true;
             while (!_stop)
             {
                 Message msg = null;
@@ -120,22 +118,14 @@ namespace EventStore.Core.Bus
                     {
                         while (!_queue.TryDequeue(out msg) && !_stop)
                         {
-                            if (!wasEmpty)
-                            {
-                                _queueStats.EnterIdle();
-                                wasEmpty = true;
-                            }
+                            _queueStats.EnterIdle();
                             Monitor.Wait(_locker, 100);
                         }
                         if (_stop)
                             break;
                     }
 
-                    if (wasEmpty)
-                    {
-                        _queueStats.EnterNonIdle();
-                        wasEmpty = false;
-                    }
+                    _queueStats.EnterBusy();
 
                     var cnt = _queue.Count;
                     _queueStats.ProcessingStarted(msg.GetType(), cnt);
@@ -162,7 +152,6 @@ namespace EventStore.Core.Bus
                     Log.ErrorException(ex, "Error while processing message {0} in queued handler '{1}'.", msg, Name);
                 }
             }
-            _queueStats.EnterIdle();
             _queueStats.Stop();
 
             _stopped.Set();

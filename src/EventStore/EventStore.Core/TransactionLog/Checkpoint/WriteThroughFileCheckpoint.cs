@@ -144,6 +144,11 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             return Interlocked.Read(ref _last);
         }
 
+        public bool WaitForFlush(TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Dispose()
         {
             Close();
