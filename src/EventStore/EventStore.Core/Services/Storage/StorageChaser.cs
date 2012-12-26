@@ -92,22 +92,16 @@ namespace EventStore.Core.Services.Storage
         private void ChaseTransactionLog()
         {
             _queueStats.Start();
-            _queueStats.EnterNonIdle();
+            _queueStats.EnterBusy();
             QueueMonitor.Default.Register(this);
 
             _queueStats.ProcessingStarted<ChaserOpen>(0);
             _chaser.Open();
             _queueStats.ProcessingEnded(1);
 
-            bool wasIdle = false;
             while (!_stop)
             {
-                if (wasIdle)
-                {
-                    _queueStats.EnterNonIdle();
-                    wasIdle = false;
-                }
-
+                _queueStats.EnterBusy();
                 _queueStats.ProcessingStarted<ChaserTryReadNext>(0);
                 var result = _chaser.TryReadNext();
                 _queueStats.ProcessingEnded(1);
@@ -121,7 +115,6 @@ namespace EventStore.Core.Services.Storage
                             _queueStats.ProcessingStarted<PrepareLogRecord>(0);
 
                             var record = (PrepareLogRecord) result.LogRecord;
-
                             if ((record.Flags & (PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd)) != 0)
                             {
                                 _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId,
@@ -167,11 +160,7 @@ namespace EventStore.Core.Services.Storage
 
                 if (!result.Success)
                 {
-                    if (!wasIdle)
-                    {
-                        _queueStats.EnterIdle();
-                        wasIdle = true;
-                    }
+                    _queueStats.EnterIdle();
                     Thread.Sleep(1);
                 }
             }

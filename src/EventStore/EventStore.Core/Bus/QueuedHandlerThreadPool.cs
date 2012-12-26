@@ -86,7 +86,6 @@ namespace EventStore.Core.Bus
         public void Start()
         {
             _queueStats.Start();
-            _queueStats.EnterIdle();
             _queueMonitor.Register(this);
         }
 
@@ -95,9 +94,8 @@ namespace EventStore.Core.Bus
             _stop = true;
             if (!_stopped.Wait(_threadStopWaitTimeout))
                 throw new TimeoutException(string.Format("Unable to stop thread '{0}'.", Name));
-            _queueMonitor.Unregister(this);
-            _queueStats.EnterIdle();
             _queueStats.Stop();
+            _queueMonitor.Unregister(this);
         }
 
         private void ReadFromQueue(object o)
@@ -106,7 +104,7 @@ namespace EventStore.Core.Bus
             while (proceed)
             {
                 _stopped.Reset();
-                _queueStats.EnterNonIdle();
+                _queueStats.EnterBusy();
 
                 Message msg;
                 while (!_stop && _queue.TryDequeue(out msg))

@@ -345,8 +345,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private IPAddress GetInterIpAddress()
         {
-            return IPAddress.Loopback;
-
             var interIp = IPAddress.None;
 
             var host = Dns.GetHostEntry(Dns.GetHostName());

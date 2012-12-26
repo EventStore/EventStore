@@ -60,6 +60,8 @@ namespace EventStore.Core.Bus
         private Type _lastProcessedMsgType;
         private Type _inProgressMsgType;
 
+        private bool _wasIdle;
+
         public QueueStatsCollector(string name, string groupName = null)
         {
             Ensure.NotNull(name, "name");
@@ -71,10 +73,12 @@ namespace EventStore.Core.Bus
         public void Start()
         {
             _totalTimeWatch.Start();
+            EnterIdle();
         }
 
         public void Stop()
         {
+            EnterIdle();
             _totalTimeWatch.Stop();
         }
 
@@ -100,6 +104,10 @@ namespace EventStore.Core.Bus
 
         public void EnterIdle()
         {
+            if (_wasIdle)
+                return;
+            _wasIdle = true;
+
             //NOTE: the following locks are primarily acquired in main thread, 
             //      so not too high performance penalty
             lock (_statisticsLock)
@@ -112,8 +120,12 @@ namespace EventStore.Core.Bus
             }
         }
 
-        public void EnterNonIdle()
+        public void EnterBusy()
         {
+            if (!_wasIdle)
+                return;
+            _wasIdle = false;
+
             lock (_statisticsLock)
             {
                 _totalIdleWatch.Stop();
