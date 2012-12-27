@@ -52,7 +52,9 @@
     <Content Include="es-common-web\js\atom\FeedElement.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="es-common-web\js\atom\render.js" />
+    <Content Include="es-common-web\js\atom\render.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="es-common-web\js\controls\es.Zoomer.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
