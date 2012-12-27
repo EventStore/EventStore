@@ -35,8 +35,8 @@ namespace EventStore.Core.Messages
         {
             public EventLinkPair(Data.EventRecord eventRecord, Data.EventRecord linkRecord)
             {
-                Event = new EventRecord(eventRecord);
-
+                if (eventRecord != null)
+                    Event = new EventRecord(eventRecord);
                 if (linkRecord != null)
                     Link = new EventRecord(linkRecord);
             }

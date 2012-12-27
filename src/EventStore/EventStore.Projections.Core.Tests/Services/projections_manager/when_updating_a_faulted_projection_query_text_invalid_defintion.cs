@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS",
-                    @"fromAll(); on_any(function(){});log(1****);", enabled: false, emitEnabled: true));
+                    @"fromAll(); on_any(function(){});log(1****);", enabled: false, checkpointsEnabled: true, emitEnabled: true));
             // when
             _newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
             _manager.Handle(

@@ -36,8 +36,8 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly ProjectionSubscriptionMessage.CommittedEventReceived _message;
         private string _partition;
-        private List<EmittedEvent[]> _scheduledWrites;
         private readonly StatePartitionSelector _statePartitionSelector;
+        private EventProcessedResult _eventProcessedResult;
 
         public CommittedEventWorkItem(
             CoreProjection projection, ProjectionSubscriptionMessage.CommittedEventReceived message,
@@ -61,32 +61,32 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override void Load(CheckpointTag checkpointTag)
         {
             // we load partition state even if stopping etc.  should we skip?
-            Projection.BeginStatePartitionLoad(
-                _partition, _message.CheckpointTag, LoadCompleted, allowRelockAtTheSamePosition: false);
+            Projection.BeginGetPartitionStateAt(
+                _partition, _message.CheckpointTag, LoadCompleted, lockLoaded: true);
         }
 
-        private void LoadCompleted()
+        private void LoadCompleted(CheckpointTag checkpointTag, string state)
         {
             NextStage();
         }
 
         protected override void ProcessEvent()
         {
-            Projection.ProcessCommittedEvent(this, _message, _partition);
+            var eventProcessedResult = Projection.ProcessCommittedEvent(_message, _partition);
+            if (eventProcessedResult != null)
+                SetEventProcessedResult(eventProcessedResult);
             NextStage();
         }
 
         protected override void WriteOutput()
         {
-            Projection.FinalizeEventProcessing(_scheduledWrites, _message.CheckpointTag, _message.Progress);
+            Projection.FinalizeEventProcessing(_eventProcessedResult, _message.CheckpointTag, _message.Progress);
             NextStage();
         }
 
-        public void ScheduleEmitEvents(EmittedEvent[] emittedEvents)
+        private void SetEventProcessedResult(EventProcessedResult eventProcessedResult)
         {
-            if (_scheduledWrites == null)
-                _scheduledWrites = new List<EmittedEvent[]>();
-            _scheduledWrites.Add(emittedEvents);
+            _eventProcessedResult = eventProcessedResult;
         }
     }
 }

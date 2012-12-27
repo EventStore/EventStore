@@ -264,6 +264,11 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.Stopped message)
         {
             _state = ManagedProjectionState.Stopped;
+            FireStoppedOrFaulted();
+        }
+
+        private void FireStoppedOrFaulted()
+        {
             var stopCompleted = _onStopped;
             _onStopped = null;
             if (stopCompleted != null) stopCompleted();
@@ -278,6 +283,7 @@ namespace EventStore.Projections.Core.Services.Management
                 _persistedState.SourceDefintion = null;
                 OnPrepared();
             }
+            FireStoppedOrFaulted();
         }
 
         public void Handle(CoreProjectionManagementMessage.Prepared message)
@@ -307,6 +313,12 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void InitializeNew(ProjectionManagementMessage.Post message, Action completed)
         {
+            if (message.Mode >= ProjectionMode.Continuous && !message.CheckpointsEnabled)
+                throw new InvalidOperationException("Continuous mode requires checkpoints");
+
+            if (message.EmitEnabled && !message.CheckpointsEnabled)
+                throw new InvalidOperationException("Emit requires checkpoints");
+
             LoadPersistedState(
                 new PersistedState
                     {
@@ -315,6 +327,7 @@ namespace EventStore.Projections.Core.Services.Management
                         Query = message.Query,
                         Mode = message.Mode,
                         EmitEnabled = message.EmitEnabled,
+                        CheckpointsDisabled = !message.CheckpointsEnabled,
                     });
             Action completed1 = () => StartOrLoadNew(completed);
             Prepare(() => BeginWrite(completed1));
@@ -411,7 +424,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, "$projections-" + _name, ExpectedVersion.Any,
-                    new Event(Guid.NewGuid(), "ProjectionUpdated", false, managedProjectionSerializedState, new byte[0])),
+                    new Event(Guid.NewGuid(), "ProjectionUpdated", true, managedProjectionSerializedState, new byte[0])),
                 m => WriteCompleted(m, completed));
         }
 

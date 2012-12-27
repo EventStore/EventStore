@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -30,35 +30,38 @@ using System;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
+namespace EventStore.Projections.Core.Tests.Services.partition_state_update_manager
 {
     [TestFixture]
-    public class when_relocking_the_state_at_earlier_position
+    public class when_created
     {
-        private PartitionStateCache _cache;
-        private CheckpointTag _cachedAtCheckpointTag;
+        private PartitionStateUpdateManager _updateManager;
 
         [SetUp]
-        public void given()
+        public void setup()
         {
-            //given
-            _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, -1));
-            _cachedAtCheckpointTag = CheckpointTag.FromPosition(1000, 900);
-            _cache.CacheAndLockPartitionState("partition", new PartitionStateCache.State("data", _cachedAtCheckpointTag), _cachedAtCheckpointTag);
-        }
-
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void thorws_invalid_operation_exception()
-        {
-            _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(500, 400));
+            _updateManager = new PartitionStateUpdateManager(new ProjectionNamesBuilder("projection"));
         }
 
         [Test]
-        public void the_state_can_be_retrieved()
+        public void handles_state_updated()
         {
-            var state = _cache.TryGetPartitionState("partition");
-            Assert.AreEqual("data", state.Data);
+            _updateManager.StateUpdated("partition", "state", CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(200, 150));
         }
 
+        [Test]
+        public void emit_events_does_not_write_any_events()
+        {
+            _updateManager.EmitEvents(new FakeEventWriter());
+        }
+
+        class FakeEventWriter : IEventWriter
+        {
+            public void EmitEvents(EmittedEvent[] events)
+            {
+                Assert.Fail("Should not write any events");
+            }
+        }
     }
+
 }

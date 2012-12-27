@@ -85,18 +85,18 @@
         </div>
 
         <script id="queuesTable" type="text/x-jsrender">
-             <table class="table table-bordered table-striped queue-stats">
+             <table class="table table-bordered table-striped queue-stats" style="table-layout: fixed; ">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Length</th>
-                        <th>Avg,</br>items/s</th>
-                        <th>Avg Time,</br>ms/item</th>
-                        <th>Busy, %</th>
-                        <th>Peak</th>
-                        <th>Max Peak</th>
-                        <th>Total</br>Processed</th>
-                        <th>Current/Last Message</th>
+                        <th style="width: 120px;">Name</th>
+                        <th style="width: 50px;">Length</th>
+                        <th style="width: 50px;">Avg,</br>items/s</th>
+                        <th style="width: 50px;">Avg Time,</br>ms/item</th>
+                        <th style="width: 50px;">Busy, %</th>
+                        <th style="width: 50px;">Peak</th>
+                        <th style="width: 50px;">Max Peak</th>
+                        <th style="width: 60px;">Total</br>Processed</th>
+                        <th style="width: 250px;">Current/Last Message</th>
                     </tr>
                 </thead>
                 <tbody class="stats-body">
@@ -112,7 +112,7 @@
                       <td>{{>lengthCurrentTryPeak}}</td>
                       <td>{{>lengthLifetimePeak}}</td>
                       <td>{{>totalItemsProcessed}}</td>
-                      <td>{{if isGroup}}n/a{{else}}{{>inProgressMessage}} / {{>lastProcessedMessage}}{{/else}}</td>
+                      <td style="white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{if isGroup}}n/a{{else}}{{>inProgressMessage}} / {{>lastProcessedMessage}}{{/else}}</td>
                     </tr>
                     {{/for}}
                 </tbody>

@@ -32,30 +32,40 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage
 {
-    public class StorageChaser : IHandle<SystemMessage.SystemInit>,
+    public class StorageChaser : IMonitoredQueue,
+                                 IHandle<SystemMessage.SystemInit>,
                                  IHandle<SystemMessage.SystemStart>,
                                  IHandle<SystemMessage.BecomeShuttingDown>
     {
-        private static readonly decimal MsPerTick = 1000.0M / Stopwatch.Frequency;
+        private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
+        private static readonly int MinFlushDelay = 2 * TicksPerMs;
+        private static readonly TimeSpan FlushWaitTimeout = TimeSpan.FromMilliseconds(100);
+
+        public string Name { get { return _queueStats.Name; } }
 
         private readonly IPublisher _masterBus;
+        private readonly ICheckpoint _writerCheckpoint;
         private readonly ITransactionFileChaser _chaser;
         private readonly IReadIndex _readIndex;
         private readonly IPEndPoint _vnodeEndPoint;
         private Thread _thread;
         private volatile bool _stop;
 
+        private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Storage Chaser");
+
         private readonly Stopwatch _watch = Stopwatch.StartNew();
         private long _flushDelay;
         private long _lastFlush;
 
-        public StorageChaser(IPublisher masterBus, ITransactionFileChaser chaser, IReadIndex readIndex, IPEndPoint vnodeEndPoint)
+        public StorageChaser(IPublisher masterBus, ICheckpoint writerCheckpoint, ITransactionFileChaser chaser, IReadIndex readIndex, IPEndPoint vnodeEndPoint)
         {
             Ensure.NotNull(masterBus, "masterBus");
             Ensure.NotNull(chaser, "chaser");
@@ -63,6 +73,7 @@ namespace EventStore.Core.Services.Storage
             Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
 
             _masterBus = masterBus;
+            _writerCheckpoint = writerCheckpoint;
             _chaser = chaser;
             _readIndex = readIndex;
             _vnodeEndPoint = vnodeEndPoint;
@@ -75,7 +86,7 @@ namespace EventStore.Core.Services.Storage
         {
             _thread = new Thread(ChaseTransactionLog);
             _thread.IsBackground = true;
-            _thread.Name = "StorageChaser";
+            _thread.Name = Name;
         }
 
         public void Handle(SystemMessage.SystemStart message)
@@ -85,18 +96,26 @@ namespace EventStore.Core.Services.Storage
 
         private void ChaseTransactionLog()
         {
+            _queueStats.Start();
+            QueueMonitor.Default.Register(this);
+
             _chaser.Open();
             while (!_stop)
             {
+                _queueStats.EnterBusy();
+                _queueStats.ProcessingStarted<ChaserTryReadNext>(0);
                 var result = _chaser.TryReadNext();
+                _queueStats.ProcessingEnded(1);
+
                 if (result.Success)
                 {
                     switch (result.LogRecord.RecordType)
                     {
                         case LogRecordType.Prepare:
                         {
-                            var record = (PrepareLogRecord) result.LogRecord;
+                            _queueStats.ProcessingStarted<PrepareLogRecord>(0);
 
+                            var record = (PrepareLogRecord) result.LogRecord;
                             if ((record.Flags & (PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd)) != 0)
                             {
                                 _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId,
@@ -105,17 +124,22 @@ namespace EventStore.Core.Services.Storage
                                                                                  record.Flags));
                             }
 
+                            _queueStats.ProcessingEnded(1);
                             break;
                         }
                         case LogRecordType.Commit:
                         {
-                            var record = (CommitLogRecord) result.LogRecord;
+                            _queueStats.ProcessingStarted<CommitLogRecord>(0);
+
+                            var record = (CommitLogRecord)result.LogRecord;
                             _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, 
                                                                             _vnodeEndPoint,
                                                                             record.LogPosition,
                                                                             record.TransactionPosition,
                                                                             record.EventNumber));
                             _readIndex.Commit(record);
+                            
+                            _queueStats.ProcessingEnded(1);
                             break;
                         }
                         default:
@@ -123,24 +147,49 @@ namespace EventStore.Core.Services.Storage
                     }
                 }
 
-                if (_watch.ElapsedTicks - _lastFlush >= _flushDelay + 2 * MsPerTick)
+                var start = _watch.ElapsedTicks;
+                if (start - _lastFlush >= _flushDelay + MinFlushDelay)
                 {
-                    var start = _watch.ElapsedTicks;
+                    _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
                     _chaser.Flush();
-                    _flushDelay = _watch.ElapsedTicks - start;
-                    _lastFlush = _watch.ElapsedTicks;
+                    _queueStats.ProcessingEnded(1);
+
+                    var end = _watch.ElapsedTicks;
+                    _flushDelay = end - start;
+                    _lastFlush = end;
                 }
 
                 if (!result.Success)
-                    Thread.Sleep(1);
+                {
+                    _queueStats.EnterIdle();
+                    //Thread.Sleep(1);
+                    _writerCheckpoint.WaitForFlush(FlushWaitTimeout);
+                }
             }
             _chaser.Close();
-            _masterBus.Publish(new SystemMessage.ServiceShutdown("StorageChaser"));
+            _masterBus.Publish(new SystemMessage.ServiceShutdown(Name));
+
+            _queueStats.EnterIdle();
+            _queueStats.Stop();
+            QueueMonitor.Default.Unregister(this);
         }
 
         public void Handle(SystemMessage.BecomeShuttingDown message)
         {
             _stop = true;
+        }
+
+        public QueueStats GetStatistics()
+        {
+            return _queueStats.GetStatistics(0);
+        }
+
+        private class ChaserTryReadNext
+        {
+        }
+
+        private class ChaserCheckpointFlush
+        {
         }
     }
 }

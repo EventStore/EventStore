@@ -116,9 +116,6 @@ function scope($on, $notify) {
 
     function foreachStream() {
         eventProcessor.byStream();
-        // NOTE: this may be removed in the future
-        // currently we do not support foreach projections without emitStateUpdated
-        eventProcessor.emit_state_updated();
         return {
             when: when,
             whenAny: whenAny,
@@ -127,9 +124,6 @@ function scope($on, $notify) {
 
     function partitionBy(byHandler) {
         eventProcessor.partitionBy(byHandler);
-        // NOTE: this may be removed in the future
-        // currently we do not support foreach projections without emitStateUpdated
-        eventProcessor.emit_state_updated();
         return {
             when: when,
             whenAny: whenAny,

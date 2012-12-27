@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -57,7 +58,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void event_processed_throws_invalid_operation_exception()
         {
-            _manager.EventProcessed(@"{""state"":""state""}", null, CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
+//            _manager.StateUpdated("", @"{""state"":""state""}");
+            _manager.EventProcessed(CheckpointTag.FromStreamPosition("stream", 10), 77.7f);
         }
 
         [Test, ExpectedException(typeof(InvalidOperationException))]

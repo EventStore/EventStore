@@ -53,10 +53,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string projectionCheckpointStreamId, string name,
-            PositionTagger positionTagger, bool useCheckpoints)
+            PositionTagger positionTagger, ProjectionNamesBuilder namingBuilder, bool useCheckpoints,
+            bool emitStateUpdated, bool emitPartitionCheckpoints = false)
             : base(
                 coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
-                name, positionTagger, useCheckpoints)
+                name, positionTagger, namingBuilder, useCheckpoints, emitStateUpdated, emitPartitionCheckpoints)
         {
             if (projectionCheckpointStreamId == null) throw new ArgumentNullException("projectionCheckpointStreamId");
             if (projectionCheckpointStreamId == "") throw new ArgumentException("projectionCheckpointStreamId");
@@ -70,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _inCheckpointWriteAttempt = 1;
             //TODO: pass correct expected version
             _checkpointEventToBePublished = new Event(
-                Guid.NewGuid(), "ProjectionCheckpoint", false,
+                Guid.NewGuid(), "ProjectionCheckpoint", true,
                 requestedCheckpointState == null ? null : Encoding.UTF8.GetBytes(requestedCheckpointState),
                 requestedCheckpointPosition.ToJsonBytes());
             PublishWriteCheckpointEvent();

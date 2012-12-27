@@ -36,24 +36,30 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class MultiStreamCheckpointManager : CoreProjectionCheckpointManager
+    /// <summary>
+    /// A checkpoint manager based on assumption that if all events emitted by a projection
+    /// are written to the single stream we don't need any checkpoints at all.  So, the 
+    /// MultiStreamSingleOutputStreamCheckpointManager just flushes emitted streams and waits 
+    /// for confirmation on a checkpoint
+    /// </summary>
+    public class MultiStreamSingleOutputStreamCheckpointManager : CoreProjectionCheckpointManager
     {
         private readonly string _projectionStateUpdatesStreamId;
         private int _nextStateIndexToRequest;
         private Guid _readRequestId;
 
-        public MultiStreamCheckpointManager(
+        public MultiStreamSingleOutputStreamCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ProjectionConfig projectionConfig, string name,
-            PositionTagger positionTagger, string projectionStateUpdatesStreamId, bool useCheckpoints)
+            ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
+            ProjectionNamesBuilder namingBuilder, bool useCheckpoints, bool emitStateUpdated)
             : base(
                 coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
-                name, positionTagger, useCheckpoints)
+                name, positionTagger, namingBuilder, useCheckpoints, emitStateUpdated, false)
         {
-            _projectionStateUpdatesStreamId = projectionStateUpdatesStreamId;
+            _projectionStateUpdatesStreamId = namingBuilder.GetStateStreamName();
         }
 
         protected override void BeginWriteCheckpoint(

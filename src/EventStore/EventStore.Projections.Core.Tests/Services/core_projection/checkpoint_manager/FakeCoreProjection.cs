@@ -85,5 +85,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             throw new System.NotImplementedException();
         }
+
+        
     }
 }

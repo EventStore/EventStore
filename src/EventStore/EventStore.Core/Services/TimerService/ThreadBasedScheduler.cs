@@ -28,12 +28,16 @@
 using System;
 using System.Threading;
 using EventStore.Common.Utils;
+using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Services.Monitoring.Stats;
 
 namespace EventStore.Core.Services.TimerService
 {
-    public class ThreadBasedScheduler : IDisposable, IScheduler
+    public class ThreadBasedScheduler : IMonitoredQueue, IScheduler, IDisposable
     {
+        public string Name { get { return _queueStats.Name; } }
+
         private readonly Common.Concurrent.ConcurrentQueue<ScheduledTask> _pending = new Common.Concurrent.ConcurrentQueue<ScheduledTask>();
         private readonly PairingHeap<ScheduledTask> _tasks = new PairingHeap<ScheduledTask>((x, y) => x.DueTime < y.DueTime);
 
@@ -42,6 +46,8 @@ namespace EventStore.Core.Services.TimerService
         private readonly Thread _timerThread;
         private volatile bool _stop;
 
+        private readonly QueueStatsCollector _queueStats = new QueueStatsCollector("Timer");
+
         public ThreadBasedScheduler(ITimeProvider timeProvider)
         {
             Ensure.NotNull(timeProvider, "timeProvider");
@@ -49,7 +55,7 @@ namespace EventStore.Core.Services.TimerService
 
             _timerThread = new Thread(DoTiming);
             _timerThread.IsBackground = true;
-            _timerThread.Name = "TimerThread";
+            _timerThread.Name = Name;
             _timerThread.Start();
         }
 
@@ -60,30 +66,53 @@ namespace EventStore.Core.Services.TimerService
 
         private void DoTiming()
         {
+            _queueStats.Start();
+            QueueMonitor.Default.Register(this);
+
             while (!_stop)
             {
+                _queueStats.EnterBusy();
+                _queueStats.ProcessingStarted<SchedulePendingTasks>(_pending.Count);
+
+                int pending = 0;
                 ScheduledTask task;
                 while (_pending.TryDequeue(out task))
                 {
                     _tasks.Add(task);
+                    pending += 1;
                 }
 
-                bool processed = false;
+                _queueStats.ProcessingEnded(pending);
+
+                _queueStats.ProcessingStarted<ExecuteScheduledTasks>(_tasks.Count);
+                int processed = 0;
                 while (_tasks.Count > 0 && _tasks.FindMin().DueTime <= _timeProvider.Now)
                 {
-                    processed = true;
+                    processed += 1;
                     var scheduledTask = _tasks.DeleteMin();
                     scheduledTask.Action(this, scheduledTask.State);
                 }
+                _queueStats.ProcessingEnded(processed);
 
-                if (!processed)
+                if (processed == 0)
+                {
+                    _queueStats.EnterIdle();
                     Thread.Sleep(1);
+                }
             }
+
+            _queueStats.Stop();
+            QueueMonitor.Default.Unregister(this);
         }
 
         public void Dispose()
         {
             _stop = true;
+        }
+
+        public QueueStats GetStatistics()
+        {
+            return _queueStats.GetStatistics(_tasks.Count);
         }
 
         private struct ScheduledTask
@@ -98,6 +127,14 @@ namespace EventStore.Core.Services.TimerService
                 Action = action;
                 State = state;
             }
+        }
+
+        private class SchedulePendingTasks
+        {
+        }
+
+        private class ExecuteScheduledTasks
+        {
         }
     }
 }

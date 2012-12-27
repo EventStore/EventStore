@@ -26,38 +26,50 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
-
-namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
+namespace EventStore.Projections.Core.Services.Processing
 {
-    [TestFixture]
-    public class when_relocking_the_state_at_earlier_position
+    public class EventProcessedResult
     {
-        private PartitionStateCache _cache;
-        private CheckpointTag _cachedAtCheckpointTag;
+        private readonly EmittedEvent[] _emittedEvents;
+        private readonly PartitionStateCache.State _oldState;
+        private readonly PartitionStateCache.State _newState;
+        private readonly string _partition;
+        private readonly CheckpointTag _checkpointTag;
 
-        [SetUp]
-        public void given()
+        public EventProcessedResult(
+            string partition, CheckpointTag checkpointTag, PartitionStateCache.State oldState,
+            PartitionStateCache.State newState, EmittedEvent[] emittedEvents)
         {
-            //given
-            _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, -1));
-            _cachedAtCheckpointTag = CheckpointTag.FromPosition(1000, 900);
-            _cache.CacheAndLockPartitionState("partition", new PartitionStateCache.State("data", _cachedAtCheckpointTag), _cachedAtCheckpointTag);
+            _emittedEvents = emittedEvents;
+            _oldState = oldState;
+            _newState = newState;
+            _partition = partition;
+            _checkpointTag = checkpointTag;
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void thorws_invalid_operation_exception()
+        public EmittedEvent[] EmittedEvents
         {
-            _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(500, 400));
+            get { return _emittedEvents; }
         }
 
-        [Test]
-        public void the_state_can_be_retrieved()
+        public PartitionStateCache.State OldState
         {
-            var state = _cache.TryGetPartitionState("partition");
-            Assert.AreEqual("data", state.Data);
+            get { return _oldState; }
+        }
+
+        public PartitionStateCache.State NewState
+        {
+            get { return _newState; }
+        }
+
+        public string Partition
+        {
+            get { return _partition; }
+        }
+
+        public CheckpointTag CheckpointTag
+        {
+            get { return _checkpointTag; }
         }
 
     }

@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void setup()
         {
             //given
-            _cache = new PartitionStateCache(10);
+            _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, -1), 10);
             _cachedAtCheckpointTag1 = CheckpointTag.FromPosition(1000, 900);
             for (var i = 0; i < 15; i++)
             {
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
             the_first_partition_locked_before_the_unlock_position_cannot_be_retrieved_and_relocked_at_later_position()
         {
             var data = _cache.TryGetAndLockPartitionState(
-                "partition1", CheckpointTag.FromPosition(25000, 24000), allowRelockAtTheSamePosition: false);
+                "partition1", CheckpointTag.FromPosition(25000, 24000));
             Assert.AreEqual("data1", data.Data);
         }
 
@@ -86,18 +86,17 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         }
 
         [Test]
-        public void partitions_locked_at_the_unlock_position_can_be_retrieved_and_relocked_at_later_position()
+        public void the_still_cached_unlocked_state_can_be_retrieved()
         {
-            var data = _cache.TryGetAndLockPartitionState(
-                "partition2", CheckpointTag.FromPosition(25000, 24000), allowRelockAtTheSamePosition: false);
-            Assert.AreEqual("data2", data.Data);
+            var state = _cache.TryGetPartitionState("partition2");
+            Assert.AreEqual("data2", state.Data);
         }
 
         [Test]
-        public void partitions_locked_at_the_unlock_position_can_be_retrieved_and_relocked_at_the_same_position_if_allowed()
+        public void partitions_locked_at_the_unlock_position_can_be_retrieved_and_relocked_at_later_position()
         {
             var data = _cache.TryGetAndLockPartitionState(
-                "partition2", _cachedAtCheckpointTag2, allowRelockAtTheSamePosition: true);
+                "partition2", CheckpointTag.FromPosition(25000, 24000));
             Assert.AreEqual("data2", data.Data);
         }
 

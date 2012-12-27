@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -26,37 +26,43 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
 {
     [TestFixture]
-    public class when_relocking_the_state_at_earlier_position
+    public class when_caching_a_parition_state_as_locked
     {
         private PartitionStateCache _cache;
         private CheckpointTag _cachedAtCheckpointTag;
 
         [SetUp]
-        public void given()
+        public void when()
         {
-            //given
             _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, -1));
             _cachedAtCheckpointTag = CheckpointTag.FromPosition(1000, 900);
             _cache.CacheAndLockPartitionState("partition", new PartitionStateCache.State("data", _cachedAtCheckpointTag), _cachedAtCheckpointTag);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void thorws_invalid_operation_exception()
+        [Test]
+        public void the_state_can_be_retrieved_as_locked()
         {
-            _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(500, 400));
+            var state = _cache.GetLockedPartitionState("partition");
+            Assert.AreEqual("data", state.Data);
         }
 
         [Test]
         public void the_state_can_be_retrieved()
         {
             var state = _cache.TryGetPartitionState("partition");
+            Assert.AreEqual("data", state.Data);
+        }
+
+        [Test]
+        public void the_state_can_be_retrieved_as_unlocked_and_relocked_at_later_position()
+        {
+            var state = _cache.TryGetAndLockPartitionState("partition", CheckpointTag.FromPosition(1500, 1400));
             Assert.AreEqual("data", state.Data);
         }
 
