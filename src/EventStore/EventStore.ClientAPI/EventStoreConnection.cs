@@ -449,6 +449,37 @@ namespace EventStore.ClientAPI
             return Tasks.CreateCompleted();
         }
 
+        public event EventHandler Disconnected;
+        public event EventHandler Reconnecting;
+        public event EventHandler Connected;
+
+        private void OnDisconnected()
+        {
+            var d = Disconnected;
+            if (d != null)
+            {
+                d(this, new EventArgs());
+            }
+        }
+
+        private void OnReconnecting()
+        {
+            var r = Reconnecting;
+            if (r != null)
+            {
+                r(this, new EventArgs());
+            }
+        }
+
+        private void OnConnected()
+        {
+            var c = Connected;
+            if (c != null)
+            {
+                c(this, new EventArgs());
+            }
+        }
+
         private void MainLoop()
         {
             while (!_stopping)
@@ -468,6 +499,7 @@ namespace EventStore.ClientAPI
                 {
                     if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= _settings.ReconnectionDelay)
                     {
+                        OnReconnecting();
                         _reconnectionsCount += 1;
                         if (_reconnectionsCount > _settings.MaxReconnections)
                             Close();
@@ -628,6 +660,7 @@ namespace EventStore.ClientAPI
 
         private void OnConnectionEstablished(TcpTypedConnection tcpTypedConnection)
         {
+            OnConnected();
             lock (_connectionLock)
             {
                 _reconnectionsCount = 0;
@@ -636,6 +669,7 @@ namespace EventStore.ClientAPI
 
         private void OnConnectionClosed(TcpTypedConnection connection, IPEndPoint endPoint, SocketError error)
         {
+            OnDisconnected();
             lock (_connectionLock)
             {
                 _reconnectionStopwatch.Restart();
