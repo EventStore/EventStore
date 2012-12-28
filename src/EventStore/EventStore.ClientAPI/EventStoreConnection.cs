@@ -455,25 +455,28 @@ namespace EventStore.ClientAPI
 
         private void OnDisconnected()
         {
-            if (Disconnected != null)
+            var d = Disconnected;
+            if (d != null)
             {
-                Disconnected(this, new EventArgs());
+                d(this, new EventArgs());
             }
         }
 
         private void OnReconnecting()
         {
-            if (Reconnecting != null)
+            var r = Reconnecting;
+            if (r != null)
             {
-                Reconnecting(this, new EventArgs());
+                r(this, new EventArgs());
             }
         }
 
         private void OnConnected()
         {
-            if (Connected != null)
+            var c = Connected;
+            if (c != null)
             {
-                Connected(this, new EventArgs());
+                c(this, new EventArgs());
             }
         }
 
