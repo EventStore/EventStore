@@ -93,6 +93,13 @@ namespace EventStore.ClientAPI
             return new EventStoreConnection(settings);
         }
 
+        public void Connect(string endPoint)
+        {
+            var pieces = endPoint.Split(':');
+            if(pieces.Count() != 2) throw new ArgumentOutOfRangeException("endPoint", "endpoint should be of the form ip:port");
+            Connect(new IPEndPoint(IPAddress.Parse(pieces[0]), int.Parse(pieces[1])));
+        }
+
         public void Connect(IPEndPoint tcpEndPoint)
         {
             ConnectAsync(tcpEndPoint).Wait();
