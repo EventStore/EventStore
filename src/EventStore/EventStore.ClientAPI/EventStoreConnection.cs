@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -45,6 +46,20 @@ using System.Linq;
 
 namespace EventStore.ClientAPI
 {
+    /// <summary>
+    /// Maintains a full duplex connection to the EventStore
+    /// </summary>
+    /// <remarks>
+    /// An <see cref="EventStoreConnection"/> operates quite differently than say a <see cref="SqlConnection"/>. Normally
+    /// when using an <see cref="EventStoreConnection"/> you want to keep the connection open for a much longer of time than 
+    /// when you use a SqlConnection. If you prefer the usage pattern of using(new Connection()) .. then you would likely
+    /// want to create a FlyWeight on top of the <see cref="EventStoreConnection"/>.
+    /// 
+    /// Another difference is that with the <see cref="EventStoreConnection"/> all operations are handled in a full async manner
+    /// (even if you call the synchronous behaviours). Many threads can use an <see cref="EventStoreConnection"/> at the same
+    /// time or a single thread can make many asynchronous requests. To get the most performance out of the connection
+    /// it is generally recommended to use it in this way.
+    /// </remarks>
     public class EventStoreConnection : IDisposable
     {
         private readonly ILogger _log;
@@ -71,6 +86,11 @@ namespace EventStore.ClientAPI
 
         private readonly ConnectionSettings _settings;
 
+
+        /// <summary>
+        /// Constructs a new instance of a <see cref="EventStoreConnection"/>
+        /// </summary>
+        /// <param name="settings">The <see cref="ConnectionSettings"/> containing the settings for this connection.</param>
         private EventStoreConnection(ConnectionSettings settings)
         {
             _settings = settings;
@@ -82,40 +102,64 @@ namespace EventStore.ClientAPI
             _subscriptionsChannel = new SubscriptionsChannel(_connector);
         }
 
+        /// <summary>
+        /// Creates a new <see cref="EventStoreConnection"/> using default <see cref="ConnectionSettings"/>
+        /// </summary>
+        /// <returns>a new <see cref="EventStoreConnection"/></returns>
         public static EventStoreConnection Create()
         {
             return new EventStoreConnection(ConnectionSettings.Default);
         }
 
+        /// <summary>
+        /// Creates a new <see cref="EventStoreConnection"/> using specific <see cref="ConnectionSettings"/>
+        /// </summary>
+        /// <param name="settings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
+        /// <returns>a new <see cref="EventStoreConnection"/></returns>
         public static EventStoreConnection Create(ConnectionSettings settings)
         {
             Ensure.NotNull(settings, "settings");
             return new EventStoreConnection(settings);
         }
 
-        public void Connect(string endPoint)
-        {
-            var pieces = endPoint.Split(':');
-            if(pieces.Count() != 2) throw new ArgumentOutOfRangeException("endPoint", "endpoint should be of the form ip:port");
-            Connect(new IPEndPoint(IPAddress.Parse(pieces[0]), int.Parse(pieces[1])));
-        }
-
+        /// <summary>
+        /// Connects the <see cref="EventStoreConnections"/> synchronously to a given <see cref="IPEndPoint"/>
+        /// </summary>
+        /// <param name="tcpEndPoint">The <see cref="IPEndPoint"/> to connect to</param>
         public void Connect(IPEndPoint tcpEndPoint)
         {
             ConnectAsync(tcpEndPoint).Wait();
         }
 
+        /// <summary>
+        /// Connects the <see cref="EventStoreConnections"/> asynchronously to a given <see cref="IPEndPoint"/>
+        /// </summary>
+        /// <param name="tcpEndPoint">The <see cref="IPEndPoint"/> to connect to.</param>
+        /// <returns>A <see cref="Task"/> that can be waited upon.</returns>
         public Task ConnectAsync(IPEndPoint tcpEndPoint)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
             return EstablishConnectionAsync(tcpEndPoint);
         }
 
+        /// <summary>
+        /// Connects the <see cref="EventStoreConnection"/> synchronously to a clustered EventStore based upon DNS entry
+        /// </summary>
+        /// <param name="clusterDns">The cluster's DNS entry.</param>
+        /// <param name="maxDiscoverAttempts">The maximum number of attempts to try the DNS.</param>
+        /// <param name="port">The port to connect to.</param>
         public void Connect(string clusterDns, int maxDiscoverAttempts = 10, int port = 30777)
         {
             ConnectAsync(clusterDns, maxDiscoverAttempts, port).Wait();
         }
 
+        /// <summary>
+        /// Connects the <see cref="EventStoreConnection"/> asynchronously to a clustered EventStore based upon DNS entry
+        /// </summary>
+        /// <param name="clusterDns">The cluster's DNS entry</param>
+        /// <param name="maxDiscoverAttempts">The maximum number of attempts to try the DNS</param>
+        /// <param name="port">The port to connect to</param>
+        /// <returns>A <see cref="Task"/> that can be awaited upon</returns>
         public Task ConnectAsync(string clusterDns, int maxDiscoverAttempts = 10, int port = 30777)
         {
             Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
@@ -162,11 +206,17 @@ namespace EventStore.ClientAPI
                 throw new InvalidOperationException(string.Format("EventStoreConnection [{0}] is not active.", _tcpEndPoint));
         }
 
+        /// <summary>
+        /// Disposes this <see cref="EventStoreConnection"/>
+        /// </summary>
         void IDisposable.Dispose()
         {
             Close();
         }
 
+        /// <summary>
+        /// Closes this <see cref="EventStoreConnection"/>
+        /// </summary>
         public void Close()
         {
             lock (_connectionLock)
@@ -191,6 +241,13 @@ namespace EventStore.ClientAPI
             _log.Info("EventStoreConnection closed.");
         }
 
+        /// <summary>
+        /// Creates a new Stream in the Event Store syncrhonously
+        /// </summary>
+        /// <param name="stream">The name of the stream to create.</param>
+        /// <param name="id"></param>
+        /// <param name="isJson">A bool whether the metadata is json or not</param>
+        /// <param name="metadata">The metadata to associate with the created stream</param>
         public void CreateStream(string stream, Guid id, bool isJson, byte[] metadata)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -200,6 +257,15 @@ namespace EventStore.ClientAPI
             CreateStreamAsync(stream, id, isJson, metadata).Wait();
         }
 
+
+        /// <summary>
+        /// Creates a new Stream in the Event Store asynchronously
+        /// </summary>
+        /// <param name="stream">The name of the stream to create</param>
+        /// <param name="id"></param>
+        /// <param name="isJson">A bool whether the metadata is json or not.</param>
+        /// <param name="metadata">The metadata to associate with the created stream.</param>
+        /// <returns>A <see cref="Task"></see> that can be waited upon by the caller.</returns>
         public Task CreateStreamAsync(string stream, Guid id, bool isJson, byte[] metadata)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -213,6 +279,11 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        /// <summary>
+        /// Deletes a stream from the Event Store syncrhonously
+        /// </summary>
+        /// <param name="stream">The name of the stream to be deleted</param>
+        /// <param name="expectedVersion">The expected version the stream should have when being deleted. <see cref="ExpectedVersion"/></param>
         public void DeleteStream(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -221,6 +292,12 @@ namespace EventStore.ClientAPI
             DeleteStreamAsync(stream, expectedVersion).Wait();
         }
 
+        /// <summary>
+        /// Deletes a stream from the Event Store asyncrhonously
+        /// </summary>
+        /// <param name="stream">The name of the stream to delete.</param>
+        /// <param name="expectedVersion">The expected version that the streams should have when being deleted. <see cref="ExpectedVersion"/></param>
+        /// <returns>A <see cref="Task"/> that can be awaited upon by the caller.</returns>
         public Task DeleteStreamAsync(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -233,6 +310,23 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        /// <summary>
+        /// Appends Events syncrhonously to a stream.
+        /// </summary>
+        /// <remarks>
+        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
+        /// make a very large difference in the observed behaviour. If no stream exists
+        /// and ExpectedVersion.Any is used. A new stram will be implictly created when appending
+        /// as an example.
+        /// 
+        /// There are also differences in idempotency between different types of calls.
+        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
+        /// will give you an idempotency guarentee. If using ExpectedVersion.Any the Event Store
+        /// will do its best to provide idempotency but does not guarantee idempotency
+        /// </remarks>
+        /// <param name="stream">The name of the stream to append the events to.</param>
+        /// <param name="expectedVersion">The expected version of the stream</param>
+        /// <param name="events">The events to write to the stream</param>
         public void AppendToStream(string stream, int expectedVersion, IEnumerable<IEvent> events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -242,6 +336,24 @@ namespace EventStore.ClientAPI
             AppendToStreamAsync(stream, expectedVersion, events).Wait();
         }
 
+        /// <summary>
+        /// Appends Events asyncrhonously to a stream.
+        /// </summary>
+        /// <remarks>
+        /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
+        /// make a very large difference in the observed behaviour. If no stream exists
+        /// and ExpectedVersion.Any is used. A new stram will be implictly created when appending
+        /// as an example.
+        /// 
+        /// There are also differences in idempotency between different types of calls.
+        /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
+        /// will give you an idempotency guarentee. If using ExpectedVersion.Any the Event Store
+        /// will do its best to provide idempotency but does not guarantee idempotency
+        /// </remarks>
+        /// <param name="stream">The name of the stream to append events to</param>
+        /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
+        /// <param name="events">The events to append to the stream</param>
+        /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
         public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<IEvent> events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -255,6 +367,17 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        /// <summary>
+        /// Starts a transaction in the event store on a given stream
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
+        /// round trips over long periods of time between the caller and the event store. This method
+        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
+        /// </remarks>
+        /// <param name="stream">The stream to start a transaction on</param>
+        /// <param name="expectedVersion">The expected version when starting a transaction</param>
+        /// <returns>An <see cref="EventStoreTransaction"/> that can be used to control a series of operations.</returns>
         public EventStoreTransaction StartTransaction(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -263,6 +386,17 @@ namespace EventStore.ClientAPI
             return StartTransactionAsync(stream, expectedVersion).Result;
         }
 
+        /// <summary>
+        /// Starts a transaction in the event store on a given stream asynchronously
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
+        /// round trips over long periods of time between the caller and the event store. This method
+        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
+        /// </remarks>
+        /// <param name="stream">The stream to start a transaction on</param>
+        /// <param name="expectedVersion">The expected version of the stream at the time of starting the transaction</param>
+        /// <returns>A task the caller can use to control the operation.</returns>
         public Task<EventStoreTransaction> StartTransactionAsync(string stream, int expectedVersion)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -275,6 +409,57 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        /// <summary>
+        /// Starts a transaction in the event store on a given stream synchronously
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
+        /// round trips over long periods of time between the caller and the event store. This method
+        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
+        /// </remarks>
+        /// <param name="transactionId">The transaction id to write to.</param>
+        /// <param name="stream">The name of the stream to write to</param>
+        /// <param name="events">The events to write</param>
+        public void TransactionalWrite(EventStoreTransaction transaction, IEnumerable<IEvent> events)
+        {
+            Ensure.NotNull(transaction, "transaction");
+            Ensure.NotNull(events, "events");
+            EnsureActive();
+            TransactionalWriteAsync(transaction.TransactionId, transaction.Stream, events).Wait();
+        }
+
+        /// <summary>
+        /// Starts a transaction in the event store on a given stream asynchronously
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
+        /// round trips over long periods of time between the caller and the event store. This method
+        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
+        /// </remarks>
+        /// <param name="transactionId">The transaction id to write to.</param>
+        /// <param name="stream">The name of the stream to write to</param>
+        /// <param name="events">The events to write</param>
+        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
+        public Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<IEvent> events)
+        {
+            Ensure.NotNull(transaction, "transaction");
+            Ensure.NotNull(events, "events");
+            EnsureActive();
+            TransactionalWriteAsync(transaction.TransactionId, transaction.Stream, events).Wait();
+        }
+
+
+        /// <summary>
+        /// Starts a transaction in the event store on a given stream asynchronously
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
+        /// round trips over long periods of time between the caller and the event store. This method
+        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
+        /// </remarks>
+        /// <param name="transactionId">The transaction id to write to.</param>
+        /// <param name="stream">The name of the stream to write to</param>
+        /// <param name="events">The events to write</param>
         public void TransactionalWrite(long transactionId, string stream, IEnumerable<IEvent> events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -284,6 +469,18 @@ namespace EventStore.ClientAPI
             TransactionalWriteAsync(transactionId, stream, events).Wait();
         }
 
+        /// <summary>
+        /// Starts a transaction in the event store on a given stream asynchronously
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
+        /// round trips over long periods of time between the caller and the event store. This method
+        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
+        /// </remarks>
+        /// <param name="transactionId">The transaction id to write to.</param>
+        /// <param name="stream">The name of the stream to write to</param>
+        /// <param name="events">The events to write</param>
+        /// <returns>A <see cref="Task"/> allowing the caller to control the operation</returns>
         public Task TransactionalWriteAsync(long transactionId, string stream, IEnumerable<IEvent> events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -297,6 +494,11 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        /// <summary>
+        /// Commits a multi-write transaction in the Event Store
+        /// </summary>
+        /// <param name="transactionId">The transaction id of the transaction</param>
+        /// <param name="stream">The name of the stream to commit the transaction on</param>
         public void CommitTransaction(long transactionId, string stream)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -305,6 +507,12 @@ namespace EventStore.ClientAPI
             CommitTransactionAsync(transactionId, stream).Wait();
         }
 
+        /// <summary>
+        /// Commits a multi-write transaction in the Event Store
+        /// </summary>
+        /// <param name="transactionId">The transaction id of the transaction</param>
+        /// <param name="stream">The name of the stream to commit the transaction on</param>
+        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
         public Task CommitTransactionAsync(long transactionId, string stream)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -317,6 +525,13 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        /// <summary>
+        /// Reads count Events from an Event Stream forwards (eg oldest to newest) starting from position start
+        /// </summary>
+        /// <param name="stream">The stream to read from</param>
+        /// <param name="start">The starting point to read from</param>
+        /// <param name="count">The count of items to read</param>
+        /// <returns>A <see cref="EventStreamSlice"/> containing the results of the read operation</returns>
         public EventStreamSlice ReadEventStreamForward(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -326,7 +541,13 @@ namespace EventStore.ClientAPI
 
             return ReadEventStreamForwardAsync(stream, start, count).Result;
         }
-
+        /// <summary>
+        /// Reads count Events from an Event Stream forwards (eg oldest to newest) starting from position start 
+        /// </summary>
+        /// <param name="stream">The stream to read from</param>
+        /// <param name="start">The starting point to read from</param>
+        /// <param name="count">The count of items to read</param>
+        /// <returns>A <see cref="Task&gt;EventStreamSlice%lt;"/> containing the results of the read operation</returns>
         public Task<EventStreamSlice> ReadEventStreamForwardAsync(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -341,6 +562,13 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        /// <summary>
+        /// Reads count events from an Event Stream backwards (eg newest to oldest) from position
+        /// </summary>
+        /// <param name="stream">The Event Stream to read from</param>
+        /// <param name="start">The position to start reading from</param>
+        /// <param name="count">The count to read from the position</param>
+        /// <returns>An <see cref="EventStreamSlice"/> containing the results of the read operation</returns>
         public EventStreamSlice ReadEventStreamBackward(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -350,6 +578,13 @@ namespace EventStore.ClientAPI
             return ReadEventStreamBackwardAsync(stream, start, count).Result;
         }
 
+        /// <summary>
+        /// Reads count events from an Event Stream backwards (eg newest to oldest) from position asynchronously
+        /// </summary>
+        /// <param name="stream">The Event Stream to read from</param>
+        /// <param name="start">The position to start reading from</param>
+        /// <param name="count">The count to read from the position</param>
+        /// <returns>An <see cref="Task&gt;EventStreamSlice&lt;"/> containing the results of the read operation</returns>
         public Task<EventStreamSlice> ReadEventStreamBackwardAsync(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -363,6 +598,12 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        /// <summary>
+        /// Reads All Events in the node forward. (eg beginning to end)
+        /// </summary>
+        /// <param name="position">The position to start reading from</param>
+        /// <param name="maxCount">The maximum count to read</param>
+        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
         public AllEventsSlice ReadAllEventsForward(Position position, int maxCount)
         {
             Ensure.NotNull(position, "position");
@@ -372,6 +613,12 @@ namespace EventStore.ClientAPI
             return ReadAllEventsForwardAsync(position, maxCount).Result;
         }
 
+        /// <summary>
+        /// Reads All Events in the node forward asynchronously (eg beginning to end)
+        /// </summary>
+        /// <param name="position">The position to start reading from</param>
+        /// <param name="maxCount">The maximum count to read</param>
+        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
         public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount)
         {
             Ensure.NotNull(position, "position");
@@ -385,6 +632,12 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+        /// <summary>
+        /// Reads All Events in the node backwards (eg end to beginning)
+        /// </summary>
+        /// <param name="position">The position to start reading from</param>
+        /// <param name="maxCount">The maximum count to read</param>
+        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
         public AllEventsSlice ReadAllEventsBackward(Position position, int maxCount)
         {
             Ensure.NotNull(position, "position");
@@ -394,6 +647,12 @@ namespace EventStore.ClientAPI
             return ReadAllEventsBackwardAsync(position, maxCount).Result;
         }
 
+        /// <summary>
+        /// Reads All Events in the node backwards (eg end to beginning)
+        /// </summary>
+        /// <param name="position">The position to start reading from</param>
+        /// <param name="maxCount">The maximum count to read</param>
+        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
         public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount)
         {
             Ensure.NotNull(position, "position");
@@ -447,6 +706,14 @@ namespace EventStore.ClientAPI
             return _subscriptionsChannel.SubscribeToAllStreams(eventAppeared, subscriptionDropped);
         }
 
+        /// <summary>
+        /// Unsubscribes from the $all stream. 
+        /// </summary>
+        /// <remarks>
+        /// This does not unsubscribe all subscriptions. It unsubscribes the subscription to $all. If you
+        /// have other subscriptions you will continue to receive them.
+        /// </remarks>
+        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
         public Task UnsubscribeFromAllStreamsAsync()
         {
             EnsureActive();
@@ -456,8 +723,17 @@ namespace EventStore.ClientAPI
             return Tasks.CreateCompleted();
         }
 
+        /// <summary>
+        /// Raised whenever the internal connection is disconnected from the event store
+        /// </summary>
         public event EventHandler Disconnected;
+        /// <summary>
+        /// Raised whenever the internal connection is reconnecting to the event store
+        /// </summary>
         public event EventHandler Reconnecting;
+        /// <summary>
+        /// Raised whenever the internal connection is connected to the event store
+        /// </summary>
         public event EventHandler Connected;
 
         private void OnDisconnected()
