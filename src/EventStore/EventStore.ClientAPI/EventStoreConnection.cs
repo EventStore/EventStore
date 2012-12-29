@@ -403,7 +403,7 @@ namespace EventStore.ClientAPI
             EnsureActive();
 
             var source = new TaskCompletionSource<EventStoreTransaction>();
-            var operation = new StartTransactionOperation(source, Guid.NewGuid(), _settings.AllowForwarding, stream, expectedVersion);
+            var operation = new StartTransactionOperation(source, Guid.NewGuid(), _settings.AllowForwarding, stream, expectedVersion, this);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -445,7 +445,12 @@ namespace EventStore.ClientAPI
             Ensure.NotNull(transaction, "transaction");
             Ensure.NotNull(events, "events");
             EnsureActive();
-            TransactionalWriteAsync(transaction.TransactionId, transaction.Stream, events).Wait();
+
+            var source = new TaskCompletionSource<object>();
+            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transaction.TransactionId, transaction.Stream, events);
+
+            EnqueueOperation(operation);
+            return source.Task;
         }
 
 
@@ -493,6 +498,38 @@ namespace EventStore.ClientAPI
             EnqueueOperation(operation);
             return source.Task;
         }
+
+        /// <summary>
+        /// Commits a multi-write transaction in the Event Store
+        /// </summary>
+        /// <param name="transactionId">The transaction id of the transaction</param>
+        /// <param name="stream">The name of the stream to commit the transaction on</param>
+        public void CommitTransaction(EventStoreTransaction transaction)
+        {
+            Ensure.NotNull(transaction, "stream");
+            EnsureActive();
+
+            CommitTransactionAsync(transaction.TransactionId, transaction.Stream).Wait();
+        }
+
+        /// <summary>
+        /// Commits a multi-write transaction in the Event Store
+        /// </summary>
+        /// <param name="transactionId">The transaction id of the transaction</param>
+        /// <param name="stream">The name of the stream to commit the transaction on</param>
+        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
+        public Task CommitTransactionAsync(EventStoreTransaction transaction)
+        {
+            Ensure.NotNull(transaction, "transaction");
+            EnsureActive();
+
+            var source = new TaskCompletionSource<object>();
+            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transaction.TransactionId, transaction.Stream);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
 
         /// <summary>
         /// Commits a multi-write transaction in the Event Store

@@ -25,21 +25,55 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
 {
-    public class EventStoreTransaction
+    public class EventStoreTransaction : IDisposable
     {
-        public readonly string Stream;
-        public readonly long TransactionId;
+        internal readonly string Stream;
+        internal readonly long TransactionId;
+        private readonly EventStoreConnection _connection;
+        private bool isRolledBack = false;
+        private bool isCommitted = false;
 
-        internal EventStoreTransaction(string stream, long transactionId)
+        public void Commit()
+        {
+            if(isRolledBack) throw new InvalidOperationException("can't commit a rolledback transaction");
+            if(!isCommitted) throw new InvalidOperationException("Transaction is already committed");
+            _connection.CommitTransaction(this);
+            isCommitted = true;
+        }
+
+        public Task CommitAsync()
+        {
+            if (isRolledBack) throw new InvalidOperationException("can't commit a rolledback transaction");
+            if (!isCommitted) throw new InvalidOperationException("transaction is already committed");
+            isCommitted = true;
+            return _connection.CommitTransactionAsync(this);
+        }
+
+
+        public void Rollback()
+        {
+            isRolledBack = true;
+        }
+
+        internal EventStoreTransaction(string stream, long transactionId, EventStoreConnection connection)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
-
             Stream = stream;
             TransactionId = transactionId;
+            _connection = connection;
+        }
+
+        public void Dispose()
+        {
+            isRolledBack = true;
         }
     }
 }
