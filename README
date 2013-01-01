@@ -62,7 +62,7 @@ You can get and build mono from the master branch in github repository with
 
 ./src/EventStore/Scripts/v8/build-js1.sh 
 
-3. The EventStore.sln soluiton can be built with xbuild or MonoDevelop (3 or 
+3. The EventStore.sln solution can be built with xbuild or MonoDevelop (3 or 
 later)
 
 
