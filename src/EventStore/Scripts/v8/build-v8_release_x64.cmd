@@ -2,9 +2,9 @@
 pushd %~dp0 || goto :error
 cd ..\..\v8
 
-rem call :setup-environment
-rem call :generate-project-files
-rem call :build-solution
+call :setup-environment
+call :generate-project-files
+call :build-solution
 call :copy-files
 
 popd || goto :error
