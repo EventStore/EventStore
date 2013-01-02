@@ -32,9 +32,19 @@ using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
 {
+    /// <summary>
+    /// The result of a read operation from the $all stream.
+    /// </summary>
     public class AllEventsSlice
     {
+        /// <summary>
+        /// A <see cref="Position"/> representing the position where this slice was read from.
+        /// </summary>
         public readonly Position Position;
+
+        /// <summary>
+        /// The events read
+        /// </summary>
         public readonly RecordedEvent[] Events;
 
         internal AllEventsSlice(Position position, IEnumerable<ClientMessage.EventLinkPair> events)

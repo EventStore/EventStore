@@ -417,8 +417,7 @@ namespace EventStore.ClientAPI
         /// round trips over long periods of time between the caller and the event store. This method
         /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
         /// </remarks>
-        /// <param name="transactionId">The transaction id to write to.</param>
-        /// <param name="stream">The name of the stream to write to</param>
+        /// <param name="transaction">The <see cref="EventStoreTransaction"></see> to write to.</param>
         /// <param name="events">The events to write</param>
         public void TransactionalWrite(EventStoreTransaction transaction, IEnumerable<IEvent> events)
         {
@@ -436,8 +435,7 @@ namespace EventStore.ClientAPI
         /// round trips over long periods of time between the caller and the event store. This method
         /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
         /// </remarks>
-        /// <param name="transactionId">The transaction id to write to.</param>
-        /// <param name="stream">The name of the stream to write to</param>
+        /// <param name="transaction">The <see cref="EventStoreTransaction"/> to write to.</param>
         /// <param name="events">The events to write</param>
         /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
         public Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<IEvent> events)
@@ -456,8 +454,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Commits a multi-write transaction in the Event Store
         /// </summary>
-        /// <param name="transactionId">The transaction id of the transaction</param>
-        /// <param name="stream">The name of the stream to commit the transaction on</param>
+        /// <param name="transaction">The <see cref="EventStoreTransaction"></see> to commit.</param>
         public void CommitTransaction(EventStoreTransaction transaction)
         {
             Ensure.NotNull(transaction, "stream");
@@ -469,8 +466,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Commits a multi-write transaction in the Event Store
         /// </summary>
-        /// <param name="transactionId">The transaction id of the transaction</param>
-        /// <param name="stream">The name of the stream to commit the transaction on</param>
+        /// <param name="transaction">The <see cref="EventStoreTransaction"></see> to commit</param>
         /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
         public Task CommitTransactionAsync(EventStoreTransaction transaction)
         {
