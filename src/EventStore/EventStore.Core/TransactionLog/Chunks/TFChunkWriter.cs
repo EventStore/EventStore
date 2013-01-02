@@ -121,6 +121,8 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void Flush()
         {
+            if (_writerChunk == null) // the last chunk allocation failed
+                return;
             _writerChunk.Flush();
             _writerCheckpoint.Flush();
         }
