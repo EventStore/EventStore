@@ -83,9 +83,12 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void CompleteChunk()
         {
-            _writerChunk.Complete();
+            var chunk = _writerChunk;
+            _writerChunk = null; // in case creation of new chunk fails, we need to not use completed chunk for write
 
-            _writerPos = (_writerChunk.ChunkHeader.ChunkEndNumber + 1) * (long)_db.Config.ChunkSize;
+            chunk.Complete();
+
+            _writerPos = (chunk.ChunkHeader.ChunkEndNumber + 1) * (long)_db.Config.ChunkSize;
             _writerCheckpoint.Write(_writerPos);
             _writerCheckpoint.Flush();
 
@@ -94,10 +97,12 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk)
         {
+            _writerChunk = null; // in case creation of new chunk fails, we need to not use completed chunk for write
+
             rawChunk.CompleteRaw();
             _db.Manager.SwitchChunk(rawChunk, verifyHash: true, replaceChunksWithGreaterNumbers: true);
 
-            _writerPos = (rawChunk.ChunkHeader.ChunkEndNumber+1) * (long)_db.Config.ChunkSize;
+            _writerPos = (rawChunk.ChunkHeader.ChunkEndNumber + 1) * (long)_db.Config.ChunkSize;
             _writerCheckpoint.Write(_writerPos);
             _writerCheckpoint.Flush();
 
@@ -116,6 +121,8 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void Flush()
         {
+            if (_writerChunk == null) // the last chunk allocation failed
+                return;
             _writerChunk.Flush();
             _writerCheckpoint.Flush();
         }

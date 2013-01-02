@@ -209,7 +209,10 @@ namespace EventStore.Core.Services.Storage
                 var record = ShouldCreateStreamFor(message)
                     ? LogRecord.StreamCreated(logPosition, message.CorrelationId, logPosition, message.EventStreamId, LogRecord.NoData, isImplicit: true)
                     : LogRecord.TransactionBegin(logPosition, message.CorrelationId, message.EventStreamId, message.ExpectedVersion);
-                WritePrepareWithRetry(record);
+                var res = WritePrepareWithRetry(record);
+
+                // we update cache to avoid non-cached look-up on next TransactionWrite
+                ReadIndex.UpdateTransactionOffset(res.WrittenPos, -1); 
             }
             finally
             {
