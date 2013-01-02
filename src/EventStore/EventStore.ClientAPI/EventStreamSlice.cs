@@ -33,20 +33,51 @@ using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
 {
+    /// <summary>
+    /// An Event Stream Slice represents the result of a single read operation to the event store.
+    /// </summary>
     public class EventStreamSlice
     {
         internal static readonly RecordedEvent[] EmptyEvents = new RecordedEvent[0];
 
+        /// <summary>
+        /// The <see cref="SliceReadStatus"/> representing the status of this read attempt
+        /// </summary>
         public readonly SliceReadStatus Status;
+
+        /// <summary>
+        /// The name of the stream read
+        /// </summary>
         public readonly string Stream;
 
+        /// <summary>
+        /// The starting point (represented as a sequence number) of the read operation
+        /// </summary>
         public readonly int Start;
+
+        /// <summary>
+        /// The number of items read in this read operation
+        /// </summary>
         public readonly int Count;
+
+        /// <summary>
+        /// The events read represented as <see cref="RecordedEvent"/>
+        /// </summary>
         public readonly RecordedEvent[] Events;
 
+        /// <summary>
+        /// The next event number that can be read
+        /// </summary>
         public readonly int NextEventNumber;
+
+        /// <summary>
+        /// The last event number that was read
+        /// </summary>
         public readonly int LastEventNumber;
 
+        /// <summary>
+        /// A boolean representing whether or not this is the end of the stream.
+        /// </summary>
         public readonly bool IsEndOfStream;
 
         internal EventStreamSlice(SliceReadStatus status, 
