@@ -1,20 +1,20 @@
-﻿<h1>{{:Title}}</h1>
+﻿<h1>{{:title}}</h1>
 <div>
-    {{for Links}}
-    <div style="display: inline-block"><a href="{{:Uri}}">{{:Relation}}</a></div>
+    {{for links}}
+    <div style="display: inline-block"><a href="{{:uri}}">[{{:relation}}] </a></div>
     {{/for}}
 </div>
 <table class="table table-bordered table-striped">
-    {{for Entries}}
+    {{for entries}}
     <tr>
-        <td><a href="/streams/{{attr:PositionStreamId}}/{{attr:PositionEventNumber}}">{{:PositionEventNumber}}</a></td>
-        <td><a href="{{:Id}}">{{:EventNumber}}@{{>StreamId}}</a></td>
-        <td>{{:EventType}}</td>
-        <td>{{:~formatDate(Updated)}}</td>
-        <td>{{if (IsJson || IsMetaData)}}<a href="#" class="json-expand">json >></a>{{/if}}</td>
+        <td><a href="/streams/{{attr:positionStreamId}}/{{attr:positionEventNumber}}">{{:positionEventNumber}}</a></td>
+        <td><a href="{{:id}}">{{:eventNumber}}@{{>StreamId}}</a></td>
+        <td>{{:eventType}}</td>
+        <td>{{:~formatDate(updated)}}</td>
+        <td>{{if (isJson || isMetaData)}}<a href="#" class="json-expand">json >></a>{{/if}}</td>
     </tr>
     <tr style="display: none;">
-        <td colspan="5"><pre>{{:Data}}</pre><pre>{{:MetaData}}</pre></td>
+        <td colspan="5"><pre>{{:data}}</pre><pre>{{:metaData}}</pre></td>
     </tr>
     {{/for}}
 </table>
@@ -23,4 +23,37 @@
     $(".json-expand").click(function () {
         $(this).parent().parent().next().slideToggle();
     });
+
 </script>
+
+{{if headOfStream}}
+<script>
+    $(function () {
+
+        function schedule() {
+            setTimeout(function() {
+                var dataUrl = data.selfUrl + "?embed=tryharder";
+                $.ajax(dataUrl, {
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    success: function(d, statusText, jqXHR) {
+                        if (jqXHR.status == 200) {
+                            reRenderData(d);
+                        }
+                        else {
+                            schedule();
+                        }
+                    },
+                    error: function (jqXhr, status, error) {
+                        schedule();
+                    }
+                });
+
+            }, 1000);
+        }
+
+        schedule();
+    });
+</script>
+{{/if}}

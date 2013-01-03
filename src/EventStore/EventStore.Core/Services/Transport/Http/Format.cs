@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
             }
 
-            public static string ReadStreamEventsBackwardCompletedFeed(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
+            public static string ReadStreamEventsBackwardCompletedFeed(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed, bool headOfStream)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 
@@ -81,7 +81,7 @@ namespace EventStore.Core.Services.Transport.Http
                     switch (completed.Result)
                     {
                         case StreamResult.Success:
-                            return entity.ResponseCodec.To(Convert.ToReadStreamFeed(completed, entity.UserHostName, embed));
+                            return entity.ResponseCodec.To(Convert.ToReadStreamFeed(completed, entity.UserHostName, embed, headOfStream));
                         case StreamResult.NoStream:
                         case StreamResult.StreamDeleted:
                         case StreamResult.NotModified:

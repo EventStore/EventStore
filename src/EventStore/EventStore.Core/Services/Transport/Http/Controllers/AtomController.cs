@@ -38,6 +38,7 @@ using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
 using EventStore.Common.Utils;
+using Newtonsoft.Json.Serialization;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
@@ -242,15 +243,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         {
             int streamVersion;
             var etag = entity.Request.Headers["If-None-Match"];
+            int? validationStreamVersion = null;
             //TODO: extract 
-            var typeHash = entity.ResponseCodec.ContentType.GetHashCode();
             // etag format is version;contenttypehash
-            var trimmed = etag.Trim('\"');
-            var splitted = trimmed.Split(new char[] {';'});
-            int? validationStreamVersion = splitted.Length == 2 && splitted[1] == typeHash.ToString(CultureInfo.InvariantCulture)
-                                           && etag.IsNotEmptyString() && int.TryParse(splitted[0], out streamVersion)
-                                               ? (int?) streamVersion
-                                               : null;
+            if (etag != null)
+            {
+                var trimmed = etag.Trim('\"');
+                var splitted = trimmed.Split(new char[] {';'});
+                if (splitted.Length == 2)
+                {
+                    var typeHash = entity.ResponseCodec.ContentType.GetHashCode();
+                    validationStreamVersion = splitted[1] == typeHash.ToString(CultureInfo.InvariantCulture)
+                                              && etag.IsNotEmptyString() && int.TryParse(splitted[0], out streamVersion)
+                                                  ? (int?) streamVersion
+                                                  : null;
+                }
+            }
             _genericController.GetStreamFeedPage(
                 entity, stream, start, count, embed, validationStreamVersion, headOfStream);
         }
@@ -414,10 +422,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 </head>
 <body>
 <script>
-    var data = " + JsonConvert.SerializeObject(value, Formatting.Indented) + @";
+    var data = " + JsonConvert.SerializeObject(value, Formatting.Indented, JsonCodec.JsonSettings) + @";
     var templateJs = '/web/es/js/atom/" + value.GetType().Name + @".html';
-    $(function() {
+
+    function reRenderData(data) {
         renderHtmlBy(data, templateJs);
+    }
+
+    $(function() {
+        reRenderData(data);
     }); 
 </script>
 
@@ -524,7 +537,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             entity.Manager.AsyncState = start;
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
-                                                  (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, embed),
+                                                  (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, embed, headOfStream),
                                                   (args, msg) => Configure.ReadStreamEventsBackwardCompleted(args, msg, headOfStream));
             Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(),
                                                                envelope,

@@ -3,7 +3,7 @@
     $.when($.get(templateJs))
         .done(function(template) {
             $.templates({ renderTemplate: template });
-            $('#data').html($.render.renderTemplate(data,
+            var html = $.render.renderTemplate(data,
                 {
                     formatDate: function(s) {
                         var d = new Date(s);
@@ -12,7 +12,8 @@
                             d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
                     }
                 }
-            ));
+            );
+            $('#data').html(html);
 
         });
 }

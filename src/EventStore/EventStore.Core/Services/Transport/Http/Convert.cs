@@ -94,7 +94,9 @@ namespace EventStore.Core.Services.Transport.Http
             return document;
         }
 
-        public static FeedElement ToReadStreamFeed(ClientMessage.ReadStreamEventsBackwardCompleted msg, string userHostName, EmbedLevel embedContent)
+        public static FeedElement ToReadStreamFeed(
+            ClientMessage.ReadStreamEventsBackwardCompleted msg, string userHostName, EmbedLevel embedContent,
+            bool headOfStream)
         {
             Ensure.NotNull(msg, "msg");
 
@@ -105,6 +107,8 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
+            feed.SetHeadOfStream(headOfStream);
+            feed.SetSelfUrl(self);
 
             feed.AddLink("self", self);
             feed.AddLink("first", HostName.Combine(userHostName, "/streams/{0}", escapedStreamId)); // TODO AN: should account for msg.MaxCount
