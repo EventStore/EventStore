@@ -71,7 +71,7 @@ namespace EventStore.Core
 
                 var options = new TOptions();
                 if (!CommandLineParser.Default.ParseArguments(args, options, Console.Error, Constants.EnvVarPrefix))
-                    throw new ApplicationInitializationException("Error while parsing options");
+                    throw new ApplicationInitializationException("Error while parsing options.");
 
                 Init(options);
                 Create(options);
