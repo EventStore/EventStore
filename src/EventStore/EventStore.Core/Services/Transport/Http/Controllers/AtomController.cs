@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Globalization;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
@@ -236,14 +237,22 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             OnGetStreamFeedCore(entity, stream, startIdx, cnt, embed, headOfStream: false);
         }
 
-        private void OnGetStreamFeedCore(HttpEntity entity, string stream, int start, int count, EmbedLevel embed, bool headOfStream)
+        private void OnGetStreamFeedCore(
+            HttpEntity entity, string stream, int start, int count, EmbedLevel embed, bool headOfStream)
         {
             int streamVersion;
             var etag = entity.Request.Headers["If-None-Match"];
-            int? validationStreamVersion = etag.IsNotEmptyString() && int.TryParse(etag.Trim('\"'), out streamVersion)
-                                                   ? (int?)streamVersion
-                                                   : null;
-            _genericController.GetStreamFeedPage(entity, stream, start, count, embed, validationStreamVersion, headOfStream);
+            //TODO: extract 
+            var typeHash = entity.ResponseCodec.ContentType.GetHashCode();
+            // etag format is version;contenttypehash
+            var trimmed = etag.Trim('\"');
+            var splitted = trimmed.Split(new char[] {';'});
+            int? validationStreamVersion = splitted.Length == 2 && splitted[1] == typeHash.ToString(CultureInfo.InvariantCulture)
+                                           && etag.IsNotEmptyString() && int.TryParse(splitted[0], out streamVersion)
+                                               ? (int?) streamVersion
+                                               : null;
+            _genericController.GetStreamFeedPage(
+                entity, stream, start, count, embed, validationStreamVersion, headOfStream);
         }
 
         private static EmbedLevel GetEmbed(HttpEntity entity, UriTemplateMatch match, EmbedLevel htmlLevel = EmbedLevel.PrettyBody)
