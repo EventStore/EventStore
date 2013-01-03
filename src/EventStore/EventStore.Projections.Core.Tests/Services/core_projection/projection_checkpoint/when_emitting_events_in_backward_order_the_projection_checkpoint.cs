@@ -48,10 +48,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
             try
             {
-                _checkpoint.EmitEvents(
+                _checkpoint.ValidateOrderAndEmitEvents(
                     new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
                     CheckpointTag.FromPosition(140, 130), null)});
-                _checkpoint.EmitEvents(
+                _checkpoint.ValidateOrderAndEmitEvents(
                     new[] {new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2",
                     CheckpointTag.FromPosition(120, 110), null)});
             }

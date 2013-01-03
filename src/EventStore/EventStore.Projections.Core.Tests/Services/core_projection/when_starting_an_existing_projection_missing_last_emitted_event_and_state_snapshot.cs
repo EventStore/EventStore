@@ -55,6 +55,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 FakeProjectionStateHandler._emit1StreamId, FakeProjectionStateHandler._emit1EventType,
                 @"{""CommitPosition"": 120, ""PreparePosition"": 110}", FakeProjectionStateHandler._emit1Data);
             NoStream(FakeProjectionStateHandler._emit2StreamId);
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
         }
 
         protected override void When()
@@ -69,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void should_write_second_emitted_event_and_state_snapshot()
         {
-            Assert.AreEqual(2, _writeEventHandler.HandledMessages.Count);
+            Assert.AreEqual(1 /*order*/ + 2, _writeEventHandler.HandledMessages.Count);
 
             Assert.IsTrue(
                 _writeEventHandler.HandledMessages.Any(

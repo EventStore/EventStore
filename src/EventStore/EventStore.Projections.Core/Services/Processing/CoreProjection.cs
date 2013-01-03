@@ -826,5 +826,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 _checkpointManager.EventProcessed(eventCheckpointTag, progress);
             }
         }
+
+        internal void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action completed)
+        {
+            _checkpointManager.RecordEventOrder(message, () =>
+            {
+                completed(); 
+                EnsureTickPending();
+            });
+        }
     }
 }

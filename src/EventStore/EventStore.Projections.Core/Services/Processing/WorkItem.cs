@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
             : base(initialCorrelationId)
         {
             Projection = projection;
-            _lastStage = 3;
+            _lastStage = 4;
         }
 
         public override void Process(int onStage, Action<int, object> readyForStage)
@@ -57,15 +57,18 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (onStage)
             {
                 case 0:
-                    GetStatePartition();
+                    RecordEventOrder();
                     break;
                 case 1:
-                    Load(_checkpointTag);
+                    GetStatePartition();
                     break;
                 case 2:
-                    ProcessEvent();
+                    Load(_checkpointTag);
                     break;
                 case 3:
+                    ProcessEvent();
+                    break;
+                case 4:
                     WriteOutput();
                     break;
                 default:
@@ -74,6 +77,11 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected virtual void WriteOutput()
+        {
+            NextStage();
+        }
+
+        protected virtual void RecordEventOrder()
         {
             NextStage();
         }

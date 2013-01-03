@@ -54,6 +54,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 };
             TicksAreHandledImmediately();
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
             NoStream("$projections-projection-region-a-state");
 
@@ -88,8 +90,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void update_state_snapshot_is_written_to_the_correct_stream()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
-            var message = _writeEventHandler.HandledMessages[0];
+            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("StateUpdated").Count);
+            var message = _writeEventHandler.HandledMessages.WithEventType("StateUpdated")[0];
             Assert.AreEqual("$projections-projection-region-a-state", message.EventStreamId);
         }
 

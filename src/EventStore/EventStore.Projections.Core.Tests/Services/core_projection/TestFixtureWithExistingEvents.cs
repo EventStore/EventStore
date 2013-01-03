@@ -58,6 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         private int _fakePosition = 100;
         private bool _allWritesSucceed;
+        private HashSet<string> _writesToSucceed = new HashSet<string>();
         private bool _allWritesQueueUp;
         private Queue<ClientMessage.WriteEvents> _writesQueue;
         private long _lastPosition;
@@ -91,6 +92,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected void AllWritesSucceed()
         {
             _allWritesSucceed = true;
+        }
+
+        protected void AllWritesToSucceed(string streamId)
+        {
+            _writesToSucceed.Add(streamId);
         }
 
         protected void TicksAreHandledImmediately()
@@ -193,7 +199,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         public void Handle(ClientMessage.WriteEvents message)
         {
-            if (_allWritesSucceed)
+            if (_allWritesSucceed || _writesToSucceed.Contains(message.EventStreamId))
             {
                 List<EventRecord> list;
                 if (!_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || list == null)
@@ -215,7 +221,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 message.Envelope.ReplyWith(
                     new ClientMessage.WriteEventsCompleted(message.CorrelationId, message.EventStreamId, 0));
             }
-            if (_allWritesQueueUp)
+            else if (_allWritesQueueUp)
                 _writesQueue.Enqueue(message);
         }
 

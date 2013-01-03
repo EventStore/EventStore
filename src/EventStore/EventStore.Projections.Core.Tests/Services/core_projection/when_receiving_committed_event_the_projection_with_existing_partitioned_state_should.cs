@@ -53,6 +53,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 };
             TicksAreHandledImmediately();
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             ExistingEvent(
                 "$projections-projection-partitions", "PartitionCreated",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "account-01");

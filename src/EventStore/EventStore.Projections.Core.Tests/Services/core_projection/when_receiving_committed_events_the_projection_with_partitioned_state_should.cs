@@ -54,6 +54,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 };
             TicksAreHandledImmediately();
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
             NoStream("$projections-projection-partitions");
             NoStream("$projections-projection-account-01-state");

@@ -43,6 +43,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             _checkpointHandledThreshold = 2;
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
             NoStream(FakeProjectionStateHandler._emit1StreamId);
             AllWritesQueueUp();
@@ -79,11 +81,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void other_events_are_not_written_after_the_checkpoint_write()
         {
             AllWriteComplete();
-            Assert.AreEqual(
-                2,
-                _writeEventHandler.HandledMessages.FindIndex(
-                    v => v.Events.Any(e => e.EventType == "ProjectionCheckpoint")));
-            Assert.AreEqual(3, _writeEventHandler.HandledMessages.Count());
+            var index = _writeEventHandler.HandledMessages.FindIndex(
+                    v => v.Events.Any(e => e.EventType == "ProjectionCheckpoint"));
+            Assert.AreEqual(index + 1, _writeEventHandler.HandledMessages.Count());
         }
     }
 }

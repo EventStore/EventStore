@@ -47,6 +47,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.IncludeEvent("non-existing");
                 };
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
             NoStream(FakeProjectionStateHandler._emit1StreamId);
             AllWritesSucceed();

@@ -58,6 +58,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly int _maxWriteBatchLength;
         private CheckpointTag _lastSubmittedOrCommittedMetadata; // TODO: rename
         private Event[] _submittedToWriteEvents;
+        private EmittedEvent[] _submittedToWriteEmittedEvents;
         private int _lastKnownEventNumber = ExpectedVersion.Invalid;
 
 
@@ -129,6 +130,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _lastKnownEventNumber = message.EventNumber + _submittedToWriteEvents.Length - 1
                                         + (_lastKnownEventNumber == ExpectedVersion.NoStream ? 1 : 0); // account for stream crated
+                NotifyEventsCommitted(_submittedToWriteEmittedEvents);
                 OnWriteCompleted();
                 return;
             }
@@ -201,6 +203,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void SubmitWriteEvents()
         {
             var events = new List<Event>();
+            var emittedEvents = new List<EmittedEvent>();
             while (_pendingWrites.Count > 0 && events.Count < _maxWriteBatchLength)
             {
                 var eventsToWrite = _pendingWrites.Dequeue();
@@ -220,9 +223,12 @@ namespace EventStore.Projections.Core.Services.Processing
                         }
                     _lastSubmittedOrCommittedMetadata = causedByTag;
                     events.Add(new Event(e.EventId, e.EventType, true, e.Data, e.CausedByTag.ToJsonBytes()));
+                    emittedEvents.Add(e);
                 }
             }
             _submittedToWriteEvents = events.ToArray();
+            _submittedToWriteEmittedEvents = emittedEvents.ToArray();
+
             PublishWriteEvents();
         }
 
@@ -281,9 +287,18 @@ namespace EventStore.Projections.Core.Services.Processing
                     SubmitWriteEvents();
                     return;
                 }
+                
+                NotifyEventsCommitted(eventsToWrite);
                 _pendingWrites.Dequeue(); // drop already committed event
             }
             OnWriteCompleted();
+        }
+
+        private static void NotifyEventsCommitted(EmittedEvent[] eventsToWrite)
+        {
+            foreach (var @event in eventsToWrite)
+                if (@event.OnCommitted != null)
+                    @event.OnCommitted();
         }
     }
 }

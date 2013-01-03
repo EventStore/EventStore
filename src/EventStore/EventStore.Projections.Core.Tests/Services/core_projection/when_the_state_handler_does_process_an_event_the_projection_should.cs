@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
@@ -46,6 +47,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
         }
 
         protected override void When()
@@ -60,18 +63,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void write_the_new_state_snapshot()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
+            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("StateUpdated").Count);
 
-            var data = Encoding.UTF8.GetString(_writeEventHandler.HandledMessages[0].Events[0].Data);
+            var data = Encoding.UTF8.GetString(_writeEventHandler.HandledMessages.OfEventType("StateUpdated")[0].Data);
             Assert.AreEqual("data", data);
         }
 
         [Test]
         public void emit_a_state_updated_event()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
+            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("StateUpdated").Count);
 
-            var @event = _writeEventHandler.HandledMessages[0].Events[0];
+            var @event = _writeEventHandler.HandledMessages.OfEventType("StateUpdated")[0];
             Assert.AreEqual("StateUpdated", @event.EventType);
         }
     }

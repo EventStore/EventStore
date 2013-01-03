@@ -21,6 +21,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 source.SetEmitStateUpdated();
             };
             NoStream("state-stream");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
         }
 
@@ -38,9 +40,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void write_the_new_state_snapshot()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
+            Assert.AreEqual(1, _writeEventHandler.HandledMessages.ToStream("state-stream").Count);
 
-            var message = _writeEventHandler.HandledMessages[0];
+            var message = _writeEventHandler.HandledMessages.ToStream("state-stream")[0];
             var data = Encoding.UTF8.GetString(message.Events[0].Data);
             Assert.AreEqual("data", data);
             Assert.AreEqual("state-stream", message.EventStreamId);
@@ -50,9 +52,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void emit_a_state_updated_event()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
+            Assert.AreEqual(1, _writeEventHandler.HandledMessages.ToStream("state-stream").Count);
 
-            var @event = _writeEventHandler.HandledMessages[0].Events[0];
+            var @event = _writeEventHandler.HandledMessages.ToStream("state-stream")[0].Events[0];
             Assert.AreEqual("StateUpdated", @event.EventType);
         }
     }

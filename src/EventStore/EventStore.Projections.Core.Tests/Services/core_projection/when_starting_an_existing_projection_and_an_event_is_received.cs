@@ -54,6 +54,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             ExistingEvent(
                 "$projections-projection-state", "StateUpdated",
                 @"{""CommitPosition"": 300, ""PreparePosition"": 250}", _testProjectionState);
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
         }
 
         protected override void When()

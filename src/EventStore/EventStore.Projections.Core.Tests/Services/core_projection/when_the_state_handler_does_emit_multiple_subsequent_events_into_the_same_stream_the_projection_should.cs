@@ -49,6 +49,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
             NoStream(FakeProjectionStateHandler._emit2StreamId);
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
         }
 
         protected override void When()
@@ -64,7 +66,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void write_events_in_a_single_transaction()
         {
-            Assert.AreEqual(2, _writeEventHandler.HandledMessages.Count);
             Assert.IsTrue(_writeEventHandler.HandledMessages.Any(v => v.Events.Length == 2));
         }
 

@@ -42,6 +42,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             base.Given();
             NoStream("$projections-test-projection-state");
+            NoStream("$projections-test-projection-order");
+            AllWritesToSucceed("$projections-test-projection-order");
             NoStream("$projections-test-projection-checkpoint");
             ExistingEvent("$projections-$all", "ProjectionCreated", null, "test-projection");
             ExistingEvent(
