@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -108,6 +109,9 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
             feed.SetHeadOfStream(headOfStream);
+            if (headOfStream)
+                //NOTE: etag workaround - to be fixed with better http handling model
+                feed.SetETag(msg.LastEventNumber.ToString(CultureInfo.InvariantCulture) + ";" + "application/json".GetHashCode());
             feed.SetSelfUrl(self);
 
             feed.AddLink("self", self);
