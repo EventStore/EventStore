@@ -41,7 +41,7 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<JsonCodec>();
 
-        private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+        public static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver(),
             DateFormatHandling = DateFormatHandling.IsoDateFormat,

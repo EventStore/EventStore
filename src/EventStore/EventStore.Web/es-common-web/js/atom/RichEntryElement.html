@@ -3,31 +3,31 @@
 <h2>Link From: {{>PositionEventNumber}}@{{>PositionStreamId}}</h2>
 {{/if}}
 <div>
-    <a href="/streams/{{attr:PositionStreamId}}/{{attr:PositionEventNumber - 1}}">[Previous]</a> <a href="/streams/{{attr:PositionStreamId}}/{{attr:PositionEventNumber + 1}}">[Next]</a>
+    <a href="/streams/{{attr:positionStreamId}}/{{attr:positionEventNumber - 1}}">[Previous]</a> <a href="/streams/{{attr:positionStreamId}}/{{attr:positionEventNumber + 1}}">[Next]</a>
 </div>
 <div>
-    {{for Links}}
-    <div style="display: inline-block"><a href="{{:Uri}}">[{{>Relation}}{{if Relation!=null && Type!=null}}: {{/if}}{{>Type}}]</a></div>
+    {{for links}}
+    <div style="display: inline-block"><a href="{{:uri}}">[{{>relation}}{{if relation!=null && type!=null}}: {{/if}}{{>Type}}]</a></div>
     {{/for}}
 </div>
 <table class="table table-bordered table-striped">
     <tr>
         <th>No:</th>
-        <td>{{:EventNumber}}</td>
+        <td>{{:eventNumber}}</td>
     </tr>
     <tr>
         <th>Stream:</th>
-        <td><a href="/streams/{{attr:StreamId}}">{{>StreamId}}</a></td>
+        <td><a href="/streams/{{attr:streamId}}">{{>StreamId}}</a></td>
     </tr>
     <tr>
         <th>Type:</th>
-        <td>{{:EventType}}</td>
+        <td>{{:eventType}}</td>
     </tr>
     <tr>
         <th>Timestamp:</th>
-        <td>{{:~formatDate(Updated)}}</td>
+        <td>{{:~formatDate(updated)}}</td>
     </tr>
 </table>
-<pre>{{:Data}}</pre>
-<pre>{{:MetaData}}</pre>
+<pre>{{:data}}</pre>
+<pre>{{:metaData}}</pre>
 

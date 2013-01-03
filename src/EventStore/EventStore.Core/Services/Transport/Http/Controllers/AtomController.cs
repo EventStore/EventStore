@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Globalization;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
@@ -37,6 +38,7 @@ using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
 using EventStore.Common.Utils;
+using Newtonsoft.Json.Serialization;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
@@ -236,14 +238,29 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             OnGetStreamFeedCore(entity, stream, startIdx, cnt, embed, headOfStream: false);
         }
 
-        private void OnGetStreamFeedCore(HttpEntity entity, string stream, int start, int count, EmbedLevel embed, bool headOfStream)
+        private void OnGetStreamFeedCore(
+            HttpEntity entity, string stream, int start, int count, EmbedLevel embed, bool headOfStream)
         {
             int streamVersion;
             var etag = entity.Request.Headers["If-None-Match"];
-            int? validationStreamVersion = etag.IsNotEmptyString() && int.TryParse(etag.Trim('\"'), out streamVersion)
-                                                   ? (int?)streamVersion
-                                                   : null;
-            _genericController.GetStreamFeedPage(entity, stream, start, count, embed, validationStreamVersion, headOfStream);
+            int? validationStreamVersion = null;
+            //TODO: extract 
+            // etag format is version;contenttypehash
+            if (etag != null)
+            {
+                var trimmed = etag.Trim('\"');
+                var splitted = trimmed.Split(new char[] {';'});
+                if (splitted.Length == 2)
+                {
+                    var typeHash = entity.ResponseCodec.ContentType.GetHashCode();
+                    validationStreamVersion = splitted[1] == typeHash.ToString(CultureInfo.InvariantCulture)
+                                              && etag.IsNotEmptyString() && int.TryParse(splitted[0], out streamVersion)
+                                                  ? (int?) streamVersion
+                                                  : null;
+                }
+            }
+            _genericController.GetStreamFeedPage(
+                entity, stream, start, count, embed, validationStreamVersion, headOfStream);
         }
 
         private static EmbedLevel GetEmbed(HttpEntity entity, UriTemplateMatch match, EmbedLevel htmlLevel = EmbedLevel.PrettyBody)
@@ -405,10 +422,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 </head>
 <body>
 <script>
-    var data = " + JsonConvert.SerializeObject(value, Formatting.Indented) + @";
+    var data = " + JsonConvert.SerializeObject(value, Formatting.Indented, JsonCodec.JsonSettings) + @";
     var templateJs = '/web/es/js/atom/" + value.GetType().Name + @".html';
-    $(function() {
+
+    function reRenderData(data) {
         renderHtmlBy(data, templateJs);
+    }
+
+    $(function() {
+        reRenderData(data);
     }); 
 </script>
 
@@ -515,7 +537,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             entity.Manager.AsyncState = start;
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
-                                                  (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, embed),
+                                                  (ent, msg) => Format.Atom.ReadStreamEventsBackwardCompletedFeed(ent, msg, embed, headOfStream),
                                                   (args, msg) => Configure.ReadStreamEventsBackwardCompleted(args, msg, headOfStream));
             Publish(new ClientMessage.ReadStreamEventsBackward(Guid.NewGuid(),
                                                                envelope,

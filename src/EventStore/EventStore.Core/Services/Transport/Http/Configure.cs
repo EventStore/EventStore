@@ -68,7 +68,7 @@ namespace EventStore.Core.Services.Transport.Http
             headrs.Add(new KeyValuePair<string, string>("Cache-Control", "max-age=0, no-cache, must-revalidate"));
             headrs.Add(new KeyValuePair<string, string>("Vary", "Accept"));
             if (etag.IsNotEmptyString())
-                headrs.Add(new KeyValuePair<string, string>("ETag", string.Format("\"{0}\"", etag)));
+                headrs.Add(new KeyValuePair<string, string>("ETag", string.Format("\"{0}\"", etag + ";" + contentType.GetHashCode())));
             return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType, headrs);
         }
 
