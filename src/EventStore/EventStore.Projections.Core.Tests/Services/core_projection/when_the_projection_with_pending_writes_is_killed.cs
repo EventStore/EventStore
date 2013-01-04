@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void other_events_are_not_written_after_the_checkpoint_write()
         {
             AllWriteComplete();
-            Assert.AreEqual(2 /*order*/+ 2 + 1/*order*/, _writeEventHandler.HandledMessages.Count());
+            Assert.AreEqual(2, _writeEventHandler.HandledMessages.Count());
         }
     }
 }

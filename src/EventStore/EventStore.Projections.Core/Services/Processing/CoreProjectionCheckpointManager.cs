@@ -341,10 +341,18 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected void CheckpointLoaded(CheckpointTag checkpointTag, string checkpointData)
         {
+            if (checkpointTag == null) // no checkpoint data found
+            {
+                checkpointTag = _positionTagger.MakeZeroCheckpointTag();
+                checkpointData = "";
+            }
             _stateLoaded = true;
             _coreProjection.Handle(
                 new CoreProjectionProcessingMessage.CheckpointLoaded(
                     _projectionCorrelationId, checkpointTag, checkpointData));
+            _coreProjection.Handle(
+                new CoreProjectionProcessingMessage.PrerecordedEventsLoaded(
+                    _projectionCorrelationId, checkpointTag));
         }
 
         protected void RequestRestart(string reason)

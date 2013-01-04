@@ -119,6 +119,8 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions_when_updating.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_tf_position.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\TestFixtureWithMultiStreamCheckpointManager.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_starting_with_prerecorded_events_after_the_last_checkpoint.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_checkpoint_requested_but_disabled.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit__with_committed_callback.cs" />
     <Compile Include="Services\core_projection\TestFixtureUtils.cs" />

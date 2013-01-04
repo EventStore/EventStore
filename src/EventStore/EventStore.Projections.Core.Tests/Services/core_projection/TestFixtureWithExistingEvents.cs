@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected void ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData)
         {
             List<EventRecord> list;
-            if (!_lastMessageReplies.TryGetValue(streamId, out list))
+            if (!_lastMessageReplies.TryGetValue(streamId, out list) || list == null)
             {
                 list = new List<EventRecord>();
                 _lastMessageReplies[streamId] = list;
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         protected void NoStream(string streamId)
         {
-            _lastMessageReplies.Add(streamId, null);
+            _lastMessageReplies[streamId] = null;
         }
 
         protected void AllWritesSucceed()

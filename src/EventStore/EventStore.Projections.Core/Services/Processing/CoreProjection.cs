@@ -113,7 +113,8 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             Initial = 0x80000000,
             LoadStateRequsted = 0x1,
-            StateLoadedSubscribed = 0x2,
+            StateLoaded = 0x2,
+            Subscribed = 0x4,
             Running = 0x08,
             Stopping = 0x40,
             Stopped = 0x80,
@@ -220,7 +221,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Stop()
         {
-            EnsureState(State.LoadStateRequsted | State.StateLoadedSubscribed | State.Running);
+            EnsureState(State.LoadStateRequsted | State.StateLoaded | State.Subscribed | State.Running);
             try
             {
                 if (_state == State.LoadStateRequsted)
@@ -251,17 +252,24 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
-            if (IsOutOfOrderSubscriptionMessage(message))
-                return;
-            RegisterSubscriptionMessage(message);
-
-            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            if (_state != State.StateLoaded)
+            {
+                if (IsOutOfOrderSubscriptionMessage(message))
+                    return;
+                RegisterSubscriptionMessage(message);
+            }
+            EnsureState(
+                /* load state restores already ordered events by sending committed events back to the projection */
+                State.StateLoaded| State.Running | State.Stopping | State.Stopped | State.FaultedStopping
+                | State.Faulted);
+                //TODO: should we allow stopped states here? 
             try
             {
                 CheckpointTag eventTag = message.CheckpointTag;
                 var committedEventWorkItem = new CommittedEventWorkItem(this, message, _statePartitionSelector);
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
-                _processingQueue.ProcessEvent();
+                if (_state != State.StateLoaded)
+                    _processingQueue.ProcessEvent();
             }
             catch (Exception ex)
             {
@@ -352,7 +360,20 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureState(State.LoadStateRequsted);
             try
             {
-                OnLoadStateCompleted(message.CheckpointTag, message.CheckpointData);
+                InitializeProjectionFromCheckpoint(message.CheckpointData, message.CheckpointTag);
+            }
+            catch (Exception ex)
+            {
+                SetFaulted(ex);
+            }
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
+        {
+            EnsureState(State.StateLoaded);
+            try
+            {
+                Subscribe(message.CheckpointTag);
             }
             catch (Exception ex)
             {
@@ -384,7 +405,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var wasStopped = _state == State.Stopped || _state == State.Faulted;
             var wasStopping = _state == State.Stopping || _state == State.FaultedStopping;
-            var wasStarted = _state == State.StateLoadedSubscribed 
+            var wasStarted = _state == State.Subscribed 
                              || _state == State.Running || _state == State.Stopping || _state == State.FaultedStopping;
             _state = state; // set state before transition to allow further state change
             switch (state)
@@ -408,8 +429,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 case State.LoadStateRequsted:
                     EnterLoadStateRequested();
                     break;
-                case State.StateLoadedSubscribed:
-                    EnterStateLoadedSubscribed();
+                case State.StateLoaded:
+                    EnterStateLoaded();
+                    break;
+                case State.Subscribed:
+                    EnterSubscribed();
                     break;
                 case State.Running:
                     EnterRunning();
@@ -449,7 +473,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointManager.BeginLoadState();
         }
 
-        private void EnterStateLoadedSubscribed()
+        private void EnterStateLoaded()
+        {
+        }
+
+        private void EnterSubscribed()
         {
             if (_startOnLoad)
             {
@@ -521,12 +549,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projectionStateHandler.Initialize();
         }
 
-        private void LoadProjectionStateFaulted(string newState, Exception ex)
+        private void LoadProjectionStateFaulted(Exception ex)
         {
             _faultedReason =
                 string.Format(
-                    "Cannot load the {0} projection state.\r\nHandler: {1}\r\nState:\r\n\r\n{2}\r\n\r\nMessage:\r\n\r\n{3}",
-                    _name, GetHandlerTypeName(), newState, ex.Message);
+                    "Cannot load the {0} projection state.\r\nHandler: {1}\r\n\r\nMessage:\r\n\r\n{2}",
+                    _name, GetHandlerTypeName(), ex.Message);
             if (_logger != null)
                 _logger.ErrorException(ex, _faultedReason);
             GoToState(State.Faulted);
@@ -694,36 +722,27 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void OnLoadStateCompleted(CheckpointTag checkpointTag, string checkpointData)
-        {
-            if (checkpointTag == null)
-            {
-                var zeroTag = _checkpointStrategy.PositionTagger.MakeZeroCheckpointTag();
-                InitializeProjectionFromCheckpoint("", zeroTag);
-            }
-            else
-            {
-                InitializeProjectionFromCheckpoint(checkpointData, checkpointTag);
-            }
-        }
-
         private void InitializeProjectionFromCheckpoint(string state, CheckpointTag checkpointTag)
         {
-            EnsureState(State.Initial | State.LoadStateRequsted);
             //TODO: initialize projection state here (test it)
             //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
             _partitionStateCache.CacheAndLockPartitionState("", new PartitionStateCache.State(state, checkpointTag), null);
             _checkpointManager.Start(checkpointTag);
+            _processingQueue.InitializeQueue(checkpointTag);
+            GoToState(State.StateLoaded);
+        }
+
+        private void Subscribe(CheckpointTag checkpointTag)
+        {
             try
             {
-                GoToState(State.StateLoadedSubscribed);
+                GoToState(State.Subscribed);
             }
             catch (Exception ex)
             {
-                LoadProjectionStateFaulted(state, ex);
+                LoadProjectionStateFaulted(ex);
                 return;
             }
-            _processingQueue.InitializeQueue(checkpointTag);
             _expectedSubscriptionMessageSequenceNumber = 0;
             _subscribed = true;
             bool stopOnEof = _projectionConfig.StopOnEof;

@@ -90,14 +90,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
-        public void null_projection_checkpoint_stream_id_throws_argument_null_exception()
-        {
-            _manager = new DefaultCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
-                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled, true);
-        }
-
-        [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_projection_name_throws_argument_null_exception()
         {
             _manager = new DefaultCheckpointManager(

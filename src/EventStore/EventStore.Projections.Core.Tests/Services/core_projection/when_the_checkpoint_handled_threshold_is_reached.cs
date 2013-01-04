@@ -79,10 +79,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void other_events_are_written_after_the_checkpoint_write()
         {
             Assert.AreEqual(
-                2 /*order*/ + 2,
+                2,
                 _writeEventHandler.HandledMessages.FindIndex(
                     v => v.Events.Any(e => e.EventType == "ProjectionCheckpoint")));
-            Assert.AreEqual(3 /*order*/ + 4, _writeEventHandler.HandledMessages.Count());
+            Assert.AreEqual(4, _writeEventHandler.HandledMessages.Count());
         }
     }
 }
