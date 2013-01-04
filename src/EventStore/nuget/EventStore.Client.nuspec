@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>EventStore.Client</id>
+    <version>1.0.0-alpha</version>
+    <authors>Event Store LLP</authors>
+    <owners>Event Store LLP</owners>
+    <licenseUrl>http://geteventstore.com/bsdlicense</licenseUrl>
+    <projectUrl>http://geteventstore.com</projectUrl>
+    <iconUrl>http://geteventstore.com/assets/ouro-200.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>The client API for the Event Store. Get the open source or commercial versions of the Event Store server from http://geteventstore.com</description>
+    <releaseNotes>Initial release of the client API</releaseNotes>
+    <copyright>Copyright 2012-2013 Event Store LLP</copyright>
+    <dependencies>
+      <dependency id="Newtonsoft.Json" version="4.0.8"/>
+      <dependency id="protobuf-net" version="2.0.0.601"/>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="..\..\..\bin\eventstore\release\anycpu\EventStore.ClientAPI.dll" target="lib\net40" />
+  </files>
+</package>
