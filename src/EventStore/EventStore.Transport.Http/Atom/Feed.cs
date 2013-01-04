@@ -42,6 +42,7 @@ namespace EventStore.Transport.Http.Atom
         public PersonElement Author { get; set; }
         public bool HeadOfStream { get; set; }
         public string SelfUrl { get; set; }
+        public string ETag { get; set; }
 
         public List<LinkElement> Links { get; set; }
         public List<EntryElement> Entries { get; set; }
@@ -132,6 +133,11 @@ namespace EventStore.Transport.Http.Atom
         public void SetSelfUrl(string self)
         {
             this.SelfUrl = self;
+        }
+
+        public void SetETag(string etag)
+        {
+            this.ETag = etag;
         }
     }
 

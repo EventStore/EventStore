@@ -8,7 +8,7 @@
     {{for entries}}
     <tr>
         <td><a href="/streams/{{attr:positionStreamId}}/{{attr:positionEventNumber}}">{{:positionEventNumber}}</a></td>
-        <td><a href="{{:id}}">{{:eventNumber}}@{{>StreamId}}</a></td>
+        <td><a href="{{:id}}">{{:eventNumber}}@{{>streamId}}</a></td>
         <td>{{:eventType}}</td>
         <td>{{:~formatDate(updated)}}</td>
         <td>{{if (isJson || isMetaData)}}<a href="#" class="json-expand">json >></a>{{/if}}</td>
@@ -28,24 +28,26 @@
 
 {{if headOfStream}}
 <script>
-    $(function () {
+    $(function() {
+        var eTag = '{{:eTag}}';
 
         function schedule() {
             setTimeout(function() {
                 var dataUrl = data.selfUrl + "?embed=tryharder";
                 $.ajax(dataUrl, {
                     headers: {
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'If-None-Match': eTag,
                     },
                     success: function(d, statusText, jqXHR) {
                         if (jqXHR.status == 200) {
+                            eTag = d.etag;
                             reRenderData(d);
-                        }
-                        else {
+                        } else {
                             schedule();
                         }
                     },
-                    error: function (jqXhr, status, error) {
+                    error: function(jqXhr, status, error) {
                         schedule();
                     }
                 });
