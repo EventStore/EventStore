@@ -53,5 +53,10 @@ namespace EventStore.Common.Utils
                 return list.Count == 0;
             return !collection.Any();
         }
+
+        public static bool IsNotEmpty<T>(this IEnumerable<T> collection)
+        {
+            return !IsEmpty(collection);
+        }
     }
 }
