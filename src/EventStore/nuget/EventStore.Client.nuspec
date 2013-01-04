@@ -5,7 +5,7 @@
     <version>1.0.0-alpha</version>
     <authors>Event Store LLP</authors>
     <owners>Event Store LLP</owners>
-    <licenseUrl>http://geteventstore.com/bsdlicense</licenseUrl>
+    <licenseUrl>http://geteventstore.com/terms/licence/bsd/</licenseUrl>
     <projectUrl>http://geteventstore.com</projectUrl>
     <iconUrl>http://geteventstore.com/assets/ouro-200.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
