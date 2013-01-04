@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected readonly string _name;
         private readonly PositionTagger _positionTagger;
-        private readonly ProjectionNamesBuilder _namingBuilder;
+        protected readonly ProjectionNamesBuilder _namingBuilder;
         private readonly bool _useCheckpoints;
         private readonly bool _emitStateUpdated;
         private readonly bool _emitPartitionCheckpoints;
@@ -67,14 +67,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _inCheckpoint;
         private string _requestedCheckpointState;
         private CheckpointTag _lastCompletedCheckpointPosition;
-        private CheckpointTag _lastOrderCheckpointTag;  //TODO: use position tracker to ensure order?
         private readonly PositionTracker _lastProcessedEventPosition;
         private float _lastProcessedEventProgress;
 
         private int _eventsProcessedAfterRestart;
         private bool _stateLoaded;
         private bool _started;
-        private bool _stopping;
+        protected bool _stopping;
         private bool _stopped;
         private bool _stateRequested;
         private string _currentProjectionState;
@@ -125,7 +124,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _inCheckpoint = false;
             _requestedCheckpointState = null;
             _lastCompletedCheckpointPosition = null;
-            _lastOrderCheckpointTag = null;
             _lastProcessedEventPosition.Initialize();
             _lastProcessedEventProgress = -1;
 
@@ -139,15 +137,9 @@ namespace EventStore.Projections.Core.Services.Processing
             foreach (var requestId in _loadStateRequests)
                 _readDispatcher.Cancel(requestId);
             _loadStateRequests.Clear();
-            _orderStream = null;
         }
 
-        private EmittedStream CreateOrderStream()
-        {
-            return new EmittedStream(_namingBuilder.GetOrderStreamName(), _positionTagger.MakeZeroCheckpointTag(), _publisher, this /* MUST NEVER SEND READY MESSAGE */, 100, _logger);
-        }
-
-        public void Start(CheckpointTag checkpointTag)
+        public virtual void Start(CheckpointTag checkpointTag)
         {
             if (!_stateLoaded)
                 throw new InvalidOperationException("State is not loaded");
@@ -157,13 +149,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastProcessedEventPosition.UpdateByCheckpointTagInitial(checkpointTag);
             _lastProcessedEventProgress = -1;
             _lastCompletedCheckpointPosition = checkpointTag;
-            _lastOrderCheckpointTag = checkpointTag;
             _requestedCheckpointPosition = null;
             _currentCheckpoint = new ProjectionCheckpoint(
                 _publisher, this, _lastProcessedEventPosition.LastTag, _positionTagger.MakeZeroCheckpointTag(), _projectionConfig.MaxWriteBatchLength, _logger);
             _currentCheckpoint.Start();
-            _orderStream = CreateOrderStream();
-            _orderStream.Start();
         }
 
         public void Stopping()
@@ -192,7 +181,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                                           : 0;
             info.WritePendingEventsAfterCheckpoint = (_currentCheckpoint != null
                                                           ? _currentCheckpoint.GetWritePendingEvents()
-                                                          : 0) + _orderStream.GetWritePendingEvents();
+                                                          : 0);
             info.ReadsInProgress = /*_readDispatcher.ActiveRequestCount*/ + _readRequestsInProgress
                                                                           + + (_closingCheckpoint != null
                                                                                    ? _closingCheckpoint
@@ -201,11 +190,9 @@ namespace EventStore.Projections.Core.Services.Processing
                                                                           + (_currentCheckpoint != null
                                                                                  ? _currentCheckpoint.GetReadsInProgress
                                                                                        ()
-                                                                                 : 0)
-                                                                          + _orderStream.GetReadsInProgress();
+                                                                                 : 0);
             info.WritesInProgress = (_closingCheckpoint != null ? _closingCheckpoint.GetWritesInProgress() : 0)
-                                    + (_currentCheckpoint != null ? _currentCheckpoint.GetWritesInProgress() : 0)
-                                    + _orderStream.GetWritesInProgress();
+                                    + (_currentCheckpoint != null ? _currentCheckpoint.GetWritesInProgress() : 0);
             info.CheckpointStatus = _inCheckpoint ? "Requested" : "";
         }
 
@@ -435,8 +422,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private int _readRequestsInProgress;
         private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
-        private EmittedStream _orderStream;
 
+
+        public abstract void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed);
 
         public void BeginLoadPartitionStateAt(string statePartition,
             CheckpointTag requestedStateCheckpointTag, Action<PartitionStateCache.State> loadCompleted)
@@ -464,23 +452,6 @@ namespace EventStore.Projections.Core.Services.Processing
                         partitionStateStreamName, stateEventType));
             if (requestId != Guid.Empty)
                 _loadStateRequests.Add(requestId);
-        }
-
-        public void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed)
-        {
-            EnsureStarted();
-            if (_stopping)
-                throw new InvalidOperationException("Stopping");
-            var orderStreamName = _namingBuilder.GetOrderStreamName();
-            _orderStream.EmitEvents(
-                new[]
-                    {
-                        new EmittedEvent(
-                    orderStreamName, Guid.NewGuid(), "$>",
-                    message.PositionSequenceNumber + "@" + message.PositionStreamId, message.CheckpointTag,
-                    _lastOrderCheckpointTag, committed)
-                    });
-            _lastOrderCheckpointTag = message.CheckpointTag;
         }
 
         private void OnLoadPartitionStateReadStreamEventsBackwardCompleted(

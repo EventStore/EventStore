@@ -60,12 +60,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private Event[] _submittedToWriteEvents;
         private EmittedEvent[] _submittedToWriteEmittedEvents;
         private int _lastKnownEventNumber = ExpectedVersion.Invalid;
+        private readonly bool _noCheckpoints;
 
 
         public EmittedStream(
             string streamId, CheckpointTag zeroPosition, IPublisher publisher,
             IProjectionCheckpointManager readyHandler,
-            int maxWriteBatchLength, ILogger logger = null)
+            int maxWriteBatchLength, ILogger logger = null, bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -77,6 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readyHandler = readyHandler;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;
+            _noCheckpoints = noCheckpoints;
         }
 
         public void EmitEvents(EmittedEvent[] events)
@@ -92,6 +94,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Checkpoint()
         {
+            EnsureCheckpointsEnabled();
             EnsureStreamStarted();
             EnsureCheckpointNotRequested();
             _checkpointRequested = true;
@@ -273,8 +276,15 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_checkpointRequested && !_awaitingWriteCompleted && _pendingWrites.Count == 0)
             {
+                EnsureCheckpointsEnabled();
                 _readyHandler.Handle(new CoreProjectionProcessingMessage.ReadyForCheckpoint(this));
             }
+        }
+
+        private void EnsureCheckpointsEnabled()
+        {
+            if (_noCheckpoints)
+                throw new InvalidOperationException("Checkpoints disabled");
         }
 
         private void SubmitWriteEventsInRecovery()

@@ -235,34 +235,29 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
             ICoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
-            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> requestResponseDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> responseDispatcher,
+            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name, ProjectionNamesBuilder namingBuilder)
         {
             var emitPartitionCheckpoints = UseCheckpoints && !EmitStateUpdated && (_byCustomPartitions || _byStream);
+
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
-                if (emitPartitionCheckpoints)
-                    throw new InvalidOperationException("Partition checkpoints cannot be used");
-                return new MultiStreamSingleOutputStreamCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
+                return new MultiStreamMultiOutputCheckpointManager(
+                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
                     projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated);
             }
             else if (_streams != null && _streams.Count > 1)
             {
-                if (emitPartitionCheckpoints)
-                    throw new InvalidOperationException("Partition checkpoints cannot be used");
-                return new MultiStreamSingleOutputStreamCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
+                return new MultiStreamMultiOutputCheckpointManager(
+                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
                     projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated);
             }
             else
             {
-                string projectionCheckpointStreamId = namingBuilder.MakeCheckpointStreamName();
-
                 return new DefaultCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, projectionCheckpointStreamId, name, PositionTagger, namingBuilder, UseCheckpoints,
+                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints,
                     EmitStateUpdated, emitPartitionCheckpoints);
             }
         }
