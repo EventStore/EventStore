@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     UpdateSafePositionToJoin(message.EventStreamId, message.LastCommitPosition);
                     ProcessBuffers();
                     if (_pauseRequested)
-                        _paused = true;
+                        _paused = !AreEventsRequested();
                     else
                         RequestEvents(message.EventStreamId, delay: true);
                     _publisher.Publish(CreateTickMessage());
@@ -166,7 +166,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
                     ProcessBuffers();
                     if (_pauseRequested)
-                        _paused = true;
+                        _paused = !AreEventsRequested();
                     else if (message.Events.Length == 0)
                         RequestEvents(message.EventStreamId, delay: true);
                     _publisher.Publish(CreateTickMessage());
