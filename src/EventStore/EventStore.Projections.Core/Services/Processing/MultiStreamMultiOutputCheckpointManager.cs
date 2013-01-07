@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private EmittedStream _orderStream;
         private bool _orderStreamReadingCompleted;
         private int _loadingItemsCount;
-        private Stack<Item> _loadQueue = new Stack<Item>();
+        private readonly Stack<Item> _loadQueue = new Stack<Item>();
 
         public MultiStreamMultiOutputCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
@@ -105,9 +105,12 @@ namespace EventStore.Projections.Core.Services.Processing
         public override void GetStatistics(ProjectionStatistics info)
         {
             base.GetStatistics(info);
-            info.WritePendingEventsAfterCheckpoint += _orderStream.GetWritePendingEvents();
-            info.ReadsInProgress += _orderStream.GetReadsInProgress();
-            info.WritesInProgress += _orderStream.GetWritesInProgress();
+            if (_orderStream != null)
+            {
+                info.WritePendingEventsAfterCheckpoint += _orderStream.GetWritePendingEvents();
+                info.ReadsInProgress += _orderStream.GetReadsInProgress();
+                info.WritesInProgress += _orderStream.GetWritesInProgress();
+            }
         }
 
 
@@ -132,7 +135,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                     foreach (var @event in completed.Events)
                                     {
                                         var tag = @event.Event.Metadata.ParseJson<CheckpointTag>();
-                                        if (tag < checkpointTag)
+                                        if (tag <= checkpointTag)
                                         {
                                             SetOrderStreamReadCompleted();
                                             break;
@@ -204,6 +207,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     number++;
                 }
 
+                _loadingItemsCount = -1; // completed - do not dispatch one more time
                 PrerecordedEventsLoaded(lastTag);
             }
         }
@@ -217,7 +221,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private class Item
         {
             internal EventLinkPair _result;
-            private CheckpointTag _tag;
+            private readonly CheckpointTag _tag;
 
             public Item(CheckpointTag tag)
             {

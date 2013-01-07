@@ -741,6 +741,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void Subscribe(CheckpointTag checkpointTag)
         {
+            _expectedSubscriptionMessageSequenceNumber = 0;
+            _currentSubscriptionId = Guid.NewGuid();
+            bool stopOnEof = _projectionConfig.StopOnEof;
+            _publisher.Publish(
+                new ProjectionSubscriptionManagement.Subscribe(
+                    _projectionCorrelationId, _currentSubscriptionId, this, checkpointTag, _checkpointStrategy,
+                    _projectionConfig.CheckpointUnhandledBytesThreshold, stopOnEof));
             try
             {
                 GoToState(State.Subscribed);
@@ -750,14 +757,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 LoadProjectionStateFaulted(ex);
                 return;
             }
-            _expectedSubscriptionMessageSequenceNumber = 0;
-            _currentSubscriptionId = Guid.NewGuid();
             _subscribed = true;
-            bool stopOnEof = _projectionConfig.StopOnEof;
-            _publisher.Publish(
-                new ProjectionSubscriptionManagement.Subscribe(
-                    _projectionCorrelationId, _currentSubscriptionId, this, checkpointTag, _checkpointStrategy,
-                    _projectionConfig.CheckpointUnhandledBytesThreshold, stopOnEof));
         }
 
         internal void BeginGetPartitionStateAt(
@@ -856,11 +856,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
         internal void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action completed)
         {
-            _checkpointManager.RecordEventOrder(message, () =>
+            if (_state == State.Running)
             {
-                completed(); 
-                EnsureTickPending();
-            });
+                _checkpointManager.RecordEventOrder(
+                    message, () =>
+                        {
+                            completed();
+                            EnsureTickPending();
+                        });
+            }
         }
     }
 }

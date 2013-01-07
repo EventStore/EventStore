@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private long? _lastPassedOrCheckpointedEventPosition;
         private float _progress = -1;
         private long _subscriptionMessageSequenceNumber;
-        private Guid _subscriptionId;
+        private readonly Guid _subscriptionId;
         private bool _eofReached;
 
         protected ProjectionSubscriptionBase(
@@ -46,6 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _stopOnEof = stopOnEof;
             _projectionCorrelationId = projectionCorrelationId;
+            _subscriptionId = subscriptionId;
             _lastPassedOrCheckpointedEventPosition = null;
 
             _eventFilter = checkpointStrategy.EventFilter;

@@ -63,6 +63,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             ExistingEvent("c", "Event", "", @"{""data"":""c""");
 
             ExistingEvent(
+                "$projections-projection-order", "$>", @"{""Streams"": {""a"": 0, ""b"": 0, ""c"": 0}}", "0@c");
+            ExistingEvent(
                 "$projections-projection-order", "$>", @"{""Streams"": {""a"": 0, ""b"": 0, ""c"": 1}}", "1@c");
             ExistingEvent(
                 "$projections-projection-order", "$>", @"{""Streams"": {""a"": 1, ""b"": 0, ""c"": 1}}", "1@a");
