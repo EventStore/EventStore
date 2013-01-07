@@ -197,5 +197,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastWrittenCheckpointEventNumber = checkpointEventNumber;
             CheckpointLoaded(checkpointTag, checkpointData);
         }
+
+        protected override void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag)
+        {
+            PrerecordedEventsLoaded(checkpointTag);
+        }
     }
 }

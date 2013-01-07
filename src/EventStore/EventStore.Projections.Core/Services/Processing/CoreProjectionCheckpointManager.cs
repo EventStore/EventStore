@@ -34,6 +34,7 @@ using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -350,9 +351,30 @@ namespace EventStore.Projections.Core.Services.Processing
             _coreProjection.Handle(
                 new CoreProjectionProcessingMessage.CheckpointLoaded(
                     _projectionCorrelationId, checkpointTag, checkpointData));
+            BeginLoadPrerecordedEvents(checkpointTag);
+        }
+
+        protected void SendPrerecordedEvent(
+            EventLinkPair pair, CheckpointTag positionTag, long prerecordedEventMessageSequenceNumber)
+        {
+            var position = pair.Link ?? pair.Event;
+            var committedEvent = new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                Guid.Empty, default(EventPosition), position.EventStreamId, position.EventNumber,
+                pair.Event.EventStreamId, pair.Event.EventNumber, pair.Link != null,
+                ResolvedEvent.Create(
+                    pair.Event.EventId, pair.Event.EventType, (pair.Event.Flags & PrepareFlags.IsJson) != 0,
+                    pair.Event.Data, pair.Event.Metadata, pair.Event.TimeStamp), null, -1);
             _coreProjection.Handle(
-                new CoreProjectionProcessingMessage.PrerecordedEventsLoaded(
-                    _projectionCorrelationId, checkpointTag));
+                ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
+                    committedEvent, positionTag, null, Guid.Empty, prerecordedEventMessageSequenceNumber));
+        }
+
+        protected abstract void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
+
+        protected void PrerecordedEventsLoaded(CheckpointTag checkpointTag)
+        {
+            _coreProjection.Handle(
+                new CoreProjectionProcessingMessage.PrerecordedEventsLoaded(_projectionCorrelationId, checkpointTag));
         }
 
         protected void RequestRestart(string reason)

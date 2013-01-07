@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
                     Guid.Empty, _subscriptionId, new EventPosition(160, 150), "account-01", 3, false,
                     ResolvedEvent.Sample(
-                        _eventId, "append", false, Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata")), 2));
+                        _eventId, "append", false, Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata")), 1));
         }
 
         [Test]

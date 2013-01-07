@@ -72,8 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 list = new List<EventRecord>();
                 _lastMessageReplies[streamId] = list;
             }
-            list.Insert(
-                0,
+            list.Add(
                 new EventRecord(
                     list.Count,
                     new PrepareLogRecord(

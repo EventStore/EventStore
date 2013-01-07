@@ -27,7 +27,10 @@
 // 
 
 using System;
+using System.Collections.Generic;
+using System.Text;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 
@@ -39,18 +42,21 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly PositionTagger _positionTagger;
         private CheckpointTag _lastOrderCheckpointTag; //TODO: use position tracker to ensure order?
         private EmittedStream _orderStream;
+        private bool _orderStreamReadingCompleted;
+        private int _loadingItemsCount;
+        private Stack<Item> _loadQueue = new Stack<Item>();
 
         public MultiStreamMultiOutputCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ProjectionConfig projectionConfig, string name,
-            PositionTagger positionTagger, ProjectionNamesBuilder namingBuilder, bool useCheckpoints,
-            bool emitStateUpdated, bool emitPartitionCheckpoints = false)
+            ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
+            ProjectionNamesBuilder namingBuilder, bool useCheckpoints, bool emitStateUpdated,
+            bool emitPartitionCheckpoints = false)
             : base(
-                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig, name, positionTagger, namingBuilder, useCheckpoints, emitStateUpdated,
-                emitPartitionCheckpoints)
+                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
+                name, positionTagger, namingBuilder, useCheckpoints, emitStateUpdated, emitPartitionCheckpoints)
         {
             _publisher = publisher;
             _positionTagger = positionTagger;
@@ -102,6 +108,131 @@ namespace EventStore.Projections.Core.Services.Processing
             info.WritePendingEventsAfterCheckpoint += _orderStream.GetWritePendingEvents();
             info.ReadsInProgress += _orderStream.GetReadsInProgress();
             info.WritesInProgress += _orderStream.GetWritesInProgress();
+        }
+
+
+        protected override void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag)
+        {
+            BeginLoadPrerecordedEventsChunk(checkpointTag, -1);
+        }
+
+        private void BeginLoadPrerecordedEventsChunk(CheckpointTag checkpointTag, int fromEventNumber)
+        {
+            _readDispatcher.Publish(
+                new ClientMessage.ReadStreamEventsBackward(
+                    Guid.NewGuid(), _readDispatcher.Envelope, _namingBuilder.GetOrderStreamName(), fromEventNumber, 100,
+                    false, null), completed =>
+                        {
+                            switch (completed.Result)
+                            {
+                                case StreamResult.NoStream:
+                                    PrerecordedEventsLoaded(checkpointTag);
+                                    break;
+                                case StreamResult.Success:
+                                    foreach (var @event in completed.Events)
+                                    {
+                                        var tag = @event.Event.Metadata.ParseJson<CheckpointTag>();
+                                        if (tag < checkpointTag)
+                                        {
+                                            SetOrderStreamReadCompleted();
+                                            break;
+                                        }
+                                        EnqueuePrerecordedEvent(@event.Event, tag);
+                                    }
+                                    if (completed.IsEndOfStream)
+                                        SetOrderStreamReadCompleted();
+                                    else
+                                        BeginLoadPrerecordedEventsChunk(checkpointTag, completed.NextEventNumber);
+                                    break;
+                                default:
+                                    throw new Exception("Cannot read order stream");
+                            }
+                        });
+        }
+
+        private void EnqueuePrerecordedEvent(EventRecord @event, CheckpointTag tag)
+        {
+            if (@event == null) throw new ArgumentNullException("event");
+            if (tag == null) throw new ArgumentNullException("tag");
+            if (@event.EventType != "$>")
+                throw new ArgumentException("linkto ($>) event expected", "event");
+
+            _loadingItemsCount++;
+
+            var item = new Item(tag);
+            _loadQueue.Push(item);
+
+            var linkTo = Encoding.UTF8.GetString(@event.Data);
+            string[] parts = linkTo.Split('@');
+            int eventNumber = int.Parse(parts[0]);
+            string streamId = parts[1];
+
+
+            _readDispatcher.Publish(
+                new ClientMessage.ReadStreamEventsBackward(
+                    Guid.NewGuid(), _readDispatcher.Envelope, streamId, eventNumber, 1, true, null), completed =>
+                        {
+                            switch (completed.Result)
+                            {
+                                case StreamResult.Success:
+                                    if (completed.Events.Length != 1)
+                                        throw new Exception(
+                                            string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Error));
+                                    item.SetLoadedEvent(completed.Events[0]);
+                                    _loadingItemsCount--;
+                                    CheckAllEventsLoaded();
+                                    break;
+                                default:
+                                    throw new Exception(
+                                        string.Format("Cannot read {0}. Error: {1}", linkTo, completed.Error));
+                            }
+                        });
+        }
+
+        private void CheckAllEventsLoaded()
+        {
+            CheckpointTag lastTag = null;
+            if (_orderStreamReadingCompleted && _loadingItemsCount == 0)
+            {
+                var number = 0;
+                while (_loadQueue.Count > 0)
+                {
+                    var item = _loadQueue.Pop();
+                    var @event = item._result;
+                    lastTag = item.Tag;
+                    SendPrerecordedEvent(@event, lastTag, number);
+                    number++;
+                }
+
+                PrerecordedEventsLoaded(lastTag);
+            }
+        }
+
+        private void SetOrderStreamReadCompleted()
+        {
+            _orderStreamReadingCompleted = true;
+            CheckAllEventsLoaded();
+        }
+
+        private class Item
+        {
+            internal EventLinkPair _result;
+            private CheckpointTag _tag;
+
+            public Item(CheckpointTag tag)
+            {
+                _tag = tag;
+            }
+
+            public CheckpointTag Tag
+            {
+                get { return _tag; }
+            }
+
+            public void SetLoadedEvent(EventLinkPair eventLinkPair)
+            {
+                _result = eventLinkPair;
+            }
         }
     }
 }

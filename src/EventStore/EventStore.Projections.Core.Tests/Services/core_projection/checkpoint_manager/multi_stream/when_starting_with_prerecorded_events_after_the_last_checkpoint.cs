@@ -26,19 +26,34 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream
 {
     [TestFixture]
-    public class when_starting_with_prerecorded_events_after_the_last_checkpoint: TestFixtureWithMultiStreamCheckpointManager
+    public class when_starting_with_prerecorded_events_after_the_last_checkpoint :
+        TestFixtureWithMultiStreamCheckpointManager
     {
+        private readonly CheckpointTag _tag1 =
+            CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 0}, {"b", 0}, {"c", 1}});
+
+        private readonly CheckpointTag _tag2 =
+            CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 0}, {"c", 1}});
+
+        private readonly CheckpointTag _tag3 =
+            CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 1}, {"c", 1}});
+
         protected override void Given()
         {
             base.Given();
-            ExistingEvent("$projections-projection-checkpoint", "ProjectionCheckpoint", @"{""Streams"": {""a"": 0, ""b"": 0, ""c"": 0}}", "{}");
+            ExistingEvent(
+                "$projections-projection-checkpoint", "ProjectionCheckpoint",
+                @"{""Streams"": {""a"": 0, ""b"": 0, ""c"": 0}}", "{}");
             ExistingEvent("a", "StreamCreated", "", "");
             ExistingEvent("b", "StreamCreated", "", "");
             ExistingEvent("c", "StreamCreated", "", "");
@@ -47,9 +62,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             ExistingEvent("b", "Event", "", @"{""data"":""b""");
             ExistingEvent("c", "Event", "", @"{""data"":""c""");
 
-            ExistingEvent("$projections-projection-order", "$>", @"{""Streams"": {""a"": 0, ""b"": 0, ""c"": 1}}", "1@c");
-            ExistingEvent("$projections-projection-order", "$>", @"{""Streams"": {""a"": 1, ""b"": 0, ""c"": 1}}", "1@a");
-            ExistingEvent("$projections-projection-order", "$>", @"{""Streams"": {""a"": 1, ""b"": 1, ""c"": 1}}", "1@b");
+            ExistingEvent(
+                "$projections-projection-order", "$>", @"{""Streams"": {""a"": 0, ""b"": 0, ""c"": 1}}", "1@c");
+            ExistingEvent(
+                "$projections-projection-order", "$>", @"{""Streams"": {""a"": 1, ""b"": 0, ""c"": 1}}", "1@a");
+            ExistingEvent(
+                "$projections-projection-order", "$>", @"{""Streams"": {""a"": 1, ""b"": 1, ""c"": 1}}", "1@b");
         }
 
         protected override void When()
@@ -59,8 +77,72 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         }
 
         [Test]
-        public void publishes_correct_checkpoint_loaded_message()
+        public void sends_correct_checkpoint_loaded_message()
         {
+            Assert.AreEqual(1, _projection._checkpointLoadedMessages.Count);
+            Assert.AreEqual(
+                CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 0}, {"b", 0}, {"c", 0}}),
+                _projection._checkpointLoadedMessages.Single().CheckpointTag);
+            Assert.AreEqual("{}", _projection._checkpointLoadedMessages.Single().CheckpointData);
+        }
+
+        [Test]
+        public void sends_correct_preprecoded_events_loaded_message()
+        {
+            Assert.AreEqual(1, _projection._prerecordedEventsLoadedMessages.Count);
+            Assert.AreEqual(
+                CheckpointTag.FromStreamPositions(new Dictionary<string, int> {{"a", 1}, {"b", 1}, {"c", 1}}),
+                _projection._prerecordedEventsLoadedMessages.Single().CheckpointTag);
+        }
+
+        [Test]
+        public void sends_commited_event_received_messages_in_correct_order()
+        {
+            var messages = _projection._committedEventReceivedMessages;
+            Assert.AreEqual(3, messages.Count);
+
+            var message1 = messages[0];
+            var message2 = messages[1];
+            var message3 = messages[2];
+
+            Assert.AreEqual(_tag1, message1.CheckpointTag);
+            Assert.AreEqual(_tag2, message2.CheckpointTag);
+            Assert.AreEqual(_tag3, message3.CheckpointTag);
+        }
+
+        [Test]
+        public void sends_correct_commited_event_received_messages()
+        {
+            var messages = _projection._committedEventReceivedMessages;
+            Assert.AreEqual(3, messages.Count);
+
+            var message1 = messages[0];
+            var message2 = messages[1];
+            var message3 = messages[2];
+
+            Assert.AreEqual(@"{""data"":""c""", Encoding.UTF8.GetString(message1.Data.Data));
+            Assert.AreEqual(@"{""data"":""a""", Encoding.UTF8.GetString(message2.Data.Data));
+            Assert.AreEqual(@"{""data"":""b""", Encoding.UTF8.GetString(message3.Data.Data));
+
+            Assert.AreEqual("Event", message1.Data.EventType);
+            Assert.AreEqual("Event", message2.Data.EventType);
+            Assert.AreEqual("Event", message3.Data.EventType);
+
+            Assert.AreEqual("c", message1.PositionStreamId);
+            Assert.AreEqual("a", message2.PositionStreamId);
+            Assert.AreEqual("b", message3.PositionStreamId);
+
+            Assert.AreEqual("c", message1.EventStreamId);
+            Assert.AreEqual("a", message2.EventStreamId);
+            Assert.AreEqual("b", message3.EventStreamId);
+
+            Assert.AreEqual(Guid.Empty, message1.SubscriptionId);
+            Assert.AreEqual(Guid.Empty, message2.SubscriptionId);
+            Assert.AreEqual(Guid.Empty, message3.SubscriptionId);
+
+            Assert.AreEqual(false, message1.ResolvedLinkTo);
+            Assert.AreEqual(false, message2.ResolvedLinkTo);
+            Assert.AreEqual(false, message3.ResolvedLinkTo);
         }
     }
 }

@@ -34,17 +34,14 @@ namespace EventStore.Projections.Core.Messages
 {
     public abstract class ProjectionSubscriptionMessage : Message
     {
-        private readonly Guid _correlationId;
         private readonly Guid _subscriptionId;
         private readonly long _subscriptionMessageSequenceNumber;
         private readonly CheckpointTag _checkpointTag;
         private readonly float _progress;
 
-        private ProjectionSubscriptionMessage(
-            Guid correlationId, Guid subscriptionId, CheckpointTag checkpointTag, float progress,
+        private ProjectionSubscriptionMessage(Guid subscriptionId, CheckpointTag checkpointTag, float progress,
             long subscriptionMessageSequenceNumber)
         {
-            _correlationId = correlationId;
             _subscriptionId = subscriptionId;
             _checkpointTag = checkpointTag;
             _progress = progress;
@@ -62,7 +59,7 @@ namespace EventStore.Projections.Core.Messages
             public CheckpointSuggested(
                 Guid correlationId, Guid subscriptionId, CheckpointTag checkpointTag, float progress,
                 long subscriptionMessageSequenceNumber)
-                : base(correlationId, subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
             {
             }
         }
@@ -72,7 +69,7 @@ namespace EventStore.Projections.Core.Messages
             public ProgressChanged(
                 Guid correlationId, Guid subscriptionId, CheckpointTag checkpointTag, float progress,
                 long subscriptionMessageSequenceNumber)
-                : base(correlationId, subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
             {
             }
         }
@@ -82,7 +79,7 @@ namespace EventStore.Projections.Core.Messages
             public EofReached(
                 Guid correlationId, Guid subscriptionId, CheckpointTag checkpointTag, float progress,
                 long subscriptionMessageSequenceNumber)
-                : base(correlationId, subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
             {
             }
         }
@@ -112,7 +109,7 @@ namespace EventStore.Projections.Core.Messages
                 string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
                 string eventCategory, bool resolvedLinkTo, ResolvedEvent data, float progress,
                 long subscriptionMessageSequenceNumber)
-                : base(correlationId, subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
             {
                 if (data == null) throw new ArgumentNullException("data");
                 _data = data;
@@ -186,11 +183,6 @@ namespace EventStore.Projections.Core.Messages
                     message.PositionSequenceNumber, message.EventStreamId, message.EventSequenceNumber, eventCategory,
                     message.ResolvedLinkTo, message.Data, message.Progress, subscriptionMessageSequenceNumber);
             }
-        }
-
-        public Guid CorrelationId
-        {
-            get { return _correlationId; }
         }
 
         public CheckpointTag CheckpointTag
