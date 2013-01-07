@@ -206,13 +206,14 @@ namespace EventStore.Core.Services.Storage
                     return;
 
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
-                var record = ShouldCreateStreamFor(message)
+                bool shouldCreateStream = ShouldCreateStreamFor(message);
+                var record = shouldCreateStream
                     ? LogRecord.StreamCreated(logPosition, message.CorrelationId, logPosition, message.EventStreamId, LogRecord.NoData, isImplicit: true)
                     : LogRecord.TransactionBegin(logPosition, message.CorrelationId, message.EventStreamId, message.ExpectedVersion);
                 var res = WritePrepareWithRetry(record);
 
                 // we update cache to avoid non-cached look-up on next TransactionWrite
-                ReadIndex.UpdateTransactionOffset(res.WrittenPos, -1); 
+                ReadIndex.UpdateTransactionOffset(res.WrittenPos, shouldCreateStream ? 0 : -1); 
             }
             finally
             {
