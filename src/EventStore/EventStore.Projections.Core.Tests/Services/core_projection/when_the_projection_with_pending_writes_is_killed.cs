@@ -55,19 +55,22 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             //projection subscribes here
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
-                                        Encoding.UTF8.GetBytes("metadata")), 0));
+                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
+                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(140, 130), "/event_category/1", -1, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
-                                        Encoding.UTF8.GetBytes("metadata")), 1));
+                    Guid.Empty, _subscriptionId, new EventPosition(140, 130), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
+                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
+                        Encoding.UTF8.GetBytes("metadata")), 1));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(160, 150), "/event_category/1", -1, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data3"),
-                                        Encoding.UTF8.GetBytes("metadata")), 2));
+                    Guid.Empty, _subscriptionId, new EventPosition(160, 150), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
+                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data3"),
+                        Encoding.UTF8.GetBytes("metadata")), 2));
             _coreProjection.Kill();
         }
 

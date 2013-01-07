@@ -263,17 +263,17 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public IProjectionSubscription CreateProjectionSubscription(
-            CheckpointTag fromCheckpointTag, Guid projectionCorrelationId, ICoreProjection projection,
-            long checkpointUnhandledBytesThreshold, bool stopOnEof)
+            CheckpointTag fromCheckpointTag, Guid projectionCorrelationId, Guid subscriptionId,
+            ICoreProjection projection, long checkpointUnhandledBytesThreshold, bool stopOnEof)
         {
             if (_reorderEvents)
                 return new EventReorderingProjectionSubscription(
-                    projectionCorrelationId, fromCheckpointTag, projection, projection, projection, projection, this,
-                    checkpointUnhandledBytesThreshold, _processingLag, stopOnEof);
+                    projectionCorrelationId, subscriptionId, fromCheckpointTag, projection, projection, projection,
+                    projection, this, checkpointUnhandledBytesThreshold, _processingLag, stopOnEof);
             else
                 return new ProjectionSubscription(
-                    projectionCorrelationId, fromCheckpointTag, projection, projection, projection, projection, this,
-                    checkpointUnhandledBytesThreshold, stopOnEof);
+                    projectionCorrelationId, subscriptionId, fromCheckpointTag, projection, projection, projection,
+                    projection, this, checkpointUnhandledBytesThreshold, stopOnEof);
         }
     }
 }

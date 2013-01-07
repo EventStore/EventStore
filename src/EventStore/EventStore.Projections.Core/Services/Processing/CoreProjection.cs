@@ -154,6 +154,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool _tickPending;
         private long _expectedSubscriptionMessageSequenceNumber = -1;
+        private Guid _currentSubscriptionId;
+
         private bool _subscribed;
         private bool _startOnLoad;
         private StatePartitionSelector _statePartitionSelector;
@@ -464,6 +466,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _tickPending = false;
             _partitionStateCache.CacheAndLockPartitionState("", new PartitionStateCache.State("", null), null);
             _expectedSubscriptionMessageSequenceNumber = -1; // this is to be overridden when subscribing
+            _currentSubscriptionId = Guid.Empty;
             // NOTE: this is to workaround exception in GetState requests submitted by client
             _eventsForDebugging.Clear();
         }
@@ -529,7 +532,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool IsOutOfOrderSubscriptionMessage(ProjectionSubscriptionMessage message)
         {
-            return _expectedSubscriptionMessageSequenceNumber != message.SubscriptionMessageSequenceNumber;
+            if (_currentSubscriptionId != message.SubscriptionId)
+                return true;
+            if (_expectedSubscriptionMessageSequenceNumber != message.SubscriptionMessageSequenceNumber)
+                throw new InvalidOperationException("Out of order message detected");
+            return false;
         }
 
         private void RegisterSubscriptionMessage(ProjectionSubscriptionMessage message)
@@ -744,11 +751,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             _expectedSubscriptionMessageSequenceNumber = 0;
+            _currentSubscriptionId = Guid.NewGuid();
             _subscribed = true;
             bool stopOnEof = _projectionConfig.StopOnEof;
             _publisher.Publish(
                 new ProjectionSubscriptionManagement.Subscribe(
-                    _projectionCorrelationId, this, checkpointTag, _checkpointStrategy,
+                    _projectionCorrelationId, _currentSubscriptionId, this, checkpointTag, _checkpointStrategy,
                     _projectionConfig.CheckpointUnhandledBytesThreshold, stopOnEof));
         }
 

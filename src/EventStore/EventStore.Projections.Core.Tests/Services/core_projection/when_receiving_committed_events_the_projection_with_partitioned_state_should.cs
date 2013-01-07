@@ -70,24 +70,24 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _consumer.HandledMessages.Clear();
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(120, 110), "account-01", 1, false,
+                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "account-01", 1, false,
                     ResolvedEvent.Sample(
                         _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
                         Encoding.UTF8.GetBytes("metadata")), 0));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(140, 130), "account-02", 2, false,
+                    Guid.Empty, _subscriptionId, new EventPosition(140, 130), "account-02", 2, false,
                     ResolvedEvent.Sample(
                         _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
                         Encoding.UTF8.GetBytes("metadata")), 1));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(160, 150), "account-01", 2, false,
+                    Guid.Empty, _subscriptionId, new EventPosition(160, 150), "account-01", 2, false,
                     ResolvedEvent.Sample(
                         _eventId, "append", false, Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata")), 2));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(180, 170), "account-02", 3, false,
+                    Guid.Empty, _subscriptionId, new EventPosition(180, 170), "account-02", 3, false,
                     ResolvedEvent.Sample(
                         _eventId, "append", false, Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata")), 3));
         }

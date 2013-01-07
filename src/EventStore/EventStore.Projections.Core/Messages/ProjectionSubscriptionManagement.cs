@@ -37,6 +37,7 @@ namespace EventStore.Projections.Core.Messages
         public class Subscribe : Message
         {
             private readonly Guid _correlationId;
+            private readonly Guid _subscriptionId;
             private readonly ICoreProjection _subscriber;
             private readonly CheckpointTag _fromPosition;
             private readonly CheckpointStrategy _checkpointStrategy;
@@ -44,10 +45,11 @@ namespace EventStore.Projections.Core.Messages
             private readonly bool _stopOnEof;
 
             public Subscribe(
-                Guid correlationId, ICoreProjection subscriber, CheckpointTag from,
+                Guid correlationId, Guid subscriptionId, ICoreProjection subscriber, CheckpointTag from,
                 CheckpointStrategy checkpointStrategy, long checkpointUnhandledBytesThreshold, bool stopOnEof = false)
             {
                 _correlationId = correlationId;
+                _subscriptionId = subscriptionId;
                 _subscriber = subscriber;
                 _fromPosition = @from;
                 _checkpointStrategy = checkpointStrategy;
@@ -83,6 +85,11 @@ namespace EventStore.Projections.Core.Messages
             public bool StopOnEof
             {
                 get { return _stopOnEof; }
+            }
+
+            public Guid SubscriptionId
+            {
+                get { return _subscriptionId; }
             }
         }
 

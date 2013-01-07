@@ -22,10 +22,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private long? _lastPassedOrCheckpointedEventPosition;
         private float _progress = -1;
         private long _subscriptionMessageSequenceNumber;
+        private Guid _subscriptionId;
         private bool _eofReached;
 
         protected ProjectionSubscriptionBase(
-            Guid projectionCorrelationId, CheckpointTag from,
+            Guid projectionCorrelationId, Guid subscriptionId, CheckpointTag from,
             IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> eventHandler,
             IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> checkpointHandler,
             IHandle<ProjectionSubscriptionMessage.ProgressChanged> progressHandler,
@@ -66,7 +67,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (progressChanged)
                     _progressHandler.Handle(
                         new ProjectionSubscriptionMessage.ProgressChanged(
-                            _projectionCorrelationId, _positionTracker.LastTag, _progress,
+                            _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, _progress,
                             _subscriptionMessageSequenceNumber++));
                 return;
             }
@@ -93,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
                 var convertedMessage =
                     ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
-                        message, eventCheckpointTag, _eventFilter.GetCategory(message.PositionStreamId),
+                        message, eventCheckpointTag, _eventFilter.GetCategory(message.PositionStreamId), _subscriptionId,
                         _subscriptionMessageSequenceNumber++);
                 _eventHandler.Handle(convertedMessage);
             }
@@ -107,7 +108,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
                     _checkpointHandler.Handle(
                         new ProjectionSubscriptionMessage.CheckpointSuggested(
-                            _projectionCorrelationId, _positionTracker.LastTag, message.Progress,
+                            _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, message.Progress,
                             _subscriptionMessageSequenceNumber++));
                 }
                 else
@@ -115,7 +116,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (progressChanged)
                         _progressHandler.Handle(
                             new ProjectionSubscriptionMessage.ProgressChanged(
-                                _projectionCorrelationId, _positionTracker.LastTag, _progress,
+                                _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, _progress,
                                 _subscriptionMessageSequenceNumber++));
                 }
             }
@@ -141,7 +142,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 EofReached();
                 _eofHandler.Handle(
                     new ProjectionSubscriptionMessage.EofReached(
-                        _projectionCorrelationId, _positionTracker.LastTag, _progress,
+                        _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, _progress,
                         _subscriptionMessageSequenceNumber++));
             }
         }
