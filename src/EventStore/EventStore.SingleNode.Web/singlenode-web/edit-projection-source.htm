@@ -109,8 +109,8 @@
                 });
 
                 function successSource(data, status, xhr) {
-                    $("#source").text(data.Query);
-                    $("#emit").attr("checked", data.EmitEnabled);
+                    $("#source").text(data.query);
+                    $("#emit").attr("checked", data.emitEnabled);
                 }
 
                 function errorSource(xhr, status) {
