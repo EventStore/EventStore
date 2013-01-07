@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -94,7 +95,9 @@ namespace EventStore.Core.Services.Transport.Http
             return document;
         }
 
-        public static FeedElement ToReadStreamFeed(ClientMessage.ReadStreamEventsBackwardCompleted msg, string userHostName, EmbedLevel embedContent)
+        public static FeedElement ToReadStreamFeed(
+            ClientMessage.ReadStreamEventsBackwardCompleted msg, string userHostName, EmbedLevel embedContent,
+            bool headOfStream)
         {
             Ensure.NotNull(msg, "msg");
 
@@ -105,6 +108,11 @@ namespace EventStore.Core.Services.Transport.Http
             feed.SetId(self);
             feed.SetUpdated(msg.Events.Length > 0 ? msg.Events[0].Event.TimeStamp : DateTime.MinValue.ToUniversalTime());
             feed.SetAuthor(AtomSpecs.Author);
+            feed.SetHeadOfStream(headOfStream);
+            if (headOfStream)
+                //NOTE: etag workaround - to be fixed with better http handling model
+                feed.SetETag(msg.LastEventNumber.ToString(CultureInfo.InvariantCulture) + ";" + "application/json".GetHashCode());
+            feed.SetSelfUrl(self);
 
             feed.AddLink("self", self);
             feed.AddLink("first", HostName.Combine(userHostName, "/streams/{0}", escapedStreamId)); // TODO AN: should account for msg.MaxCount

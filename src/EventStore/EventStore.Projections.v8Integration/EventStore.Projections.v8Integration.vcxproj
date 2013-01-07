@@ -66,29 +66,43 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)\..\Libs\x64;$(LibraryPath)</LibraryPath>
-    <OutDir>$(ProjectDir)..\libs\x64\</OutDir>
+    <OutDir>$(ProjectDir)\..\libs\$(Platform)\</OutDir>
     <TargetName>js1</TargetName>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)\..\Libs\win32;$(LibraryPath)</LibraryPath>
-    <OutDir>$(ProjectDir)..\libs\win32\</OutDir>
+    <OutDir>$(ProjectDir)\..\libs\$(Platform)\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
     <TargetName>js1</TargetName>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(ProjectDir)..\..\..\bin\eventstore\$(Configuration)\anycpu\</OutDir>
+    <OutDir>$(ProjectDir)\..\libs\$(Platform)\</OutDir>
     <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)\..\Libs\win32;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)\..\Libs\x64;$(LibraryPath)</LibraryPath>
+    <TargetName>js1</TargetName>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
-    <OutDir>$(ProjectDir)..\..\..\bin\eventstore\$(Configuration)\x86\</OutDir>
+    <OutDir>$(ProjectDir)\..\libs\$(Platform)\</OutDir>
     <IncludePath>$(ProjectDir)\..\libs\include\;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)\..\Libs\win32;$(LibraryPath)</LibraryPath>
+    <TargetName>js1</TargetName>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -131,6 +145,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>v8_base.lib;v8_snapshot.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
@@ -148,6 +163,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>v8_base.lib;v8_snapshot.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>

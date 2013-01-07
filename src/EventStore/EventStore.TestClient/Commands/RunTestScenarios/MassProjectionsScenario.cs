@@ -169,10 +169,20 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                     try
                     {
-                        if (enable && !isRunning)
-                            manager.Enable(projection);
+                        if (enable)
+                        {
+                            if (!isRunning)
+                                manager.Enable(projection);
+                            else 
+                                Log.Info("Projection '{0}' is already running and will not be enabled.", projection);
+                        }
                         else
-                            manager.Disable(projection);
+                        {
+                            if (isRunning)
+                                manager.Disable(projection);
+                            else
+                                Log.Info("Projection '{0}' is already not running and will not be disabled again.", projection);
+                        }
 
                         break;
                     }

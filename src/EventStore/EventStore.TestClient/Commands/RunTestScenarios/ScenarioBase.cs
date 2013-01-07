@@ -549,7 +549,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             };
 
             int writtenCount = 0;
-            long transactionId = -1;
+            EventStoreTransaction transaction = null;
             var createTask = store.CreateStreamAsync(stream, Guid.NewGuid(), false, Encoding.UTF8.GetBytes("metadata"));
             createTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
 
@@ -558,7 +558,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 if (writtenCount == eventCount)
                 {
-                    var commitTask = store.CommitTransactionAsync(transactionId, stream);
+                    var commitTask = store.CommitTransactionAsync(transaction);
                     commitTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                     commitTask.ContinueWith(t =>
                     {
@@ -570,7 +570,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 writtenCount += 1;
 
-                var writeTask = store.TransactionalWriteAsync(transactionId, stream, new[] { createEvent(writtenCount) });
+                var writeTask = store.TransactionalWriteAsync(transaction, new[] { createEvent(writtenCount) });
                 writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 writeTask.ContinueWith(writeTransactionEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
@@ -581,7 +581,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 startTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 startTask.ContinueWith(t =>
                 {
-                    transactionId = t.Result.TransactionId;
+                    transaction = t.Result;
                     writeTransactionEvent(t);
                 }, TaskContinuationOptions.OnlyOnRanToCompletion);
 

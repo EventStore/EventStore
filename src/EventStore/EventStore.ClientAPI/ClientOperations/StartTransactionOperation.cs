@@ -48,6 +48,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;
+        private readonly EventStoreConnection _parentConnection;
 
         public Guid CorrelationId
         {
@@ -62,14 +63,15 @@ namespace EventStore.ClientAPI.ClientOperations
                                          Guid corrId,
                                          bool forward,
                                          string stream,
-                                         int expectedVersion)
+                                         int expectedVersion,
+                                         EventStoreConnection parentConnection)
         {
             _source = source;
-
             _corrId = corrId;
             _forward = forward;
             _stream = stream;
             _expectedVersion = expectedVersion;
+            _parentConnection = parentConnection;
         }
 
         public void SetRetryId(Guid correlationId)
@@ -140,7 +142,7 @@ namespace EventStore.ClientAPI.ClientOperations
             if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
             {
                 if (_result != null)
-                    _source.SetResult(new EventStoreTransaction(_result.EventStreamId, _result.TransactionId));
+                    _source.SetResult(new EventStoreTransaction(_result.EventStreamId, _result.TransactionId, _parentConnection));
                 else
                     _source.SetException(new NoResultException());
             }

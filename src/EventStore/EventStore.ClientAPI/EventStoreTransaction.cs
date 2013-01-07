@@ -25,21 +25,113 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
 {
-    public class EventStoreTransaction
+    /// <summary>
+    /// Represents a multi-request transaction with the Event Store
+    /// </summary>
+    public class EventStoreTransaction : IDisposable
     {
-        public readonly string Stream;
-        public readonly long TransactionId;
+        internal readonly string Stream;
+        internal readonly long TransactionId;
+        private readonly EventStoreConnection _connection;
+        private bool isRolledBack = false;
+        private bool isCommitted = false;
 
-        internal EventStoreTransaction(string stream, long transactionId)
+        /// <summary>
+        /// Commits this transaction
+        /// </summary>
+        public void Commit()
+        {
+            if(isRolledBack) throw new InvalidOperationException("can't commit a rolledback transaction");
+            if(isCommitted) throw new InvalidOperationException("Transaction is already committed");
+            _connection.CommitTransaction(this);
+            isCommitted = true;
+        }
+
+        /// <summary>
+        /// Asynchronously commits this transaction
+        /// </summary>
+        /// <returns>A <see cref="Task"/> the caller can use to control the async operation</returns>
+        public Task CommitAsync()
+        {
+            if (isRolledBack) throw new InvalidOperationException("can't commit a rolledback transaction");
+            if (isCommitted) throw new InvalidOperationException("transaction is already committed");
+            isCommitted = true;
+            return _connection.CommitTransactionAsync(this);
+        }
+
+
+        /// <summary>
+        /// Starts a transaction in the event store on a given stream synchronously
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
+        /// round trips over long periods of time between the caller and the event store. This method
+        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
+        /// </remarks>
+        /// <param name="events">The events to write</param>
+        public void Write(IEnumerable<IEvent> events)
+        {
+            if (isRolledBack) throw new InvalidOperationException("can't write to a rolledback transaction");
+            if (isCommitted) throw new InvalidOperationException("Transaction is already committed");
+            _connection.TransactionalWrite(this, events);
+        }
+
+        /// <summary>
+        /// Starts a transaction in the event store on a given stream asynchronously
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
+        /// round trips over long periods of time between the caller and the event store. This method
+        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
+        /// </remarks>
+        /// <param name="events">The events to write</param>
+        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
+        public Task WriteAsync(IEnumerable<IEvent> events)
+        {
+            if (isRolledBack) throw new InvalidOperationException("can't write to a rolledback transaction");
+            if (isCommitted) throw new InvalidOperationException("Transaction is already committed");
+            return _connection.TransactionalWriteAsync(this, events);
+        }
+
+        /// <summary>
+        /// Rollsback this transaction.
+        /// </summary>
+        public void Rollback()
+        {
+            if (isCommitted) throw new InvalidOperationException("Transaction is already committed");
+            isRolledBack = true;
+        } 
+
+        /// <summary>
+        /// Constucts a new <see cref="EventStoreTransaction"/>
+        /// </summary>
+        /// <param name="stream">The stream in the transaction</param>
+        /// <param name="transactionId">The transaction id of the transaction</param>
+        /// <param name="connection">The connection the transaction is hooked to</param>
+        internal EventStoreTransaction(string stream, long transactionId, EventStoreConnection connection)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
-
             Stream = stream;
             TransactionId = transactionId;
+            _connection = connection;
+        }
+
+        /// <summary>
+        /// Disposes this transaction rolling it back if not already committed
+        /// </summary>
+        public void Dispose()
+        {
+            if(!isCommitted)
+                isRolledBack = true;
         }
     }
 }

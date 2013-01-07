@@ -40,6 +40,9 @@ namespace EventStore.Transport.Http.Atom
         public string Id { get; set; }
         public string Updated { get; set; }
         public PersonElement Author { get; set; }
+        public bool HeadOfStream { get; set; }
+        public string SelfUrl { get; set; }
+        public string ETag { get; set; }
 
         public List<LinkElement> Links { get; set; }
         public List<EntryElement> Entries { get; set; }
@@ -120,6 +123,21 @@ namespace EventStore.Transport.Http.Atom
             Entries.ForEach(entry => entry.WriteXml(writer));
 
             writer.WriteEndElement();
+        }
+
+        public void SetHeadOfStream(bool headOfStream)
+        {
+            this.HeadOfStream = headOfStream;
+        }
+
+        public void SetSelfUrl(string self)
+        {
+            this.SelfUrl = self;
+        }
+
+        public void SetETag(string etag)
+        {
+            this.ETag = etag;
         }
     }
 

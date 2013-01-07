@@ -30,16 +30,39 @@ using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
 {
+    /// <summary>
+    /// Represents a previously written event
+    /// </summary>
     public class RecordedEvent
     {
+        /// <summary>
+        /// The Event Stream that this event belongs to
+        /// </summary>
         public readonly string EventStreamId;
 
+        /// <summary>
+        /// The Unique Identifier representing this event
+        /// </summary>
         public readonly Guid EventId;
+
+        /// <summary>
+        /// The number of this event in the stream
+        /// </summary>
         public readonly int EventNumber;
 
+        /// <summary>
+        /// The type of event this is
+        /// </summary>
         public readonly string EventType;
 
+        /// <summary>
+        /// A byte array representing the data of this event
+        /// </summary>
         public readonly byte[] Data;
+
+        /// <summary>
+        /// A byte array representing the metadata associated with this event
+        /// </summary>
         public readonly byte[] Metadata;
 
         internal RecordedEvent(ClientMessage.EventRecord systemRecord)
