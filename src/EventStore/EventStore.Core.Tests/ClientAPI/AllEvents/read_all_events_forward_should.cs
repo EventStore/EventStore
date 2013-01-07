@@ -330,38 +330,45 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
+                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
+                
                 var catched = new List<RecordedEvent>();
-                Position lastKnonwPosition = null;
+                Position lastKnownPosition = null;
                 var dropped = new AutoResetEvent(false);
 
-                var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create.Wait);
-
                 var subscribed = new ManualResetEventSlim();
+                bool wasSubscribed = false;
                 store.SubscribeAsync(stream, 
                                      (@event, position) =>
                                      {
                                          catched.Add(@event);
-                                         lastKnonwPosition = position;
+                                         lastKnownPosition = position;
+                                         wasSubscribed = true;
                                          subscribed.Set();
                                      },
-                                     () => dropped.Set());
+                                     () =>
+                                     {
+                                         wasSubscribed = false;
+                                         subscribed.Set();
+                                         dropped.Set();
+                                     });
 
                 var testEvents = Enumerable.Range(1, 5).Select(x => new TestEvent(x.ToString())).ToArray();
 
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.That(write.Wait(Timeout));
 
-                Assert.IsTrue(subscribed.Wait(2000), "Subscription haven't happened in time.");
+                Assert.IsTrue(subscribed.Wait(5000), "Subscription haven't happened in time.");
+                Assert.IsTrue(wasSubscribed, "Subscription failed.");
+                Assert.NotNull(lastKnownPosition, "Last know position should not be null.");
 
                 store.UnsubscribeAsync(stream);
-                Assert.That(dropped.WaitOne(Timeout));
+                Assert.That(dropped.WaitOne(Timeout), "Couldn't unsubscribe in time.");
 
                 var write2 = store.AppendToStreamAsync(stream, testEvents.Length, testEvents);
                 Assert.That(write2.Wait(Timeout));
 
-                Assert.NotNull("Last know position should not be null.");
-                var missed = store.ReadAllEventsForwardAsync(lastKnonwPosition, int.MaxValue);
+                var missed = store.ReadAllEventsForwardAsync(lastKnownPosition, int.MaxValue);
                 Assert.That(missed.Wait(Timeout));
 
                 var expected = testEvents.Concat(testEvents).ToArray();

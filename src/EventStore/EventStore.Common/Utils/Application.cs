@@ -38,6 +38,8 @@ namespace EventStore.Common.Utils
 
     public class Application
     {
+        protected static readonly ILogger Log = LogManager.GetLoggerFor<Application>();
+
         private static Action<int> _exit;
 
         public static void RegisterExitAction(Action<int> exitAction)
@@ -56,7 +58,8 @@ namespace EventStore.Common.Utils
         {
             Ensure.NotNullOrEmpty(reason, "reason");
             
-            Console.WriteLine("Exiting with exitcode {0}, exit reason : {1}", exitCode, reason);
+            Console.WriteLine("Exiting with exitcode {0}\nExit reason : {1}", exitCode, reason);
+            Log.Info("Exiting with exitcode {0}\nExit reason : {1}", exitCode, reason);
 
             LogManager.Finish();
 
