@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
@@ -39,13 +40,13 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var settings = ConnectionSettings.Create()
                 .LimitReconnectionsTo(0)
-                .SetReconnectionDelayTo(TimeSpan.Zero);
+                .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(200));
 
             using (var connection = EventStoreConnection.Create(settings))
             {
                 connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
 
-                Thread.Sleep(8000); //Ensure reconnection attempt
+                Thread.Sleep(4000); //Ensure reconnection attempt
 
                 Assert.Throws<InvalidOperationException>(
                     () => connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348)),
@@ -59,13 +60,13 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var settings = ConnectionSettings.Create()
                 .LimitReconnectionsTo(0)
-                .SetReconnectionDelayTo(TimeSpan.Zero);
+                .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(200));
 
             using (var connection = EventStoreConnection.Create(settings))
             {
                 connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
 
-                Thread.Sleep(12000); //Ensure reconnection attempt
+                Thread.Sleep(4000); //Ensure reconnection attempt
 
                 Assert.Throws<InvalidOperationException>(
                     () => connection.CreateStream("stream", Guid.NewGuid(), false, new byte[0]),
