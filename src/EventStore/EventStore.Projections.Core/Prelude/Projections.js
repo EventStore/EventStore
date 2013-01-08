@@ -42,12 +42,12 @@ var $projections = {
                 return "OK";
             },
 
-            get_state_partition_raw: function (event, streamId, eventType, category, sequenceNumber, metadata, log_position) {
-                return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata, log_position);
+            get_state_partition_raw: function (event, streamId, eventType, category, sequenceNumber, metadata, position) {
+                return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata, position);
             },
 
-            process_event_raw: function (event, streamId, eventType, category, sequenceNumber, metadata, log_position) {
-                processEvent(event, streamId, eventType, category, sequenceNumber, metadata, log_position);
+            process_event_raw: function (event, streamId, eventType, category, sequenceNumber, metadata, partition, position) {
+                processEvent(event, streamId, eventType, category, sequenceNumber, metadata, partition, position);
                 return "OK";
             },
 
@@ -108,7 +108,7 @@ var $projections = {
             }
         }
 
-        function getStatePartition(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw) {
+         function getStatePartition(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw, position) {
 
              var eventHandler = getStatePartitionHandler;
 
@@ -119,6 +119,7 @@ var $projections = {
                  streamId: streamId,
                  sequenceNumber: sequenceNumber,
                  metadataRaw: metadataRaw,
+                 position: position,
              };
 
              tryDeserializeBody(eventEnvelope);
@@ -135,7 +136,7 @@ var $projections = {
 
         }
 
-         function processEvent(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw, partition) {
+         function processEvent(eventRaw, streamId, eventType, category, sequenceNumber, metadataRaw, partition, position) {
 
             var eventName = eventType;
 
@@ -152,6 +153,7 @@ var $projections = {
                 sequenceNumber: sequenceNumber,
                 metadataRaw: metadataRaw,
                 partition: partition,
+                position: position,
             };
             // debug only
             for (index = 0; index < rawEventHandlers.length; index++) {

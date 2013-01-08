@@ -596,7 +596,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 ProcessEventFaulted(
                     string.Format(
                         "The {0} projection failed to process an event.\r\nHandler: {1}\r\nEvent Position: {2}\r\n\r\nMessage:\r\n\r\n{3}",
-                        _name, GetHandlerTypeName(), message.Position, ex.Message), ex);
+                        _name, GetHandlerTypeName(), message.CheckpointTag, ex.Message), ex);
                 newState = null;
                 emittedEvents = null;
                 hasBeenProcessed = false;

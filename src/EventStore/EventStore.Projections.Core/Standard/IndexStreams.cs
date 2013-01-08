@@ -61,7 +61,8 @@ namespace EventStore.Projections.Core.Standard
         }
 
         public string GetStatePartition(
-            string streamId, string eventType, string category, Guid eventid, int sequenceNumber, string metadata, string data)
+            CheckpointTag position, string streamId, string eventType, string category, Guid eventid, int sequenceNumber,
+            string metadata, string data)
         {
             throw new NotImplementedException();
         }

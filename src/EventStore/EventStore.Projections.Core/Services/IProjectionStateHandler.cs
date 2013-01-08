@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Services
         /// </summary>
         /// <returns>partition name</returns>
         string GetStatePartition(
-            string streamId, string eventType, string category, Guid eventid,
+            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
             int sequenceNumber, string metadata, string data);
 
         /// <summary>
