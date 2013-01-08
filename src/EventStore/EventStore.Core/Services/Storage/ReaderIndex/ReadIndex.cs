@@ -158,8 +158,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 SeqReadResult result;
                 while ((result = seqReader.TryReadNext()).Success)
                 {
-                    if (result.LogRecord.RecordType == LogRecordType.Commit)
-                        Commit((CommitLogRecord)result.LogRecord);
+                    switch (result.LogRecord.RecordType)
+                    {
+                        case LogRecordType.Prepare:
+                            break;
+                        case LogRecordType.Commit:
+                            Commit((CommitLogRecord)result.LogRecord);
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException("recordType", string.Format("Unknown RecordType: {0}", result.LogRecord.RecordType));
+                    }
 
                     processed += 1;
                     if (processed % 100000 == 0)
@@ -184,6 +192,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             int eventNumber = -1;
             uint streamHash = 0;
             string streamId = null;
+
+            var indexEntries = new List<IndexEntry>();
+            var prepares = new List<PrepareLogRecord>();
 
             foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition))
             {
@@ -235,8 +246,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         }
                     }
 #endif
-                    _tableIndex.Add(commit.LogPosition, streamHash, eventNumber, prepare.LogPosition);
-                    _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, eventNumber, prepare));
+                    indexEntries.Add(new IndexEntry(streamHash, eventNumber, prepare.LogPosition));
+                    prepares.Add(prepare);
+                }
+            }
+
+            if (indexEntries.Count > 0)
+            {
+                _tableIndex.AddEntries(commit.LogPosition, indexEntries); // atomically add a whole bulk of entries
+                for (int i = 0, n = indexEntries.Count; i < n; ++i)
+                {
+                    _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, indexEntries[i].Version, prepares[i]));
                 }
             }
 

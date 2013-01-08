@@ -150,17 +150,31 @@ namespace EventStore.Core.Index
             Ensure.Nonnegative(version, "version");
             Ensure.Nonnegative(position, "position");
 
+            AddEntries(commitPos, new[] { new IndexEntry(stream, version, position) });
+        }
+
+        public void AddEntries(long commitPos, IList<IndexEntry> entries)
+        {
+            Ensure.Nonnegative(commitPos, "commitPos");
+            Ensure.NotNull(entries, "entries");
+            Ensure.Positive(entries.Count, "entries.Count");
+
             //should only be called on a single thread.
-            var table = (IMemTable) _awaitingMemTables[0].Table; // always a memtable
-            table.Add(stream, version, position);
+            var table = (IMemTable)_awaitingMemTables[0].Table; // always a memtable
+
+            table.AddEntries(entries);
 
             if (table.Count >= _maxSizeForMemory)
             {
-                var prepareCheckpoint = position;
+                long prepareCheckpoint = entries[0].Position;
+                for (int i = 1, n = entries.Count; i < n; ++i)
+                {
+                    prepareCheckpoint = Math.Max(prepareCheckpoint, entries[i].Position);
+                }
 
                 lock (_awaitingTablesLock)
                 {
-                    var newTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1)};
+                    var newTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
                     newTables.AddRange(_awaitingMemTables.Select(
                         (x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos) : x));
 

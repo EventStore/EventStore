@@ -38,6 +38,7 @@ namespace EventStore.Core.Index
         void Close(bool removeFiles = true);
 
         void Add(long commitPos, uint stream, int version, long position);
+        void AddEntries(long commitPos, IList<IndexEntry> entries);
         
         bool TryGetOneValue(uint stream, int version, out long position);
         bool TryGetLatestEntry(uint stream, out IndexEntry entry);
