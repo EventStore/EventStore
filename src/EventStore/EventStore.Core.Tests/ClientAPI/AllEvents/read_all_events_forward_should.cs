@@ -339,6 +339,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var subscribed = new ManualResetEventSlim();
                 bool wasSubscribed = false;
                 store.SubscribeAsync(stream, 
+                                     false,
                                      (@event, position) =>
                                      {
                                          catched.Add(@event);

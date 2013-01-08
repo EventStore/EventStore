@@ -441,7 +441,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = package.Data.Deserialize<TcpClientMessageDto.SubscribeToStream>();
             if (dto == null) return null;
-            return new ClientMessage.SubscribeToStream(connection, package.CorrelationId, dto.EventStreamId);
+            return new ClientMessage.SubscribeToStream(connection, package.CorrelationId, dto.EventStreamId, dto.ResolveLinkTos);
         }
 
         private ClientMessage.UnsubscribeFromStream UnwrapUnsubscribeFromStream(TcpPackage package, IEnvelope envelope, TcpConnectionManager connection)
@@ -453,8 +453,9 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private ClientMessage.SubscribeToAllStreams UnwrapSubscribeToAllStreams(TcpPackage package, IEnvelope envelope, TcpConnectionManager connection)
         {
-            //var dto = package.Data.Deserialize<HttpClientMessageDto.SubscribeToAllStreams>();
-            return new ClientMessage.SubscribeToAllStreams(connection, package.CorrelationId);
+            var dto = package.Data.Deserialize<TcpClientMessageDto.SubscribeToAllStreams>();
+            if (dto == null) return null;
+            return new ClientMessage.SubscribeToAllStreams(connection, package.CorrelationId, dto.ResolveLinkTos);
         }
 
         private ClientMessage.UnsubscribeFromAllStreams UnwrapUnsubscribeFromAllStreams(TcpPackage package, IEnvelope envelope, TcpConnectionManager connection)

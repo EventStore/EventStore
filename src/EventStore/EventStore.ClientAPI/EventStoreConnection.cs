@@ -703,13 +703,18 @@ namespace EventStore.ClientAPI
 
         public Task SubscribeAsync(string stream, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
+            return SubscribeAsync(stream, false, eventAppeared, subscriptionDropped);
+        }
+
+        public Task SubscribeAsync(string stream, bool resolveLinkTos, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
+        {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
             EnsureActive();
 
             _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
-            return _subscriptionsChannel.Subscribe(stream, eventAppeared, subscriptionDropped);
+            return _subscriptionsChannel.Subscribe(stream, resolveLinkTos, eventAppeared, subscriptionDropped);
         }
 
         public Task UnsubscribeAsync(string stream)
@@ -724,12 +729,17 @@ namespace EventStore.ClientAPI
 
         public Task SubscribeToAllStreamsAsync(Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
+            return SubscribeToAllStreamsAsync(false, eventAppeared, subscriptionDropped);
+        }
+
+        public Task SubscribeToAllStreamsAsync(bool resolveLinkTos, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
+        {
             Ensure.NotNull(eventAppeared, "eventAppeared");
             Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
             EnsureActive();
 
             _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
-            return _subscriptionsChannel.SubscribeToAllStreams(eventAppeared, subscriptionDropped);
+            return _subscriptionsChannel.SubscribeToAllStreams(resolveLinkTos, eventAppeared, subscriptionDropped);
         }
 
         /// <summary>

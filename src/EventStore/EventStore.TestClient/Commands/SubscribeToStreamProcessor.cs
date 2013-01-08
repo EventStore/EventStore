@@ -95,7 +95,7 @@ namespace EventStore.TestClient.Commands
             if (args.Length == 0)
             {
                 context.Log.Info("SUBSCRIBING TO ALL STREAMS...");
-                var cmd = new TcpClientMessageDto.SubscribeToAllStreams();
+                var cmd = new TcpClientMessageDto.SubscribeToAllStreams(resolveLinkTos: false);
                 connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToAllStreams, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
             }
             else
@@ -103,7 +103,7 @@ namespace EventStore.TestClient.Commands
                 foreach (var stream in args)
                 {
                     context.Log.Info("SUBSCRIBING TO STREAM <{0}>...", stream);
-                    var cmd = new TcpClientMessageDto.SubscribeToStream(stream);
+                    var cmd = new TcpClientMessageDto.SubscribeToStream(stream, resolveLinkTos: false);
                     connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
                 }
             }

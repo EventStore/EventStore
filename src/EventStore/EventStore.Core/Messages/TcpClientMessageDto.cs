@@ -711,11 +711,15 @@ namespace EventStore.Core.Messages
     [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
   
+    [ProtoMember(2, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
+  
     private SubscribeToStream() {}
   
-    public SubscribeToStream(string eventStreamId)
+    public SubscribeToStream(string eventStreamId, bool resolveLinkTos)
     {
         EventStreamId = eventStreamId;
+        ResolveLinkTos = resolveLinkTos;
     }
   }
   
@@ -736,8 +740,14 @@ namespace EventStore.Core.Messages
   [Serializable, ProtoContract(Name=@"SubscribeToAllStreams")]
   public partial class SubscribeToAllStreams
   {
-    public SubscribeToAllStreams()
+    [ProtoMember(1, IsRequired = true, Name=@"resolve_link_tos", DataFormat = DataFormat.Default)]
+    public readonly bool ResolveLinkTos;
+  
+    private SubscribeToAllStreams() {}
+  
+    public SubscribeToAllStreams(bool resolveLinkTos)
     {
+        ResolveLinkTos = resolveLinkTos;
     }
   }
   

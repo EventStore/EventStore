@@ -75,14 +75,14 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public Task Subscribe(string stream, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
+        public Task Subscribe(string stream, bool resolveLinkTos, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             var id = Guid.NewGuid();
             var source = new TaskCompletionSource<object>();
 
             if (_subscriptions.TryAdd(id, new Subscription(source, id, stream, eventAppeared, subscriptionDropped)))
             {
-                var subscribe = new ClientMessage.SubscribeToStream(stream);
+                var subscribe = new ClientMessage.SubscribeToStream(stream, resolveLinkTos);
                 var pkg = new TcpPackage(TcpCommand.SubscribeToStream, id, subscribe.Serialize());
                 _connection.EnqueueSend(pkg.AsByteArray());
             }
@@ -112,14 +112,14 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public Task SubscribeToAllStreams(Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
+        public Task SubscribeToAllStreams(bool resolveLinkTos, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
         {
             var id = Guid.NewGuid();
             var source = new TaskCompletionSource<object>();
 
             if (_subscriptions.TryAdd(id, new Subscription(source, id, eventAppeared, subscriptionDropped)))
             {
-                var subscribe = new ClientMessage.SubscribeToAllStreams();
+                var subscribe = new ClientMessage.SubscribeToAllStreams(resolveLinkTos);
                 var pkg = new TcpPackage(TcpCommand.SubscribeToAllStreams, id, subscribe.Serialize());
                 _connection.EnqueueSend(pkg.AsByteArray());
             }

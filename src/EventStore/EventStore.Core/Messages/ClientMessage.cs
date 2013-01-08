@@ -745,12 +745,14 @@ namespace EventStore.Core.Messages
             public readonly TcpConnectionManager Connection;
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
+            public readonly bool ResolveLinkTos;
 
-            public SubscribeToStream(TcpConnectionManager connection, Guid correlationId, string eventStreamId)
+            public SubscribeToStream(TcpConnectionManager connection, Guid correlationId, string eventStreamId, bool resolveLinkTos)
             {
                 Connection = connection;
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
+                ResolveLinkTos = resolveLinkTos;
             }
         }
 
@@ -772,11 +774,13 @@ namespace EventStore.Core.Messages
         {
             public readonly TcpConnectionManager Connection;
             public readonly Guid CorrelationId;
+            public readonly bool ResolveLinkTos;
 
-            public SubscribeToAllStreams(TcpConnectionManager connection, Guid correlationId)
+            public SubscribeToAllStreams(TcpConnectionManager connection, Guid correlationId, bool resolveLinkTos)
             {
                 Connection = connection;
                 CorrelationId = correlationId;
+                ResolveLinkTos = resolveLinkTos;
             }
         }
 

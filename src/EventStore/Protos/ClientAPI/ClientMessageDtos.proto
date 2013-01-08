@@ -187,6 +187,7 @@ message TransactionCommitCompleted {
 
 message SubscribeToStream {
 	required string event_stream_id = 1;
+	required bool resolve_link_tos = 2;
 }
 
 message UnsubscribeFromStream {
@@ -194,6 +195,7 @@ message UnsubscribeFromStream {
 }
 
 message SubscribeToAllStreams {
+	required bool resolve_link_tos = 1;
 }
 
 message UnsubscribeFromAllStreams {
