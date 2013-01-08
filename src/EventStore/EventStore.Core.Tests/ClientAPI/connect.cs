@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
 
-                Thread.Sleep(8000); //Ensure reconnection attempt
+                Thread.Sleep(12000); //Ensure reconnection attempt
 
                 Assert.Throws<InvalidOperationException>(
                     () => connection.CreateStream("stream", Guid.NewGuid(), false, new byte[0]),
