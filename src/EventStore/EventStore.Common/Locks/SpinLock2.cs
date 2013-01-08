@@ -108,12 +108,12 @@ namespace EventStore.Common.Locks
         }
 
         //TODO AN: make this use struct again after bug in mono JIT is fixed!!!
-        public LockReleaser Acquire()
+        public LockReleaserSlim Acquire()
         {
             bool taken;
             Enter(out taken);
             if (taken)
-                return new LockReleaser(this);
+                return new LockReleaserSlim(this);
             throw new Exception("Unable to acquire lock, this shouldn't happen.");
         }
 
