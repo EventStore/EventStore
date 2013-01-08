@@ -32,7 +32,6 @@ using EventStore.Common.Exceptions;
 using EventStore.Common.Utils;
 using EventStore.Core;
 
-// TeamCity test - a commit to dev
 namespace EventStore.TestClient
 {
     public class Program: ProgramBase<ClientOptions>
