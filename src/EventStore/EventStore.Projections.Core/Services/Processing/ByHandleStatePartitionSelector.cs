@@ -43,8 +43,8 @@ namespace EventStore.Projections.Core.Services.Processing
         public override string GetStatePartition(ProjectionSubscriptionMessage.CommittedEventReceived @event)
         {
             return _handler.GetStatePartition(
-                @event.EventStreamId, @event.Data.EventType, @event.EventCategory, @event.Data.EventId,
-                @event.EventSequenceNumber, Encoding.UTF8.GetString(@event.Data.Metadata),
+                @event.CheckpointTag, @event.EventStreamId, @event.Data.EventType, @event.EventCategory,
+                @event.Data.EventId, @event.EventSequenceNumber, Encoding.UTF8.GetString(@event.Data.Metadata),
                 Encoding.UTF8.GetString(@event.Data.Data));
         }
     }

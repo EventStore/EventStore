@@ -251,6 +251,21 @@ namespace EventStore.Core.Services.Transport.Http
                         {
                             // ignore - we tried
                         }
+                        var lnk = eventLinkPair.Link;
+                        if (lnk != null)
+                        {
+                            try
+                            {
+                                richEntry.LinkMetaData = Encoding.UTF8.GetString(lnk.Metadata);
+                                richEntry.IsLinkMetaData = richEntry.LinkMetaData.IsNotEmptyString();
+                                // next step may fail, so we have already assigned body
+                                richEntry.LinkMetaData = FormatJson(richEntry.LinkMetaData);
+                            }
+                            catch
+                            {
+                                // ignore - we tried
+                            }
+                        }
                     }
                 }
             }
