@@ -164,14 +164,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_options.UseEventIndexes && _allEvents)
                 throw new InvalidOperationException("useEventIndexes option cannot be used in whenAny() projections");
 
-
-            if (!_options.EmitStateUpdated && 
-                ((_allStreams && _options.UseEventIndexes && _events != null && _events.Count > 1)
-                || (_streams != null && _streams.Count > 1)))
-            {
-                throw new InvalidOperationException("EmitStateUpdated is required for multi-stream sources");
-            }
-
             if (_options.ReorderEvents)
             {
                 if (_options.UseEventIndexes)
