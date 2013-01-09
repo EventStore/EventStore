@@ -466,7 +466,10 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private TcpPackage WrapStreamEventAppeared(ClientMessage.StreamEventAppeared msg)
         {
-            var dto = new TcpClientMessageDto.StreamEventAppeared(msg.EventNumber, msg.Event, msg.CommitPosition);
+            var dto = new TcpClientMessageDto.StreamEventAppeared(msg.EventStreamId,
+                                                                  msg.CommitPosition,
+                                                                  msg.PreparePosition,
+                                                                  new TcpClientMessageDto.EventLinkPair(msg.Event.Event, msg.Event.Link));
             return new TcpPackage(TcpCommand.StreamEventAppeared, msg.CorrelationId, dto.Serialize());
         }
 

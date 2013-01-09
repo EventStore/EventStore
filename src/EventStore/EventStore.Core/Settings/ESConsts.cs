@@ -32,11 +32,12 @@ namespace EventStore.Core.Settings
     {
         public const int StorageReaderHandlerCount = 4;
 
-        public const int ReadIndexReaderCount = 1   /*StorageWriter*/
-                                                + 1 /*StorageChaser*/
-                                                + 1 /*Projections*/
-                                                + 1 /*Scavenging*/
-                                                + StorageReaderHandlerCount;
+        public const int ReadIndexReaderCount = 1 /*StorageWriter*/
+                                              + 1 /*StorageChaser*/
+                                              + 1 /*Projections*/
+                                              + 1 /*Scavenging*/
+                                              + 1 /*Subscription LinkTos resolving*/
+                                              + StorageReaderHandlerCount;
 
         public const int TFChunkReaderCount = ReadIndexReaderCount + 2 /* for caching/uncaching, populating midpoints */;
 

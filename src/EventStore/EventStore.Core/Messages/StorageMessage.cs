@@ -262,14 +262,12 @@ namespace EventStore.Core.Messages
         public class EventCommited: Message
         {
             public readonly long CommitPosition;
-            public readonly int EventNumber;
-            public readonly PrepareLogRecord Prepare;
+            public readonly EventRecord Event;
 
-            public EventCommited(long commitPosition, int eventNumber, PrepareLogRecord prepare)
+            public EventCommited(long commitPosition, EventRecord @event)
             {
                 CommitPosition = commitPosition;
-                EventNumber = eventNumber;
-                Prepare = prepare;
+                Event = @event;
             }
         }
 

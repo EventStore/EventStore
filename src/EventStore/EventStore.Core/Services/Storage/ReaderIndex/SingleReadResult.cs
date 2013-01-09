@@ -30,9 +30,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 {
     public enum SingleReadResult
     {
-        Success,
-        NotFound,
-        NoStream,
-        StreamDeleted
+        Success = 0,
+        NotFound = 1,
+        NoStream = 2,
+        StreamDeleted = 3
     }
 }

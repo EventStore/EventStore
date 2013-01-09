@@ -29,6 +29,9 @@ namespace EventStore.Core.Data
 {
     public struct EventLinkPair
     {
+        public EventRecord OriginalEvent { get { return Link ?? Event; } }
+        public EventRecord ResolvedEvent { get { return Link != null ? Event : null; } }
+
         public readonly EventRecord Event;
         public readonly EventRecord Link;
 

@@ -256,7 +256,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 _tableIndex.AddEntries(commit.LogPosition, indexEntries); // atomically add a whole bulk of entries
                 for (int i = 0, n = indexEntries.Count; i < n; ++i)
                 {
-                    _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, indexEntries[i].Version, prepares[i]));
+                    _bus.Publish(new StorageMessage.EventCommited(commit.LogPosition, new EventRecord(indexEntries[i].Version, prepares[i])));
                 }
             }
 

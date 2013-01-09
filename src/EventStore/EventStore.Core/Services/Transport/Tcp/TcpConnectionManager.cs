@@ -45,8 +45,7 @@ namespace EventStore.Core.Services.Transport.Tcp
     /// Manager for individual TCP connection. It handles connection lifecycle,
     /// heartbeats, message framing and dispatch to the memory bus.
     /// </summary>
-    public class TcpConnectionManager: IHandle<TcpMessage.Heartbeat>, 
-                                       IHandle<TcpMessage.HeartbeatTimeout>
+    public class TcpConnectionManager: IHandle<TcpMessage.Heartbeat>, IHandle<TcpMessage.HeartbeatTimeout>
     {
         private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromMilliseconds(15000);
         private static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromMilliseconds(60000);

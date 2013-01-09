@@ -181,13 +181,7 @@ namespace EventStore.Core
             Bus.Subscribe<StorageMessage.PreparePhaseTimeout>(requestManagement);
             Bus.Subscribe<StorageMessage.CommitPhaseTimeout>(requestManagement);
 
-            var clientService = new ClientService();
-            Bus.Subscribe<TcpMessage.ConnectionClosed>(clientService);
-            Bus.Subscribe<ClientMessage.SubscribeToStream>(clientService);
-            Bus.Subscribe<ClientMessage.UnsubscribeFromStream>(clientService);
-            Bus.Subscribe<ClientMessage.SubscribeToAllStreams>(clientService);
-            Bus.Subscribe<ClientMessage.UnsubscribeFromAllStreams>(clientService);
-            Bus.Subscribe<StorageMessage.EventCommited>(clientService);
+            var subscriptionsService = new SubscriptionsService(_mainBus, readIndex);
 
             //TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));

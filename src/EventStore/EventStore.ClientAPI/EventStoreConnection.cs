@@ -62,6 +62,19 @@ namespace EventStore.ClientAPI
     /// </remarks>
     public class EventStoreConnection : IDisposable
     {
+        /// <summary>
+        /// Raised whenever the internal connection is disconnected from the event store
+        /// </summary>
+        public event EventHandler Disconnected;
+        /// <summary>
+        /// Raised whenever the internal connection is reconnecting to the event store
+        /// </summary>
+        public event EventHandler Reconnecting;
+        /// <summary>
+        /// Raised whenever the internal connection is connected to the event store
+        /// </summary>
+        public event EventHandler Connected;
+
         private readonly ILogger _log;
 
         private IPEndPoint _tcpEndPoint;
@@ -85,7 +98,6 @@ namespace EventStore.ClientAPI
         private volatile bool _stopping;
 
         private readonly ConnectionSettings _settings;
-
 
         /// <summary>
         /// Constructs a new instance of a <see cref="EventStoreConnection"/>
@@ -567,6 +579,7 @@ namespace EventStore.ClientAPI
 
             return ReadEventStreamForwardAsync(stream, start, count).Result;
         }
+
         /// <summary>
         /// Reads count Events from an Event Stream forwards (eg oldest to newest) starting from position start 
         /// </summary>
@@ -759,44 +772,25 @@ namespace EventStore.ClientAPI
             return Tasks.CreateCompleted();
         }
 
-        /// <summary>
-        /// Raised whenever the internal connection is disconnected from the event store
-        /// </summary>
-        public event EventHandler Disconnected;
-        /// <summary>
-        /// Raised whenever the internal connection is reconnecting to the event store
-        /// </summary>
-        public event EventHandler Reconnecting;
-        /// <summary>
-        /// Raised whenever the internal connection is connected to the event store
-        /// </summary>
-        public event EventHandler Connected;
-
         private void OnDisconnected()
         {
-            var d = Disconnected;
-            if (d != null)
-            {
-                d(this, new EventArgs());
-            }
+            var handler = Disconnected;
+            if (handler != null)
+                handler(this, EventArgs.Empty);
         }
 
         private void OnReconnecting()
         {
-            var r = Reconnecting;
-            if (r != null)
-            {
-                r(this, new EventArgs());
-            }
+            var handler = Reconnecting;
+            if (handler != null)
+                handler(this, EventArgs.Empty);
         }
 
         private void OnConnected()
         {
-            var c = Connected;
-            if (c != null)
-            {
-                c(this, new EventArgs());
-            }
+            var handler = Connected;
+            if (handler != null)
+                handler(this, EventArgs.Empty);
         }
 
         private void MainLoop()

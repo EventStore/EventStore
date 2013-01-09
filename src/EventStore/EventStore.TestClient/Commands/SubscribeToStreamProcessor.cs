@@ -61,10 +61,10 @@ namespace EventStore.TestClient.Commands
                                                  + "\tData:          {3}\n"
                                                  + "\tMetadata:      {4}\n",
                                                  dto.EventStreamId,
-                                                 dto.EventNumber,
-                                                 dto.EventType,
-                                                 Encoding.UTF8.GetString(dto.Data ?? new byte[0]),
-                                                 Encoding.UTF8.GetString(dto.Metadata ?? new byte[0]));
+                                                 dto.Event.Event.EventNumber,
+                                                 dto.Event.Event.EventType,
+                                                 Encoding.UTF8.GetString(dto.Event.Event.Data ?? new byte[0]),
+                                                 Encoding.UTF8.GetString(dto.Event.Event.Metadata ?? new byte[0]));
                                 break;
                             }
                             case TcpCommand.SubscriptionDropped:

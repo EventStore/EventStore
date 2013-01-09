@@ -82,13 +82,13 @@ namespace EventStore.ClientAPI
         {
             EventStreamId = streamEvent.EventStreamId;
 
-            EventId = new Guid(streamEvent.EventId);
-            EventNumber = streamEvent.EventNumber;
+            EventId = new Guid(streamEvent.Event.Event.EventId);
+            EventNumber = streamEvent.Event.Event.EventNumber;
 
-            EventType = streamEvent.EventType;
+            EventType = streamEvent.Event.Event.EventType;
 
-            Data = streamEvent.Data;
-            Metadata = streamEvent.Metadata;
+            Data = streamEvent.Event.Event.Data;
+            Metadata = streamEvent.Event.Event.Metadata;
         }
     }
 }

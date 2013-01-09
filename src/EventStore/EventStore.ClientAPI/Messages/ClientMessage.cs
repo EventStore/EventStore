@@ -765,39 +765,23 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
     public readonly string EventStreamId;
   
-    [ProtoMember(2, IsRequired = true, Name=@"event_number", DataFormat = DataFormat.TwosComplement)]
-    public readonly int EventNumber;
-  
-    [ProtoMember(3, IsRequired = true, Name=@"event_id", DataFormat = DataFormat.Default)]
-    public readonly byte[] EventId;
-  
-    [ProtoMember(4, IsRequired = true, Name=@"event_type", DataFormat = DataFormat.Default)]
-    public readonly string EventType;
-  
-    [ProtoMember(5, IsRequired = true, Name=@"data", DataFormat = DataFormat.Default)]
-    public readonly byte[] Data;
-  
-    [ProtoMember(6, IsRequired = true, Name=@"metadata", DataFormat = DataFormat.Default)]
-    public readonly byte[] Metadata;
-  
-    [ProtoMember(7, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    [ProtoMember(2, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long CommitPosition;
   
-    [ProtoMember(8, IsRequired = true, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
+    [ProtoMember(3, IsRequired = true, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long PreparePosition;
+  
+    [ProtoMember(4, IsRequired = true, Name=@"event", DataFormat = DataFormat.Default)]
+    public readonly EventLinkPair Event;
   
     private StreamEventAppeared() {}
   
-    public StreamEventAppeared(string eventStreamId, int eventNumber, byte[] eventId, string eventType, byte[] data, byte[] metadata, long commitPosition, long preparePosition)
+    public StreamEventAppeared(string eventStreamId, long commitPosition, long preparePosition, EventLinkPair @event)
     {
         EventStreamId = eventStreamId;
-        EventNumber = eventNumber;
-        EventId = eventId;
-        EventType = eventType;
-        Data = data;
-        Metadata = metadata;
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
+        Event = @event;
     }
   }
   

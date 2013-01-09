@@ -5,21 +5,6 @@ namespace EventStore.Core.Messages
 {
     public partial class TcpClientMessageDto
     {
-        public partial class StreamEventAppeared
-        {
-            public StreamEventAppeared(int eventNumber, PrepareLogRecord prepareLogRecord, long commitPosition)
-            {
-                EventStreamId = prepareLogRecord.EventStreamId;
-                EventNumber = eventNumber;
-                EventId = prepareLogRecord.EventId.ToByteArray();
-                EventType = prepareLogRecord.EventType;
-                Data = prepareLogRecord.Data;
-                Metadata = prepareLogRecord.Metadata;
-                PreparePosition = prepareLogRecord.LogPosition;
-                CommitPosition = commitPosition;
-            }
-        }
-
         public partial class DeniedToRoute
         {
             public DeniedToRoute(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint)

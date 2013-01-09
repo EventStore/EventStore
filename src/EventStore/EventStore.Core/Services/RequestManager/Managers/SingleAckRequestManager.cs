@@ -102,10 +102,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _transactionId = request.TransactionId;
 
             _bus.Publish(new StorageMessage.WriteTransactionData(request.CorrelationId,
-                                                                     _publishEnvelope,
-                                                                     _transactionId,
-                                                                     request.EventStreamId,
-                                                                     request.Events));
+                                                                 _publishEnvelope,
+                                                                 _transactionId,
+                                                                 request.EventStreamId,
+                                                                 request.Events));
             CompleteSuccessRequest(request.CorrelationId, request.TransactionId, request.EventStreamId);
         }
 

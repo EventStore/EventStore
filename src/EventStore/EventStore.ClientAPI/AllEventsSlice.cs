@@ -38,7 +38,7 @@ namespace EventStore.ClientAPI
     public class AllEventsSlice
     {
         /// <summary>
-        /// A <see cref="Position"/> representing the position where this slice was read from.
+        /// A <see cref="Position"/> representing the position where the next slice should be read from.
         /// </summary>
         public readonly Position Position;
 
@@ -47,9 +47,9 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly RecordedEvent[] Events;
 
-        internal AllEventsSlice(Position position, IEnumerable<ClientMessage.EventLinkPair> events)
+        internal AllEventsSlice(Position nextPosition, IEnumerable<ClientMessage.EventLinkPair> events)
         {
-            Position = position;
+            Position = nextPosition;
             Events = events == null ? EventStreamSlice.EmptyEvents : events.Select(x => new RecordedEvent(x.Event)).ToArray();
         }
     }

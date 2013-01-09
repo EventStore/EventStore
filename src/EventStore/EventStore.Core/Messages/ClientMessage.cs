@@ -32,7 +32,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages
 {
@@ -799,16 +798,18 @@ namespace EventStore.Core.Messages
         public class StreamEventAppeared : Message
         {
             public readonly Guid CorrelationId;
-            public readonly int EventNumber;
-            public readonly PrepareLogRecord Event;
+            public readonly string EventStreamId;
             public readonly long CommitPosition;
+            public readonly long PreparePosition;
+            public readonly EventLinkPair Event;
 
-            public StreamEventAppeared(Guid correlationId, int eventNumber, PrepareLogRecord @event, long commitPosition)
+            public StreamEventAppeared(Guid correlationId, string eventStreamId, long commitPosition, long preparePosition, EventLinkPair @event)
             {
                 CorrelationId = correlationId;
-                EventNumber = eventNumber;
-                Event = @event;
+                EventStreamId = eventStreamId;
                 CommitPosition = commitPosition;
+                PreparePosition = preparePosition;
+                Event = @event;
             }
         }
 
