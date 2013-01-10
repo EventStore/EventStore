@@ -91,6 +91,10 @@ namespace EventStore.Projections.Core.Tests.Services
                 throw new NotImplementedException();
             }
 
+            public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         protected TestHandler<Message> _consumer;

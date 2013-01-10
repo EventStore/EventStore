@@ -48,6 +48,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _message = message;
         }
 
+        protected override void RecordEventOrder()
+        {
+            Projection.RecordEventOrder(_message, () => NextStage());
+        }
+
         protected override void GetStatePartition()
         {
             _partition = _statePartitionSelector.GetStatePartition(_message);

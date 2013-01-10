@@ -26,51 +26,43 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Collections.Generic;
 using System.Linq;
-using EventStore.Projections.Core.Messages;
-using NUnit.Framework;
+using EventStore.Core.Data;
+using EventStore.Core.Messages;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
-    [TestFixture]
-    public class when_loading_a_new_projection : TestFixtureWithCoreProjectionLoaded
+    public static class TestFixtureUtils
     {
-        protected override void Given()
+        public static IEnumerable<ClientMessage.WriteEvents> ToStream(
+            this IEnumerable<ClientMessage.WriteEvents> self, string streamId)
         {
-            NoStream("$projections-projection-state");
-            NoStream("$projections-projection-order");
-            AllWritesToSucceed("$projections-projection-order");
-            NoStream("$projections-projection-checkpoint");
+            return self.Where(v => v.EventStreamId == streamId);
         }
 
-        protected override void When()
+        public static List<ClientMessage.WriteEvents> ToStream(
+            this List<ClientMessage.WriteEvents> self, string streamId)
         {
+            return self.Where(v => v.EventStreamId == streamId).ToList();
         }
 
-        [Test]
-        public void should_subscribe_from_beginning()
+        public static IEnumerable<Event> OfEventType(
+            this IEnumerable<ClientMessage.WriteEvents> self, string type)
         {
-            Assert.AreEqual(1, _subscribeProjectionHandler.HandledMessages.Count);
-            Assert.AreEqual(0, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.CommitPosition);
-            Assert.AreEqual(-1, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.PreparePosition);
+            return self.SelectMany(v => v.Events).Where(v => v.EventType == type);
         }
 
-        [Test]
-        public void should_subscribe_non_null_subscriber()
+        public static List<Event> OfEventType(
+            this List<ClientMessage.WriteEvents> self, string type)
         {
-            Assert.NotNull(_subscribeProjectionHandler.HandledMessages[0].Subscriber);
+            return self.SelectMany(v => v.Events).Where(v => v.EventType == type).ToList();
         }
 
-        [Test]
-        public void should_not_initialize_projection_state_handler()
+        public static List<ClientMessage.WriteEvents> WithEventType(
+            this List<ClientMessage.WriteEvents> self, string type)
         {
-            Assert.AreEqual(0, _stateHandler._initializeCalled);
-        }
-
-        [Test]
-        public void should_not_publish_started_message()
-        {
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
+            return self.Where(v => v.Events.Any(m => m.EventType == type)).ToList();
         }
     }
 }

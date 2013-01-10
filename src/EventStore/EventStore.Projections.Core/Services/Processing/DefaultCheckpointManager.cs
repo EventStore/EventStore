@@ -52,16 +52,14 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ProjectionConfig projectionConfig, string projectionCheckpointStreamId, string name,
+            ProjectionConfig projectionConfig, string name,
             PositionTagger positionTagger, ProjectionNamesBuilder namingBuilder, bool useCheckpoints,
             bool emitStateUpdated, bool emitPartitionCheckpoints = false)
             : base(
                 coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
                 name, positionTagger, namingBuilder, useCheckpoints, emitStateUpdated, emitPartitionCheckpoints)
         {
-            if (projectionCheckpointStreamId == null) throw new ArgumentNullException("projectionCheckpointStreamId");
-            if (projectionCheckpointStreamId == "") throw new ArgumentException("projectionCheckpointStreamId");
-            _projectionCheckpointStreamId = projectionCheckpointStreamId;
+            _projectionCheckpointStreamId = namingBuilder.MakeCheckpointStreamName();
         }
 
         protected override void BeginWriteCheckpoint(
@@ -75,6 +73,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 requestedCheckpointState == null ? null : Encoding.UTF8.GetBytes(requestedCheckpointState),
                 requestedCheckpointPosition.ToJsonBytes());
             PublishWriteCheckpointEvent();
+        }
+
+        public override void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed)
+        {
+            committed();
         }
 
         private void WriteCheckpointEventCompleted(ClientMessage.WriteEventsCompleted message)
@@ -193,6 +196,11 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             _lastWrittenCheckpointEventNumber = checkpointEventNumber;
             CheckpointLoaded(checkpointTag, checkpointData);
+        }
+
+        protected override void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag)
+        {
+            PrerecordedEventsLoaded(checkpointTag);
         }
     }
 }

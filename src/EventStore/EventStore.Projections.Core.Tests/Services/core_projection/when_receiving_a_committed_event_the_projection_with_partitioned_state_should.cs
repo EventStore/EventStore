@@ -54,6 +54,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 };
             TicksAreHandledImmediately();
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
             NoStream("$projections-projection-partitions");
             NoStream("$projections-projection-account-01-state");
@@ -65,9 +67,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _eventId = Guid.NewGuid();
             _consumer.HandledMessages.Clear();
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "account-01", -1, false,
-                       ResolvedEvent.Sample(_eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                                           Encoding.UTF8.GetBytes("metadata")), 0));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "account-01", -1, false,
+                    ResolvedEvent.Sample(
+                        _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]

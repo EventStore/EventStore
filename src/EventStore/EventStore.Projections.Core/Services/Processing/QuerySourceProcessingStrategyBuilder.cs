@@ -158,23 +158,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Both AllEvents and specific event filters cannot be set");
 
             if (_byStream && _streams != null)
-                throw new InvalidOperationException("Partitioned projections are not supported on stream based sources");
-            if (_byCustomPartitions && _streams != null && _streams.Count > 1)
-                throw new InvalidOperationException("Partitioned projections are not supported on multi-stream based sources");
-            if (_options.UseEventIndexes && (_byStream || _byCustomPartitions))
-                throw new InvalidOperationException("Partitioned projections are not supported with useEventIndexes option");
+                throw new InvalidOperationException("foreachStream projections are not supported on stream based sources");
             if (_options.UseEventIndexes && !_allStreams)
                 throw new InvalidOperationException("useEventIndexes option is only available in fromAll() projections");
             if (_options.UseEventIndexes && _allEvents)
                 throw new InvalidOperationException("useEventIndexes option cannot be used in whenAny() projections");
-
-
-            if (!_options.EmitStateUpdated && 
-                ((_allStreams && _options.UseEventIndexes && _events != null && _events.Count > 1)
-                || (_streams != null && _streams.Count > 1)))
-            {
-                throw new InvalidOperationException("EmitStateUpdated is required for multi-stream sources");
-            }
 
             if (_options.ReorderEvents)
             {

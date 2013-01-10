@@ -549,5 +549,30 @@ namespace EventStore.Projections.Core.Tests.Services
                 Assert.AreEqual(1, processed2);
             }
         }
+
+
+        [TestFixture]
+        public class when_changing_correlation_id_on_unordered_stage
+        {
+            private StagedProcessingQueue _q;
+            private TestTask _t1;
+
+            [SetUp]
+            public void when()
+            {
+                _q = new StagedProcessingQueue(new[] { false });
+                _t1 = new TestTask(Guid.NewGuid(), 1, stageCorrelations: new object[] { "a" });
+                _q.Enqueue(_t1);
+            }
+
+            [Test, ExpectedException(typeof(InvalidOperationException))]
+            public void first_task_starts_on_second_stage_on_first_stage_completion()
+            {
+                _q.Process();
+                _t1.Complete();
+            }
+
+        }
+
     }
 }

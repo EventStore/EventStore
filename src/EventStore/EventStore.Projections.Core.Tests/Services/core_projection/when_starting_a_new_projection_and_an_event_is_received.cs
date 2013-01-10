@@ -41,6 +41,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void Given()
         {
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
         }
 
@@ -49,9 +51,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var eventId = Guid.NewGuid();
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                    ResolvedEvent.Sample(eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                                        Encoding.UTF8.GetBytes("metadata")), 0));
+                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
+                        eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]

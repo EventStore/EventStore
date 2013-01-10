@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void EmitEvents(EmittedEvent[] events)
+        public void ValidateOrderAndEmitEvents(EmittedEvent[] events)
         {
             ValidatePosition(events);
             EnsureCheckpointNotRequested();

@@ -35,44 +35,45 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class MultiStreamEventReader : MultiStreamEventReaderBase<long>
+    public class EventIndexEventReader : MultiStreamEventReaderBase<EventPosition>
     {
-        public MultiStreamEventReader(
+        public EventIndexEventReader(
             IPublisher publisher, Guid distibutionPointCorrelationId, string[] streams,
             Dictionary<string, int> fromPositions, bool resolveLinkTos, ITimeProvider timeProvider,
             bool stopOnEof = false)
             : base(
                 publisher, distibutionPointCorrelationId, streams, fromPositions, resolveLinkTos, timeProvider,
-                stopOnEof)
+                stopOnEof, skipStreamCreated: true)
         {
         }
 
-        protected override long? EventPairToPosition(EventLinkPair eventLinkPair)
+        protected override EventPosition? EventPairToPosition(EventLinkPair eventLinkPair)
         {
-            var @event = eventLinkPair.Event;
             var @link = eventLinkPair.Link;
-            EventRecord positionEvent = (link ?? @event);
-            return positionEvent.LogPosition;
+            return @link.Metadata.ParseJson<CheckpointTag>().Position;
         }
 
-        protected override long? MessageToLastCommitPosition(ClientMessage.ReadStreamEventsForwardCompleted message)
+        protected override EventPosition? MessageToLastCommitPosition(
+            ClientMessage.ReadStreamEventsForwardCompleted message)
         {
-            return message.LastCommitPosition;
+            return message.LastCommitPosition != null
+                       ? new EventPosition(message.LastCommitPosition.GetValueOrDefault(), 0)
+                       : (EventPosition?) null;
         }
 
-        protected override long GetItemPosition(Tuple<EventRecord, EventRecord, float> head)
+        protected override EventPosition GetItemPosition(Tuple<EventRecord, EventRecord, float> head)
         {
-            return head.Item2.LogPosition;
+            return head.Item2.Metadata.ParseJson<CheckpointTag>().Position;
         }
 
-        protected override long GetMaxPosition()
+        protected override EventPosition GetMaxPosition()
         {
-            return long.MaxValue;
+            return new EventPosition(long.MaxValue, long.MaxValue);
         }
 
-        protected override long? PositionToSafeJoinPosition(long? safePositionToJoin)
+        protected override long? PositionToSafeJoinPosition(EventPosition? safePositionToJoin)
         {
-            return safePositionToJoin;
+            return safePositionToJoin != null ? safePositionToJoin.GetValueOrDefault().CommitPosition : (long?) null;
         }
     }
 }

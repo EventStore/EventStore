@@ -26,51 +26,46 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Linq;
-using EventStore.Projections.Core.Messages;
+using System;
+using EventStore.Core.Tests.Fakes;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection
+namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class when_loading_a_new_projection : TestFixtureWithCoreProjectionLoaded
+    public class when_checkpoint_requested_but_disabled
     {
-        protected override void Given()
-        {
-            NoStream("$projections-projection-state");
-            NoStream("$projections-projection-order");
-            AllWritesToSucceed("$projections-projection-order");
-            NoStream("$projections-projection-checkpoint");
-        }
+        private EmittedStream _stream;
+        private FakePublisher _publisher;
+        private TestCheckpointManagerMessageHandler _readyHandler;
+        private Exception _exception;
 
-        protected override void When()
+        [SetUp]
+        public void setup()
         {
-        }
-
-        [Test]
-        public void should_subscribe_from_beginning()
-        {
-            Assert.AreEqual(1, _subscribeProjectionHandler.HandledMessages.Count);
-            Assert.AreEqual(0, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.CommitPosition);
-            Assert.AreEqual(-1, _subscribeProjectionHandler.HandledMessages[0].FromPosition.Position.PreparePosition);
-        }
-
-        [Test]
-        public void should_subscribe_non_null_subscriber()
-        {
-            Assert.NotNull(_subscribeProjectionHandler.HandledMessages[0].Subscriber);
+            _exception = null;
+            _publisher = new FakePublisher();
+            _readyHandler = new TestCheckpointManagerMessageHandler();
+            _stream = new EmittedStream(
+                "test", CheckpointTag.FromPosition(0, -1), _publisher, _readyHandler, 50, noCheckpoints: true);
+            _stream.Start();
+            try
+            {
+                _stream.Checkpoint();
+            }
+            catch (Exception ex)
+            {
+                _exception = ex;
+            }
         }
 
         [Test]
-        public void should_not_initialize_projection_state_handler()
+        public void invalid_operation_exceptioon_is_thrown()
         {
-            Assert.AreEqual(0, _stateHandler._initializeCalled);
+            Assert.IsNotNull(_exception);
+            Assert.IsInstanceOf<InvalidOperationException>(_exception);
         }
 
-        [Test]
-        public void should_not_publish_started_message()
-        {
-            Assert.AreEqual(0, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
-        }
     }
 }

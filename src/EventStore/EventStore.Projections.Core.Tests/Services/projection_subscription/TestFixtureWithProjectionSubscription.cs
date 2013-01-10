@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected virtual IProjectionSubscription CreateProjectionSubscription()
         {
             return new ProjectionSubscription(
-                _projectionCorrelationId, CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler,
+                _projectionCorrelationId, Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler,
                 _progressHandler, _eofHandler, _checkpointStrategy, _checkpointUnhandledBytesThreshold);
         }
 

@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -51,5 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
         void BeginLoadPartitionStateAt(
             string statePartition, CheckpointTag requestedStateCheckpointTag,
             Action<PartitionStateCache.State> loadCompleted);
+
+        void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed);
     }
 }
