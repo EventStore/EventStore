@@ -702,7 +702,6 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-
         private void EnqueueOperation(IClientOperation operation)
         {
             while (_queue.Count >= _settings.MaxQueueSize)
@@ -712,83 +711,26 @@ namespace EventStore.ClientAPI
             _queue.Enqueue(operation);
         }
 
-        public Task SubscribeAsync(string stream, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
+        public EventStoreSubscription SubscribeToStream(string streamId, 
+                                                        bool resolveLinkTos, 
+                                                        Action<EventLinkPositionedPair> eventAppeared, 
+                                                        Action subscriptionDropped = null)
         {
-            return SubscribeAsync(stream, false, eventAppeared, subscriptionDropped);
-        }
-
-        public Task SubscribeAsync(string stream, bool resolveLinkTos, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNullOrEmpty(streamId, "streamId");
             Ensure.NotNull(eventAppeared, "eventAppeared");
-            Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
             EnsureActive();
-
             _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
-            return _subscriptionsChannel.Subscribe(stream, resolveLinkTos, eventAppeared, subscriptionDropped);
+            return _subscriptionsChannel.Subscribe(streamId, resolveLinkTos, eventAppeared, subscriptionDropped);
         }
 
-        public Task UnsubscribeAsync(string stream)
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
-            EnsureActive();
-
-            _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
-            _subscriptionsChannel.Unsubscribe(stream);
-            return Tasks.CreateCompleted();
-        }
-
-        public Task SubscribeToAllStreamsAsync(Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
-        {
-            return SubscribeToAllStreamsAsync(false, eventAppeared, subscriptionDropped);
-        }
-
-        public Task SubscribeToAllStreamsAsync(bool resolveLinkTos, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
+        public EventStoreSubscription SubscribeToAll(bool resolveLinkTos, 
+                                                     Action<EventLinkPositionedPair> eventAppeared, Action
+                                                     subscriptionDropped = null)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
-            Ensure.NotNull(subscriptionDropped, "subscriptionDropped");
             EnsureActive();
-
             _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
-            return _subscriptionsChannel.SubscribeToAllStreams(resolveLinkTos, eventAppeared, subscriptionDropped);
-        }
-
-        /// <summary>
-        /// Unsubscribes from the $all stream. 
-        /// </summary>
-        /// <remarks>
-        /// This does not unsubscribe all subscriptions. It unsubscribes the subscription to $all. If you
-        /// have other subscriptions you will continue to receive them.
-        /// </remarks>
-        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
-        public Task UnsubscribeFromAllStreamsAsync()
-        {
-            EnsureActive();
-
-            _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
-            _subscriptionsChannel.UnsubscribeFromAllStreams();
-            return Tasks.CreateCompleted();
-        }
-
-        private void OnDisconnected()
-        {
-            var handler = Disconnected;
-            if (handler != null)
-                handler(this, EventArgs.Empty);
-        }
-
-        private void OnReconnecting()
-        {
-            var handler = Reconnecting;
-            if (handler != null)
-                handler(this, EventArgs.Empty);
-        }
-
-        private void OnConnected()
-        {
-            var handler = Connected;
-            if (handler != null)
-                handler(this, EventArgs.Empty);
+            return _subscriptionsChannel.Subscribe(string.Empty, resolveLinkTos, eventAppeared, subscriptionDropped);
         }
 
         private void MainLoop()
@@ -922,7 +864,7 @@ namespace EventStore.ClientAPI
 
                     _tcpEndPoint = tcpEndpoint;
                     _connection.Close();
-                    _subscriptionsChannel.Close(false);
+                    _subscriptionsChannel.Close();
                 }
                 Retry(workItem);
             }
@@ -985,6 +927,27 @@ namespace EventStore.ClientAPI
             {
                 _reconnectionStopwatch.Restart();
             }
+        }
+
+        private void OnConnected()
+        {
+            var handler = Connected;
+            if (handler != null)
+                handler(this, EventArgs.Empty);
+        }
+
+        private void OnReconnecting()
+        {
+            var handler = Reconnecting;
+            if (handler != null)
+                handler(this, EventArgs.Empty);
+        }
+
+        private void OnDisconnected()
+        {
+            var handler = Disconnected;
+            if (handler != null)
+                handler(this, EventArgs.Empty);
         }
     }
 }

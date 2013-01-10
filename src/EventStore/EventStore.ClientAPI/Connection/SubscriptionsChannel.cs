@@ -27,11 +27,9 @@
 //  
 
 using System;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
@@ -49,14 +47,11 @@ namespace EventStore.ClientAPI.Connection
         private readonly TcpConnector _connector;
         private TcpTypedConnection _connection;
 
-        private readonly ManualResetEvent _connectedEvent = new ManualResetEvent(false);
+        private readonly ManualResetEventSlim _connectedEvent = new ManualResetEventSlim(false);
         private readonly object _subscriptionChannelLock = new object();
-
-        private Thread _executionThread;
-        private volatile bool _stopExecutionThread;
         private readonly Common.Concurrent.ConcurrentQueue<Action> _executionQueue = new Common.Concurrent.ConcurrentQueue<Action>(); 
-
-        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, Subscription> _subscriptions = new System.Collections.Concurrent.ConcurrentDictionary<Guid, Subscription>();
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, EventStoreSubscription> _subscriptions = new System.Collections.Concurrent.ConcurrentDictionary<Guid, EventStoreSubscription>();
+        private int _workerRunning;
 
         public SubscriptionsChannel(TcpConnector connector)
         {
@@ -64,105 +59,67 @@ namespace EventStore.ClientAPI.Connection
             _log = LogManager.GetLogger();
         }
 
-        public void Close(bool stopBackgroundThread = true)
+        public void Close()
         {
             lock (_subscriptionChannelLock)
             {
                 if (_connection != null)
                     _connection.Close();
-
-                _stopExecutionThread = stopBackgroundThread;
             }
         }
 
-        public Task Subscribe(string stream, bool resolveLinkTos, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
+        public EventStoreSubscription Subscribe(string streamId, bool resolveLinkTos, Action<EventLinkPositionedPair> eventAppeared, Action subscriptionDropped)
         {
             var id = Guid.NewGuid();
-            var source = new TaskCompletionSource<object>();
 
-            if (_subscriptions.TryAdd(id, new Subscription(source, id, stream, eventAppeared, subscriptionDropped)))
+            var eventStoreSubscription = new EventStoreSubscription(id, streamId, this, eventAppeared, subscriptionDropped);
+            if (!_subscriptions.TryAdd(id, eventStoreSubscription))
+                throw new Exception("Failed to add subscription. Concurrency failure.");
+
+            var subscribe = new ClientMessage.SubscribeToStream(streamId, resolveLinkTos);
+            var pkg = new TcpPackage(TcpCommand.SubscribeToStream, id, subscribe.Serialize());
+            _connection.EnqueueSend(pkg.AsByteArray());
+
+            return eventStoreSubscription;
+        }
+
+        public void Unsubscribe(Guid correlationId)
+        {
+            if (DropSubscription(correlationId))
             {
-                var subscribe = new ClientMessage.SubscribeToStream(stream, resolveLinkTos);
-                var pkg = new TcpPackage(TcpCommand.SubscribeToStream, id, subscribe.Serialize());
+                var pkg = new TcpPackage(TcpCommand.UnsubscribeFromStream,
+                                         correlationId,
+                                         new ClientMessage.UnsubscribeFromStream().Serialize());
                 _connection.EnqueueSend(pkg.AsByteArray());
             }
-            else
-            {
-                source.SetException(new Exception("Failed to add subscription. Concurrency failure."));
-            }
-
-            return source.Task;
         }
 
-        public void Unsubscribe(string stream)
+        private bool DropSubscription(Guid correlationId)
         {
-            foreach (var id in _subscriptions.Values.Where(s => s.Stream == stream).Select(s => s.Id))
+            EventStoreSubscription eventStoreSubscription;
+            if (_subscriptions.TryRemove(correlationId, out eventStoreSubscription))
             {
-                Subscription removed;
-                if(_subscriptions.TryRemove(id, out removed))
-                {
-                    removed.Source.SetResult(null);
-                    ExecuteUserCallbackAsync(removed.SubscriptionDropped);
-
-                    var pkg = new TcpPackage(TcpCommand.UnsubscribeFromStream,
-                                             id,
-                                             new ClientMessage.UnsubscribeFromStream().Serialize());
-                    _connection.EnqueueSend(pkg.AsByteArray());
-                }
+                ExecuteUserCallbackAsync(eventStoreSubscription.SubscriptionDropped);
+                return true;
             }
-        }
-
-        public Task SubscribeToAllStreams(bool resolveLinkTos, Action<RecordedEvent, Position> eventAppeared, Action subscriptionDropped)
-        {
-            var id = Guid.NewGuid();
-            var source = new TaskCompletionSource<object>();
-
-            if (_subscriptions.TryAdd(id, new Subscription(source, id, eventAppeared, subscriptionDropped)))
-            {
-                var subscribe = new ClientMessage.SubscribeToStream(string.Empty, resolveLinkTos); // subscribe to all
-                var pkg = new TcpPackage(TcpCommand.SubscribeToStream, id, subscribe.Serialize());
-                _connection.EnqueueSend(pkg.AsByteArray());
-            }
-            else
-            {
-                source.SetException(new Exception("Failed to add subscription to all streams. Concurrency failure"));
-            }
-            
-            return source.Task;
-        }
-
-        public void UnsubscribeFromAllStreams()
-        {
-            var all = _subscriptions.Values;
-            var ids = all.Where(s => s.Stream == null).Select(s => s.Id);
-
-            foreach (var id in ids)
-            {
-                Subscription removed;
-                if (_subscriptions.TryRemove(id, out removed))
-                {
-                    removed.Source.SetResult(null);
-                    ExecuteUserCallbackAsync(removed.SubscriptionDropped);
-
-                    var pkg = new TcpPackage(TcpCommand.UnsubscribeFromStream, 
-                                             id, 
-                                             new ClientMessage.UnsubscribeFromStream().Serialize());
-                    _connection.EnqueueSend(pkg.AsByteArray());
-                }
-            }
+            return false;
         }
 
         private void ExecuteUserCallbackAsync(Action callback)
         {
             _executionQueue.Enqueue(callback);
+
+            if (Interlocked.CompareExchange(ref _workerRunning, 1, 0) == 0)
+                ThreadPool.QueueUserWorkItem(ExecuteUserCallbacks);
         }
 
-        private void ExecuteUserCallbacks()
+        private void ExecuteUserCallbacks(object state)
         {
-            while (!_stopExecutionThread)
+            bool proceed = true;
+            while (proceed)
             {
                 Action callback;
-                if (_executionQueue.TryDequeue(out callback))
+                while (_executionQueue.TryDequeue(out callback))
                 {
                     try
                     {
@@ -170,17 +127,20 @@ namespace EventStore.ClientAPI.Connection
                     }
                     catch (Exception e)
                     {
-                        _log.Error(e, "User callback thrown");
+                        _log.Error(e, "User callback have thrown.");
                     }
                 }
-                else
-                    Thread.Sleep(1);
+
+                Interlocked.CompareExchange(ref _workerRunning, 0, 1);
+
+                // try to reacquire lock if needed
+                proceed = _executionQueue.Count > 0 && Interlocked.CompareExchange(ref _workerRunning, 1, 0) == 0; 
             }
         }
 
         private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
         {
-            Subscription subscription;
+            EventStoreSubscription subscription;
             if (!_subscriptions.TryGetValue(package.CorrelationId, out subscription))
             {
                 _log.Error("Unexpected package received : {0} ({1})", package.CorrelationId, package.Command);
@@ -194,20 +154,12 @@ namespace EventStore.ClientAPI.Connection
                     case TcpCommand.StreamEventAppeared:
                     {
                         var dto = package.Data.Deserialize<ClientMessage.StreamEventAppeared>();
-                        var recordedEvent = new RecordedEvent(dto);
-                        var commitPos = dto.Event.CommitPosition;
-                        var preparePos = dto.Event.PreparePosition;
-                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(recordedEvent, new Position(commitPos, preparePos)));
+                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(new EventLinkPositionedPair(dto.Event)));
                         break;
                     }
                     case TcpCommand.SubscriptionDropped:
                     {
-                        Subscription removed;
-                        if (_subscriptions.TryRemove(subscription.Id, out removed))
-                        {
-                            removed.Source.SetResult(null);
-                            ExecuteUserCallbackAsync(removed.SubscriptionDropped);
-                        }
+                        DropSubscription(package.CorrelationId);
                         break;
                     }
                     default:
@@ -229,22 +181,20 @@ namespace EventStore.ClientAPI.Connection
         {
             _connectedEvent.Reset();
 
-            foreach (var subscription in _subscriptions.Values)
+            foreach (var correlationId in _subscriptions.Keys)
             {
-                subscription.Source.SetResult(null);
-                ExecuteUserCallbackAsync(subscription.SubscriptionDropped);
+                DropSubscription(correlationId);
             }
-            _subscriptions.Clear();
         }
 
         public void EnsureConnected(IPEndPoint endPoint)
         {
             lock (_subscriptionChannelLock)
             {
-                if (!_connectedEvent.WaitOne(0))
+                if (!_connectedEvent.Wait(0))
                 {
                     Connect(endPoint);
-                    if (!_connectedEvent.WaitOne(ConnectionTimeoutMs))
+                    if (!_connectedEvent.Wait(ConnectionTimeoutMs))
                     {
                         var message = string.Format("Couldn't connect to [{0}] in {1} ms.", _connection.EffectiveEndPoint, ConnectionTimeoutMs);
                         _log.Error(message);
@@ -257,17 +207,6 @@ namespace EventStore.ClientAPI.Connection
         private void Connect(IPEndPoint endPoint)
         {
             _connection = _connector.CreateTcpConnection(endPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
-
-            if (_executionThread == null)
-            {
-                _stopExecutionThread = false;
-                _executionThread = new Thread(ExecuteUserCallbacks)
-                                   {
-                                           IsBackground = true,
-                                           Name = "SubscriptionsChannel user callbacks thread"
-                                   };
-                _executionThread.Start();
-            }
         }
     }
 }

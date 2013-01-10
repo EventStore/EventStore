@@ -343,41 +343,43 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
 
                 var subscribed = new ManualResetEventSlim();
                 bool wasSubscribed = false;
-                store.SubscribeAsync(stream, 
-                                     (@event, position) =>
-                                     {
-                                         catched.Add(@event);
-                                         lastKnownPosition = position;
-                                         wasSubscribed = true;
-                                         subscribed.Set();
-                                     },
-                                     () =>
-                                     {
-                                         wasSubscribed = false;
-                                         subscribed.Set();
-                                         dropped.Set();
-                                     });
+                using (var subscription = store.SubscribeToStream(stream,
+                                                                  false,
+                                                                  @event =>
+                                                                  {
+                                                                      catched.Add(@event.Event);
+                                                                      lastKnownPosition = @event.OriginalPosition;
+                                                                      wasSubscribed = true;
+                                                                      subscribed.Set();
+                                                                  },
+                                                                  () =>
+                                                                  {
+                                                                      wasSubscribed = false;
+                                                                      subscribed.Set();
+                                                                      dropped.Set();
+                                                                  }))
+                {
+                    var testEvents = Enumerable.Range(1, 5).Select(x => new TestEvent(x.ToString())).ToArray();
+                    var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
+                    Assert.That(write.Wait(Timeout));
 
-                var testEvents = Enumerable.Range(1, 5).Select(x => new TestEvent(x.ToString())).ToArray();
-                var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
-                Assert.That(write.Wait(Timeout));
+                    Assert.IsTrue(subscribed.Wait(5000), "Subscription haven't happened in time.");
+                    Assert.IsTrue(wasSubscribed, "Subscription failed.");
+                    Assert.NotNull(lastKnownPosition, "Last know position should not be null.");
 
-                Assert.IsTrue(subscribed.Wait(5000), "Subscription haven't happened in time.");
-                Assert.IsTrue(wasSubscribed, "Subscription failed.");
-                Assert.NotNull(lastKnownPosition, "Last know position should not be null.");
+                    subscription.Unsubscribe();
+                    Assert.That(dropped.WaitOne(Timeout), "Couldn't unsubscribe in time.");
 
-                store.UnsubscribeAsync(stream);
-                Assert.That(dropped.WaitOne(Timeout), "Couldn't unsubscribe in time.");
+                    var write2 = store.AppendToStreamAsync(stream, testEvents.Length, testEvents);
+                    Assert.That(write2.Wait(Timeout));
 
-                var write2 = store.AppendToStreamAsync(stream, testEvents.Length, testEvents);
-                Assert.That(write2.Wait(Timeout));
+                    var missed = store.ReadAllEventsForwardAsync(lastKnownPosition, int.MaxValue, false);
+                    Assert.That(missed.Wait(Timeout));
 
-                var missed = store.ReadAllEventsForwardAsync(lastKnownPosition, int.MaxValue, false);
-                Assert.That(missed.Wait(Timeout));
-
-                var expected = testEvents.Concat(testEvents).ToArray();
-                var actual = catched.Concat(missed.Result.Events.Skip(1).Select(x => x.Event)).ToArray();//skip 1 because readallforward is inclusive
-                Assert.That(TestEventsComparer.Equal(expected, actual));
+                    var expected = testEvents.Concat(testEvents).ToArray();
+                    var actual = catched.Concat(missed.Result.Events.Skip(1).Select(x => x.Event)).ToArray();//skip 1 because readallforward is inclusive
+                    Assert.That(TestEventsComparer.Equal(expected, actual));
+                }
             }
         }
     }

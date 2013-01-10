@@ -132,13 +132,9 @@ namespace EventStore.Core.Tests.ClientAPI
             //Assert.Throws<InvalidOperationException>(() => connection.CommitTransaction(0, s));
             //Assert.Throws<InvalidOperationException>(() => connection.CommitTransactionAsync(0, s));
 
-            Assert.Throws<InvalidOperationException>(() => connection.SubscribeAsync(s, (_, __) => { }, () => { }));
+            Assert.Throws<InvalidOperationException>(() => connection.SubscribeToStream(s, false, _ => { }, () => { }));
 
-            Assert.Throws<InvalidOperationException>(() => connection.SubscribeToAllStreamsAsync((_, __) => { }, () => { }));
-
-            Assert.Throws<InvalidOperationException>(() => connection.UnsubscribeAsync(s));
-
-            Assert.Throws<InvalidOperationException>(() => connection.UnsubscribeFromAllStreamsAsync());
+            Assert.Throws<InvalidOperationException>(() => connection.SubscribeToAll(false, _ => { }, () => { }));
         }
     }
 }
