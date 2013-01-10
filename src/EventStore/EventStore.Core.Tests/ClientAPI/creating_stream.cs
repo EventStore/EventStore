@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -82,7 +83,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var create2 = connection.CreateStreamAsync(stream, id, false, new byte[0]);
                 Assert.DoesNotThrow(create2.Wait);
 
-                var read = connection.ReadEventStreamForwardAsync(stream, 0, 10);
+                var read = connection.ReadEventStreamForwardAsync(stream, 0, 10, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(1));

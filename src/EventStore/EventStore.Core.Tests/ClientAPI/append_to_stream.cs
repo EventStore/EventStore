@@ -27,6 +27,7 @@
 //  
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -65,7 +66,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, new[] {new TestEvent()});
                 Assert.DoesNotThrow(append.Wait);
 
-                var read = store.ReadEventStreamForwardAsync(stream, 0, 2);
+                var read = store.ReadEventStreamForwardAsync(stream, 0, 2, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
                 Assert.That(read.Result.Events.Length, Is.EqualTo(2));
             }
@@ -82,7 +83,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var append = store.AppendToStreamAsync(stream, ExpectedVersion.Any, new[] { new TestEvent() });
                 Assert.DoesNotThrow(append.Wait);
 
-                var read = store.ReadEventStreamForwardAsync(stream, 0, 2);
+                var read = store.ReadEventStreamForwardAsync(stream, 0, 2, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
                 Assert.That(read.Result.Events.Length, Is.EqualTo(2));
             }

@@ -148,7 +148,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("Stream: {0}, Start: {1}, Count: {2}, ResolveLinkTos: {3}, CorrelationId: {4}", 
+            return string.Format("Stream: {0}, FromEventNumber: {1}, MaxCount: {2}, ResolveLinkTos: {3}, CorrelationId: {4}", 
                                  _stream, 
                                  _start, 
                                  _count, 

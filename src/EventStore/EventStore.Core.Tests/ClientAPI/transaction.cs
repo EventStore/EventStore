@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var commit = store.CommitTransactionAsync(start.Result);
                 Assert.DoesNotThrow(commit.Wait);
 
-                var streamCreated = store.ReadEventStreamForwardAsync(stream, 0, 1);
+                var streamCreated = store.ReadEventStreamForwardAsync(stream, 0, 1, resolveLinkTos: false);
                 Assert.DoesNotThrow(streamCreated.Wait);
 
                 Assert.That(streamCreated.Result.Events.Length, Is.EqualTo(1));//stream created event
@@ -214,15 +214,15 @@ namespace EventStore.Core.Tests.ClientAPI
             transWritesCompleted.WaitOne();
             writesToSameStreamCompleted.WaitOne();
 
-            //check all written
+            // check all written
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var slice = store.ReadEventStreamForward(stream, 0, totalTranWrites + totalPlainWrites + 1);
+                var slice = store.ReadEventStreamForward(stream, 0, totalTranWrites + totalPlainWrites + 1, false);
                 Assert.That(slice.Events.Length, Is.EqualTo(totalTranWrites + totalPlainWrites + 1));
 
-                Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Metadata) == "trans write"), Is.EqualTo(totalTranWrites));
-                Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Metadata) == "plain write"), Is.EqualTo(totalPlainWrites));
+                Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Event.Metadata) == "trans write"), Is.EqualTo(totalTranWrites));
+                Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Event.Metadata) == "plain write"), Is.EqualTo(totalPlainWrites));
             }
         }
 

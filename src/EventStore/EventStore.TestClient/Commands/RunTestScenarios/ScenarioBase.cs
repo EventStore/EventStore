@@ -240,7 +240,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             foreach (var stream in streams)
             {
                 var s = stream;
-                var task = store.ReadEventStreamForwardAsync(stream, 0, 1).ContinueWith(t =>
+                var task = store.ReadEventStreamForwardAsync(stream, 0, 1, resolveLinkTos: false).ContinueWith(t =>
                 {
                     if (t.Result.Status != SliceReadStatus.StreamDeleted)
                         throw new Exception(string.Format("Stream '{0}' is not deleted, but should be!", s));
@@ -603,7 +603,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 resSource.SetException(prevTask.Exception);
             };
 
-            var readTask = store.ReadEventStreamForwardAsync(stream, from, count);
+            var readTask = store.ReadEventStreamForwardAsync(stream, @from, count, resolveLinkTos: false);
             readTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
             readTask.ContinueWith(t =>
             {
@@ -625,7 +625,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                     for (int i = 0; i < count; ++i)
                     {
-                        var evnt = slice.Events[i];
+                        var evnt = slice.Events[i].Event;
                         if (evnt.EventNumber != i + from)
                         {
                             throw new Exception(string.Format(

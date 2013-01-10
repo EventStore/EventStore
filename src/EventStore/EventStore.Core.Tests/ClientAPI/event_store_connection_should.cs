@@ -27,6 +27,7 @@
 //  
 
 using System;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
@@ -111,11 +112,11 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.Throws<InvalidOperationException>(() => connection.AppendToStream(s, 0, events));
             Assert.Throws<InvalidOperationException>(() => connection.AppendToStreamAsync(s, 0, events));
 
-            Assert.Throws<InvalidOperationException>(() => connection.ReadEventStreamForward(s, 0, 1));
-            Assert.Throws<InvalidOperationException>(() => connection.ReadEventStreamForwardAsync(s, 0, 1));
+            Assert.Throws<InvalidOperationException>(() => connection.ReadEventStreamForward(s, 0, 1, false));
+            Assert.Throws<InvalidOperationException>(() => connection.ReadEventStreamForwardAsync(s, 0, 1, resolveLinkTos: false));
 
-            Assert.Throws<InvalidOperationException>(() => connection.ReadEventStreamBackward(s, 0, 1));
-            Assert.Throws<InvalidOperationException>(() => connection.ReadEventStreamBackwardAsync(s, 0, 1));
+            Assert.Throws<InvalidOperationException>(() => connection.ReadEventStreamBackward(s, 0, 1, false));
+            Assert.Throws<InvalidOperationException>(() => connection.ReadEventStreamBackwardAsync(s, 0, 1, resolveLinkTos: false));
 
             Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsForward(Position.Start, 1, false));
             Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsForwardAsync(Position.Start, 1, false));

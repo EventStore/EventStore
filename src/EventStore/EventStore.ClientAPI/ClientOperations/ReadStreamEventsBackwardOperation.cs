@@ -45,8 +45,8 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly object _corrIdLock = new object();
 
         private readonly string _stream;
-        private readonly int _start;
-        private readonly int _count;
+        private readonly int _fromEventNumber;
+        private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
 
         public Guid CorrelationId
@@ -61,16 +61,16 @@ namespace EventStore.ClientAPI.ClientOperations
         public ReadStreamEventsBackwardOperation(TaskCompletionSource<EventStreamSlice> source,
                                                  Guid corrId,
                                                  string stream,
-                                                 int start,
-                                                 int count,
+                                                 int fromEventNumber,
+                                                 int maxCount,
                                                  bool resolveLinkTos)
         {
             _source = source;
 
             _correlationId = corrId;
             _stream = stream;
-            _start = start;
-            _count = count;
+            _fromEventNumber = fromEventNumber;
+            _maxCount = maxCount;
             _resolveLinkTos = resolveLinkTos;
         }
 
@@ -84,7 +84,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessage.ReadStreamEvents(_stream, _start, _count, _resolveLinkTos);
+                var dto = new ClientMessage.ReadStreamEvents(_stream, _fromEventNumber, _maxCount, _resolveLinkTos);
                 return new TcpPackage(TcpCommand.ReadStreamEventsBackward, _correlationId, dto.Serialize());
             }
         }
@@ -125,8 +125,8 @@ namespace EventStore.ClientAPI.ClientOperations
                 {
                     _source.SetResult(new EventStreamSlice(StatusCode.Convert(_result.Result),
                                                            _stream,
-                                                           _start,
-                                                           _count,
+                                                           _fromEventNumber,
+                                                           _maxCount,
                                                            _result.Events,
                                                            _result.NextEventNumber,
                                                            _result.LastEventNumber,
@@ -147,10 +147,10 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("Stream: {0}, Start: {1}, Count: {2}, ResolveLinkTos: {3}, CorrelationId: {4}", 
+            return string.Format("Stream: {0}, FromEventNumber: {1}, MaxCount: {2}, ResolveLinkTos: {3}, CorrelationId: {4}", 
                                  _stream,
-                                 _start, 
-                                 _count, 
+                                 _fromEventNumber, 
+                                 _maxCount, 
                                  _resolveLinkTos, 
                                  CorrelationId);
         }

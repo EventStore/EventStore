@@ -36,8 +36,6 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class EventStreamSlice
     {
-        internal static readonly RecordedEvent[] EmptyEvents = new RecordedEvent[0];
-
         /// <summary>
         /// The <see cref="SliceReadStatus"/> representing the status of this read attempt
         /// </summary>
@@ -51,17 +49,17 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The starting point (represented as a sequence number) of the read operation.
         /// </summary>
-        public readonly int Start;
+        public readonly int FromEventNumber;
 
         /// <summary>
-        /// The number of items read in this read operation.
+        /// The maximum number of items requested in this read operation.
         /// </summary>
-        public readonly int Count;
+        public readonly int MaxCount;
 
         /// <summary>
         /// The events read represented as <see cref="RecordedEvent"/>
         /// </summary>
-        public readonly RecordedEvent[] Events;
+        public readonly ResolvedEvent[] Events;
 
         /// <summary>
         /// The next event number that can be read.
@@ -80,8 +78,8 @@ namespace EventStore.ClientAPI
 
         internal EventStreamSlice(SliceReadStatus status, 
                                   string stream, 
-                                  int start, 
-                                  int count, 
+                                  int fromEventNumber, 
+                                  int maxCount, 
                                   ClientMessage.ResolvedIndexedEvent[] events,
                                   int nextEventNumber,
                                   int lastEventNumber,
@@ -91,16 +89,16 @@ namespace EventStore.ClientAPI
 
             Status = status;
             Stream = stream;
-            Start = start;
-            Count = count;
-            if (events == null)
-                Events = EmptyEvents;
+            FromEventNumber = fromEventNumber;
+            MaxCount = maxCount;
+            if (events == null || events.Length == 0)
+                Events = ResolvedEvent.EmptyArray;
             else
             {
-                Events = new RecordedEvent[events.Length];
+                Events = new ResolvedEvent[events.Length];
                 for (int i = 0; i < Events.Length; ++i)
                 {
-                    Events[i] = new RecordedEvent(events[i].Event);
+                    Events[i] = new ResolvedEvent(events[i]);
                 }
             }
             NextEventNumber = nextEventNumber;
