@@ -33,6 +33,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -116,7 +117,77 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             {
                 Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Faulted>().Count());
             }
+
+            [Test]
+            public void the_projection_status_becomes_faulted()
+            {
+                _manager.Handle(
+                    new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, false));
+
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
+                Assert.AreEqual(
+                    1,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Length);
+                Assert.AreEqual(
+                    _projectionName,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Single()
+                        .Name);
+                Assert.AreEqual(
+                    ManagedProjectionState.Faulted,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Single()
+                        .MasterStatus);
+            }
+
         }
 
+    }
+
+    public class a_failed_projection
+    {
+        [TestFixture]
+        public class when_updating_query_test : a_new_posted_projection.Base
+        {
+            protected override void Given()
+            {
+                base.Given();
+                var readerAssignedMessage =
+                    _consumer.HandledMessages.OfType<ProjectionSubscriptionManagement.ReaderAssigned>().LastOrDefault();
+                Assert.IsNotNull(readerAssignedMessage);
+                var reader = readerAssignedMessage.ReaderId;
+
+                _bus.Publish(new ProjectionCoreServiceMessage.CommittedEventDistributed(reader,
+                    new EventPosition(100, 50), "stream", 1, "stream", 1, false, ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0]), 100, 33.3f));
+
+            }
+
+            protected override void When()
+            {
+                _manager.Handle(
+                    new ProjectionManagementMessage.UpdateQuery(
+                        new PublishEnvelope(_bus), _projectionName,
+                        "native:" + typeof(FakeProjection).AssemblyQualifiedName, @"", null));
+               
+            }
+
+            [Test]
+            public void the_projection_status_becomes_running()
+            {
+                _manager.Handle(
+                    new ProjectionManagementMessage.GetStatistics(new PublishEnvelope(_bus), null, _projectionName, false));
+
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
+                Assert.AreEqual(
+                    1,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Length);
+                Assert.AreEqual(
+                    _projectionName,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Single()
+                        .Name);
+                Assert.AreEqual(
+                    ManagedProjectionState.Running,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Single()
+                        .MasterStatus);
+            }
+        }
     }
 }

@@ -41,7 +41,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 
         public void Dispose()
         {
-            throw new NotImplementedException();
         }
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
