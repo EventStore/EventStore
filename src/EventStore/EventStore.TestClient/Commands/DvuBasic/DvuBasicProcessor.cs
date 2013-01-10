@@ -243,9 +243,9 @@ namespace EventStore.TestClient.Commands.DvuBasic
             Action<TcpTypedConnection<byte[]>, TcpPackage> packageHandler = (conn, pkg) =>
             {
                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-                switch ((OperationErrorCode)dto.ErrorCode)
+                switch (dto.Result)
                 {
-                    case OperationErrorCode.Success:
+                    case TcpClientMessageDto.OperationResult.Success:
                         lock (_heads)
                         {
                             var currentHead = _heads[streamIdx];
@@ -253,23 +253,23 @@ namespace EventStore.TestClient.Commands.DvuBasic
                             _heads[streamIdx]++;
                         }
                         break;
-                    case OperationErrorCode.PrepareTimeout:
+                    case TcpClientMessageDto.OperationResult.PrepareTimeout:
                         prepareTimeouts++;
                         failed++;
                         break;
-                    case OperationErrorCode.CommitTimeout:
+                    case TcpClientMessageDto.OperationResult.CommitTimeout:
                         commitTimeouts++;
                         failed++;
                         break;
-                    case OperationErrorCode.ForwardTimeout:
+                    case TcpClientMessageDto.OperationResult.ForwardTimeout:
                         forwardTimeouts++;
                         failed++;
                         break;
-                    case OperationErrorCode.WrongExpectedVersion:
+                    case TcpClientMessageDto.OperationResult.WrongExpectedVersion:
                         wrongExpctdVersions++;
                         failed++;
                         break;
-                    case OperationErrorCode.StreamDeleted:
+                    case TcpClientMessageDto.OperationResult.StreamDeleted:
                         streamsDeleted++;
                         failed++;
                         break;
@@ -305,10 +305,14 @@ namespace EventStore.TestClient.Commands.DvuBasic
                     head = _heads[streamIdx];
                 }
                 var evnt = CreateEvent(_streams[streamIdx], head + 2);
-                var write = new TcpClientMessageDto.WriteEvents(_streams[streamIdx],
-                                                             head == -1 ? head : head + 1,
-                                                             new[] { ClientEventUtil.FromDataEvent(evnt) },
-                                                             true);
+                var write = new TcpClientMessageDto.WriteEvents(
+                    _streams[streamIdx],
+                    head == -1 ? head : head + 1,
+                    new[] 
+                    { 
+                        new TcpClientMessageDto.NewEvent(evnt.EventId.ToByteArray(), evnt.EventType, evnt.IsJson, evnt.Data, evnt.Metadata) 
+                    },
+                    true);
 
                 var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                 connection.EnqueueSend(package.AsByteArray());

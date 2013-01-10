@@ -430,7 +430,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void WriteCompleted(ClientMessage.WriteEventsCompleted message, Action completed)
         {
-            if (message.ErrorCode == OperationErrorCode.Success)
+            if (message.Result == OperationResult.Success)
             {
                 _logger.Info("'{0}' projection source has been written", _name);
                 if (completed != null) completed();
@@ -438,11 +438,11 @@ namespace EventStore.Projections.Core.Services.Management
             }
             _logger.Info(
                 "Projection '{0}' source has not been written to {1}. Error: {2}", _name, message.EventStreamId,
-                Enum.GetName(typeof (OperationErrorCode), message.ErrorCode));
-            if (message.ErrorCode == OperationErrorCode.CommitTimeout
-                || message.ErrorCode == OperationErrorCode.ForwardTimeout
-                || message.ErrorCode == OperationErrorCode.PrepareTimeout
-                || message.ErrorCode == OperationErrorCode.WrongExpectedVersion)
+                Enum.GetName(typeof (OperationResult), message.Result));
+            if (message.Result == OperationResult.CommitTimeout
+                || message.Result == OperationResult.ForwardTimeout
+                || message.Result == OperationResult.PrepareTimeout
+                || message.Result == OperationResult.WrongExpectedVersion)
             {
                 _logger.Info("Retrying write projection source for {0}", _name);
                 BeginWrite(completed);

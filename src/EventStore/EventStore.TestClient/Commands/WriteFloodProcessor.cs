@@ -112,30 +112,30 @@ namespace EventStore.TestClient.Commands
                         }
 
                         var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-                        switch((OperationErrorCode)dto.ErrorCode)
+                        switch(dto.Result)
                         {
-                            case OperationErrorCode.Success:
+                            case TcpClientMessageDto.OperationResult.Success:
                                 Interlocked.Increment(ref succ);
                                 break;
-                            case OperationErrorCode.PrepareTimeout:
+                            case TcpClientMessageDto.OperationResult.PrepareTimeout:
                                 Interlocked.Increment(ref prepTimeout);
                                 break;
-                            case OperationErrorCode.CommitTimeout:
+                            case TcpClientMessageDto.OperationResult.CommitTimeout:
                                 Interlocked.Increment(ref commitTimeout);
                                 break;
-                            case OperationErrorCode.ForwardTimeout:
+                            case TcpClientMessageDto.OperationResult.ForwardTimeout:
                                 Interlocked.Increment(ref forwardTimeout);
                                 break;
-                            case OperationErrorCode.WrongExpectedVersion:
+                            case TcpClientMessageDto.OperationResult.WrongExpectedVersion:
                                 Interlocked.Increment(ref wrongExpVersion);
                                 break;
-                            case OperationErrorCode.StreamDeleted:
+                            case TcpClientMessageDto.OperationResult.StreamDeleted:
                                 Interlocked.Increment(ref streamDeleted);
                                 break;
                             default:
                                 throw new ArgumentOutOfRangeException();
                         }
-                        if (dto.ErrorCode != (int)OperationErrorCode.Success)
+                        if (dto.Result != TcpClientMessageDto.OperationResult.Success)
                             Interlocked.Increment(ref fail);
 
                         Interlocked.Increment(ref received);
@@ -172,13 +172,13 @@ namespace EventStore.TestClient.Commands
                             streams[rnd.Next(streamsCnt)],
                             ExpectedVersion.Any,
                             new[]
-                                {
-                                    new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
-                                                                        "TakeSomeSpaceEvent",
-                                                                        false,
-                                                                        Encoding.UTF8.GetBytes("DATA" + new string('*', size)),
-                                                                        Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
-                                },
+                            {
+                                new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+                                                                 "TakeSomeSpaceEvent",
+                                                                 false,
+                                                                 Encoding.UTF8.GetBytes("DATA" + new string('*', size)),
+                                                                 Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
+                            },
                             true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                         client.EnqueueSend(package.AsByteArray());

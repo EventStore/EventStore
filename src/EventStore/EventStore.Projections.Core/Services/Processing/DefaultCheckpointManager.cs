@@ -82,13 +82,13 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureStarted();
             if (_inCheckpointWriteAttempt == 0)
                 throw new InvalidOperationException();
-            if (message.ErrorCode == OperationErrorCode.Success)
+            if (message.Result == OperationResult.Success)
             {
                 if (_logger != null)
                     _logger.Trace(
                         "Checkpoint has be written for projection {0} at sequence number {1} (current)", _name,
-                        message.EventNumber);
-                _lastWrittenCheckpointEventNumber = message.EventNumber
+                        message.FirstEventNumber);
+                _lastWrittenCheckpointEventNumber = message.FirstEventNumber
                                                     + (_lastWrittenCheckpointEventNumber == ExpectedVersion.NoStream
                                                        // account for StreamCreated
                                                            ? 1
@@ -102,15 +102,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_logger != null)
                     _logger.Info(
                         "Failed to write projection checkpoint to stream {0}. Error: {1}", message.EventStreamId,
-                        Enum.GetName(typeof (OperationErrorCode), message.ErrorCode));
-                switch (message.ErrorCode)
+                        Enum.GetName(typeof (OperationResult), message.Result));
+                switch (message.Result)
                 {
-                    case OperationErrorCode.WrongExpectedVersion:
+                    case OperationResult.WrongExpectedVersion:
                         RequestRestart("Checkpoint stream has been written to from the outside");
                         break;
-                    case OperationErrorCode.PrepareTimeout:
-                    case OperationErrorCode.ForwardTimeout:
-                    case OperationErrorCode.CommitTimeout:
+                    case OperationResult.PrepareTimeout:
+                    case OperationResult.ForwardTimeout:
+                    case OperationResult.CommitTimeout:
                         if (_logger != null) _logger.Info("Retrying write checkpoint to {0}", message.EventStreamId);
                         _inCheckpointWriteAttempt++;
                         PublishWriteCheckpointEvent();

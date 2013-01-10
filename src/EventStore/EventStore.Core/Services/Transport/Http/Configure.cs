@@ -133,8 +133,7 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     if (msg.LastEventNumber >= msg.FromEventNumber && !headOfStream)
                         return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
-                    else
-                        return OkNoCache(entity.ResponseCodec.ContentType, msg.LastEventNumber.ToString(CultureInfo.InvariantCulture));
+                    return OkNoCache(entity.ResponseCodec.ContentType, msg.LastEventNumber.ToString(CultureInfo.InvariantCulture));
                 }
                 case StreamResult.NoStream:
                     return NotFound();
@@ -143,7 +142,7 @@ namespace EventStore.Core.Services.Transport.Http
                 case StreamResult.NotModified:
                     return NotModified();
                 case StreamResult.Error:
-                    return InternalServerError(msg.Error);
+                    return InternalServerError(msg.Message);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -157,9 +156,9 @@ namespace EventStore.Core.Services.Transport.Http
             if (completed == null)
                 return InternalServerError();
 
-            switch (completed.ErrorCode)
+            switch (completed.Result)
             {
-                case OperationErrorCode.Success:
+                case OperationResult.Success:
                 {
                     return new ResponseConfiguration(
                         HttpStatusCode.Created,
@@ -169,17 +168,17 @@ namespace EventStore.Core.Services.Transport.Http
                                                          HostName.Combine(entity.UserHostName,
                                                                           "/streams/{0}/{1}",
                                                                           Uri.EscapeDataString(completed.EventStreamId),
-                                                                          completed.EventNumber == 0 ? 1 : completed.EventNumber)));
+                                                                          completed.FirstEventNumber == 0 ? 1 : completed.FirstEventNumber)));
                 }
-                case OperationErrorCode.PrepareTimeout:
-                case OperationErrorCode.CommitTimeout:
-                case OperationErrorCode.ForwardTimeout:
+                case OperationResult.PrepareTimeout:
+                case OperationResult.CommitTimeout:
+                case OperationResult.ForwardTimeout:
                     return InternalServerError("Write timeout");
-                case OperationErrorCode.WrongExpectedVersion:
+                case OperationResult.WrongExpectedVersion:
                     return BadRequest("Wrong expected EventNumber");
-                case OperationErrorCode.StreamDeleted:
+                case OperationResult.StreamDeleted:
                     return Gone("Stream deleted");
-                case OperationErrorCode.InvalidTransaction:
+                case OperationResult.InvalidTransaction:
                     return InternalServerError("Invalid transaction");
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -205,9 +204,9 @@ namespace EventStore.Core.Services.Transport.Http
             if (completed == null)
                 return InternalServerError();
 
-            switch (completed.ErrorCode)
+            switch (completed.Result)
             {
-                case OperationErrorCode.Success:
+                case OperationResult.Success:
                 {
                     return new ResponseConfiguration(
                         HttpStatusCode.Created,
@@ -218,15 +217,15 @@ namespace EventStore.Core.Services.Transport.Http
                                                                           "/streams/{0}",
                                                                           Uri.EscapeDataString(completed.EventStreamId))));
                 }
-                case OperationErrorCode.PrepareTimeout:
-                case OperationErrorCode.CommitTimeout:
-                case OperationErrorCode.ForwardTimeout:
+                case OperationResult.PrepareTimeout:
+                case OperationResult.CommitTimeout:
+                case OperationResult.ForwardTimeout:
                     return InternalServerError("Create timeout");
 
-                case OperationErrorCode.WrongExpectedVersion:
-                case OperationErrorCode.StreamDeleted:
-                case OperationErrorCode.InvalidTransaction:
-                    return BadRequest(string.Format("Error code : {0}. Reason : {1}", completed.ErrorCode, completed.Error));
+                case OperationResult.WrongExpectedVersion:
+                case OperationResult.StreamDeleted:
+                case OperationResult.InvalidTransaction:
+                    return BadRequest(string.Format("Error code : {0}. Reason : {1}", completed.Result, completed.Message));
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -240,20 +239,20 @@ namespace EventStore.Core.Services.Transport.Http
             if (completed == null)
                 return InternalServerError();
 
-            switch (completed.ErrorCode)
+            switch (completed.Result)
             {
-                case OperationErrorCode.Success:
+                case OperationResult.Success:
                     return new ResponseConfiguration(HttpStatusCode.NoContent, "Stream deleted", null);
 
-                case OperationErrorCode.PrepareTimeout:
-                case OperationErrorCode.CommitTimeout:
-                case OperationErrorCode.ForwardTimeout:
+                case OperationResult.PrepareTimeout:
+                case OperationResult.CommitTimeout:
+                case OperationResult.ForwardTimeout:
                     return InternalServerError("Delete timeout");
 
-                case OperationErrorCode.WrongExpectedVersion:
-                case OperationErrorCode.StreamDeleted:
-                case OperationErrorCode.InvalidTransaction:
-                    return BadRequest(string.Format("Error code : {0}. Reason : {1}", completed.ErrorCode, completed.Error));
+                case OperationResult.WrongExpectedVersion:
+                case OperationResult.StreamDeleted:
+                case OperationResult.InvalidTransaction:
+                    return BadRequest(string.Format("Error code : {0}. Reason : {1}", completed.Result, completed.Message));
 
                 default:
                     throw new ArgumentOutOfRangeException();

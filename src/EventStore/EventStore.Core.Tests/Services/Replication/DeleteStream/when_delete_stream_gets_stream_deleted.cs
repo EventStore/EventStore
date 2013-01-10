@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
         public void the_envelope_is_replied_to_with_failure()
         {
             Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.DeleteStreamCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                                  x.ErrorCode == OperationErrorCode.StreamDeleted));
+                                                                                                  x.Result == OperationResult.StreamDeleted));
         }
     }
 }

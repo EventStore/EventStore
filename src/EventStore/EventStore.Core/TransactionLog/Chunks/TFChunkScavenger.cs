@@ -363,7 +363,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
             public CommitInfo(CommitLogRecord commitRecord)
             {
-                EventNumber = commitRecord.EventNumber;
+                EventNumber = commitRecord.FirstEventNumber;
             }
 
             public override string ToString()

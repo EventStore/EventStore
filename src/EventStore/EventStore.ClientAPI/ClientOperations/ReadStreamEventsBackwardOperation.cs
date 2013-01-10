@@ -38,7 +38,7 @@ namespace EventStore.ClientAPI.ClientOperations
     internal class ReadStreamEventsBackwardOperation : IClientOperation
     {
         private readonly TaskCompletionSource<EventStreamSlice> _source;
-        private ClientMessage.ReadStreamEventsBackwardCompleted _result;
+        private ClientMessage.ReadStreamEventsCompleted _result;
         private int _completed;
 
         private Guid _correlationId;
@@ -84,7 +84,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessage.ReadStreamEventsBackward(_stream, _start, _count, _resolveLinkTos);
+                var dto = new ClientMessage.ReadStreamEvents(_stream, _start, _count, _resolveLinkTos);
                 return new TcpPackage(TcpCommand.ReadStreamEventsBackward, _correlationId, dto.Serialize());
             }
         }
@@ -100,15 +100,12 @@ namespace EventStore.ClientAPI.ClientOperations
                                                                                 package.Command.ToString()));
                 }
 
-                var data = package.Data;
-                var dto = data.Deserialize<ClientMessage.ReadStreamEventsBackwardCompleted>();
-                _result = dto;
-
-                switch ((RangeReadResult)dto.Result)
+                _result = package.Data.Deserialize<ClientMessage.ReadStreamEventsCompleted>();
+                switch (_result.Result)
                 {
-                    case RangeReadResult.Success:
-                    case RangeReadResult.StreamDeleted:
-                    case RangeReadResult.NoStream:
+                    case ClientMessage.ReadStreamEventsCompleted.StreamResult.Success:
+                    case ClientMessage.ReadStreamEventsCompleted.StreamResult.StreamDeleted:
+                    case ClientMessage.ReadStreamEventsCompleted.StreamResult.NoStream:
                         return new InspectionResult(InspectionDecision.Succeed);
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -125,7 +122,7 @@ namespace EventStore.ClientAPI.ClientOperations
             if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
             {
                 if (_result != null)
-                    _source.SetResult(new EventStreamSlice(StatusCode.Convert((RangeReadResult) _result.Result),
+                    _source.SetResult(new EventStreamSlice(StatusCode.Convert(_result.Result),
                                                            _stream,
                                                            _start,
                                                            _count,

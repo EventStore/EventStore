@@ -121,7 +121,7 @@ namespace EventStore.TestClient.Commands
                         }
 
                         var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-                        if (dto.ErrorCode == (int)OperationErrorCode.Success)
+                        if (dto.Result == TcpClientMessageDto.OperationResult.Success)
                         {
                             var succDone = Interlocked.Increment(ref succ);
                             if (succDone%maxPerSecond == 0)
@@ -192,14 +192,14 @@ namespace EventStore.TestClient.Commands
                             esId,
                             ExpectedVersion.Any,
                             new[]
-                                {
-                                    new TcpClientMessageDto.ClientEvent(
-                                        Guid.NewGuid().ToByteArray(),
-                                        "TakeSomeSpaceEvent",
-                                        false,
-                                        Encoding.UTF8.GetBytes("DATA" + dataSize.ToString(" 00000 ") + new string('*', dataSize)),
-                                        Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
-                                },
+                            {
+                                new TcpClientMessageDto.NewEvent(
+                                    Guid.NewGuid().ToByteArray(),
+                                    "TakeSomeSpaceEvent",
+                                    false,
+                                    Encoding.UTF8.GetBytes("DATA" + dataSize.ToString(" 00000 ") + new string('*', dataSize)),
+                                    Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
+                            },
                             true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                         client.EnqueueSend(package.AsByteArray());

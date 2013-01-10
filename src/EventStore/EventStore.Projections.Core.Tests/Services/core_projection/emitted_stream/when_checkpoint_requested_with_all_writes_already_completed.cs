@@ -49,9 +49,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         }
 
         [SetUp]
-        public void setup()
+        public void Setup()
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
+            _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _bus, _readyHandler, 50);
             _stream.Start();
             _stream.EmitEvents(

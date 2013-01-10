@@ -94,7 +94,7 @@ namespace EventStore.TestClient.Commands
                                      eventStreamId,
                                      package.CorrelationId,
                                      dto.EventStreamId,
-                                     dto.EventNumber,
+                                     dto.Event.Event.EventNumber,
                                      (SingleReadResult)dto.Result,
                                      dto.Event.Event.EventType,
                                      Encoding.UTF8.GetString(dto.Event.Event.Data ?? new byte[0]),

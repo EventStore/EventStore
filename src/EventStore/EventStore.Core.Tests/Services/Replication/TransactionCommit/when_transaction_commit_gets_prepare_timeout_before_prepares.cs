@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
             Assert.AreEqual(1, Envelope.Replies.Count);
             var reply = (ClientMessage.TransactionCommitCompleted)Envelope.Replies[0];
             Assert.AreEqual(CorrelationId, reply.CorrelationId);
-            Assert.AreEqual(OperationErrorCode.PrepareTimeout, reply.ErrorCode);
+            Assert.AreEqual(OperationResult.PrepareTimeout, reply.Result);
         }
     }
 }

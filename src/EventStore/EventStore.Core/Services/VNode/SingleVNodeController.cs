@@ -193,7 +193,7 @@ namespace EventStore.Core.Services.VNode
             _outputBus.Publish(new StorageMessage.CreateStreamRequestCreated(message.CorrelationId,
                                                                              message.Envelope,
                                                                              message.EventStreamId,
-                                                                             message.CreateStreamId,
+                                                                             message.RequestId,
                                                                              message.IsJson,
                                                                              message.Metadata));
         }

@@ -74,9 +74,8 @@ namespace EventStore.Core.Services.Storage
             else
                 record = new EventLinkPair(result.Record);
 
-            message.Envelope.ReplyWith(new ClientMessage.ReadEventCompleted(message.CorrelationId,
+            message.Envelope.ReplyWith(new ClientMessage.ReadEventCompleted(message.CorrelationId, 
                                                                             message.EventStreamId,
-                                                                            message.EventNumber,
                                                                             result.Result,
                                                                             record));
         }

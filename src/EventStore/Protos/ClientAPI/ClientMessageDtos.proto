@@ -1,5 +1,16 @@
 package EventStore.Client.Messages;
 
+enum OperationResult
+{
+	Success = 0;
+	PrepareTimeout = 1;
+	CommitTimeout = 2;
+	ForwardTimeout = 3;
+	WrongExpectedVersion = 4;
+	StreamDeleted = 5;
+	InvalidTransaction = 6;
+}
+
 message NewEvent {
 	required bytes event_id = 1;
 	optional string event_type = 2;
@@ -29,34 +40,6 @@ message DeniedToRoute {
 	required int32 external_http_port = 4;
 }
 
-enum OperationErrorCode
-{
-	Success = 0;
-	PrepareTimeout = 1;
-	CommitTimeout = 2;
-	ForwardTimeout = 3;
-	WrongExpectedVersion = 4;
-	StreamDeleted = 5;
-	InvalidTransaction = 6;
-}
-
-enum SingleReadResult
-{
-	Success = 0;
-	NotFound = 1;
-	NoStream = 2;
-	StreamDeleted = 3;
-}
-
-enum StreamResult
-{
-	Success = 0,
-	NoStream = 1,
-	StreamDeleted = 2,
-	NotModified = 3,
-	Error = 4
-}
-
 message CreateStream {
 	required string event_stream_id = 1;
 	required bytes request_id = 2;
@@ -67,7 +50,7 @@ message CreateStream {
 
 message CreateStreamCompleted {
 	required string event_stream_id = 1;
-	required OperationErrorCode result = 2;
+	required OperationResult result = 2;
 	optional string message = 3;
 }
 
@@ -80,10 +63,9 @@ message WriteEvents {
 
 message WriteEventsCompleted {
 	required string event_stream_id = 1;
-	required OperationErrorCode result = 2;
+	required OperationResult result = 2;
 	optional string message = 3;
 	required int32 first_event_number = 4;
-	required int32 last_event_number = 5;
 }
 
 message DeleteStream {
@@ -94,7 +76,7 @@ message DeleteStream {
 
 message DeleteStreamCompleted {
 	required string event_stream_id = 1;
-	required OperationErrorCode result = 2;
+	required OperationResult result = 2;
 	optional string message = 3;
 }
 
@@ -105,6 +87,14 @@ message ReadEvent {
 }
 
 message ReadEventCompleted {
+
+	enum SingleReadResult {
+		Success = 0;
+		NotFound = 1;
+		NoStream = 2;
+		StreamDeleted = 3;
+	}
+
 	required string event_stream_id = 1;
 	required SingleReadResult result = 2;
 	required EventLinkPair event = 3;
@@ -118,6 +108,15 @@ message ReadStreamEvents {
 }
 
 message ReadStreamEventsCompleted {
+
+	enum StreamResult {
+		Success = 0;
+		NoStream = 1;
+		StreamDeleted = 2;
+		NotModified = 3;
+		Error = 4;
+	}
+
 	required string event_stream_id = 1;
 	repeated EventLinkPair events = 2;
 	required StreamResult result = 3;
@@ -152,7 +151,7 @@ message TransactionStart {
 message TransactionStartCompleted {
 	required int64 transaction_id = 1;
 	required string event_stream_id = 2;
-	required OperationErrorCode result = 3;
+	required OperationResult result = 3;
 	optional string message = 4;
 }
 
@@ -166,7 +165,7 @@ message TransactionWrite {
 message TransactionWriteCompleted {
 	required int64 transaction_id = 1;
 	required string event_stream_id = 2;
-	required OperationErrorCode result = 3;
+	required OperationResult result = 3;
 	optional string message = 4;
 }
 
@@ -178,17 +177,13 @@ message TransactionCommit {
 
 message TransactionCommitCompleted {
 	required int64 transaction_id = 1;
-	required OperationErrorCode result = 2;
+	required OperationResult result = 2;
 	optional string message = 3;
 }
 
 message SubscribeToStream {
 	required string event_stream_id = 1;
 	required bool resolve_link_tos = 2;
-}
-
-message SubscribeToAllStreams {
-	required bool resolve_link_tos = 1;
 }
 
 message StreamEventAppeared {
@@ -198,8 +193,9 @@ message StreamEventAppeared {
 	required EventLinkPair event = 4;
 }
 
-message Unsubscribe {
+message UnsubscribeFromStream {
 }
 
 message SubscriptionDropped {
+	required string event_stream_id = 1;
 }

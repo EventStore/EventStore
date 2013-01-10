@@ -241,21 +241,21 @@ namespace EventStore.Core.Messages
             public readonly IPEndPoint VNodeEndPoint;
             public readonly long LogPosition;
             public readonly long TransactionPosition;
-            public readonly int EventNumber;
+            public readonly int FirstEventNumber;
 
-            public CommitAck(Guid correlationId, IPEndPoint vnodeEndPoint, long logPosition, long transactionPosition, int eventNumber)
+            public CommitAck(Guid correlationId, IPEndPoint vnodeEndPoint, long logPosition, long transactionPosition, int firstEventNumber)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
                 Ensure.Nonnegative(logPosition, "logPosition");
                 Ensure.Nonnegative(transactionPosition, "transactionPosition");
-                Ensure.Nonnegative(eventNumber, "eventNumber");
+                Ensure.Nonnegative(firstEventNumber, "firstEventNumber");
 
                 CorrelationId = correlationId;
                 VNodeEndPoint = vnodeEndPoint;
                 LogPosition = logPosition;
                 TransactionPosition = transactionPosition;
-                EventNumber = eventNumber;
+                FirstEventNumber = firstEventNumber;
             }
         }
 
@@ -428,21 +428,21 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
 
             public readonly string EventStreamId;
-            public readonly int StartEventNumber;
-            public readonly int EndEventNumber;
+            public readonly int FirstEventNumber;
+            public readonly int LastEventNumber;
 
-            public AlreadyCommitted(Guid correlationId, string eventStreamId, int startEventNumber, int endEventNumber)
+            public AlreadyCommitted(Guid correlationId, string eventStreamId, int firstEventNumber, int lastEventNumber)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-                Ensure.Nonnegative(startEventNumber, "startEventNumber");
-                if (endEventNumber < startEventNumber)
-                    throw new ArgumentOutOfRangeException("endEventNumber", "EndEventNumber is less than StartEventNumber");
+                Ensure.Nonnegative(firstEventNumber, "FirstEventNumber");
+                if (lastEventNumber < firstEventNumber)
+                    throw new ArgumentOutOfRangeException("lastEventNumber", "LastEventNumber is less than FirstEventNumber");
 
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
-                StartEventNumber = startEventNumber;
-                EndEventNumber = endEventNumber;
+                FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
             }
         }
 

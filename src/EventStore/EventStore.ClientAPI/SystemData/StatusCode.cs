@@ -27,20 +27,21 @@
 //  
 
 using System;
+using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI.SystemData
 {
     internal class StatusCode
     {
-        public static SliceReadStatus Convert(RangeReadResult code)
+        public static SliceReadStatus Convert(ClientMessage.ReadStreamEventsCompleted.StreamResult code)
         {
             switch (code)
             {
-                case RangeReadResult.Success:
+                case ClientMessage.ReadStreamEventsCompleted.StreamResult.Success:
                     return SliceReadStatus.Success;
-                case RangeReadResult.NoStream:
+                case ClientMessage.ReadStreamEventsCompleted.StreamResult.NoStream:
                     return SliceReadStatus.StreamNotFound;
-                case RangeReadResult.StreamDeleted:
+                case ClientMessage.ReadStreamEventsCompleted.StreamResult.StreamDeleted:
                     return SliceReadStatus.StreamDeleted;
                 default:
                     throw new ArgumentOutOfRangeException("code");

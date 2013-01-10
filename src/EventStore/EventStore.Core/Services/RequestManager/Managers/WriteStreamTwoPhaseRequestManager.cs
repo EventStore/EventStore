@@ -35,7 +35,7 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.WriteRequestCreated>
+    public class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.WriteRequestCreated>
     {
         private int _expectedVersion;
         private StorageMessage.WriteRequestCreated _request;
@@ -47,43 +47,36 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(StorageMessage.WriteRequestCreated request)
         {
-            if (_initialized)
-                throw new InvalidOperationException();
-
-            _initialized = true;
-            _responseEnvelope = request.Envelope;
-            _correlationId = request.CorrelationId;
-            _eventStreamId = request.EventStreamId;
+            Init(request.Envelope, request.CorrelationId, request.EventStreamId, -1);
 
             _expectedVersion = request.ExpectedVersion;
             if (_expectedVersion == ExpectedVersion.Any)
                 _request = request;
 
-            Publisher.Publish(new StorageMessage.WritePrepares(_correlationId,
-                                                               _publishEnvelope,
-                                                               _eventStreamId,
+            Publisher.Publish(new StorageMessage.WritePrepares(CorrelationId,
+                                                               PublishEnvelope,
+                                                               EventStreamId,
                                                                _expectedVersion,
                                                                request.Events,
                                                                allowImplicitStreamCreation: true,
                                                                liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
-                                                           _publishEnvelope,
-                                                           new StorageMessage.PreparePhaseTimeout(_correlationId)));
+                                                           PublishEnvelope,
+                                                           new StorageMessage.PreparePhaseTimeout(CorrelationId)));
         }
 
-        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
+        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int firstEventNumber)
         {
-            base.CompleteSuccessRequest(correlationId, eventStreamId, startEventNumber);
-            var responseMsg = new ClientMessage.WriteEventsCompleted(
-                correlationId, eventStreamId, startEventNumber);
-            _responseEnvelope.ReplyWith(responseMsg);
+            base.CompleteSuccessRequest(correlationId, eventStreamId, firstEventNumber);
+            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, eventStreamId, firstEventNumber);
+            ResponseEnvelope.ReplyWith(responseMsg);
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
+        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationResult result, string error)
         {
-            base.CompleteFailedRequest(correlationId, eventStreamId, errorCode, error);
+            base.CompleteFailedRequest(correlationId, eventStreamId, result, error);
 
-            if (errorCode == OperationErrorCode.WrongExpectedVersion && _expectedVersion == ExpectedVersion.Any)
+            if (result == OperationResult.WrongExpectedVersion && _expectedVersion == ExpectedVersion.Any)
             {
                 // with ExpectedVersion.Any WrongExpectedVersion could happen only when multiple requests create implicitly streams
                 // so just one retry should be enough
@@ -92,8 +85,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 return;
             }
             
-            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, eventStreamId, errorCode, error);
-            _responseEnvelope.ReplyWith(responseMsg);
+            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, eventStreamId, result, error);
+            ResponseEnvelope.ReplyWith(responseMsg);
         }
 
     }

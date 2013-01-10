@@ -136,7 +136,7 @@ namespace EventStore.Core.Services.Storage
                                                                             _vnodeEndPoint,
                                                                             record.LogPosition,
                                                                             record.TransactionPosition,
-                                                                            record.EventNumber));
+                                                                            record.FirstEventNumber));
                             _readIndex.Commit(record);
                             
                             _queueStats.ProcessingEnded(1);

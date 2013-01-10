@@ -224,27 +224,27 @@ namespace EventStore.Core.Services.Monitoring
 
         public void Handle(ClientMessage.CreateStreamCompleted message)
         {
-            switch (message.ErrorCode)
+            switch (message.Result)
             {
-                case OperationErrorCode.Success:
-                case OperationErrorCode.WrongExpectedVersion: // already created
+                case OperationResult.Success:
+                case OperationResult.WrongExpectedVersion: // already created
                 {
-                    Log.Trace("Created stats stream '{0}', code = {1}", _nodeStatsStream, message.ErrorCode);
+                    Log.Trace("Created stats stream '{0}', code = {1}", _nodeStatsStream, message.Result);
                     _statsStreamCreated = true;
                     break;
                 }
-                case OperationErrorCode.PrepareTimeout:
-                case OperationErrorCode.CommitTimeout:
-                case OperationErrorCode.ForwardTimeout:
+                case OperationResult.PrepareTimeout:
+                case OperationResult.CommitTimeout:
+                case OperationResult.ForwardTimeout:
                 {
-                    Log.Debug("Failed to create stats stream '{0}'. Reason : {1}({2}). Retrying...", _nodeStatsStream, message.ErrorCode, message.Error);
+                    Log.Debug("Failed to create stats stream '{0}'. Reason : {1}({2}). Retrying...", _nodeStatsStream, message.Result, message.Message);
                     CreateStatsStream();
                     break;
                 }
-                case OperationErrorCode.StreamDeleted:
-                case OperationErrorCode.InvalidTransaction: // should not happen at all
+                case OperationResult.StreamDeleted:
+                case OperationResult.InvalidTransaction: // should not happen at all
                 {
-                    Log.Error("Monitoring service got unexpected response code when trying to create stats stream ({0}).", message.ErrorCode);
+                    Log.Error("Monitoring service got unexpected response code when trying to create stats stream ({0}).", message.Result);
                     break;
                 }
                 default:

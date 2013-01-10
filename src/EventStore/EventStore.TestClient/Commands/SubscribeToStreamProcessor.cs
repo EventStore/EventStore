@@ -70,13 +70,7 @@ namespace EventStore.TestClient.Commands
                             case TcpCommand.SubscriptionDropped:
                             {
                                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
-                                context.Log.Error("Subscription to <{0}> WAS DROPPED!", dto.EventStreamId);
-                                break;
-                            }
-                            case TcpCommand.SubscriptionToAllDropped:
-                            {
-                                var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionToAllDropped>();
-                                context.Log.Error("Subscription to ALL WAS DROPPED!");
+                                context.Log.Error("Subscription to <{0}> WAS DROPPED!", string.IsNullOrEmpty(dto.EventStreamId) ? "ALL" : dto.EventStreamId);
                                 break;
                             }
                             default:
@@ -95,8 +89,8 @@ namespace EventStore.TestClient.Commands
             if (args.Length == 0)
             {
                 context.Log.Info("SUBSCRIBING TO ALL STREAMS...");
-                var cmd = new TcpClientMessageDto.SubscribeToAllStreams(resolveLinkTos: false);
-                connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToAllStreams, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
+                var cmd = new TcpClientMessageDto.SubscribeToStream(string.Empty, resolveLinkTos: false);
+                connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
             }
             else
             {

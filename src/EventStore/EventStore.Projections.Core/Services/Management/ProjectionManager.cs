@@ -455,18 +455,18 @@ namespace EventStore.Projections.Core.Services.Management
         private void WriteProjectionRegistrationCompleted(
             ClientMessage.WriteEventsCompleted message, Action completed, string name)
         {
-            if (message.ErrorCode == OperationErrorCode.Success)
+            if (message.Result == OperationResult.Success)
             {
                 if (completed != null) completed();
                 return;
             }
             _logger.Info(
                 "Projection '{0}' registration has not been written to {1}. Error: {2}", name, message.EventStreamId,
-                Enum.GetName(typeof (OperationErrorCode), message.ErrorCode));
-            if (message.ErrorCode == OperationErrorCode.CommitTimeout
-                || message.ErrorCode == OperationErrorCode.ForwardTimeout
-                || message.ErrorCode == OperationErrorCode.PrepareTimeout
-                || message.ErrorCode == OperationErrorCode.WrongExpectedVersion)
+                Enum.GetName(typeof (OperationResult), message.Result));
+            if (message.Result == OperationResult.CommitTimeout
+                || message.Result == OperationResult.ForwardTimeout
+                || message.Result == OperationResult.PrepareTimeout
+                || message.Result == OperationResult.WrongExpectedVersion)
             {
                 _logger.Info("Retrying write projection registration for {0}", name);
                 BeginWriteProjectionRegistration(name, completed);

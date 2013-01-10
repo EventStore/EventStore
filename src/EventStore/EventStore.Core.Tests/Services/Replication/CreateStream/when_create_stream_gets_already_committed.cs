@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
         public void the_envelope_is_replied_to_with_success()
         {
             Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.CreateStreamCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                                  x.ErrorCode == OperationErrorCode.Success));
+                                                                                                  x.Result == OperationResult.Success));
         }
     }
 }

@@ -106,7 +106,7 @@ namespace EventStore.ClientAPI.Connection
 
                     var pkg = new TcpPackage(TcpCommand.UnsubscribeFromStream,
                                              id,
-                                             new ClientMessage.UnsubscribeFromStream(stream).Serialize());
+                                             new ClientMessage.UnsubscribeFromStream().Serialize());
                     _connection.EnqueueSend(pkg.AsByteArray());
                 }
             }
@@ -119,8 +119,8 @@ namespace EventStore.ClientAPI.Connection
 
             if (_subscriptions.TryAdd(id, new Subscription(source, id, eventAppeared, subscriptionDropped)))
             {
-                var subscribe = new ClientMessage.SubscribeToAllStreams(resolveLinkTos);
-                var pkg = new TcpPackage(TcpCommand.SubscribeToAllStreams, id, subscribe.Serialize());
+                var subscribe = new ClientMessage.SubscribeToStream(string.Empty, resolveLinkTos); // subscribe to all
+                var pkg = new TcpPackage(TcpCommand.SubscribeToStream, id, subscribe.Serialize());
                 _connection.EnqueueSend(pkg.AsByteArray());
             }
             else
@@ -144,9 +144,9 @@ namespace EventStore.ClientAPI.Connection
                     removed.Source.SetResult(null);
                     ExecuteUserCallbackAsync(removed.SubscriptionDropped);
 
-                    var pkg = new TcpPackage(TcpCommand.UnsubscribeFromAllStreams, 
+                    var pkg = new TcpPackage(TcpCommand.UnsubscribeFromStream, 
                                              id, 
-                                             new ClientMessage.UnsubscribeFromAllStreams().Serialize());
+                                             new ClientMessage.UnsubscribeFromStream().Serialize());
                     _connection.EnqueueSend(pkg.AsByteArray());
                 }
             }
@@ -201,7 +201,6 @@ namespace EventStore.ClientAPI.Connection
                         break;
                     }
                     case TcpCommand.SubscriptionDropped:
-                    case TcpCommand.SubscriptionToAllDropped:
                     {
                         Subscription removed;
                         if (_subscriptions.TryRemove(subscription.Id, out removed))

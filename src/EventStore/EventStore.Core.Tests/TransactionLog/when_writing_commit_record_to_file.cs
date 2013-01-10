@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                           correlationId: _eventId,
                                           transactionPosition: 4321,
                                           timeStamp: new DateTime(2012, 12, 21),
-                                          eventNumber: 10);
+                                          firstEventNumber: 10);
             long newPos;
             _writer.Write(_record, out newPos);
             _writer.Flush();

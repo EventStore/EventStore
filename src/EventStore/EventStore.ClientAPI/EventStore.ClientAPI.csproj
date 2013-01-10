@@ -126,11 +126,8 @@
     <Compile Include="SystemData\StatusCode.cs" />
     <Compile Include="ExpectedVersion.cs" />
     <Compile Include="SystemData\InspectionResult.cs" />
-    <Compile Include="SystemData\OperationErrorCode.cs" />
     <Compile Include="SystemData\PrepareFlags.cs" />
     <Compile Include="SystemData\InspectionDecision.cs" />
-    <Compile Include="SystemData\RangeReadResult.cs" />
-    <Compile Include="SystemData\SingleReadResult.cs" />
     <Compile Include="SystemData\TcpCommand.cs" />
     <Compile Include="SystemData\TcpPackage.cs" />
     <Compile Include="Transport.Http\AsyncStreamCopier.cs" />

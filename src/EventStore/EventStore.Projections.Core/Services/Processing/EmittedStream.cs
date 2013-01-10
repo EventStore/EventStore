@@ -125,9 +125,9 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_awaitingWriteCompleted)
                 throw new InvalidOperationException("WriteEvents has not been submitted");
-            if (message.ErrorCode == OperationErrorCode.Success)
+            if (message.Result == OperationResult.Success)
             {
-                _lastKnownEventNumber = message.EventNumber + _submittedToWriteEvents.Length - 1
+                _lastKnownEventNumber = message.FirstEventNumber + _submittedToWriteEvents.Length - 1
                                         + (_lastKnownEventNumber == ExpectedVersion.NoStream ? 1 : 0); // account for stream crated
                 OnWriteCompleted();
                 return;
@@ -135,15 +135,15 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_logger != null)
                 _logger.Info(
                     "Failed to write events to stream {0}. Error: {1}", message.EventStreamId,
-                    Enum.GetName(typeof (OperationErrorCode), message.ErrorCode));
-            switch (message.ErrorCode)
+                    Enum.GetName(typeof (OperationResult), message.Result));
+            switch (message.Result)
             {
-                case OperationErrorCode.WrongExpectedVersion:
+                case OperationResult.WrongExpectedVersion:
                     RequestRestart(string.Format("The '{0}' stream has be written to from the outside", _streamId));
                     break;
-                case OperationErrorCode.PrepareTimeout:
-                case OperationErrorCode.ForwardTimeout:
-                case OperationErrorCode.CommitTimeout:
+                case OperationResult.PrepareTimeout:
+                case OperationResult.ForwardTimeout:
+                case OperationResult.CommitTimeout:
                     if (_logger != null) _logger.Info("Retrying write to {0}", message.EventStreamId);
                     PublishWriteEvents();
                     break;

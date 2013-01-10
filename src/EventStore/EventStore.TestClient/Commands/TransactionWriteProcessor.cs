@@ -87,9 +87,9 @@ namespace EventStore.TestClient.Commands
                                 }
 
                                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionStartCompleted>();
-                                if ((OperationErrorCode)dto.ErrorCode != OperationErrorCode.Success)
+                                if (dto.Result != TcpClientMessageDto.OperationResult.Success)
                                 {
-                                    var msg = string.Format("Error while starting transaction: {0} ({1}).", dto.Error, (OperationErrorCode)dto.ErrorCode);
+                                    var msg = string.Format("Error while starting transaction: {0} ({1}).", dto.Message, dto.Result);
                                     context.Log.Info(msg);
                                     context.Fail(reason: msg);
                                 }
@@ -102,17 +102,18 @@ namespace EventStore.TestClient.Commands
                                     stage = Stage.Writing;
                                     for (int i = 0; i < eventsCnt; ++i)
                                     {
-                                        var writeDto = new TcpClientMessageDto.TransactionWrite(transactionId,
-                                                eventStreamId,
-                                                new[] 
-                                                { 
-                                                        new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray() ,
-                                                                                   "TakeSomeSpaceEvent",
-                                                                                   false,
-                                                                                   Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()),
-                                                                                   Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()))
-                                                },
-                                                true);
+                                        var writeDto = new TcpClientMessageDto.TransactionWrite(
+                                            transactionId,
+                                            eventStreamId,
+                                            new[] 
+                                            { 
+                                                new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray() ,
+                                                                                 "TakeSomeSpaceEvent",
+                                                                                 false,
+                                                                                 Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()),
+                                                                                 Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()))
+                                            },
+                                            true);
                                         var package = new TcpPackage(TcpCommand.TransactionWrite, Guid.NewGuid(), writeDto.Serialize());
                                         conn.EnqueueSend(package.AsByteArray());
                                     }
@@ -129,9 +130,9 @@ namespace EventStore.TestClient.Commands
                                 }
 
                                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionWriteCompleted>();
-                                if ((OperationErrorCode)dto.ErrorCode != OperationErrorCode.Success)
+                                if (dto.Result != TcpClientMessageDto.OperationResult.Success)
                                 {
-                                    var msg = string.Format("Error while writing transactional event: {0} ({1}).", dto.Error, (OperationErrorCode)dto.ErrorCode);
+                                    var msg = string.Format("Error while writing transactional event: {0} ({1}).", dto.Message, dto.Result);
                                     context.Log.Info(msg);
                                     context.Fail(reason: msg);
                                 }
@@ -161,9 +162,9 @@ namespace EventStore.TestClient.Commands
                                 sw.Stop();
 
                                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionCommitCompleted>();
-                                if ((OperationErrorCode)dto.ErrorCode != OperationErrorCode.Success)
+                                if (dto.Result != TcpClientMessageDto.OperationResult.Success)
                                 {
-                                    var msg = string.Format("Error while committing transaction: {0} ({1}).", dto.Error, (OperationErrorCode)dto.ErrorCode);
+                                    var msg = string.Format("Error while committing transaction: {0} ({1}).", dto.Message, dto.Result);
                                     context.Log.Info(msg);
                                     context.Log.Info("Transaction took: {0}.", sw.Elapsed);
                                     context.Fail(reason: msg);

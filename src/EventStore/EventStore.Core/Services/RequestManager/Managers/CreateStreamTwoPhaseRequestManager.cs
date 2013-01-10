@@ -35,7 +35,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class CreateStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.CreateStreamRequestCreated>
+    public class CreateStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.CreateStreamRequestCreated>
     {
         public CreateStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
                 base(publisher, prepareCount, commitCount)
@@ -44,18 +44,12 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(StorageMessage.CreateStreamRequestCreated request)
         {
-            if (_initialized)
-                throw new InvalidOperationException();
-
-            _initialized = true;
-            _responseEnvelope = request.Envelope;
-            _correlationId = request.CorrelationId;
-            _eventStreamId = request.EventStreamId;
+            Init(request.Envelope, request.CorrelationId, request.EventStreamId, -1);
 
             Publisher.Publish(
                 new StorageMessage.WritePrepares(
                     request.CorrelationId,
-                    _publishEnvelope,
+                    PublishEnvelope,
                     request.EventStreamId,
                     ExpectedVersion.NoStream,
                     new[]
@@ -65,24 +59,23 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     allowImplicitStreamCreation: false,
                     liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
-                                                      _publishEnvelope,
-                                                      new StorageMessage.PreparePhaseTimeout(_correlationId)));
+                                                           PublishEnvelope,
+                                                           new StorageMessage.PreparePhaseTimeout(CorrelationId)));
         }
 
 
-        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
+        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int firstEventNumber)
         {
-            base.CompleteSuccessRequest(correlationId, eventStreamId, startEventNumber);
-            var responseMsg = new ClientMessage.CreateStreamCompleted(
-                correlationId, eventStreamId, OperationErrorCode.Success, null);
-            _responseEnvelope.ReplyWith(responseMsg);
+            base.CompleteSuccessRequest(correlationId, eventStreamId, firstEventNumber);
+            var responseMsg = new ClientMessage.CreateStreamCompleted(correlationId, eventStreamId, OperationResult.Success, null);
+            ResponseEnvelope.ReplyWith(responseMsg);
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
+        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationResult result, string error)
         {
-            base.CompleteFailedRequest(correlationId, eventStreamId, errorCode, error);
-            var responseMsg = new ClientMessage.CreateStreamCompleted(correlationId, eventStreamId, errorCode, error);
-            _responseEnvelope.ReplyWith(responseMsg);     
+            base.CompleteFailedRequest(correlationId, eventStreamId, result, error);
+            var responseMsg = new ClientMessage.CreateStreamCompleted(correlationId, eventStreamId, result, error);
+            ResponseEnvelope.ReplyWith(responseMsg);     
         }
     }
 }

@@ -35,7 +35,7 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class SingleAckRequestManager : IHandle<StorageMessage.TransactionStartRequestCreated>,
+    public class SingleAckRequestManager : IHandle<StorageMessage.TransactionStartRequestCreated>,
                                            IHandle<StorageMessage.TransactionWriteRequestCreated>,
                                            IHandle<StorageMessage.PrepareAck>,
                                            IHandle<StorageMessage.WrongExpectedVersion>,
@@ -119,17 +119,17 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(StorageMessage.WrongExpectedVersion message)
         {
-            CompleteFailedRequest(message.CorrelationId, _transactionId, _eventStreamId, OperationErrorCode.WrongExpectedVersion, "Wrong expected version.");
+            CompleteFailedRequest(message.CorrelationId, _transactionId, _eventStreamId, OperationResult.WrongExpectedVersion, "Wrong expected version.");
         }
 
         public void Handle(StorageMessage.InvalidTransaction message)
         {
-            CompleteFailedRequest(message.CorrelationId, _transactionId, _eventStreamId, OperationErrorCode.WrongExpectedVersion, "Wrong expected version.");
+            CompleteFailedRequest(message.CorrelationId, _transactionId, _eventStreamId, OperationResult.WrongExpectedVersion, "Wrong expected version.");
         }
 
         public void Handle(StorageMessage.StreamDeleted message)
         {
-            CompleteFailedRequest(message.CorrelationId, _transactionId, _eventStreamId, OperationErrorCode.StreamDeleted, "Stream is deleted.");
+            CompleteFailedRequest(message.CorrelationId, _transactionId, _eventStreamId, OperationResult.StreamDeleted, "Stream is deleted.");
         }
 
         public void Handle(StorageMessage.PreparePhaseTimeout message)
@@ -137,7 +137,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_completed)
                 return;
 
-            CompleteFailedRequest(message.CorrelationId, _transactionId, _eventStreamId, OperationErrorCode.PrepareTimeout, "Prepare phase timeout.");
+            CompleteFailedRequest(message.CorrelationId, _transactionId, _eventStreamId, OperationResult.PrepareTimeout, "Prepare phase timeout.");
         }
 
         private void CompleteSuccessRequest(Guid correlationId, long transactionId, string eventStreamId)
@@ -147,10 +147,10 @@ namespace EventStore.Core.Services.RequestManager.Managers
             switch (_requestType)
             {
                 case RequestType.TransactionStart:
-                    responseMsg = new ClientMessage.TransactionStartCompleted(correlationId, transactionId, eventStreamId, OperationErrorCode.Success, null);
+                    responseMsg = new ClientMessage.TransactionStartCompleted(correlationId, transactionId, eventStreamId, OperationResult.Success, null);
                     break;
                 case RequestType.TransactionWrite:
-                    responseMsg = new ClientMessage.TransactionWriteCompleted(correlationId, transactionId, eventStreamId, OperationErrorCode.Success, null);
+                    responseMsg = new ClientMessage.TransactionWriteCompleted(correlationId, transactionId, eventStreamId, OperationResult.Success, null);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -159,20 +159,20 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _bus.Publish(new StorageMessage.RequestCompleted(correlationId, true));
         }
 
-        private void CompleteFailedRequest(Guid correlationId, long transactionId, string eventStreamId, OperationErrorCode errorCode, string error)
+        private void CompleteFailedRequest(Guid correlationId, long transactionId, string eventStreamId, OperationResult result, string error)
         {
-            Debug.Assert(errorCode != OperationErrorCode.Success);
+            Debug.Assert(result != OperationResult.Success);
 
             _completed = true;
             Message responseMsg;
             switch(_requestType)
             {
                 case RequestType.TransactionStart:
-                    responseMsg = new ClientMessage.TransactionStartCompleted(correlationId, transactionId, eventStreamId, errorCode, error);
+                    responseMsg = new ClientMessage.TransactionStartCompleted(correlationId, transactionId, eventStreamId, result, error);
                     break;
                 case RequestType.TransactionWrite:
                     // Should never happen, only possibly under very heavy load...
-                    responseMsg = new ClientMessage.TransactionWriteCompleted(correlationId, transactionId, eventStreamId, errorCode, error);
+                    responseMsg = new ClientMessage.TransactionWriteCompleted(correlationId, transactionId, eventStreamId, result, error);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

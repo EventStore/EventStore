@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
         public void the_envelope_is_replied_to_with_success()
         {
             Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.TransactionCommitCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                                       x.ErrorCode == OperationErrorCode.Success));
+                                                                                                       x.Result == OperationResult.Success));
         }
     }
 }

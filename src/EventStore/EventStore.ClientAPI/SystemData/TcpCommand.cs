@@ -76,15 +76,12 @@ namespace EventStore.ClientAPI.SystemData
 
         SubscribeToStream = 0xC0,
         UnsubscribeFromStream = 0xC1,
-        SubscribeToAllStreams = 0xC2,
-        UnsubscribeFromAllStreams = 0xC3,
         StreamEventAppeared = 0xC4,
         SubscriptionDropped = 0xC5,
-        SubscriptionToAllDropped = 0xC6,
 
         ScavengeDatabase = 0xD0,
 
         BadRequest = 0xF0,
-        DeniedToRoute = 0xf1
+        DeniedToRoute = 0xF1
     }
 }

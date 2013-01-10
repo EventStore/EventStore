@@ -84,13 +84,10 @@ namespace EventStore.TestClient.Commands
 
                     var dto = pkg.Data.Deserialize<TcpClientMessageDto.DeleteStreamCompleted>();
 
-                    if (dto.ErrorCode == (int)OperationErrorCode.Success)
+                    if (dto.Result == TcpClientMessageDto.OperationResult.Success)
                         context.Log.Info("DELETED event stream {0}.", eventStreamId);
                     else
-                        context.Log.Info("DELETION FAILED for event stream {0}: {1} ({2}).",
-                                         eventStreamId,
-                                         dto.Error,
-                                         (OperationErrorCode) dto.ErrorCode);
+                        context.Log.Info("DELETION FAILED for event stream {0}: {1} ({2}).", eventStreamId, dto.Message, dto.Result);
 
                     context.Log.Info("Delete request took: {0}.", sw.Elapsed);
 

@@ -107,23 +107,23 @@ namespace EventStore.ClientAPI.ClientOperations
                 var dto = data.Deserialize<ClientMessage.DeleteStreamCompleted>();
                 _result = dto;
 
-                switch ((OperationErrorCode)dto.ErrorCode)
+                switch (dto.Result)
                 {
-                    case OperationErrorCode.Success:
+                    case ClientMessage.OperationResult.Success:
                         return new InspectionResult(InspectionDecision.Succeed);
-                    case OperationErrorCode.PrepareTimeout:
-                    case OperationErrorCode.CommitTimeout:
-                    case OperationErrorCode.ForwardTimeout:
+                    case ClientMessage.OperationResult.PrepareTimeout:
+                    case ClientMessage.OperationResult.CommitTimeout:
+                    case ClientMessage.OperationResult.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
-                    case OperationErrorCode.WrongExpectedVersion:
+                    case ClientMessage.OperationResult.WrongExpectedVersion:
                         var err = string.Format("Delete stream failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}, CorrID: {2}.",
                                                 _stream,
                                                 _expectedVersion,
                                                 CorrelationId);
                         return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
-                    case OperationErrorCode.StreamDeleted:
+                    case ClientMessage.OperationResult.StreamDeleted:
                         return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
-                    case OperationErrorCode.InvalidTransaction:
+                    case ClientMessage.OperationResult.InvalidTransaction:
                         return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
                     default:
                         throw new ArgumentOutOfRangeException();

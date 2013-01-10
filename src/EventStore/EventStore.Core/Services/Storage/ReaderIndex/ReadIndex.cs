@@ -217,7 +217,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 }
                 else if ((prepare.Flags & PrepareFlags.Data) != 0)
                 {
-                    eventNumber = commit.EventNumber + prepare.TransactionOffset;
+                    eventNumber = commit.FirstEventNumber + prepare.TransactionOffset;
                     _committedEvents.PutRecord(prepare.EventId, Tuple.Create(streamId, eventNumber), throwOnDuplicate: false);
                     addToIndex = commit.LogPosition > _persistedCommitCheckpoint
                                  || commit.LogPosition == _persistedCommitCheckpoint && prepare.LogPosition > _persistedPrepareCheckpoint;
@@ -692,7 +692,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         {
                             if (new TFPos(commit.Position, prepare.LogPosition) >= pos)
                             {
-                                var eventRecord = new EventRecord(commit.EventNumber + prepare.TransactionOffset, prepare);
+                                var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
                                 records.Add(new CommitEventRecord(eventRecord, commit.Position));
                                 count++;
 
@@ -785,7 +785,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         {
                             if (new TFPos(commitPostPos, result.RecordPostPosition) <= pos)
                             {
-                                var eventRecord = new EventRecord(commit.EventNumber + prepare.TransactionOffset, prepare);
+                                var eventRecord = new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
                                 records.Add(new CommitEventRecord(eventRecord, commit.Position));
                                 count++;
 

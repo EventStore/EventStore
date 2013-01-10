@@ -416,7 +416,7 @@ namespace EventStore.Core.Services.Storage
                                                  commit.CorrelationId,
                                                  transactionPos,
                                                  commit.TimeStamp,
-                                                 commit.EventNumber);
+                                                 commit.FirstEventNumber);
                 long writtenPos = newPos;
                 if (!Writer.Write(record, out newPos))
                 {

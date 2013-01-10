@@ -100,7 +100,7 @@ namespace EventStore.TestClient.Commands
                         Interlocked.Increment(ref received);
 
                         var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-                        if (dto.ErrorCode == (int)OperationErrorCode.Success)
+                        if (dto.Result == TcpClientMessageDto.OperationResult.Success)
                         {
                             if (Interlocked.Increment(ref succ)%1000 == 0)
                                 Console.Write(".");
@@ -130,13 +130,13 @@ namespace EventStore.TestClient.Commands
                             eventStreamId,
                             ExpectedVersion.Any,
                             new[]
-                                {
-                                    new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
-                                                                        "TakeSomeSpaceEvent",
-                                                                        false,
-                                                                        Encoding.UTF8.GetBytes("DATA" + new string('*', 256)),
-                                                                        Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
-                                },
+                            {
+                                new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+                                                                 "TakeSomeSpaceEvent",
+                                                                 false,
+                                                                 Encoding.UTF8.GetBytes("DATA" + new string('*', 256)),
+                                                                 Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
+                            },
                             true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                         client.EnqueueSend(package.AsByteArray());
