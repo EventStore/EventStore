@@ -191,6 +191,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _projectionEventReaders.Add(message.CorrelationId, forkedEventReaderId);
                 _eventReaderSubscriptions.Add(forkedEventReaderId, message.CorrelationId);
                 _eventReaders.Add(forkedEventReaderId, forkedEventReader);
+                _publisher.Publish(new ProjectionSubscriptionManagement.ReaderAssigned(message.CorrelationId, forkedEventReaderId));
             }
             else
             {
@@ -226,6 +227,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventReaders.Add(distibutionPointCorrelationId, eventReader);
             _projectionEventReaders.Add(message.CorrelationId, distibutionPointCorrelationId);
             _eventReaderSubscriptions.Add(distibutionPointCorrelationId, message.CorrelationId);
+            _publisher.Publish(new ProjectionSubscriptionManagement.ReaderAssigned(message.CorrelationId, distibutionPointCorrelationId));
             eventReader.Resume();
         }
 
@@ -239,6 +241,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: test it
                 _eventReaders.Remove(eventReaderId);
                 _eventReaderSubscriptions.Remove(eventReaderId);
+                _publisher.Publish(new ProjectionSubscriptionManagement.ReaderAssigned(message.CorrelationId, Guid.Empty));
                 _logger.Trace(
                     "The '{0}' projection has unsubscribed from the '{1}' distribution point", message.CorrelationId,
                     eventReaderId);
@@ -443,6 +446,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventReaders.Remove(eventReaderId);
             _eventReaderSubscriptions.Remove(eventReaderId);
             _projectionEventReaders[projectionId] = Guid.Empty;
+            _publisher.Publish(new ProjectionSubscriptionManagement.ReaderAssigned(message.CorrelationId, Guid.Empty));
             return true;
         }
     }

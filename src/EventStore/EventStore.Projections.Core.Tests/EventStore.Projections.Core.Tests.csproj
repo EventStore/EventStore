@@ -202,6 +202,8 @@
     <Compile Include="Services\partition_state_cache\when_the_partition_state_cache_has_been_reinitialized.cs" />
     <Compile Include="Services\partition_state_cache\when_unlocking_an_overflowed_cache.cs" />
     <Compile Include="Services\partition_state_cache\when_unlocking_part_of_cached_states.cs" />
+    <Compile Include="Services\projections_manager\onetime\FakeProjection.cs" />
+    <Compile Include="Services\projections_manager\onetime\a_new_posted_projection.cs" />
     <Compile Include="Services\projections_manager\TestFixtureWithProjectionCoreAndManagementServices.cs" />
     <Compile Include="Services\projections_manager\v8\when_compiling_v8_projection.cs" />
     <Compile Include="Services\projections_manager\v8\when_defining_a_v8_projection.cs" />
