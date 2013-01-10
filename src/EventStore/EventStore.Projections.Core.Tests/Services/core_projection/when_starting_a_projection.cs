@@ -37,6 +37,7 @@ using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
+using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
@@ -92,7 +93,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
                     _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.NoStream, 
-                    new EventLinkPair[0], string.Empty, -1, -1, false, 1000));
+                    new ResolvedEvent[0], string.Empty, -1, -1, false, 1000));
         }
 
         [Test]
@@ -102,7 +103,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
                     _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.Success,
-                    new EventLinkPair[0], string.Empty, -1, -1, false, 1000));
+                    new ResolvedEvent[0], string.Empty, -1, -1, false, 1000));
         }
     }
 }

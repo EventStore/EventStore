@@ -157,7 +157,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             for (int i = result.Events.Length - 1; i >= 0; --i)
             {
-                feed.AddEntry(ToEntry(new EventLinkPair(result.Events[i].Event, result.Events[i].Link), userHostName, embedContent));
+                feed.AddEntry(ToEntry(new ResolvedEvent(result.Events[i].Event, result.Events[i].Link), userHostName, embedContent));
             }
             return feed;
         }
@@ -180,12 +180,12 @@ namespace EventStore.Core.Services.Transport.Http
 
             for (int i = 0; i < result.Events.Length; ++i)
             {
-                feed.AddEntry(ToEntry(new EventLinkPair(result.Events[i].Event, result.Events[i].Link), userHostName, embedContent));
+                feed.AddEntry(ToEntry(new ResolvedEvent(result.Events[i].Event, result.Events[i].Link), userHostName, embedContent));
             }
             return feed;
         }
 
-        public static EntryElement ToEntry(EventLinkPair eventLinkPair, string userHostName, EmbedLevel embedContent)
+        public static EntryElement ToEntry(ResolvedEvent eventLinkPair, string userHostName, EmbedLevel embedContent)
         {
             if (eventLinkPair.Event == null || userHostName == null)
                 return null;

@@ -94,7 +94,7 @@
     <Compile Include="Connection\SubscriptionsChannel.cs" />
     <Compile Include="Connection\WorkItem.cs" />
     <Compile Include="EventStoreSubscription.cs" />
-    <Compile Include="EventLinkPositionedPair.cs" />
+    <Compile Include="ResolvedEvent.cs" />
     <Compile Include="Exceptions\CannotEstablishConnectionException.cs" />
     <Compile Include="Exceptions\ProjectionCommandFailedException.cs" />
     <Compile Include="Exceptions\InvalidTransactionException.cs" />

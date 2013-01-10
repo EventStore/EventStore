@@ -29,7 +29,6 @@ using System;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 
@@ -93,7 +92,7 @@ namespace EventStore.TestClient.Commands
                 },
                 handlePackage: (conn, pkg) =>
                 {
-                    TcpClientMessageDto.EventLinkPositionedPair[] records;
+                    TcpClientMessageDto.ResolvedEvent[] records;
                     long nextCommitPos;
                     long nextPreparePos;
 

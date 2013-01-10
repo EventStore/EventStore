@@ -54,7 +54,7 @@ namespace EventStore.Core.Services
         private readonly List<Subscription> _pendingUnsubscribe = new List<Subscription>();
         private readonly IReadIndex _readIndex;
 
-        private EventLinkPositionedPair? _lastResolvedPair;
+        private ResolvedEvent? _lastResolvedPair;
 
         private readonly QueuedHandlerThreadPool _queuedHandler;
         private readonly InMemoryBus _internalBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
@@ -163,7 +163,7 @@ namespace EventStore.Core.Services
                 var subscription = subscriptions[i];
                 if (subscription.Connection.SendQueueSize <= ConnectionQueueSizeThreshold)
                 {
-                    var pair = new EventLinkPositionedPair(message.Event, null, message.CommitPosition);
+                    var pair = new ResolvedEvent(message.Event, null, message.CommitPosition);
                     if (subscription.ResolveLinkTos)
                         _lastResolvedPair = pair = _lastResolvedPair ?? ResolveLinkToEvent(message.Event, message.CommitPosition);
 
@@ -183,7 +183,7 @@ namespace EventStore.Core.Services
             _pendingUnsubscribe.Clear();
         }
 
-        private EventLinkPositionedPair ResolveLinkToEvent(EventRecord eventRecord, long commitPosition)
+        private ResolvedEvent ResolveLinkToEvent(EventRecord eventRecord, long commitPosition)
         {
             if (eventRecord.EventType == SystemEventTypes.LinkTo)
             {
@@ -195,14 +195,14 @@ namespace EventStore.Core.Services
 
                     var res = _readIndex.ReadEvent(streamId, eventNumber);
                     if (res.Result == ReadEventResult.Success)
-                        return new EventLinkPositionedPair(res.Record, eventRecord, commitPosition);
+                        return new ResolvedEvent(res.Record, eventRecord, commitPosition);
                 }
                 catch (Exception exc)
                 {
                     Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
                 }
             }
-            return new EventLinkPositionedPair(eventRecord, null, commitPosition);
+            return new ResolvedEvent(eventRecord, null, commitPosition);
         }
 
         private void DropSubscription(Subscription subscription)

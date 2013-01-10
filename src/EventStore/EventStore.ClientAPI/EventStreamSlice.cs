@@ -82,7 +82,7 @@ namespace EventStore.ClientAPI
                                   string stream, 
                                   int start, 
                                   int count, 
-                                  ClientMessage.EventLinkPair[] events,
+                                  ClientMessage.ResolvedIndexedEvent[] events,
                                   int nextEventNumber,
                                   int lastEventNumber,
                                   bool isEndOfStream)

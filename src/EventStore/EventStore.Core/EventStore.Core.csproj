@@ -92,12 +92,11 @@
     <Compile Include="DataStructures\ObjectPool.cs" />
     <Compile Include="DataStructures\PairingHeap.cs" />
     <Compile Include="Data\CommitEventRecord.cs" />
-    <Compile Include="Data\EventLinkPair.cs" />
+    <Compile Include="Data\ResolvedEvent.cs" />
     <Compile Include="Data\EventNumber.cs" />
     <Compile Include="Data\EventRecord.cs" />
     <Compile Include="Data\ReadAllResult.cs" />
     <Compile Include="Data\ReadStreamResult.cs" />
-    <Compile Include="Data\EventLinkPositionedPair.cs" />
     <Compile Include="Data\TFPos.cs" />
     <Compile Include="Exceptions\BadChunkInDatabaseException.cs" />
     <Compile Include="Exceptions\ChunkNotFoundException.cs" />

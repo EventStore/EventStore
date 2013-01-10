@@ -380,7 +380,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             return new ClientMessage.ReadEventCompleted(Guid.Empty,
                                                         "stream",
                                                         ReadEventResult.Success,
-                                                        new EventLinkPair(
+                                                        new ResolvedEvent(
                                                             new EventRecord(
                                                                 0,
                                                                 0,
@@ -534,7 +534,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
             return new ClientMessage.ReadEventCompleted(Guid.Empty,
                                                         "stream",
                                                         ReadEventResult.Success,
-                                                        new EventLinkPair(
+                                                        new ResolvedEvent(
                                                             new EventRecord(
                                                                 0,
                                                                 0,

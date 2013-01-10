@@ -28,7 +28,7 @@
 
 namespace EventStore.ClientAPI
 {
-    public class Position
+    public struct Position
     {
         public static readonly Position Start = new Position(0, 0);
         public static readonly Position End = new Position(-1, -1);

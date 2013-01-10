@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
-                Action<EventLinkPositionedPair> eventAppeared = x => appeared.Signal();
+                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
                 using (var subscription = store.SubscribeToStream(stream, false, eventAppeared, subscriptionDropped))
@@ -87,7 +87,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
-                Action<EventLinkPositionedPair> eventAppeared = x => appeared.Signal();
+                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
                 using (store.SubscribeToStream(stream, false, eventAppeared, subscriptionDropped))
@@ -110,7 +110,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared =  new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
-                Action<EventLinkPositionedPair> eventAppeared = x => appeared.Signal();
+                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
                 using (var subscription = store.SubscribeToStream(stream, false, eventAppeared, subscriptionDropped))
@@ -133,7 +133,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
-                Action<EventLinkPositionedPair> eventAppeared = x => appeared.Signal();
+                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(1);
                 var dropped = new CountdownEvent(1);
 
-                Action<EventLinkPositionedPair> eventAppeared = x => appeared.Signal();
+                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
@@ -187,7 +187,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(1);
 
-                Action<EventLinkPositionedPair> eventAppeared = x => appeared.Signal();
+                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
                 using (var subscription = store.SubscribeToStream(stream, false, eventAppeared, subscriptionDropped))

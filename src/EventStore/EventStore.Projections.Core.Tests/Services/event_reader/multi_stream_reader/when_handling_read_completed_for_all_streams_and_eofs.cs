@@ -39,6 +39,7 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
+using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader
 {
@@ -81,12 +82,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, 
                     new[]
                         {
-                            new EventLinkPair(
+                            new ResolvedEvent(
                         new EventRecord(
                             1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type1", new byte[] {1}, new byte[] {2}), null),
-                            new EventLinkPair(
+                            new ResolvedEvent(
                         new EventRecord(
                             2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "a", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
@@ -97,12 +98,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success, 
                     new[]
                         {
-                            new EventLinkPair(
+                            new ResolvedEvent(
                         new EventRecord(
                             2, 100, Guid.NewGuid(), _thirdEventId, 100, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
                             "event_type1", new byte[] {1}, new byte[] {2}), null),
-                            new EventLinkPair(
+                            new ResolvedEvent(
                         new EventRecord(
                             3, 200, Guid.NewGuid(), _fourthEventId, 200, 0, "b", ExpectedVersion.Any, DateTime.UtcNow,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
@@ -111,11 +112,11 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, new EventLinkPair[0], "", 3, 2, true,
+                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0], "", 3, 2, true,
                     400));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success, new EventLinkPair[0], "", 4, 3, true,
+                    _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0], "", 4, 3, true,
                     400));
         }
 

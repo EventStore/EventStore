@@ -68,7 +68,7 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public EventStoreSubscription Subscribe(string streamId, bool resolveLinkTos, Action<EventLinkPositionedPair> eventAppeared, Action subscriptionDropped)
+        public EventStoreSubscription Subscribe(string streamId, bool resolveLinkTos, Action<ResolvedEvent> eventAppeared, Action subscriptionDropped)
         {
             var id = Guid.NewGuid();
 
@@ -154,7 +154,7 @@ namespace EventStore.ClientAPI.Connection
                     case TcpCommand.StreamEventAppeared:
                     {
                         var dto = package.Data.Deserialize<ClientMessage.StreamEventAppeared>();
-                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(new EventLinkPositionedPair(dto.Event)));
+                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(new ResolvedEvent(dto.Event)));
                         break;
                     }
                     case TcpCommand.SubscriptionDropped:

@@ -42,22 +42,22 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public partial class EventLinkPair
+        public partial class ResolvedIndexedEvent
         {
-            public EventLinkPair(Data.EventRecord eventRecord, Data.EventRecord linkRecord)
+            public ResolvedIndexedEvent(Data.EventRecord eventRecord, Data.EventRecord linkRecord)
                 : this(eventRecord != null ? new EventRecord(eventRecord) : null,
                        linkRecord != null ? new EventRecord(linkRecord) : null)
             {
             }
         }
 
-        public partial class EventLinkPositionedPair
+        public partial class ResolvedEvent
         {
-            public EventLinkPositionedPair(Data.EventLinkPositionedPair pair)
+            public ResolvedEvent(Data.ResolvedEvent pair)
                 : this(new EventRecord(pair.Event),
                        pair.Link != null ? new EventRecord(pair.Link) : null,
-                       pair.CommitPosition,
-                       pair.Event.LogPosition)
+                       pair.OriginalPosition.Value.CommitPosition,
+                       pair.OriginalPosition.Value.PreparePosition)
             {
             }
         }

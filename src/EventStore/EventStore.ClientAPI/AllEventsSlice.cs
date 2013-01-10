@@ -34,7 +34,7 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class AllEventsSlice
     {
-        private static readonly EventLinkPositionedPair[] EmptyEvents = new EventLinkPositionedPair[0];
+        private static readonly ResolvedEvent[] EmptyEvents = new ResolvedEvent[0];
 
         /// <summary>
         /// A <see cref="NextPosition"/> representing the position where the next slice should be read from.
@@ -44,19 +44,19 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The events read
         /// </summary>
-        public readonly EventLinkPositionedPair[] Events;
+        public readonly ResolvedEvent[] Events;
 
-        internal AllEventsSlice(Position nextPosition, ClientMessage.EventLinkPositionedPair[] events)
+        internal AllEventsSlice(Position nextPosition, ClientMessage.ResolvedEvent[] events)
         {
             NextPosition = nextPosition;
             if (events == null)
                 Events = EmptyEvents;
             else
             {
-                Events = new EventLinkPositionedPair[events.Length];
+                Events = new ResolvedEvent[events.Length];
                 for (int i = 0; i < Events.Length; ++i)
                 {
-                    Events[i] = new EventLinkPositionedPair(events[i]);
+                    Events[i] = new ResolvedEvent(events[i]);
                 }
             }
         }

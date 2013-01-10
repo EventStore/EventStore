@@ -33,14 +33,14 @@ namespace EventStore.Core.Data
 {
     public struct ReadAllResult
     {
-        public readonly EventLinkPositionedPair[] Events;
+        public readonly ResolvedEvent[] Events;
         public readonly int MaxCount;
         public readonly TFPos CurrentPos;
         public readonly TFPos NextPos;
         public readonly TFPos PrevPos;
         public readonly long TfEofPosition;
 
-        public ReadAllResult(EventLinkPositionedPair[] events, int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
+        public ReadAllResult(ResolvedEvent[] events, int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
         {
             Ensure.NotNull(events, "events");
 

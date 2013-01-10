@@ -158,10 +158,10 @@ namespace EventStore.Projections.Core.Services.Processing
                     null, int.MinValue, false, null, lastPosition.PreparePosition, 100.0f)); //TODO: check was is passed here
         }
 
-        private void DeliverEvent(EventLinkPositionedPair @event, long lastCommitPosition)
+        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent @event, long lastCommitPosition)
         {
             EventRecord positionEvent = (@event.Link ?? @event.Event);
-            var receivedPosition = new EventPosition(@event.CommitPosition, positionEvent.LogPosition);
+            EventPosition receivedPosition = @event.OriginalPosition.Value;
             if (_from > receivedPosition)
                 throw new Exception(
                     string.Format(

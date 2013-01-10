@@ -73,7 +73,7 @@ namespace EventStore.Core.Messages
 
         public abstract class ReadResponseMessage : Message
         {
-            internal static readonly EventLinkPair[] EmptyRecords = new EventLinkPair[0];
+            internal static readonly ResolvedEvent[] EmptyRecords = new ResolvedEvent[0];
         }
 
         public class ForwardMessage: Message
@@ -392,9 +392,9 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
             public readonly ReadEventResult Result;
-            public readonly EventLinkPair Record;
+            public readonly ResolvedEvent Record;
 
-            public ReadEventCompleted(Guid correlationId, string eventStreamId, ReadEventResult result, EventLinkPair record)
+            public ReadEventCompleted(Guid correlationId, string eventStreamId, ReadEventResult result, ResolvedEvent record)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 if (result == ReadEventResult.Success)
@@ -466,7 +466,7 @@ namespace EventStore.Core.Messages
             public readonly int MaxCount;
             
             public readonly ReadStreamResult Result;
-            public readonly EventLinkPair[] Events;
+            public readonly ResolvedEvent[] Events;
             public readonly string Message;
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
@@ -478,7 +478,7 @@ namespace EventStore.Core.Messages
                                                     int fromEventNumber,
                                                     int maxCount,
                                                     ReadStreamResult result,
-                                                    EventLinkPair[] events,
+                                                    ResolvedEvent[] events,
                                                     string message,
                                                     int nextEventNumber,
                                                     int lastEventNumber,
@@ -557,7 +557,7 @@ namespace EventStore.Core.Messages
             public readonly int MaxCount;
 
             public readonly ReadStreamResult Result;
-            public readonly EventLinkPair[] Events;
+            public readonly ResolvedEvent[] Events;
             public readonly string Message;
             public readonly int NextEventNumber;
             public readonly int LastEventNumber;
@@ -569,7 +569,7 @@ namespace EventStore.Core.Messages
                                                      int fromEventNumber,
                                                      int maxCount,
                                                      ReadStreamResult result,
-                                                     EventLinkPair[] events,
+                                                     ResolvedEvent[] events,
                                                      string message,
                                                      int nextEventNumber,
                                                      int lastEventNumber,
@@ -746,9 +746,9 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
-            public readonly EventLinkPositionedPair Event;
+            public readonly ResolvedEvent Event;
 
-            public StreamEventAppeared(Guid correlationId, string eventStreamId, EventLinkPositionedPair @event)
+            public StreamEventAppeared(Guid correlationId, string eventStreamId, ResolvedEvent @event)
             {
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;

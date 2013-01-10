@@ -153,11 +153,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 if (list != null && list.Count > 0 && (list.Last().EventNumber <= message.FromEventNumber)
                     || (message.FromEventNumber == -1))
                 {
-                    EventLinkPair[] records = list.Safe()
+                    ResolvedEvent[] records = list.Safe()
                                                   .Reverse()
                                                   .SkipWhile(v => message.FromEventNumber != -1 && v.EventNumber > message.FromEventNumber)
                                                   .Take(message.MaxCount)
-                                                  .Select(x => new EventLinkPair(x, null))
+                                                  .Select(x => new ResolvedEvent(x, null))
                                                   .ToArray();
                     message.Envelope.ReplyWith(
                             new ClientMessage.ReadStreamEventsBackwardCompleted(

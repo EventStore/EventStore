@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 //  
 // Redistribution and use in source and binary forms, with or without
@@ -25,26 +25,47 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using EventStore.ClientAPI.Messages;
-
-namespace EventStore.ClientAPI
+namespace EventStore.Core.Data
 {
-    public struct EventLinkPositionedPair
+    public struct ResolvedEvent
     {
+        public static readonly ResolvedEvent[] EmptyArray = new ResolvedEvent[0];
+
+        public readonly EventRecord Event;
+        public readonly EventRecord Link;
+        public EventRecord OriginalEvent { get { return Link ?? Event; } }
         public bool IsResolved { get { return Link != null; } }
 
-        public RecordedEvent OriginalEvent { get { return Link ?? Event; } }
-        public RecordedEvent ResolvedEvent { get { return Link != null ? Event : null; } }
+        public readonly TFPos? OriginalPosition;
+        public string OriginalStreamId { get { return OriginalEvent.EventStreamId; } }
+        public int OriginalEventNumber { get { return OriginalEvent.EventNumber; } }
 
-        public readonly RecordedEvent Event;
-        public readonly RecordedEvent Link;
-        public readonly Position OriginalPosition;
-
-        internal EventLinkPositionedPair(ClientMessage.EventLinkPositionedPair pair)
+        public ResolvedEvent(EventRecord @event, EventRecord link)
         {
-            Event = new RecordedEvent(pair.Event);
-            Link = pair.Link == null ? null : new RecordedEvent(pair.Link);
-            OriginalPosition = new Position(pair.CommitPosition, pair.PreparePosition);
+            Event = @event;
+            Link = link;
+            OriginalPosition = null;
+        }
+
+        public ResolvedEvent(EventRecord @event, EventRecord link, long commitPosition)
+        {
+            Event = @event;
+            Link = link;
+            OriginalPosition = new TFPos(commitPosition, (link ?? @event).LogPosition);
+        }
+
+        public ResolvedEvent(EventRecord @event)
+        {
+            Event = @event;
+            Link = null;
+            OriginalPosition = null;
+        }
+
+        public ResolvedEvent(EventRecord @event, long commitPosition)
+        {
+            Event = @event;
+            Link = null;
+            OriginalPosition = new TFPos(commitPosition, @event.LogPosition);
         }
     }
 }

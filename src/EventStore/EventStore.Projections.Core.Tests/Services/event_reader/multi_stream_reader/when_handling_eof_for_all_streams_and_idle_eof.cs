@@ -39,6 +39,7 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
+using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader
 {
@@ -77,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, 
                     new[]
                         {
-                            new EventLinkPair(
+                            new ResolvedEvent(
                         new EventRecord(
                             1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, _fakeTimeProvider.Now,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
@@ -88,7 +89,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success, 
                     new[]
                         {
-                            new EventLinkPair(
+                            new ResolvedEvent(
                         new EventRecord(
                             2, 100, Guid.NewGuid(), _secondEventId, 100, 0, "b", ExpectedVersion.Any, _fakeTimeProvider.Now,
                             PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
@@ -96,14 +97,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                         }, "", 3, 2, true, 200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, new EventLinkPair[] { }, "", 2, 1, true, 400));
+                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, new ResolvedEvent[] { }, "", 2, 1, true, 400));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success, new EventLinkPair[] { }, "", 3, 2, true, 400));
+                    _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success, new ResolvedEvent[] { }, "", 3, 2, true, 400));
             _fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(500));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, new EventLinkPair[] { }, "", 2, 1, true, 600));
+                    _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, new ResolvedEvent[] { }, "", 2, 1, true, 600));
         }
 
         [Test]

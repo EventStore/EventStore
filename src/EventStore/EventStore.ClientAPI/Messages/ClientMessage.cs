@@ -81,8 +81,8 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"EventLinkPair")]
-  public partial class EventLinkPair
+  [Serializable, ProtoContract(Name=@"ResolvedIndexedEvent")]
+  public partial class ResolvedIndexedEvent
   {
     [ProtoMember(1, IsRequired = true, Name=@"event", DataFormat = DataFormat.Default)]
     public readonly EventRecord Event;
@@ -90,17 +90,17 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(2, IsRequired = false, Name=@"link", DataFormat = DataFormat.Default)]
     public readonly EventRecord Link;
   
-    private EventLinkPair() {}
+    private ResolvedIndexedEvent() {}
   
-    public EventLinkPair(EventRecord @event, EventRecord link)
+    public ResolvedIndexedEvent(EventRecord @event, EventRecord link)
     {
         Event = @event;
         Link = link;
     }
   }
   
-  [Serializable, ProtoContract(Name=@"EventLinkPositionedPair")]
-  public partial class EventLinkPositionedPair
+  [Serializable, ProtoContract(Name=@"ResolvedEvent")]
+  public partial class ResolvedEvent
   {
     [ProtoMember(1, IsRequired = true, Name=@"event", DataFormat = DataFormat.Default)]
     public readonly EventRecord Event;
@@ -114,9 +114,9 @@ namespace EventStore.ClientAPI.Messages
     [ProtoMember(4, IsRequired = true, Name=@"prepare_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long PreparePosition;
   
-    private EventLinkPositionedPair() {}
+    private ResolvedEvent() {}
   
-    public EventLinkPositionedPair(EventRecord @event, EventRecord link, long commitPosition, long preparePosition)
+    public ResolvedEvent(EventRecord @event, EventRecord link, long commitPosition, long preparePosition)
     {
         Event = @event;
         Link = link;
@@ -331,7 +331,7 @@ namespace EventStore.ClientAPI.Messages
     public readonly ReadEventCompleted.ReadEventResult Result;
   
     [ProtoMember(3, IsRequired = true, Name=@"event", DataFormat = DataFormat.Default)]
-    public readonly EventLinkPair Event;
+    public readonly ResolvedIndexedEvent Event;
   
     [ProtoContract(Name=@"ReadEventResult")]
     public enum ReadEventResult
@@ -352,7 +352,7 @@ namespace EventStore.ClientAPI.Messages
   
     private ReadEventCompleted() {}
   
-    public ReadEventCompleted(string eventStreamId, ReadEventCompleted.ReadEventResult result, EventLinkPair @event)
+    public ReadEventCompleted(string eventStreamId, ReadEventCompleted.ReadEventResult result, ResolvedIndexedEvent @event)
     {
         EventStreamId = eventStreamId;
         Result = result;
@@ -393,7 +393,7 @@ namespace EventStore.ClientAPI.Messages
     public readonly string EventStreamId;
   
     [ProtoMember(2, Name=@"events", DataFormat = DataFormat.Default)]
-    public readonly EventLinkPair[] Events;
+    public readonly ResolvedIndexedEvent[] Events;
   
     [ProtoMember(3, IsRequired = true, Name=@"result", DataFormat = DataFormat.TwosComplement)]
     public readonly ReadStreamEventsCompleted.ReadStreamResult Result;
@@ -432,7 +432,7 @@ namespace EventStore.ClientAPI.Messages
   
     private ReadStreamEventsCompleted() {}
   
-    public ReadStreamEventsCompleted(string eventStreamId, EventLinkPair[] events, ReadStreamEventsCompleted.ReadStreamResult result, int nextEventNumber, int lastEventNumber, bool isEndOfStream, long? lastVnodeCommitPosition)
+    public ReadStreamEventsCompleted(string eventStreamId, ResolvedIndexedEvent[] events, ReadStreamEventsCompleted.ReadStreamResult result, int nextEventNumber, int lastEventNumber, bool isEndOfStream, long? lastVnodeCommitPosition)
     {
         EventStreamId = eventStreamId;
         Events = events;
@@ -480,7 +480,7 @@ namespace EventStore.ClientAPI.Messages
     public readonly long PreparePosition;
   
     [ProtoMember(3, Name=@"events", DataFormat = DataFormat.Default)]
-    public readonly EventLinkPositionedPair[] Events;
+    public readonly ResolvedEvent[] Events;
   
     [ProtoMember(4, IsRequired = true, Name=@"next_commit_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long NextCommitPosition;
@@ -490,7 +490,7 @@ namespace EventStore.ClientAPI.Messages
   
     private ReadAllEventsCompleted() {}
   
-    public ReadAllEventsCompleted(long commitPosition, long preparePosition, EventLinkPositionedPair[] events, long nextCommitPosition, long nextPreparePosition)
+    public ReadAllEventsCompleted(long commitPosition, long preparePosition, ResolvedEvent[] events, long nextCommitPosition, long nextPreparePosition)
     {
         CommitPosition = commitPosition;
         PreparePosition = preparePosition;
@@ -669,11 +669,11 @@ namespace EventStore.ClientAPI.Messages
     public readonly string EventStreamId;
   
     [ProtoMember(2, IsRequired = true, Name=@"event", DataFormat = DataFormat.Default)]
-    public readonly EventLinkPositionedPair Event;
+    public readonly ResolvedEvent Event;
   
     private StreamEventAppeared() {}
   
-    public StreamEventAppeared(string eventStreamId, EventLinkPositionedPair @event)
+    public StreamEventAppeared(string eventStreamId, ResolvedEvent @event)
     {
         EventStreamId = eventStreamId;
         Event = @event;

@@ -46,7 +46,7 @@ namespace EventStore.ClientAPI
         private readonly Guid _correlationId;
         private readonly string _streamId;
         private readonly SubscriptionsChannel _subscriptionsChannel;
-        private readonly Action<EventLinkPositionedPair> _eventAppeared;
+        private readonly Action<ResolvedEvent> _eventAppeared;
         private readonly Action _subscriptionDropped;
 
         private volatile int _unsubscribed;
@@ -54,7 +54,7 @@ namespace EventStore.ClientAPI
         internal EventStoreSubscription(Guid correlationId, 
                                         string streamId, 
                                         SubscriptionsChannel subscriptionsChannel,
-                                        Action<EventLinkPositionedPair> eventAppeared, 
+                                        Action<ResolvedEvent> eventAppeared, 
                                         Action subscriptionDropped)
         {
             Ensure.NotEmptyGuid(correlationId, "correlationId");
@@ -90,7 +90,7 @@ namespace EventStore.ClientAPI
 #pragma warning restore 420
         }
 
-        internal void EventAppeared(EventLinkPositionedPair @event)
+        internal void EventAppeared(ResolvedEvent @event)
         {
             if (_unsubscribed != 0)
                 return;

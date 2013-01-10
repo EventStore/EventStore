@@ -659,7 +659,6 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
         public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos)
         {
-            Ensure.NotNull(position, "position");
             Ensure.Positive(maxCount, "maxCount");
             EnsureActive();
 
@@ -691,7 +690,6 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
         public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos)
         {
-            Ensure.NotNull(position, "position");
             Ensure.Positive(maxCount, "maxCount");
             EnsureActive();
 
@@ -713,7 +711,7 @@ namespace EventStore.ClientAPI
 
         public EventStoreSubscription SubscribeToStream(string streamId, 
                                                         bool resolveLinkTos, 
-                                                        Action<EventLinkPositionedPair> eventAppeared, 
+                                                        Action<ResolvedEvent> eventAppeared, 
                                                         Action subscriptionDropped = null)
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
@@ -724,7 +722,7 @@ namespace EventStore.ClientAPI
         }
 
         public EventStoreSubscription SubscribeToAll(bool resolveLinkTos, 
-                                                     Action<EventLinkPositionedPair> eventAppeared, Action
+                                                     Action<ResolvedEvent> eventAppeared, Action
                                                      subscriptionDropped = null)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");

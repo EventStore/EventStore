@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,27 +24,34 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-namespace EventStore.Core.Data
+//  
+using EventStore.ClientAPI.Messages;
+
+namespace EventStore.ClientAPI
 {
-    public struct EventLinkPositionedPair
+    public struct ResolvedEvent
     {
-        public static readonly EventLinkPositionedPair[] EmptyArray = new EventLinkPositionedPair[0];
+        public readonly RecordedEvent Event;
+        public readonly RecordedEvent Link;
+        public RecordedEvent OriginalEvent { get { return Link ?? Event; } }
+        public bool IsResolved { get { return Link != null; } }
 
-        public readonly EventRecord Event;
-        public readonly EventRecord Link;
-        public readonly long CommitPosition;
+        public readonly Position? OriginalPosition;
+        public string OriginalStreamId { get { return OriginalEvent.EventStreamId; } }
+        public int OriginalEventNumber { get { return OriginalEvent.EventNumber; } }
 
-        public EventLinkPositionedPair(EventRecord @event, EventRecord link, long commitPosition)
+        internal ResolvedEvent(ClientMessage.ResolvedEvent evnt)
         {
-            Event = @event;
-            CommitPosition = commitPosition;
-            Link = link;
+            Event = new RecordedEvent(evnt.Event);
+            Link = evnt.Link == null ? null : new RecordedEvent(evnt.Link);
+            OriginalPosition = new Position(evnt.CommitPosition, evnt.PreparePosition);
         }
 
-        public override string ToString()
+        internal ResolvedEvent(ClientMessage.ResolvedIndexedEvent evnt)
         {
-            return string.Format("CommitPosition: {0}, Event: {1}, Link: {2}", CommitPosition, Event, Link);
+            Event = new RecordedEvent(evnt.Event);
+            Link = evnt.Link == null ? null : new RecordedEvent(evnt.Link);
+            OriginalPosition = null;
         }
     }
 }

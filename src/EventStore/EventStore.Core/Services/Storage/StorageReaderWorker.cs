@@ -66,14 +66,14 @@ namespace EventStore.Core.Services.Storage
         {
             var result = _readIndex.ReadEvent(message.EventStreamId, message.EventNumber);
 
-            EventLinkPair record;
+            ResolvedEvent record;
             if (result.Result == ReadEventResult.Success && message.ResolveLinkTos)
             {
                 Debug.Assert(result.Record != null);
                 record = ResolveLinkToEvent(result.Record);
             }
             else
-                record = new EventLinkPair(result.Record);
+                record = new ResolvedEvent(result.Record);
 
             message.Envelope.ReplyWith(new ClientMessage.ReadEventCompleted(message.CorrelationId, 
                                                                             message.EventStreamId,
@@ -204,9 +204,9 @@ namespace EventStore.Core.Services.Storage
             }
         }
 
-        private EventLinkPair[] ResolveLinkToEvents(EventRecord[] records, bool resolveLinks)
+        private ResolvedEvent[] ResolveLinkToEvents(EventRecord[] records, bool resolveLinks)
         {
-            var resolved = new EventLinkPair[records.Length];
+            var resolved = new ResolvedEvent[records.Length];
             if (resolveLinks)
             {
                 for (int i = 0; i < records.Length; i++)
@@ -218,13 +218,13 @@ namespace EventStore.Core.Services.Storage
             {
                 for (int i = 0; i < records.Length; ++i)
                 {
-                    resolved[i] = new EventLinkPair(records[i]);
+                    resolved[i] = new ResolvedEvent(records[i]);
                 }
             }
             return resolved;
         }
 
-        private EventLinkPair ResolveLinkToEvent(EventRecord eventRecord)
+        private ResolvedEvent ResolveLinkToEvent(EventRecord eventRecord)
         {
             if (eventRecord.EventType == SystemEventTypes.LinkTo)
             {
@@ -236,14 +236,14 @@ namespace EventStore.Core.Services.Storage
 
                     var res = _readIndex.ReadEvent(streamId, eventNumber);
                     if (res.Result == ReadEventResult.Success)
-                        return new EventLinkPair(res.Record, eventRecord);
+                        return new ResolvedEvent(res.Record, eventRecord);
                 }
                 catch (Exception exc)
                 {
                     Log.ErrorException(exc, "Error while resolving link for event record: {0}", eventRecord.ToString());
                 }
             }
-            return new EventLinkPair(eventRecord);
+            return new ResolvedEvent(eventRecord);
         }
 
         void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward message)
@@ -251,14 +251,14 @@ namespace EventStore.Core.Services.Storage
             var pos = new TFPos(message.CommitPosition, message.PreparePosition);
             if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
             {
-                var r = new ReadAllResult(EventLinkPositionedPair.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                var r = new ReadAllResult(ResolvedEvent.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
                 message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: false));
                 return;
             }
 
             if (message.ValidationTfEofPosition.HasValue && _readIndex.LastCommitPosition == message.ValidationTfEofPosition.Value)
             {
-                var r = new ReadAllResult(EventLinkPositionedPair.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                var r = new ReadAllResult(ResolvedEvent.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
                 message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: true));
                 return;
             }
@@ -278,14 +278,14 @@ namespace EventStore.Core.Services.Storage
             }
             if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
             {
-                var r = new ReadAllResult(EventLinkPositionedPair.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                var r = new ReadAllResult(ResolvedEvent.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
                 message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: false));
                 return;
             }
 
             if (message.ValidationTfEofPosition.HasValue && _readIndex.LastCommitPosition == message.ValidationTfEofPosition.Value)
             {
-                var r = new ReadAllResult(EventLinkPositionedPair.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                var r = new ReadAllResult(ResolvedEvent.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
                 message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsBackwardCompleted(message.CorrelationId, r, notModified: true));
                 return;
             }
@@ -297,21 +297,21 @@ namespace EventStore.Core.Services.Storage
 
         private ReadAllResult ResolveReadAllResult(IndexReadAllResult res, bool resolveLinks)
         {
-            var resolved = new EventLinkPositionedPair[res.Records.Count];
+            var resolved = new ResolvedEvent[res.Records.Count];
             if (resolveLinks)
             {
                 for (int i = 0; i < resolved.Length; ++i)
                 {
                     var record = res.Records[i];
                     var resolvedPair = ResolveLinkToEvent(record.Event);
-                    resolved[i] = new EventLinkPositionedPair(resolvedPair.Event, resolvedPair.Link, record.CommitPosition);
+                    resolved[i] = new ResolvedEvent(resolvedPair.Event, resolvedPair.Link, record.CommitPosition);
                 }
             }
             else
             {
                 for (int i = 0; i < resolved.Length; ++i)
                 {
-                    resolved[i] = new EventLinkPositionedPair(res.Records[i].Event, null, res.Records[i].CommitPosition);
+                    resolved[i] = new ResolvedEvent(res.Records[i].Event, null, res.Records[i].CommitPosition);
                 }
             }
             return new ReadAllResult(resolved, res.MaxCount, res.CurrentPos, res.NextPos, res.PrevPos, res.TfEofPosition);

@@ -28,12 +28,12 @@ message EventRecord {
 	optional bytes metadata = 6;
 }
 
-message EventLinkPair {
+message ResolvedIndexedEvent {
 	required EventRecord event = 1;
 	optional EventRecord link = 2;
 }
 
-message EventLinkPositionedPair {
+message ResolvedEvent {
 	required EventRecord event = 1;
 	optional EventRecord link = 2;
 	required int64 commit_position = 3;
@@ -104,7 +104,7 @@ message ReadEventCompleted {
 
 	required string event_stream_id = 1;
 	required ReadEventResult result = 2;
-	required EventLinkPair event = 3;
+	required ResolvedIndexedEvent event = 3;
 }
 
 message ReadStreamEvents {
@@ -125,7 +125,7 @@ message ReadStreamEventsCompleted {
 	}
 
 	required string event_stream_id = 1;
-	repeated EventLinkPair events = 2;
+	repeated ResolvedIndexedEvent events = 2;
 	required ReadStreamResult result = 3;
 	required int32 next_event_number = 4;
 	required int32 last_event_number = 5;
@@ -144,7 +144,7 @@ message ReadAllEvents {
 message ReadAllEventsCompleted {
 	required int64 commit_position = 1;
 	required int64 prepare_position = 2;
-	repeated EventLinkPositionedPair events = 3;
+	repeated ResolvedEvent events = 3;
 	required int64 next_commit_position = 4;
 	required int64 next_prepare_position = 5;
 }
@@ -195,7 +195,7 @@ message SubscribeToStream {
 
 message StreamEventAppeared {
 	required string event_stream_id = 1;
-	required EventLinkPositionedPair event = 2;
+	required ResolvedEvent event = 2;
 }
 
 message UnsubscribeFromStream {

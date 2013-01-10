@@ -71,28 +71,28 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
                 new ClientMessage.ReadAllEventsForwardCompleted(
                     _distibutionPointCorrelationId, new ReadAllResult(
                     new[]
-                        {
-                            new EventLinkPositionedPair(
-                        new EventRecord(
-                            1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, _fakeTimeProvider.Now,
-                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            "event_type1", new byte[] {1}, new byte[] {2}), null, 100), 
-                            new EventLinkPositionedPair(
-                        new EventRecord(
-                            2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "b", ExpectedVersion.Any, _fakeTimeProvider.Now,
-                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                            "event_type1", new byte[] {1}, new byte[] {2}), null, 200), 
-                        }, 100, new TFPos(200, 150), new TFPos(500, -1), new TFPos(100, 50), 500), notModified: false));
+                    {
+                        new EventStore.Core.Data.ResolvedEvent(
+                            new EventRecord(
+                                1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any, _fakeTimeProvider.Now,
+                                PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                                "event_type1", new byte[] {1}, new byte[] {2}), null, 100), 
+                                new EventStore.Core.Data.ResolvedEvent(
+                            new EventRecord(
+                                2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "b", ExpectedVersion.Any, _fakeTimeProvider.Now,
+                                PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                                "event_type1", new byte[] {1}, new byte[] {2}), null, 200), 
+                    }, 100, new TFPos(200, 150), new TFPos(500, -1), new TFPos(100, 50), 500), notModified: false));
 
             _edp.Handle(
                 new ClientMessage.ReadAllEventsForwardCompleted(
                     _distibutionPointCorrelationId,
-                    new ReadAllResult(new EventLinkPositionedPair[0], 100, new TFPos(), new TFPos(), new TFPos(), 500), notModified: false));
+                    new ReadAllResult(new EventStore.Core.Data.ResolvedEvent[0], 100, new TFPos(), new TFPos(), new TFPos(), 500), notModified: false));
             _fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(500));
             _edp.Handle(
                 new ClientMessage.ReadAllEventsForwardCompleted(
                     _distibutionPointCorrelationId,
-                    new ReadAllResult(new EventLinkPositionedPair[0], 100, new TFPos(), new TFPos(), new TFPos(), 500), notModified: false));
+                    new ReadAllResult(new EventStore.Core.Data.ResolvedEvent[0], 100, new TFPos(), new TFPos(), new TFPos(), 500), notModified: false));
         }
 
         [Test]

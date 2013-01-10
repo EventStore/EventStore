@@ -122,6 +122,7 @@ namespace EventStore.ClientAPI.ClientOperations
             if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
             {
                 if (_result != null)
+                {
                     _source.SetResult(new EventStreamSlice(StatusCode.Convert(_result.Result),
                                                            _stream,
                                                            _start,
@@ -130,6 +131,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                                            _result.NextEventNumber,
                                                            _result.LastEventNumber,
                                                            _result.IsEndOfStream));
+                }
                 else
                     _source.SetException(new NoResultException());
             }

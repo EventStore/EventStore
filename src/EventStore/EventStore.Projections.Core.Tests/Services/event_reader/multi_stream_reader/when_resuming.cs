@@ -38,6 +38,7 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
+using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader
 {
@@ -105,7 +106,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
                     _distibutionPointCorrelationId, "a", 100, 100, ReadStreamResult.Success, 
                     new[]
                         {
-                            new EventLinkPair(
+                            new ResolvedEvent(
                         new EventRecord(
                             1, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "a", ExpectedVersion.Any,
                             DateTime.UtcNow,

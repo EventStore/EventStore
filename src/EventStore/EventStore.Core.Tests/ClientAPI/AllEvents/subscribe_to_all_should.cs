@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
-                Action<EventLinkPositionedPair> eventAppeared = x => appeared.Signal();
+                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
                 using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped))
@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(1);
 
-                Action<EventLinkPositionedPair> eventAppeared = x => appeared.Signal();
+                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
                 using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped))
