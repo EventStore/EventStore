@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class ReadStreamEventsBackwardOperation : IClientOperation
     {
-        private readonly TaskCompletionSource<EventStreamSlice> _source;
+        private readonly TaskCompletionSource<StreamEventsSlice> _source;
         private ClientMessage.ReadStreamEventsCompleted _result;
         private int _completed;
 
@@ -58,7 +58,7 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        public ReadStreamEventsBackwardOperation(TaskCompletionSource<EventStreamSlice> source,
+        public ReadStreamEventsBackwardOperation(TaskCompletionSource<StreamEventsSlice> source,
                                                  Guid corrId,
                                                  string stream,
                                                  int fromEventNumber,
@@ -123,9 +123,10 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 if (_result != null)
                 {
-                    _source.SetResult(new EventStreamSlice(StatusCode.Convert(_result.Result),
+                    _source.SetResult(new StreamEventsSlice(StatusCode.Convert(_result.Result),
                                                            _stream,
                                                            _fromEventNumber,
+                                                           ReadDirection.Backward, 
                                                            _result.Events,
                                                            _result.NextEventNumber,
                                                            _result.LastEventNumber,

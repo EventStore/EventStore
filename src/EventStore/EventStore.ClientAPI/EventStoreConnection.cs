@@ -570,15 +570,15 @@ namespace EventStore.ClientAPI
         /// <param name="start">The starting point to read from</param>
         /// <param name="count">The count of items to read</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>A <see cref="EventStreamSlice"/> containing the results of the read operation</returns>
-        public EventStreamSlice ReadEventStreamForward(string stream, int start, int count, bool resolveLinkTos)
+        /// <returns>A <see cref="StreamEventsSlice"/> containing the results of the read operation</returns>
+        public StreamEventsSlice ReadStreamEventsForward(string stream, int start, int count, bool resolveLinkTos)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(start, "start");
             Ensure.Positive(count, "count");
             EnsureActive();
 
-            return ReadEventStreamForwardAsync(stream, start, count, resolveLinkTos).Result;
+            return ReadStreamEventsForwardAsync(stream, start, count, resolveLinkTos).Result;
         }
 
         /// <summary>
@@ -588,15 +588,15 @@ namespace EventStore.ClientAPI
         /// <param name="start">The starting point to read from</param>
         /// <param name="count">The count of items to read</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>A <see cref="Task&lt;EventStreamSlice&gt;"/> containing the results of the read operation</returns>
-        public Task<EventStreamSlice> ReadEventStreamForwardAsync(string stream, int start, int count, bool resolveLinkTos)
+        /// <returns>A <see cref="Task&lt;StreamEventsSlice&gt;"/> containing the results of the read operation</returns>
+        public Task<StreamEventsSlice> ReadStreamEventsForwardAsync(string stream, int start, int count, bool resolveLinkTos)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(start, "start");
             Ensure.Positive(count, "count");
             EnsureActive();
 
-            var source = new TaskCompletionSource<EventStreamSlice>();
+            var source = new TaskCompletionSource<StreamEventsSlice>();
             var operation = new ReadStreamEventsForwardOperation(source, Guid.NewGuid(), stream, start, count, resolveLinkTos);
 
             EnqueueOperation(operation);
@@ -610,14 +610,14 @@ namespace EventStore.ClientAPI
         /// <param name="start">The position to start reading from</param>
         /// <param name="count">The count to read from the position</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>An <see cref="EventStreamSlice"/> containing the results of the read operation</returns>
-        public EventStreamSlice ReadEventStreamBackward(string stream, int start, int count, bool resolveLinkTos)
+        /// <returns>An <see cref="StreamEventsSlice"/> containing the results of the read operation</returns>
+        public StreamEventsSlice ReadStreamEventsBackward(string stream, int start, int count, bool resolveLinkTos)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
             EnsureActive();
 
-            return ReadEventStreamBackwardAsync(stream, start, count, resolveLinkTos).Result;
+            return ReadStreamEventsBackwardAsync(stream, start, count, resolveLinkTos).Result;
         }
 
         /// <summary>
@@ -627,14 +627,14 @@ namespace EventStore.ClientAPI
         /// <param name="start">The position to start reading from</param>
         /// <param name="count">The count to read from the position</param>
         /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
-        /// <returns>An <see cref="Task&lt;EventStreamSlice&gt;"/> containing the results of the read operation</returns>
-        public Task<EventStreamSlice> ReadEventStreamBackwardAsync(string stream, int start, int count, bool resolveLinkTos)
+        /// <returns>An <see cref="Task&lt;StreamEventsSlice&gt;"/> containing the results of the read operation</returns>
+        public Task<StreamEventsSlice> ReadStreamEventsBackwardAsync(string stream, int start, int count, bool resolveLinkTos)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Positive(count, "count");
             EnsureActive();
 
-            var source = new TaskCompletionSource<EventStreamSlice>();
+            var source = new TaskCompletionSource<StreamEventsSlice>();
             var operation = new ReadStreamEventsBackwardOperation(source, Guid.NewGuid(), stream, start, count, resolveLinkTos);
 
             EnqueueOperation(operation);

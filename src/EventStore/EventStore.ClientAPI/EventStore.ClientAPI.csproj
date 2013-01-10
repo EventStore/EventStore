@@ -94,6 +94,7 @@
     <Compile Include="Connection\SubscriptionsChannel.cs" />
     <Compile Include="Connection\WorkItem.cs" />
     <Compile Include="EventStoreSubscription.cs" />
+    <Compile Include="ReadDirection.cs" />
     <Compile Include="ResolvedEvent.cs" />
     <Compile Include="Exceptions\CannotEstablishConnectionException.cs" />
     <Compile Include="Exceptions\ProjectionCommandFailedException.cs" />
@@ -102,7 +103,7 @@
     <Compile Include="Exceptions\WrongExpectedVersionException.cs" />
     <Compile Include="IEvent.cs" />
     <Compile Include="EventStoreTransaction.cs" />
-    <Compile Include="EventStreamSlice.cs" />
+    <Compile Include="StreamEventsSlice.cs" />
     <Compile Include="Exceptions\CommandNotExpectedException.cs" />
     <Compile Include="Exceptions\ConnectionClosingException.cs" />
     <Compile Include="Exceptions\ConnectionFailedException.cs" />

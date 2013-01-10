@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var commit = store.CommitTransactionAsync(start.Result);
                 Assert.DoesNotThrow(commit.Wait);
 
-                var streamCreated = store.ReadEventStreamForwardAsync(stream, 0, 1, resolveLinkTos: false);
+                var streamCreated = store.ReadStreamEventsForwardAsync(stream, 0, 1, resolveLinkTos: false);
                 Assert.DoesNotThrow(streamCreated.Wait);
 
                 Assert.That(streamCreated.Result.Events.Length, Is.EqualTo(1));//stream created event
@@ -218,7 +218,7 @@ namespace EventStore.Core.Tests.ClientAPI
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var slice = store.ReadEventStreamForward(stream, 0, totalTranWrites + totalPlainWrites + 1, false);
+                var slice = store.ReadStreamEventsForward(stream, 0, totalTranWrites + totalPlainWrites + 1, false);
                 Assert.That(slice.Events.Length, Is.EqualTo(totalTranWrites + totalPlainWrites + 1));
 
                 Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Event.Metadata) == "trans write"), Is.EqualTo(totalTranWrites));

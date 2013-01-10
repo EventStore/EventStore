@@ -32,9 +32,9 @@ using EventStore.ClientAPI.Messages;
 namespace EventStore.ClientAPI
 {
     /// <summary>
-    /// An Event Stream Slice represents the result of a single read operation to the event store.
+    /// An Stream Events Slice represents the result of a single read operation to the event store.
     /// </summary>
-    public class EventStreamSlice
+    public class StreamEventsSlice
     {
         /// <summary>
         /// The <see cref="SliceReadStatus"/> representing the status of this read attempt
@@ -50,6 +50,11 @@ namespace EventStore.ClientAPI
         /// The starting point (represented as a sequence number) of the read operation.
         /// </summary>
         public readonly int FromEventNumber;
+
+        /// <summary>
+        /// The direction of read request.
+        /// </summary>
+        public readonly ReadDirection ReadDirection;
 
         /// <summary>
         /// The events read represented as <see cref="RecordedEvent"/>
@@ -71,19 +76,21 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly bool IsEndOfStream;
 
-        internal EventStreamSlice(SliceReadStatus status, 
-                                  string stream, 
-                                  int fromEventNumber, 
-                                  ClientMessage.ResolvedIndexedEvent[] events,
-                                  int nextEventNumber,
-                                  int lastEventNumber,
-                                  bool isEndOfStream)
+        internal StreamEventsSlice(SliceReadStatus status, 
+                                   string stream, 
+                                   int fromEventNumber, 
+                                   ReadDirection readDirection,
+                                   ClientMessage.ResolvedIndexedEvent[] events,
+                                   int nextEventNumber,
+                                   int lastEventNumber,
+                                   bool isEndOfStream)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
 
             Status = status;
             Stream = stream;
             FromEventNumber = fromEventNumber;
+            ReadDirection = readDirection;
             if (events == null || events.Length == 0)
                 Events = ResolvedEvent.EmptyArray;
             else

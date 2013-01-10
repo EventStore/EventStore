@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var create2 = connection.CreateStreamAsync(stream, id, false, new byte[0]);
                 Assert.DoesNotThrow(create2.Wait);
 
-                var read = connection.ReadEventStreamForwardAsync(stream, 0, 10, resolveLinkTos: false);
+                var read = connection.ReadStreamEventsForwardAsync(stream, 0, 10, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(1));

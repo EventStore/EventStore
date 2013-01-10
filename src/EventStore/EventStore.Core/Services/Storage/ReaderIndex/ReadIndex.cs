@@ -227,7 +227,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 // or records which are rebuilt but are already in PTables
                 if (addToIndex)
                 {
-#if true || CHECK_COMMIT_DUPLICATES
+#if CHECK_COMMIT_DUPLICATES
                     long pos;
                     if (_tableIndex.TryGetOneValue(streamHash, eventNumber, out pos))
                     {

@@ -25,46 +25,20 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-using EventStore.ClientAPI.Messages;
-
 namespace EventStore.ClientAPI
 {
     /// <summary>
-    /// The result of a read operation from the $all stream.
+    /// Represents the direction of read operation (both from $all and usual streams)
     /// </summary>
-    public class AllEventsSlice
+    public enum ReadDirection
     {
-        private static readonly ResolvedEvent[] EmptyEvents = new ResolvedEvent[0];
-
         /// <summary>
-        /// The direction of read request.
+        /// From beginning to end.
         /// </summary>
-        public readonly ReadDirection ReadDirection;
-
+        Forward, 
         /// <summary>
-        /// A <see cref="NextPosition"/> representing the position where the next slice should be read from.
+        /// From end to beginning.
         /// </summary>
-        public readonly Position NextPosition;
-
-        /// <summary>
-        /// The events read.
-        /// </summary>
-        public readonly ResolvedEvent[] Events;
-
-        internal AllEventsSlice(ReadDirection readDirection, Position nextPosition, ClientMessage.ResolvedEvent[] events)
-        {
-            ReadDirection = readDirection;
-            NextPosition = nextPosition;
-            if (events == null)
-                Events = EmptyEvents;
-            else
-            {
-                Events = new ResolvedEvent[events.Length];
-                for (int i = 0; i < Events.Length; ++i)
-                {
-                    Events[i] = new ResolvedEvent(events[i]);
-                }
-            }
-        }
+        Backward
     }
 }
