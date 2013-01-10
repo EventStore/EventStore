@@ -37,6 +37,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Storage
 {
@@ -66,7 +67,7 @@ namespace EventStore.Core.Services.Storage
             var result = _readIndex.ReadEvent(message.EventStreamId, message.EventNumber);
 
             EventLinkPair record;
-            if (result.Result == SingleReadResult.Success && message.ResolveLinkTos)
+            if (result.Result == ReadEventResult.Success && message.ResolveLinkTos)
             {
                 Debug.Assert(result.Record != null);
                 record = ResolveLinkToEvent(result.Record);
@@ -98,7 +99,7 @@ namespace EventStore.Core.Services.Storage
                 var lastCommitPosition = _readIndex.LastCommitPosition;
 
                 var result = _readIndex.ReadStreamEventsForward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
-                if (result.Result == RangeReadResult.Success && result.Records.Length > 1)
+                if (result.Result == ReaderIndex.ReadStreamResult.Success && result.Records.Length > 1)
                 {
                     var records = result.Records;
                     for (var index = 1; index < records.Length; index++)
@@ -122,7 +123,7 @@ namespace EventStore.Core.Services.Storage
                                                                        message.EventStreamId,
                                                                        message.FromEventNumber,
                                                                        message.MaxCount,
-                                                                       (StreamResult)result.Result,
+                                                                       (ReadStreamResult)result.Result,
                                                                        resolvedPairs,
                                                                        string.Empty,
                                                                        result.NextEventNumber,
@@ -159,7 +160,7 @@ namespace EventStore.Core.Services.Storage
 
                 var lastCommitPosition = _readIndex.LastCommitPosition;
                 var result = _readIndex.ReadStreamEventsBackward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
-                if (result.Result == RangeReadResult.Success && result.Records.Length > 1)
+                if (result.Result == ReaderIndex.ReadStreamResult.Success && result.Records.Length > 1)
                 {
                     var records = result.Records;
                     for (var index = 1; index < records.Length; index++)
@@ -183,7 +184,7 @@ namespace EventStore.Core.Services.Storage
                                                                         message.EventStreamId,
                                                                         result.FromEventNumber,
                                                                         result.MaxCount,
-                                                                        (StreamResult)result.Result,
+                                                                        (ReadStreamResult)result.Result,
                                                                         resolvedPairs,
                                                                         string.Empty,
                                                                         result.NextEventNumber,
@@ -234,7 +235,7 @@ namespace EventStore.Core.Services.Storage
                     string streamId = parts[1];
 
                     var res = _readIndex.ReadEvent(streamId, eventNumber);
-                    if (res.Result == SingleReadResult.Success)
+                    if (res.Result == ReadEventResult.Success)
                         return new EventLinkPair(res.Record, eventRecord);
                 }
                 catch (Exception exc)
@@ -250,14 +251,14 @@ namespace EventStore.Core.Services.Storage
             var pos = new TFPos(message.CommitPosition, message.PreparePosition);
             if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
             {
-                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                var r = new ReadAllResult(EventLinkPositionedPair.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
                 message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: false));
                 return;
             }
 
             if (message.ValidationTfEofPosition.HasValue && _readIndex.LastCommitPosition == message.ValidationTfEofPosition.Value)
             {
-                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                var r = new ReadAllResult(EventLinkPositionedPair.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
                 message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: true));
                 return;
             }
@@ -277,14 +278,14 @@ namespace EventStore.Core.Services.Storage
             }
             if (pos.CommitPosition < 0 || pos.PreparePosition < 0)
             {
-                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                var r = new ReadAllResult(EventLinkPositionedPair.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
                 message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(message.CorrelationId, r, notModified: false));
                 return;
             }
 
             if (message.ValidationTfEofPosition.HasValue && _readIndex.LastCommitPosition == message.ValidationTfEofPosition.Value)
             {
-                var r = new ReadAllResult(ResolvedEventRecord.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
+                var r = new ReadAllResult(EventLinkPositionedPair.EmptyArray, message.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, _writerCheckpoint.Read());
                 message.Envelope.ReplyWith(new ClientMessage.ReadAllEventsBackwardCompleted(message.CorrelationId, r, notModified: true));
                 return;
             }
@@ -296,21 +297,21 @@ namespace EventStore.Core.Services.Storage
 
         private ReadAllResult ResolveReadAllResult(IndexReadAllResult res, bool resolveLinks)
         {
-            var resolved = new ResolvedEventRecord[res.Records.Count];
+            var resolved = new EventLinkPositionedPair[res.Records.Count];
             if (resolveLinks)
             {
                 for (int i = 0; i < resolved.Length; ++i)
                 {
                     var record = res.Records[i];
                     var resolvedPair = ResolveLinkToEvent(record.Event);
-                    resolved[i] = new ResolvedEventRecord(resolvedPair.Event, resolvedPair.Link, record.CommitPosition);
+                    resolved[i] = new EventLinkPositionedPair(resolvedPair.Event, resolvedPair.Link, record.CommitPosition);
                 }
             }
             else
             {
                 for (int i = 0; i < resolved.Length; ++i)
                 {
-                    resolved[i] = new ResolvedEventRecord(res.Records[i].Event, null, res.Records[i].CommitPosition);
+                    resolved[i] = new EventLinkPositionedPair(res.Records[i].Event, null, res.Records[i].CommitPosition);
                 }
             }
             return new ReadAllResult(resolved, res.MaxCount, res.CurrentPos, res.NextPos, res.PrevPos, res.TfEofPosition);
@@ -322,7 +323,7 @@ namespace EventStore.Core.Services.Storage
             {
                 // from 1 to skip $stream-created event in $streams stream
                 var result = _readIndex.ReadStreamEventsForward(SystemStreams.StreamsStream, 1, int.MaxValue);
-                if (result.Result != RangeReadResult.Success)
+                if (result.Result != ReaderIndex.ReadStreamResult.Success)
                     throw new SystemStreamNotFoundException(
                             string.Format("Couldn't find system stream {0}, which should've been created with projection 'Index By Streams'",
                                           SystemStreams.StreamsStream));

@@ -135,7 +135,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Connects the <see cref="EventStoreConnections"/> synchronously to a given <see cref="IPEndPoint"/>
+        /// Connects the <see cref="EventStoreConnection"/> synchronously to a given <see cref="IPEndPoint"/>
         /// </summary>
         /// <param name="tcpEndPoint">The <see cref="IPEndPoint"/> to connect to</param>
         public void Connect(IPEndPoint tcpEndPoint)
@@ -144,7 +144,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Connects the <see cref="EventStoreConnections"/> asynchronously to a given <see cref="IPEndPoint"/>
+        /// Connects the <see cref="EventStoreConnection"/> asynchronously to a given <see cref="IPEndPoint"/>
         /// </summary>
         /// <param name="tcpEndPoint">The <see cref="IPEndPoint"/> to connect to.</param>
         /// <returns>A <see cref="Task"/> that can be waited upon.</returns>
@@ -253,8 +253,9 @@ namespace EventStore.ClientAPI
             _log.Info("EventStoreConnection closed.");
         }
 
+
         /// <summary>
-        /// Creates a new Stream in the Event Store syncrhonously
+        /// Creates a new Stream in the Event Store synchronously
         /// </summary>
         /// <param name="stream">The name of the stream to create.</param>
         /// <param name="id"></param>
@@ -268,7 +269,6 @@ namespace EventStore.ClientAPI
 
             CreateStreamAsync(stream, id, isJson, metadata).Wait();
         }
-
 
         /// <summary>
         /// Creates a new Stream in the Event Store asynchronously
@@ -292,7 +292,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Deletes a stream from the Event Store syncrhonously
+        /// Deletes a stream from the Event Store synchronously
         /// </summary>
         /// <param name="stream">The name of the stream to be deleted</param>
         /// <param name="expectedVersion">The expected version the stream should have when being deleted. <see cref="ExpectedVersion"/></param>
@@ -305,7 +305,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Deletes a stream from the Event Store asyncrhonously
+        /// Deletes a stream from the Event Store asynchronously
         /// </summary>
         /// <param name="stream">The name of the stream to delete.</param>
         /// <param name="expectedVersion">The expected version that the streams should have when being deleted. <see cref="ExpectedVersion"/></param>
@@ -323,18 +323,18 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Appends Events syncrhonously to a stream.
+        /// Appends Events synchronously to a stream.
         /// </summary>
         /// <remarks>
         /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
         /// make a very large difference in the observed behaviour. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stram will be implictly created when appending
+        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
         /// as an example.
         /// 
         /// There are also differences in idempotency between different types of calls.
         /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
-        /// will give you an idempotency guarentee. If using ExpectedVersion.Any the Event Store
-        /// will do its best to provide idempotency but does not guarantee idempotency
+        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
+        /// will do its best to provide idempotency but does not guarantee idempotency.
         /// </remarks>
         /// <param name="stream">The name of the stream to append the events to.</param>
         /// <param name="expectedVersion">The expected version of the stream</param>
@@ -349,17 +349,17 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Appends Events asyncrhonously to a stream.
+        /// Appends Events asynchronously to a stream.
         /// </summary>
         /// <remarks>
         /// When appending events to a stream the <see cref="ExpectedVersion"/> choice can
         /// make a very large difference in the observed behaviour. If no stream exists
-        /// and ExpectedVersion.Any is used. A new stram will be implictly created when appending
+        /// and ExpectedVersion.Any is used. A new stream will be implicitly created when appending
         /// as an example.
         /// 
         /// There are also differences in idempotency between different types of calls.
         /// If you specify an ExpectedVersion aside from ExpectedVersion.Any the Event Store
-        /// will give you an idempotency guarentee. If using ExpectedVersion.Any the Event Store
+        /// will give you an idempotency guarantee. If using ExpectedVersion.Any the Event Store
         /// will do its best to provide idempotency but does not guarantee idempotency
         /// </remarks>
         /// <param name="stream">The name of the stream to append events to</param>
@@ -378,6 +378,7 @@ namespace EventStore.ClientAPI
             EnqueueOperation(operation);
             return source.Task;
         }
+
 
         /// <summary>
         /// Starts a transaction in the event store on a given stream
@@ -421,7 +422,6 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-
         /// <summary>
         /// Starts a transaction in the event store on a given stream synchronously
         /// </summary>
@@ -441,7 +441,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Writes to a transaction in the event store asychronously
+        /// Writes to a transaction in the event store asynchronously
         /// </summary>
         /// <remarks>
         /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
@@ -492,7 +492,6 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
-
         /// <summary>
         /// Starts a transaction in the event store on a given stream synchronously
         /// </summary>
@@ -512,7 +511,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Writes to a transaction in the event store asychronously
+        /// Writes to a transaction in the event store asynchronously
         /// </summary>
         /// <remarks>
         /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
@@ -563,8 +562,9 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+
         /// <summary>
-        /// Reads count Events from an Event Stream forwards (eg oldest to newest) starting from position start
+        /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start
         /// </summary>
         /// <param name="stream">The stream to read from</param>
         /// <param name="start">The starting point to read from</param>
@@ -581,12 +581,12 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Reads count Events from an Event Stream forwards (eg oldest to newest) starting from position start 
+        /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start 
         /// </summary>
         /// <param name="stream">The stream to read from</param>
         /// <param name="start">The starting point to read from</param>
         /// <param name="count">The count of items to read</param>
-        /// <returns>A <see cref="Task&gt;EventStreamSlice%lt;"/> containing the results of the read operation</returns>
+        /// <returns>A <see cref="Task&lt;EventStreamSlice%gt;"/> containing the results of the read operation</returns>
         public Task<EventStreamSlice> ReadEventStreamForwardAsync(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -602,7 +602,7 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Reads count events from an Event Stream backwards (eg newest to oldest) from position
+        /// Reads count events from an Event Stream backwards (e.g. newest to oldest) from position
         /// </summary>
         /// <param name="stream">The Event Stream to read from</param>
         /// <param name="start">The position to start reading from</param>
@@ -618,12 +618,12 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
-        /// Reads count events from an Event Stream backwards (eg newest to oldest) from position asynchronously
+        /// Reads count events from an Event Stream backwards (e.g. newest to oldest) from position asynchronously
         /// </summary>
         /// <param name="stream">The Event Stream to read from</param>
         /// <param name="start">The position to start reading from</param>
         /// <param name="count">The count to read from the position</param>
-        /// <returns>An <see cref="Task&gt;EventStreamSlice&lt;"/> containing the results of the read operation</returns>
+        /// <returns>An <see cref="Task&lt;EventStreamSlice&gt;"/> containing the results of the read operation</returns>
         public Task<EventStreamSlice> ReadEventStreamBackwardAsync(string stream, int start, int count)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
@@ -637,73 +637,71 @@ namespace EventStore.ClientAPI
             return source.Task;
         }
 
+
         /// <summary>
-        /// Reads All Events in the node forward. (eg beginning to end)
+        /// Reads All Events in the node forward. (e.g. beginning to end)
         /// </summary>
         /// <param name="position">The position to start reading from</param>
         /// <param name="maxCount">The maximum count to read</param>
+        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
         /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        public AllEventsSlice ReadAllEventsForward(Position position, int maxCount)
+        public AllEventsSlice ReadAllEventsForward(Position position, int maxCount, bool resolveLinkTos)
         {
-            Ensure.NotNull(position, "position");
-            Ensure.Positive(maxCount, "maxCount");
-            EnsureActive();
-
-            return ReadAllEventsForwardAsync(position, maxCount).Result;
+            return ReadAllEventsForwardAsync(position, maxCount, resolveLinkTos).Result;
         }
 
         /// <summary>
-        /// Reads All Events in the node forward asynchronously (eg beginning to end)
+        /// Reads All Events in the node forward asynchronously (e.g. beginning to end)
         /// </summary>
         /// <param name="position">The position to start reading from</param>
         /// <param name="maxCount">The maximum count to read</param>
+        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
         /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount)
-        {
-            Ensure.NotNull(position, "position");
-            Ensure.Positive(maxCount, "maxCount");
-            EnsureActive();
-
-            var source = new TaskCompletionSource<AllEventsSlice>();
-            var operation = new ReadAllEventsForwardOperation(source, Guid.NewGuid(), position, maxCount, true);
-
-            EnqueueOperation(operation);
-            return source.Task;
-        }
-
-        /// <summary>
-        /// Reads All Events in the node backwards (eg end to beginning)
-        /// </summary>
-        /// <param name="position">The position to start reading from</param>
-        /// <param name="maxCount">The maximum count to read</param>
-        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        public AllEventsSlice ReadAllEventsBackward(Position position, int maxCount)
-        {
-            Ensure.NotNull(position, "position");
-            Ensure.Positive(maxCount, "maxCount");
-            EnsureActive();
-
-            return ReadAllEventsBackwardAsync(position, maxCount).Result;
-        }
-
-        /// <summary>
-        /// Reads All Events in the node backwards (eg end to beginning)
-        /// </summary>
-        /// <param name="position">The position to start reading from</param>
-        /// <param name="maxCount">The maximum count to read</param>
-        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
-        public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount)
+        public Task<AllEventsSlice> ReadAllEventsForwardAsync(Position position, int maxCount, bool resolveLinkTos)
         {
             Ensure.NotNull(position, "position");
             Ensure.Positive(maxCount, "maxCount");
             EnsureActive();
 
             var source = new TaskCompletionSource<AllEventsSlice>();
-            var operation = new ReadAllEventsBackwardOperation(source, Guid.NewGuid(), position, maxCount, true);
+            var operation = new ReadAllEventsForwardOperation(source, Guid.NewGuid(), position, maxCount, resolveLinkTos);
 
             EnqueueOperation(operation);
             return source.Task;
         }
+
+        /// <summary>
+        /// Reads All Events in the node backwards (e.g. end to beginning)
+        /// </summary>
+        /// <param name="position">The position to start reading from</param>
+        /// <param name="maxCount">The maximum count to read</param>
+        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
+        public AllEventsSlice ReadAllEventsBackward(Position position, int maxCount, bool resolveLinkTos)
+        {
+            return ReadAllEventsBackwardAsync(position, maxCount, resolveLinkTos).Result;
+        }
+
+        /// <summary>
+        /// Reads All Events in the node backwards (e.g. end to beginning)
+        /// </summary>
+        /// <param name="position">The position to start reading from</param>
+        /// <param name="maxCount">The maximum count to read</param>
+        /// <param name="resolveLinkTos">Whether to resolve LinkTo events automatically</param>
+        /// <returns>A <see cref="AllEventsSlice"/> containing the records read</returns>
+        public Task<AllEventsSlice> ReadAllEventsBackwardAsync(Position position, int maxCount, bool resolveLinkTos)
+        {
+            Ensure.NotNull(position, "position");
+            Ensure.Positive(maxCount, "maxCount");
+            EnsureActive();
+
+            var source = new TaskCompletionSource<AllEventsSlice>();
+            var operation = new ReadAllEventsBackwardOperation(source, Guid.NewGuid(), position, maxCount, resolveLinkTos);
+
+            EnqueueOperation(operation);
+            return source.Task;
+        }
+
 
         private void EnqueueOperation(IClientOperation operation)
         {

@@ -34,6 +34,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -90,7 +91,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested = false;
             switch (message.Result)
             {
-                case StreamResult.NoStream:
+                case ReadStreamResult.NoStream:
                     DeliverSafeJoinPosition(message.LastCommitPosition); // allow joining heading distribution
                     if (_pauseRequested)
                         _paused = true;
@@ -99,7 +100,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendIdle();
                     SendEof();
                     break;
-                case StreamResult.Success:
+                case ReadStreamResult.Success:
                     if (message.Events.Length == 0)
                     {
                         // the end

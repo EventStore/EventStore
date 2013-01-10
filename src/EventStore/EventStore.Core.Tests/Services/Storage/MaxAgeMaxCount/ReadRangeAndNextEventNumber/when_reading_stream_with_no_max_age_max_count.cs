@@ -1,6 +1,7 @@
 ﻿using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNextEventNumber
 {
@@ -28,7 +29,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         public void on_read_forward_from_start_to_middle_next_event_number_is_middle_plus_1_and_its_not_end_of_stream()
         {
             var res = ReadIndex.ReadStreamEventsForward("ES", 0, 3);
-            Assert.AreEqual(RangeReadResult.Success, res.Result);
+            Assert.AreEqual(ReadStreamResult.Success, res.Result);
             Assert.AreEqual(3, res.NextEventNumber);
             Assert.AreEqual(5, res.LastEventNumber);
             Assert.IsFalse(res.IsEndOfStream);
@@ -44,7 +45,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         public void on_read_forward_from_the_middle_to_end_next_event_number_is_end_plus_1_and_its_end_of_stream()
         {
             var res = ReadIndex.ReadStreamEventsForward("ES", 2, 4);
-            Assert.AreEqual(RangeReadResult.Success, res.Result);
+            Assert.AreEqual(ReadStreamResult.Success, res.Result);
             Assert.AreEqual(6, res.NextEventNumber);
             Assert.AreEqual(5, res.LastEventNumber);
             Assert.IsTrue(res.IsEndOfStream);
@@ -61,7 +62,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         public void on_read_forward_from_the_middle_to_out_of_bounds_next_event_number_is_end_plus_1_and_its_end_of_stream()
         {
             var res = ReadIndex.ReadStreamEventsForward("ES", 2, 5);
-            Assert.AreEqual(RangeReadResult.Success, res.Result);
+            Assert.AreEqual(ReadStreamResult.Success, res.Result);
             Assert.AreEqual(6, res.NextEventNumber);
             Assert.AreEqual(5, res.LastEventNumber);
             Assert.IsTrue(res.IsEndOfStream);
@@ -78,7 +79,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         public void on_read_forward_from_the_out_of_bounds_to_out_of_bounds_next_event_number_is_end_plus_1_and_its_end_of_stream()
         {
             var res = ReadIndex.ReadStreamEventsForward("ES", 6, 2);
-            Assert.AreEqual(RangeReadResult.Success, res.Result);
+            Assert.AreEqual(ReadStreamResult.Success, res.Result);
             Assert.AreEqual(6, res.NextEventNumber);
             Assert.AreEqual(5, res.LastEventNumber);
             Assert.IsTrue(res.IsEndOfStream);
@@ -92,7 +93,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         public void on_read_backward_from_the_end_to_middle_next_event_number_is_middle_minus_1_and_its_not_end_of_stream()
         {
             var res = ReadIndex.ReadStreamEventsBackward("ES", 5, 3);
-            Assert.AreEqual(RangeReadResult.Success, res.Result);
+            Assert.AreEqual(ReadStreamResult.Success, res.Result);
             Assert.AreEqual(2, res.NextEventNumber);
             Assert.AreEqual(5, res.LastEventNumber);
             Assert.IsFalse(res.IsEndOfStream);
@@ -108,7 +109,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         public void on_read_backward_from_middle_to_start_next_event_number_is_minus_1_and_its_end_of_stream()
         {
             var res = ReadIndex.ReadStreamEventsBackward("ES", 3, 4);
-            Assert.AreEqual(RangeReadResult.Success, res.Result);
+            Assert.AreEqual(ReadStreamResult.Success, res.Result);
             Assert.AreEqual(-1, res.NextEventNumber);
             Assert.AreEqual(5, res.LastEventNumber);
             Assert.IsTrue(res.IsEndOfStream);
@@ -125,7 +126,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         public void on_read_backward_from_middle_to_before_start_next_event_number_is_minus_1_and_its_end_of_stream()
         {
             var res = ReadIndex.ReadStreamEventsBackward("ES", 3, 5);
-            Assert.AreEqual(RangeReadResult.Success, res.Result);
+            Assert.AreEqual(ReadStreamResult.Success, res.Result);
             Assert.AreEqual(-1, res.NextEventNumber);
             Assert.AreEqual(5, res.LastEventNumber);
             Assert.IsTrue(res.IsEndOfStream);
@@ -142,7 +143,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         public void on_read_backward_from_out_of_bounds_to_middle_next_event_number_is_middle_minus_1_and_its_not_end_of_stream()
         {
             var res = ReadIndex.ReadStreamEventsBackward("ES", 7, 5);
-            Assert.AreEqual(RangeReadResult.Success, res.Result);
+            Assert.AreEqual(ReadStreamResult.Success, res.Result);
             Assert.AreEqual(2, res.NextEventNumber);
             Assert.AreEqual(5, res.LastEventNumber);
             Assert.IsFalse(res.IsEndOfStream);
@@ -158,7 +159,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
         public void on_read_backward_from_out_of_bounds_to_out_of_bounds_next_event_number_is_end_and_its_not_end_of_stream()
         {
             var res = ReadIndex.ReadStreamEventsBackward("ES", 10, 3);
-            Assert.AreEqual(RangeReadResult.Success, res.Result);
+            Assert.AreEqual(ReadStreamResult.Success, res.Result);
             Assert.AreEqual(5, res.NextEventNumber);
             Assert.AreEqual(5, res.LastEventNumber);
             Assert.IsFalse(res.IsEndOfStream);

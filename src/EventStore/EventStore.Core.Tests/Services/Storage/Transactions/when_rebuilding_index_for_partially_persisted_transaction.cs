@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             for (int i = 0; i < 15; ++i)
             {
                 var result = ReadIndex.ReadEvent("ES", i);
-                Assert.AreEqual(SingleReadResult.Success, result.Result);
+                Assert.AreEqual(ReadEventResult.Success, result.Result);
                 Assert.AreEqual(Encoding.UTF8.GetBytes("data" + i), result.Record.Data);
             }
         }

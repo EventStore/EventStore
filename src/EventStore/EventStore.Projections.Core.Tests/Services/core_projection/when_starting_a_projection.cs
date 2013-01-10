@@ -36,6 +36,7 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
@@ -90,7 +91,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Handle(
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
-                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, StreamResult.NoStream, 
+                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.NoStream, 
                     new EventLinkPair[0], string.Empty, -1, -1, false, 1000));
         }
 
@@ -100,7 +101,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Handle(
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
-                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, StreamResult.Success,
+                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.Success,
                     new EventLinkPair[0], string.Empty, -1, -1, false, 1000));
         }
     }

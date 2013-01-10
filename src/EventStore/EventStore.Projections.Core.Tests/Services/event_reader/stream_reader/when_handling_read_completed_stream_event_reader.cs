@@ -37,6 +37,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
 {
@@ -65,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             _secondEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, StreamResult.Success, 
+                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, 
                     new[]
                     {
                         new EventLinkPair( 
@@ -135,7 +136,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, StreamResult.Success, 
+                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, 
                     new[]
                     {
                         new EventLinkPair( 
@@ -151,7 +152,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, StreamResult.Success, 
+                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, 
                     new[]
                     {
                         new EventLinkPair( 

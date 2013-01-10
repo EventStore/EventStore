@@ -33,7 +33,7 @@ namespace EventStore.ClientAPI
     public static class StreamPosition
     {
         /// <summary>
-        /// The first event in a stream (always a streamcreated)
+        /// The first event in a stream (always a $stream-created)
         /// </summary>
         public const int Start = 0;
         /// <summary>

@@ -60,17 +60,17 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             throw new NotImplementedException();
         }
 
-        public ReadEventResult ReadEvent(string streamId, int eventNumber)
+        public IndexReadEventResult ReadEvent(string streamId, int eventNumber)
         {
             throw new NotImplementedException();
         }
 
-        public ReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
+        public IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
         {
             throw new NotImplementedException();
         }
 
-        public ReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
+        public IndexReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
         {
             throw new NotImplementedException();
         }

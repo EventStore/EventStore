@@ -31,6 +31,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
 {
@@ -63,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_first_event_can_be_read()
         {
             var result = ReadIndex.ReadEvent("test1", 0);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(new EventRecord(0, _prepare1), result.Record);
         }
 
@@ -71,7 +72,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_second_event_can_be_read()
         {
             var result = ReadIndex.ReadEvent("test1", 1);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(new EventRecord(1, _prepare2), result.Record);
         }
 
@@ -79,14 +80,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_nonexisting_event_can_not_be_read()
         {
             var result = ReadIndex.ReadEvent("test1", 2);
-            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
         }
 
         [Test]
         public void the_first_event_can_be_read_through_range_query()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test1", 0, 1);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(1, result.Records.Length);
             Assert.AreEqual(new EventRecord(0, _prepare1), result.Records[0]);
         }
@@ -95,7 +96,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_second_event_can_be_read_through_range_query()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test1", 1, 1);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(1, result.Records.Length);
             Assert.AreEqual(new EventRecord(1, _prepare2), result.Records[0]);
         }
@@ -104,7 +105,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_stream_can_be_read_as_a_whole_with_specific_from_version()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test1", 1, 2);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(2, result.Records.Length);
             Assert.AreEqual(new EventRecord(1, _prepare2), result.Records[0]);
             Assert.AreEqual(new EventRecord(0, _prepare1), result.Records[1]);
@@ -114,7 +115,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_stream_can_be_read_as_a_whole_with_from_end()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test1", -1, 2);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(2, result.Records.Length);
             Assert.AreEqual(new EventRecord(1, _prepare2), result.Records[0]);
             Assert.AreEqual(new EventRecord(0, _prepare1), result.Records[1]);
@@ -124,7 +125,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex
         public void the_stream_cant_be_read_for_second_stream()
         {
             var result = ReadIndex.ReadStreamEventsBackward("test2", 0, 1);
-            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadStreamResult.NoStream, result.Result);
             Assert.AreEqual(0, result.Records.Length);
         }
 

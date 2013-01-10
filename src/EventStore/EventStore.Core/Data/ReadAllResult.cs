@@ -25,12 +25,39 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-namespace EventStore.Core.Services.Storage.ReaderIndex
+
+using System.Linq;
+using EventStore.Common.Utils;
+
+namespace EventStore.Core.Data
 {
-    public enum RangeReadResult
+    public struct ReadAllResult
     {
-        Success,
-        NoStream,
-        StreamDeleted
+        public readonly EventLinkPositionedPair[] Events;
+        public readonly int MaxCount;
+        public readonly TFPos CurrentPos;
+        public readonly TFPos NextPos;
+        public readonly TFPos PrevPos;
+        public readonly long TfEofPosition;
+
+        public ReadAllResult(EventLinkPositionedPair[] events, int maxCount, TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfEofPosition)
+        {
+            Ensure.NotNull(events, "events");
+
+            Events = events;
+            MaxCount = maxCount;
+            CurrentPos = currentPos;
+            NextPos = nextPos;
+            PrevPos = prevPos;
+            TfEofPosition = tfEofPosition;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("NextPos: {0}, PrevPos: {1}, Events: {2}",
+                                 NextPos,
+                                 PrevPos,
+                                 string.Join("\n", Events.Select(x => x.ToString())));
+        }
     }
 }

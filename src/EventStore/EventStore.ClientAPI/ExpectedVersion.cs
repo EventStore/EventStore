@@ -44,7 +44,7 @@ namespace EventStore.ClientAPI
     /// 
     /// The Event Store will assure idempotency for all operations using any value in ExpectedVersion except for
     /// ExpectedVersion.Any. When using ExpectedVersion.Any the Event Store will do its best to assure idempotency but
-    /// will not gaurantee idempotency.
+    /// will not guarantee idempotency.
     /// </remarks>
     public static class ExpectedVersion
     {
@@ -53,7 +53,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         public const int Any = -2;
         /// <summary>
-        /// The stream being written to should not yet exist. If it does exist treat that as a concurrency problem
+        /// The stream being written to should not yet exist. If it does exist treat that as a concurrency problem.
         /// </summary>
         public const int NoStream = -1;
         /// <summary>

@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
-                var read = store.ReadAllEventsBackwardAsync(Position.Start, 1);
+                var read = store.ReadAllEventsBackwardAsync(Position.Start, 1, false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(0));
@@ -83,10 +83,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var position = Position.End;
                 AllEventsSlice slice;
 
-                while ((slice = store.ReadAllEventsBackward(position, 1)).Events.Any())
+                while ((slice = store.ReadAllEventsBackward(position, 1, false)).Events.Any())
                 {
-                    all.Add(slice.Events.Single());
-                    position = slice.Position;
+                    all.Add(slice.Events.Single().Event);
+                    position = slice.NextPosition;
                 }
 
                 Assert.That(all, Is.Empty);
@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write.Wait);
 
-                var read = store.ReadAllEventsBackwardAsync(Position.End, 25);
+                var read = store.ReadAllEventsBackwardAsync(Position.End, 25, false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(testEvents.Length + 1));
@@ -130,10 +130,11 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write.Wait);
 
-                var read = store.ReadAllEventsBackwardAsync(Position.End, testEvents.Length + 1);
+                var read = store.ReadAllEventsBackwardAsync(Position.End, testEvents.Length + 1, false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(TestEventsComparer.Equal(testEvents.Reverse().ToArray(), read.Result.Events.Take(testEvents.Length).ToArray()));
+                Assert.That(TestEventsComparer.Equal(testEvents.Reverse().ToArray(), 
+                                                     read.Result.Events.Select(x => x.Event).Take(testEvents.Length).ToArray()));
             }
         }
 
@@ -150,11 +151,11 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var create2 = store.CreateStreamAsync(stream + 2, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create2.Wait);
 
-                var read = store.ReadAllEventsBackwardAsync(Position.End, 2);
+                var read = store.ReadAllEventsBackwardAsync(Position.End, 2, false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(2));
-                Assert.That(read.Result.Events.All(x => x.EventType == SystemEventTypes.StreamCreated));
+                Assert.That(read.Result.Events.All(x => x.Event.EventType == SystemEventTypes.StreamCreated));
             }
         }
 
@@ -177,10 +178,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var position = Position.End;
                 AllEventsSlice slice;
 
-                while ((slice = store.ReadAllEventsBackward(position, 1)).Events.Any())
+                while ((slice = store.ReadAllEventsBackward(position, 1, false)).Events.Any())
                 {
-                    all.Add(slice.Events.Single());
-                    position = slice.Position;
+                    all.Add(slice.Events.Single().Event);
+                    position = slice.NextPosition;
                 }
 
                 Assert.That(TestEventsComparer.Equal(testEvents.Reverse().ToArray(), all.Take(testEvents.Length).ToArray()));
@@ -206,10 +207,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var position = Position.End;
                 AllEventsSlice slice;
 
-                while ((slice = store.ReadAllEventsBackward(position, 5)).Events.Any())
+                while ((slice = store.ReadAllEventsBackward(position, 5, false)).Events.Any())
                 {
-                    all.AddRange(slice.Events);
-                    position = slice.Position;
+                    all.AddRange(slice.Events.Select(x => x.Event));
+                    position = slice.NextPosition;
                 }
 
                 Assert.That(TestEventsComparer.Equal(testEvents.Reverse().ToArray(), all.Take(testEvents.Length).ToArray()));
@@ -244,10 +245,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var position = Position.End;
                 AllEventsSlice slice;
 
-                while ((slice = store.ReadAllEventsBackward(position, 2)).Events.Any())
+                while ((slice = store.ReadAllEventsBackward(position, 2, false)).Events.Any())
                 {
-                    all.AddRange(slice.Events);
-                    position = slice.Position;
+                    all.AddRange(slice.Events.Select(x => x.Event));
+                    position = slice.NextPosition;
                 }
 
                 Assert.Inconclusive();
@@ -273,7 +274,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var delete1 = store.DeleteStreamAsync(stream + 1, ExpectedVersion.EmptyStream);
                 Assert.DoesNotThrow(delete1.Wait);
 
-                var read = store.ReadAllEventsBackwardAsync(Position.End, 3);
+                var read = store.ReadAllEventsBackwardAsync(Position.End, 3, false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(1));
@@ -295,7 +296,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.DoesNotThrow(delete.Wait);
 
-                var read = store.ReadAllEventsBackwardAsync(Position.Start, 2);
+                var read = store.ReadAllEventsBackwardAsync(Position.Start, 2, false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(0));

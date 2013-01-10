@@ -38,6 +38,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Utils;
 using System.Linq;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -349,7 +350,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void LoadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed)
         {
-            if (completed.Result == StreamResult.Success && completed.Events.Length == 1)
+            if (completed.Result == ReadStreamResult.Success && completed.Events.Length == 1)
             {
                 byte[] state = completed.Events[0].Event.Data;
                 var persistedState = state.ParseJson<PersistedState>();

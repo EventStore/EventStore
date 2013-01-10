@@ -26,9 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System.Collections.Generic;
 using EventStore.ClientAPI.Common.Utils;
-using System.Linq;
 using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
@@ -51,12 +49,12 @@ namespace EventStore.ClientAPI
         public readonly string Stream;
 
         /// <summary>
-        /// The starting point (represented as a sequence number) of the read operation
+        /// The starting point (represented as a sequence number) of the read operation.
         /// </summary>
         public readonly int Start;
 
         /// <summary>
-        /// The number of items read in this read operation
+        /// The number of items read in this read operation.
         /// </summary>
         public readonly int Count;
 
@@ -66,12 +64,12 @@ namespace EventStore.ClientAPI
         public readonly RecordedEvent[] Events;
 
         /// <summary>
-        /// The next event number that can be read
+        /// The next event number that can be read.
         /// </summary>
         public readonly int NextEventNumber;
 
         /// <summary>
-        /// The last event number that was read
+        /// The last event number in the stream.
         /// </summary>
         public readonly int LastEventNumber;
 
@@ -84,7 +82,7 @@ namespace EventStore.ClientAPI
                                   string stream, 
                                   int start, 
                                   int count, 
-                                  IEnumerable<ClientMessage.EventLinkPair> events,
+                                  ClientMessage.EventLinkPair[] events,
                                   int nextEventNumber,
                                   int lastEventNumber,
                                   bool isEndOfStream)
@@ -95,7 +93,16 @@ namespace EventStore.ClientAPI
             Stream = stream;
             Start = start;
             Count = count;
-            Events = events == null ? EmptyEvents : events.Select(e => new RecordedEvent(e.Event)).ToArray();
+            if (events == null)
+                Events = EmptyEvents;
+            else
+            {
+                Events = new RecordedEvent[events.Length];
+                for (int i = 0; i < Events.Length; ++i)
+                {
+                    Events[i] = new RecordedEvent(events[i].Event);
+                }
+            }
             NextEventNumber = nextEventNumber;
             LastEventNumber = lastEventNumber;
             IsEndOfStream = isEndOfStream;

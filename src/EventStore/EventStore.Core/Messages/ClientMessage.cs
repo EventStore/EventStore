@@ -32,6 +32,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Tcp;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Messages
 {
@@ -390,13 +391,13 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
-            public readonly SingleReadResult Result;
+            public readonly ReadEventResult Result;
             public readonly EventLinkPair Record;
 
-            public ReadEventCompleted(Guid correlationId, string eventStreamId, SingleReadResult result, EventLinkPair record)
+            public ReadEventCompleted(Guid correlationId, string eventStreamId, ReadEventResult result, EventLinkPair record)
             {
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-                if (result == SingleReadResult.Success)
+                if (result == ReadEventResult.Success)
                     Ensure.NotNull(record.Event, "record.Event");
 
                 CorrelationId = correlationId;
@@ -464,7 +465,7 @@ namespace EventStore.Core.Messages
             public readonly int FromEventNumber;
             public readonly int MaxCount;
             
-            public readonly StreamResult Result;
+            public readonly ReadStreamResult Result;
             public readonly EventLinkPair[] Events;
             public readonly string Message;
             public readonly int NextEventNumber;
@@ -476,7 +477,7 @@ namespace EventStore.Core.Messages
                                                     string eventStreamId,
                                                     int fromEventNumber,
                                                     int maxCount,
-                                                    StreamResult result,
+                                                    ReadStreamResult result,
                                                     EventLinkPair[] events,
                                                     string message,
                                                     int nextEventNumber,
@@ -503,14 +504,14 @@ namespace EventStore.Core.Messages
             public static ReadStreamEventsForwardCompleted NotModified(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount)
             {
                 return new ReadStreamEventsForwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount, 
-                                                            StreamResult.NotModified, EmptyRecords, string.Empty, -1, -1, false, null);
+                                                            ReadStreamResult.NotModified, EmptyRecords, string.Empty, -1, -1, false, null);
             }
 
             public static ReadStreamEventsForwardCompleted Faulted(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount, string message)
             {
                 Ensure.NotNullOrEmpty(message, "message");
                 return new ReadStreamEventsForwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
-                                                            StreamResult.Error, EmptyRecords, message, -1, -1, false, null);
+                                                            ReadStreamResult.Error, EmptyRecords, message, -1, -1, false, null);
             }
         }
 
@@ -555,7 +556,7 @@ namespace EventStore.Core.Messages
             public readonly int FromEventNumber;
             public readonly int MaxCount;
 
-            public readonly StreamResult Result;
+            public readonly ReadStreamResult Result;
             public readonly EventLinkPair[] Events;
             public readonly string Message;
             public readonly int NextEventNumber;
@@ -567,7 +568,7 @@ namespace EventStore.Core.Messages
                                                      string eventStreamId,
                                                      int fromEventNumber,
                                                      int maxCount,
-                                                     StreamResult result,
+                                                     ReadStreamResult result,
                                                      EventLinkPair[] events,
                                                      string message,
                                                      int nextEventNumber,
@@ -594,14 +595,14 @@ namespace EventStore.Core.Messages
             public static ReadStreamEventsBackwardCompleted NotModified(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount)
             {
                 return new ReadStreamEventsBackwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
-                                                             StreamResult.NotModified, EmptyRecords, string.Empty, -1, -1, false, null);
+                                                             ReadStreamResult.NotModified, EmptyRecords, string.Empty, -1, -1, false, null);
             }
 
             public static ReadStreamEventsBackwardCompleted Faulted(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount, string message)
             {
                 Ensure.NotNullOrEmpty(message, "message");
                 return new ReadStreamEventsBackwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
-                                                             StreamResult.Error, EmptyRecords, message, -1, -1, false, null);
+                                                             ReadStreamResult.Error, EmptyRecords, message, -1, -1, false, null);
             }
         }
 
@@ -745,16 +746,12 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly string EventStreamId;
-            public readonly long CommitPosition;
-            public readonly long PreparePosition;
-            public readonly EventLinkPair Event;
+            public readonly EventLinkPositionedPair Event;
 
-            public StreamEventAppeared(Guid correlationId, string eventStreamId, long commitPosition, long preparePosition, EventLinkPair @event)
+            public StreamEventAppeared(Guid correlationId, string eventStreamId, EventLinkPositionedPair @event)
             {
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
-                CommitPosition = commitPosition;
-                PreparePosition = preparePosition;
                 Event = @event;
             }
         }

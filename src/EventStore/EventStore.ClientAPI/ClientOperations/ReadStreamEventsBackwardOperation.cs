@@ -103,9 +103,9 @@ namespace EventStore.ClientAPI.ClientOperations
                 _result = package.Data.Deserialize<ClientMessage.ReadStreamEventsCompleted>();
                 switch (_result.Result)
                 {
-                    case ClientMessage.ReadStreamEventsCompleted.StreamResult.Success:
-                    case ClientMessage.ReadStreamEventsCompleted.StreamResult.StreamDeleted:
-                    case ClientMessage.ReadStreamEventsCompleted.StreamResult.NoStream:
+                    case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.Success:
+                    case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.StreamDeleted:
+                    case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.NoStream:
                         return new InspectionResult(InspectionDecision.Succeed);
                     default:
                         throw new ArgumentOutOfRangeException();

@@ -93,7 +93,7 @@ namespace EventStore.TestClient.Commands
                 },
                 handlePackage: (conn, pkg) =>
                 {
-                    TcpClientMessageDto.EventLinkPair[] records;
+                    TcpClientMessageDto.EventLinkPositionedPair[] records;
                     long nextCommitPos;
                     long nextPreparePos;
 

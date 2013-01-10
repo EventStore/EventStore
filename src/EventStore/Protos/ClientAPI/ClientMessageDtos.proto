@@ -33,6 +33,13 @@ message EventLinkPair {
 	optional EventRecord link = 2;
 }
 
+message EventLinkPositionedPair {
+	required EventRecord event = 1;
+	optional EventRecord link = 2;
+	required int64 commit_position = 3;
+	required int64 prepare_position = 4;
+}
+
 message DeniedToRoute {
 	required string external_tcp_address = 1;
 	required int32 external_tcp_port = 2;
@@ -88,7 +95,7 @@ message ReadEvent {
 
 message ReadEventCompleted {
 
-	enum SingleReadResult {
+	enum ReadEventResult {
 		Success = 0;
 		NotFound = 1;
 		NoStream = 2;
@@ -96,7 +103,7 @@ message ReadEventCompleted {
 	}
 
 	required string event_stream_id = 1;
-	required SingleReadResult result = 2;
+	required ReadEventResult result = 2;
 	required EventLinkPair event = 3;
 }
 
@@ -109,7 +116,7 @@ message ReadStreamEvents {
 
 message ReadStreamEventsCompleted {
 
-	enum StreamResult {
+	enum ReadStreamResult {
 		Success = 0;
 		NoStream = 1;
 		StreamDeleted = 2;
@@ -119,7 +126,7 @@ message ReadStreamEventsCompleted {
 
 	required string event_stream_id = 1;
 	repeated EventLinkPair events = 2;
-	required StreamResult result = 3;
+	required ReadStreamResult result = 3;
 	required int32 next_event_number = 4;
 	required int32 last_event_number = 5;
 	required bool is_end_of_stream = 6;
@@ -137,7 +144,7 @@ message ReadAllEvents {
 message ReadAllEventsCompleted {
 	required int64 commit_position = 1;
 	required int64 prepare_position = 2;
-	repeated EventLinkPair events = 3;
+	repeated EventLinkPositionedPair events = 3;
 	required int64 next_commit_position = 4;
 	required int64 next_prepare_position = 5;
 }
@@ -188,9 +195,7 @@ message SubscribeToStream {
 
 message StreamEventAppeared {
 	required string event_stream_id = 1;
-	required int64 commit_position = 2;
-	required int64 prepare_position = 3;
-	required EventLinkPair event = 4;
+	required EventLinkPositionedPair event = 2;
 }
 
 message UnsubscribeFromStream {

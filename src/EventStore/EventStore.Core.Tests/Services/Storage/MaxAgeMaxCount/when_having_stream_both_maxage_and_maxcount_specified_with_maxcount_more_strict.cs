@@ -29,6 +29,7 @@ using System;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 {
@@ -58,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         public void single_event_read_doesnt_return_stream_created_event()
         {
             var result = ReadIndex.ReadEvent("ES", 0);
-            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
             Assert.IsNull(result.Record);
         }
 
@@ -66,27 +67,27 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         public void single_event_read_doesnt_return_expired_events_and_returns_all_actual_ones()
         {
             var result = ReadIndex.ReadEvent("ES", 0);
-            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
             Assert.IsNull(result.Record);
 
             result = ReadIndex.ReadEvent("ES", 1);
-            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
             Assert.IsNull(result.Record);
 
             result = ReadIndex.ReadEvent("ES", 2);
-            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
             Assert.IsNull(result.Record);
 
             result = ReadIndex.ReadEvent("ES", 3);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r4, result.Record);
 
             result = ReadIndex.ReadEvent("ES", 4);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r5, result.Record);
 
             result = ReadIndex.ReadEvent("ES", 5);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r6, result.Record);
         }
 
@@ -94,7 +95,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         public void forward_range_read_doesnt_return_expired_records()
         {
             var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(3, result.Records.Length);
             Assert.AreEqual(_r4, result.Records[0]);
             Assert.AreEqual(_r5, result.Records[1]);
@@ -105,7 +106,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         public void backward_range_read_doesnt_return_expired_records()
         {
             var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(3, result.Records.Length);
             Assert.AreEqual(_r6, result.Records[0]);
             Assert.AreEqual(_r5, result.Records[1]);

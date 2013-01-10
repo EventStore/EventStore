@@ -25,9 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-
-using System.Collections.Generic;
-using System.Linq;
 using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
@@ -37,20 +34,31 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class AllEventsSlice
     {
+        private static readonly EventLinkPositionedPair[] EmptyEvents = new EventLinkPositionedPair[0];
+
         /// <summary>
-        /// A <see cref="Position"/> representing the position where the next slice should be read from.
+        /// A <see cref="NextPosition"/> representing the position where the next slice should be read from.
         /// </summary>
-        public readonly Position Position;
+        public readonly Position NextPosition;
 
         /// <summary>
         /// The events read
         /// </summary>
-        public readonly RecordedEvent[] Events;
+        public readonly EventLinkPositionedPair[] Events;
 
-        internal AllEventsSlice(Position nextPosition, IEnumerable<ClientMessage.EventLinkPair> events)
+        internal AllEventsSlice(Position nextPosition, ClientMessage.EventLinkPositionedPair[] events)
         {
-            Position = nextPosition;
-            Events = events == null ? EventStreamSlice.EmptyEvents : events.Select(x => new RecordedEvent(x.Event)).ToArray();
+            NextPosition = nextPosition;
+            if (events == null)
+                Events = EmptyEvents;
+            else
+            {
+                Events = new EventLinkPositionedPair[events.Length];
+                for (int i = 0; i < Events.Length; ++i)
+                {
+                    Events[i] = new EventLinkPositionedPair(events[i]);
+                }
+            }
         }
     }
 }

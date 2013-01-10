@@ -30,6 +30,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions
 {
@@ -55,7 +56,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void return_empty_range_on_from_start_range_query_for_non_existing_stream()
         {
             var result = ReadIndex.ReadStreamEventsForward("ES-NONEXISTING", 0, 1);
-            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadStreamResult.NoStream, result.Result);
             Assert.AreEqual(0, result.Records.Length);
         }
 
@@ -63,7 +64,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void return_empty_range_on_from_end_range_query_for_non_existing_stream()
         {
             var result = ReadIndex.ReadStreamEventsBackward("ES-NONEXISTING", 0, 1);
-            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadStreamResult.NoStream, result.Result);
             Assert.AreEqual(0, result.Records.Length);
         }
 
@@ -71,7 +72,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void return_not_found_for_get_record_from_non_existing_stream()
         {
             var result = ReadIndex.ReadEvent("ES-NONEXISTING", 0);
-            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadEventResult.NoStream, result.Result);
             Assert.IsNull(result.Record);
         }
 
@@ -85,7 +86,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void return_stream_deleted_result_for_deleted_event_stream()
         {
             var result = ReadIndex.ReadEvent("ES", 0);
-            Assert.AreEqual(SingleReadResult.StreamDeleted, result.Result);
+            Assert.AreEqual(ReadEventResult.StreamDeleted, result.Result);
             Assert.IsNull(result.Record);
         }
 
@@ -93,7 +94,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void return_empty_range_on_from_start_range_query_for_deleted_event_stream()
         {
             var result = ReadIndex.ReadStreamEventsForward("ES", 0, 1);
-            Assert.AreEqual(RangeReadResult.StreamDeleted, result.Result);
+            Assert.AreEqual(ReadStreamResult.StreamDeleted, result.Result);
             Assert.AreEqual(0, result.Records.Length);
         }
 
@@ -101,7 +102,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void return_empty_range_on_from_end_range_query_for_deleted_event_stream()
         {
             var result = ReadIndex.ReadStreamEventsBackward("ES", 0, 1);
-            Assert.AreEqual(RangeReadResult.StreamDeleted, result.Result);
+            Assert.AreEqual(ReadStreamResult.StreamDeleted, result.Result);
             Assert.AreEqual(0, result.Records.Length);
         }
 
@@ -115,7 +116,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void not_find_record_for_nonexistent_event_stream_with_same_hash_as_deleted_one()
         {
             var result = ReadIndex.ReadEvent("AB", 0);
-            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadEventResult.NoStream, result.Result);
             Assert.IsNull(result.Record);
         }
 
@@ -123,7 +124,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void return_empty_range_on_from_start_query_for_nonexisting_event_stream_with_same_hash_as_deleted_one()
         {
             var result = ReadIndex.ReadStreamEventsForward("HG", 0, 1);
-            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadStreamResult.NoStream, result.Result);
             Assert.AreEqual(0, result.Records.Length);
         }
 
@@ -131,7 +132,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void return_empty_on_from_end_query_for_nonexisting_event_stream_with_same_hash_as_deleted_one()
         {
             var result = ReadIndex.ReadStreamEventsBackward("HG", 0, 1);
-            Assert.AreEqual(RangeReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadStreamResult.NoStream, result.Result);
             Assert.AreEqual(0, result.Records.Length);
         }
 
@@ -139,7 +140,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void not_find_record_with_nonexistent_version_for_deleted_event_stream()
         {
             var result = ReadIndex.ReadEvent("ES", 1);
-            Assert.AreEqual(SingleReadResult.StreamDeleted, result.Result);
+            Assert.AreEqual(ReadEventResult.StreamDeleted, result.Result);
             Assert.IsNull(result.Record);
         }
 
@@ -147,7 +148,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions
         public void not_find_record_with_non_existing_version_for_event_stream_with_same_hash_as_deleted_one()
         {
             var result = ReadIndex.ReadEvent("CL", 1);
-            Assert.AreEqual(SingleReadResult.NoStream, result.Result);
+            Assert.AreEqual(ReadEventResult.NoStream, result.Result);
             Assert.IsNull(result.Record);
         }
 

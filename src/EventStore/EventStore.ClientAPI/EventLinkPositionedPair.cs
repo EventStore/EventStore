@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,27 +24,27 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-namespace EventStore.Core.Data
+//  
+using EventStore.ClientAPI.Messages;
+
+namespace EventStore.ClientAPI
 {
-    public struct ResolvedEventRecord
+    public struct EventLinkPositionedPair
     {
-        public static readonly ResolvedEventRecord[] EmptyArray = new ResolvedEventRecord[0];
+        public bool IsResolved { get { return Link != null; } }
 
-        public readonly EventRecord Event;
-        public readonly EventRecord Link;
-        public readonly long CommitPosition;
+        public RecordedEvent OriginalEvent { get { return Link ?? Event; } }
+        public RecordedEvent ResolvedEvent { get { return Link != null ? Event : null; } }
 
-        public ResolvedEventRecord(EventRecord @event, EventRecord link, long commitPosition)
+        public readonly RecordedEvent Event;
+        public readonly RecordedEvent Link;
+        public readonly Position OriginalPosition;
+
+        internal EventLinkPositionedPair(ClientMessage.EventLinkPositionedPair pair)
         {
-            Event = @event;
-            CommitPosition = commitPosition;
-            Link = link;
-        }
-
-        public override string ToString()
-        {
-            return string.Format("CommitPosition: {0}, Event: {1}, Link: {2}", CommitPosition, Event, Link);
+            Event = new RecordedEvent(pair.Event);
+            Link = pair.Link == null ? null : new RecordedEvent(pair.Link);
+            OriginalPosition = new Position(pair.CommitPosition, pair.PreparePosition);
         }
     }
 }

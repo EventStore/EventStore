@@ -30,6 +30,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.Transactions
 {
@@ -73,7 +74,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void return_correct_first_record_for_larger_stream()
         {
             var result = ReadIndex.ReadEvent("ES", 0);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_p1, result.Record);
         }
 
@@ -81,7 +82,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void return_correct_second_record_for_larger_stream()
         {
             var result = ReadIndex.ReadEvent("ES", 1);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_p3, result.Record);
         }
 
@@ -89,7 +90,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void return_correct_third_record_for_larger_stream()
         {
             var result = ReadIndex.ReadEvent("ES", 2);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_p5, result.Record);
         }
 
@@ -97,7 +98,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void not_find_record_with_nonexistent_version_for_larger_stream()
         {
             var result = ReadIndex.ReadEvent("ES", 3);
-            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
             Assert.IsNull(result.Record);
         }
 
@@ -105,7 +106,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void return_correct_range_on_from_start_range_query_for_larger_stream()
         {
             var result = ReadIndex.ReadStreamEventsForward("ES", 0, 3);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(3, result.Records.Length);
             Assert.AreEqual(_p1, result.Records[0]);
             Assert.AreEqual(_p3, result.Records[1]);
@@ -116,7 +117,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void return_correct_range_on_from_end_range_query_for_larger_stream_with_specific_version()
         {
             var result = ReadIndex.ReadStreamEventsBackward("ES", 2, 3);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(3, result.Records.Length);
             Assert.AreEqual(_p5, result.Records[0]);
             Assert.AreEqual(_p3, result.Records[1]);
@@ -127,7 +128,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void return_correct_range_on_from_end_range_query_for_larger_stream_with_from_end_version()
         {
             var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 3);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(3, result.Records.Length);
             Assert.AreEqual(_p5, result.Records[0]);
             Assert.AreEqual(_p3, result.Records[1]);
@@ -144,7 +145,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void return_correct_first_record_for_smaller_stream()
         {
             var result = ReadIndex.ReadEvent("ABC", 0);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_p2, result.Record);
         }
 
@@ -152,7 +153,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void return_correct_second_record_for_smaller_stream()
         {
             var result = ReadIndex.ReadEvent("ABC", 1);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_p4, result.Record);
         }
 
@@ -160,7 +161,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void not_find_record_with_nonexistent_version_for_smaller_stream()
         {
             var result = ReadIndex.ReadEvent("ABC", 2);
-            Assert.AreEqual(SingleReadResult.NotFound, result.Result);
+            Assert.AreEqual(ReadEventResult.NotFound, result.Result);
             Assert.IsNull(result.Record);
         }
 
@@ -168,7 +169,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void return_correct_range_on_from_start_range_query_for_smaller_stream()
         {
             var result = ReadIndex.ReadStreamEventsForward("ABC", 0, 2);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(2, result.Records.Length);
             Assert.AreEqual(_p2, result.Records[0]);
             Assert.AreEqual(_p4, result.Records[1]);
@@ -178,7 +179,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void return_correct_range_on_from_end_range_query_for_smaller_stream_with_specific_version()
         {
             var result = ReadIndex.ReadStreamEventsBackward("ABC", 1, 2);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(2, result.Records.Length);
             Assert.AreEqual(_p4, result.Records[0]);
             Assert.AreEqual(_p2, result.Records[1]);
@@ -188,7 +189,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         public void return_correct_range_on_from_end_range_query_for_smaller_stream_with_from_end_version()
         {
             var result = ReadIndex.ReadStreamEventsBackward("ABC", -1, 2);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(2, result.Records.Length);
             Assert.AreEqual(_p4, result.Records[0]);
             Assert.AreEqual(_p2, result.Records[1]);

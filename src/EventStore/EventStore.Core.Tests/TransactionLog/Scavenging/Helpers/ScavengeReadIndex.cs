@@ -31,17 +31,17 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             throw new System.NotImplementedException();
         }
 
-        public ReadEventResult ReadEvent(string streamId, int eventNumber)
+        public IndexReadEventResult ReadEvent(string streamId, int eventNumber)
         {
             throw new System.NotImplementedException();
         }
 
-        public ReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
+        public IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
         {
             throw new System.NotImplementedException();
         }
 
-        public ReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
+        public IndexReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
         {
             throw new System.NotImplementedException();
         }

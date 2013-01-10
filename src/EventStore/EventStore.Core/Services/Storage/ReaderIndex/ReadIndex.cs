@@ -227,19 +227,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 // or records which are rebuilt but are already in PTables
                 if (addToIndex)
                 {
-#if CHECK_COMMIT_DUPLICATES
+#if true || CHECK_COMMIT_DUPLICATES
                     long pos;
                     if (_tableIndex.TryGetOneValue(streamHash, eventNumber, out pos))
                     {
-                        ReadEventResult res = ((IReadIndex)this).ReadEvent(eventStreamId, eventNumber);
-                        if (res.Result == SingleReadResult.Success)
+                        var res = ((IReadIndex)this).ReadEvent(streamId, eventNumber);
+                        if (res.Result == ReadEventResult.Success)
                         {
                             Debugger.Break();
                             throw new Exception(
                                 string.Format(
                                     "Trying to add duplicate event #{0} for stream {1}(hash {2})\nCommit: {3}\nPrepare: {4}.",
                                     eventNumber,
-                                    eventStreamId,
+                                    streamId,
                                     streamHash,
                                     commit,
                                     prepare));
@@ -306,7 +306,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        ReadEventResult IReadIndex.ReadEvent(string streamId, int eventNumber)
+        IndexReadEventResult IReadIndex.ReadEvent(string streamId, int eventNumber)
         {
             var reader = GetReader();
             try
@@ -319,23 +319,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private ReadEventResult ReadEventInternal(ITransactionFileReader reader, string streamId, int version)
+        private IndexReadEventResult ReadEventInternal(ITransactionFileReader reader, string streamId, int version)
         {
             Ensure.NotNull(streamId, "streamId");
             Ensure.Nonnegative(version, "eventNumber");
 
             var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
             if (lastEventNumber == EventNumber.DeletedStream)
-                return new ReadEventResult(SingleReadResult.StreamDeleted);
+                return new IndexReadEventResult(ReadEventResult.StreamDeleted);
             if (lastEventNumber == ExpectedVersion.NoStream)
-                return new ReadEventResult(SingleReadResult.NoStream);
+                return new IndexReadEventResult(ReadEventResult.NoStream);
 
             var metadata = GetStreamMetadataCached(reader, streamId);
             if (metadata.MaxCount.HasValue)
             {
                 var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
                 if (version < minEventNumber || version > lastEventNumber)
-                    return new ReadEventResult(SingleReadResult.NotFound);
+                    return new IndexReadEventResult(ReadEventResult.NotFound);
             }
 
             EventRecord record;
@@ -343,14 +343,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             if (success)
             {
                 if (metadata.MaxAge.HasValue && record.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)
-                    return new ReadEventResult(SingleReadResult.NotFound);
-                return new ReadEventResult(SingleReadResult.Success, record);
+                    return new IndexReadEventResult(ReadEventResult.NotFound);
+                return new IndexReadEventResult(ReadEventResult.Success, record);
             }
 
-            return new ReadEventResult(SingleReadResult.NotFound);
+            return new IndexReadEventResult(ReadEventResult.NotFound);
         }
 
-        ReadStreamResult IReadIndex.ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
+        IndexReadStreamResult IReadIndex.ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
         {
             Ensure.NotNull(streamId, "streamId");
             Ensure.Nonnegative(fromEventNumber, "fromEventNumber");
@@ -362,9 +362,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
                 if (lastEventNumber == EventNumber.DeletedStream)
-                    return new ReadStreamResult(fromEventNumber, maxCount, RangeReadResult.StreamDeleted);
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted);
                 if (lastEventNumber == ExpectedVersion.NoStream)
-                    return new ReadStreamResult(fromEventNumber, maxCount, RangeReadResult.NoStream);
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream);
 
                 int startEventNumber = fromEventNumber;
                 int endEventNumber = (int) Math.Min(int.MaxValue, (long) fromEventNumber + maxCount - 1);
@@ -375,9 +375,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
                     if (endEventNumber < minEventNumber)
                     {
-                        return new ReadStreamResult(fromEventNumber,
+                        return new IndexReadStreamResult(fromEventNumber,
                                                     maxCount,
-                                                    RangeReadResult.Success,
+                                                    ReadStreamResult.Success,
                                                     EmptyRecords,
                                                     minEventNumber,
                                                     lastEventNumber,
@@ -403,9 +403,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (records.Length > 0)
                     nextEventNumber = records[records.Length - 1].EventNumber + 1;
                 var isEndOfStream = endEventNumber >= lastEventNumber;
-                return new ReadStreamResult(endEventNumber,
+                return new IndexReadStreamResult(endEventNumber,
                                             maxCount,
-                                            RangeReadResult.Success,
+                                            ReadStreamResult.Success,
                                             records,
                                             nextEventNumber,
                                             lastEventNumber,
@@ -417,7 +417,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        ReadStreamResult IReadIndex.ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
+        IndexReadStreamResult IReadIndex.ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
         {
             Ensure.NotNull(streamId, "streamId");
             Ensure.Positive(maxCount, "maxCount");
@@ -428,9 +428,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
                 if (lastEventNumber == EventNumber.DeletedStream)
-                    return new ReadStreamResult(fromEventNumber, maxCount, RangeReadResult.StreamDeleted);
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.StreamDeleted);
                 if (lastEventNumber == ExpectedVersion.NoStream)
-                    return new ReadStreamResult(fromEventNumber, maxCount, RangeReadResult.NoStream);
+                    return new IndexReadStreamResult(fromEventNumber, maxCount, ReadStreamResult.NoStream);
 
                 int endEventNumber = fromEventNumber < 0 ? lastEventNumber : fromEventNumber;
                 int startEventNumber = (int)Math.Max(0L, (long)endEventNumber - maxCount + 1);
@@ -442,9 +442,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     var minEventNumber = lastEventNumber - metadata.MaxCount.Value + 1;
                     if (endEventNumber < minEventNumber)
                     {
-                        return new ReadStreamResult(fromEventNumber,
+                        return new IndexReadStreamResult(fromEventNumber,
                                                     maxCount,
-                                                    RangeReadResult.Success,
+                                                    ReadStreamResult.Success,
                                                     EmptyRecords,
                                                     -1,
                                                     lastEventNumber,
@@ -475,9 +475,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                 || startEventNumber <= lastEventNumber 
                                    && (records.Length == 0 || records[records.Length - 1].EventNumber != startEventNumber);
                 int nextEventNumber = isEndOfStream ? -1 : Math.Min(startEventNumber - 1, lastEventNumber);
-                return new ReadStreamResult(endEventNumber,
+                return new IndexReadStreamResult(endEventNumber,
                                             maxCount,
-                                            RangeReadResult.Success,
+                                            ReadStreamResult.Success,
                                             records,
                                             nextEventNumber,
                                             lastEventNumber,

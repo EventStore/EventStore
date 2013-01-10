@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var write5 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write5.Wait);
 
-                var read = store.ReadAllEventsForwardAsync(Position.End, 1);
+                var read = store.ReadAllEventsForwardAsync(Position.End, 1, false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(0));
@@ -90,10 +90,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var position = Position.Start;
                 AllEventsSlice slice;
 
-                while ((slice = store.ReadAllEventsForward(position, 1)).Events.Any())
+                while ((slice = store.ReadAllEventsForward(position, 1, false)).Events.Any())
                 {
-                    all.Add(slice.Events.Single());
-                    position = slice.Position;
+                    all.Add(slice.Events.Single().Event);
+                    position = slice.NextPosition;
                 }
 
                 Assert.That(all, Is.Empty);
@@ -121,11 +121,14 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var write5to2 = store.AppendToStreamAsync(stream + 2, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write5to2.Wait);
 
-                var read = store.ReadAllEventsForwardAsync(Position.Start, testEvents.Length*2 + 2);
+                var read = store.ReadAllEventsForwardAsync(Position.Start, testEvents.Length*2 + 2, false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(TestEventsComparer.Equal(testEvents.Concat(testEvents).ToArray(),
-                                                     read.Result.Events.Skip(1).Take(testEvents.Length).Concat(read.Result.Events.Skip(testEvents.Length + 2).Take(testEvents.Length)).ToArray()));
+                Assert.That(TestEventsComparer.Equal(
+                    testEvents.Concat(testEvents).ToArray(),
+                    read.Result.Events.Skip(1).Take(testEvents.Length)
+                        .Concat(read.Result.Events.Skip(testEvents.Length + 2).Take(testEvents.Length))
+                        .Select(x => x.Event).ToArray()));
             }
         }
 
@@ -142,11 +145,11 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var create2 = store.CreateStreamAsync(stream + 2, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create2.Wait);
 
-                var read = store.ReadAllEventsForwardAsync(Position.Start, 2);
+                var read = store.ReadAllEventsForwardAsync(Position.Start, 2, false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(2));
-                Assert.That(read.Result.Events.All(x => x.EventType == SystemEventTypes.StreamCreated));
+                Assert.That(read.Result.Events.All(x => x.Event.EventType == SystemEventTypes.StreamCreated));
             }
         }
 
@@ -169,10 +172,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var position = Position.Start;
                 AllEventsSlice slice;
 
-                while ((slice = store.ReadAllEventsForward(position, 1)).Events.Any())
+                while ((slice = store.ReadAllEventsForward(position, 1, false)).Events.Any())
                 {
-                    all.Add(slice.Events.Single());
-                    position = slice.Position;
+                    all.Add(slice.Events.Single().Event);
+                    position = slice.NextPosition;
                 }
 
                 Assert.That(TestEventsComparer.Equal(testEvents, all.Skip(1).ToArray()));
@@ -198,10 +201,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var position = Position.Start;
                 AllEventsSlice slice;
 
-                while ((slice = store.ReadAllEventsForward(position, 5)).Events.Any())
+                while ((slice = store.ReadAllEventsForward(position, 5, false)).Events.Any())
                 {
-                    all.AddRange(slice.Events);
-                    position = slice.Position;
+                    all.AddRange(slice.Events.Select(x => x.Event));
+                    position = slice.NextPosition;
                 }
 
                 Assert.That(TestEventsComparer.Equal(testEvents, all.Skip(1).ToArray()));
@@ -223,7 +226,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write.Wait);
 
-                var read = store.ReadAllEventsForwardAsync(Position.Start, 25);
+                var read = store.ReadAllEventsForwardAsync(Position.Start, 25, false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(testEvents.Length + 1));
@@ -260,10 +263,10 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var position = Position.Start;
                 AllEventsSlice slice;
 
-                while ((slice = store.ReadAllEventsForward(position, 2)).Events.Any())
+                while ((slice = store.ReadAllEventsForward(position, 2, false)).Events.Any())
                 {
-                    all.AddRange(slice.Events);
-                    position = slice.Position;
+                    all.AddRange(slice.Events.Select(x => x.Event));
+                    position = slice.NextPosition;
                 }
 
                 Assert.That(TestEventsComparer.Equal(testEvents, all.Skip(1).ToArray()));
@@ -288,7 +291,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var delete1 = store.DeleteStreamAsync(stream + 1, ExpectedVersion.EmptyStream);
                 Assert.DoesNotThrow(delete1.Wait);
 
-                var read = store.ReadAllEventsForwardAsync(Position.Start, 3);
+                var read = store.ReadAllEventsForwardAsync(Position.Start, 3, false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(1));
@@ -316,7 +319,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var delete2 = store.DeleteStreamAsync(stream + 2, ExpectedVersion.EmptyStream);
                 Assert.DoesNotThrow(delete2.Wait);
 
-                var read = store.ReadAllEventsForwardAsync(Position.Start, 4);
+                var read = store.ReadAllEventsForwardAsync(Position.Start, 4, false);
                 Assert.DoesNotThrow(read.Wait);
 
                 Assert.That(read.Result.Events.Length, Is.EqualTo(0));
@@ -369,11 +372,11 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var write2 = store.AppendToStreamAsync(stream, testEvents.Length, testEvents);
                 Assert.That(write2.Wait(Timeout));
 
-                var missed = store.ReadAllEventsForwardAsync(lastKnownPosition, int.MaxValue);
+                var missed = store.ReadAllEventsForwardAsync(lastKnownPosition, int.MaxValue, false);
                 Assert.That(missed.Wait(Timeout));
 
                 var expected = testEvents.Concat(testEvents).ToArray();
-                var actual = catched.Concat(missed.Result.Events.Skip(1)).ToArray();//skip 1 because readallforward is inclusive
+                var actual = catched.Concat(missed.Result.Events.Skip(1).Select(x => x.Event)).ToArray();//skip 1 because readallforward is inclusive
                 Assert.That(TestEventsComparer.Equal(expected, actual));
             }
         }

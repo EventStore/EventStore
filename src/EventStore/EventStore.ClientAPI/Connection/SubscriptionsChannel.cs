@@ -195,8 +195,8 @@ namespace EventStore.ClientAPI.Connection
                     {
                         var dto = package.Data.Deserialize<ClientMessage.StreamEventAppeared>();
                         var recordedEvent = new RecordedEvent(dto);
-                        var commitPos = dto.CommitPosition;
-                        var preparePos = dto.PreparePosition;
+                        var commitPos = dto.Event.CommitPosition;
+                        var preparePos = dto.Event.PreparePosition;
                         ExecuteUserCallbackAsync(() => subscription.EventAppeared(recordedEvent, new Position(commitPos, preparePos)));
                         break;
                     }

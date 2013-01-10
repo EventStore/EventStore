@@ -111,7 +111,11 @@ namespace EventStore.ClientAPI.ClientOperations
             if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
             {
                 if (_result != null)
-                    _source.SetResult(new AllEventsSlice(new Position(_result.NextCommitPosition, _result.NextPreparePosition), _result.Events));
+                {
+                    _source.SetResult(
+                        new AllEventsSlice(new Position(_result.NextCommitPosition, _result.NextPreparePosition), 
+                                                     _result.Events));
+                }
                 else
                     _source.SetException(new NoResultException());
             }

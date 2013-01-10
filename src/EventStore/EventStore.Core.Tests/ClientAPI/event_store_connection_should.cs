@@ -117,11 +117,11 @@ namespace EventStore.Core.Tests.ClientAPI
             Assert.Throws<InvalidOperationException>(() => connection.ReadEventStreamBackward(s, 0, 1));
             Assert.Throws<InvalidOperationException>(() => connection.ReadEventStreamBackwardAsync(s, 0, 1));
 
-            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsForward(Position.Start, 1));
-            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsForwardAsync(Position.Start, 1));
+            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsForward(Position.Start, 1, false));
+            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsForwardAsync(Position.Start, 1, false));
 
-            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsBackward(Position.End, 1));
-            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsBackwardAsync(Position.End, 1));
+            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsBackward(Position.End, 1, false));
+            Assert.Throws<InvalidOperationException>(() => connection.ReadAllEventsBackwardAsync(Position.End, 1, false));
 
             Assert.Throws<InvalidOperationException>(() => connection.StartTransaction(s, 0));
             Assert.Throws<InvalidOperationException>(() => connection.StartTransactionAsync(s, 0));

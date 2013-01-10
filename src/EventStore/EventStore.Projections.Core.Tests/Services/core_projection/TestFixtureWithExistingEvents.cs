@@ -43,6 +43,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
@@ -164,7 +165,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                                     message.EventStreamId,
                                     message.FromEventNumber == -1 ? (list.IsEmpty() ? -1 : list.Last().EventNumber) : message.FromEventNumber,
                                     message.MaxCount,
-                                    StreamResult.Success,
+                                    ReadStreamResult.Success,
                                     records,
                                     string.Empty,
                                     nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber - 1 : -1,
@@ -181,7 +182,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                                     message.CorrelationId,
                                     message.EventStreamId,
                                     new EventLinkPair[0],
-                                    RangeReadResult.Success,
+                                    ReadStreamResult.Success,
                                     nextEventNumber: -1,
                                     lastEventNumber: list.Safe().Last().EventNumber,
                                     isEndOfStream: true,// NOTE AN: don't know how to correctly determine this here

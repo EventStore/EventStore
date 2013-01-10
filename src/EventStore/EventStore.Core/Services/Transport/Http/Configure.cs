@@ -35,6 +35,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Transport.Http;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -107,12 +108,12 @@ namespace EventStore.Core.Services.Transport.Http
 
             switch (completed.Result)
             {
-                case SingleReadResult.Success:
+                case ReadEventResult.Success:
                     return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
-                case SingleReadResult.NotFound:
-                case SingleReadResult.NoStream:
+                case ReadEventResult.NotFound:
+                case ReadEventResult.NoStream:
                     return NotFound();
-                case SingleReadResult.StreamDeleted:
+                case ReadEventResult.StreamDeleted:
                     return Gone();
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -129,19 +130,19 @@ namespace EventStore.Core.Services.Transport.Http
 
             switch (msg.Result)
             {
-                case StreamResult.Success:
+                case ReadStreamResult.Success:
                 {
                     if (msg.LastEventNumber >= msg.FromEventNumber && !headOfStream)
                         return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
                     return OkNoCache(entity.ResponseCodec.ContentType, msg.LastEventNumber.ToString(CultureInfo.InvariantCulture));
                 }
-                case StreamResult.NoStream:
+                case ReadStreamResult.NoStream:
                     return NotFound();
-                case StreamResult.StreamDeleted:
+                case ReadStreamResult.StreamDeleted:
                     return Gone();
-                case StreamResult.NotModified:
+                case ReadStreamResult.NotModified:
                     return NotModified();
-                case StreamResult.Error:
+                case ReadStreamResult.Error:
                     return InternalServerError(msg.Message);
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -292,7 +293,7 @@ namespace EventStore.Core.Services.Transport.Http
                 return InternalServerError("Failed to read all events forward.");
             if (msg.NotModified)
                 return NotModified();
-            if (!headOfTf && msg.Result.Records.Length == msg.Result.MaxCount)
+            if (!headOfTf && msg.Result.Events.Length == msg.Result.MaxCount)
                 return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
             return OkNoCache(entity.ResponseCodec.ContentType, msg.Result.TfEofPosition.ToString(CultureInfo.InvariantCulture));
         }

@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
 
-            if (message.Result.Records.Length == 0)
+            if (message.Result.Events.Length == 0)
             {
                 // the end
                 if (_deliverEndOfTfPosition)
@@ -94,9 +94,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             else
             {
-                for (int index = 0; index < message.Result.Records.Length; index++)
+                for (int index = 0; index < message.Result.Events.Length; index++)
                 {
-                    var @event = message.Result.Records[index];
+                    var @event = message.Result.Events[index];
                     DeliverEvent(@event, message.Result.TfEofPosition);
                 }
                 _from = message.Result.NextPos;
@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (_pauseRequested)
                 _paused = true;
-            else if (message.Result.Records.Length == 0)
+            else if (message.Result.Events.Length == 0)
                 RequestEvents(delay: true);
             else
                 _publisher.Publish(CreateTickMessage());
@@ -158,7 +158,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     null, int.MinValue, false, null, lastPosition.PreparePosition, 100.0f)); //TODO: check was is passed here
         }
 
-        private void DeliverEvent(ResolvedEventRecord @event, long lastCommitPosition)
+        private void DeliverEvent(EventLinkPositionedPair @event, long lastCommitPosition)
         {
             EventRecord positionEvent = (@event.Link ?? @event.Event);
             var receivedPosition = new EventPosition(@event.CommitPosition, positionEvent.LogPosition);

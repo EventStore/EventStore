@@ -32,6 +32,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Http.Controllers;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -58,11 +59,11 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     switch (completed.Result)
                     {
-                        case SingleReadResult.Success:
+                        case ReadEventResult.Success:
                             return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.UserHostName, embed));
-                        case SingleReadResult.NotFound:
-                        case SingleReadResult.NoStream:
-                        case SingleReadResult.StreamDeleted:
+                        case ReadEventResult.NotFound:
+                        case ReadEventResult.NoStream:
+                        case ReadEventResult.StreamDeleted:
                             return string.Empty;
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -80,12 +81,12 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     switch (completed.Result)
                     {
-                        case StreamResult.Success:
+                        case ReadStreamResult.Success:
                             return entity.ResponseCodec.To(Convert.ToReadStreamFeed(completed, entity.UserHostName, embed, headOfStream));
-                        case StreamResult.NoStream:
-                        case StreamResult.StreamDeleted:
-                        case StreamResult.NotModified:
-                        case StreamResult.Error:
+                        case ReadStreamResult.NoStream:
+                        case ReadStreamResult.StreamDeleted:
+                        case ReadStreamResult.NotModified:
+                        case ReadStreamResult.Error:
                             return string.Empty;
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -150,12 +151,12 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 switch (completed.Result)
                 {
-                    case SingleReadResult.Success:
+                    case ReadEventResult.Success:
                         return AutoEventConverter.SmartFormat(completed, entity.ResponseCodec);
 
-                    case SingleReadResult.NotFound:
-                    case SingleReadResult.NoStream:
-                    case SingleReadResult.StreamDeleted:
+                    case ReadEventResult.NotFound:
+                    case ReadEventResult.NoStream:
+                    case ReadEventResult.StreamDeleted:
                         return string.Empty;
                     default:
                         throw new ArgumentOutOfRangeException();

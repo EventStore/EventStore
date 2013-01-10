@@ -39,6 +39,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Services.Management
 {
@@ -358,7 +359,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void LoadProjectionListCompleted(
             ClientMessage.ReadStreamEventsBackwardCompleted completed, int requestedFrom)
         {
-            if (completed.Result == StreamResult.Success && completed.Events.Length > 0)
+            if (completed.Result == ReadStreamResult.Success && completed.Events.Length > 0)
             {
                 if (completed.NextEventNumber != -1)
                     BeginLoadProjectionList(@from: completed.NextEventNumber);

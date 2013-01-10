@@ -36,6 +36,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -119,7 +120,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eventsRequested.Remove(message.EventStreamId);
             switch (message.Result)
             {
-                case StreamResult.NoStream:
+                case ReadStreamResult.NoStream:
                     _eofs[message.EventStreamId] = true;
                     UpdateSafePositionToJoin(message.EventStreamId, message.LastCommitPosition);
                     ProcessBuffers();
@@ -131,7 +132,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     CheckIdle();
                     CheckEof();
                     break;
-                case StreamResult.Success:
+                case ReadStreamResult.Success:
                     if (message.Events.Length == 0)
                     {
                         // the end

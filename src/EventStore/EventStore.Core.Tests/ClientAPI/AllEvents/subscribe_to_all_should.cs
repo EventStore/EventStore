@@ -71,6 +71,8 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
+                Thread.Sleep(100);
+
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.IsTrue(create.Wait(Timeout), "StreamCreateAsync timed out.");
 
@@ -93,7 +95,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
                 store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
 
-                Thread.Sleep(10);
+                Thread.Sleep(100);
 
                 store.UnsubscribeFromAllStreamsAsync();
 

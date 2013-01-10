@@ -341,9 +341,9 @@ namespace EventStore.TestClient.Commands.DvuBasic
             Action<TcpTypedConnection<byte[]>, TcpPackage> packageReceived = (conn, pkg) =>
             {
                 var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
-                switch ((SingleReadResult)dto.Result)
+                switch ((ReadEventResult)dto.Result)
                 {
-                    case SingleReadResult.Success:
+                    case ReadEventResult.Success:
                         if (Equal(_streams[streamIdx], eventidx, dto.Event.Event.EventType, dto.Event.Event.Data))
                         {
                             successes++;
@@ -356,9 +356,9 @@ namespace EventStore.TestClient.Commands.DvuBasic
                             status.ReportReadError(readerIdx, _streams[streamIdx], eventidx);
                         }
                         break;
-                    case SingleReadResult.NotFound:
-                    case SingleReadResult.NoStream:
-                    case SingleReadResult.StreamDeleted:
+                    case ReadEventResult.NotFound:
+                    case ReadEventResult.NoStream:
+                    case ReadEventResult.StreamDeleted:
                         fails++;
                         status.ReportNotFoundOnRead(readerIdx, _streams[streamIdx], eventidx);
                         break;
