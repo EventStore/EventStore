@@ -126,7 +126,6 @@ namespace EventStore.ClientAPI.ClientOperations
                     _source.SetResult(new EventStreamSlice(StatusCode.Convert(_result.Result),
                                                            _stream,
                                                            _fromEventNumber,
-                                                           _maxCount,
                                                            _result.Events,
                                                            _result.NextEventNumber,
                                                            _result.LastEventNumber,

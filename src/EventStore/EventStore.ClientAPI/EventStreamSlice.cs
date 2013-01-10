@@ -52,11 +52,6 @@ namespace EventStore.ClientAPI
         public readonly int FromEventNumber;
 
         /// <summary>
-        /// The maximum number of items requested in this read operation.
-        /// </summary>
-        public readonly int MaxCount;
-
-        /// <summary>
         /// The events read represented as <see cref="RecordedEvent"/>
         /// </summary>
         public readonly ResolvedEvent[] Events;
@@ -79,7 +74,6 @@ namespace EventStore.ClientAPI
         internal EventStreamSlice(SliceReadStatus status, 
                                   string stream, 
                                   int fromEventNumber, 
-                                  int maxCount, 
                                   ClientMessage.ResolvedIndexedEvent[] events,
                                   int nextEventNumber,
                                   int lastEventNumber,
@@ -90,7 +84,6 @@ namespace EventStore.ClientAPI
             Status = status;
             Stream = stream;
             FromEventNumber = fromEventNumber;
-            MaxCount = maxCount;
             if (events == null || events.Length == 0)
                 Events = ResolvedEvent.EmptyArray;
             else
