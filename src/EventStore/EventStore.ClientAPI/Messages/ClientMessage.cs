@@ -662,20 +662,30 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
+  [Serializable, ProtoContract(Name=@"SubscribedToStream")]
+  public partial class SubscribedToStream
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long CommitPosition;
+  
+    private SubscribedToStream() {}
+  
+    public SubscribedToStream(long commitPosition)
+    {
+        CommitPosition = commitPosition;
+    }
+  }
+  
   [Serializable, ProtoContract(Name=@"StreamEventAppeared")]
   public partial class StreamEventAppeared
   {
-    [ProtoMember(1, IsRequired = true, Name=@"event_stream_id", DataFormat = DataFormat.Default)]
-    public readonly string EventStreamId;
-  
-    [ProtoMember(2, IsRequired = true, Name=@"event", DataFormat = DataFormat.Default)]
+    [ProtoMember(1, IsRequired = true, Name=@"event", DataFormat = DataFormat.Default)]
     public readonly ResolvedEvent Event;
   
     private StreamEventAppeared() {}
   
-    public StreamEventAppeared(string eventStreamId, ResolvedEvent @event)
+    public StreamEventAppeared(ResolvedEvent @event)
     {
-        EventStreamId = eventStreamId;
         Event = @event;
     }
   }

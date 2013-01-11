@@ -112,7 +112,9 @@ namespace EventStore.Core.Services
 
         public void Handle(ClientMessage.SubscribeToStream message)
         {
+            var subscribedMessage = new ClientMessage.SubscribedToStream(message.CorrelationId, _readIndex.LastCommitPosition);
             SubscribeToStream(message.EventStreamId, message.CorrelationId, message.Connection, message.ResolveLinkTos);
+            message.Connection.SendMessage(subscribedMessage);
         }
 
         public void Handle(ClientMessage.UnsubscribeFromStream message)
@@ -142,7 +144,7 @@ namespace EventStore.Core.Services
         {
             Subscription subscription;
             if (_subscriptionsByCorrelationId.TryGetValue(correlationId, out subscription))
-                DropSubscription(subscription);
+                DropSubscription(subscription, sendDropNotification: true);
         }
 
         public void Handle(StorageMessage.EventCommited message)
@@ -168,7 +170,7 @@ namespace EventStore.Core.Services
                         _lastResolvedPair = pair = _lastResolvedPair ?? ResolveLinkToEvent(message.Event, message.CommitPosition);
 
                     subscription.Connection.SendMessage(
-                        new ClientMessage.StreamEventAppeared(subscription.CorrelationId, message.Event.EventStreamId, pair));
+                        new ClientMessage.StreamEventAppeared(subscription.CorrelationId, pair));
                 }
                 else
                 {
@@ -178,7 +180,7 @@ namespace EventStore.Core.Services
 
             for (int i = 0, n = _pendingUnsubscribe.Count; i < n; i++)
             {
-                DropSubscription(_pendingUnsubscribe[i]);
+                DropSubscription(_pendingUnsubscribe[i], sendDropNotification: true);
             }
             _pendingUnsubscribe.Clear();
         }
@@ -205,10 +207,13 @@ namespace EventStore.Core.Services
             return new ResolvedEvent(eventRecord, null, commitPosition);
         }
 
-        private void DropSubscription(Subscription subscription)
+        private void DropSubscription(Subscription subscription, bool sendDropNotification)
         {
-            subscription.Connection.SendMessage(
-                new ClientMessage.SubscriptionDropped(subscription.CorrelationId, subscription.EventStreamId));
+            if (sendDropNotification)
+            {
+                subscription.Connection.SendMessage(
+                    new ClientMessage.SubscriptionDropped(subscription.CorrelationId, subscription.EventStreamId));
+            }
 
             List<Subscription> subscriptions;
             if (_subscriptionGroupsByStream.TryGetValue(subscription.EventStreamId, out subscriptions))

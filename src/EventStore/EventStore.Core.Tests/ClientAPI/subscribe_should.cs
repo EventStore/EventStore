@@ -113,7 +113,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                using (var subscription = store.SubscribeToStream(stream, false, eventAppeared, subscriptionDropped))
+                using (var subscription = store.SubscribeToStream(stream, false, eventAppeared, subscriptionDropped).Result)
                 {
                     Assert.IsFalse(appeared.Wait(100), "Some event appeared!");
                     subscription.Unsubscribe();

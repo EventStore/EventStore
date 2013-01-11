@@ -75,9 +75,10 @@ namespace EventStore.ClientAPI.SystemData
         ReadAllEventsBackwardCompleted = 0xB9,
 
         SubscribeToStream = 0xC0,
-        UnsubscribeFromStream = 0xC1,
-        StreamEventAppeared = 0xC4,
-        SubscriptionDropped = 0xC5,
+        SubscribedToStream = 0xC1,
+        StreamEventAppeared = 0xC2,
+        UnsubscribeFromStream = 0xC3,
+        SubscriptionDropped = 0xC4,
 
         ScavengeDatabase = 0xD0,
 

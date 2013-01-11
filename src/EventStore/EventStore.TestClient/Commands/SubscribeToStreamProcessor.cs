@@ -60,7 +60,7 @@ namespace EventStore.TestClient.Commands
                                                  + "\tEventType:     {2}\n"
                                                  + "\tData:          {3}\n"
                                                  + "\tMetadata:      {4}\n",
-                                                 dto.EventStreamId,
+                                                 dto.Event.Event.EventStreamId,
                                                  dto.Event.Event.EventNumber,
                                                  dto.Event.Event.EventType,
                                                  Encoding.UTF8.GetString(dto.Event.Event.Data ?? new byte[0]),

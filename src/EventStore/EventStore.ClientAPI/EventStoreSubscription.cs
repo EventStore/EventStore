@@ -42,13 +42,23 @@ namespace EventStore.ClientAPI
     {
         public bool SubscriptionToAll { get { return _streamId == string.Empty; } }
         public string StreamId { get { return _streamId; } }
+        public long FromCommitPosition
+        {
+            get
+            {
+                if (_commitPosition < 0)
+                    throw new InvalidOperationException("CommitPosition wasn't set yet.");
+                return _commitPosition;
+            }
+        }
 
         private readonly Guid _correlationId;
         private readonly string _streamId;
         private readonly SubscriptionsChannel _subscriptionsChannel;
         private readonly Action<ResolvedEvent> _eventAppeared;
         private readonly Action _subscriptionDropped;
-
+        
+        private long _commitPosition = -1;
         private volatile int _unsubscribed;
 
         internal EventStoreSubscription(Guid correlationId, 
@@ -88,6 +98,11 @@ namespace EventStore.ClientAPI
                 _subscriptionDropped();
             }
 #pragma warning restore 420
+        }
+
+        internal void SetCommitPosition(long commitPosition)
+        {
+            _commitPosition = commitPosition;
         }
 
         internal void EventAppeared(ResolvedEvent @event)

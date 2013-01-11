@@ -193,9 +193,12 @@ message SubscribeToStream {
 	required bool resolve_link_tos = 2;
 }
 
+message SubscribedToStream {
+	required int64 commit_position = 1;
+}
+
 message StreamEventAppeared {
-	required string event_stream_id = 1;
-	required ResolvedEvent event = 2;
+	required ResolvedEvent event = 1;
 }
 
 message UnsubscribeFromStream {

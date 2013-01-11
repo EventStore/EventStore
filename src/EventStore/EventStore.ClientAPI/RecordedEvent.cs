@@ -77,18 +77,5 @@ namespace EventStore.ClientAPI
             Data = systemRecord.Data;
             Metadata = systemRecord.Metadata;
         }
-
-        internal RecordedEvent(ClientMessage.StreamEventAppeared streamEvent)
-        {
-            EventStreamId = streamEvent.EventStreamId;
-
-            EventId = new Guid(streamEvent.Event.Event.EventId);
-            EventNumber = streamEvent.Event.Event.EventNumber;
-
-            EventType = streamEvent.Event.Event.EventType;
-
-            Data = streamEvent.Event.Event.Data;
-            Metadata = streamEvent.Event.Event.Metadata;
-        }
     }
 }

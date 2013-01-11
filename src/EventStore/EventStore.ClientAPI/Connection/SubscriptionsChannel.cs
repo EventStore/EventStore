@@ -30,7 +30,9 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
@@ -50,7 +52,7 @@ namespace EventStore.ClientAPI.Connection
         private readonly ManualResetEventSlim _connectedEvent = new ManualResetEventSlim(false);
         private readonly object _subscriptionChannelLock = new object();
         private readonly Common.Concurrent.ConcurrentQueue<Action> _executionQueue = new Common.Concurrent.ConcurrentQueue<Action>(); 
-        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, EventStoreSubscription> _subscriptions = new System.Collections.Concurrent.ConcurrentDictionary<Guid, EventStoreSubscription>();
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, SubscriptionTaskPair> _subscriptions = new System.Collections.Concurrent.ConcurrentDictionary<Guid, SubscriptionTaskPair>();
         private int _workerRunning;
 
         public SubscriptionsChannel(TcpConnector connector)
@@ -68,19 +70,20 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public EventStoreSubscription Subscribe(string streamId, bool resolveLinkTos, Action<ResolvedEvent> eventAppeared, Action subscriptionDropped)
+        public Task<EventStoreSubscription> Subscribe(string streamId, bool resolveLinkTos, Action<ResolvedEvent> eventAppeared, Action subscriptionDropped)
         {
             var id = Guid.NewGuid();
 
             var eventStoreSubscription = new EventStoreSubscription(id, streamId, this, eventAppeared, subscriptionDropped);
-            if (!_subscriptions.TryAdd(id, eventStoreSubscription))
+            var subscriptionTaskPair = new SubscriptionTaskPair(eventStoreSubscription);
+            if (!_subscriptions.TryAdd(id, subscriptionTaskPair))
                 throw new Exception("Failed to add subscription. Concurrency failure.");
 
             var subscribe = new ClientMessage.SubscribeToStream(streamId, resolveLinkTos);
             var pkg = new TcpPackage(TcpCommand.SubscribeToStream, id, subscribe.Serialize());
             _connection.EnqueueSend(pkg.AsByteArray());
 
-            return eventStoreSubscription;
+            return subscriptionTaskPair.TaskCompletionSource.Task;
         }
 
         public void Unsubscribe(Guid correlationId)
@@ -96,10 +99,10 @@ namespace EventStore.ClientAPI.Connection
 
         private bool DropSubscription(Guid correlationId)
         {
-            EventStoreSubscription eventStoreSubscription;
-            if (_subscriptions.TryRemove(correlationId, out eventStoreSubscription))
+            SubscriptionTaskPair subscription;
+            if (_subscriptions.TryRemove(correlationId, out subscription))
             {
-                ExecuteUserCallbackAsync(eventStoreSubscription.SubscriptionDropped);
+                ExecuteUserCallbackAsync(subscription.Subscription.SubscriptionDropped);
                 return true;
             }
             return false;
@@ -140,7 +143,7 @@ namespace EventStore.ClientAPI.Connection
 
         private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
         {
-            EventStoreSubscription subscription;
+            SubscriptionTaskPair subscription;
             if (!_subscriptions.TryGetValue(package.CorrelationId, out subscription))
             {
                 _log.Error("Unexpected package received : {0} ({1})", package.CorrelationId, package.Command);
@@ -151,10 +154,17 @@ namespace EventStore.ClientAPI.Connection
             {
                 switch (package.Command)
                 {
+                    case TcpCommand.SubscribedToStream:
+                    {
+                        var dto = package.Data.Deserialize<ClientMessage.SubscribedToStream>();
+                        subscription.Subscription.SetCommitPosition(dto.CommitPosition);
+                        subscription.TaskCompletionSource.SetResult(subscription.Subscription);
+                        break;
+                    }
                     case TcpCommand.StreamEventAppeared:
                     {
                         var dto = package.Data.Deserialize<ClientMessage.StreamEventAppeared>();
-                        ExecuteUserCallbackAsync(() => subscription.EventAppeared(new ResolvedEvent(dto.Event)));
+                        ExecuteUserCallbackAsync(() => subscription.Subscription.EventAppeared(new ResolvedEvent(dto.Event)));
                         break;
                     }
                     case TcpCommand.SubscriptionDropped:
@@ -207,6 +217,19 @@ namespace EventStore.ClientAPI.Connection
         private void Connect(IPEndPoint endPoint)
         {
             _connection = _connector.CreateTcpConnection(endPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
+        }
+
+        private class SubscriptionTaskPair
+        {
+            public TaskCompletionSource<EventStoreSubscription> TaskCompletionSource;
+            public readonly EventStoreSubscription Subscription;
+
+            public SubscriptionTaskPair(EventStoreSubscription subscription)
+            {
+                Ensure.NotNull(subscription, "subscription");
+                Subscription = subscription;
+                TaskCompletionSource = new TaskCompletionSource<EventStoreSubscription>();
+            }
         }
     }
 }

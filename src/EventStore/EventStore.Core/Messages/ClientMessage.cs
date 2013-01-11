@@ -742,16 +742,26 @@ namespace EventStore.Core.Messages
             }
         }
 
+        public class SubscribedToStream : Message
+        {
+            public readonly Guid CorrelationId;
+            public readonly long CommitPosition;
+
+            public SubscribedToStream(Guid correlationId, long commitPosition)
+            {
+                CorrelationId = correlationId;
+                CommitPosition = commitPosition;    
+            }
+        }
+
         public class StreamEventAppeared : Message
         {
             public readonly Guid CorrelationId;
-            public readonly string EventStreamId;
             public readonly ResolvedEvent Event;
 
-            public StreamEventAppeared(Guid correlationId, string eventStreamId, ResolvedEvent @event)
+            public StreamEventAppeared(Guid correlationId, ResolvedEvent @event)
             {
                 CorrelationId = correlationId;
-                EventStreamId = eventStreamId;
                 Event = @event;
             }
         }

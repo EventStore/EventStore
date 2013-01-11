@@ -357,7 +357,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                                                                       wasSubscribed = false;
                                                                       subscribed.Set();
                                                                       dropped.Set();
-                                                                  }))
+                                                                  }).Result)
                 {
                     var testEvents = Enumerable.Range(1, 5).Select(x => new TestEvent(x.ToString())).ToArray();
                     var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);

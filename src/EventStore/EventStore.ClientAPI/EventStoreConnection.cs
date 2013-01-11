@@ -713,10 +713,10 @@ namespace EventStore.ClientAPI
             _queue.Enqueue(operation);
         }
 
-        public EventStoreSubscription SubscribeToStream(string stream, 
-                                                        bool resolveLinkTos, 
-                                                        Action<ResolvedEvent> eventAppeared, 
-                                                        Action subscriptionDropped = null)
+        public Task<EventStoreSubscription> SubscribeToStream(string stream, 
+                                                              bool resolveLinkTos, 
+                                                              Action<ResolvedEvent> eventAppeared, 
+                                                              Action subscriptionDropped = null)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
@@ -725,9 +725,9 @@ namespace EventStore.ClientAPI
             return _subscriptionsChannel.Subscribe(stream, resolveLinkTos, eventAppeared, subscriptionDropped);
         }
 
-        public EventStoreSubscription SubscribeToAll(bool resolveLinkTos, 
-                                                     Action<ResolvedEvent> eventAppeared, Action
-                                                     subscriptionDropped = null)
+        public Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos, 
+                                                           Action<ResolvedEvent> eventAppeared, Action
+                                                           subscriptionDropped = null)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
             EnsureActive();
