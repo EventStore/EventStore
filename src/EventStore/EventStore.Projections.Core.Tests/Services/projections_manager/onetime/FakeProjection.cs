@@ -35,10 +35,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 {
     public class FakeProjection : IProjectionStateHandler
     {
+        private readonly string _query;
         private readonly Action<string> _logger;
 
         public FakeProjection(string query, Action<string> logger)
         {
+            _query = query;
             _logger = logger;
         }
 
@@ -77,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             Guid eventid, int sequenceNumber, string metadata, string data, out string newState,
             out EmittedEvent[] emittedEvents)
         {
-            if (eventType == "fail")
+            if (eventType == "fail" || _query == "fail")
                 throw new Exception("failed");
             _logger("ProcessEvent(" + "..." + ")");
             newState = "{\"data\": 1}";

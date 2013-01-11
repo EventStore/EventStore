@@ -44,17 +44,23 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         public abstract class Base : TestFixtureWithProjectionCoreAndManagementServices
         {
             protected string _projectionName;
+            protected string _projectionSource;
 
             protected override void Given()
             {
                 base.Given();
-                _manager.Handle(new SystemMessage.BecomeWorking());
 
                 _projectionName = "test-projection";
+                _projectionSource = @"";
+            }
+
+            protected override void When()
+            {
+                _manager.Handle(new SystemMessage.BecomeWorking());
                 _manager.Handle(
                     new ProjectionManagementMessage.Post(
                         new PublishEnvelope(_bus), ProjectionMode.OneTime, _projectionName,
-                        "native:" + typeof(FakeProjection).AssemblyQualifiedName, @"", enabled: true,
+                        "native:" + typeof(FakeProjection).AssemblyQualifiedName, _projectionSource, enabled: true,
                         checkpointsEnabled: false, emitEnabled: false));
             }
         }
@@ -64,6 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         {
             protected override void When()
             {
+                base.When();
                 _manager.Handle(new ProjectionManagementMessage.GetQuery(new PublishEnvelope(_bus), _projectionName));
             }
 
@@ -83,6 +90,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         {
             protected override void When()
             {
+                base.When();
                 _manager.Handle(new ProjectionManagementMessage.GetState(new PublishEnvelope(_bus), _projectionName, ""));
             }
 
@@ -103,6 +111,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         {
             protected override void When()
             {
+                base.When();
                 var readerAssignedMessage =
                     _consumer.HandledMessages.OfType<ProjectionSubscriptionManagement.ReaderAssigned>().LastOrDefault();
                 Assert.IsNotNull(readerAssignedMessage);

@@ -38,25 +38,34 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 {
     public class a_failed_projection
     {
-        [TestFixture]
-        public class when_updating_query : a_new_posted_projection.Base
+        public abstract class Base : a_new_posted_projection.Base
         {
             protected override void Given()
             {
                 base.Given();
-                var readerAssignedMessage =
-                    _consumer.HandledMessages.OfType<ProjectionSubscriptionManagement.ReaderAssigned>().LastOrDefault();
-                Assert.IsNotNull(readerAssignedMessage);
-                var reader = readerAssignedMessage.ReaderId;
-
-                _bus.Publish(
-                    new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                        reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false,
-                        ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0]), 100, 33.3f));
+                _projectionSource = "fail";
             }
 
             protected override void When()
             {
+                base.When();
+                var readerAssignedMessage =
+                    _consumer.HandledMessages.OfType<ProjectionSubscriptionManagement.ReaderAssigned>().LastOrDefault();
+                Assert.IsNotNull(readerAssignedMessage);
+                var reader = readerAssignedMessage.ReaderId;
+                _bus.Publish(
+                    new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                        reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false,
+                        ResolvedEvent.Sample(Guid.NewGuid(), "event", false, new byte[0], new byte[0]), 100, 33.3f));
+            }
+        }
+
+        [TestFixture]
+        public class when_updating_query : Base
+        {
+            protected override void When()
+            {
+                base.When();
                 _manager.Handle(
                     new ProjectionManagementMessage.UpdateQuery(
                         new PublishEnvelope(_bus), _projectionName,
@@ -92,29 +101,16 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         }
 
         [TestFixture]
-        public class when_stopping : a_new_posted_projection.Base
+        public class when_stopping : Base
         {
-            protected override void Given()
-            {
-                base.Given();
-                var readerAssignedMessage =
-                    _consumer.HandledMessages.OfType<ProjectionSubscriptionManagement.ReaderAssigned>().LastOrDefault();
-                Assert.IsNotNull(readerAssignedMessage);
-                var reader = readerAssignedMessage.ReaderId;
-
-                _bus.Publish(
-                    new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                        reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false,
-                        ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0]), 100, 33.3f));
-            }
-
             protected override void When()
             {
+                base.When();
                 _manager.Handle(new ProjectionManagementMessage.Disable(new PublishEnvelope(_bus), _projectionName));
             }
 
             [Test]
-            public void the_projection_status_becomes_stopped_disabled()
+            public void the_projection_status_becomes_faulted_disabled()
             {
                 _manager.Handle(
                     new ProjectionManagementMessage.GetStatistics(
@@ -133,7 +129,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                              .Projections.Single()
                              .Name);
                 Assert.AreEqual(
-                    ManagedProjectionState.Stopped,
+                    ManagedProjectionState.Faulted,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
                              .Projections.Single()
@@ -148,29 +144,16 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         }
 
         [TestFixture]
-        public class when_starting : a_new_posted_projection.Base
+        public class when_starting : Base
         {
-            protected override void Given()
-            {
-                base.Given();
-                var readerAssignedMessage =
-                    _consumer.HandledMessages.OfType<ProjectionSubscriptionManagement.ReaderAssigned>().LastOrDefault();
-                Assert.IsNotNull(readerAssignedMessage);
-                var reader = readerAssignedMessage.ReaderId;
-
-                _bus.Publish(
-                    new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                        reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false,
-                        ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0]), 100, 33.3f));
-            }
-
             protected override void When()
             {
+                base.When();
                 _manager.Handle(new ProjectionManagementMessage.Enable(new PublishEnvelope(_bus), _projectionName));
             }
 
             [Test]
-            public void the_projection_status_becomes_running_enabled()
+            public void the_projection_status_remains_faulted_enabled()
             {
                 _manager.Handle(
                     new ProjectionManagementMessage.GetStatistics(
@@ -189,7 +172,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                              .Projections.Single()
                              .Name);
                 Assert.AreEqual(
-                    ManagedProjectionState.Running,
+                    ManagedProjectionState.Faulted,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
                              .Projections.Single()
