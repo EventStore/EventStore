@@ -172,6 +172,7 @@ namespace EventStore.Projections.Core.Services.Management
             }
             if (_state == ManagedProjectionState.Faulted)
                 status.StateReason = _faultedReason;
+            status.Enabled = Enabled;
             return status;
         }
 

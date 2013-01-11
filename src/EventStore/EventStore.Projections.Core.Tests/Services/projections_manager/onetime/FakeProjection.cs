@@ -35,8 +35,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 {
     public class FakeProjection : IProjectionStateHandler
     {
+        private readonly Action<string> _logger;
+
         public FakeProjection(string query, Action<string> logger)
         {
+            _logger = logger;
         }
 
         public void Dispose()
@@ -45,24 +48,27 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
         {
+            _logger("ConfigureSourceProcessingStrategy(" + builder + ")");
             builder.FromAll();
             builder.AllEvents();
         }
 
         public void Load(string state)
         {
+            _logger("Load(" + state + ")");
             throw new NotImplementedException();
         }
 
         public void Initialize()
         {
-            throw new NotImplementedException();
+            _logger("Initialize");
         }
 
         public string GetStatePartition(
             CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
             int sequenceNumber, string metadata, string data)
         {
+            _logger("GetStatePartition(" + "..." + ")");
             throw new NotImplementedException();
         }
 
@@ -71,7 +77,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             Guid eventid, int sequenceNumber, string metadata, string data, out string newState,
             out EmittedEvent[] emittedEvents)
         {
-            throw new NotImplementedException();
+            if (eventType == "fail")
+                throw new Exception("failed");
+            _logger("ProcessEvent(" + "..." + ")");
+            newState = "{\"data\": 1}";
+            emittedEvents = null;
+            return true;
         }
     }
 }

@@ -331,6 +331,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
+            if (_state == State.LoadStateRequsted || _state == State.StateLoaded)
+            {
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.StateReport(
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, null, new Exception("Not yet available")));
+                return;
+            }
             EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
