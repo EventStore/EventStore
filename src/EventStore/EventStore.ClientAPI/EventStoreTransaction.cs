@@ -37,8 +37,8 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class EventStoreTransaction : IDisposable
     {
-        internal readonly string Stream;
-        internal readonly long TransactionId;
+        public readonly string Stream;
+        public readonly long TransactionId;
 
         private readonly EventStoreConnection _connection;
         private bool _isRolledBack;
@@ -53,6 +53,8 @@ namespace EventStore.ClientAPI
         internal EventStoreTransaction(string stream, long transactionId, EventStoreConnection connection)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.Nonnegative(transactionId, "transactionId");
+
             Stream = stream;
             TransactionId = transactionId;
             _connection = connection;
