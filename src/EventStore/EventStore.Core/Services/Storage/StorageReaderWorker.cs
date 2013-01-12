@@ -97,7 +97,6 @@ namespace EventStore.Core.Services.Storage
                 }
 
                 var lastCommitPosition = _readIndex.LastCommitPosition;
-
                 var result = _readIndex.ReadStreamEventsForward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
                 if (result.Result == ReaderIndex.ReadStreamResult.Success && result.Records.Length > 1)
                 {

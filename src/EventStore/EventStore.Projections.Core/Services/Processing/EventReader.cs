@@ -28,6 +28,7 @@
 using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 
@@ -111,6 +112,15 @@ namespace EventStore.Projections.Core.Services.Processing
                 _publisher.Publish(new ProjectionCoreServiceMessage.EventReaderEof(_distibutionPointCorrelationId));
                 Dispose();
             }
+        }
+
+        protected static long? GetLastCommitPositionFrom(ClientMessage.ReadStreamEventsForwardCompleted msg)
+        {
+            return msg.IsEndOfStream 
+                   || msg.Result == ReadStreamResult.NoStream 
+                   || msg.Result == ReadStreamResult.StreamDeleted
+                        ? msg.LastCommitPosition
+                        : (long?) null;
         }
     }
 }

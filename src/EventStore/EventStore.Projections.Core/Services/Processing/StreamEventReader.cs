@@ -92,7 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (message.Result)
             {
                 case ReadStreamResult.NoStream:
-                    DeliverSafeJoinPosition(message.LastCommitPosition); // allow joining heading distribution
+                    DeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
                     if (_pauseRequested)
                         _paused = true;
                     else 
@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (message.Events.Length == 0)
                     {
                         // the end
-                        DeliverSafeJoinPosition(message.LastCommitPosition);
+                        DeliverSafeJoinPosition(message.LastCommitPosition/*GetLastCommitPositionFrom(message)*/);
                         SendIdle();
                         SendEof();
                     }

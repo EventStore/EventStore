@@ -56,9 +56,8 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override EventPosition? MessageToLastCommitPosition(
             ClientMessage.ReadStreamEventsForwardCompleted message)
         {
-            return message.IsEndOfStream || message.Result == ReadStreamResult.NoStream || message.Result == ReadStreamResult.StreamDeleted
-                       ? new EventPosition(message.LastCommitPosition, 0)
-                       : (EventPosition?)null;
+            var lastCommitPosition = GetLastCommitPositionFrom(message);
+            return lastCommitPosition.HasValue ? new EventPosition(message.LastCommitPosition, 0) : (EventPosition?)null;
         }
 
         protected override EventPosition GetItemPosition(Tuple<EventRecord, EventRecord, float> head)

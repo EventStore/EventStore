@@ -159,15 +159,15 @@ namespace EventStore.Projections.Core.Services.Management
             if (_lastReceivedStatistics == null)
             {
                 status = new ProjectionStatistics
-                    {Name = _name, Mode = GetMode(), Status = _state.EnumVaueName(), MasterStatus = _state};
+                    {Name = _name, Mode = GetMode(), Status = _state.EnumValueName(), MasterStatus = _state};
             }
             else
             {
                 status = _lastReceivedStatistics.Clone();
                 status.Mode = GetMode();
                 status.Name = _name;
-                status.Status = !status.Status.StartsWith(_state.EnumVaueName())
-                                    ? _state.EnumVaueName() + "/" + status.Status
+                status.Status = !status.Status.StartsWith(_state.EnumValueName())
+                                    ? _state.EnumValueName() + "/" + status.Status
                                     : status.Status;
                 status.MasterStatus = _state;
             }

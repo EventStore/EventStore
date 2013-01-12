@@ -245,7 +245,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void GetStatistics(ProjectionStatistics info)
         {
             _checkpointManager.GetStatistics(info);
-            info.Status = _state.EnumVaueName() + info.Status + _processingQueue.GetStatus();
+            info.Status = _state.EnumValueName() + info.Status + _processingQueue.GetStatus();
             info.Name = _name;
             info.StateReason = "";
             info.BufferedEvents = _processingQueue.GetBufferedEventCount();
