@@ -41,6 +41,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     {
         protected override void Given()
         {
+            NoStream("$projections-test-projection-order");
+            AllWritesToSucceed("$projections-test-projection-order");
             NoStream("$projections-test-projection-checkpoint");
             AllWritesSucceed();
         }

@@ -1,13 +1,13 @@
-﻿<h1>{{:Title}}</h1>
-{{if PositionStreamId != StreamId || PositionEventNumber != EventNumber}}
-<h2>Link From: {{>PositionEventNumber}}@{{>PositionStreamId}}</h2>
+﻿<h1>{{:title}}</h1>
+{{if positionStreamId != streamId || positionEventNumber != eventNumber}}
+<h2>Link From: {{>positionEventNumber}}@{{>positionStreamId}}</h2>
 {{/if}}
 <div>
     <a href="/streams/{{attr:positionStreamId}}/{{attr:positionEventNumber - 1}}">[Previous]</a> <a href="/streams/{{attr:positionStreamId}}/{{attr:positionEventNumber + 1}}">[Next]</a>
 </div>
 <div>
     {{for links}}
-    <div style="display: inline-block"><a href="{{:uri}}">[{{>relation}}{{if relation!=null && type!=null}}: {{/if}}{{>Type}}]</a></div>
+    <div style="display: inline-block"><a href="{{:uri}}">[{{>relation}}{{if relation!=null && type!=null}}: {{/if}}{{>type}}]</a></div>
     {{/for}}
 </div>
 <table class="table table-bordered table-striped">
@@ -30,4 +30,6 @@
 </table>
 <pre>{{:data}}</pre>
 <pre>{{:metaData}}</pre>
-
+{{if isLinkMetaData}}
+<pre>{{:linkMetaData}}</pre>
+{{/if}}

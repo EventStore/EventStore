@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
@@ -58,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         protected override IProjectionSubscription CreateProjectionSubscription()
         {
             return new EventReorderingProjectionSubscription(
-                _projectionCorrelationId,
+                _projectionCorrelationId, Guid.NewGuid(),
                 CheckpointTag.FromStreamPositions(
                     new Dictionary<string, int> {{"a", ExpectedVersion.NoStream}, {"b", ExpectedVersion.NoStream}}),
                 _eventHandler, _checkpointHandler, _progressHandler, _eofHandler, _checkpointStrategy,

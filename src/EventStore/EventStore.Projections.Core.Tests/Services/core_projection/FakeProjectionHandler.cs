@@ -100,7 +100,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         public string GetStatePartition(
-            string streamId, string eventType, string category, Guid eventid, int sequenceNumber, string metadata, string data)
+            CheckpointTag position, string streamId, string eventType, string category, Guid eventid, int sequenceNumber,
+            string metadata, string data)
         {
             if (_failOnGetPartition)
                 throw new Exception("GetStatePartition FAILED");

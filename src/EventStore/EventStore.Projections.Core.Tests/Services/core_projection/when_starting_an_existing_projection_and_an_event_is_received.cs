@@ -55,6 +55,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             ExistingEvent(
                 "$projections-projection-state", "StateUpdated",
                 @"{""CommitPosition"": 300, ""PreparePosition"": 250}", _testProjectionState);
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
         }
 
         protected override void When()
@@ -62,8 +64,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             var eventId = Guid.NewGuid();
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                    ResolvedEvent.Sample(eventId, "append", false, Encoding.UTF8.GetBytes("data"), Encoding.UTF8.GetBytes("metadata")), 0));
+                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
+                        eventId, "append", false, Encoding.UTF8.GetBytes("data"), Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
 

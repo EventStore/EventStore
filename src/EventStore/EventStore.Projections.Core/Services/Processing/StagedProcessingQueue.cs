@@ -148,6 +148,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!entry.Busy)
                 throw new InvalidOperationException("Task was not in progress");
             entry.Busy = false;
+            if (!_orderedStage[entry.ReadForStage] && !Equals(entry.BusyCorrelationId, newCorrelationId))
+                throw new InvalidOperationException("Cannot change busy correlation id at non-ordered stage");
             entry.BusyCorrelationId = newCorrelationId;
             if (readyForStage < 0)
                 RemoveCompletedTask(entry);

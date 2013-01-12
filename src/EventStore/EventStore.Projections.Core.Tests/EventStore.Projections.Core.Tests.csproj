@@ -119,8 +119,14 @@
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_stream_positions_when_updating.cs" />
     <Compile Include="Services\checkpoint_tag\checkpoint_tag_by_tf_position.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\TestFixtureWithMultiStreamCheckpointManager.cs" />
+    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_starting_with_prerecorded_events_after_the_last_checkpoint.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_checkpoint_requested_but_disabled.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit__with_committed_callback.cs" />
+    <Compile Include="Services\core_projection\TestFixtureUtils.cs" />
     <Compile Include="Services\core_projection\when_receiving_committed_event_the_projection_with_existing_partitioned_state_should.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_eof_for_all_streams_and_idle_eof.cs" />
+    <Compile Include="Services\event_reader\multi_stream_reader\when_handling_read_completed_for_all_streams_after_pause_requested.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_onetime_reader_handles_eof.cs" />
     <Compile Include="Services\event_reader\stream_reader\when_handling_eof_and_idle_eof.cs" />
     <Compile Include="Services\event_reader\stream_reader\when_onetime_reader_handles_eof.cs" />
@@ -147,8 +153,6 @@
     <Compile Include="Services\event_reordering_projection_subscription\when_handling_a_second_event_after_the_delay.cs" />
     <Compile Include="Services\event_reordering_projection_subscription\when_handling_two_subsequent_events.cs" />
     <Compile Include="Services\event_reordering_projection_subscription\when_receiving_multiple_events_not_passing_event_filter.cs" />
-    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\TestFixtureWithCoreProjectionMultiStreamCheckpointManager.cs" />
-    <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_multiple_event_processed_received.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\when_a_default_checkpoint_manager_has_been_reinitialized.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_expected_tag_the_started_in_recovery_stream.cs" />
     <Compile Include="Services\core_projection\TestCheckpointManagerMessageHandler.cs" />

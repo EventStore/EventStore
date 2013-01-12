@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
@@ -39,7 +40,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var settings = ConnectionSettings.Create()
                 .LimitReconnectionsTo(0)
-                .SetReconnectionDelayTo(TimeSpan.Zero);
+                .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(200));
 
             using (var connection = EventStoreConnection.Create(settings))
             {
@@ -59,7 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var settings = ConnectionSettings.Create()
                 .LimitReconnectionsTo(0)
-                .SetReconnectionDelayTo(TimeSpan.Zero);
+                .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(200));
 
             using (var connection = EventStoreConnection.Create(settings))
             {

@@ -47,6 +47,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.IncludeEvent("non-existing");
                 };
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
             NoStream(FakeProjectionStateHandler._emit1StreamId);
             AllWritesSucceed();
@@ -56,7 +58,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             //projection subscribes here
             _coreProjection.Handle(
-                new ProjectionSubscriptionMessage.CheckpointSuggested(Guid.Empty, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
+                new ProjectionSubscriptionMessage.CheckpointSuggested(
+                    Guid.Empty, _subscriptionId, CheckpointTag.FromPosition(140, 130), 55.5f, 0));
         }
 
         [Test]

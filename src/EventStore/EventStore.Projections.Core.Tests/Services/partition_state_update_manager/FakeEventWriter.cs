@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
             get { return _writes; }
         }
 
-        public void EmitEvents(EmittedEvent[] events)
+        public void ValidateOrderAndEmitEvents(EmittedEvent[] events)
         {
             Writes.Add(events);
         }

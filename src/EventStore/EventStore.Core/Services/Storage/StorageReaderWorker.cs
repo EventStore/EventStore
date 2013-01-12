@@ -129,7 +129,7 @@ namespace EventStore.Core.Services.Storage
                                                                        result.NextEventNumber,
                                                                        result.LastEventNumber,
                                                                        result.IsEndOfStream,
-                                                                       result.IsEndOfStream ? lastCommitPosition : (long?)null));
+                                                                       lastCommitPosition));
             }
             catch (Exception exc)
             {
@@ -190,7 +190,7 @@ namespace EventStore.Core.Services.Storage
                                                                         result.NextEventNumber,
                                                                         result.LastEventNumber,
                                                                         result.IsEndOfStream,
-                                                                        result.IsEndOfStream ? lastCommitPosition : (long?)null));
+                                                                        lastCommitPosition));
             }
             catch (Exception exc)
             {

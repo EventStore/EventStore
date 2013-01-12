@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
@@ -38,6 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         {
             _projection = @"
                 fromAll().partitionBy(function(event){
+                    log(JSON.parse(event.position).commitPosition + '/' + JSON.parse(event.position).preparePosition);
                     return event.body.region;
                 }).whenAny(function(event, state) {
                     return {};
@@ -49,9 +51,20 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         public void get_state_partition_returns_correct_result()
         {
             var result = _stateHandler.GetStatePartition(
-                "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata", @"{""region"":""Europe""}");
+                CheckpointTag.FromPosition(100, 50), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                @"{""region"":""Europe""}");
 
             Assert.AreEqual("Europe", result);
+        }
+
+        [Test]
+        public void partition_by_function_receives_correct_position()
+        {
+            var result = _stateHandler.GetStatePartition(
+                CheckpointTag.FromPosition(100, 50), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                @"{""region"":""Europe""}");
+
+            Assert.AreEqual("100/50", _logged[0]);
         }
 
     }
