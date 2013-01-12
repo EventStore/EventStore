@@ -84,8 +84,8 @@ namespace EventStore.Core.Services.Storage
             Writer = writer;
             Writer.Open();
 
-            _writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: true, slowMsgThresholdMs: TimeSpan.FromMilliseconds(500));
-            _storageWriterQueue = new QueuedHandler(_writerBus, "StorageWriterQueue", watchSlowMsg: false);
+            _writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
+            _storageWriterQueue = new QueuedHandler(_writerBus, "StorageWriterQueue", true, TimeSpan.FromMilliseconds(500));
             _storageWriterQueue.Start();
 
             SubscribeToMessage<SystemMessage.SystemInit>();

@@ -52,13 +52,13 @@ namespace EventStore.Core.Bus
         private readonly bool _watchSlowMsg;
         private readonly TimeSpan _slowMsgThreshold;
 
-        public InMemoryBus(string name, bool watchSlowMsg = true, TimeSpan? slowMsgThresholdMs = null)
+        public InMemoryBus(string name, bool watchSlowMsg = true, TimeSpan? slowMsgThreshold = null)
         {
             _typeHash = new Dictionary<Type, List<IMessageHandler>>();
 
             Name = name;
             _watchSlowMsg = watchSlowMsg;
-            _slowMsgThreshold = slowMsgThresholdMs ?? DefaultSlowMessageThreshold;
+            _slowMsgThreshold = slowMsgThreshold ?? DefaultSlowMessageThreshold;
         }
 
         public void Subscribe<T>(IHandle<T> handler) where T : Message
