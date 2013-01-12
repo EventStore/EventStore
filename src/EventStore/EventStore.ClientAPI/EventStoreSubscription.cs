@@ -45,7 +45,7 @@ namespace EventStore.ClientAPI
         {
             get
             {
-                if (_commitPosition < 0)
+                if (_commitPosition == long.MinValue)
                     throw new InvalidOperationException("Subscription wasn't confirmed yet.");
                 return _commitPosition;
             }
@@ -54,7 +54,7 @@ namespace EventStore.ClientAPI
         {
             get
             {
-                if (_commitPosition < 0)
+                if (_commitPosition == long.MinValue)
                     throw new InvalidOperationException("Subscription wasn't confirmed yet.");
                 return _eventNumber;
             }
@@ -66,7 +66,7 @@ namespace EventStore.ClientAPI
         private readonly Action<ResolvedEvent> _eventAppeared;
         private readonly Action _subscriptionDropped;
         
-        private long _commitPosition = -1;
+        private long _commitPosition = long.MinValue;
         private int? _eventNumber;
         private volatile int _unsubscribed;
 
@@ -111,7 +111,8 @@ namespace EventStore.ClientAPI
 
         internal void ConfirmSubscription(long commitPosition, int? eventNumber)
         {
-            Ensure.Nonnegative(commitPosition, "commitPosition");
+            if (commitPosition < -1)
+                throw new ArgumentOutOfRangeException("commitPosition", string.Format("Invalid commitPosition {0} on subscription confirmation.", commitPosition));
 
             _commitPosition = commitPosition;
             _eventNumber = eventNumber;

@@ -48,9 +48,9 @@ namespace EventStore.Common.Utils
         {
             if (collection == null)
                 return true;
-            var list = collection as IList;
-            if (list != null)
-                return list.Count == 0;
+            var coll = collection as ICollection;
+            if (coll != null)
+                return coll.Count == 0;
             return !collection.Any();
         }
 

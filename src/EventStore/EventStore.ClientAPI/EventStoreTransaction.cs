@@ -25,7 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -64,10 +63,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         public void Commit()
         {
-            if(_isRolledBack) throw new InvalidOperationException("Can't commit a rolledback transaction");
-            if(_isCommitted) throw new InvalidOperationException("Transaction is already committed");
-            _connection.CommitTransaction(this);
-            _isCommitted = true;
+            CommitAsync().Wait();
         }
 
         /// <summary>
@@ -76,37 +72,43 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="Task"/> the caller can use to control the async operation</returns>
         public Task CommitAsync()
         {
-            if (_isRolledBack) throw new InvalidOperationException("can't commit a rolledback transaction");
-            if (_isCommitted) throw new InvalidOperationException("transaction is already committed");
+            if (_isRolledBack) throw new InvalidOperationException("Can't commit a rolledback transaction");
+            if (_isCommitted) throw new InvalidOperationException("Transaction is already committed");
             _isCommitted = true;
             return _connection.CommitTransactionAsync(this);
         }
 
-
         /// <summary>
-        /// Starts a transaction in the event store on a given stream synchronously
+        /// Writes to a transaction in the event store asynchronously
         /// </summary>
-        /// <remarks>
-        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
-        /// round trips over long periods of time between the caller and the event store. This method
-        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
-        /// </remarks>
         /// <param name="events">The events to write</param>
         public void Write(IEnumerable<IEvent> events)
         {
-            if (_isRolledBack) throw new InvalidOperationException("can't write to a rolledback transaction");
-            if (_isCommitted) throw new InvalidOperationException("Transaction is already committed");
-            _connection.TransactionalWrite(this, events);
+            WriteAsync(events).Wait();
         }
 
         /// <summary>
-        /// Starts a transaction in the event store on a given stream asynchronously
+        /// Writes to a transaction in the event store asynchronously
         /// </summary>
-        /// <remarks>
-        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
-        /// round trips over long periods of time between the caller and the event store. This method
-        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
-        /// </remarks>
+        /// <param name="events">The events to write</param>
+        public void Write(params IEvent[] events)
+        {
+            WriteAsync((IEnumerable<IEvent>)events).Wait();
+        }
+
+        /// <summary>
+        /// Writes to a transaction in the event store asynchronously
+        /// </summary>
+        /// <param name="events">The events to write</param>
+        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
+        public Task WriteAsync(params IEvent[] events)
+        {
+            return WriteAsync((IEnumerable<IEvent>)events);
+        }
+
+        /// <summary>
+        /// Writes to a transaction in the event store asynchronously
+        /// </summary>
         /// <param name="events">The events to write</param>
         /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
         public Task WriteAsync(IEnumerable<IEvent> events)
@@ -130,7 +132,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         public void Dispose()
         {
-            if(!_isCommitted)
+            if (!_isCommitted)
                 _isRolledBack = true;
         }
     }

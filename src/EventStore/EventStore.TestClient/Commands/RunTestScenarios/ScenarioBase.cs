@@ -558,7 +558,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 if (writtenCount == eventCount)
                 {
-                    var commitTask = store.CommitTransactionAsync(transaction);
+                    var commitTask = transaction.CommitAsync();
                     commitTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                     commitTask.ContinueWith(t =>
                     {
@@ -570,7 +570,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 writtenCount += 1;
 
-                var writeTask = store.TransactionalWriteAsync(transaction, new[] { createEvent(writtenCount) });
+                var writeTask = transaction.WriteAsync(createEvent(writtenCount));
                 writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 writeTask.ContinueWith(writeTransactionEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
             };

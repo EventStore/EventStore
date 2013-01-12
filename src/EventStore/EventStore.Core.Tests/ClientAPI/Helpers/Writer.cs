@@ -72,31 +72,29 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
         public OngoingTransaction StartTransaction(int expectedVersion)
         {
-            return new OngoingTransaction(_store, _store.StartTransaction(_stream, expectedVersion));
+            return new OngoingTransaction(_store.StartTransaction(_stream, expectedVersion));
         }
     }
 
     //TODO GFY this should be removed and megrged with the public idea of a transaction.
     internal class OngoingTransaction
     {
-        private readonly EventStoreConnection _store;
         private readonly EventStoreTransaction _transaction;
 
-        public OngoingTransaction(EventStoreConnection store, EventStoreTransaction transaction)
+        public OngoingTransaction(EventStoreTransaction transaction)
         {
-            _store = store;
             _transaction = transaction;
         }
 
-        public OngoingTransaction Write(params TestEvent[] events)
+        public OngoingTransaction Write(params IEvent[] events)
         {
-            _store.TransactionalWrite(_transaction, events);
+            _transaction.Write(events);
             return this;
         }
 
         public void Commit()
         {
-            _store.CommitTransaction(_transaction);
+            _transaction.Commit();
         }
     }
 }
