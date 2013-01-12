@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             AddUnwrapper(TcpCommand.SubscribeToStream, UnwrapSubscribeToStream);
             AddUnwrapper(TcpCommand.UnsubscribeFromStream, UnwrapUnsubscribeFromStream);
 
-            AddWrapper<ClientMessage.SubscribedToStream>(WrapSubscribedToStream);
+            AddWrapper<ClientMessage.SubscriptionConfirmation>(WrapSubscribedToStream);
             AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppeared);
             AddWrapper<ClientMessage.SubscriptionDropped>(WrapSubscriptionDropped);
             
@@ -438,10 +438,10 @@ namespace EventStore.Core.Services.Transport.Tcp
             return new ClientMessage.UnsubscribeFromStream(package.CorrelationId);
         }
 
-        private TcpPackage WrapSubscribedToStream(ClientMessage.SubscribedToStream msg)
+        private TcpPackage WrapSubscribedToStream(ClientMessage.SubscriptionConfirmation msg)
         {
-            var dto = new TcpClientMessageDto.SubscribedToStream(msg.CommitPosition);
-            return new TcpPackage(TcpCommand.SubscribedToStream, msg.CorrelationId, dto.Serialize());
+            var dto = new TcpClientMessageDto.SubscriptionConfirmation(msg.LastCommitPosition, msg.LastEventNumber);
+            return new TcpPackage(TcpCommand.SubscriptionConfirmation, msg.CorrelationId, dto.Serialize());
         }
 
         private TcpPackage WrapStreamEventAppeared(ClientMessage.StreamEventAppeared msg)

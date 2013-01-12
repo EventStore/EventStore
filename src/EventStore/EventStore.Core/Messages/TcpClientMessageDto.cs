@@ -662,17 +662,21 @@ namespace EventStore.Core.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"SubscribedToStream")]
-  public partial class SubscribedToStream
+  [Serializable, ProtoContract(Name=@"SubscriptionConfirmation")]
+  public partial class SubscriptionConfirmation
   {
-    [ProtoMember(1, IsRequired = true, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long CommitPosition;
+    [ProtoMember(1, IsRequired = true, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long LastCommitPosition;
   
-    private SubscribedToStream() {}
+    [ProtoMember(2, IsRequired = false, Name=@"last_event_number", DataFormat = DataFormat.TwosComplement)]
+    public readonly int? LastEventNumber;
   
-    public SubscribedToStream(long commitPosition)
+    private SubscriptionConfirmation() {}
+  
+    public SubscriptionConfirmation(long lastCommitPosition, int? lastEventNumber)
     {
-        CommitPosition = commitPosition;
+        LastCommitPosition = lastCommitPosition;
+        LastEventNumber = lastEventNumber;
     }
   }
   

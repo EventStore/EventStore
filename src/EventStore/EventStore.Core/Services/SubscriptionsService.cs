@@ -112,7 +112,10 @@ namespace EventStore.Core.Services
 
         public void Handle(ClientMessage.SubscribeToStream message)
         {
-            var subscribedMessage = new ClientMessage.SubscribedToStream(message.CorrelationId, _readIndex.LastCommitPosition);
+            var lastEventNumber = message.EventStreamId.IsEmptyString()
+                                          ? (int?) null
+                                          : _readIndex.GetLastStreamEventNumber(message.EventStreamId);
+            var subscribedMessage = new ClientMessage.SubscriptionConfirmation(message.CorrelationId, _readIndex.LastCommitPosition, lastEventNumber);
             SubscribeToStream(message.EventStreamId, message.CorrelationId, message.Connection, message.ResolveLinkTos);
             message.Connection.SendMessage(subscribedMessage);
         }

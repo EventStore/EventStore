@@ -27,28 +27,36 @@
 //  
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Connection;
 
 namespace EventStore.ClientAPI
 {
     /// <summary>
-    /// Represents a multi-request transaction with the Event Store
+    /// Represents a subscription to some particular stream or to all possible streams within the Event Store
     /// </summary>
     public class EventStoreSubscription : IDisposable
     {
-        public bool SubscriptionToAll { get { return _streamId == string.Empty; } }
+        public bool IsSubscribedToAll { get { return _streamId == string.Empty; } }
         public string StreamId { get { return _streamId; } }
-        public long FromCommitPosition
+
+        public long LastCommitPosition
         {
             get
             {
                 if (_commitPosition < 0)
-                    throw new InvalidOperationException("CommitPosition wasn't set yet.");
+                    throw new InvalidOperationException("Subscription wasn't confirmed yet.");
                 return _commitPosition;
+            }
+        }
+        public int? LastEventNumber
+        {
+            get
+            {
+                if (_commitPosition < 0)
+                    throw new InvalidOperationException("Subscription wasn't confirmed yet.");
+                return _eventNumber;
             }
         }
 
@@ -59,6 +67,7 @@ namespace EventStore.ClientAPI
         private readonly Action _subscriptionDropped;
         
         private long _commitPosition = -1;
+        private int? _eventNumber;
         private volatile int _unsubscribed;
 
         internal EventStoreSubscription(Guid correlationId, 
@@ -100,9 +109,12 @@ namespace EventStore.ClientAPI
 #pragma warning restore 420
         }
 
-        internal void SetCommitPosition(long commitPosition)
+        internal void ConfirmSubscription(long commitPosition, int? eventNumber)
         {
+            Ensure.Nonnegative(commitPosition, "commitPosition");
+
             _commitPosition = commitPosition;
+            _eventNumber = eventNumber;
         }
 
         internal void EventAppeared(ResolvedEvent @event)

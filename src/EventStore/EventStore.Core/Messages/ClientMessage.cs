@@ -742,15 +742,17 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class SubscribedToStream : Message
+        public class SubscriptionConfirmation : Message
         {
             public readonly Guid CorrelationId;
-            public readonly long CommitPosition;
+            public readonly long LastCommitPosition;
+            public readonly int? LastEventNumber;
 
-            public SubscribedToStream(Guid correlationId, long commitPosition)
+            public SubscriptionConfirmation(Guid correlationId, long lastCommitPosition, int? lastEventNumber)
             {
                 CorrelationId = correlationId;
-                CommitPosition = commitPosition;    
+                LastCommitPosition = lastCommitPosition;
+                LastEventNumber = lastEventNumber;
             }
         }
 

@@ -154,10 +154,10 @@ namespace EventStore.ClientAPI.Connection
             {
                 switch (package.Command)
                 {
-                    case TcpCommand.SubscribedToStream:
+                    case TcpCommand.SubscriptionConfirmation:
                     {
-                        var dto = package.Data.Deserialize<ClientMessage.SubscribedToStream>();
-                        subscription.Subscription.SetCommitPosition(dto.CommitPosition);
+                        var dto = package.Data.Deserialize<ClientMessage.SubscriptionConfirmation>();
+                        subscription.Subscription.ConfirmSubscription(dto.LastCommitPosition, dto.LastEventNumber);
                         subscription.TaskCompletionSource.SetResult(subscription.Subscription);
                         break;
                     }

@@ -193,8 +193,9 @@ message SubscribeToStream {
 	required bool resolve_link_tos = 2;
 }
 
-message SubscribedToStream {
-	required int64 commit_position = 1;
+message SubscriptionConfirmation {
+	required int64 last_commit_position = 1;
+	optional int32 last_event_number = 2;
 }
 
 message StreamEventAppeared {
