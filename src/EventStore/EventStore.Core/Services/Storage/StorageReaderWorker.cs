@@ -128,7 +128,12 @@ namespace EventStore.Core.Services.Storage
                                                                        result.NextEventNumber,
                                                                        result.LastEventNumber,
                                                                        result.IsEndOfStream,
-                                                                       result.IsEndOfStream ? lastCommitPosition : (long?)null));
+                                                                       (result.IsEndOfStream
+                                                                        || result.Result == RangeReadResult.NoStream
+                                                                        || result.Result
+                                                                        == RangeReadResult.StreamDeleted)
+                                                                           ? lastCommitPosition
+                                                                           : (long?) null));
             }
             catch (Exception exc)
             {

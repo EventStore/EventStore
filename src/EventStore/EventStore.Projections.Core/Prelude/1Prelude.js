@@ -34,12 +34,12 @@ function scope($on, $notify) {
                 return eventProcessor.commandHandlers.initialize_raw();
             },
 
-            get_state_partition: function (json, streamId, eventType, category, sequenceNumber, metadata) {
-                return eventProcessor.commandHandlers.get_state_partition_raw(json, streamId, eventType, category, sequenceNumber, metadata);
+            get_state_partition: function (json, streamId, eventType, category, sequenceNumber, metadata, position) {
+                return eventProcessor.commandHandlers.get_state_partition_raw(json, streamId, eventType, category, sequenceNumber, metadata, position);
             },
         
-            process_event: function(json, streamId, eventType, category, sequenceNumber, metadata, partition) {
-                return eventProcessor.commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata, partition);
+            process_event: function(json, streamId, eventType, category, sequenceNumber, metadata, partition, position) {
+                return eventProcessor.commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata, partition, position);
             }, 
 
             get_state: function() {

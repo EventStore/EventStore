@@ -47,6 +47,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             _stateHandler = new FakeProjectionStateHandler(failOnLoad: true);
         }
 
@@ -55,9 +57,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             //projection subscribes here
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                                        Encoding.UTF8.GetBytes("metadata")), 0));
+                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
+                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]
@@ -69,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void not_emit_a_state_updated_event()
         {
-            Assert.AreEqual(0, _writeEventHandler.HandledMessages.Count);
+            Assert.AreEqual(0, _writeEventHandler.HandledMessages.OfEventType("StateUpdate").Count());
         }
     }
 }

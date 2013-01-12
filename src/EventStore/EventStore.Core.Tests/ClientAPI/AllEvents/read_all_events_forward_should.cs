@@ -359,7 +359,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.That(write.Wait(Timeout));
 
-                Assert.IsTrue(subscribed.Wait(5000), "Subscription haven't happened in time.");
+                Assert.IsTrue(subscribed.Wait(10000), "Subscription haven't happened in time.");
                 Assert.IsTrue(wasSubscribed, "Subscription failed.");
                 Assert.NotNull(lastKnownPosition, "Last know position should not be null.");
 

@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         public void it_can_be_created()
         {
             var ps = new EventReorderingProjectionSubscription(
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
+                Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(),
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(),
                 new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         public void null_event_handler_throws_argument_null_exception()
         {
             var ps = new EventReorderingProjectionSubscription(
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), null,
+                Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), null,
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(),
                 new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
                 new TestHandler<ProjectionSubscriptionMessage.EofReached>(), 
@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         public void null_ceckpoint_handler_throws_argument_null_exception()
         {
             var ps = new EventReorderingProjectionSubscription(
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
+                Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(), null,
                 new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
                 new TestHandler<ProjectionSubscriptionMessage.EofReached>(), 
@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         public void null_progress_handler_throws_argument_null_exception()
         {
             var ps = new EventReorderingProjectionSubscription(
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
+                Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(),
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(), null,
                 new TestHandler<ProjectionSubscriptionMessage.EofReached>(), 
@@ -90,7 +90,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         public void null_eof_handler_throws_argument_null_exception()
         {
             var ps = new EventReorderingProjectionSubscription(
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
+                Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(),
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(), 
                 new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
@@ -102,7 +102,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         public void null_describe_source_throws_argument_null_exception()
         {
             var ps = new EventReorderingProjectionSubscription(
-                Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
+                Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(),
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(),
                 new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(), 

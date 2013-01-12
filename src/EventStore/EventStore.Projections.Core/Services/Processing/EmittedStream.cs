@@ -58,13 +58,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly int _maxWriteBatchLength;
         private CheckpointTag _lastSubmittedOrCommittedMetadata; // TODO: rename
         private Event[] _submittedToWriteEvents;
+        private EmittedEvent[] _submittedToWriteEmittedEvents;
         private int _lastKnownEventNumber = ExpectedVersion.Invalid;
+        private readonly bool _noCheckpoints;
 
 
         public EmittedStream(
             string streamId, CheckpointTag zeroPosition, IPublisher publisher,
             IProjectionCheckpointManager readyHandler,
-            int maxWriteBatchLength, ILogger logger = null)
+            int maxWriteBatchLength, ILogger logger = null, bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -76,6 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readyHandler = readyHandler;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;
+            _noCheckpoints = noCheckpoints;
         }
 
         public void EmitEvents(EmittedEvent[] events)
@@ -91,6 +94,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Checkpoint()
         {
+            EnsureCheckpointsEnabled();
             EnsureStreamStarted();
             EnsureCheckpointNotRequested();
             _checkpointRequested = true;
@@ -129,6 +133,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _lastKnownEventNumber = message.FirstEventNumber + _submittedToWriteEvents.Length - 1
                                         + (_lastKnownEventNumber == ExpectedVersion.NoStream ? 1 : 0); // account for stream crated
+                NotifyEventsCommitted(_submittedToWriteEmittedEvents);
                 OnWriteCompleted();
                 return;
             }
@@ -201,6 +206,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void SubmitWriteEvents()
         {
             var events = new List<Event>();
+            var emittedEvents = new List<EmittedEvent>();
             while (_pendingWrites.Count > 0 && events.Count < _maxWriteBatchLength)
             {
                 var eventsToWrite = _pendingWrites.Dequeue();
@@ -220,9 +226,12 @@ namespace EventStore.Projections.Core.Services.Processing
                         }
                     _lastSubmittedOrCommittedMetadata = causedByTag;
                     events.Add(new Event(e.EventId, e.EventType, true, e.Data, e.CausedByTag.ToJsonBytes()));
+                    emittedEvents.Add(e);
                 }
             }
             _submittedToWriteEvents = events.ToArray();
+            _submittedToWriteEmittedEvents = emittedEvents.ToArray();
+
             PublishWriteEvents();
         }
 
@@ -267,8 +276,15 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_checkpointRequested && !_awaitingWriteCompleted && _pendingWrites.Count == 0)
             {
+                EnsureCheckpointsEnabled();
                 _readyHandler.Handle(new CoreProjectionProcessingMessage.ReadyForCheckpoint(this));
             }
+        }
+
+        private void EnsureCheckpointsEnabled()
+        {
+            if (_noCheckpoints)
+                throw new InvalidOperationException("Checkpoints disabled");
         }
 
         private void SubmitWriteEventsInRecovery()
@@ -281,9 +297,18 @@ namespace EventStore.Projections.Core.Services.Processing
                     SubmitWriteEvents();
                     return;
                 }
+                
+                NotifyEventsCommitted(eventsToWrite);
                 _pendingWrites.Dequeue(); // drop already committed event
             }
             OnWriteCompleted();
+        }
+
+        private static void NotifyEventsCommitted(EmittedEvent[] eventsToWrite)
+        {
+            foreach (var @event in eventsToWrite)
+                if (@event.OnCommitted != null)
+                    @event.OnCommitted();
         }
     }
 }

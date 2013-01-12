@@ -28,8 +28,8 @@
 
 using System;
 using System.Collections.Generic;
-using EventStore.Core.Bus;
 using System.Linq;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
@@ -90,7 +90,8 @@ namespace EventStore.Projections.Core.Services.Processing
             return _streams == null || _streams.Count <= 1;
         }
 
-        public EventReader CreatePausedEventReader(Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof)
+        public EventReader CreatePausedEventReader(
+            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof)
         {
             if (_allStreams && _useEventIndexes && _events != null && _events.Count == 1)
             {
@@ -100,8 +101,9 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
-                return CreatePausedMultiStreamEventReader(
-                    eventReaderId, publisher, checkpointTag, stopOnEof, resolveLinkTos: true, streams: GetEventIndexStreams());
+                IEnumerable<string> streams = GetEventIndexStreams();
+                return CreatePausedEventIndexEventReader(
+                    eventReaderId, publisher, checkpointTag, stopOnEof, true, streams);
             }
             if (_allStreams)
             {
@@ -127,7 +129,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_streams != null && _streams.Count > 1)
             {
                 return CreatePausedMultiStreamEventReader(
-                    eventReaderId, publisher, checkpointTag, stopOnEof, resolveLinkTos: true, streams: _streams);
+                    eventReaderId, publisher, checkpointTag, stopOnEof, true, _streams);
             }
             throw new NotSupportedException();
         }
@@ -144,16 +146,26 @@ namespace EventStore.Projections.Core.Services.Processing
             return eventReader;
         }
 
-        private EventReader CreatePausedMultiStreamEventReader(
+        private static EventReader CreatePausedEventIndexEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, bool resolveLinkTos,
             IEnumerable<string> streams)
         {
             var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
 
-            var eventReader = new MultiStreamEventReader(
+            return new EventIndexEventReader(
                 publisher, eventReaderId, streams.ToArray(), nextPositions, resolveLinkTos, new RealTimeProvider(),
                 stopOnEof);
-            return eventReader;
+        }
+
+        private static EventReader CreatePausedMultiStreamEventReader(
+            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, bool resolveLinkTos,
+            IEnumerable<string> streams)
+        {
+            var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
+
+            return new MultiStreamEventReader(
+                publisher, eventReaderId, streams.ToArray(), nextPositions, resolveLinkTos, new RealTimeProvider(),
+                stopOnEof);
         }
 
         private CheckpointStrategy(
@@ -235,50 +247,48 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
             ICoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
-            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> requestResponseDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> responseDispatcher,
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name, ProjectionNamesBuilder namingBuilder)
         {
             var emitPartitionCheckpoints = UseCheckpoints && !EmitStateUpdated && (_byCustomPartitions || _byStream);
+
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
-                if (emitPartitionCheckpoints)
-                    throw new InvalidOperationException("Partition checkpoints cannot be used");
-                return new MultiStreamSingleOutputStreamCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated);
+                return new MultiStreamMultiOutputCheckpointManager(
+                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated,
+                    emitPartitionCheckpoints);
             }
             else if (_streams != null && _streams.Count > 1)
             {
-                if (emitPartitionCheckpoints)
-                    throw new InvalidOperationException("Partition checkpoints cannot be used");
-                return new MultiStreamSingleOutputStreamCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated);
+                return new MultiStreamMultiOutputCheckpointManager(
+                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated,
+                    emitPartitionCheckpoints);
             }
             else
             {
-                string projectionCheckpointStreamId = namingBuilder.MakeCheckpointStreamName();
-
                 return new DefaultCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, projectionCheckpointStreamId, name, PositionTagger, namingBuilder, UseCheckpoints,
-                    EmitStateUpdated, emitPartitionCheckpoints);
+                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated,
+                    emitPartitionCheckpoints);
             }
         }
 
         public IProjectionSubscription CreateProjectionSubscription(
-            CheckpointTag fromCheckpointTag, Guid projectionCorrelationId, ICoreProjection projection,
-            long checkpointUnhandledBytesThreshold, bool stopOnEof)
+            CheckpointTag fromCheckpointTag, Guid projectionCorrelationId, Guid subscriptionId,
+            ICoreProjection projection, long checkpointUnhandledBytesThreshold, bool stopOnEof)
         {
             if (_reorderEvents)
                 return new EventReorderingProjectionSubscription(
-                    projectionCorrelationId, fromCheckpointTag, projection, projection, projection, projection, this,
-                    checkpointUnhandledBytesThreshold, _processingLag, stopOnEof);
+                    projectionCorrelationId, subscriptionId, fromCheckpointTag, projection, projection, projection,
+                    projection, this, checkpointUnhandledBytesThreshold, _processingLag, stopOnEof);
             else
                 return new ProjectionSubscription(
-                    projectionCorrelationId, fromCheckpointTag, projection, projection, projection, projection, this,
-                    checkpointUnhandledBytesThreshold, stopOnEof);
+                    projectionCorrelationId, subscriptionId, fromCheckpointTag, projection, projection, projection,
+                    projection, this, checkpointUnhandledBytesThreshold, stopOnEof);
         }
     }
 }

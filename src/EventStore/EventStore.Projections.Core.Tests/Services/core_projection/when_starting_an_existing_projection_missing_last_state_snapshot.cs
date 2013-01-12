@@ -51,15 +51,19 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             ExistingEvent(
                 FakeProjectionStateHandler._emit1StreamId, FakeProjectionStateHandler._emit1EventType,
                 @"{""CommitPosition"": 120, ""PreparePosition"": 110}", FakeProjectionStateHandler._emit1Data);
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
         }
 
         protected override void When()
         {
             //projection subscribes here
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                       ResolvedEvent.Sample(_causedByEventId, "emit1_type", false, Encoding.UTF8.GetBytes("data"),
-                                           Encoding.UTF8.GetBytes("metadata")), 0));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
+                        _causedByEventId, "emit1_type", false, Encoding.UTF8.GetBytes("data"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]

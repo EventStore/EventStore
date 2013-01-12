@@ -112,6 +112,7 @@
     <Compile Include="Services\Processing\CommittedEventWorkItem.cs" />
     <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\DefaultCheckpointManager.cs" />
+    <Compile Include="Services\Processing\EventIndexEventReader.cs" />
     <Compile Include="Services\Processing\EventProcessedResult.cs" />
     <Compile Include="Services\Processing\EventReorderingProjectionSubscription.cs" />
     <Compile Include="Services\Processing\GetStateWorkItem.cs" />
@@ -119,7 +120,8 @@
     <Compile Include="Services\Processing\IEventWriter.cs" />
     <Compile Include="Services\Processing\IndexedEventTypeEventFilter.cs" />
     <Compile Include="Services\Processing\IndexedEventTypesEventFilter.cs" />
-    <Compile Include="Services\Processing\MultiStreamSingleOutputStreamCheckpointManager.cs" />
+    <Compile Include="Services\Processing\MultiStreamEventReaderBase.cs" />
+    <Compile Include="Services\Processing\MultiStreamMultiOutputCheckpointManager.cs" />
     <Compile Include="Services\Processing\CoreProjectionQueue.cs" />
     <Compile Include="Services\Processing\EventReader.cs" />
     <Compile Include="Services\Processing\IProjectionSubscription.cs" />

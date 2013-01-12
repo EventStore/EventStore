@@ -11,10 +11,10 @@
         <td><a href="{{:id}}">{{:eventNumber}}@{{>streamId}}</a></td>
         <td>{{:eventType}}</td>
         <td>{{:~formatDate(updated)}}</td>
-        <td>{{if (isJson || isMetaData)}}<a href="#" class="json-expand">json >></a>{{/if}}</td>
+        <td>{{if (isJson || isMetaData || isLinkMetaData)}}<a href="#" class="json-expand">json >></a>{{/if}}</td>
     </tr>
     <tr style="display: none;">
-        <td colspan="5"><pre>{{:data}}</pre><pre>{{:metaData}}</pre></td>
+        <td colspan="5"><pre>{{:data}}</pre><pre>{{:metaData}}</pre>{{if isLinkMetaData}}<pre>{{:linkMetaData}}</pre>{{/if}}</td>
     </tr>
     {{/for}}
 </table>
