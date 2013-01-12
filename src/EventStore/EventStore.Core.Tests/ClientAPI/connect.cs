@@ -59,8 +59,8 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_close_connection_after_configured_amount_of_failed_reconnections()
         {
             var settings = ConnectionSettings.Create()
-                .LimitReconnectionsTo(0)
-                .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(200));
+                                             .LimitReconnectionsTo(0)
+                                             .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(200));
 
             using (var connection = EventStoreConnection.Create(settings))
             {
@@ -68,9 +68,23 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 Thread.Sleep(4000); //Ensure reconnection attempt
 
-                Assert.Throws<InvalidOperationException>(
-                    () => connection.CreateStream("stream", Guid.NewGuid(), false, new byte[0]),
-                        "EventStoreConnection [127.0.0.1:12348] is not active.");
+                try
+                {
+                    connection.CreateStream("stream", Guid.NewGuid(), false, new byte[0]);
+                }
+                catch (InvalidOperationException exc)
+                {
+                    Assert.AreEqual("EventStoreConnection [127.0.0.1:12348] is not active.", exc.Message);
+                }
+                catch (AggregateException exc)
+                {
+                    Assert.IsInstanceOf<InvalidOperationException>(exc.Flatten().InnerException);
+                    Assert.AreEqual("EventStoreConnection [127.0.0.1:12348] is not active.", exc.Flatten().InnerException.Message);
+                }
+                catch (Exception exc)
+                {
+                    Assert.Fail("Unexpected exception thrown: {0}", exc);
+                }
             }
         }
     }
