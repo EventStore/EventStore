@@ -42,7 +42,12 @@ namespace EventStore.ClientAPI
         public readonly ReadDirection ReadDirection;
 
         /// <summary>
-        /// A <see cref="NextPosition"/> representing the position where the next slice should be read from.
+        /// A <see cref="Position"/> representing the position where this slice was read from.
+        /// </summary>
+        public readonly Position FromPosition;
+
+        /// <summary>
+        /// A <see cref="Position"/> representing the position where the next slice should be read from.
         /// </summary>
         public readonly Position NextPosition;
 
@@ -51,9 +56,10 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly ResolvedEvent[] Events;
 
-        internal AllEventsSlice(ReadDirection readDirection, Position nextPosition, ClientMessage.ResolvedEvent[] events)
+        internal AllEventsSlice(ReadDirection readDirection, Position fromPosition, Position nextPosition, ClientMessage.ResolvedEvent[] events)
         {
             ReadDirection = readDirection;
+            FromPosition = fromPosition;
             NextPosition = nextPosition;
             if (events == null)
                 Events = EmptyEvents;

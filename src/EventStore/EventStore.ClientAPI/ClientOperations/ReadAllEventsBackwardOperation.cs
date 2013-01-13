@@ -112,7 +112,8 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 if (_result != null)
                 {
-                    _source.SetResult(new AllEventsSlice(ReadDirection.Backward, 
+                    _source.SetResult(new AllEventsSlice(ReadDirection.Backward,
+                                                         new Position(_result.CommitPosition, _result.PreparePosition),
                                                          new Position(_result.NextCommitPosition, _result.NextPreparePosition), 
                                                          _result.Events));
                 }
