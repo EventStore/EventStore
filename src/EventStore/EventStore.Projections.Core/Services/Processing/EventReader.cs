@@ -116,10 +116,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected static long? GetLastCommitPositionFrom(ClientMessage.ReadStreamEventsForwardCompleted msg)
         {
-            return msg.IsEndOfStream 
+            return (msg.IsEndOfStream 
                    || msg.Result == ReadStreamResult.NoStream 
-                   || msg.Result == ReadStreamResult.StreamDeleted
-                        ? msg.LastCommitPosition
+                   || msg.Result == ReadStreamResult.StreamDeleted)
+                   ? (msg.LastCommitPosition == -1 ? (long?) null : msg.LastCommitPosition)
                         : (long?) null;
         }
     }
