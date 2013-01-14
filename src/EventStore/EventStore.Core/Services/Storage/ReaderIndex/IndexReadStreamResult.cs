@@ -27,24 +27,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Result = result;
             NextEventNumber = -1;
             LastEventNumber = -1;
-            IsEndOfStream = false;
+            IsEndOfStream = true;
             Records = ReadIndex.EmptyRecords;
         }
 
         public IndexReadStreamResult(int fromEventNumber, 
-                                int maxCount, 
-                                ReadStreamResult result, 
-                                EventRecord[] records, 
-                                int nextEventNumber, 
-                                int lastEventNumber, 
-                                bool isEndOfStream)
+                                     int maxCount, 
+                                     EventRecord[] records, 
+                                     int nextEventNumber, 
+                                     int lastEventNumber, 
+                                     bool isEndOfStream)
         {
             Ensure.NotNull(records, "records");
 
             FromEventNumber = fromEventNumber;
             MaxCount = maxCount;
 
-            Result = result;
+            Result = ReadStreamResult.Success;
             Records = records;
             NextEventNumber = nextEventNumber;
             LastEventNumber = lastEventNumber;

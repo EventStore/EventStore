@@ -83,6 +83,7 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward message)
         {
+            var lastCommitPosition = _readIndex.LastCommitPosition;
             try
             {
                 if (message.ValidationStreamVersion.HasValue
@@ -92,11 +93,11 @@ namespace EventStore.Core.Services.Storage
                         ClientMessage.ReadStreamEventsForwardCompleted.NotModified(message.CorrelationId,
                                                                                    message.EventStreamId,
                                                                                    message.FromEventNumber,
-                                                                                   message.MaxCount));
+                                                                                   message.MaxCount,
+                                                                                   lastCommitPosition));
                     return;
                 }
 
-                var lastCommitPosition = _readIndex.LastCommitPosition;
                 var result = _readIndex.ReadStreamEventsForward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
                 if (result.Result == ReaderIndex.ReadStreamResult.Success && result.Records.Length > 1)
                 {
@@ -137,13 +138,15 @@ namespace EventStore.Core.Services.Storage
                                                                            message.EventStreamId,
                                                                            message.FromEventNumber,
                                                                            message.MaxCount,
-                                                                           exc.Message));
+                                                                           exc.Message,
+                                                                           lastCommitPosition));
                 Log.ErrorException(exc, "Error during processing ReadStreamEventsForward request.");
             }
         }
 
         void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward message)
         {
+            var lastCommitPosition = _readIndex.LastCommitPosition;
             try
             {
                 if (message.ValidationStreamVersion.HasValue
@@ -153,11 +156,11 @@ namespace EventStore.Core.Services.Storage
                         ClientMessage.ReadStreamEventsBackwardCompleted.NotModified(message.CorrelationId,
                                                                                     message.EventStreamId,
                                                                                     message.FromEventNumber,
-                                                                                    message.MaxCount));
+                                                                                    message.MaxCount,
+                                                                                    lastCommitPosition));
                     return;
                 }
 
-                var lastCommitPosition = _readIndex.LastCommitPosition;
                 var result = _readIndex.ReadStreamEventsBackward(message.EventStreamId, message.FromEventNumber, message.MaxCount);
                 if (result.Result == ReaderIndex.ReadStreamResult.Success && result.Records.Length > 1)
                 {
@@ -166,8 +169,7 @@ namespace EventStore.Core.Services.Storage
                     {
                         if (records[index].EventNumber != records[index - 1].EventNumber - 1)
                         {
-                            throw new Exception(string.Format(
-                                                              "Invalid order of events has been detected in read index for the event stream '{0}'. "
+                            throw new Exception(string.Format("Invalid order of events has been detected in read index for the event stream '{0}'. "
                                                               + "The event {1} at position {2} goes after the event {3} at position {4}",
                                                               message.EventStreamId,
                                                               records[index].EventNumber,
@@ -198,7 +200,8 @@ namespace EventStore.Core.Services.Storage
                                                                             message.EventStreamId,
                                                                             message.FromEventNumber,
                                                                             message.MaxCount,
-                                                                            exc.Message));
+                                                                            exc.Message,
+                                                                            lastCommitPosition));
                 Log.ErrorException(exc, "Error during processing ReadStreamEventsForward request.");
             }
         }

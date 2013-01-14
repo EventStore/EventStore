@@ -41,5 +41,53 @@ namespace EventStore.ClientAPI
             CommitPosition = commitPosition;
             PreparePosition = preparePosition;
         }
+
+        public static bool operator <(Position p1, Position p2)
+        {
+            return p1.CommitPosition < p2.CommitPosition || (p1.CommitPosition == p2.CommitPosition && p1.PreparePosition < p2.PreparePosition);
+        }
+
+        public static bool operator >(Position p1, Position p2)
+        {
+            return p1.CommitPosition > p2.CommitPosition || (p1.CommitPosition == p2.CommitPosition && p1.PreparePosition > p2.PreparePosition);
+        }
+
+        public static bool operator >=(Position p1, Position p2)
+        {
+            return p1 > p2 || p1 == p2;
+        }
+
+        public static bool operator <=(Position p1, Position p2)
+        {
+            return p1 < p2 || p1 == p2;
+        }
+
+        public static bool operator ==(Position p1, Position p2)
+        {
+            return p1.CommitPosition == p2.CommitPosition && p1.PreparePosition == p2.PreparePosition;
+        }
+
+        public static bool operator !=(Position p1, Position p2)
+        {
+            return !(p1 == p2);
+        }
+
+        public override bool Equals(object other)
+        {
+            return other is Position && Equals((Position)other);
+        }
+
+        public bool Equals(Position other)
+        {
+            return this == other;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (CommitPosition.GetHashCode()*397) ^ PreparePosition.GetHashCode();
+            }
+        }
     }
 }

@@ -487,6 +487,13 @@ namespace EventStore.Core.Messages
             {
                 Ensure.NotNull(events, "events");
 
+                if (result != ReadStreamResult.Success)
+                {
+                    Ensure.Equal(nextEventNumber, -1, "nextEventNumber");
+                    Ensure.Equal(lastEventNumber, -1, "lastEventNumber");
+                    Ensure.Equal(isEndOfStream, true, "isEndOfStream");
+                }
+
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
                 FromEventNumber = fromEventNumber;
@@ -501,17 +508,19 @@ namespace EventStore.Core.Messages
                 LastCommitPosition = lastCommitPosition;
             }
 
-            public static ReadStreamEventsForwardCompleted NotModified(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount)
+            public static ReadStreamEventsForwardCompleted NotModified(Guid correlationId, string eventStreamId, 
+                                                                       int fromEventNumber, int maxCount, long lastCommitPosition)
             {
                 return new ReadStreamEventsForwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount, 
-                                                            ReadStreamResult.NotModified, EmptyRecords, string.Empty, -1, -1, false, long.MinValue);
+                                                            ReadStreamResult.NotModified, EmptyRecords, string.Empty, -1, -1, true, lastCommitPosition);
             }
 
-            public static ReadStreamEventsForwardCompleted Faulted(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount, string message)
+            public static ReadStreamEventsForwardCompleted Faulted(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount, 
+                                                                   string message, long lastCommitPosition)
             {
                 Ensure.NotNullOrEmpty(message, "message");
                 return new ReadStreamEventsForwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
-                                                            ReadStreamResult.Error, EmptyRecords, message, -1, -1, false, long.MinValue);
+                                                            ReadStreamResult.Error, EmptyRecords, message, -1, -1, true, lastCommitPosition);
             }
         }
 
@@ -578,6 +587,13 @@ namespace EventStore.Core.Messages
             {
                 Ensure.NotNull(events, "events");
 
+                if (result != ReadStreamResult.Success)
+                {
+                    Ensure.Equal(nextEventNumber, -1, "nextEventNumber");
+                    Ensure.Equal(lastEventNumber, -1, "lastEventNumber");
+                    Ensure.Equal(isEndOfStream, true, "isEndOfStream");
+                }
+
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
                 FromEventNumber = fromEventNumber;
@@ -592,17 +608,19 @@ namespace EventStore.Core.Messages
                 LastCommitPosition = lastCommitPosition;
             }
 
-            public static ReadStreamEventsBackwardCompleted NotModified(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount)
+            public static ReadStreamEventsBackwardCompleted NotModified(Guid correlationId, string eventStreamId, 
+                                                                        int fromEventNumber, int maxCount, long lastCommitPosition)
             {
                 return new ReadStreamEventsBackwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
-                                                             ReadStreamResult.NotModified, EmptyRecords, string.Empty, -1, -1, false, long.MinValue);
+                                                             ReadStreamResult.NotModified, EmptyRecords, string.Empty, -1, -1, true, lastCommitPosition);
             }
 
-            public static ReadStreamEventsBackwardCompleted Faulted(Guid correlationId, string eventStreamId, int fromEventNumber, int maxCount, string message)
+            public static ReadStreamEventsBackwardCompleted Faulted(Guid correlationId, string eventStreamId, int fromEventNumber, 
+                                                                    int maxCount, string message, long lastCommitPosition)
             {
                 Ensure.NotNullOrEmpty(message, "message");
                 return new ReadStreamEventsBackwardCompleted(correlationId, eventStreamId, fromEventNumber, maxCount,
-                                                             ReadStreamResult.Error, EmptyRecords, message, -1, -1, false, long.MinValue);
+                                                             ReadStreamResult.Error, EmptyRecords, message, -1, -1, true, lastCommitPosition);
             }
         }
 
