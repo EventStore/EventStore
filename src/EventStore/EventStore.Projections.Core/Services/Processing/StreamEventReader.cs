@@ -104,7 +104,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (message.Events.Length == 0)
                     {
                         // the end
-                        DeliverSafeJoinPosition(message.LastCommitPosition/*GetLastCommitPositionFrom(message)*/);
+                        DeliverSafeJoinPosition(GetLastCommitPositionFrom(message));
                         SendIdle();
                         SendEof();
                     }

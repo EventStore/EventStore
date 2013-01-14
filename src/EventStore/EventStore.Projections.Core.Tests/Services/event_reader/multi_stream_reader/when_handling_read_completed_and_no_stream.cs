@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
                     _distibutionPointCorrelationId, "b", 100, 100, ReadStreamResult.Success, 
-                    new ResolvedEvent[0], "", -1, ExpectedVersion.NoStream, false, 200));
+                    new ResolvedEvent[0], "", -1, ExpectedVersion.NoStream, true, 200));
         }
 
         [Test]

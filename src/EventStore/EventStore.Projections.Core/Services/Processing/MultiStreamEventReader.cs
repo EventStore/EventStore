@@ -54,7 +54,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override long? MessageToLastCommitPosition(ClientMessage.ReadStreamEventsForwardCompleted message)
         {
-            return message.LastCommitPosition;
             return GetLastCommitPositionFrom(message);
         }
 
