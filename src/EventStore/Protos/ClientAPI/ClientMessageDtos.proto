@@ -130,7 +130,7 @@ message ReadStreamEventsCompleted {
 	required int32 next_event_number = 4;
 	required int32 last_event_number = 5;
 	required bool is_end_of_stream = 6;
-	required int64 last_vnode_commit_position = 7;
+	required int64 last_commit_position = 7;
 }
 
 message ReadAllEvents {

@@ -407,8 +407,8 @@ namespace EventStore.Core.Messages
     [ProtoMember(6, IsRequired = true, Name=@"is_end_of_stream", DataFormat = DataFormat.Default)]
     public readonly bool IsEndOfStream;
   
-    [ProtoMember(7, IsRequired = true, Name=@"last_vnode_commit_position", DataFormat = DataFormat.TwosComplement)]
-    public readonly long LastVnodeCommitPosition;
+    [ProtoMember(7, IsRequired = true, Name=@"last_commit_position", DataFormat = DataFormat.TwosComplement)]
+    public readonly long LastCommitPosition;
   
     [ProtoContract(Name=@"ReadStreamResult")]
     public enum ReadStreamResult
@@ -432,7 +432,7 @@ namespace EventStore.Core.Messages
   
     private ReadStreamEventsCompleted() {}
   
-    public ReadStreamEventsCompleted(string eventStreamId, ResolvedIndexedEvent[] events, ReadStreamEventsCompleted.ReadStreamResult result, int nextEventNumber, int lastEventNumber, bool isEndOfStream, long lastVnodeCommitPosition)
+    public ReadStreamEventsCompleted(string eventStreamId, ResolvedIndexedEvent[] events, ReadStreamEventsCompleted.ReadStreamResult result, int nextEventNumber, int lastEventNumber, bool isEndOfStream, long lastCommitPosition)
     {
         EventStreamId = eventStreamId;
         Events = events;
@@ -440,7 +440,7 @@ namespace EventStore.Core.Messages
         NextEventNumber = nextEventNumber;
         LastEventNumber = lastEventNumber;
         IsEndOfStream = isEndOfStream;
-        LastVnodeCommitPosition = lastVnodeCommitPosition;
+        LastCommitPosition = lastCommitPosition;
     }
   }
   
