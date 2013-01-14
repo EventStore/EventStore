@@ -49,7 +49,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             EventId = Guid.NewGuid();
             Type = "TestEvent-" + subIndex.ToString();
 
-            var body = new string('#', 1 + 17 * subIndex * subIndex);
+            var body = new string('#', 1 + subIndex * subIndex);
 
             IsJson = false;
             Data = Encoding.UTF8.GetBytes(string.Format("{0}-{1}-{2}", index, body.Length, body));
