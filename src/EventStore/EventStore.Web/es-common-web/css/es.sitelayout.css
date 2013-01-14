@@ -103,7 +103,7 @@ General UI
 Projections common
 ========================================================================== */
 
-.source-code, #source {
+.json, .source-code, #source {
     height: 350px;
     overflow-y: auto;
     font-family: consolas, 'ubuntu mono', 'courier new'; 
@@ -112,7 +112,7 @@ Projections common
     overflow: auto;
 }
 
-.source-code, #source, #name {
+.json, .source-code, #source, #name {
     min-width: 500px;
 }
 

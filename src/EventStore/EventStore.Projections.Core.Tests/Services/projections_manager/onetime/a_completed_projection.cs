@@ -105,5 +105,48 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                              .Enabled);
             }
         }
+        [TestFixture]
+
+        public class when_starting : Base
+        {
+            protected override void When()
+            {
+                base.When();
+                _manager.Handle(new ProjectionManagementMessage.Enable(new PublishEnvelope(_bus), _projectionName));
+            }
+
+            [Test]
+            public void the_projection_status_becomes_running_enabled()
+            {
+                _manager.Handle(
+                    new ProjectionManagementMessage.GetStatistics(
+                        new PublishEnvelope(_bus), null, _projectionName, false));
+
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
+                Assert.AreEqual(
+                    1,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Length);
+                Assert.AreEqual(
+                    _projectionName,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Name);
+                Assert.AreEqual(
+                    ManagedProjectionState.Running,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .MasterStatus);
+                Assert.AreEqual(
+                    true,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Enabled);
+            }
+        }
     }
 }

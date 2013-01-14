@@ -235,13 +235,13 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Enable message)
         {
-            if (Enabled)
+            if (Enabled && _state == ManagedProjectionState.Running)
             {
-                _logger.Error("DBG: *{0}* ALREADY ENABLED!!!", _name);
-                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Not disabled"));
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Already enabled and running"));
                 return;
             }
-            Enable();
+            if (!Enabled)
+                Enable();
             Action completed = () => Start(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
             Prepare(() => BeginWrite(completed));
         }
@@ -359,7 +359,10 @@ namespace EventStore.Projections.Core.Services.Management
                 //TODO: encapsulate this into managed projection
                 _state = ManagedProjectionState.Loaded;
                 if (Enabled)
-                    Prepare(() => Start(() => { }));
+                {
+                    if (Mode >= ProjectionMode.Continuous)
+                        Prepare(() => Start(() => { }));
+                }
                 else
                     CreatePrepared(() => LoadStopped(() => { }));
                 return;
@@ -376,9 +379,6 @@ namespace EventStore.Projections.Core.Services.Management
         {
             switch ((int)persistedState.Mode)
             {
-                case 1: //old AdHoc
-                    persistedState.Mode = ProjectionMode.OneTime;
-                    break;
                 case 2: // old continuous
                     persistedState.Mode = ProjectionMode.Continuous;
                     break;
@@ -416,7 +416,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void BeginWrite(Action completed)
         {
-            if (Mode == ProjectionMode.OneTime)
+            if (Mode == ProjectionMode.Transient)
             {
                 completed();
                 return;
@@ -642,7 +642,7 @@ namespace EventStore.Projections.Core.Services.Management
             var maxWriteBatchLength = 500;
             var emitEventEnabled = _persistedState.EmitEnabled == true;
             var createTempStreams = _persistedState.CreateTempStreams == true;
-            var stopOnEof = _persistedState.Mode == ProjectionMode.OneTime;
+            var stopOnEof = _persistedState.Mode <= ProjectionMode.OneTime;
 
             var projectionConfig = new ProjectionConfig(
                 checkpointHandledThreshold, checkpointUnhandledBytesThreshold, pendingEventsThreshold,

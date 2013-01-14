@@ -302,7 +302,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_projectionConfig.StopOnEof)
                 throw new InvalidOperationException("!_projectionConfig.StopOnEof");
-
+            _subscribed = false; // NOTE:  stopOnEof subscriptions automatically unsuibscribe when handling this message
             Stop();
         }
 
@@ -755,6 +755,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ProjectionSubscriptionManagement.Subscribe(
                     _projectionCorrelationId, _currentSubscriptionId, this, checkpointTag, _checkpointStrategy,
                     _projectionConfig.CheckpointUnhandledBytesThreshold, stopOnEof));
+            _subscribed = true;
             try
             {
                 GoToState(State.Subscribed);
@@ -764,7 +765,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 LoadProjectionStateFaulted(ex);
                 return;
             }
-            _subscribed = true;
         }
 
         internal void BeginGetPartitionStateAt(

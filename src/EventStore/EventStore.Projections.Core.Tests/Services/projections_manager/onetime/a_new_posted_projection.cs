@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 _manager.Handle(new SystemMessage.BecomeWorking());
                 _manager.Handle(
                     new ProjectionManagementMessage.Post(
-                        new PublishEnvelope(_bus), ProjectionMode.OneTime, _projectionName,
+                        new PublishEnvelope(_bus), ProjectionMode.Transient, _projectionName,
                         "native:" + typeof(FakeProjection).AssemblyQualifiedName, _projectionSource, enabled: true,
                         checkpointsEnabled: false, emitEnabled: false));
             }

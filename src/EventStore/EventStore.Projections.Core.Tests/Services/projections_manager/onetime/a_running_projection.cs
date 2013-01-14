@@ -73,6 +73,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             }
 
             [Test]
+            public void pause_message_is_published()
+            {
+                Assert.Inconclusive("actually in unsubscribes...");
+            }
+
+
+            [Test]
             public void the_projection_status_becomes_stopped_enabled()
             {
                 _manager.Handle(
@@ -98,7 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                              .Projections.Single()
                              .MasterStatus);
                 Assert.AreEqual(
-                    false,
+                    true,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
                              .Projections.Single()

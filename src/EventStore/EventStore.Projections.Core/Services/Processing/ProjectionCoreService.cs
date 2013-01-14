@@ -306,6 +306,9 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_eventReaderSubscriptions.TryGetValue(message.CorrelationId, out projectionId))
                 return; // unsubscribed
             _subscriptions[projectionId].Handle(message);
+
+            _pausedProjections.Add(projectionId); // it is actually disposed -- workaround
+            Handle(new ProjectionSubscriptionManagement.Unsubscribe(projectionId));
         }
 
         public void Handle(CoreProjectionManagementMessage.CreateAndPrepare message)
