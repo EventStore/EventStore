@@ -2,8 +2,6 @@ using System;
 using System.Net;
 using System.Threading;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
-using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
@@ -11,26 +9,13 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class connect : SpecificationWithDirectoryPerTestFixture
     {
-        [TestFixtureSetUp]
-        public override void TestFixtureSetUp()
-        {
-            base.TestFixtureSetUp();
-
-        }
-
-        [TestFixtureTearDown]
-        public override void TestFixtureTearDown()
-        {
-            base.TestFixtureTearDown();
-        }
-
         [Test]
         [Category("Network")]
         public void should_not_throw_exception_when_server_is_down()
         {
             using (var connection = EventStoreConnection.Create())
             {
-                connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
+                Assert.DoesNotThrow(() => connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348)));
             }
         }
 
@@ -39,14 +24,18 @@ namespace EventStore.Core.Tests.ClientAPI
         public void should_throw_exception_when_trying_to_reopen_closed_connection()
         {
             var settings = ConnectionSettings.Create()
-                .LimitReconnectionsTo(0)
-                .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(200));
+                                             .LimitReconnectionsTo(0)
+                                             .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0));
 
             using (var connection = EventStoreConnection.Create(settings))
             {
+                var reconnected = new ManualResetEventSlim();
+                connection.Reconnecting += (_, __) => reconnected.Set();
+
                 connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
 
-                Thread.Sleep(4000); //Ensure reconnection attempt
+                if (!reconnected.Wait(TimeSpan.FromSeconds(45)))
+                    Assert.Fail("Reconnection took too long.");
 
                 Assert.Throws<InvalidOperationException>(
                     () => connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348)),
@@ -60,7 +49,7 @@ namespace EventStore.Core.Tests.ClientAPI
         {
             var settings = ConnectionSettings.Create()
                                              .LimitReconnectionsTo(0)
-                                             .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(200));
+                                             .SetReconnectionDelayTo(TimeSpan.FromMilliseconds(0));
 
             using (var connection = EventStoreConnection.Create(settings))
             {

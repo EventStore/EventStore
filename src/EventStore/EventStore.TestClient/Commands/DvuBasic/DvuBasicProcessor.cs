@@ -230,7 +230,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             var prepareTimeouts = 0;
             var commitTimeouts = 0;
             var forwardTimeouts = 0;
-            var wrongExpctdVersions = 0;
+            var wrongExpectedVersion = 0;
             var streamsDeleted = 0;
 
             var failed = 0;
@@ -249,7 +249,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                         lock (_heads)
                         {
                             var currentHead = _heads[streamIdx];
-                            Ensure.Equal(currentHead, head);
+                            Ensure.Equal(currentHead, head, "currentHead");
                             _heads[streamIdx]++;
                         }
                         break;
@@ -266,7 +266,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                         failed++;
                         break;
                     case TcpClientMessageDto.OperationResult.WrongExpectedVersion:
-                        wrongExpctdVersions++;
+                        wrongExpectedVersion++;
                         failed++;
                         break;
                     case TcpClientMessageDto.OperationResult.StreamDeleted:
@@ -280,7 +280,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
                 sent++;
                 if (sent % 1000 == 0)
                     status.ReportWritesProgress(writerIdx, sent, prepareTimeouts, commitTimeouts, forwardTimeouts,
-                                                wrongExpctdVersions, streamsDeleted, failed, requests);
+                                                wrongExpectedVersion, streamsDeleted, failed, requests);
                 if (sent == requests)
                     finish.Set();
 
@@ -320,7 +320,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             }
 
             status.ReportWritesProgress(writerIdx, sent, prepareTimeouts, commitTimeouts, forwardTimeouts,
-                                        wrongExpctdVersions, streamsDeleted, failed, requests);
+                                        wrongExpectedVersion, streamsDeleted, failed, requests);
             status.FinilizeStatus(writerIdx, failed != sent);
             connection.Close();
         }
