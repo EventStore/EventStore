@@ -105,8 +105,9 @@
     <Compile Include="ClientAPI\Helpers\TestEvent.cs" />
     <Compile Include="ClientAPI\Helpers\TestEventsComparer.cs" />
     <Compile Include="ClientAPI\transaction.cs" />
-    <Compile Include="Common\CollectionsExtensions.cs" />
-    <Compile Include="Common\HelperExtensions.cs" />
+    <Compile Include="Common\Options\OptsHelperTests.cs" />
+    <Compile Include="Helper\CollectionsExtensions.cs" />
+    <Compile Include="Helper\HelperExtensions.cs" />
     <Compile Include="DataStructures\pairing_heap_should.cs" />
     <Compile Include="Fakes\FakeLogger.cs" />
     <Compile Include="Fakes\FakePublisher.cs" />

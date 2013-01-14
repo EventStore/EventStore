@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,25 +25,48 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace EventStore.Core.Tests.Common
+namespace EventStore.Core.Tests.Helper
 {
-    public static class HelperExtensions
+    public static class CollectionsExtensions
     {
-        public static bool IsBetween(this int n, int a, int b)
+        public static bool ContainsNo<TMessage>(this IEnumerable<object> collection)
         {
-            return n >= a && n <= b;
+            return collection.ContainsNo<TMessage>(v => true);
         }
 
-        public static bool AreEqual<TKey, TValue>(this IDictionary<TKey, TValue> first, IDictionary<TKey, TValue> second)
+        public static bool ContainsNo<TMessage>(this IEnumerable<object> collection, Predicate<TMessage> predicate)
         {
-            if (first.Count != second.Count)
-                return false;
+            return collection.ContainsN<TMessage>(0, predicate);
+        }
 
-            TValue value;
-            return first.All(kvp => second.TryGetValue(kvp.Key, out value) && value.Equals(kvp.Value));
+        public static bool ContainsSingle<TMessage>(this IEnumerable<object> collection)
+        {
+            return collection.ContainsSingle<TMessage>(v => true);
+        }
+
+        public static bool ContainsSingle<TMessage>(this IEnumerable<object> collection, Predicate<TMessage> predicate)
+        {
+            return collection.ContainsN<TMessage>(1, predicate);
+        }
+
+        public static bool ContainsN<TMessage>(this IEnumerable<object> collection, int n)
+        {
+            return collection.ContainsN<TMessage>(n, v => true);
+        }
+
+        public static bool ContainsN<TMessage>(this IEnumerable<object> collection, int n, Predicate<TMessage> predicate)
+        {
+            return collection.OfType<TMessage>().Count(v => predicate(v)) == n;
+        }
+
+        public static bool IsEmpty(this IEnumerable<object> collection)
+        {
+            return !collection.Any();
         }
     }
 }
