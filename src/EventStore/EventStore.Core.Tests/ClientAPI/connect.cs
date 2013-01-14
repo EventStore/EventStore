@@ -64,27 +64,16 @@ namespace EventStore.Core.Tests.ClientAPI
 
             using (var connection = EventStoreConnection.Create(settings))
             {
+                var reconnected = new ManualResetEventSlim();
+                connection.Reconnecting += (_, __) => reconnected.Set();
+
                 connection.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 12348));
 
-                Thread.Sleep(4000); //Ensure reconnection attempt
+                if (!reconnected.Wait(TimeSpan.FromSeconds(45)))
+                    Assert.Fail("Reconnection took too long.");
 
-                try
-                {
-                    connection.CreateStream("stream", Guid.NewGuid(), false, new byte[0]);
-                }
-                catch (InvalidOperationException exc)
-                {
-                    Assert.AreEqual("EventStoreConnection [127.0.0.1:12348] is not active.", exc.Message);
-                }
-                catch (AggregateException exc)
-                {
-                    Assert.IsInstanceOf<InvalidOperationException>(exc.Flatten().InnerException);
-                    Assert.AreEqual("EventStoreConnection [127.0.0.1:12348] is not active.", exc.Flatten().InnerException.Message);
-                }
-                catch (Exception exc)
-                {
-                    Assert.Fail("Unexpected exception thrown: {0}", exc);
-                }
+                Assert.Throws<InvalidOperationException>(() => connection.CreateStream("stream", Guid.NewGuid(), false, new byte[0]),
+                                                         "EventStoreConnection [127.0.0.1:12348] is still active.");
             }
         }
     }
