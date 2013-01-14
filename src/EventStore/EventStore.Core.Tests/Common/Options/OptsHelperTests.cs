@@ -1,98 +1,105 @@
-﻿using System;
+﻿// Copyright (c) 2012, Event Store LLP
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+// Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+// Neither the name of the Event Store LLP nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Net;
-using System.Text;
-using EventStore.Common.Options;
+using EventStore.Common.Utils;
 using Mono.Options;
 using NUnit.Framework;
+using Newtonsoft.Json;
 
 namespace EventStore.Core.Tests.Common.Options
 {
-
-    public class OptsHelper
+    public abstract class OptsHelperTestBase : SpecificationWithDirectory
     {
-        public void Register(Expression<Func<bool>> member, string cmdPrototype, string jsonPath, string envName, 
-                             string description, bool? @default = null)
+        private const string EnvPrefix = "OPTSHELPER_";
+
+        public string[] FakeConfigsProperty { get; private set; }
+
+        protected OptsHelper Helper;
+
+        private readonly List<Tuple<string, string>> _setVariables = new List<Tuple<string, string>>();
+
+        public override void SetUp()
         {
+            base.SetUp();
+
+            Helper = new OptsHelper(() => FakeConfigsProperty, EnvPrefix);
+            Helper.RegisterArray(() => FakeConfigsProperty, "cfg=", null, null, null, new string[0], "Configs.");
         }
 
-        public void Register<T>(Expression<Func<T>> member, string cmdPrototype, string jsonPath, string envName, 
-                                string description, T? @default = null) 
-            where T : struct
+        public override void TearDown()
         {
+            UnsetEnvironment();
+            base.TearDown();
         }
 
-        public void Register<T>(Expression<Func<T>> member, string cmdPrototype, string jsonPath, string envName, 
-                                string description, T @default = null) 
-            where T : class
+        private void UnsetEnvironment()
         {
+            for (int i = _setVariables.Count - 1; i >= 0; --i)
+            {
+                Environment.SetEnvironmentVariable(_setVariables[i].Item1, _setVariables[i].Item2);
+            }
+            _setVariables.Clear();
         }
 
-        public void Register<T>(Expression<Func<T[]>> member, string cmdPrototype, string jsonPath, 
-                                string description, T[] @default = null)
+        protected void SetEnv(string envVariable, string value)
         {
+            var envVar = (EnvPrefix + envVariable).ToUpper();
+            _setVariables.Add(Tuple.Create(envVar, Environment.GetEnvironmentVariable(envVar)));
+            Environment.SetEnvironmentVariable(envVar, value);
         }
 
-        public T Get<T>(Expression<Func<T>> member)
+        protected string WriteJsonConfig(object cfg)
         {
-            throw new NotImplementedException();
+            Ensure.NotNull(cfg, "cfg");
+
+            var s = JsonConvert.SerializeObject(cfg, Formatting.Indented);
+            var file = GetTempFilePath();
+
+            Console.WriteLine("Writing to file {0}:", file);
+            Console.WriteLine(s);
+            Console.WriteLine();
+
+            File.WriteAllText(file, s);
+
+            return file;
         }
     }
-
-
-    public class SingleNodeOptions
-    {
-        private readonly OptsHelper _helper;
-
-        public IPAddress Ip { get { return _helper.Get(() => Ip); } }
-        public int TcpPort { get { return _helper.Get(() => TcpPort); } }
-        public int HttpPort { get { return _helper.Get(() => HttpPort); } }
-        public int StatsPeriodSec { get { return _helper.Get(() => StatsPeriodSec); } }
-        public int ChunksToCache { get { return _helper.Get(() => ChunksToCache); } }
-        public string DbPath { get { return _helper.Get(() => DbPath); } }
-        public bool DoNotVerifyDbHashesOnStartup { get { return _helper.Get(() => DoNotVerifyDbHashesOnStartup); } }
-        public bool RunProjections { get { return _helper.Get(() => RunProjections); } }
-        public int ProjectionThreads { get { return _helper.Get(() => ProjectionThreads); } }
-        public int TcpSendThreads { get { return _helper.Get(() => TcpSendThreads); } }
-        public int HttpReceiveThreads { get { return _helper.Get(() => HttpReceiveThreads); } }
-        public int HttpSendThreads { get { return _helper.Get(() => HttpSendThreads); } }
-        public string[] HttpPrefixes { get { return _helper.Get(() => HttpPrefixes); } }
-
-        public string[] Configs { get { return _helper.Get(() => Configs); } }
-
-        public SingleNodeOptions()
-        {
-            _helper = new OptsHelper(/*() => Configs, "EVENTSTORE_"*/);
-            _helper.Register(() => Ip, "i|ip=", "net.ip", "ip", "The IP address to bind to.", IPAddress.Loopback);
-            _helper.Register(() => TcpPort, "t|tcp-port=", null, null, "The port to run the TCP server on.", (int?)1113);
-            _helper.Register(() => HttpPort, "h|http-port=", null, null, "The port to run the HTTP server on.", (int?)2113);
-            _helper.Register(() => StatsPeriodSec, "s|stats-period-sec=", null, null, "The number of seconds between statistics gathers.", (int?)30);
-            _helper.Register(() => ChunksToCache, "c|chunkcache=", null, null, "The number of chunks to cache in unmanaged memory.", (int?)2);
-            _helper.Register(() => DbPath, "db=", null, null, "The path the db should be loaded/saved to.", string.Empty);
-            _helper.Register(() => DoNotVerifyDbHashesOnStartup, "skip-db-verify|do-not-verify-db-hashes-on-startup", null, null, "Bypasses the checking of file hashes of database during startup (allows for faster startup).", (bool?)false);
-            _helper.Register(() => RunProjections, "run-projections", null, null, "Enables the running of JavaScript projections (experimental).", (bool?)false);
-            _helper.Register(() => ProjectionThreads, "projection-threads=", null, null, "The number of threads to use for projections.", (int?)3);
-            _helper.Register(() => TcpSendThreads, "tcp-send-threads=", null, null, "The number of threads to use for sending to TCP sockets.", (int?)3);
-            _helper.Register(() => HttpReceiveThreads, "http-receive-threads=", null, null, "The number of threads to use for receiving from HTTP.", (int?)5);
-            _helper.Register(() => HttpSendThreads, "http-send-threads=", null, null, "The number of threads for sending over HTTP.", (int?)3);
-            _helper.Register(() => HttpPrefixes, "prefixes|http-prefix=", null, null, "The prefixes that the http server should respond to.", new string[0]);
-
-            //_helper.Parse();
-        }
-    }
-
-
 
     [TestFixture]
-    public class OptsHelperTests
+    public class OptsHelperTests : OptsHelperTestBase
     {
         [Test]
         public void test1()
         {
-            TypeDescriptor.AddAttributes(typeof(IPAddress), new TypeConverterAttribute(typeof(IPAddressTypeConverter)));
 
             bool showHelp = false;
             var optionSet = new OptionSet()

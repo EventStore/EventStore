@@ -1,10 +1,10 @@
 ﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,28 +24,30 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
-
-using System.Collections.Generic;
-using EventStore.Common.CommandLine.lib;
-
-namespace EventStore.Common.CommandLine
+// 
+namespace EventStore.Core.Tests.Common.Options
 {
-    public abstract class EventStoreCmdLineOptionsBase : CommandLineOptionsBase
+    public class OptionInfo
     {
-        public virtual IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
+        public readonly bool Success;
+        public readonly string Name;
+        public readonly object Value;
+
+        public readonly OptionOrigin Origin;
+        public readonly string OriginName;
+        public readonly string OriginOptionName;
+
+        public readonly string Error;
+
+        public OptionInfo(bool success, string name, object value, OptionOrigin origin, string originName, string originOptionName, string error)
         {
-            yield return new KeyValuePair<string, string>("LOGSDIR", LogsDir);
+            Success = success;
+            Name = name;
+            Value = value;
+            Origin = origin;
+            OriginName = originName;
+            OriginOptionName = originOptionName;
+            Error = error;
         }
-
-        [Option(null, "logsdir", HelpText = "Path where to keep log files.")]
-        public string LogsDir { get; set; }
-
-        [HelpOption]
-        public virtual string GetUsage()
-        {
-            return HelpText.AutoBuild(this, (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
-        }
-
     }
 }
