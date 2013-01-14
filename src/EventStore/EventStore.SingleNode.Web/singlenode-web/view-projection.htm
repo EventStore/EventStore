@@ -291,7 +291,9 @@
 
                 function successState(data, status, xhr) {
                     if (data) {
-                        $("#projection-state").text(JSON.stringify(data));
+                        var jsonData = JSON.stringify(data);
+                        if ($("#projection-state").text() != jsonData)
+                            $("#projection-state").text(jsonData);
                     }
                     delayedRequestProjectionState();
                 }

@@ -69,12 +69,40 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             protected override void When()
             {
                 base.When();
+                _manager.Handle(new ProjectionManagementMessage.Disable(new PublishEnvelope(_bus), _projectionName));
             }
 
             [Test]
-            public void the_projection_status_becomes_stopped_enabled()
+            public void the_projection_status_becomes_stopped_disabled()
             {
-                Assert.Inconclusive();
+                _manager.Handle(
+                    new ProjectionManagementMessage.GetStatistics(
+                        new PublishEnvelope(_bus), null, _projectionName, false));
+
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
+                Assert.AreEqual(
+                    1,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Length);
+                Assert.AreEqual(
+                    _projectionName,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Name);
+                Assert.AreEqual(
+                    ManagedProjectionState.Stopped,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .MasterStatus);
+                Assert.AreEqual(
+                    false,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Enabled);
             }
         }
     }

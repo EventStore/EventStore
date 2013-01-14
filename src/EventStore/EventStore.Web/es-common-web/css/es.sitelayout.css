@@ -104,10 +104,14 @@ Projections common
 ========================================================================== */
 
 .source-code, #source {
-    height: 250px;
+    height: 350px;
     overflow-y: auto;
-    font-family: consolas, 'courier new'; 
+    font-family: consolas, 'ubuntu mono', 'courier new'; 
+    font-size: 85%;
+    white-space: pre;
+    overflow: auto;
 }
+
 .source-code, #source, #name {
     min-width: 500px;
 }
