@@ -98,6 +98,52 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                              .Projections.Single()
                              .MasterStatus);
                 Assert.AreEqual(
+                    false,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Enabled);
+            }
+        }
+
+        [TestFixture]
+        public class when_handling_event : Base
+        {
+            protected override void When()
+            {
+                base.When();
+                _bus.Publish(
+                    new ProjectionCoreServiceMessage.CommittedEventDistributed(
+                        _reader, new EventPosition(200, 150), "stream", 2, "stream", 1, false,
+                        ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0]), 100, 33.3f));
+            }
+
+            [Test]
+            public void the_projection_status_remains_running_enabled()
+            {
+                _manager.Handle(
+                    new ProjectionManagementMessage.GetStatistics(
+                        new PublishEnvelope(_bus), null, _projectionName, false));
+
+                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
+                Assert.AreEqual(
+                    1,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Length);
+                Assert.AreEqual(
+                    _projectionName,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .Name);
+                Assert.AreEqual(
+                    ManagedProjectionState.Running,
+                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
+                             .Single()
+                             .Projections.Single()
+                             .MasterStatus);
+                Assert.AreEqual(
                     true,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
