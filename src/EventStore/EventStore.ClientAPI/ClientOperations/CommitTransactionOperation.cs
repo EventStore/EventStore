@@ -118,7 +118,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                                 CorrelationId);
                         return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
                     case ClientMessage.OperationResult.StreamDeleted:
-                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_transactionId));
+                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException());
                     case ClientMessage.OperationResult.InvalidTransaction:
                         return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
                     default:
