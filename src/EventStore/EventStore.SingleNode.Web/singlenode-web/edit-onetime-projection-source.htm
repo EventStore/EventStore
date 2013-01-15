@@ -26,8 +26,8 @@
             <div class="span12">
                 <div id="commands-container">
                     <ul style="display: inline;">
-                        <li><a href="#" id="btn-start" class="btn btn-success">Run</a></li>
-                        <li><a href="#" id="btn-stop" class="btn btn-danger">Break</a></li>
+                        <li><a href="#" id="btn-run" class="btn btn-success">Run</a></li>
+                        <li><a href="#" id="btn-break" class="btn btn-danger">Break</a></li>
                     </ul>
                 </div>
             </div>
@@ -41,21 +41,15 @@
                 </div>
             </div>
             <div class="control-group">
-                <label class="control-label" for="source">
-                    <strong>State</strong></label>
-                <div class="controls">
-                    <textarea id="state" spellcheck="false" wrap="off" cols="100" rows="20"></textarea>
-                </div>
-            </div>
-            <div class="control-group">
                 <label class="control-label" for="emit"><strong>Emit Enabled</strong></label>
                 <div class="controls">
                     <input type="checkbox" id="emit" /></div>
             </div>
             <div class="control-group">
-                <div class="controls" id="update-source-container">
-                    <button id="update-button" class="btn btn-success">
-                        Update</button>
+                <label class="control-label" for="source">
+                    <strong>State</strong></label>
+                <div class="controls">
+                    <textarea id="state" spellcheck="false" wrap="off" cols="100" rows="20"></textarea>
                 </div>
             </div>
         </div>
@@ -74,34 +68,20 @@
 
         require(['projections/Controller', 'projections/ui/Editor'], function (controller, editor) {
 
-            var lastSource = "";
-
-            function statusChanged(status) {
-                $("#status").html(status.status + ($.isNumeric(status.progress) && status.progress != -1 ? ("(" + status.progress.toFixed(1) + "%)") : ""));
-            }
-
-            function stateChanged(state) {
-                $("#state").text(state);
-            }
-
-            function sourceChanged(source) {
-                var current = $("#source").text();
-                if (current !== source.query) {
-                    if (lastSource === current) {
-                        $("#source").text(source.query);
-                    } else {
-                        console.log("Ignoring query source changed outside. There are local pending changes.");
-                    }
-                }
-                $("#emit").attr("checked", source.emitEnabled);
-            }
-
             $(function () {
                 var projectionStatusUrl = location.hash.substr(1);
                 var projectionMonitor = controller.create(projectionStatusUrl);
-                projectionMonitor.subscribe({ statusChanged: statusChanged, stateChanged: stateChanged, sourceChanged: sourceChanged });
 
-                var projectionEditor = editor.create(projectionStatusUrl, projectionMonitor);
+                var projectionEditor = editor.create(projectionStatusUrl, projectionMonitor, {
+                    status: $("#status"),
+                    source: $("#source"),
+                    state: $("#state"),
+                    emit: $("#emit"),
+                    start: $("#btn-run"),
+                    stop: $("#btn-break"),
+                });
+
+                projectionEditor.bind();
             });
         });
 

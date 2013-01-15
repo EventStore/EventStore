@@ -9,12 +9,13 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
             var commandErrorHandler = null;
 
             function enrichStatus(status) {
+                console.log(status);
                 status.availableCommands = {
-                    stop: status.masterStatus === "Running",
+                    stop: status.status.indexOf("Running") === 0,
                     start:
-                        status.masterStatus === "Loaded" ||
-                        status.masterStatus === "Stopped" || 
-                        status.masterStatus === "Faulted",
+                        status.status.indexOf("Loaded") === 0 ||
+                        status.status.indexOf("Stopped") === 0 ||
+                        status.status.indexOf("Faulted") === 0,
                     update: true,
                 };
                 return status;
@@ -58,11 +59,14 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                 },
 
                 commands: {
-                    start: function() {
+                    start: function () {
+                        console.log("start()");
                     },
                     stop: function() {
+                        console.log("stop()");
                     },
                     update: function (query) {
+                        console.log("update(" + query + ")");
                     }
                 }
             };
