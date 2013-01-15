@@ -27,7 +27,7 @@
 // 
 
 using System;
-using Mono.Options;
+using EventStore.Common.Options;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Common.Options
@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test, Ignore("Mono.Options allows this situation and ignores the value provided.")]
         public void with_value_in_cmd_line()
         {
-            Helper.RegisterFlag(() => Flag, "f|flag", "settings.flag", "FLAG");
+            Helper.Register(() => Flag, "f|flag", "FLAG", "settings.flag");
 
             Helper.Parse("-f", "somevalue");
             Assert.Fail();
@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test, Ignore("Mono.Options allows this situation and ignores the value provided.")]
         public void if_flag_is_defined_more_than_once()
         {
-            Helper.RegisterFlag(() => Flag, "f|flag", "settings.flag", "FLAG");
+            Helper.Register(() => Flag, "f|flag", "FLAG", "settings.flag");
 
             Assert.Throws<OptionException>(() => Helper.Parse("-f-", "-f+"));
         }
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void with_non_bool_value_in_env()
         {
-            Helper.RegisterFlag(() => Flag, "f|flag", "settings.flag", "FLAG");
+            Helper.Register(() => Flag, "f|flag", "FLAG", "settings.flag");
             SetEnv("FLAG", "NOTBOOL");
 
             Assert.Throws<OptionException>(() => Helper.Parse(),
@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Common.Options
         [Test]
         public void with_wrong_type_in_json()
         {
-            Helper.RegisterFlag(() => Flag, "f|flag", "settings.flag", "FLAG");
+            Helper.Register(() => Flag, "f|flag", "FLAG", "settings.flag");
             var cfg = WriteJsonConfig(new {settings = new {flag = "bla"}});
 
             Assert.Throws<OptionException>(() => Helper.Parse("--cfg", cfg));

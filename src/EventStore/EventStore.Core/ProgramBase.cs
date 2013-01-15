@@ -30,20 +30,17 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using EventStore.Common.CommandLine;
-using EventStore.Common.CommandLine.lib;
-using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
-using System.Linq;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core
 {
-    public abstract class ProgramBase<TOptions> where TOptions : EventStoreCmdLineOptionsBase, new()
+    public abstract class ProgramBase<TOptions> where TOptions : IOptions, new()
     {
         protected readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
 
@@ -65,13 +62,18 @@ namespace EventStore.Core
                 return 0;
             }
 
+            var options = new TOptions();
             try
             {
                 Application.RegisterExitAction(Exit);
 
-                var options = new TOptions();
-                if (!CommandLineParser.Default.ParseArguments(args, options, Console.Error, Constants.EnvVarPrefix))
-                    throw new ApplicationInitializationException("Error while parsing options.");
+                options.Parse(args);
+                if (options.ShowHelp)
+                {
+                    Console.WriteLine("Options:");
+                    Console.WriteLine(options.GetUsage());
+                    return 0;
+                }
 
                 Init(options);
                 Create(options);
@@ -79,13 +81,21 @@ namespace EventStore.Core
 
                 _exitEvent.Wait();
             }
+            catch (OptionException exc)
+            {
+                Console.Error.WriteLine("Error while parsing options:");
+                Console.Error.WriteLine(FormatExceptionMessage(exc));
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("Usage:");
+                Console.Error.WriteLine(options.GetUsage());
+            }
             catch (ApplicationInitializationException ex)
             {
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
             catch (Exception ex)
             {
-                Log.ErrorException(ex, "Unhandled exception while starting application: {0}", FormatExceptionMessage(ex));
+                Log.ErrorException(ex, "Unhandled exception while starting application:\n{0}", FormatExceptionMessage(ex));
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
             finally
@@ -123,7 +133,7 @@ namespace EventStore.Core
                      Marshal.SizeOf(typeof(IntPtr)) * 8,
                      GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
                      LogManager.LogsDirectory,
-                     string.Join("\n", options.GetLoadedOptionsPairs().Select(pair => string.Format("{0} : {1}", pair.Key, pair.Value))));
+                     options.DumpOptions());
         }
 
         private string FormatExceptionMessage(Exception ex)

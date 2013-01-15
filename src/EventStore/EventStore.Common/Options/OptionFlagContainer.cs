@@ -25,58 +25,51 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
-using Mono.Options;
 using Newtonsoft.Json.Linq;
 
-namespace EventStore.Core.Tests.Common.Options
+namespace EventStore.Common.Options
 {
-    internal class OptionArrayContainer<T> : IOptionContainer
+    internal class OptionFlagContainer : IOptionContainer
     {
         object IOptionContainer.FinalValue { get { return FinalValue; } }
 
-        public T[] FinalValue
+        public bool FinalValue
         {
             get
             {
                 if (Value == null && _default == null)
                     throw new InvalidOperationException(string.Format("No value provided for option '{0}'.", Name));
-                return Value ?? _default;
+                return (Value ?? _default).Value;
             }
         }
 
         public string Name { get; private set; }
-        public T[] Value { get; private set; }
-        public bool IsSet { get { return Value != null; } }
-        public bool HasDefault { get { return _default != null; } }
+        public bool? Value { get; set; }
+        public bool IsSet { get { return Value.HasValue; } }
+        public bool HasDefault { get { return _default.HasValue; } }
 
-        public OptionOrigin Origin { get; private set; }
-        public string OriginName { get; private set; }
-        public string OriginOptionName { get; private set; }
+        public OptionOrigin Origin { get; set; }
+        public string OriginName { get; set; }
+        public string OriginOptionName { get; set; }
 
         private readonly string _cmdPrototype;
         private readonly string _envVariable;
-        private readonly string _separator;
         private readonly string[] _jsonPath;
-        private readonly T[] _default;
+        private readonly bool? _default;
 
-        private readonly List<T> _cmdLineList = new List<T>();
-
-        public OptionArrayContainer(string name, string cmdPrototype, string envVariable, string separator, string[] jsonPath, T[] @default)
+        public OptionFlagContainer(string name, string cmdPrototype, string envVariable, string[] jsonPath, bool? @default)
         {
             Ensure.NotNullOrEmpty(name, "name");
-            if (envVariable.IsNotEmptyString() && separator.IsEmptyString())
-                throw new ArgumentException("No value separator is provided for environment variable.");
             if (jsonPath != null && jsonPath.Length == 0)
                 throw new ArgumentException("JsonPath array is empty.", "jsonPath");
 
             Name = name;
             _cmdPrototype = cmdPrototype;
             _envVariable = envVariable;
-            _separator = separator;
             _jsonPath = jsonPath;
             _default = @default;
 
@@ -85,14 +78,16 @@ namespace EventStore.Core.Tests.Common.Options
             OriginOptionName = name;
         }
 
-        public void ParsingFromCmdLine(T value)
+        public void ParsingFromCmdLine(string flagArgName)
         {
             Origin = OptionOrigin.CommandLine;
             OriginName = OptionOrigin.CommandLine.ToString();
-            OriginOptionName = _cmdPrototype.Split('|').Last();
+            OriginOptionName = flagArgName ?? _cmdPrototype.Split('|').Last().Trim('=');
 
-            _cmdLineList.Add(value);
-            Value = _cmdLineList.ToArray();
+            if (Value.HasValue)
+                throw new OptionException(string.Format("Option {0} is set more than once.", OriginOptionName), OriginOptionName);
+
+            Value = flagArgName != null;
         }
 
         public void ParseFromEnvironment()
@@ -108,30 +103,22 @@ namespace EventStore.Core.Tests.Common.Options
             OriginName = OptionOrigin.Environment.ToString();
             OriginOptionName = _envVariable;
 
-            var parts = varValue.Split(new[] {_separator}, StringSplitOptions.None);
-
-            var values = new List<T>();
-            foreach (var part in parts)
+            switch (varValue)
             {
-                try
-                {
-                    var value = OptionContainerHelpers.ConvertFromString<T>(part);
-                    values.Add(value);
-                }
-                catch (Exception exc)
-                {
+                case "0":
+                    Value = false;
+                    break;
+                case "1":
+                    Value = true;
+                    break;
+                default:
                     throw new OptionException(
-                            string.Format("Could not convert part of environment variable {0} (part: '{1}', value: '{2}') to type {3}.",
+                            string.Format(
+                                          "Invalid value for flag in environment variable {0} (value: '{1}'), valid values are '0' and '1'.",
                                           _envVariable,
-                                          part,
-                                          varValue,
-                                          typeof (T).Name),
-                            _envVariable,
-                            exc);
-                }
+                                          varValue),
+                            _envVariable);
             }
-
-            Value = values.ToArray();
         }
 
         public void ParseFromConfig(JObject json, string configName)
@@ -144,42 +131,21 @@ namespace EventStore.Core.Tests.Common.Options
             OriginName = configName;
             OriginOptionName = string.Join(".", _jsonPath);
 
-            var token = OptionContainerHelpers.GetTokenByJsonPath(json, _jsonPath);
-            if (token == null)
+            var value = OptionContainerHelpers.GetTokenByJsonPath(json, _jsonPath);
+            if (value == null)
                 return;
 
-            if (token.Type != JTokenType.Array)
+            if (value.Type != JTokenType.Boolean)
             {
                 throw new OptionException(
-                        string.Format("Property '{0}' (value: {1}) in JSON config at '{2}' is not array.",
+                        string.Format("Property '{0}' (value: {1}) in JSON config at '{2}' is not boolean value.",
                                       OriginOptionName,
-                                      token,
+                                      value,
                                       configName),
                         OriginOptionName);
             }
 
-            var values = new List<T>();
-            foreach (var item in (JArray) token)
-            {
-                try
-                {
-                    var value = OptionContainerHelpers.ConvertFromJToken<T>(item); 
-                    values.Add(value);
-                }
-                catch (Exception exc)
-                {
-                    throw new OptionException(
-                            string.Format("Could not convert part of JSON array {0} at '{1}' to type {2}. JToken: {3}.",
-                                          OriginOptionName,
-                                          configName,
-                                          typeof(T).Name,
-                                          token),
-                            OriginOptionName,
-                            exc);
-                }
-            }
-
-            Value = values.ToArray();
+            Value = value.Value<bool>();
         }
     }
 }

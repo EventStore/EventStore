@@ -25,13 +25,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.ComponentModel;
 using System.Linq;
 using EventStore.Common.Utils;
 using Newtonsoft.Json.Linq;
 
-namespace EventStore.Core.Tests.Common.Options
+namespace EventStore.Common.Options
 {
     public static class OptionContainerHelpers
     {

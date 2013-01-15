@@ -105,11 +105,6 @@
     <Compile Include="ClientAPI\Helpers\TestEvent.cs" />
     <Compile Include="ClientAPI\Helpers\TestEventsComparer.cs" />
     <Compile Include="ClientAPI\transaction.cs" />
-    <Compile Include="Common\Options\OptionValueContainer.cs" />
-    <Compile Include="Common\Options\IOptionContainer.cs" />
-    <Compile Include="Common\Options\OptionArrayContainer.cs" />
-    <Compile Include="Common\Options\OptionContainerHelpers.cs" />
-    <Compile Include="Common\Options\OptionFlagContainer.cs" />
     <Compile Include="Common\Options\OptsHelperTestBase.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_array.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_custom_type.cs" />
@@ -117,13 +112,8 @@
     <Compile Include="Common\Options\opts_helper_for_array_of_int_should.cs" />
     <Compile Include="Common\Options\opts_helper_for_custom_type_should.cs" />
     <Compile Include="Common\Options\opts_helper_for_int_should.cs" />
-    <Compile Include="Common\Options\IOptions.cs" />
-    <Compile Include="Common\Options\OptionInfo.cs" />
-    <Compile Include="Common\Options\OptionOrigin.cs" />
-    <Compile Include="Common\Options\OptsHelper.cs" />
     <Compile Include="Common\Options\opts_helper_for_bool_flag_should.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_flag.cs" />
-    <Compile Include="Common\Options\SingleNodeOptions.cs" />
     <Compile Include="Helper\CollectionsExtensions.cs" />
     <Compile Include="Helper\HelperExtensions.cs" />
     <Compile Include="DataStructures\pairing_heap_should.cs" />

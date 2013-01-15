@@ -26,9 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.IO;
 using System.Text;
-using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using NLog;
 using NLog.LayoutRenderers;

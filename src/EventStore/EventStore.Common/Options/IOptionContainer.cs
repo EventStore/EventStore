@@ -25,11 +25,23 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-namespace EventStore.Common.Configuration
+
+using Newtonsoft.Json.Linq;
+
+namespace EventStore.Common.Options
 {
-    public class Constants
+    internal interface IOptionContainer
     {
-        public const string EnvVarPrefix = "EVENTSTORE_";
-        public const string EnvVarLogsSuffix = "LOGSDIR";
+        string Name { get; }
+        object FinalValue { get; }
+        bool IsSet { get; }
+        bool HasDefault { get; }
+
+        OptionOrigin Origin { get; set; }
+        string OriginName { get; set; }
+        string OriginOptionName { get; set; }
+
+        void ParseFromEnvironment();
+        void ParseFromConfig(JObject json, string configName);
     }
 }

@@ -25,22 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using Newtonsoft.Json.Linq;
-
-namespace EventStore.Core.Tests.Common.Options
+namespace EventStore.Common.Options
 {
-    internal interface IOptionContainer
+    public interface IOptions
     {
-        string Name { get; }
-        object FinalValue { get; }
-        bool IsSet { get; }
-        bool HasDefault { get; }
+        bool ShowHelp { get; }
+        string LogsDir { get; }
 
-        OptionOrigin Origin { get; }
-        string OriginName { get; }
-        string OriginOptionName { get; }
-
-        void ParseFromEnvironment();
-        void ParseFromConfig(JObject json, string configName);
+        void Parse(params string[] args);
+        string DumpOptions();
+        string GetUsage();
     }
 }

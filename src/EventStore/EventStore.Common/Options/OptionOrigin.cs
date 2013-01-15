@@ -25,13 +25,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-namespace EventStore.Core.Tests.Common.Options
+namespace EventStore.Common.Options
 {
-    public interface IOptions
+    public enum OptionOrigin
     {
-        bool ShowHelp { get; }
-
-        string DumpOptions();
-        string GetUsage();
+        None,
+        CommandLine,
+        Environment,
+        Config,
+        Default
     }
 }

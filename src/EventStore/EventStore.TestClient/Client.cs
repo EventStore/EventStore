@@ -62,9 +62,8 @@ namespace EventStore.TestClient
         {
             Options = options;
 
-            var ipAddr = IPAddress.Parse(options.Ip);
-            TcpEndpoint = new IPEndPoint(ipAddr, options.TcpPort);
-            HttpEndpoint = new IPEndPoint(ipAddr, options.HttpPort);
+            TcpEndpoint = new IPEndPoint(options.Ip, options.TcpPort);
+            HttpEndpoint = new IPEndPoint(options.Ip, options.HttpPort);
 
             InteractiveMode = options.Command.IsEmpty();
 

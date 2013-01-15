@@ -25,32 +25,32 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 using System.Linq;
 using EventStore.Common.Utils;
-using Mono.Options;
 using Newtonsoft.Json.Linq;
 
-namespace EventStore.Core.Tests.Common.Options
+namespace EventStore.Common.Options
 {
-    internal class OptionFlagContainer : IOptionContainer
+    internal class OptionValueContainer<T> : IOptionContainer
     {
         object IOptionContainer.FinalValue { get { return FinalValue; } }
 
-        public bool FinalValue
+        public T FinalValue
         {
             get
             {
-                if (Value == null && _default == null)
+                if (!_isSet && !_hasDefault)
                     throw new InvalidOperationException(string.Format("No value provided for option '{0}'.", Name));
-                return (Value ?? _default).Value;
+                return _isSet ? Value : _default;
             }
         }
 
         public string Name { get; private set; }
-        public bool? Value { get; set; }
-        public bool IsSet { get { return Value.HasValue; } }
-        public bool HasDefault { get { return _default.HasValue; } }
+        public T Value { get; private set; }
+        public bool IsSet { get { return _isSet; } }
+        public bool HasDefault { get { return _hasDefault; } }
 
         public OptionOrigin Origin { get; set; }
         public string OriginName { get; set; }
@@ -59,9 +59,13 @@ namespace EventStore.Core.Tests.Common.Options
         private readonly string _cmdPrototype;
         private readonly string _envVariable;
         private readonly string[] _jsonPath;
-        private readonly bool? _default;
+        
+        private readonly T _default;
+        private readonly bool _hasDefault;
 
-        public OptionFlagContainer(string name, string cmdPrototype, string envVariable, string[] jsonPath, bool? @default)
+        private bool _isSet;
+
+        public OptionValueContainer(string name, string cmdPrototype, string envVariable, string[] jsonPath, bool hasDefault, T @default)
         {
             Ensure.NotNullOrEmpty(name, "name");
             if (jsonPath != null && jsonPath.Length == 0)
@@ -71,23 +75,29 @@ namespace EventStore.Core.Tests.Common.Options
             _cmdPrototype = cmdPrototype;
             _envVariable = envVariable;
             _jsonPath = jsonPath;
+
+            _hasDefault = hasDefault;
             _default = @default;
+            if (_hasDefault && _default == null)
+                throw new ArgumentException("It is told that default is present, but default value is null.", "hasDefault");
 
             Origin = OptionOrigin.None;
             OriginName = "<uninitialized>";
             OriginOptionName = name;
+            _isSet = false;
         }
 
-        public void ParsingFromCmdLine(string flagArgName)
+        public void ParsingFromCmdLine(T value)
         {
             Origin = OptionOrigin.CommandLine;
             OriginName = OptionOrigin.CommandLine.ToString();
-            OriginOptionName = flagArgName ?? _cmdPrototype.Split('|').Last();
+            OriginOptionName = _cmdPrototype.Split('|').Last().Trim('=');
 
-            if (Value.HasValue)
+            if (_isSet)
                 throw new OptionException(string.Format("Option {0} is set more than once.", OriginOptionName), OriginOptionName);
 
-            Value = flagArgName != null;
+            Value = value;
+            _isSet = true;
         }
 
         public void ParseFromEnvironment()
@@ -103,21 +113,20 @@ namespace EventStore.Core.Tests.Common.Options
             OriginName = OptionOrigin.Environment.ToString();
             OriginOptionName = _envVariable;
 
-            switch (varValue)
+            try
             {
-                case "0":
-                    Value = false;
-                    break;
-                case "1":
-                    Value = true;
-                    break;
-                default:
-                    throw new OptionException(
-                            string.Format(
-                                          "Invalid value for flag in environment variable {0} (value: '{1}'), valid values are '0' and '1'.",
-                                          _envVariable,
-                                          varValue),
-                            _envVariable);
+                Value = OptionContainerHelpers.ConvertFromString<T>(varValue);
+                _isSet = true;
+            }
+            catch (Exception exc)
+            {
+                throw new OptionException(
+                        string.Format("Could not convert environment variable {0} (value: '{1}') to type {2}.",
+                                      _envVariable,
+                                      varValue,
+                                      typeof(T).Name),
+                        _envVariable,
+                        exc);
             }
         }
 
@@ -131,21 +140,26 @@ namespace EventStore.Core.Tests.Common.Options
             OriginName = configName;
             OriginOptionName = string.Join(".", _jsonPath);
 
-            var value = OptionContainerHelpers.GetTokenByJsonPath(json, _jsonPath);
-            if (value == null)
+            var token = OptionContainerHelpers.GetTokenByJsonPath(json, _jsonPath);
+            if (token == null)
                 return;
 
-            if (value.Type != JTokenType.Boolean)
+            try
+            {
+                Value = OptionContainerHelpers.ConvertFromJToken<T>(token);
+                _isSet = true;
+            }
+            catch (Exception exc)
             {
                 throw new OptionException(
-                        string.Format("Property '{0}' (value: {1}) in JSON config at '{2}' is not boolean value.",
+                        string.Format("Could not convert JToken {0} at '{1}' to type {2}. JToken: {3}.",
                                       OriginOptionName,
-                                      value,
-                                      configName),
-                        OriginOptionName);
+                                      configName,
+                                      typeof(T).Name,
+                                      token),
+                        OriginOptionName,
+                        exc);
             }
-
-            Value = value.Value<bool>();
         }
     }
 }

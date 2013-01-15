@@ -28,6 +28,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using Newtonsoft.Json;
 
