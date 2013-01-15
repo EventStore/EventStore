@@ -282,11 +282,11 @@ namespace EventStore.Projections.Core.Services.Http
                         ProjectionManagementMessage.Post postMessage;
                         string handlerType = match.BoundVariables["type"] ?? "JS";
                         bool emitEnabled = IsOn(match, "emit", false);
-                        bool checkpointsEnabled = mode != ProjectionMode.OneTime
+                        bool checkpointsEnabled = mode >= ProjectionMode.Continuous
                                                       ? true
                                                       : IsOn(match, "checkpoints", false);
                         bool enabled = IsOn(match, "enabled", def: true);
-                        if (mode == ProjectionMode.OneTime && string.IsNullOrEmpty(name))
+                        if (mode <= ProjectionMode.OneTime && string.IsNullOrEmpty(name))
                             postMessage = new ProjectionManagementMessage.Post(
                                 envelope, mode, Guid.NewGuid().ToString("D"), handlerType, s, enabled: enabled,
                                 checkpointsEnabled: checkpointsEnabled, emitEnabled: emitEnabled);

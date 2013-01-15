@@ -4,6 +4,7 @@
     <title>Edit Projection Source</title>
     <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
     <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/lib/require.js" type="text/javascript"></script>
     <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
     <script id="r-head">
         es.tmpl.renderHead();
@@ -12,21 +13,21 @@
 <body>
     <div id="content">
         <h1>
-            Edit Projection Source</h1>
-        <div class="form-horizontal">
-            <div class="control-group">
-                <label class="control-label" for="projection-state">
-                    <strong>State</strong></label>
-                <div class="controls">
-                    <div id="projection-state">
-                    </div>
-                </div>
-            </div>
+            One Time Projection</h1>
+        <h2 id="status"></h2>
+        <div>
             <div class="control-group">
                 <label class="control-label" for="source">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <textarea id="source" spellcheck="false" wrap="off" cols="100"></textarea>
+                    <textarea id="source" class="json" spellcheck="false" wrap="off" cols="100"></textarea>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="source">
+                    <strong>State</strong></label>
+                <div class="controls">
+                    <textarea id="state" spellcheck="false" wrap="off" cols="100" rows="20"></textarea>
                 </div>
             </div>
             <div class="control-group">
@@ -47,16 +48,38 @@
     </div>
 
     <script type="text/javascript">
+        require.config({
+            baseUrl: "/web/es/js",
+            paths: {
+            },
+        });
 
-        (function() {
+        require(['projections/state-status-monitor'], function (monitor) {
+
+            function statusChanged(status) {
+                $("#status").html(status.status + ($.isNumeric(status.progress) && status.progress != -1 ? ("(" + status.progress.toFixed(1) + "%)"): ""));
+            }
+
+            function stateChanged(state) {
+                $("#state").text(state);
+            }
+
+            $(function() {
+                var projectionStatusUrl = location.hash.substr(1);
+                var projectionMonitor = monitor(projectionStatusUrl);
+                projectionMonitor.start(statusChanged, stateChanged);
+            });
+        });
+
+        (function () {
 
             var projectionStatusUrl = "";
 
-            $(function() {
+            $(function () {
                 $.templates("editSourceTemplate", "#editSourceTemplate");
                 projectionStatusUrl = location.hash.substr(1);
 
-                $('#update-button').click(function(ev) {
+                $('#update-button').click(function (ev) {
                     var params = $.param({
                         emit: $("#emit").attr("checked") ? "yes" : "no",
                     });
@@ -68,8 +91,8 @@
                         type: "PUT",
                         data: $("#source").val(),
                         success: successUpdateSource,
-                        error: function(xhr) {
-                             var msg = es.util.formatError("Couldn't delete projection", xhr);
+                        error: function (xhr) {
+                            var msg = es.util.formatError("Couldn't delete projection", xhr);
                             alert(msg);
                         }
                     });
@@ -120,8 +143,8 @@
 
             function successUpdateSource(data, status, xhr) {
                 window.location = "view-projection.htm#" + projectionStatusUrl;
-            }            
-            
+            }
+
         })();
 
     </script>

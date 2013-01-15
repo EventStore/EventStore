@@ -67,12 +67,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource, emitEnabled: null));
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _manager.Dispose();
-        }
-
         [Test, Category("v8")]
         public void the_projection_source_can_be_retrieved()
         {

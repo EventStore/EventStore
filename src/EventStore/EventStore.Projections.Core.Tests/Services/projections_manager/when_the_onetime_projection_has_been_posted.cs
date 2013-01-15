@@ -46,12 +46,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _projectionName = _consumer.HandledMessages.OfType<ProjectionManagementMessage.Updated>().Single().Name;
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _manager.Dispose();
-        }
-
         [Test, Category("v8")]
         public void it_has_been_posted()
         {

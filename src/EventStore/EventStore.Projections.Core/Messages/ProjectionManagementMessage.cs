@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Messages
                 _envelope = envelope;
                 _name = Guid.NewGuid().ToString("D");
                 _handlerType = "JS";
-                _mode = ProjectionMode.OneTime;
+                _mode = ProjectionMode.Transient;
                 _query = query;
                 _enabled = enabled;
                 _checkpointsEnabled = false;

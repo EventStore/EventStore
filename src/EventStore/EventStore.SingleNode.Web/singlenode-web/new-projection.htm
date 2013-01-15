@@ -10,8 +10,8 @@
     </script>         
     <style>
         #mode {
-    min-width: 515px; /*width of #source + 15px - todo: find out why*/
-}
+            min-width: 515px; /*width of #source + 15px - todo: find out why*/
+        }
     </style>
 </head>
 <body>
@@ -30,9 +30,55 @@
                 <label class="control-label" for="source">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <textarea id="source" spellcheck="false">
-    fromAll().whenAny(function(state,event) { return state; });
-                    </textarea>
+                    <textarea id="source" spellcheck="false" wrap="off" cols="100">
+    // NOTE: this sample projection immediately stops in one-time mode unless you have 
+    // either event_type1 or event_type1 events in the store
+    options({
+
+                // stateStreamName: null,         // overrides output stream StateUpdated events are emitted to
+                                                  // NOTE: use {0} placeholder in case of a partitioned projection
+                useEventIndexes: true,            // makes a fromAll() projection to use event indexes 
+                                                  // NOTE: $by_event_type standard projection should be enabled
+                // reorderEvents: false,          // enables event reordering in a multi-stream projection
+                                                  // event reordering atempts to feed the projection with events in a 
+                                                  // their natural order
+                // processingLag: 0,              // processing lag in ms allowing event reordering to happen
+    });
+
+    fromAll() 
+    // fromStream('streamId') | fromStreams(['sream1', 'stream2']) | fromCategory('category')
+       //NOTE: fromCategory requires $by_category standard projection to be enabled
+
+    // .foreachStream() | .paritionBy(function(e) { return e.body.useId; })
+
+    .when({
+        $init: function () {
+            return { count1: 0, count2: 0, }; // initial state
+        },
+      
+        event_type1: function(s, e) {
+            //  emit('streamId', 'eventType', {/* event body */});
+            //  linkTo('streamId', e);
+            s.count1 += 1;
+            return s;
+        },
+                        
+        event_type2: function(s, e) {
+            s.count2 += 1;
+            return s;
+        },
+                        
+                        
+        /* $any: function (s, e) ... // NOTE: $any is exclusive and cannot be used in combination with 
+                                     // other event filters
+        */
+    })
+    // .emitStateUpdated()           
+                    
+                        
+    //NOTE: emitStateUpdated(), emit(), linkTo() require "emit enabled" (see checkbox below)
+
+</textarea>
                 </div>
             </div>
             <div class="control-group">
@@ -79,6 +125,7 @@
 
     <script type="text/javascript">
         $(function () {
+
             var storedCheckpoints = false;
             $("#mode").change(function () {
                 debugger;

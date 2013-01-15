@@ -366,7 +366,8 @@ namespace EventStore.Projections.Core.Services.Management
                 foreach (var @event in completed.Events.Where(v => v.Event.EventType == "ProjectionCreated"))
                 {
                     var projectionName = Encoding.UTF8.GetString(@event.Event.Data);
-                    if (_projections.ContainsKey(projectionName))
+                    if (string.IsNullOrEmpty(projectionName) // NOTE: workaround for a bug allowing to create such projections
+                        || _projections.ContainsKey(projectionName))
                     {
                         //TODO: log this event as it should not happen
                         continue; // ignore older attempts to create a projection
@@ -408,7 +409,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void PostNewProjection(ProjectionManagementMessage.Post message, Action<ManagedProjection> completed)
         {
-            if (message.Mode > ProjectionMode.OneTime)
+            if (message.Mode >= ProjectionMode.OneTime)
             {
                 BeginWriteProjectionRegistration(
                     message.Name, () =>
