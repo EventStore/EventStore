@@ -26,12 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.CreateStream
@@ -45,7 +46,7 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new StorageMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", false, Metadata);
+            yield return new StorageMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Guid.NewGuid(), false, Metadata);
         }
 
         protected override Message When()
@@ -65,7 +66,7 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
             Assert.AreEqual(1, Envelope.Replies.Count);
             var reply = (ClientMessage.CreateStreamCompleted) Envelope.Replies[0];
             Assert.AreEqual(CorrelationId, reply.CorrelationId);
-            Assert.AreEqual(OperationErrorCode.PrepareTimeout, reply.ErrorCode);
+            Assert.AreEqual(OperationResult.PrepareTimeout, reply.Result);
         }
     }
 }

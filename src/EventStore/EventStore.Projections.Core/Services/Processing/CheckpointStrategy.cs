@@ -28,9 +28,10 @@
 
 using System;
 using System.Collections.Generic;
-using EventStore.Core.Bus;
 using System.Linq;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -43,18 +44,24 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _allEvents;
         private readonly HashSet<string> _events;
         private readonly bool _byStream;
+        private readonly bool _byCustomPartitions;
         private readonly bool _useEventIndexes;
+        private readonly bool _reorderEvents;
+        private readonly int _processingLag;
+        private readonly bool _emitStateUpdated;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
-        private readonly StatePartitionSelector _statePartitionSelector;
+        private readonly bool _useCheckpoints;
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
-            public CheckpointStrategy Build(ProjectionMode mode)
+            public CheckpointStrategy Build(ProjectionConfig config)
             {
-                base.Validate(mode);
+                base.Validate(config);
                 return new CheckpointStrategy(
-                    _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream, _options.UseEventIndexes);
+                    _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream,
+                    _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag,
+                    _options.EmitStateUpdated, config.CheckpointsEnabled);
             }
         }
 
@@ -68,9 +75,14 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _positionTagger; }
         }
 
-        public StatePartitionSelector StatePartitionSelector
+        public bool EmitStateUpdated
         {
-            get { return _statePartitionSelector; }
+            get { return _emitStateUpdated; }
+        }
+
+        public bool UseCheckpoints
+        {
+            get { return _useCheckpoints; }
         }
 
         public bool IsEmiEnabled()
@@ -78,72 +90,88 @@ namespace EventStore.Projections.Core.Services.Processing
             return _streams == null || _streams.Count <= 1;
         }
 
-        public EventDistributionPoint CreatePausedEventDistributionPoint(
-            Guid distributionPointId, IPublisher publisher, CheckpointTag checkpointTag)
+        public EventReader CreatePausedEventReader(
+            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof)
         {
             if (_allStreams && _useEventIndexes && _events != null && _events.Count == 1)
             {
                 var streamName = checkpointTag.Streams.Keys.First();
-                return CreatePausedStreamReaderEventDistributionPoint(
-                    distributionPointId, publisher, checkpointTag, streamName, resolveLinkTos: true);
+                return CreatePausedStreamEventReader(
+                    eventReaderId, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true);
             }
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
-                return CreatePausedMultiStreamReaderEventDistributionPoint(
-                    distributionPointId, publisher, checkpointTag, resolveLinkTos: true, streams: GetEventIndexStreams());
+                IEnumerable<string> streams = GetEventIndexStreams();
+                return CreatePausedEventIndexEventReader(
+                    eventReaderId, publisher, checkpointTag, stopOnEof, true, streams);
             }
             if (_allStreams)
             {
-                var distributionPoint = new TransactionFileReaderEventDistributionPoint(
-                    publisher, distributionPointId,
-                    new EventPosition(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value));
-                return distributionPoint;
+                var eventReader = new TransactionFileEventReader(
+                    publisher, eventReaderId,
+                    new EventPosition(checkpointTag.CommitPosition.Value, checkpointTag.PreparePosition.Value),
+                    new RealTimeProvider(), deliverEndOfTFPosition: true, stopOnEof: stopOnEof);
+                return eventReader;
             }
             if (_streams != null && _streams.Count == 1)
             {
                 var streamName = checkpointTag.Streams.Keys.First();
                 //TODO: handle if not the same
-                return CreatePausedStreamReaderEventDistributionPoint(
-                    distributionPointId, publisher, checkpointTag, streamName, resolveLinkTos: true);
+                return CreatePausedStreamEventReader(
+                    eventReaderId, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true);
             }
             if (_categories != null && _categories.Count == 1)
             {
                 var streamName = checkpointTag.Streams.Keys.First();
-                return CreatePausedStreamReaderEventDistributionPoint(
-                    distributionPointId, publisher, checkpointTag, streamName, resolveLinkTos: true);
+                return CreatePausedStreamEventReader(
+                    eventReaderId, publisher, checkpointTag, streamName, stopOnEof, resolveLinkTos: true);
             }
             if (_streams != null && _streams.Count > 1)
             {
-                return CreatePausedMultiStreamReaderEventDistributionPoint(
-                    distributionPointId, publisher, checkpointTag, resolveLinkTos: true, streams: _streams);
+                return CreatePausedMultiStreamEventReader(
+                    eventReaderId, publisher, checkpointTag, stopOnEof, true, _streams);
             }
             throw new NotSupportedException();
         }
 
-        private static EventDistributionPoint CreatePausedStreamReaderEventDistributionPoint(
-            Guid distributionPointId, IPublisher publisher, CheckpointTag checkpointTag,
-            string streamName, bool resolveLinkTos)
+        private static EventReader CreatePausedStreamEventReader(
+            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, string streamName, bool stopOnEof,
+            bool resolveLinkTos)
         {
             var lastProcessedSequenceNumber = checkpointTag.Streams.Values.First();
             var fromSequenceNumber = lastProcessedSequenceNumber + 1;
-            var distributionPoint = new StreamReaderEventDistributionPoint(
-                publisher, distributionPointId, streamName, fromSequenceNumber, resolveLinkTos);
-            return distributionPoint;
+            var eventReader = new StreamEventReader(
+                publisher, eventReaderId, streamName, fromSequenceNumber, new RealTimeProvider(), resolveLinkTos,
+                stopOnEof);
+            return eventReader;
         }
 
-        private EventDistributionPoint CreatePausedMultiStreamReaderEventDistributionPoint(
-            Guid distributionPointId, IPublisher publisher, CheckpointTag checkpointTag, bool resolveLinkTos, IEnumerable<string> streams)
+        private static EventReader CreatePausedEventIndexEventReader(
+            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, bool resolveLinkTos,
+            IEnumerable<string> streams)
         {
             var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
 
-            var distributionPoint = new MultiStreamReaderEventDistributionPoint(
-                publisher, distributionPointId, streams.ToArray(), nextPositions, resolveLinkTos);
-            return distributionPoint;
+            return new EventIndexEventReader(
+                publisher, eventReaderId, streams.ToArray(), nextPositions, resolveLinkTos, new RealTimeProvider(),
+                stopOnEof);
+        }
+
+        private static EventReader CreatePausedMultiStreamEventReader(
+            Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof, bool resolveLinkTos,
+            IEnumerable<string> streams)
+        {
+            var nextPositions = checkpointTag.Streams.ToDictionary(v => v.Key, v => v.Value + 1);
+
+            return new MultiStreamEventReader(
+                publisher, eventReaderId, streams.ToArray(), nextPositions, resolveLinkTos, new RealTimeProvider(),
+                stopOnEof);
         }
 
         private CheckpointStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, HashSet<string> events,
-            bool byStream, bool useEventIndexes)
+            bool byStream, bool byCustomPartitions, bool useEventIndexes, bool reorderEvents, int processingLag,
+            bool emitStateUpdated, bool useCheckpoints)
         {
             _allStreams = allStreams;
             _categories = categories;
@@ -151,11 +179,15 @@ namespace EventStore.Projections.Core.Services.Processing
             _allEvents = allEvents;
             _events = events;
             _byStream = byStream;
+            _byCustomPartitions = byCustomPartitions;
             _useEventIndexes = useEventIndexes;
+            _reorderEvents = reorderEvents;
+            _processingLag = processingLag;
+            _emitStateUpdated = emitStateUpdated;
+            _useCheckpoints = useCheckpoints;
 
             _eventFilter = CreateEventFilter();
             _positionTagger = CreatePositionTagger();
-            _statePartitionSelector = CreateStatePartitionSelector();
         }
 
         private EventFilter CreateEventFilter()
@@ -183,6 +215,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 return new StreamPositionTagger("$et-" + _events.First());
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
                 return new MultiStreamPositionTagger(GetEventIndexStreams());
+            if (_allStreams && _reorderEvents)
+                return new PreparePositionTagger();
             if (_allStreams)
                 return new TransactionFilePositionTagger();
             if (_categories != null && _categories.Count == 1)
@@ -202,46 +236,59 @@ namespace EventStore.Projections.Core.Services.Processing
             return _events.Select(v => "$et-" + v).ToArray();
         }
 
-        private StatePartitionSelector CreateStatePartitionSelector()
+        public StatePartitionSelector CreateStatePartitionSelector(IProjectionStateHandler projectionStateHandler)
         {
-            return _byStream
-                       ? (StatePartitionSelector) new ByStreamStatePartitionSelector()
-                       : new NoopStatePartitionSelector();
+            return _byCustomPartitions
+                       ? new ByHandleStatePartitionSelector(projectionStateHandler)
+                       : (_byStream
+                              ? (StatePartitionSelector) new ByStreamStatePartitionSelector()
+                              : new NoopStatePartitionSelector());
         }
 
         public ICoreProjectionCheckpointManager CreateCheckpointManager(
             ICoreProjection coreProjection, Guid projectionCorrelationId, IPublisher publisher,
             RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-                requestResponseDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> responseDispatcher,
-            ProjectionConfig projectionConfig, string name, string stateUpdatesStreamId)
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+            ProjectionConfig projectionConfig, string name, ProjectionNamesBuilder namingBuilder)
         {
+            var emitPartitionCheckpoints = UseCheckpoints && !EmitStateUpdated && (_byCustomPartitions || _byStream);
+
             if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
-                string projectionStateUpdatesStreamId = stateUpdatesStreamId;
-
-                return new MultiStreamCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, name, PositionTagger, projectionStateUpdatesStreamId);
+                return new MultiStreamMultiOutputCheckpointManager(
+                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated,
+                    emitPartitionCheckpoints);
             }
             else if (_streams != null && _streams.Count > 1)
             {
-                string projectionStateUpdatesStreamId = stateUpdatesStreamId;
-
-                return new MultiStreamCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, name, PositionTagger, projectionStateUpdatesStreamId);
+                return new MultiStreamMultiOutputCheckpointManager(
+                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated,
+                    emitPartitionCheckpoints);
             }
             else
             {
-                string projectionCheckpointStreamId = CoreProjection.ProjectionsStreamPrefix + name
-                                                      + CoreProjection.ProjectionCheckpointStreamSuffix;
-
                 return new DefaultCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, requestResponseDispatcher, responseDispatcher,
-                    projectionConfig, projectionCheckpointStreamId, name, PositionTagger);
+                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated,
+                    emitPartitionCheckpoints);
             }
+        }
+
+        public IProjectionSubscription CreateProjectionSubscription(
+            CheckpointTag fromCheckpointTag, Guid projectionCorrelationId, Guid subscriptionId,
+            ICoreProjection projection, long checkpointUnhandledBytesThreshold, bool stopOnEof)
+        {
+            if (_reorderEvents)
+                return new EventReorderingProjectionSubscription(
+                    projectionCorrelationId, subscriptionId, fromCheckpointTag, projection, projection, projection,
+                    projection, this, checkpointUnhandledBytesThreshold, _processingLag, stopOnEof);
+            else
+                return new ProjectionSubscription(
+                    projectionCorrelationId, subscriptionId, fromCheckpointTag, projection, projection, projection,
+                    projection, this, checkpointUnhandledBytesThreshold, stopOnEof);
         }
     }
 }

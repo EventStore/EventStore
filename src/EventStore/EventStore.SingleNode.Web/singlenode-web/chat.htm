@@ -7,7 +7,40 @@
     <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
     <script id="r-head">
         es.tmpl.renderHead();
-    </script>
+    </script>   
+    <style>
+        .chat-window {
+            width: 98%;
+            border: 1px solid #d6d6d6;
+            border-radius: 5px;
+            margin: 10px 0;
+            cursor: default !important;
+        }
+        .input-window {
+            width: 100%;
+        }
+        .input-window .username {
+            width: 10%;
+            margin: 10px 0;
+        }
+        .input-window .message-input{
+            margin: 10px;
+            width: 80%;
+        }    
+        .input-window .send {
+            width: 10%;
+        }
+        .input-window .send, .input-dialog .submit {
+            background-color: whitesmoke;
+            color: #222222;
+            border: 1px solid #d6d6d6;
+            border-radius: 4px;
+            padding: 5px;
+            margin: 3px;
+            text-align: center;
+        }
+        
+    </style>
 </head>
 <body>
     <div id="content">
@@ -52,51 +85,52 @@
 
             tryLoadUserData();
 
-            $(".input-dialog").dialog({
-                modal: true,
-                closeOnEscape: false,
-                open: function (event, ui) {
-                    $(this).closest('.ui-dialog').find('.ui-dialog-titlebar-close').hide();
-                }
-            })
-                    .submit(onUserDataInput)
-                    .show();
+            $(".input-dialog")
+                .dialog({
+                    modal: true,
+                    closeOnEscape: false,
+                    open: function(event, ui) {
+                        $(this).closest('.ui-dialog').find('.ui-dialog-titlebar-close').hide();
+                    }
+                })
+                .submit(onUserDataInput)
+                .show();
 
             $(".input-window").submit(onMessageInput);
 
-            es.projection({
-                body: function () {
-                    fromStream('chat-' + chatRoomName).when({
-                        'ChatMessage': function (state, event) {
-                            var body = event.body;
-                            return { "text": (body.time + "> " + body.sender + ": " + body.message) };
-                        },
-                        'UserJoinedChat': function (state, event) {
-                            var body = event.body;
-                            return { "text": (body.time + "> user " + body.user + " has joined the chat!") };
-                        }
-                    });
-                },
-                runTrigger: function (runAction) {
-                    $(".input-dialog").bind("dialogclose", function (event, ui) {
-                        runAction();
-                    });
-                },
-                onStateChange: function (stateStr) {
-                    var stateObj = JSON.parse(stateStr);
-                    var currentText = $('.chat-window').val();
-
-                    var chatWindow = $('.chat-window').val(currentText + (stateObj.text || "") + "\r\n")[0];
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
-                },
-                startFrom: 0,
-                showError: function (err) {
-                    $('.error').text(err);
-                },
-                hideError: function () {
-                    $('.error').hide().text("");
-                }
+            $(".input-dialog").bind("dialogclose", function (event, ui) {
+                var projection = initProjection(userName, chatRoomName);
+                projection.start();
             });
+
+            function initProjection(userName, chatRoomName) {
+                return es.projection({
+                    body: function () {
+                        fromStream('chat-' + chatRoomName).when({
+                            'ChatMessage': function (state, event) {
+                                var body = event.body;
+                                return { "text": (body.time + "> " + body.sender + ": " + body.message) };
+                            },
+                            'UserJoinedChat': function (state, event) {
+                                var body = event.body;
+                                return { "text": (body.time + "> user " + body.user + " has joined the chat!") };
+                            }
+                        });
+                    },
+                    onStateUpdate: function (state) {
+                        var currentText = $('.chat-window').val();
+
+                        var chatWindow = $('.chat-window').val(currentText + (state.text || "") + "\r\n")[0];
+                        chatWindow.scrollTop = chatWindow.scrollHeight;
+                    },
+                    showError: function (err) {
+                        $('.error').text(err);
+                    },
+                    hideError: function () {
+                        $('.error').hide().text("");
+                    }
+                });
+            }
 
             function onUserDataInput(event) {
                 event.preventDefault();

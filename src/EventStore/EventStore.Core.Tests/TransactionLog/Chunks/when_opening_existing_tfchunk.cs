@@ -28,24 +28,33 @@
 using System;
 using System.IO;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_opening_existing_tfchunk
+    public class when_opening_existing_tfchunk: SpecificationWithFilePerTestFixture
     {
-        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
         private TFChunk _chunk;
         private TFChunk _testChunk;
 
-        [SetUp]
-        public void Setup()
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
         {
-            _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);
+            base.TestFixtureSetUp();
+            _chunk = TFChunk.CreateNew(Filename, 4096, 0, false);
             _chunk.Complete();
-            _testChunk = TFChunk.FromCompletedFile(_filename, verifyHash: true);
+            _testChunk = TFChunk.FromCompletedFile(Filename, verifyHash: true);
+        }
+
+        [TearDown]
+        public override void TestFixtureTearDown()
+        {
+            _chunk.Dispose();
+            _testChunk.Dispose();
+            base.TestFixtureTearDown();
         }
 
         [Test]
@@ -70,14 +79,6 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public void flush_throws_invalid_operation_exception()
         {
             Assert.Throws<InvalidOperationException>(() => _testChunk.Flush());
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _chunk.Dispose();
-            _testChunk.Dispose();
-            File.Delete(_filename);
         }
     }
 }

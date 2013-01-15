@@ -136,14 +136,14 @@ namespace EventStore.Core.Messages
 
             public ReadEventCompletedText(ClientMessage.ReadEventCompleted message)
             {
-                if (message.Record != null)
+                if (message.Record.Event != null)
                 {
-                    EventStreamId = message.Record.EventStreamId;
-                    EventNumber = message.Record.EventNumber;
-                    EventType = message.Record.EventType;
+                    EventStreamId = message.Record.Event.EventStreamId;
+                    EventNumber = message.Record.Event.EventNumber;
+                    EventType = message.Record.Event.EventType;
 
-                    Data = Encoding.UTF8.GetString(message.Record.Data ?? new byte[0]);
-                    Metadata = Encoding.UTF8.GetString(message.Record.Metadata ?? new byte[0]);
+                    Data = Encoding.UTF8.GetString(message.Record.Event.Data ?? new byte[0]);
+                    Metadata = Encoding.UTF8.GetString(message.Record.Event.Metadata ?? new byte[0]);
                 }
                 else
                 {

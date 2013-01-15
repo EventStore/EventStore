@@ -26,12 +26,13 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // using System.Collections;
 
+using System;
 using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Helper;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -46,18 +47,18 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new StorageMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", false, Metadata);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.CommitAck(CorrelationId, 2, 3);
-            yield return new StorageMessage.CommitAck(CorrelationId, 2, 3);
+            yield return new StorageMessage.CreateStreamRequestCreated(CorrelationId, Envelope, "test123", Guid.NewGuid(), false, Metadata);
+            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.CommitAck(CorrelationId, SomeEndPoint, 100, 2, 3);
+            yield return new StorageMessage.CommitAck(CorrelationId, SomeEndPoint, 100, 2, 3);
             
         }
 
         protected override Message When()
         {
-            return new StorageMessage.CommitAck(CorrelationId, 2, 3);
+            return new StorageMessage.CommitAck(CorrelationId, SomeEndPoint, 100, 2, 3);
         }
 
         [Test]
@@ -71,7 +72,7 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
         public void the_envelope_is_replied_to_with_success()
         {
             Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.CreateStreamCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                                  x.ErrorCode == OperationErrorCode.Success));
+                                                                                                  x.Result == OperationResult.Success));
         }
     }
 }

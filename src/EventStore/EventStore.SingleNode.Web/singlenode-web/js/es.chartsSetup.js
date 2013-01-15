@@ -83,7 +83,7 @@ $(function () {
                 className: timeSeriesClass,
                 titleClassName: chartTitleClass,
                 appendTo: appendToSelector,
-                maxLength: 20,
+                maxLength: 50,
                 zoomer: sets.zoomer
             });
         }

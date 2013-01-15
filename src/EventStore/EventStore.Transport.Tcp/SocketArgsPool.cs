@@ -32,14 +32,10 @@ namespace EventStore.Transport.Tcp
 {
     internal class SocketArgsPool
     {
-        private readonly string _name;
+        public readonly string Name;
+
         private readonly Func<SocketAsyncEventArgs> _socketArgsCreator;
-        
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Common.ConcurrentCollections.ConcurrentStack<SocketAsyncEventArgs>();
-#else
-        private readonly System.Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new System.Collections.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
-#endif
+        private readonly Common.Concurrent.ConcurrentStack<SocketAsyncEventArgs> _socketArgsPool = new Common.Concurrent.ConcurrentStack<SocketAsyncEventArgs>();
 
         public SocketArgsPool(string name, int initialCount, Func<SocketAsyncEventArgs> socketArgsCreator)
         {
@@ -48,7 +44,7 @@ namespace EventStore.Transport.Tcp
             if (initialCount < 0)
                 throw new ArgumentOutOfRangeException("initialCount");
 
-            _name = name;
+            Name = name;
             _socketArgsCreator = socketArgsCreator;
 
             for (int i = 0; i < initialCount; ++i)

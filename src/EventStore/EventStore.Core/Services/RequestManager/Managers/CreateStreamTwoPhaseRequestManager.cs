@@ -35,49 +35,47 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class CreateStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.CreateStreamRequestCreated>
+    public class CreateStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.CreateStreamRequestCreated>
     {
         public CreateStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
-            base(publisher, prepareCount, commitCount)
-        {}
+                base(publisher, prepareCount, commitCount)
+        {
+        }
 
         public void Handle(StorageMessage.CreateStreamRequestCreated request)
         {
-            if (_initialized)
-                throw new InvalidOperationException();
+            Init(request.Envelope, request.CorrelationId, -1);
 
-            _initialized = true;
-            _responseEnvelope = request.Envelope;
-            _correlationId = request.CorrelationId;
-            _eventStreamId = request.EventStreamId;
-
-            Publisher.Publish(new StorageMessage.WritePrepares(
-                             request.CorrelationId,
-                             _publishEnvelope,
-                             request.EventStreamId,
-                             ExpectedVersion.NoStream,
-                             new[] { new Event(Guid.NewGuid(), "StreamCreated", request.IsJson, LogRecord.NoData, request.Metadata) },
-                             allowImplicitStreamCreation: false,
-                             liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
+            Publisher.Publish(
+                new StorageMessage.WritePrepares(
+                    request.CorrelationId,
+                    PublishEnvelope,
+                    request.EventStreamId,
+                    ExpectedVersion.NoStream,
+                    new[]
+                    {
+                        new Event(request.CreateStreamId, SystemEventTypes.StreamCreated, request.IsJson, LogRecord.NoData, request.Metadata)
+                    },
+                    allowImplicitStreamCreation: false,
+                    liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
-                                                      _publishEnvelope,
-                                                      new StorageMessage.PreparePhaseTimeout(_correlationId)));
+                                                           PublishEnvelope,
+                                                           new StorageMessage.PreparePhaseTimeout(CorrelationId)));
         }
 
 
-        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
+        protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
         {
-            base.CompleteSuccessRequest(correlationId, eventStreamId, startEventNumber);
-            var responseMsg = new ClientMessage.CreateStreamCompleted(
-                correlationId, eventStreamId, OperationErrorCode.Success, null);
-            _responseEnvelope.ReplyWith(responseMsg);
+            base.CompleteSuccessRequest(correlationId, firstEventNumber);
+            var responseMsg = new ClientMessage.CreateStreamCompleted(correlationId, OperationResult.Success, null);
+            ResponseEnvelope.ReplyWith(responseMsg);
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
+        protected override void CompleteFailedRequest(Guid correlationId, OperationResult result, string error)
         {
-            base.CompleteFailedRequest(correlationId, eventStreamId, errorCode, error);
-            var responseMsg = new ClientMessage.CreateStreamCompleted(correlationId, eventStreamId, errorCode, error);
-            _responseEnvelope.ReplyWith(responseMsg);     
+            base.CompleteFailedRequest(correlationId, result, error);
+            var responseMsg = new ClientMessage.CreateStreamCompleted(correlationId, result, error);
+            ResponseEnvelope.ReplyWith(responseMsg);     
         }
     }
 }

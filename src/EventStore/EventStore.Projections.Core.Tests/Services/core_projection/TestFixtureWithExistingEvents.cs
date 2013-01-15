@@ -36,15 +36,18 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
+    [MightyMooseIgnore]
     public abstract class TestFixtureWithExistingEvents : TestFixtureWithReadWriteDisaptchers,
                                                           IHandle<ClientMessage.ReadStreamEventsBackward>,
                                                           IHandle<ClientMessage.WriteEvents>,
@@ -56,6 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         private int _fakePosition = 100;
         private bool _allWritesSucceed;
+        private HashSet<string> _writesToSucceed = new HashSet<string>();
         private bool _allWritesQueueUp;
         private Queue<ClientMessage.WriteEvents> _writesQueue;
         private long _lastPosition;
@@ -64,13 +68,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected void ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData)
         {
             List<EventRecord> list;
-            if (!_lastMessageReplies.TryGetValue(streamId, out list))
+            if (!_lastMessageReplies.TryGetValue(streamId, out list) || list == null)
             {
                 list = new List<EventRecord>();
                 _lastMessageReplies[streamId] = list;
             }
-            list.Insert(
-                0,
+            list.Add(
                 new EventRecord(
                     list.Count,
                     new PrepareLogRecord(
@@ -83,12 +86,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         protected void NoStream(string streamId)
         {
-            _lastMessageReplies.Add(streamId, null);
+            _lastMessageReplies[streamId] = null;
         }
 
         protected void AllWritesSucceed()
         {
             _allWritesSucceed = true;
+        }
+
+        protected void AllWritesToSucceed(string streamId)
+        {
+            _writesToSucceed.Add(streamId);
         }
 
         protected void TicksAreHandledImmediately()
@@ -104,8 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected void OneWriteCompletes()
         {
             var message = _writesQueue.Dequeue();
-            message.Envelope.ReplyWith(
-                new ClientMessage.WriteEventsCompleted(message.CorrelationId, message.EventStreamId, 0));
+            message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, 0));
         }
 
         protected void AllWriteComplete()
@@ -150,18 +157,21 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 if (list != null && list.Count > 0 && (list.Last().EventNumber <= message.FromEventNumber)
                     || (message.FromEventNumber == -1))
                 {
-                    EventLinkPair[] records = list.Safe()
+                    ResolvedEvent[] records = list.Safe()
                                                   .Reverse()
                                                   .SkipWhile(v => message.FromEventNumber != -1 && v.EventNumber > message.FromEventNumber)
                                                   .Take(message.MaxCount)
-                                                  .Select(x => new EventLinkPair(x, null))
+                                                  .Select(x => new ResolvedEvent(x, null))
                                                   .ToArray();
                     message.Envelope.ReplyWith(
                             new ClientMessage.ReadStreamEventsBackwardCompleted(
                                     message.CorrelationId,
                                     message.EventStreamId,
+                                    message.FromEventNumber == -1 ? (list.IsEmpty() ? -1 : list.Last().EventNumber) : message.FromEventNumber,
+                                    message.MaxCount,
+                                    ReadStreamResult.Success,
                                     records,
-                                    RangeReadResult.Success,
+                                    string.Empty,
                                     nextEventNumber: records.Length > 0 ? records.Last().Event.EventNumber - 1 : -1,
                                     lastEventNumber: list.Safe().Any() ? list.Safe().Last().EventNumber : -1,
                                     isEndOfStream: records.Length > 0 && records.Last().Event.EventNumber == 0,
@@ -170,23 +180,25 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 else
                 {
                     throw new NotImplementedException();
+/*
                     message.Envelope.ReplyWith(
                             new ClientMessage.ReadStreamEventsBackwardCompleted(
                                     message.CorrelationId,
                                     message.EventStreamId,
                                     new EventLinkPair[0],
-                                    RangeReadResult.Success,
+                                    ReadStreamResult.Success,
                                     nextEventNumber: -1,
                                     lastEventNumber: list.Safe().Last().EventNumber,
                                     isEndOfStream: true,// NOTE AN: don't know how to correctly determine this here
                                     lastCommitPosition: _lastPosition));
+*/
                 }
             }
         }
 
         public void Handle(ClientMessage.WriteEvents message)
         {
-            if (_allWritesSucceed)
+            if (_allWritesSucceed || _writesToSucceed.Contains(message.EventStreamId))
             {
                 List<EventRecord> list;
                 if (!_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || list == null)
@@ -205,10 +217,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     list.Add(eventRecord);
                 }
 
-                message.Envelope.ReplyWith(
-                    new ClientMessage.WriteEventsCompleted(message.CorrelationId, message.EventStreamId, 0));
+                message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, 0));
             }
-            if (_allWritesQueueUp)
+            else if (_allWritesQueueUp)
                 _writesQueue.Enqueue(message);
         }
 

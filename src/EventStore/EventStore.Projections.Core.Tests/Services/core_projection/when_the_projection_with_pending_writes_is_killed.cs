@@ -31,17 +31,21 @@ using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_projection_with_pending_writes_is_killed : TestFixtureWithCoreProjection
+    public class when_the_projection_with_pending_writes_is_killed : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {
             _checkpointHandledThreshold = 2;
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
             NoStream(FakeProjectionStateHandler._emit1StreamId);
             AllWritesQueueUp();
@@ -52,20 +56,20 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             //projection subscribes here
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                    new Event(
+                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
                         Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
                         Encoding.UTF8.GetBytes("metadata")), 0));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(140, 130), "/event_category/1", -1, false,
-                    new Event(
+                    Guid.Empty, _subscriptionId, new EventPosition(140, 130), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
                         Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
                         Encoding.UTF8.GetBytes("metadata")), 1));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, new EventPosition(160, 150), "/event_category/1", -1, false,
-                    new Event(
+                    Guid.Empty, _subscriptionId, new EventPosition(160, 150), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
                         Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data3"),
                         Encoding.UTF8.GetBytes("metadata")), 2));
             _coreProjection.Kill();

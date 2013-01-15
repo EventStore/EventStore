@@ -53,10 +53,10 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
 
             ReadIndex.Close();
             ReadIndex.Dispose();
-            TableIndex.ClearAll(removeFiles: false);
+            TableIndex.Close(removeFiles: false);
 
-            TableIndex = new TableIndex(Path.Combine(PathName, "index"),
-                                        () => new HashListMemTable(maxSize: 2000),
+            TableIndex = new TableIndex(GetFilePathFor("index"),
+                                        () => new HashListMemTable(maxSize: MaxEntriesInMemTable*2),
                                         maxSizeForMemory: MaxEntriesInMemTable);
 
             ReadIndex = new ReadIndex(new NoopPublisher(),
@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             for (int i = 0; i < 15; ++i)
             {
                 var result = ReadIndex.ReadEvent("ES", i);
-                Assert.AreEqual(SingleReadResult.Success, result.Result);
+                Assert.AreEqual(ReadEventResult.Success, result.Result);
                 Assert.AreEqual(Encoding.UTF8.GetBytes("data" + i), result.Record.Data);
             }
         }

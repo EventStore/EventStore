@@ -27,28 +27,29 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using EventStore.Core.Data;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class when_merging_two_ptables_with_deletes_and_hash_collisions
+    public class when_merging_two_ptables_with_deletes_and_hash_collisions: SpecificationWithDirectoryPerTestFixture
     {
         private readonly List<string> _files = new List<string>();
         private readonly List<PTable> _tables = new List<PTable>();
         private PTable _newtable;
 
         [TestFixtureSetUp]
-        public void Setup()
+        public override void TestFixtureSetUp()
         {
+            base.TestFixtureSetUp();
             for (int i = 0; i < 2; i++)
             {
-                _files.Add(Path.GetRandomFileName());
+                _files.Add(GetTempFilePath());
 
-                var table = new HashListMemTable(maxSize: 2000);
+                var table = new HashListMemTable(maxSize: 30);
                 for (int j = 0; j < 10; j++)
                 {
                     table.Add((UInt32)j % 8, i, i * j * 100 + i + j); // 0 collisions with 8, 1 collisions with 9
@@ -62,15 +63,26 @@ namespace EventStore.Core.Tests.Index
                 }
                 _tables.Add(PTable.FromMemtable(table, _files[i]));
             }
-            _files.Add(Path.GetRandomFileName());
+            _files.Add(GetTempFilePath());
             _newtable = PTable.MergeTo(_tables, _files[2], x => x.Stream <= 1);
+        }
+
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
+        {
+            _newtable.Dispose();
+            foreach (var ssTable in _tables)
+            {
+                ssTable.Dispose();
+            }
+            base.TestFixtureTearDown();
         }
 
         [Test]
         public void there_are_thirty_six_records_in_merged_index_because_collisions_are_not_deleted()
         {
-            // 20 data records + 4 delete records - 4 deleted records (with 2 and 3 as a hash)
-            Assert.AreEqual(20, _newtable.Count);
+            // 20 data records + 4 delete records - 2 deleted records (with 2 and 3 as a hash, but not those for 0th event)
+            Assert.AreEqual(22, _newtable.Count);
         }
 
         [Test]
@@ -93,10 +105,12 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void the_right_items_are_deleted()
         {
-            long position;
             for (uint i = 2; i <= 3; i++)
             {
-                Assert.IsFalse(_newtable.TryGetOneValue(i, 0, out position));
+                long position;
+                Assert.IsTrue(_newtable.TryGetOneValue(i, 0, out position));    // 0th events are left
+                Assert.IsFalse(_newtable.TryGetOneValue(i, 1, out position));   
+                Assert.IsTrue(_newtable.TryGetOneValue(i, EventNumber.DeletedStream, out position));    // delete tombstones are left
             }
         }
 
@@ -107,20 +121,6 @@ namespace EventStore.Core.Tests.Index
             {
                 var entries = _newtable.GetRange(i, 0, 0).ToArray();
                 Assert.AreEqual(2, entries.Length);
-            }
-        }
-
-        [TestFixtureTearDown]
-        public void Teardown()
-        {
-            _newtable.Dispose();
-            foreach (var ssTable in _tables)
-            {
-                ssTable.Dispose();
-            }
-            foreach (var f in _files)
-            {
-                File.Delete(f);
             }
         }
     }

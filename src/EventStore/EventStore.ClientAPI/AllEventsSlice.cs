@@ -25,22 +25,52 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
-
-using System.Collections.Generic;
-using System.Linq;
 using EventStore.ClientAPI.Messages;
 
 namespace EventStore.ClientAPI
 {
+    /// <summary>
+    /// The result of a read operation from the $all stream.
+    /// </summary>
     public class AllEventsSlice
     {
-        public readonly Position Position;
-        public readonly RecordedEvent[] Events;
+        private static readonly ResolvedEvent[] EmptyEvents = new ResolvedEvent[0];
 
-        internal AllEventsSlice(Position position, IEnumerable<ClientMessage.EventLinkPair> events)
+        /// <summary>
+        /// The direction of read request.
+        /// </summary>
+        public readonly ReadDirection ReadDirection;
+
+        /// <summary>
+        /// A <see cref="Position"/> representing the position where this slice was read from.
+        /// </summary>
+        public readonly Position FromPosition;
+
+        /// <summary>
+        /// A <see cref="Position"/> representing the position where the next slice should be read from.
+        /// </summary>
+        public readonly Position NextPosition;
+
+        /// <summary>
+        /// The events read.
+        /// </summary>
+        public readonly ResolvedEvent[] Events;
+
+        internal AllEventsSlice(ReadDirection readDirection, Position fromPosition, Position nextPosition, ClientMessage.ResolvedEvent[] events)
         {
-            Position = position;
-            Events = events == null ? EventStreamSlice.EmptyEvents : events.Select(x => new RecordedEvent(x.Event)).ToArray();
+            ReadDirection = readDirection;
+            FromPosition = fromPosition;
+            NextPosition = nextPosition;
+            if (events == null)
+                Events = EmptyEvents;
+            else
+            {
+                Events = new ResolvedEvent[events.Length];
+                for (int i = 0; i < Events.Length; ++i)
+                {
+                    Events[i] = new ResolvedEvent(events[i]);
+                }
+            }
         }
     }
 }

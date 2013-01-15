@@ -33,17 +33,20 @@ using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_state_handler_does_emit_an_event_the_projection_should : TestFixtureWithCoreProjection
+    public class when_the_state_handler_does_emit_an_event_the_projection_should : TestFixtureWithCoreProjectionStarted
     {
         private Guid _causingEventId;
 
         protected override void Given()
         {
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
             NoStream(FakeProjectionStateHandler._emit1StreamId);
         }
@@ -52,11 +55,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             //projection subscribes here
             _causingEventId = Guid.NewGuid();
-            _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                       new Event(
-                           _causingEventId, "no_state_emit1_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata")), 0));
+            var committedEventReceived = ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                Guid.Empty, _subscriptionId, new EventPosition(120, 110), "/event_category/1", -1, false,
+                ResolvedEvent.Sample(
+                    _causingEventId, "no_state_emit1_type", false, Encoding.UTF8.GetBytes("data"),
+                    Encoding.UTF8.GetBytes("metadata")), 0);
+            _coreProjection.Handle(committedEventReceived);
         }
 
         [Test]

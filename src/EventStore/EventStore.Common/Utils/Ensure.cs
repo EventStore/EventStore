@@ -73,10 +73,22 @@ namespace EventStore.Common.Utils
                 throw new ArgumentException(argumentName, argumentName + " shoud be non-empty GUID.");
         }
 
-        public static void Equal(int expected, int actual)
+        public static void Equal(int expected, int actual, string argumentName)
         {
             if (expected != actual)
-                throw new Exception(string.Format("expected {0} actual {1}", expected, actual));
+                throw new ArgumentException(string.Format("{0} expected value: {1}, actual value: {2}", argumentName, expected, actual));
+        }
+
+        public static void Equal(long expected, long actual, string argumentName)
+        {
+            if (expected != actual)
+                throw new ArgumentException(string.Format("{0} expected value: {1}, actual value: {2}", argumentName, expected, actual));
+        }
+
+        public static void Equal(bool expected, bool actual, string argumentName)
+        {
+            if (expected != actual)
+                throw new ArgumentException(string.Format("{0} expected value: {1}, actual value: {2}", argumentName, expected, actual));
         }
     }
 }

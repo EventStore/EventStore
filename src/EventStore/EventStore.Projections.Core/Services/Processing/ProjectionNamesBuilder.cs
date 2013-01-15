@@ -26,19 +26,75 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ProjectionNamesBuilder : QuerySourceProcessingStrategyBuilder
     {
-        public string StateStreamName
+        private readonly string _name;
+
+        public ProjectionNamesBuilder(string name)
         {
-            get { return _options.StateStreamName; }
+            _name = name;
+        }
+
+        public string EffectiveProjectionName
+        {
+            get { return _options.ForceProjectionName ?? _name; }
+        }
+
+        private string GetPartitionStateStreamName(string partitonName)
+        {
+            return
+                String.Format(
+                    _options.StateStreamName
+                    ?? ProjectionsStreamPrefix + EffectiveProjectionName + "-{0}" + ProjectionsStateStreamSuffix,
+                    partitonName);
+        }
+
+        public string GetStateStreamName()
+        {
+            return _options.StateStreamName ?? ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionsStateStreamSuffix;
+        }
+
+        private const string ProjectionsStreamPrefix = "$projections-";
+        private const string ProjectionsStateStreamSuffix = "-state";
+        private const string ProjectionCheckpointStreamSuffix = "-checkpoint";
+        private const string ProjectionOrderStreamSuffix = "-order";
+        private const string ProjectionPartitionCatalogStreamSuffix = "-partitions";
+
+        public string GetPartitionCatalogStreamName()
+        {
+            return ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionPartitionCatalogStreamSuffix;
+        }
+
+        public string MakePartitionStateStreamName(string statePartition)
+        {
+            return String.IsNullOrEmpty(statePartition)
+                       ? GetStateStreamName()
+                       : GetPartitionStateStreamName(statePartition);
+        }
+
+        public string MakePartitionCheckpointStreamName(string statePartition)
+        {
+            if (String.IsNullOrEmpty(statePartition))
+                throw new InvalidOperationException("Root partition cannot have a partition checkpoint stream");
+
+            return ProjectionsStreamPrefix + EffectiveProjectionName + "-" + statePartition + ProjectionCheckpointStreamSuffix;
         }
 
 
-        public string ForceProjectionName
+        public string MakeCheckpointStreamName()
         {
-            get { return _options.ForceProjectionName; }
+            return ProjectionsStreamPrefix + EffectiveProjectionName
+                   + ProjectionCheckpointStreamSuffix;
+        }
+
+        public string GetOrderStreamName()
+        {
+            return ProjectionsStreamPrefix + EffectiveProjectionName
+                   + ProjectionOrderStreamSuffix;
         }
     }
 }

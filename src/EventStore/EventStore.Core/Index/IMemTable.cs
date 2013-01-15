@@ -26,11 +26,14 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Collections.Generic;
+
 namespace EventStore.Core.Index
 {
     public interface IMemTable: ISearchTable
     {
         bool MarkForConversion();
         void Add(uint stream, int version, long position);
+        void AddEntries(IList<IndexEntry> entries);
     }
 }

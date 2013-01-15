@@ -40,7 +40,7 @@ namespace EventStore.TestClient.Commands
 {
     internal class WriteFloodProcessor : ICmdProcessor
     {
-        public string Usage { get { return "WRFL [<clients> <requests> [<streams-cnt>]]"; } }
+        public string Usage { get { return "WRFL [<clients> <requests> [<streams-cnt> [<size>]]]"; } }
         public string Keyword { get { return "WRFL"; } }
 
         public bool Execute(CommandProcessorContext context, string[] args)
@@ -48,9 +48,10 @@ namespace EventStore.TestClient.Commands
             int clientsCnt = 1;
             long requestsCnt = 5000;
             int streamsCnt = 1000;
+            int size = 256;
             if (args.Length > 0)
             {
-                if (args.Length != 2 && args.Length != 3)
+                if (args.Length < 2 || args.Length > 4)
                     return false;
 
                 try
@@ -59,6 +60,8 @@ namespace EventStore.TestClient.Commands
                     requestsCnt = long.Parse(args[1]);
                     if (args.Length >= 3)
                         streamsCnt = int.Parse(args[2]);
+                    if (args.Length >= 4)
+                        size = int.Parse(args[3]);
                 }
                 catch
                 {
@@ -66,11 +69,11 @@ namespace EventStore.TestClient.Commands
                 }
             }
 
-            WriteFlood(context, clientsCnt, requestsCnt, streamsCnt);
+            WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size);
             return true;
         }
 
-        private void WriteFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt, int streamsCnt)
+        private void WriteFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt, int streamsCnt, int size)
         {
             context.IsAsync();
 
@@ -109,30 +112,30 @@ namespace EventStore.TestClient.Commands
                         }
 
                         var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-                        switch((OperationErrorCode)dto.ErrorCode)
+                        switch(dto.Result)
                         {
-                            case OperationErrorCode.Success:
+                            case TcpClientMessageDto.OperationResult.Success:
                                 Interlocked.Increment(ref succ);
                                 break;
-                            case OperationErrorCode.PrepareTimeout:
+                            case TcpClientMessageDto.OperationResult.PrepareTimeout:
                                 Interlocked.Increment(ref prepTimeout);
                                 break;
-                            case OperationErrorCode.CommitTimeout:
+                            case TcpClientMessageDto.OperationResult.CommitTimeout:
                                 Interlocked.Increment(ref commitTimeout);
                                 break;
-                            case OperationErrorCode.ForwardTimeout:
+                            case TcpClientMessageDto.OperationResult.ForwardTimeout:
                                 Interlocked.Increment(ref forwardTimeout);
                                 break;
-                            case OperationErrorCode.WrongExpectedVersion:
+                            case TcpClientMessageDto.OperationResult.WrongExpectedVersion:
                                 Interlocked.Increment(ref wrongExpVersion);
                                 break;
-                            case OperationErrorCode.StreamDeleted:
+                            case TcpClientMessageDto.OperationResult.StreamDeleted:
                                 Interlocked.Increment(ref streamDeleted);
                                 break;
                             default:
                                 throw new ArgumentOutOfRangeException();
                         }
-                        if (dto.ErrorCode != (int)OperationErrorCode.Success)
+                        if (dto.Result != TcpClientMessageDto.OperationResult.Success)
                             Interlocked.Increment(ref fail);
 
                         Interlocked.Increment(ref received);
@@ -153,7 +156,7 @@ namespace EventStore.TestClient.Commands
                     },
                     connectionClosed: (conn, err) =>
                     {
-                        if (all < requestsCnt)
+                        if (received < count)
                             context.Fail(null, "Socket was closed, but not all requests were completed.");
                         else
                             context.Success();
@@ -169,20 +172,22 @@ namespace EventStore.TestClient.Commands
                             streams[rnd.Next(streamsCnt)],
                             ExpectedVersion.Any,
                             new[]
-                                {
-                                    new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
-                                                                        "TakeSomeSpaceEvent",
-                                                                        false,
-                                                                        Encoding.UTF8.GetBytes("DATA" + new string('*', 256)),
-                                                                        Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
-                                },
+                            {
+                                new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+                                                                 "TakeSomeSpaceEvent",
+                                                                 false,
+                                                                 Encoding.UTF8.GetBytes("DATA" + new string('*', size)),
+                                                                 Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
+                            },
                             true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                         client.EnqueueSend(package.AsByteArray());
 
                         Interlocked.Increment(ref sent);
-                        while (sent - received > context.Client.Options.WriteWindow)
+                        while (sent - received > context.Client.Options.WriteWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }
@@ -224,15 +229,24 @@ namespace EventStore.TestClient.Commands
                               PerfUtils.Col("ElapsedMilliseconds", sw.ElapsedMilliseconds)),
                 PerfUtils.Row(PerfUtils.Col("successes", succ), PerfUtils.Col("failures", fail)));
 
+            var failuresRate = (int) (100 * fail / (fail + succ));
+            
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt),
-                                           (int) reqPerSec);
+                                           (int)reqPerSec);
 
             PerfUtils.LogTeamCityGraphData(
                 string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt),
-                100*fail/(fail + succ));
+                failuresRate);
 
-            if (succ < fail)
-                context.Fail(reason: "Number of failures is greater than number of successes");
+            PerfUtils.LogTeamCityGraphData(string.Format("{0}-c{1}-r{2}-st{3}-s{4}-reqPerSec", Keyword, clientsCnt, requestsCnt, streamsCnt, size),
+                                           (int)reqPerSec);
+
+            PerfUtils.LogTeamCityGraphData(
+                string.Format("{0}-c{1}-r{2}-st{3}-s{4}-failureSuccessRate", Keyword, clientsCnt, requestsCnt, streamsCnt, size),
+                              failuresRate);
+
+            if (succ < prepTimeout+commitTimeout+forwardTimeout)
+                context.Fail(reason: "Number of timeout is greater than number of successes");
             else
                 context.Success();
         }

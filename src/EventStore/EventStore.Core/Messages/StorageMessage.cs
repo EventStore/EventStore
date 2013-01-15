@@ -49,6 +49,10 @@ namespace EventStore.Core.Messages
         {
         }
 
+        public interface IAckMessage
+        {
+        }
+
         public interface IMasterWriteMessage
         {
              
@@ -124,13 +128,13 @@ namespace EventStore.Core.Messages
         {
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
-            public readonly long PrepareStartPosition;
+            public readonly long TransactionPosition;
 
-            public WriteCommit(Guid correlationId, IEnvelope envelope, long prepareStartPosition)
+            public WriteCommit(Guid correlationId, IEnvelope envelope, long transactionPosition)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
-                PrepareStartPosition = prepareStartPosition;
+                TransactionPosition = transactionPosition;
             }
         }
 
@@ -170,19 +174,13 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long TransactionId;
-            public readonly string EventStreamId;
             public readonly Event[] Events;
 
-            public WriteTransactionData(Guid correlationId, 
-                                        IEnvelope envelope, 
-                                        long transactionId, 
-                                        string eventStreamId, 
-                                        Event[] events)
+            public WriteTransactionData(Guid correlationId, IEnvelope envelope, long transactionId, Event[] events)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 TransactionId = transactionId;
-                EventStreamId = eventStreamId;
                 Events = events;
             }
         }
@@ -192,67 +190,72 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long TransactionId;
-            public readonly string EventStreamId;
 
             public readonly DateTime LiveUntil;
 
-            public WriteTransactionPrepare(Guid correlationId, 
-                                           IEnvelope envelope, 
-                                           long transactionId, 
-                                           string eventStreamId,
-                                           DateTime liveUntil)
+            public WriteTransactionPrepare(Guid correlationId, IEnvelope envelope, long transactionId, DateTime liveUntil)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 TransactionId = transactionId;
-                EventStreamId = eventStreamId;
 
                 LiveUntil = liveUntil;
             }
         }
 
-        public class PrepareAck : Message
+        public class PrepareAck : Message, IAckMessage
         {
             public readonly Guid CorrelationId;
+            public readonly IPEndPoint VNodeEndPoint;
             public readonly long LogPosition;
-            public readonly PrepareFlags Flags; 
+            public readonly PrepareFlags Flags;
 
-            public PrepareAck(Guid correlationId, long logPosition, PrepareFlags flags)
+            public PrepareAck(Guid correlationId, IPEndPoint vnodeEndPoint, long logPosition, PrepareFlags flags)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
+                Ensure.Nonnegative(logPosition, "logPosition");
+
                 CorrelationId = correlationId;
+                VNodeEndPoint = vnodeEndPoint;
                 LogPosition = logPosition;
                 Flags = flags;
             }
         }
 
-        public class CommitAck : Message
+        public class CommitAck : Message, IAckMessage
         {
             public readonly Guid CorrelationId;
+            public readonly IPEndPoint VNodeEndPoint;
+            public readonly long LogPosition;
             public readonly long TransactionPosition;
-            public readonly int EventNumber;
+            public readonly int FirstEventNumber;
 
-            public CommitAck(Guid correlationId, long transactionPosition, int eventNumber)
+            public CommitAck(Guid correlationId, IPEndPoint vnodeEndPoint, long logPosition, long transactionPosition, int firstEventNumber)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
+                Ensure.Nonnegative(logPosition, "logPosition");
                 Ensure.Nonnegative(transactionPosition, "transactionPosition");
-                Ensure.Nonnegative(eventNumber, "eventNumber");
+                Ensure.Nonnegative(firstEventNumber, "firstEventNumber");
 
                 CorrelationId = correlationId;
+                VNodeEndPoint = vnodeEndPoint;
+                LogPosition = logPosition;
                 TransactionPosition = transactionPosition;
-                EventNumber = eventNumber;
+                FirstEventNumber = firstEventNumber;
             }
         }
 
         public class EventCommited: Message
         {
             public readonly long CommitPosition;
-            public readonly int EventNumber;
-            public readonly PrepareLogRecord Prepare;
+            public readonly EventRecord Event;
 
-            public EventCommited(long commitPosition, int eventNumber, PrepareLogRecord prepare)
+            public EventCommited(long commitPosition, EventRecord @event)
             {
                 CommitPosition = commitPosition;
-                EventNumber = eventNumber;
-                Prepare = prepare;
+                Event = @event;
             }
         }
 
@@ -261,23 +264,27 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly string EventStreamId;
+            public readonly Guid CreateStreamId;
             public readonly bool IsJson;
             public readonly byte[] Metadata;
 
             public CreateStreamRequestCreated(Guid correlationId,
                                               IEnvelope envelope,
                                               string eventStreamId,
+                                              Guid createStreamId,
                                               bool isJson,
                                               byte[] metadata)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
+                Ensure.NotEmptyGuid(createStreamId, "createStreamId");
                 Ensure.NotNull(metadata, "metadata");
 
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 EventStreamId = eventStreamId;
+                CreateStreamId = createStreamId;
                 IsJson = isJson;
                 Metadata = metadata;
             }
@@ -339,21 +346,18 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long TransactionId;
-            public readonly string EventStreamId;
             public readonly Event[] Events;
 
-            public TransactionWriteRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId, string eventStreamId, Event[] events)
+            public TransactionWriteRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId, Event[] events)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.Nonnegative(transactionId, "transactionId");
-                Ensure.NotNull(eventStreamId, "eventStreamId");
                 Ensure.NotNull(events, "events");
 
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 TransactionId = transactionId;
-                EventStreamId = eventStreamId;
                 Events = events;
             }
         }
@@ -363,19 +367,16 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long TransactionId;
-            public readonly string EventStreamId;
 
-            public TransactionCommitRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId, string eventStreamId)
+            public TransactionCommitRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.Nonnegative(transactionId, "transactionId");
-                Ensure.NotNull(eventStreamId, "eventStreamID");
 
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 TransactionId = transactionId;
-                EventStreamId = eventStreamId;
             }
         }
 
@@ -409,21 +410,21 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
 
             public readonly string EventStreamId;
-            public readonly int StartEventNumber;
-            public readonly int EndEventNumber;
+            public readonly int FirstEventNumber;
+            public readonly int LastEventNumber;
 
-            public AlreadyCommitted(Guid correlationId, string eventStreamId, int startEventNumber, int endEventNumber)
+            public AlreadyCommitted(Guid correlationId, string eventStreamId, int firstEventNumber, int lastEventNumber)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-                Ensure.Nonnegative(startEventNumber, "startEventNumber");
-                if (endEventNumber < startEventNumber)
-                    throw new ArgumentOutOfRangeException("endEventNumber", "EndEventNumber is less than StartEventNumber");
+                Ensure.Nonnegative(firstEventNumber, "FirstEventNumber");
+                if (lastEventNumber < firstEventNumber)
+                    throw new ArgumentOutOfRangeException("lastEventNumber", "LastEventNumber is less than FirstEventNumber");
 
                 CorrelationId = correlationId;
                 EventStreamId = eventStreamId;
-                StartEventNumber = startEventNumber;
-                EndEventNumber = endEventNumber;
+                FirstEventNumber = firstEventNumber;
+                LastEventNumber = lastEventNumber;
             }
         }
 

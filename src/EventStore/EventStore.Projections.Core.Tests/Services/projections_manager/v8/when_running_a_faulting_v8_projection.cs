@@ -49,13 +49,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             _state = @"{""count"": 0}";
         }
 
-        [Test, ExpectedException(typeof (Js1Exception), ExpectedMessage = "failed")]
+        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "failed")]
         public void process_event_throws_js1_exception()
         {
             string state;
             EmittedEvent[] emittedEvents;
             _stateHandler.ProcessEvent(
-                new EventPosition(10, 5), CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                "", CheckpointTag.FromPosition(10, 5), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
         }
     }

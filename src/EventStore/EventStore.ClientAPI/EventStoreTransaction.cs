@@ -25,21 +25,113 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
 {
-    public class EventStoreTransaction
+    /// <summary>
+    /// Represents a multi-request transaction with the Event Store
+    /// </summary>
+    public class EventStoreTransaction : IDisposable
     {
-        public readonly string Stream;
         public readonly long TransactionId;
 
-        internal EventStoreTransaction(string stream, long transactionId)
-        {
-            Ensure.NotNullOrEmpty(stream, "stream");
+        private readonly EventStoreConnection _connection;
+        private bool _isRolledBack;
+        private bool _isCommitted;
 
-            Stream = stream;
+        /// <summary>
+        /// Constructs a new <see cref="EventStoreTransaction"/>
+        /// </summary>
+        /// <param name="transactionId">The transaction id of the transaction</param>
+        /// <param name="connection">The connection the transaction is hooked to</param>
+        internal EventStoreTransaction(long transactionId, EventStoreConnection connection)
+        {
+            Ensure.Nonnegative(transactionId, "transactionId");
+
             TransactionId = transactionId;
+            _connection = connection;
+        }
+
+        /// <summary>
+        /// Commits this transaction
+        /// </summary>
+        public void Commit()
+        {
+            CommitAsync().Wait();
+        }
+
+        /// <summary>
+        /// Asynchronously commits this transaction
+        /// </summary>
+        /// <returns>A <see cref="Task"/> the caller can use to control the async operation</returns>
+        public Task CommitAsync()
+        {
+            if (_isRolledBack) throw new InvalidOperationException("Can't commit a rolledback transaction");
+            if (_isCommitted) throw new InvalidOperationException("Transaction is already committed");
+            _isCommitted = true;
+            return _connection.CommitTransactionAsync(this);
+        }
+
+        /// <summary>
+        /// Writes to a transaction in the event store asynchronously
+        /// </summary>
+        /// <param name="events">The events to write</param>
+        public void Write(IEnumerable<IEvent> events)
+        {
+            WriteAsync(events).Wait();
+        }
+
+        /// <summary>
+        /// Writes to a transaction in the event store asynchronously
+        /// </summary>
+        /// <param name="events">The events to write</param>
+        public void Write(params IEvent[] events)
+        {
+            WriteAsync((IEnumerable<IEvent>)events).Wait();
+        }
+
+        /// <summary>
+        /// Writes to a transaction in the event store asynchronously
+        /// </summary>
+        /// <param name="events">The events to write</param>
+        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
+        public Task WriteAsync(params IEvent[] events)
+        {
+            return WriteAsync((IEnumerable<IEvent>)events);
+        }
+
+        /// <summary>
+        /// Writes to a transaction in the event store asynchronously
+        /// </summary>
+        /// <param name="events">The events to write</param>
+        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
+        public Task WriteAsync(IEnumerable<IEvent> events)
+        {
+            if (_isRolledBack) throw new InvalidOperationException("can't write to a rolledback transaction");
+            if (_isCommitted) throw new InvalidOperationException("Transaction is already committed");
+            return _connection.TransactionalWriteAsync(this, events);
+        }
+
+        /// <summary>
+        /// Rollsback this transaction.
+        /// </summary>
+        public void Rollback()
+        {
+            if (_isCommitted) throw new InvalidOperationException("Transaction is already committed");
+            _isRolledBack = true;
+        } 
+
+        /// <summary>
+        /// Disposes this transaction rolling it back if not already committed
+        /// </summary>
+        public void Dispose()
+        {
+            if (!_isCommitted)
+                _isRolledBack = true;
         }
     }
 }

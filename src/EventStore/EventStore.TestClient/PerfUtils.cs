@@ -25,7 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System;
 using System.Text;
 using EventStore.Common.Log;
 
@@ -33,17 +32,10 @@ namespace EventStore.TestClient
 {
     public static class PerfUtils
     {
-        public class NameValue
-        {
-            public string Name;
-            public object Value;
+        private static readonly ILogger Log = LogManager.GetLoggerFor(typeof(PerfUtils));
 
-            public NameValue(string name, object value)
-            {
-                Name = name;
-                Value = value;
-            }
-        }
+        private const string ColumnSplitter = ";";
+        private const string PairSplitter = ":";
 
         public static NameValue Col(string name, object value)
         {
@@ -54,11 +46,6 @@ namespace EventStore.TestClient
         {
             return nameValuesList;
         }
-
-        private static readonly Lazy<ILogger> Log = new Lazy<ILogger>(() => LogManager.GetLogger("integrationOutput"));
-
-        private const string ColumnSplitter = ";";
-        private const string PairSplitter = ":";
 
         private static string Format(string name, object value)
         {
@@ -81,8 +68,9 @@ namespace EventStore.TestClient
             }
             sb.AppendLine("end]]");
 
-            Log.Value.Debug(sb.ToString());
+            Log.Debug(sb.ToString());
         }
+
         /// <summary>
         /// Prints key-value point to the log in a way that TeamCity build server
         /// would be able to capture and then plot on build statistics page,
@@ -93,13 +81,22 @@ namespace EventStore.TestClient
         {
             if (value < 0)
             {
-                Log.Value.Error("value is {0}, however TeamCity requires Value as a positive (non negative) integer.", value);
+                Log.Error("Value is {0}, however TeamCity requires Value as a positive (non negative) integer.", value);
                 return;
             }
+            Log.Debug("\n##teamcity[buildStatisticValue key='{0}' value='{1}']", key, value);
+        }
 
-            // ##teamcity[buildStatisticValue key='<valueTypeKey>' value='<value>']
-            const string teamCityFormat = "##teamcity[buildStatisticValue key='{0}' value='{1}']";
-            Log.Value.Debug(teamCityFormat, key, value);
+        public class NameValue
+        {
+            public readonly string Name;
+            public readonly object Value;
+
+            public NameValue(string name, object value)
+            {
+                Name = name;
+                Value = value;
+            }
         }
     }
 }

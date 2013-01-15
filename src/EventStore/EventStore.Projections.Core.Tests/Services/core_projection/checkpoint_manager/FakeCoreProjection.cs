@@ -42,14 +42,17 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         public readonly List<CoreProjectionProcessingMessage.CheckpointCompleted> _checkpointCompletedMessages =
             new List<CoreProjectionProcessingMessage.CheckpointCompleted>();
 
-        public readonly List<CoreProjectionProcessingMessage.PauseRequested> _pauseRequestedMessages =
-            new List<CoreProjectionProcessingMessage.PauseRequested>();
-
         public readonly List<CoreProjectionProcessingMessage.CheckpointLoaded> _checkpointLoadedMessages =
             new List<CoreProjectionProcessingMessage.CheckpointLoaded>();
 
+        public readonly List<CoreProjectionProcessingMessage.PrerecordedEventsLoaded> _prerecordedEventsLoadedMessages =
+            new List<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>();
+
         public readonly List<ProjectionSubscriptionMessage.ProgressChanged> _progresschangedMessages =
             new List<ProjectionSubscriptionMessage.ProgressChanged>();
+
+        public readonly List<ProjectionSubscriptionMessage.EofReached> _eofReachedMessages =
+            new List<ProjectionSubscriptionMessage.EofReached>();
 
         public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
@@ -66,11 +69,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _checkpointCompletedMessages.Add(message);
         }
 
-        public void Handle(CoreProjectionProcessingMessage.PauseRequested message)
-        {
-            _pauseRequestedMessages.Add(message);
-        }
-
         public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
         {
             _checkpointLoadedMessages.Add(message);
@@ -81,9 +79,20 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _progresschangedMessages.Add(message);
         }
 
+        public void Handle(ProjectionSubscriptionMessage.EofReached message)
+        {
+            _eofReachedMessages.Add(message);
+        }
+
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             throw new System.NotImplementedException();
+        }
+
+
+        public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
+        {
+            _prerecordedEventsLoadedMessages.Add(message);
         }
     }
 }

@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -37,13 +38,9 @@ namespace EventStore.Transport.Http.Server
         private static readonly ILogger Logger = LogManager.GetLoggerFor<HttpAsyncServer>();
 
         public event Action<HttpAsyncServer, HttpListenerContext> RequestReceived;
-        public bool IsListening
-        {
-            get
-            {
-                return _listener != null && _listener.IsListening;
-            }
-        }
+        
+        public bool IsListening { get { return _listener.IsListening; } }
+        public IEnumerable<string> ListenPrefixes { get { return _listener.Prefixes; } }
 
         private readonly HttpListener _listener;
 
@@ -53,19 +50,21 @@ namespace EventStore.Transport.Http.Server
 
             _listener = new HttpListener();
             foreach (var prefix in prefixes)
+            {
                 _listener.Prefixes.Add(prefix);
+            }
         }
 
         public bool TryStart()
         {
             try
             {
-                Logger.Info("Starting http server on [{0}]...", string.Join(",", _listener.Prefixes));
+                Logger.Info("Starting HTTP server on [{0}]...", string.Join(",", _listener.Prefixes));
 
                 _listener.Start();
                 _listener.BeginGetContext(ContextAcquired, null);
 
-                Logger.Info("http up and listening on [{0}]", string.Join(",", _listener.Prefixes));
+                Logger.Info("HTTP server is up and listening on [{0}]", string.Join(",", _listener.Prefixes));
 
                 return true;
             }
@@ -84,32 +83,43 @@ namespace EventStore.Transport.Http.Server
             }
             catch (Exception e)
             {
-                Logger.FatalException(e, "Error while shutting down http server");
+                Logger.ErrorException(e, "Error while shutting down http server");
             }
         }
 
         private void ContextAcquired(IAsyncResult ar)
         {
-            HttpListenerContext context;
+            HttpListenerContext context = null;
+            bool success = false;
             try
             {
                 context = _listener.EndGetContext(ar);
+                success = true;
+            }
+            catch (HttpListenerException e)
+            {
+                Logger.ErrorException(e, "EndGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
+            }
+            catch (InvalidOperationException e)
+            {
+                Logger.ErrorException(e, "EndGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
+            }
+
+            if (success)
+                ProcessRequest(context);
+
+            try
+            {
                 _listener.BeginGetContext(ContextAcquired, null);
             }
             catch (HttpListenerException e)
             {
-                Logger.ErrorException(e, "EndGetContext/BeginGetContext error. Status : {0}",
-                                      IsListening ? "listening" : "stopped");
-                return;
+                Logger.ErrorException(e, "BeginGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
             }
             catch (InvalidOperationException e)
             {
-                Logger.ErrorException(e, "EndGetContext/BeginGetContext error. Status : {0}",
-                                      IsListening ? "listening" : "stopped");
-                return;
+                Logger.ErrorException(e, "BeginGetContext error. Status : {0}.", IsListening ? "listening" : "stopped");
             }
-
-            ProcessRequest(context);
         }
 
         private void ProcessRequest(HttpListenerContext context)

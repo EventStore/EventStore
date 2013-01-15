@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
+using System.Text;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
 
@@ -66,8 +68,12 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _handlerType;
             private readonly string _query;
             private readonly bool _enabled;
+            private readonly bool _checkpointsEnabled;
+            private readonly bool _emitEnabled;
 
-            public Post(IEnvelope envelope, ProjectionMode mode, string name, string handlerType, string query, bool enabled)
+            public Post(
+                IEnvelope envelope, ProjectionMode mode, string name, string handlerType, string query, bool enabled,
+                bool checkpointsEnabled, bool emitEnabled)
             {
                 _envelope = envelope;
                 _name = name;
@@ -75,6 +81,8 @@ namespace EventStore.Projections.Core.Messages
                 _mode = mode;
                 _query = query;
                 _enabled = enabled;
+                _checkpointsEnabled = checkpointsEnabled;
+                _emitEnabled = emitEnabled;
             }
 
             // shortcut for posting ad-hoc JS queries
@@ -83,9 +91,11 @@ namespace EventStore.Projections.Core.Messages
                 _envelope = envelope;
                 _name = Guid.NewGuid().ToString("D");
                 _handlerType = "JS";
-                _mode = ProjectionMode.OneTime;
+                _mode = ProjectionMode.Transient;
                 _query = query;
                 _enabled = enabled;
+                _checkpointsEnabled = false;
+                _emitEnabled = false;
             }
 
             public ProjectionMode Mode
@@ -117,6 +127,16 @@ namespace EventStore.Projections.Core.Messages
             {
                 get { return _enabled; }
             }
+
+            public bool EmitEnabled
+            {
+                get { return _emitEnabled; }
+            }
+
+            public bool CheckpointsEnabled
+            {
+                get { return _checkpointsEnabled; }
+            }
         }
 
         public class UpdateQuery : Message
@@ -125,13 +145,15 @@ namespace EventStore.Projections.Core.Messages
             private readonly string _name;
             private readonly string _handlerType;
             private readonly string _query;
+            private readonly bool? _emitEnabled;
 
-            public UpdateQuery(IEnvelope envelope, string name, string handlerType, string query)
+            public UpdateQuery(IEnvelope envelope, string name, string handlerType, string query, bool? emitEnabled)
             {
                 _envelope = envelope;
                 _name = name;
                 _handlerType = handlerType;
                 _query = query;
+                _emitEnabled = emitEnabled;
             }
 
             public string Query
@@ -152,6 +174,11 @@ namespace EventStore.Projections.Core.Messages
             public string HandlerType
             {
                 get { return _handlerType; }
+            }
+
+            public bool? EmitEnabled
+            {
+                get { return _emitEnabled; }
             }
         }
 
@@ -296,6 +323,30 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class GetDebugState : Message
+        {
+            private readonly IEnvelope _envelope;
+            private readonly string _name;
+
+            public GetDebugState(IEnvelope envelope, string name)
+            {
+                if (envelope == null) throw new ArgumentNullException("envelope");
+                if (name == null) throw new ArgumentNullException("name");
+                _envelope = envelope;
+                _name = name;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+        }
         public class Statistics : Message
         {
             private readonly ProjectionStatistics[] _projections;
@@ -315,12 +366,16 @@ namespace EventStore.Projections.Core.Messages
         public class ProjectionState : Message
         {
             private readonly string _name;
+            private readonly string _partition;
             private readonly string _state;
+            private readonly Exception _exception;
 
-            public ProjectionState(string name, string state)
+            public ProjectionState(string name, string partition, string state, Exception exception = null)
             {
                 _name = name;
+                _partition = partition;
                 _state = state;
+                _exception = exception;
             }
 
             public string Name
@@ -332,17 +387,51 @@ namespace EventStore.Projections.Core.Messages
             {
                 get { return _state; }
             }
+
+            public Exception Exception
+            {
+                get { return _exception; }
+            }
+
+            public string Partition
+            {
+                get { return _partition; }
+            }
+        }
+
+        public class ProjectionDebugState : Message
+        {
+            private readonly string _name;
+            private readonly CoreProjectionManagementMessage.DebugState.Event[] _events;
+
+            public ProjectionDebugState(string name, CoreProjectionManagementMessage.DebugState.Event[] events)
+            {
+                _name = name;
+                _events = events;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public CoreProjectionManagementMessage.DebugState.Event[] Events
+            {
+                get { return _events; }
+            }
         }
 
         public class ProjectionQuery : Message
         {
             private readonly string _name;
             private readonly string _query;
+            private readonly bool _emitEnabled;
 
-            public ProjectionQuery(string name, string query)
+            public ProjectionQuery(string name, string query, bool emitEnabled)
             {
                 _name = name;
                 _query = query;
+                _emitEnabled = emitEnabled;
             }
 
             public string Name
@@ -353,6 +442,11 @@ namespace EventStore.Projections.Core.Messages
             public string Query
             {
                 get { return _query; }
+            }
+
+            public bool EmitEnabled
+            {
+                get { return _emitEnabled; }
             }
         }
 

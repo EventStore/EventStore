@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void nothing_is_found_on_empty_stream()
         {
-            var memTable = new HashListMemTable(maxSize: 2000);
+            var memTable = new HashListMemTable(maxSize: 10);
             memTable.Add(0x11, 0x01, 0xffff);
             using (var ptable = PTable.FromMemtable(memTable, Filename))
             {
@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void single_item_is_latest()
         {
-            var memTable = new HashListMemTable(maxSize: 2000);
+            var memTable = new HashListMemTable(maxSize: 10);
             memTable.Add(0x11, 0x01, 0xffff);
             using (var ptable = PTable.FromMemtable(memTable, Filename))
             {
@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void correct_entry_is_returned()
         {
-            var memTable = new HashListMemTable(maxSize: 2000);
+            var memTable = new HashListMemTable(maxSize: 10);
             memTable.Add(0x11, 0x01, 0xffff);
             memTable.Add(0x11, 0x02, 0xfff2);
             using (var ptable = PTable.FromMemtable(memTable, Filename))
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void when_duplicated_entries_exist_the_one_with_latest_position_is_returned()
         {
-            var memTable = new HashListMemTable(maxSize: 2000);
+            var memTable = new HashListMemTable(maxSize: 10);
             memTable.Add(0x11, 0x01, 0xfff1);
             memTable.Add(0x11, 0x02, 0xfff2);
             memTable.Add(0x11, 0x01, 0xfff3);
@@ -98,7 +98,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void only_entry_with_largest_position_is_returned_when_triduplicated()
         {
-            var memTable = new HashListMemTable(maxSize: 2000);
+            var memTable = new HashListMemTable(maxSize: 10);
             memTable.Add(0x11, 0x01, 0xfff1);
             memTable.Add(0x11, 0x01, 0xfff3);
             memTable.Add(0x11, 0x01, 0xfff5);

@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -39,9 +40,17 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         private TFChunk _chunk;
 
         [SetUp]
-        public void Setup()
+        public override void SetUp()
         {
-            _chunk = TFChunk.CreateNew(Filename, 1024, 0, 0);
+            base.SetUp();
+            _chunk = TFChunk.CreateNew(Filename, 1024, 0, false);
+        }
+
+        [TearDown]
+        public override void TearDown()
+        {
+            _chunk.Dispose();
+            base.TearDown();
         }
 
         [Test]
@@ -102,51 +111,5 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             var res = _chunk.TryReadLast();
             Assert.IsFalse(res.Success);
         }
-
-        [TearDown]
-        public override void TearDown()
-        {
-            _chunk.Dispose();
-            base.TearDown();
-        }
     }
-
-    //[TestFixture]
-    //public class when_creating_TFChunk_from_existing_non_completed_file
-    //{
-    //    readonly string filename = Path.Combine(Path.GetTempPath(), "foo");
-    //    private TFChunk _chunk;
-
-    //    [SetUp]
-    //    public void SetUp()
-    //    {
-    //        _chunk = TFChunk.CreateNew(filename);
-    //    }
-
-    //    [Test]
-    //    public void the_file_is_created()
-    //    {
-    //        Assert.IsTrue(File.Exists(filename));
-    //    }
-
-    //    [Test]
-    //    public void the_chunk_is_not_readonly()
-    //    {
-    //        Assert.IsFalse(_chunk.IsReadOnly);
-    //    }
-
-    //    [Test]
-    //    public void append_does_not_throw_exception()
-    //    {
-    //        long position;
-    //        Assert.DoesNotThrow(() => _chunk.TryAppend(new CommitLogRecord(0, Guid.NewGuid(), 0, 0, DateTime.UtcNow), out position));
-    //    }
-
-    //    [TearDown]
-    //    public void TearDown()
-    //    {
-    //        _chunk.Dispose();
-    //        File.Delete(filename);
-    //    }
-    //}
 }

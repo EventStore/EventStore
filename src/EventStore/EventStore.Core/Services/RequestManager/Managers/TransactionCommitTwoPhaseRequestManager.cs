@@ -33,45 +33,38 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.TransactionCommitRequestCreated>
+    public class TransactionCommitTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.TransactionCommitRequestCreated>
     {
         public TransactionCommitTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
-            base(publisher, prepareCount, commitCount)
-        {}
+                base(publisher, prepareCount, commitCount)
+        {
+        }
 
         public void Handle(StorageMessage.TransactionCommitRequestCreated request)
         {
-            if (_initialized)
-                throw new InvalidOperationException();
-
-            _initialized = true;
-            _responseEnvelope = request.Envelope;
-            _correlationId = request.CorrelationId;
-            _preparePos = request.TransactionId;
-            _eventStreamId = request.EventStreamId;
+            Init(request.Envelope, request.CorrelationId, request.TransactionId);
 
             Publisher.Publish(new StorageMessage.WriteTransactionPrepare(request.CorrelationId,
-                                                                             _publishEnvelope,
-                                                                             request.TransactionId,
-                                                                             request.EventStreamId,
-                                                                             liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
+                                                                         PublishEnvelope,
+                                                                         request.TransactionId,
+                                                                         liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
-                                                           _publishEnvelope,
-                                                           new StorageMessage.PreparePhaseTimeout(_correlationId)));
+                                                           PublishEnvelope,
+                                                           new StorageMessage.PreparePhaseTimeout(CorrelationId)));
         }
 
-        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
+        protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
         {
-            base.CompleteSuccessRequest(correlationId, eventStreamId, startEventNumber);
-            var responseMsg = new ClientMessage.TransactionCommitCompleted(correlationId, _preparePos, OperationErrorCode.Success, null);
-            _responseEnvelope.ReplyWith(responseMsg);
+            base.CompleteSuccessRequest(correlationId, firstEventNumber);
+            var responseMsg = new ClientMessage.TransactionCommitCompleted(correlationId, TransactionPosition, OperationResult.Success, null);
+            ResponseEnvelope.ReplyWith(responseMsg);
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
+        protected override void CompleteFailedRequest(Guid correlationId, OperationResult result, string error)
         {
-            base.CompleteFailedRequest(correlationId, eventStreamId, errorCode, error);
-            var responseMsg = new ClientMessage.TransactionCommitCompleted(correlationId, _preparePos, errorCode, error);
-            _responseEnvelope.ReplyWith(responseMsg);
+            base.CompleteFailedRequest(correlationId, result, error);
+            var responseMsg = new ClientMessage.TransactionCommitCompleted(correlationId, TransactionPosition, result, error);
+            ResponseEnvelope.ReplyWith(responseMsg);
         }
 
     }

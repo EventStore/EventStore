@@ -64,11 +64,11 @@ namespace EventStore.TestClient.Commands
                 eventStreamId,
                 expectedVersion,
                 Enumerable.Range(0, writeCount).Select(x =>
-                                                       new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
-                                                                                  "type",
-                                                                                  false,
-                                                                                  Encoding.UTF8.GetBytes(data),
-                                                                                  new byte[0])).ToArray(),
+                                                       new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+                                                                                        "type",
+                                                                                        false,
+                                                                                        Encoding.UTF8.GetBytes(data),
+                                                                                        new byte[0])).ToArray(),
                 true);
 
             var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
@@ -94,14 +94,14 @@ namespace EventStore.TestClient.Commands
                     sw.Stop();
 
                     var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-                    if (dto.ErrorCode == (int)OperationErrorCode.Success)
+                    if (dto.Result == TcpClientMessageDto.OperationResult.Success)
                     {
                         context.Log.Info("Successfully written {0} events. CorrelationId: {1}.", writeCount, package.CorrelationId);
                         PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
                     }
                     else
                     {
-                        context.Log.Info("Error while writing: {0}. CorrelationId: {1}.", dto.Error, package.CorrelationId);
+                        context.Log.Info("Error while writing: {0}. CorrelationId: {1}.", dto.Result, package.CorrelationId);
                     }
                     context.Log.Info("Write request took: {0}.", sw.Elapsed);
                     

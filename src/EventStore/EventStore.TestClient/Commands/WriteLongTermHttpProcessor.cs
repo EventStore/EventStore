@@ -106,12 +106,13 @@ namespace EventStore.TestClient.Commands
 
             var requestsCnt = 0;
 
+            int sent = 0;
+            int received = 0;
+
             var watchLockRoot = new object();
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < clientsCnt; i++)
             {
-                int sent = 0;
-                int received = 0;
 
                 threads.Add(new Thread(() =>
                 {
@@ -210,8 +211,10 @@ namespace EventStore.TestClient.Commands
                         Thread.Sleep(sleepTime);
                         sentCount -= 1;
 
-                        while (sent - received > context.Client.Options.WriteWindow)
+                        while (sent - received > context.Client.Options.WriteWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }
@@ -254,10 +257,7 @@ namespace EventStore.TestClient.Commands
                 string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt),
                 100 * fail / (fail + succ));
 
-            if (succ < fail)
-                context.Fail(reason: "Number of failures is greater than number of successes");
-            else
-                context.Success();
+            context.Success();
         }
     }
 }

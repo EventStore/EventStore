@@ -55,12 +55,12 @@ namespace EventStore.TestClient.Commands.DvuBasic
                     var modVersion = version % 2;
                     if (modVersion == 0)
                     {
-                        var credited = new AccountCredited(version * 10);
+                        var credited = new AccountCredited(version * 10, version % 17);
                         accountObject = credited;
                     }
                     else
                     {
-                        var debited = new AccountDebited(version * 10);
+                        var debited = new AccountDebited(version * 10, version % 17);
                         accountObject = debited;
                     }
                 }

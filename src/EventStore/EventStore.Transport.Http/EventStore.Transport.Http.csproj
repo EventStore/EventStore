@@ -50,11 +50,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AcceptComponent.cs" />
+    <Compile Include="AsyncQueuedBufferWriter.cs" />
     <Compile Include="Client\ClientOperationState.cs" />
     <Compile Include="Client\HttpAsyncClient.cs" />
     <Compile Include="Client\IHttpClient.cs" />
     <Compile Include="EntityManagement\HttpEntity.cs" />
     <Compile Include="EntityManagement\HttpEntityManager.cs" />
+    <Compile Include="EntityManagement\HttpEntityManagerExtensions.cs" />
     <Compile Include="EntityManagement\ManagerOperationState.cs" />
     <Compile Include="HttpResponse.cs" />
     <Compile Include="IOStreams.cs" />

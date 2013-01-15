@@ -26,15 +26,23 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using EventStore.Core.Bus;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Common;
+using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Bus
 {
     [TestFixture]
-    public class when_publishing_to_queued_handler_before_starting : QueuedHandlerTestWithWaitingConsumer
+    public abstract class when_publishing_to_queued_handler_before_starting : QueuedHandlerTestWithWaitingConsumer
     {
+        protected when_publishing_to_queued_handler_before_starting(Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
+                : base(queuedHandlerFactory)
+        {
+        }
+
         [Test]
         public void should_not_throw()
         {
@@ -94,6 +102,51 @@ namespace EventStore.Core.Tests.Bus
             Assert.That(Consumer.HandledMessages.ContainsSingle<TestMessage>() &&
                         Consumer.HandledMessages.ContainsSingle<TestMessage2>() &&
                         Consumer.HandledMessages.ContainsSingle<TestMessage3>());
+        }
+    }
+
+    [TestFixture]
+    public class when_publishing_to_queued_handler_mres_before_starting : when_publishing_to_queued_handler_before_starting
+    {
+        public when_publishing_to_queued_handler_mres_before_starting()
+            : base((consumer, name, timeout) => new QueuedHandlerMRES(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_publishing_to_queued_handler_autoreset_before_starting : when_publishing_to_queued_handler_before_starting
+    {
+        public when_publishing_to_queued_handler_autoreset_before_starting()
+            : base((consumer, name, timeout) => new QueuedHandlerAutoReset(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_publishing_to_queued_handler_sleep_before_starting : when_publishing_to_queued_handler_before_starting
+    {
+        public when_publishing_to_queued_handler_sleep_before_starting()
+            : base((consumer, name, timeout) => new QueuedHandlerSleep(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_publishing_to_queued_handler_pulse_before_starting : when_publishing_to_queued_handler_before_starting
+    {
+        public when_publishing_to_queued_handler_pulse_before_starting()
+            : base((consumer, name, timeout) => new QueuedHandlerPulse(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture, Ignore]
+    public class when_publishing_to_queued_handler_threadpool_before_starting : when_publishing_to_queued_handler_before_starting
+    {
+        public when_publishing_to_queued_handler_threadpool_before_starting()
+            : base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, false, null, timeout))
+        {
         }
     }
 }

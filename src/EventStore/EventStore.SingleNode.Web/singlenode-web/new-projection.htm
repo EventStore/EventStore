@@ -7,7 +7,12 @@
     <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
     <script id="r-head">
         es.tmpl.renderHead();
-    </script>
+    </script>         
+    <style>
+        #mode {
+            min-width: 515px; /*width of #source + 15px - todo: find out why*/
+        }
+    </style>
 </head>
 <body>
     <div id="content">
@@ -25,9 +30,55 @@
                 <label class="control-label" for="source">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <textarea id="source">
-    fromAll().whenAny(function(state,event) { return state; });
-                    </textarea>
+                    <textarea id="source" spellcheck="false" wrap="off" cols="100">
+    // NOTE: this sample projection immediately stops in one-time mode unless you have 
+    // either event_type1 or event_type1 events in the store
+    options({
+
+                // stateStreamName: null,         // overrides output stream StateUpdated events are emitted to
+                                                  // NOTE: use {0} placeholder in case of a partitioned projection
+                useEventIndexes: true,            // makes a fromAll() projection to use event indexes 
+                                                  // NOTE: $by_event_type standard projection should be enabled
+                // reorderEvents: false,          // enables event reordering in a multi-stream projection
+                                                  // event reordering atempts to feed the projection with events in a 
+                                                  // their natural order
+                // processingLag: 0,              // processing lag in ms allowing event reordering to happen
+    });
+
+    fromAll() 
+    // fromStream('streamId') | fromStreams(['sream1', 'stream2']) | fromCategory('category')
+       //NOTE: fromCategory requires $by_category standard projection to be enabled
+
+    // .foreachStream() | .paritionBy(function(e) { return e.body.useId; })
+
+    .when({
+        $init: function () {
+            return { count1: 0, count2: 0, }; // initial state
+        },
+      
+        event_type1: function(s, e) {
+            //  emit('streamId', 'eventType', {/* event body */});
+            //  linkTo('streamId', e);
+            s.count1 += 1;
+            return s;
+        },
+                        
+        event_type2: function(s, e) {
+            s.count2 += 1;
+            return s;
+        },
+                        
+                        
+        /* $any: function (s, e) ... // NOTE: $any is exclusive and cannot be used in combination with 
+                                     // other event filters
+        */
+    })
+    // .emitStateUpdated()           
+                    
+                        
+    //NOTE: emitStateUpdated(), emit(), linkTo() require "emit enabled" (see checkbox below)
+
+</textarea>
                 </div>
             </div>
             <div class="control-group">
@@ -36,11 +87,21 @@
                 <div class="controls">
                     <select id="mode" >
                         <option selected="selected" value="onetime">One-Time</option>
-                        <option value="adhoc">Ad-Hoc</option>
                         <option value="continuous">Continuous</option>
-                        <option value="persistent">Persistent</option>
                     </select>
                 </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="emit"><strong>Checkpoints Enabled</strong></label>
+                <div class="controls"><input type="checkbox" id="checkpoints" /></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="emit"><strong>Emit Enabled</strong></label>
+                <div class="controls"><input type="checkbox" id="emit" /></div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="enabled"><strong>Enabled</strong></label>
+                <div class="controls"><input type="checkbox" id="enabled" checked="checked" /></div>
             </div>
             <div class="control-group">
                 <div class="controls">
@@ -63,11 +124,37 @@
     
 
     <script type="text/javascript">
-        $(function(){
+        $(function () {
+
+            var storedCheckpoints = false;
+            $("#mode").change(function () {
+                debugger;
+                if ($("#mode").val() == "continuous") {
+                    storedCheckpoints = $("#checkpoints").attr("checked");
+                    $("#checkpoints").attr("checked", "checked");
+                    $("#checkpoints").attr("disabled", "disabled");
+                } else {
+                    if (storedCheckpoints)
+                        $("#checkpoints").attr("checked", storedCheckpoints);
+                    else
+                        $("#checkpoints").removeAttr("checked");
+                    $("#checkpoints").removeAttr("disabled");
+                }
+            });
+
             $("#post").click(function () {
                 
                 var name = $("#name").val();
-                $.ajax("/projections/" + $("#mode").val() + (name == "" ? "" : "?name=" + name), {
+
+                var params = $.param({
+                    name: name,
+                    emit: $("#emit").attr("checked") ? "yes" : "no",
+                    checkpoints: $("#checkpoints").attr("checked") ? "yes" : "no",
+                    enabled: $("#enabled").attr("checked") ? "yes" : "no",
+                });
+                var url = "/projections/" + $("#mode").val() + "?" + params;
+
+                $.ajax(url, {
                     headers: {
                         Accept: "application/json",
                     },

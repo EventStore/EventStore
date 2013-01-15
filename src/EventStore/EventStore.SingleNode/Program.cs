@@ -28,8 +28,9 @@
 using System;
 using System.IO;
 using System.Net;
-using EventStore.Common.Settings;
 using EventStore.Core;
+using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Common.Utils;
 using System.Linq;
@@ -70,33 +71,38 @@ namespace EventStore.SingleNode
 
         protected override void Create(SingleNodeOptions options)
         {
-            var dbPath = ResolveDbPath(options.DbPath, options.HttpPort);
-            var db = new TFChunkDb(CreateDbConfig(dbPath, options.ChunksToCache));
+            var dbPath = Path.GetFullPath(ResolveDbPath(options.DbPath, options.HttpPort));
+            Log.Info("\nDATABASE: {0}", dbPath);
+            var db = new TFChunkDb(CreateDbConfig(dbPath, options.CachedChunks));
             var vnodeSettings = GetVNodeSettings(options);
-            var appSettings = new SingleVNodeAppSettings(TimeSpan.FromSeconds(options.StatsPeriodSec));
-            var dbVerifyHashes = !options.DoNotVerifyDbHashesOnStartup;
-            _node = new SingleVNode(db, vnodeSettings, appSettings, dbVerifyHashes);
+            var dbVerifyHashes = !options.SkipDbVerify;
+            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes);
 
-            if (!options.NoProjections)
+            if (options.RunProjections)
             {
                 _projections = new Projections.Core.Projections(db,
                                                                 _node.MainQueue,
                                                                 _node.Bus,
                                                                 _node.TimerService,
                                                                 _node.HttpService,
+                                                                _node.NetworkSendService,
                                                                 options.ProjectionThreads);
             }
         }
 
         private static SingleVNodeSettings GetVNodeSettings(SingleNodeOptions options)
         {
-            var tcp = new IPEndPoint(options.Ip, options.TcpPort);
-            var http = new IPEndPoint(options.Ip, options.HttpPort);
-            var prefixes = options.PrefixesString.IsNotEmptyString()
-                                   ? options.PrefixesString.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)
-                                   : new[] {http.ToHttpUrl()};
-
-            var vnodeSettings = new SingleVNodeSettings(tcp, http, prefixes.Select(p => p.Trim()).ToArray());
+            var tcpEndPoint = new IPEndPoint(options.Ip, options.TcpPort);
+            var httpEndPoint = new IPEndPoint(options.Ip, options.HttpPort);
+            var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] {httpEndPoint.ToHttpUrl()};
+            var vnodeSettings = new SingleVNodeSettings(tcpEndPoint,
+                                                        httpEndPoint, 
+                                                        prefixes.Select(p => p.Trim()).ToArray(),
+                                                        options.HttpSendThreads,
+                                                        options.HttpReceiveThreads,
+                                                        options.TcpSendThreads,
+                                                        TimeSpan.FromSeconds(options.StatsPeriodSec),
+                                                        StatsStorage.StreamAndCsv);
             return vnodeSettings;
         }
 

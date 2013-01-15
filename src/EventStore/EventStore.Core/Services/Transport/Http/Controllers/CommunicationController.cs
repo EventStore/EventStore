@@ -68,16 +68,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
         protected void SendBadRequest(HttpEntity entity, string reason)
         {
-            entity.Manager.Reply(HttpStatusCode.BadRequest,
-                                 reason,
-                                 e => Log.ErrorException(e, "Error while closing http connection (bad request)"));
+            entity.Manager.ReplyStatus(HttpStatusCode.BadRequest,
+                                       reason,
+                                       e => Log.ErrorException(e, "Error while closing http connection (bad request)"));
         }
 
         protected void SendOk(HttpEntity entity)
         {
-            entity.Manager.Reply(HttpStatusCode.OK,
-                                 "OK",
-                                 e => Log.ErrorException(e, "Error while closing http connection (ok)"));
+            entity.Manager.ReplyStatus(HttpStatusCode.OK,
+                                       "OK",
+                                       e => Log.ErrorException(e, "Error while closing http connection (ok)"));
         }
     }
 }

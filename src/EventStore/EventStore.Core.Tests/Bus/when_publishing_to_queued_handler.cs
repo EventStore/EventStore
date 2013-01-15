@@ -29,15 +29,22 @@
 using System;
 using System.Linq;
 using System.Threading;
+using EventStore.Core.Bus;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Common;
+using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Bus
 {
     [TestFixture]
-    public class when_publishing_to_queued_handler : QueuedHandlerTestWithWaitingConsumer
+    public abstract class when_publishing_to_queued_handler : QueuedHandlerTestWithWaitingConsumer
     {
+        protected when_publishing_to_queued_handler(Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
+                : base(queuedHandlerFactory)
+        {
+        }
+
         public override void SetUp()
         {
             base.SetUp();
@@ -97,14 +104,18 @@ namespace EventStore.Core.Tests.Bus
             };
 
             foreach (var thread in threads)
+            {
                 thread.Start();
+            }
 
-            bool executedOnTime = Consumer.Wait(500);
+            bool executedOnTime = Consumer.Wait(5000);
 
             if (!executedOnTime)
             {
                 foreach (var thread in threads)
+                {
                     thread.Abort();
+                }
             }
 
             Assert.That(msg1ThreadId == msg2ThreadId && msg2ThreadId == msg3ThreadId);
@@ -141,7 +152,14 @@ namespace EventStore.Core.Tests.Bus
             var waitHandle = new ManualResetEvent(false);
             try
             {
-                Queue.Publish(new DeferredExecutionTestMessage(() => waitHandle.WaitOne()));
+                var firstEvent = new ManualResetEventSlim(false);
+                Queue.Publish(new DeferredExecutionTestMessage(() =>
+                {
+                    firstEvent.Set();
+                    waitHandle.WaitOne();
+                }));
+
+                firstEvent.Wait();
                 Queue.Publish(new TestMessage());
 
                 Assert.That(Consumer.HandledMessages.ContainsNo<TestMessage>());
@@ -152,6 +170,51 @@ namespace EventStore.Core.Tests.Bus
                 Consumer.Wait();
                 waitHandle.Dispose();
             }
+        }
+    }
+
+    [TestFixture]
+    public class when_publishing_to_queued_handler_mres : when_publishing_to_queued_handler
+    {
+        public when_publishing_to_queued_handler_mres()
+            : base((consumer, name, timeout) => new QueuedHandlerMRES(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_publishing_to_queued_handler_autoreset : when_publishing_to_queued_handler
+    {
+        public when_publishing_to_queued_handler_autoreset()
+            : base((consumer, name, timeout) => new QueuedHandlerAutoReset(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_publishing_to_queued_handler_sleep : when_publishing_to_queued_handler
+    {
+        public when_publishing_to_queued_handler_sleep()
+            : base((consumer, name, timeout) => new QueuedHandlerSleep(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture]
+    public class when_publishing_to_queued_handler_pulse : when_publishing_to_queued_handler
+    {
+        public when_publishing_to_queued_handler_pulse()
+            : base((consumer, name, timeout) => new QueuedHandlerPulse(consumer, name, false, null, timeout))
+        {
+        }
+    }
+
+    [TestFixture, Ignore]
+    public class when_publishing_to_queued_handler_threadpool : when_publishing_to_queued_handler
+    {
+        public when_publishing_to_queued_handler_threadpool()
+            : base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, false, null, timeout))
+        {
         }
     }
 }

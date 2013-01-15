@@ -45,8 +45,7 @@ namespace EventStore.Core.Services.Transport.Tcp
     /// Manager for individual TCP connection. It handles connection lifecycle,
     /// heartbeats, message framing and dispatch to the memory bus.
     /// </summary>
-    public class TcpConnectionManager: IHandle<TcpMessage.Heartbeat>, 
-                                       IHandle<TcpMessage.HeartbeatTimeout>
+    public class TcpConnectionManager: IHandle<TcpMessage.Heartbeat>, IHandle<TcpMessage.HeartbeatTimeout>
     {
         private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromMilliseconds(15000);
         private static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromMilliseconds(60000);
@@ -67,7 +66,6 @@ namespace EventStore.Core.Services.Transport.Tcp
         private readonly IPublisher _publisher;
         private readonly ITcpDispatcher _dispatcher;
         private readonly IMessageFramer _framer;
-        
         private int _messageNumber;
         private bool _isClosed;
         private readonly string _connectionName;
@@ -77,7 +75,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                     Guid connectionId,
                                     ITcpDispatcher dispatcher, 
                                     IPublisher publisher, 
-                                    TcpConnection openedConnection)
+                                    TcpConnection openedConnection,
+                                    IPublisher networkSendQueue)
         {
             Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(dispatcher, "dispatcher");
@@ -87,7 +86,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             _connectionName = connectionName;
             _connectionId = connectionId;
             
-            _tcpEnvelope = new SendOverTcpEnvelope(this);
+            _tcpEnvelope = new SendOverTcpEnvelope(this, networkSendQueue);
             _publisher = publisher;
             _dispatcher = dispatcher;
 
@@ -98,6 +97,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
             _connection = openedConnection;
             _connection.ConnectionClosed += OnConnectionClosed;
+
             ScheduleHeartbeat(0);
         }
 
@@ -106,7 +106,8 @@ namespace EventStore.Core.Services.Transport.Tcp
                                     ITcpDispatcher dispatcher,
                                     IPublisher publisher, 
                                     IPEndPoint remoteEndPoint, 
-                                    TcpClientConnector connector)
+                                    TcpClientConnector connector,
+                                    IPublisher networkSendQueue)
         {
             Ensure.NotEmptyGuid(connectionId, "connectionId");
             Ensure.NotNull(dispatcher, "dispatcher");
@@ -117,7 +118,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             _connectionName = connectionName;
             _connectionId = connectionId;
 
-            _tcpEnvelope = new SendOverTcpEnvelope(this);
+            _tcpEnvelope = new SendOverTcpEnvelope(this, networkSendQueue);
             _publisher = publisher;
             _dispatcher = dispatcher;
 

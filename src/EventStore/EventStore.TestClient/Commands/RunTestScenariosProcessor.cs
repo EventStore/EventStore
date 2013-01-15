@@ -105,15 +105,22 @@ namespace EventStore.TestClient.Commands
                     executionPeriodMinutes = int.Parse(args[6]);
 
                     if (args.Length == 8)
+                    {
                         dbParentPath = args[7];
+                    }
+                    else
+                    {
+                        var envDbPath = Environment.GetEnvironmentVariable("EVENTSTORE_DATABASEPATH");
+                        if (!string.IsNullOrEmpty(envDbPath))
+                            dbParentPath = envDbPath;
+                    }
+
                 }
                 catch (Exception e)
                 {
                     Log.Error("Invalid arguments ({0})", e.Message);
                     return false;
                 }
-
-               
             }
 
             context.IsAsync();
@@ -142,13 +149,6 @@ namespace EventStore.TestClient.Commands
                                     streamDeleteStep, 
                                     TimeSpan.FromMinutes(executionPeriodMinutes),
                                     dbParentPath), 
-                new ProjectionsScenario1(directTcpSender, 
-                                         maxConcurrentRequests, 
-                                         connections, 
-                                         streams, 
-                                         eventsPerStream, 
-                                         streamDeleteStep, 
-                                         dbParentPath),
                 new ProjectionsKillScenario(directTcpSender, 
                                             maxConcurrentRequests, 
                                             connections, 
@@ -156,6 +156,21 @@ namespace EventStore.TestClient.Commands
                                             eventsPerStream, 
                                             streamDeleteStep, 
                                             dbParentPath),
+                new ProjKillForeachScenario(directTcpSender, 
+                                            maxConcurrentRequests, 
+                                            connections, 
+                                            streams, 
+                                            eventsPerStream, 
+                                            streamDeleteStep, 
+                                            dbParentPath), 
+                new LoopingProjTranWriteScenario(directTcpSender, 
+                                            maxConcurrentRequests, 
+                                            connections, 
+                                            streams, 
+                                            eventsPerStream, 
+                                            streamDeleteStep,
+                                            TimeSpan.FromMinutes(executionPeriodMinutes),
+                                            dbParentPath), 
                 new LoopingProjectionKillScenario(directTcpSender, 
                                                   maxConcurrentRequests, 
                                                   connections, 

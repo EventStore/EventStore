@@ -32,6 +32,7 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
 {
@@ -64,27 +65,27 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         public void on_single_event_read_all_metadata_is_ignored()
         {
             var result = ReadIndex.ReadEvent("ES", 0);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r1, result.Record);
 
             result = ReadIndex.ReadEvent("ES", 1);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r2, result.Record);
 
             result = ReadIndex.ReadEvent("ES", 2);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r3, result.Record);
 
             result = ReadIndex.ReadEvent("ES", 3);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r4, result.Record);
 
             result = ReadIndex.ReadEvent("ES", 4);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r5, result.Record);
 
             result = ReadIndex.ReadEvent("ES", 5);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_r6, result.Record);
         }
 
@@ -92,7 +93,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         public void on_forward_range_read_all_metadata_is_ignored()
         {
             var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(6, result.Records.Length);
             Assert.AreEqual(_r1, result.Records[0]);
             Assert.AreEqual(_r2, result.Records[1]);
@@ -106,7 +107,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount
         public void on_backward_range_read_all_metadata_is_ignored()
         {
             var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(6, result.Records.Length);
             Assert.AreEqual(_r1, result.Records[5]);
             Assert.AreEqual(_r2, result.Records[4]);

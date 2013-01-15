@@ -28,93 +28,81 @@
 using System;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.AllEvents
 {
-    [TestFixture, Category("LongRunning"), Explicit]
-    internal class subscribe_to_all_should
+    [TestFixture, Category("LongRunning")]
+    public class subscribe_to_all_should: SpecificationWithDirectory
     {
-        public int Timeout = 1000;
-        public MiniNode Node;
+        private const int Timeout = 10000;
+        
+        private MiniNode _node;
 
         [SetUp]
-        public void SetUp()
+        public override void SetUp()
         {
-            Node = MiniNode.Create(40111, 40112);
-            Node.Start();
+            base.SetUp();
+            _node = new MiniNode(PathName);
+            _node.Start();
         }
 
         [TearDown]
-        public void TearDown()
+        public override void TearDown()
         {
-            Node.Shutdown();
+            _node.Shutdown();
+            base.TearDown();
         }
 
-        [Test]
+        [Test, Category("LongRunning")]
         public void allow_multiple_subscriptions()
         {
             const string stream = "subscribe_to_all_should_allow_multiple_subscriptions";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(Node.TcpEndPoint);
+                store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(2);
 
-                Action<RecordedEvent, Position> eventAppeared = (x, p) => appeared.Signal();
+                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
-                store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
+                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped))
+                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped))
+                {
+                    Thread.Sleep(100);
 
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.That(create.Wait(Timeout));
+                    var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
+                    Assert.IsTrue(create.Wait(Timeout), "StreamCreateAsync timed out.");
 
-                Assert.That(appeared.Wait(Timeout));
+                    Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
+                }
             }
         }
 
-        [Test]
-        public void drop_all_global_subscribers_when_unsubscribe_from_all_called()
-        {
-            using (var store = EventStoreConnection.Create())
-            {
-                store.Connect(Node.TcpEndPoint);
-                var appeared = new CountdownEvent(1);
-                var dropped = new CountdownEvent(2);
-
-                Action<RecordedEvent, Position> eventAppeared = (x, p) => appeared.Signal();
-                Action subscriptionDropped = () => dropped.Signal();
-
-                store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
-                store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
-
-                store.UnsubscribeFromAllStreamsAsync();
-                Assert.That(dropped.Wait(Timeout));
-            }
-        }
-
-        [Test]
+        [Test, Category("LongRunning")]
         public void catch_created_and_deleted_events_as_well()
         {
             const string stream = "subscribe_to_all_should_catch_created_and_deleted_events_as_well";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(Node.TcpEndPoint);
+                store.Connect(_node.TcpEndPoint);
                 var appeared = new CountdownEvent(2);
                 var dropped = new CountdownEvent(1);
 
-                Action<RecordedEvent, Position> eventAppeared = (x, p) => appeared.Signal();
+                Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                store.SubscribeToAllStreamsAsync(eventAppeared, subscriptionDropped);
+                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped))
+                {
+                    var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
+                    Assert.IsTrue(create.Wait(Timeout), "CreateStreamAsync timed out.");
+                    var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                    Assert.IsTrue(delete.Wait(Timeout), "DeleteStreamAsync timed out.");
 
-                var create = store.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.That(create.Wait(Timeout));
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
-                Assert.That(delete.Wait(Timeout));
-
-                Assert.That(appeared.Wait(Timeout));
+                    Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event didn't fire in time.");
+                }
             }
         }
     }

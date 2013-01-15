@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.TransactionLog
 {
     [TestFixture]
-    public class when_creating_chunked_transaction_file_reader
+    public class when_creating_chunked_transaction_file_reader: SpecificationWithDirectory
     {
         [Test]
         public void a_null_db_config_throws_argument_null_exception()
@@ -47,8 +47,8 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_null_checkpoint_throws_argument_null_exception()
         {
-            var config = new TFChunkDbConfig(Path.GetTempPath(),
-                                             new PrefixFileNamingStrategy(Path.GetTempPath(), "prefix.tf"),
+            var config = new TFChunkDbConfig(PathName,
+                                             new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(0),

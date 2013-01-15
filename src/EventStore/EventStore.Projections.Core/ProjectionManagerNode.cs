@@ -34,6 +34,7 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<ProjectionManagementMessage.Delete>(_projectionManager);
             mainBus.Subscribe<ProjectionManagementMessage.GetStatistics>(_projectionManager);
             mainBus.Subscribe<ProjectionManagementMessage.GetState>(_projectionManager);
+            mainBus.Subscribe<ProjectionManagementMessage.GetDebugState>(_projectionManager);
             mainBus.Subscribe<ProjectionManagementMessage.Disable>(_projectionManager);
             mainBus.Subscribe<ProjectionManagementMessage.Enable>(_projectionManager);
             mainBus.Subscribe<CoreProjectionManagementMessage.Started>(_projectionManager);
@@ -41,16 +42,21 @@ namespace EventStore.Projections.Core
             mainBus.Subscribe<CoreProjectionManagementMessage.Faulted>(_projectionManager);
             mainBus.Subscribe<CoreProjectionManagementMessage.Prepared>(_projectionManager);
             mainBus.Subscribe<CoreProjectionManagementMessage.StateReport>(_projectionManager);
+            mainBus.Subscribe<CoreProjectionManagementMessage.DebugState>(_projectionManager);
             mainBus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_projectionManager);
             mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(_projectionManager);
             mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_projectionManager);
         }
 
-        public static ProjectionManagerNode Create(TFChunkDb db, QueuedHandler inputQueue, HttpService httpService, IPublisher[] queues)
+        public static ProjectionManagerNode Create(TFChunkDb db, 
+                                                   QueuedHandler inputQueue, 
+                                                   HttpService httpService, 
+                                                   IPublisher networkSendQueue,
+                                                   IPublisher[] queues)
         {
             var projectionManagerNode =
                 new ProjectionManagerNode(inputQueue, queues, db.Config.WriterCheckpoint);
-            httpService.SetupController(new ProjectionsController(inputQueue));
+            httpService.SetupController(new ProjectionsController(inputQueue, networkSendQueue));
 
             return projectionManagerNode;
         }

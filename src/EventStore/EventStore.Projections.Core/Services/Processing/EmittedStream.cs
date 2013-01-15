@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -58,13 +57,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly int _maxWriteBatchLength;
         private CheckpointTag _lastSubmittedOrCommittedMetadata; // TODO: rename
         private Event[] _submittedToWriteEvents;
+        private EmittedEvent[] _submittedToWriteEmittedEvents;
         private int _lastKnownEventNumber = ExpectedVersion.Invalid;
+        private readonly bool _noCheckpoints;
 
 
         public EmittedStream(
             string streamId, CheckpointTag zeroPosition, IPublisher publisher,
             IProjectionCheckpointManager readyHandler,
-            int maxWriteBatchLength, ILogger logger = null)
+            int maxWriteBatchLength, ILogger logger = null, bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -76,6 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _readyHandler = readyHandler;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;
+            _noCheckpoints = noCheckpoints;
         }
 
         public void EmitEvents(EmittedEvent[] events)
@@ -91,6 +93,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Checkpoint()
         {
+            EnsureCheckpointsEnabled();
             EnsureStreamStarted();
             EnsureCheckpointNotRequested();
             _checkpointRequested = true;
@@ -125,26 +128,29 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_awaitingWriteCompleted)
                 throw new InvalidOperationException("WriteEvents has not been submitted");
-            if (message.ErrorCode == OperationErrorCode.Success)
+            if (message.Result == OperationResult.Success)
             {
-                _lastKnownEventNumber = message.EventNumber + _submittedToWriteEvents.Length - 1
+                _lastKnownEventNumber = message.FirstEventNumber + _submittedToWriteEvents.Length - 1
                                         + (_lastKnownEventNumber == ExpectedVersion.NoStream ? 1 : 0); // account for stream crated
+                NotifyEventsCommitted(_submittedToWriteEmittedEvents);
                 OnWriteCompleted();
                 return;
             }
             if (_logger != null)
-                _logger.Info(
-                    "Failed to write events to stream {0}. Error: {1}", message.EventStreamId,
-                    Enum.GetName(typeof (OperationErrorCode), message.ErrorCode));
-            switch (message.ErrorCode)
             {
-                case OperationErrorCode.WrongExpectedVersion:
+                _logger.Info("Failed to write events to stream {0}. Error: {1}",
+                             _streamId,
+                             Enum.GetName(typeof (OperationResult), message.Result));
+            }
+            switch (message.Result)
+            {
+                case OperationResult.WrongExpectedVersion:
                     RequestRestart(string.Format("The '{0}' stream has be written to from the outside", _streamId));
                     break;
-                case OperationErrorCode.PrepareTimeout:
-                case OperationErrorCode.ForwardTimeout:
-                case OperationErrorCode.CommitTimeout:
-                    if (_logger != null) _logger.Info("Retrying write to {0}", message.EventStreamId);
+                case OperationResult.PrepareTimeout:
+                case OperationResult.ForwardTimeout:
+                case OperationResult.CommitTimeout:
+                    if (_logger != null) _logger.Info("Retrying write to {0}", _streamId);
                     PublishWriteEvents();
                     break;
                 default:
@@ -195,12 +201,13 @@ namespace EventStore.Projections.Core.Services.Processing
             _awaitingListEventsCompleted = true;
             _publisher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), new SendToThisEnvelope(this), _streamId, -1, 1, resolveLinks: false));
+                    Guid.NewGuid(), new SendToThisEnvelope(this), _streamId, -1, 1, resolveLinks: false, validationStreamVersion: null));
         }
 
         private void SubmitWriteEvents()
         {
             var events = new List<Event>();
+            var emittedEvents = new List<EmittedEvent>();
             while (_pendingWrites.Count > 0 && events.Count < _maxWriteBatchLength)
             {
                 var eventsToWrite = _pendingWrites.Dequeue();
@@ -220,9 +227,12 @@ namespace EventStore.Projections.Core.Services.Processing
                         }
                     _lastSubmittedOrCommittedMetadata = causedByTag;
                     events.Add(new Event(e.EventId, e.EventType, true, e.Data, e.CausedByTag.ToJsonBytes()));
+                    emittedEvents.Add(e);
                 }
             }
             _submittedToWriteEvents = events.ToArray();
+            _submittedToWriteEmittedEvents = emittedEvents.ToArray();
+
             PublishWriteEvents();
         }
 
@@ -267,8 +277,15 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_checkpointRequested && !_awaitingWriteCompleted && _pendingWrites.Count == 0)
             {
+                EnsureCheckpointsEnabled();
                 _readyHandler.Handle(new CoreProjectionProcessingMessage.ReadyForCheckpoint(this));
             }
+        }
+
+        private void EnsureCheckpointsEnabled()
+        {
+            if (_noCheckpoints)
+                throw new InvalidOperationException("Checkpoints disabled");
         }
 
         private void SubmitWriteEventsInRecovery()
@@ -281,9 +298,18 @@ namespace EventStore.Projections.Core.Services.Processing
                     SubmitWriteEvents();
                     return;
                 }
+                
+                NotifyEventsCommitted(eventsToWrite);
                 _pendingWrites.Dequeue(); // drop already committed event
             }
             OnWriteCompleted();
+        }
+
+        private static void NotifyEventsCommitted(EmittedEvent[] eventsToWrite)
+        {
+            foreach (var @event in eventsToWrite)
+                if (@event.OnCommitted != null)
+                    @event.OnCommitted();
         }
     }
 }

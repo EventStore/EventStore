@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System.IO;
-using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 
 namespace EventStore.Core.Index
@@ -36,12 +35,10 @@ namespace EventStore.Core.Index
         public const int Size = 128;
 
         public readonly FileType FileType;
-        public readonly int Version;
+        public readonly byte Version;
 
-        public PTableHeader(int version)
+        public PTableHeader(byte version)
         {
-            Ensure.Nonnegative(version, "version");
-
             FileType = FileType.PTableFile;
             Version = version;
         }
@@ -49,22 +46,20 @@ namespace EventStore.Core.Index
         public byte[] AsByteArray()
         {
             var array = new byte[Size];
-            using (var memStream = new MemoryStream(array))
-            using (var writer = new BinaryWriter(memStream))
-            {
-                writer.Write((byte)FileType.PTableFile);
-                writer.Write(Version);
-            }
+            array[0] = (byte) FileType.PTableFile;
+            array[1] = Version;
             return array;
         }
 
-        public static PTableHeader FromStream(BinaryReader reader)
+        public static PTableHeader FromStream(Stream stream)
         {
-            var type = reader.ReadByte();
-            if (type != (int)FileType.PTableFile) 
-                throw new CorruptIndexException("Corrupted PTable.", new InvalidFileException());
-            var version = reader.ReadInt32();
-            return new PTableHeader(version);
+            var type = stream.ReadByte();
+            if (type != (int) FileType.PTableFile)
+                throw new CorruptIndexException("Corrupted PTable.", new InvalidFileException("Wrong type of PTable."));
+            var version = stream.ReadByte();
+            if (version == -1)
+                throw new CorruptIndexException("Couldn't read version of PTable from header.", new InvalidFileException("Invalid PTable file."));
+            return new PTableHeader((byte)version);
         }
     }
 }

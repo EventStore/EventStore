@@ -31,23 +31,25 @@ using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_state_handler_fails_to_process_an_event_the_projection_should : TestFixtureWithCoreProjection
+    public class when_the_state_handler_fails_to_process_an_event_the_projection_should : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {
             ExistingEvent(
                 "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", "{}");
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", "{}");
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             _stateHandler = new FakeProjectionStateHandler(failOnProcessEvent: true);
         }
 
@@ -55,14 +57,15 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             //projection subscribes here
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                       new Event(
-                           Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata")), 0));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
+                        Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]
-        public void should_publiseh_faulted_message()
+        public void should_publish_faulted_message()
         {
             Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Faulted>().Count());
         }
@@ -70,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void not_emit_a_state_updated_event()
         {
-            Assert.AreEqual(0, _writeEventHandler.HandledMessages.Count);
+            Assert.AreEqual(0, _writeEventHandler.HandledMessages.OfEventType("StateUpdated").Count());
         }
     }
 }

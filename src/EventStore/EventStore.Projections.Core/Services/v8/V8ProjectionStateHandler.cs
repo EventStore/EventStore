@@ -28,10 +28,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
-using System.Text;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.v8;
 
@@ -121,12 +118,20 @@ namespace EventStore.Projections.Core.Services.v8
                         builder.IncludeEvent(@event);
             if (sourcesDefintion.ByStreams)
                 builder.SetByStream();
+            if (sourcesDefintion.ByCustomPartitions)
+                builder.SetByCustomPartitions();
             if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.StateStreamName))
                 builder.SetStateStreamNameOption(sourcesDefintion.Options.StateStreamName);
             if (!string.IsNullOrWhiteSpace(sourcesDefintion.Options.ForceProjectionName))
                 builder.SetForceProjectionName(sourcesDefintion.Options.ForceProjectionName);
             if (sourcesDefintion.Options.UseEventIndexes)
                 builder.SetUseEventIndexes(true);
+            if (sourcesDefintion.Options.ReorderEvents)
+                builder.SetReorderEvents(true);
+            if (sourcesDefintion.Options.ProcessingLag != null)
+                builder.SetProcessingLag(sourcesDefintion.Options.ProcessingLag.GetValueOrDefault());
+            if (sourcesDefintion.Options.EmitStateUpdated)
+                builder.SetEmitStateUpdated(true);
         }
 
         public void Load(string state)
@@ -141,8 +146,26 @@ namespace EventStore.Projections.Core.Services.v8
             _query.Initialize();
         }
 
+        public string GetStatePartition(
+            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
+            int sequenceNumber, string metadata, string data)
+        {
+            CheckDisposed();
+            if (eventType == null)
+                throw new ArgumentNullException("eventType");
+            if (streamId == null)
+                throw new ArgumentNullException("streamId");
+            var partition = _query.GetPartition(
+                data.Trim(), // trimming data passed to a JS 
+                new string[] { streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture), metadata ?? "", eventPosition.ToJson() });
+            if (partition == "")
+                return null;
+            else 
+                return partition;
+        }
+
         public bool ProcessEvent(
-            EventPosition position, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
+            string partition, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
             int sequenceNumber, string metadata, string data, out string newState, out EmittedEvent[] emittedEvents)
         {
             CheckDisposed();
@@ -154,7 +177,11 @@ namespace EventStore.Projections.Core.Services.v8
             _emittedEvents = null;
             _query.Push(
                 data.Trim(), // trimming data passed to a JS 
-                new string[] {streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture), metadata ?? "", position.PreparePosition.ToString()});
+                new[]
+                    {
+                        streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture),
+                        metadata ?? "", partition, eventPosition.ToJson()
+                    });
             newState = _query.GetState();
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;

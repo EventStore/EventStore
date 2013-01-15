@@ -33,37 +33,39 @@ namespace EventStore.Common.Utils
     public enum ExitCode
     {
         Success = 0,
-        Error
+        Error = 1
     }
 
     public class Application
     {
-        private static Action<ExitCode> _exit;
-        private static bool _initialized;
+        protected static readonly ILogger Log = LogManager.GetLoggerFor<Application>();
 
-        public static void RegisterExitAction(Action<ExitCode> exitAction)
+        private static Action<int> _exit;
+
+        public static void RegisterExitAction(Action<int> exitAction)
         {
             Ensure.NotNull(exitAction, "exitAction");
 
-            if (_initialized)
-                throw new InvalidOperationException("Application is already initialized");
-
             _exit = exitAction;
-            _initialized = true;
         }
 
         public static void Exit(ExitCode exitCode, string reason)
         {
+            Exit((int) exitCode, reason);
+        }
+
+        public static void Exit(int exitCode, string reason)
+        {
             Ensure.NotNullOrEmpty(reason, "reason");
             
-            if (!_initialized)
-                throw new InvalidOperationException("Application should be initialized before exiting");
-
-            Console.WriteLine("Exiting...");
-            Console.WriteLine("Exit reason : {0}", reason);
+            Console.WriteLine("Exiting with exitcode {0}\nExit reason : {1}", exitCode, reason);
+            Log.Info("Exiting with exitcode {0}\nExit reason : {1}", exitCode, reason);
 
             LogManager.Finish();
-            _exit(exitCode);
+
+            var exit = _exit;
+            if (exit != null)
+                exit(exitCode);
         }
     }
 }

@@ -100,7 +100,7 @@ namespace EventStore.Core.Util
                     || !File.Exists(fullPath))
                 {
                     _logger.Info("Replying 404 for {0} ==> {1}", contentLocalPath, fullPath);
-                    http.Manager.Reply(
+                    http.Manager.ReplyTextContent(
                         "Not Found", 404, "Not Found", "text/plain", null, 
                         ex => _logger.InfoException(ex, "Error while replying from MiniWeb"));
                 }
@@ -112,14 +112,14 @@ namespace EventStore.Core.Util
                     http.Manager.Reply(content,
                                        config.Code,
                                        config.Description,
-                                       config.Type,
+                                       config.ContentType,
                                        config.Headers,
                                        ex => _logger.InfoException(ex, "Error while replying from MiniWeb"));
                 }
             }
             catch (Exception ex)
             {
-                http.Manager.Reply(ex.ToString(), 500, "Internal Server Error", "text/plain", null, Console.WriteLine);
+                http.Manager.ReplyTextContent(ex.ToString(), 500, "Internal Server Error", "text/plain", null, Console.WriteLine);
             }
         }
 

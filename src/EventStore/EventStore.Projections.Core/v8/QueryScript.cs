@@ -38,6 +38,7 @@ namespace EventStore.Projections.Core.v8
         private readonly CompiledScript _script;
         private readonly Dictionary<string, IntPtr> _registeredHandlers = new Dictionary<string, IntPtr>();
 
+        private Func<string, string[], string> _getStatePartition;
         private Action<string, string[]> _processEvent;
         private Func<string, string[], string> _testArray;
         private Func<string> _getState;
@@ -111,6 +112,9 @@ namespace EventStore.Projections.Core.v8
                 case "initialize":
                     _initialize = () => ExecuteHandler(handlerHandle, "");
                     break;
+                case "get_state_partition":
+                    _getStatePartition = (json, other) => ExecuteHandler(handlerHandle, json, other);
+                    break;
                 case "process_event":
                     _processEvent = (json, other) => ExecuteHandler(handlerHandle, json, other);
                     break;
@@ -128,6 +132,9 @@ namespace EventStore.Projections.Core.v8
                     break;
                 case "get_sources":
                     _getSources = () => ExecuteHandler(handlerHandle, "");
+                    break;
+                case "set_debugging":
+                    // ignore - browser based debugging only
                     break;
                 default:
                     Console.WriteLine(
@@ -212,6 +219,14 @@ namespace EventStore.Projections.Core.v8
                 _initialize();
         }
 
+        public string GetPartition(string json, string[] other)
+        {
+            if (_getStatePartition == null)
+                throw new InvalidOperationException("'get_state_partition' command handler has not been registered");
+
+            return _getStatePartition(json, other);
+        }
+
         public void Push(string json, string[] other)
         {
             if (_processEvent == null)
@@ -267,6 +282,9 @@ namespace EventStore.Projections.Core.v8
             [DataMember(Name = "by_streams")]
             public bool ByStreams { get; set; }
 
+            [DataMember(Name = "by_custom_partitions")]
+            public bool ByCustomPartitions { get; set; }
+
             [DataMember(Name = "options")]
             public QuerySourcesDefinitionOptions Options { get; set;}
         }
@@ -282,6 +300,17 @@ namespace EventStore.Projections.Core.v8
 
             [DataMember(Name = "$forceProjectionName")]
             public string ForceProjectionName { get; set; }
+
+            [DataMember(Name = "reorderEvents")]
+            public bool ReorderEvents { get; set; }
+
+            [DataMember(Name = "processingLag")]
+            public int? ProcessingLag { get; set; }
+
+            [DataMember(Name = "emitStateUpdated")]
+            public bool EmitStateUpdated { get; set; }
+
+
         }
     }
 }

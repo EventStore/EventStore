@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     public class when_creating_a_projection
     {
         private readonly ProjectionConfig _defaultProjectionConfig = new ProjectionConfig(
-            ProjectionMode.AdHoc, 5, 10, 1000, 250, true, true, true);
+            5, 10, 1000, 250, true, true, true, true);
 
         private
             RequestResponseDispatcher
@@ -65,77 +65,76 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void a_null_name_throws_argument_null_excveption()
         {
-            var p = new CoreProjection(
-                null, Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(), _defaultProjectionConfig,
-                _readDispatcher, _writeDispatcher);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var p = CoreProjection.CreateAndPrepapre(null, Guid.NewGuid(), new FakePublisher(), projectionStateHandler, _defaultProjectionConfig,
+                                         _readDispatcher, _writeDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void an_empty_name_throws_argument_exception()
         {
-            var p = new CoreProjection(
-                "", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(), _defaultProjectionConfig,
-                _readDispatcher, _writeDispatcher);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var p = CoreProjection.CreateAndPrepapre("", Guid.NewGuid(), new FakePublisher(), projectionStateHandler, _defaultProjectionConfig,
+                                         _readDispatcher, _writeDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void a_null_publisher_throws_exception()
         {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), null, new FakeProjectionStateHandler(), _defaultProjectionConfig,
-                _readDispatcher, _writeDispatcher);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var p = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), null, projectionStateHandler, _defaultProjectionConfig,
+                                         _readDispatcher, _writeDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void a_null_projection_handler_throws_argument_null_exception()
         {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), null, _defaultProjectionConfig, _readDispatcher,
-                _writeDispatcher);
+            var p = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), new FakePublisher(), null, _defaultProjectionConfig, _readDispatcher,
+                                         _writeDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentOutOfRangeException))]
         public void a_negative_checkpoint_handled_interval_throws_argument_out_of_range_exception()
         {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(),
-                new ProjectionConfig(ProjectionMode.AdHoc, -1, 10, 1000, 250, true, true, true), _readDispatcher,
-                _writeDispatcher);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var p = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
+                                         new ProjectionConfig(-1, 10, 1000, 250, true, true, false, false), _readDispatcher,
+                                         _writeDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentOutOfRangeException))]
         public void a_zero_checkpoint_handled_threshold_throws_argument_out_of_range_exception()
         {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(),
-                new ProjectionConfig(ProjectionMode.AdHoc, 0, 10, 1000, 250, true, true, true), _readDispatcher,
-                _writeDispatcher);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var p = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
+                                         new ProjectionConfig(0, 10, 1000, 250, true, true, false, false), _readDispatcher,
+                                         _writeDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void a_checkpoint_threshold_less_tan_checkpoint_handled_threshold_throws_argument_out_of_range_exception(
             )
         {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(),
-                new ProjectionConfig(ProjectionMode.AdHoc, 10, 5, 1000, 250, true, true, true), _readDispatcher,
-                _writeDispatcher);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var p = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
+                                         new ProjectionConfig(10, 5, 1000, 250, true, true, false, false), _readDispatcher,
+                                         _writeDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void a_null_read_dispatcher__throws_argument_null_exception()
         {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(),
-                _defaultProjectionConfig, null, _writeDispatcher);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var p = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
+                                         _defaultProjectionConfig, null, _writeDispatcher, null);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void a_null_write_dispatcher__throws_argument_null_exception()
         {
-            var p = new CoreProjection(
-                "projection", Guid.NewGuid(), new FakePublisher(), new FakeProjectionStateHandler(),
-                _defaultProjectionConfig, _readDispatcher, null);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            var p = CoreProjection.CreateAndPrepapre("projection", Guid.NewGuid(), new FakePublisher(), projectionStateHandler,
+                                         _defaultProjectionConfig, _readDispatcher, null, null);
         }
     }
 }

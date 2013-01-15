@@ -27,11 +27,9 @@
 // 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -44,10 +42,13 @@ namespace EventStore.Transport.Http.EntityManagement
 
         public object AsyncState { get; set; }
         public readonly HttpEntity HttpEntity;
+        public bool IsProcessing { get { return _processing != 0; } }
 
         private int _processing;
         private readonly string[] _allowedMethods;
         private readonly Action<HttpEntity> _onRequestSatisfied;
+        private Stream _currentOutputStream;
+        private AsyncQueuedBufferWriter _asyncWriter;
 
         internal HttpEntityManager(HttpEntity httpEntity, string[] allowedMethods, Action<HttpEntity> onRequestSatisfied)
         {
@@ -67,13 +68,13 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 HttpEntity.Response.StatusCode = code;
             }
-            catch (ProtocolViolationException e)
-            {
-                Log.InfoException(e, "Attempt to set invalid http status code occurred");
-            }
             catch (ObjectDisposedException e)
             {
-                Log.InfoException(e, "Attempt to set http status code on disponsed response object, ignoring...");
+                Log.InfoException(e, "Attempt to set http status code on disposed response object, ignoring...");
+            }
+            catch (ProtocolViolationException e)
+            {
+                Log.InfoException(e, "Attempt to set invalid http status code occurred.");
             }
         }
 
@@ -85,32 +86,31 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (ObjectDisposedException e)
             {
-                Log.InfoException(e, "Attempt to set http status description on disponsed response object, ignoring...");
+                Log.InfoException(e, "Attempt to set http status description on disposed response object, ignoring...");
             }
             catch (ArgumentException e)
             {
-                Log.InfoException(e, "Description string '{0}' did not pass validation. Status description did not set",
-                                  desc);
+                Log.InfoException(e, "Description string '{0}' did not pass validation. Status description was not set.", desc);
             }
         }
 
-        private void SetResponseType(string type)
+        private void SetContentType(string contentType)
         {
             try
             {
-                HttpEntity.Response.ContentType = type;
+                HttpEntity.Response.ContentType = contentType;
             }
             catch (ObjectDisposedException e)
             {
-                Log.InfoException(e, "Attempt to set response content type on disponsed response object, ignoring...");
+                Log.InfoException(e, "Attempt to set response content type on disposed response object, ignoring...");
             }
             catch (InvalidOperationException e)
             {
-                Log.InfoException(e, "Attempt to set response content type resulted in IOE");
+                Log.InfoException(e, "Error during setting content type on HTTP response.");
             }
             catch (ArgumentOutOfRangeException e)
             {
-                Log.InfoException(e, "Invalid response type");
+                Log.InfoException(e, "Invalid response type.");
             }
         }
 
@@ -120,13 +120,17 @@ namespace EventStore.Transport.Http.EntityManagement
             {
                 HttpEntity.Response.ContentLength64 = length;
             }
+            catch (ObjectDisposedException e)
+            {
+                Log.InfoException(e, "Attempt to set content length on disposed response object, ignoring...");
+            }
             catch (InvalidOperationException e)
             {
-                Log.InfoException(e, "Content length did not set");
+                Log.InfoException(e, "Error during setting content length on HTTP response.");
             }
             catch (ArgumentOutOfRangeException e)
             {
-                Log.InfoException(e, "Attempt to set invalid value ('{0}') as content length", length);
+                Log.InfoException(e, "Attempt to set invalid value ('{0}') as content length.", length);
             }
         }
 
@@ -140,7 +144,7 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (Exception e)
             {
-                Log.InfoException(e, "Failed to set required response headers");
+                Log.InfoException(e, "Failed to set required response headers.");
             }
         }
 
@@ -155,105 +159,16 @@ namespace EventStore.Transport.Http.EntityManagement
             }
             catch (Exception e)
             {
-                Log.InfoException(e, "Failed to set additional response headers");
+                Log.InfoException(e, "Failed to set additional response headers.");
             }
         }
 
-        public void Reply(int code, string description, Action<Exception> onError)
+        public void ReadRequestAsync(Action<HttpEntityManager, byte[]> onReadSuccess, Action<Exception> onError)
         {
-            Reply((byte[])null, code, description, null, null, onError);
-        }
-
-        public void Reply(string response,
-                          int code,
-                          string description,
-                          string type,
-                          KeyValuePair<string, string>[] headers,
-                          Action<Exception> onError)
-        {
-            Reply(Encoding.UTF8.GetBytes(response ?? string.Empty), code, description, type, headers, onError);
-        }
-
-        public void Reply(byte[] response,
-                          int code,
-                          string description,
-                          string type,
-                          KeyValuePair<string, string>[] headers,
-                          Action<Exception> onError)
-        {
+            Ensure.NotNull(onReadSuccess, "OnReadSuccess");
             Ensure.NotNull(onError, "onError");
 
-            bool isAlreadyProcessing = Interlocked.CompareExchange(ref _processing, 1, 0) == 1;
-            if (isAlreadyProcessing)
-                return;
-
-            SetResponseCode(code);
-            SetResponseDescription(description);
-            SetResponseType(type);
-            SetRequiredHeaders();
-            SetAdditionalHeaders(headers ?? Enumerable.Empty<KeyValuePair<string, string>>());
-
-            if (response == null || response.Length == 0)
-            {
-                SetResponseLength(0);
-                CloseConnection(onError);
-            }
-            else
-                WriteResponseAsync(response, onError);
-        }
-
-        private void WriteResponseAsync(byte[] response, Action<Exception> onError)
-        {
-            SetResponseLength(response.Length);
-
-            var state = new ManagerOperationState(HttpEntity, (sender, e) => {}, onError)
-            {
-                InputStream = new MemoryStream(response),
-                OutputStream = HttpEntity.Response.OutputStream
-            };
-            var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
-            copier.Completed += ResponseWritten;
-            copier.Start();
-        }
-
-        private void ResponseWritten(object sender, EventArgs eventArgs)
-        {
-            var copier = (AsyncStreamCopier<ManagerOperationState>) sender;
-            var state = copier.AsyncState;
-
-            if (copier.Error != null)
-            {
-                state.DisposeIOStreams();
-                CloseConnection(e => Log.ErrorException(e, "Close connection error (after crash in write response)"));
-
-                state.OnError(copier.Error);
-                return;
-            }
-
-            state.DisposeIOStreams();
-            CloseConnection(e => Log.ErrorException(e, "Close connection error (after successful response write)"));
-        }
-
-        public void ReadRequestAsync(Action<HttpEntityManager, string> onSuccess, Action<Exception> onError)
-        {
-            ReadRequestAsync((manager, bytes) =>
-            {
-                int offset = 0;
-                        
-                // check for UTF-8 BOM (0xEF, 0xBB, 0xBF) and skip it safely, if any
-                if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
-                    offset = 3;
-
-                onSuccess(manager, Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset));
-            }, onError);
-        }
-        
-        public void ReadRequestAsync(Action<HttpEntityManager, byte[]> onSuccess, Action<Exception> onError)
-        {
-            Ensure.NotNull(onSuccess, "onSuccess");
-            Ensure.NotNull(onError, "onError");
-
-            var state = new ManagerOperationState(HttpEntity, onSuccess, onError)
+            var state = new ManagerOperationState(onReadSuccess, onError)
             {
                 InputStream = HttpEntity.Request.InputStream,
                 OutputStream = new MemoryStream()
@@ -262,6 +177,93 @@ namespace EventStore.Transport.Http.EntityManagement
             var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
             copier.Completed += RequestRead;
             copier.Start();
+        }
+
+        public bool BeginReply(int code, string description, string contentType, IEnumerable<KeyValuePair<string, string>> headers)
+        {
+            bool isAlreadyProcessing = Interlocked.CompareExchange(ref _processing, 1, 0) == 1;
+            if (isAlreadyProcessing)
+                return false;
+
+            SetResponseCode(code);
+            SetResponseDescription(description);
+            SetContentType(contentType);
+            SetRequiredHeaders();
+            SetAdditionalHeaders(headers.Safe());
+            return true;
+        }
+
+        public void ContinueReply(byte[] response, Action<Exception> onError, Action onCompleted)
+        {
+            Ensure.NotNull(onError, "onError");
+            Ensure.NotNull(onCompleted, "onCompleted");
+
+            _currentOutputStream = HttpEntity.Response.OutputStream;
+            ContinueWriteResponseAsync(response, () => { }, onError, onCompleted);
+        }
+
+        private void DisposeStreamAndCloseConnection(string message)
+        {
+            IOStreams.SafelyDispose(_currentOutputStream);
+            _currentOutputStream = null;
+            CloseConnection(e => Log.ErrorException(e, message));
+        }
+
+        public void EndReply()
+        {
+            EndWriteResponse();
+        }
+
+        public void Reply(byte[] response, 
+                          int code,
+                          string description, 
+                          string contentType, 
+                          IEnumerable<KeyValuePair<string, string>> headers,
+                          Action<Exception> onError)
+        {
+            Ensure.NotNull(onError, "onError");
+
+            if (!BeginReply(code, description, contentType, headers))
+                return;
+
+            if (response == null || response.Length == 0)
+            {
+                SetResponseLength(0);
+                CloseConnection(onError);
+            }
+            else
+            {
+                SetResponseLength(response.Length);
+                BeginWriteResponse();
+                ContinueWriteResponseAsync(response, () => { }, onError, () => { });
+                EndWriteResponse();
+            }
+        }
+
+        private void EndWriteResponse()
+        {
+            _asyncWriter.AppnedDispose(exception => { });
+        }
+
+        private void BeginWriteResponse()
+        {
+            _currentOutputStream = HttpEntity.Response.OutputStream;
+        }
+
+        private void ContinueWriteResponseAsync(byte[] response, Action onSuccess, Action<Exception> onError, Action onCompleted)
+        {
+            if (_asyncWriter == null)
+                _asyncWriter = new AsyncQueuedBufferWriter(
+                    _currentOutputStream, () => DisposeStreamAndCloseConnection("Close connection error"));
+
+            _asyncWriter.Append(response, errorIfAny =>
+                {
+                    if (errorIfAny == null)
+                        onSuccess();
+                    else
+                        onError(errorIfAny);
+                    onCompleted();
+                });
         }
 
         private void RequestRead(object sender, EventArgs e)
@@ -287,7 +289,7 @@ namespace EventStore.Transport.Http.EntityManagement
                 request = new byte[memory.Length];
                 Buffer.BlockCopy(memory.GetBuffer(), 0, request, 0, (int)memory.Length);
             }
-            state.OnSuccess(this, request);
+            state.OnReadSuccess(this, request);
         }
 
         private void CloseConnection(Action<Exception> onError)

@@ -33,19 +33,7 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public const int MidpointsDepth = 10;
 
-        public const int StorageReaderHandlerCount = 4;
-
-        public const int ReadIndexReaderCount = 1 /*StorageWriter*/
-                                                + 1 /*StorageChaser*/
-                                                + 1 /*Projections*/
-                                                + 1 /*Scavenging*/
-                                                + StorageReaderHandlerCount;
-
-        public const int TFChunkReaderCount = ReadIndexReaderCount + 2 /* for caching/uncaching, populating midpoints */;
-
         public const int ChunkSize = 256 * 1024 * 1024;
         public const int CachedChunkCount = 2;
-
-        public const int MetadataCacheCapacity = 100000;
     }
 }

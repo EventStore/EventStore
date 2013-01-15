@@ -31,8 +31,8 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Helper;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
@@ -48,10 +48,10 @@ namespace EventStore.Core.Tests.Services.Replication.WriteEvents
         protected override IEnumerable<Message> WithInitialMessages()
         {
             yield return new StorageMessage.WriteRequestCreated(CorrelationId, Envelope, "test123", ExpectedVersion.Any, new[] {DummyEvent()});
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.PrepareAck(CorrelationId, 1, PrepareFlags.SingleWrite);
-            yield return new StorageMessage.CommitAck(CorrelationId, 2, 3);
+            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.PrepareAck(CorrelationId, SomeEndPoint, 1, PrepareFlags.SingleWrite);
+            yield return new StorageMessage.CommitAck(CorrelationId, SomeEndPoint, 100, 2, 3);
         }
 
         protected override Message When()
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Services.Replication.WriteEvents
         public void the_envelope_is_replied_to_with_failure()
         {
             Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.WriteEventsCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                                 x.ErrorCode == OperationErrorCode.CommitTimeout));
+                                                                                                 x.Result == OperationResult.CommitTimeout));
         }
     }
 }

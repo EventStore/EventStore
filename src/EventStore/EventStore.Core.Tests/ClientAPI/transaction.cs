@@ -16,15 +16,14 @@
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
 // DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -32,14 +31,32 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 using System.Linq;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
-    internal class transaction
+    [TestFixture, Category("LongRunning")]
+    public class transaction: SpecificationWithDirectoryPerTestFixture
     {
+        private MiniNode _node;
+
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
+        {
+            base.TestFixtureSetUp();
+            _node = new MiniNode(PathName);
+            _node.Start();
+        }
+
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
+        {
+            _node.Shutdown();
+            base.TestFixtureTearDown();
+        }
+
         [Test]
         [Category("Network")]
         public void should_start_on_non_existing_stream_with_correct_exp_ver_and_create_stream_on_commit()
@@ -47,13 +64,14 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_start_on_non_existing_stream_with_correct_exp_ver_and_create_stream_on_commit";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var start = store.StartTransactionAsync(stream, ExpectedVersion.NoStream);
-                Assert.DoesNotThrow(start.Wait);
-                var write = store.TransactionalWriteAsync(start.Result.TransactionId, stream, new[] {new TestEvent()});
-                Assert.DoesNotThrow(write.Wait);
-                var commit = store.CommitTransactionAsync(start.Result.TransactionId, start.Result.Stream);
-                Assert.DoesNotThrow(commit.Wait);
+                store.Connect(_node.TcpEndPoint);
+                using (var transaction = store.StartTransaction(stream, ExpectedVersion.NoStream))
+                {
+                    var write = transaction.WriteAsync(new[] {new TestEvent()});
+                    Assert.DoesNotThrow(write.Wait);
+                    var commit = transaction.CommitAsync();
+                    Assert.DoesNotThrow(commit.Wait);
+                }
             }
         }
 
@@ -64,13 +82,14 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_start_on_non_existing_stream_with_exp_ver_any_and_create_stream_on_commit";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var start = store.StartTransactionAsync(stream, ExpectedVersion.Any);
-                Assert.DoesNotThrow(start.Wait);
-                var write = store.TransactionalWriteAsync(start.Result.TransactionId, stream, new[] {new TestEvent()});
-                Assert.DoesNotThrow(write.Wait);
-                var commit = store.CommitTransactionAsync(start.Result.TransactionId, start.Result.Stream);
-                Assert.DoesNotThrow(commit.Wait);
+                store.Connect(_node.TcpEndPoint);
+                using (var transaction = store.StartTransaction(stream, ExpectedVersion.Any))
+                {
+                    var write = transaction.WriteAsync(new[] {new TestEvent()});
+                    Assert.DoesNotThrow(write.Wait);
+                    var commit = transaction.CommitAsync();
+                    Assert.DoesNotThrow(commit.Wait);
+                }
             }
         }
 
@@ -81,13 +100,16 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_fail_to_commit_non_existing_stream_with_wrong_exp_ver";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var start = store.StartTransactionAsync(stream, ExpectedVersion.EmptyStream);
-                Assert.DoesNotThrow(start.Wait);
-                var write = store.TransactionalWriteAsync(start.Result.TransactionId, stream, new[] { new TestEvent() });
-                Assert.DoesNotThrow(write.Wait);
-                var commit = store.CommitTransactionAsync(start.Result.TransactionId, start.Result.Stream);
-                Assert.That(() => commit.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
+                store.Connect(_node.TcpEndPoint);
+                using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
+                {
+                    var write = transaction.WriteAsync(new TestEvent());
+                    Assert.DoesNotThrow(write.Wait);
+                    var commit = transaction.CommitAsync();
+                    Assert.That(() => commit.Wait(), 
+                                Throws.Exception.TypeOf<AggregateException>()
+                                      .With.InnerException.TypeOf<WrongExpectedVersionException>());
+                }
             }
         }
 
@@ -98,16 +120,17 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_create_stream_if_commits_no_events_to_empty_stream";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var start = store.StartTransactionAsync(stream, ExpectedVersion.NoStream);
-                Assert.DoesNotThrow(start.Wait);
-                var commit = store.CommitTransactionAsync(start.Result.TransactionId, start.Result.Stream);
-                Assert.DoesNotThrow(commit.Wait);
+                store.Connect(_node.TcpEndPoint);
+                using (var transaction = store.StartTransaction(stream, ExpectedVersion.NoStream))
+                {
+                    var commit = transaction.CommitAsync();
+                    Assert.DoesNotThrow(commit.Wait);
+                }
 
-                var streamCreated = store.ReadEventStreamForwardAsync(stream, 0, 1);
+                var streamCreated = store.ReadStreamEventsForwardAsync(stream, 0, 1, resolveLinkTos: false);
                 Assert.DoesNotThrow(streamCreated.Wait);
 
-                Assert.That(streamCreated.Result.Events.Length, Is.EqualTo(1));//stream created event
+                Assert.That(streamCreated.Result.Events.Length, Is.EqualTo(1)); //stream created event
             }
         }
 
@@ -118,13 +141,16 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_validate_expectations_on_commit";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var start = store.StartTransactionAsync(stream, 100500);
-                Assert.DoesNotThrow(start.Wait);
-                var write = store.TransactionalWriteAsync(start.Result.TransactionId, stream, new[] { new TestEvent() });
-                Assert.DoesNotThrow(write.Wait);
-                var commit = store.CommitTransactionAsync(start.Result.TransactionId, start.Result.Stream);
-                Assert.That(() => commit.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
+                store.Connect(_node.TcpEndPoint);
+                using (var transaction = store.StartTransaction(stream, 100500))
+                {
+                    var write = transaction.WriteAsync(new TestEvent());
+                    Assert.DoesNotThrow(write.Wait);
+                    var commit = transaction.CommitAsync();
+                    Assert.That(() => commit.Wait(),
+                                Throws.Exception.TypeOf<AggregateException>()
+                                      .With.InnerException.TypeOf<WrongExpectedVersionException>());
+                }
             }
         }
 
@@ -137,14 +163,14 @@ namespace EventStore.Core.Tests.ClientAPI
             var transWritesCompleted = new AutoResetEvent(false);
             var writesToSameStreamCompleted = new AutoResetEvent(false);
 
-            var totalTranWrites = 500;
-            var totalPlainWrites = 500;
+            const int totalTranWrites = 500;
+            const int totalPlainWrites = 500;
 
             //excplicitly creating stream
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                store.CreateStream(stream, false, new byte[0]);
+                store.Connect(_node.TcpEndPoint);
+                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
             }
 
             //500 events during transaction
@@ -152,23 +178,24 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 using (var store = EventStoreConnection.Create())
                 {
-                    store.Connect(MiniNode.Instance.TcpEndPoint);
-                    var transaction = store.StartTransaction(stream, ExpectedVersion.Any);
-                    var writes = new List<Task>();
-                    for (int i = 0; i < totalTranWrites; i++)
+                    store.Connect(_node.TcpEndPoint);
+                    using (var transaction = store.StartTransaction(stream, ExpectedVersion.Any))
                     {
-                        if (i % 10 == 0)
-                            writes.RemoveAll(write => write.IsCompleted);
 
-                        writes.Add(store.TransactionalWriteAsync(transaction.TransactionId,
-                                                                 transaction.Stream,
-                                                                 new[] { new TestEvent((i + 1).ToString(), "trans write") }));
+                        var writes = new List<Task>();
+                        for (int i = 0; i < totalTranWrites; i++)
+                        {
+                            if (i%10 == 0)
+                                writes.RemoveAll(write => write.IsCompleted);
+
+                            writes.Add(transaction.WriteAsync(new TestEvent((i + 1).ToString(), "trans write")));
+                        }
+
+                        Task.WaitAll(writes.ToArray());
+                        transaction.Commit();
+
+                        transWritesCompleted.Set();
                     }
-
-                    Task.WaitAll(writes.ToArray());
-                    store.CommitTransaction(transaction.TransactionId, transaction.Stream);
-
-                    transWritesCompleted.Set();
                 }
             });
 
@@ -177,7 +204,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 using (var store = EventStoreConnection.Create())
                 {
-                    store.Connect(MiniNode.Instance.TcpEndPoint);
+                    store.Connect(_node.TcpEndPoint);
                     var writes = new List<Task>();
                     for (int i = 0; i < totalPlainWrites; i++)
                     {
@@ -198,15 +225,15 @@ namespace EventStore.Core.Tests.ClientAPI
             transWritesCompleted.WaitOne();
             writesToSameStreamCompleted.WaitOne();
 
-            //check all written
+            // check all written
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var slice = store.ReadEventStreamForward(stream, 0, totalTranWrites + totalPlainWrites + 1);
+                store.Connect(_node.TcpEndPoint);
+                var slice = store.ReadStreamEventsForward(stream, 0, totalTranWrites + totalPlainWrites + 1, false);
                 Assert.That(slice.Events.Length, Is.EqualTo(totalTranWrites + totalPlainWrites + 1));
 
-                Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Metadata) == "trans write"), Is.EqualTo(totalTranWrites));
-                Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Metadata) == "plain write"), Is.EqualTo(totalPlainWrites));
+                Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Event.Metadata) == "trans write"), Is.EqualTo(totalTranWrites));
+                Assert.That(slice.Events.Count(ent => Encoding.UTF8.GetString(ent.Event.Metadata) == "plain write"), Is.EqualTo(totalPlainWrites));
             }
         }
 
@@ -217,24 +244,26 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_fail_to_commit_if_started_with_correct_ver_but_committing_with_bad";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                store.CreateStream(stream, false, new byte[0]);
+                store.Connect(_node.TcpEndPoint);
+                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
             }
 
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var start = store.StartTransactionAsync(stream, ExpectedVersion.EmptyStream);
-                Assert.DoesNotThrow(start.Wait);
+                store.Connect(_node.TcpEndPoint);
+                using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
+                {
+                    var append = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {new TestEvent()});
+                    Assert.DoesNotThrow(append.Wait);
 
-                var append = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {new TestEvent()});
-                Assert.DoesNotThrow(append.Wait);
+                    var write = transaction.WriteAsync(new TestEvent());
+                    Assert.DoesNotThrow(write.Wait);
 
-                var write = store.TransactionalWriteAsync(start.Result.TransactionId, start.Result.Stream, new[] { new TestEvent() });
-                Assert.DoesNotThrow(write.Wait);
-
-                var commit = store.CommitTransactionAsync(start.Result.TransactionId, start.Result.Stream);
-                Assert.That(() => commit.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
+                    var commit = transaction.CommitAsync();
+                    Assert.That(() => commit.Wait(),
+                                Throws.Exception.TypeOf<AggregateException>()
+                                      .With.InnerException.TypeOf<WrongExpectedVersionException>());
+                }
             }
         }
 
@@ -245,24 +274,24 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_not_fail_to_commit_if_started_with_wrong_ver_but_committing_with_correct_ver";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                store.CreateStream(stream, false, new byte[0]);
+                store.Connect(_node.TcpEndPoint);
+                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
             }
 
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var start = store.StartTransactionAsync(stream, 1);
-                Assert.DoesNotThrow(start.Wait);
+                store.Connect(_node.TcpEndPoint);
+                using (var transaction = store.StartTransaction(stream, 1))
+                {
+                    var append = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {new TestEvent()});
+                    Assert.DoesNotThrow(append.Wait);
 
-                var append = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] { new TestEvent() });
-                Assert.DoesNotThrow(append.Wait);
+                    var write = transaction.WriteAsync(new TestEvent());
+                    Assert.DoesNotThrow(write.Wait);
 
-                var write = store.TransactionalWriteAsync(start.Result.TransactionId, start.Result.Stream, new[] { new TestEvent() });
-                Assert.DoesNotThrow(write.Wait);
-
-                var commit = store.CommitTransactionAsync(start.Result.TransactionId, start.Result.Stream);
-                Assert.DoesNotThrow(commit.Wait);
+                    var commit = transaction.CommitAsync();
+                    Assert.DoesNotThrow(commit.Wait);
+                }
             }
         }
 
@@ -273,24 +302,26 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "should_fail_to_commit_if_started_with_correct_ver_but_on_commit_stream_was_deleted";
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                store.CreateStream(stream, false, new byte[0]);
+                store.Connect(_node.TcpEndPoint);
+                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
             }
 
             using (var store = EventStoreConnection.Create())
             {
-                store.Connect(MiniNode.Instance.TcpEndPoint);
-                var start = store.StartTransactionAsync(stream, ExpectedVersion.EmptyStream);
-                Assert.DoesNotThrow(start.Wait);
+                store.Connect(_node.TcpEndPoint);
+                using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
+                {
+                    var write = transaction.WriteAsync(new TestEvent());
+                    Assert.DoesNotThrow(write.Wait);
 
-                var write = store.TransactionalWriteAsync(start.Result.TransactionId, start.Result.Stream, new[] { new TestEvent() });
-                Assert.DoesNotThrow(write.Wait);
+                    var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
+                    Assert.DoesNotThrow(delete.Wait);
 
-                var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
-                Assert.DoesNotThrow(delete.Wait);
-
-                var commit = store.CommitTransactionAsync(start.Result.TransactionId, start.Result.Stream);
-                Assert.That(() => commit.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
+                    var commit = transaction.CommitAsync();
+                    Assert.That(() => commit.Wait(),
+                                Throws.Exception.TypeOf<AggregateException>()
+                                      .With.InnerException.TypeOf<StreamDeletedException>());
+                }
             }
         }
     }

@@ -40,59 +40,61 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             _projection = @"
                 fromAll();
                 on_raw(function(state, event) {
-                    log(JSON.stringify(state) + '/' + event.bodyRaw + '/' + event.streamId + '/' + event.eventType + '/' + event.sequenceNumber + '/' + event.metadataRaw);
+                    log(JSON.stringify(state) + '/' + event.bodyRaw + '/' + event.streamId + '/' + 
+                        event.eventType + '/' + event.sequenceNumber + '/' + event.metadataRaw + '/' + 
+                        JSON.parse(event.position).commitPosition + '/' + JSON.parse(event.position).preparePosition);
                     return {};
                 });
             ";
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_should_reflect_event()
         {
             string state;
             EmittedEvent[] emittedEvents;
             _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
             Assert.AreEqual(1, _logged.Count);
-            Assert.AreEqual(@"{}/{""a"":""b""}/stream1/type1/0/metadata", _logged[0]);
+            Assert.AreEqual(@"{}/{""a"":""b""}/stream1/type1/0/metadata/20/10", _logged[0]);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void multiple_process_event_should_reflect_events()
         {
             string state;
             EmittedEvent[] emittedEvents;
             _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
             _stateHandler.ProcessEvent(
-                new EventPosition(40, 30), CheckpointTag.FromPosition(40, 30), "stream1", "type1", "category", Guid.NewGuid(), 1, "metadata",
+                "", CheckpointTag.FromPosition(40, 30), "stream1", "type1", "category", Guid.NewGuid(), 1, "metadata",
                 @"{""c"":""d""}", out state, out emittedEvents);
             Assert.AreEqual(2, _logged.Count);
-            Assert.AreEqual(@"{}/{""a"":""b""}/stream1/type1/0/metadata", _logged[0]);
-            Assert.AreEqual(@"{}/{""c"":""d""}/stream1/type1/1/metadata", _logged[1]);
+            Assert.AreEqual(@"{}/{""a"":""b""}/stream1/type1/0/metadata/20/10", _logged[0]);
+            Assert.AreEqual(@"{}/{""c"":""d""}/stream1/type1/1/metadata/40/30", _logged[1]);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_returns_true()
         {
             string state;
             EmittedEvent[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
 
             Assert.IsTrue(result);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_with_null_category_returns_true()
         {
             string state;
             EmittedEvent[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", null, Guid.NewGuid(), 0, "metadata", @"{""a"":""b""}",
+                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", null, Guid.NewGuid(), 0, "metadata", @"{""a"":""b""}",
                 out state, out emittedEvents);
 
             Assert.IsTrue(result);

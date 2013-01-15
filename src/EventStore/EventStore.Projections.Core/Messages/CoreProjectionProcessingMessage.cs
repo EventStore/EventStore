@@ -42,6 +42,8 @@ namespace EventStore.Projections.Core.Messages
 
             public CheckpointLoaded(Guid correlationId, CheckpointTag checkpointTag, string checkpointData)
             {
+                if (checkpointTag == null) throw new ArgumentNullException("checkpointTag");
+                if (checkpointData == null) throw new ArgumentNullException("checkpointData");
                 _correlationId = correlationId;
                 _checkpointTag = checkpointTag;
                 _checkpointData = checkpointData;
@@ -60,6 +62,28 @@ namespace EventStore.Projections.Core.Messages
             public string CheckpointData
             {
                 get { return _checkpointData; }
+            }
+        }
+
+        public class PrerecordedEventsLoaded : Message
+        {
+            private readonly Guid _correlationId;
+            private readonly CheckpointTag _checkpointTag;
+
+            public PrerecordedEventsLoaded(Guid correlationId, CheckpointTag checkpointTag)
+            {
+                _correlationId = correlationId;
+                _checkpointTag = checkpointTag;
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+
+            public CheckpointTag CheckpointTag
+            {
+                get { return _checkpointTag; }
             }
         }
 
@@ -93,10 +117,6 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class PauseRequested : Message
-        {
-        }
-
         public class RestartRequested : Message
         {
             private readonly string _reason;
@@ -111,5 +131,6 @@ namespace EventStore.Projections.Core.Messages
                 get { return _reason; }
             }
         }
+
     }
 }

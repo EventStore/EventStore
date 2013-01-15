@@ -44,6 +44,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
             [DataMember]
             public bool UseEventIndexes { get; set; }
+
+            [DataMember]
+            public bool ReorderEvents { get; set; }
+
+            [DataMember]
+            public int ProcessingLag { get; set; }
+
+            [DataMember]
+            public bool EmitStateUpdated { get; set; }
         }
 
         protected readonly QuerySourceOptions _options = new QuerySourceOptions();
@@ -53,6 +62,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected bool _allEvents;
         protected List<string> _events;
         protected bool _byStream;
+        protected bool _byCustomPartitions;
 
         public void FromAll()
         {
@@ -90,6 +100,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _byStream = true;
         }
 
+        public void SetByCustomPartitions()
+        {
+            _byCustomPartitions = true;
+        }
+
         public void SetStateStreamNameOption(string stateStreamName)
         {
             _options.StateStreamName = string.IsNullOrWhiteSpace(stateStreamName) ? null : stateStreamName;
@@ -105,6 +120,22 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.UseEventIndexes = useEventIndexes;
         }
 
+        public void SetReorderEvents(bool reorderEvents)
+        {
+            _options.ReorderEvents = reorderEvents;
+        }
+
+        public void SetProcessingLag(int processingLag)
+        {
+            _options.ProcessingLag = processingLag;
+        }
+
+        public void SetEmitStateUpdated(bool emitStateUpdated = true)
+        {
+            _options.EmitStateUpdated = emitStateUpdated;
+        }
+
+
         protected HashSet<string> ToSet(IEnumerable<string> list)
         {
             if (list == null)
@@ -112,26 +143,42 @@ namespace EventStore.Projections.Core.Services.Processing
             return new HashSet<string>(list);
         }
 
-        public void Validate(ProjectionMode mode)
+        public void Validate(ProjectionConfig config)
         {
             if (!_allStreams && _categories == null && _streams == null)
                 throw new InvalidOperationException("None of streams and categories are included");
             if (!_allEvents && _events == null)
                 throw new InvalidOperationException("None of events are included");
             if (_streams != null && _categories != null)
-                throw new InvalidOperationException("Streams and categories cannot be included in a filter at the same time");
+                throw new InvalidOperationException(
+                    "Streams and categories cannot be included in a filter at the same time");
             if (_allStreams && (_categories != null || _streams != null))
                 throw new InvalidOperationException("Both FromAll and specific categories/streams cannot be set");
             if (_allEvents && _events != null)
                 throw new InvalidOperationException("Both AllEvents and specific event filters cannot be set");
+
             if (_byStream && _streams != null)
-                throw new InvalidOperationException("Partitioned projections are not supported on stream based sources");
-            if (_byStream && mode < ProjectionMode.Persistent)
-                throw new InvalidOperationException("Partitioned (foreachStream) projections require Persistent mode");
+                throw new InvalidOperationException("foreachStream projections are not supported on stream based sources");
             if (_options.UseEventIndexes && !_allStreams)
                 throw new InvalidOperationException("useEventIndexes option is only available in fromAll() projections");
             if (_options.UseEventIndexes && _allEvents)
                 throw new InvalidOperationException("useEventIndexes option cannot be used in whenAny() projections");
+
+            if (_options.ReorderEvents)
+            {
+                if (_options.UseEventIndexes)
+                    throw new InvalidOperationException("Event reordering cannot be used with use event indexes option");
+                if (!(_allStreams || _streams != null && _streams.Count > 1))
+                {
+                    throw new InvalidOperationException(
+                        "Event reordering is only available in fromAll() and fromStreams([]) projections");
+                }
+                if (_options.ProcessingLag < 50)
+                    throw new InvalidOperationException("Event reordering requires processing lag at least of 50ms");
+            }
+            if (_options.EmitStateUpdated && !config.EmitEventEnabled)
+                throw new InvalidOperationException(
+                    "EmitStateUpdated requires EmitEventEnabled mode");
         }
 
     }

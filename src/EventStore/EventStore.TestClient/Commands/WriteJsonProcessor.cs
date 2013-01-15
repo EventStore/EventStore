@@ -66,13 +66,13 @@ namespace EventStore.TestClient.Commands
                 eventStreamId,
                 expectedVersion,
                 new[]
-                    {
-                        new TcpClientMessageDto.ClientEvent(Guid.NewGuid().ToByteArray(),
-                                                            "JsonDataEvent",
-                                                            true,
-                                                            Encoding.UTF8.GetBytes(data),
-                                                            Encoding.UTF8.GetBytes(metadata ?? string.Empty))
-                    },
+                {
+                    new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+                                                     "JsonDataEvent",
+                                                     true,
+                                                     Encoding.UTF8.GetBytes(data),
+                                                     Encoding.UTF8.GetBytes(metadata ?? string.Empty))
+                },
                 true);
             var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
 
@@ -99,14 +99,14 @@ namespace EventStore.TestClient.Commands
                     sw.Stop();
 
                     var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-                    if ((OperationErrorCode)dto.ErrorCode == OperationErrorCode.Success)
+                    if (dto.Result == TcpClientMessageDto.OperationResult.Success)
                     {
                         context.Log.Info("Successfully written. EventId: {0}.", package.CorrelationId);
                         PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
                     }
                     else
                     {
-                        context.Log.Info("Error while writing: {0} ({1}).", dto.Error, (OperationErrorCode)dto.ErrorCode);
+                        context.Log.Info("Error while writing: {0} ({1}).", dto.Message, dto.Result);
                     }
 
                     context.Log.Info("Write request took: {0}.", sw.Elapsed);

@@ -34,23 +34,74 @@ namespace EventStore.Transport.Http
 {
     public class AcceptComponent
     {
-        private readonly string _mediaRange;
-        private readonly string _mediaType;
-        private readonly string _mediaSubtype;
-        private readonly float _priority = 1.0f;
+        public readonly string MediaRange;
+        public readonly string MediaType;
+        public readonly string MediaSubtype;
+        public readonly float Priority;
+
         private readonly string[] _params;
 
-        public AcceptComponent(string componentText)
+        public AcceptComponent(string mediaRange, string mediaType, string mediaSubtype, float priority, string[] parameters)
         {
-            if (componentText == null) throw new ArgumentNullException("componentText");
-            if (componentText == "") throw new ArgumentException("componentText");
+            MediaRange = mediaRange;
+            MediaType = mediaType;
+            MediaSubtype = mediaSubtype;
+            Priority = priority;
+            _params = parameters;
+        }
+
+        public static bool TryParse(string componentText, out AcceptComponent result)
+        {
+            return TryParseInternal(componentText, false, out result);
+        }
+
+        public static AcceptComponent TryParse(string componentText)
+        {
+            AcceptComponent result;
+            return TryParseInternal(componentText, false, out result) ? result : null;
+        }
+
+        public static AcceptComponent Parse(string componentText)
+        {
+            AcceptComponent result;
+            if (!TryParseInternal(componentText, true, out result))
+                throw new Exception("This should never happen!");
+            return result;
+        }
+
+        private static bool TryParseInternal(string componentText, bool throwExceptions, out AcceptComponent result)
+        {
+            result = null;
+
+            if (componentText == null)
+            {
+                if (throwExceptions)
+                    throw new ArgumentNullException("componentText");
+                return false;
+            }
+            if (componentText == "")
+            {
+                if (throwExceptions)
+                    throw new ArgumentException("componentText");
+                return false;
+            }
+
+            float priority = 1.0f; // default priority
+
             string[] parts = componentText.Split(';');
-            _mediaRange = parts[0];
-            string[] typeParts = _mediaRange.Split(new[] {'/'}, 2);
+            string mediaRange = parts[0];
+
+            string[] typeParts = mediaRange.Split(new[] { '/' }, 2);
             if (typeParts.Length != 2)
-                throw new ArgumentException("componentText");
-            _mediaType = typeParts[0];
-            _mediaSubtype = typeParts[1];
+            {
+                if (throwExceptions)
+                    throw new ArgumentException("componentText");
+                return false;
+            }
+
+            string mediaType = typeParts[0];
+            string mediaSubtype = typeParts[1];
+            string[] parameters = null;
 
             if (parts.Length > 1)
             {
@@ -60,34 +111,17 @@ namespace EventStore.Transport.Http
                 {
                     var quality = firstPart.Substring(2);
                     float q;
-                    if (Single.TryParse(quality, NumberStyles.Float, CultureInfo.InvariantCulture, out q))
+                    if (float.TryParse(quality, NumberStyles.Float, CultureInfo.InvariantCulture, out q))
                     {
-                        _priority = q;
+                        priority = q;
                         additionSkip = 1;
                     }
                 }
-                _params = parts.Skip(1 + additionSkip).ToArray();
+                parameters = parts.Skip(1 + additionSkip).ToArray();
             }
-        }
 
-        public string MediaRange
-        {
-            get { return _mediaRange; }
-        }
-
-        public string MediaType
-        {
-            get { return _mediaType; }
-        }
-
-        public string MediaSubtype
-        {
-            get { return _mediaSubtype; }
-        }
-
-        public float Priority
-        {
-            get { return _priority; }
+            result = new AcceptComponent(mediaRange, mediaType, mediaSubtype, priority, parameters);
+            return true;
         }
     }
 }

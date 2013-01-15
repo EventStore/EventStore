@@ -27,10 +27,23 @@
 //  
 namespace EventStore.ClientAPI
 {
+    /// <summary>
+    /// Constants for stream positions
+    /// </summary>
     public static class StreamPosition
     {
+        /// <summary>
+        /// The first event in a stream (always a $stream-created)
+        /// </summary>
         public const int Start = 0;
+        /// <summary>
+        /// The first client event in a stream (always the second event with the first being stream created)
+        /// </summary>
         public const int FirstClientEvent = 1;
+
+        /// <summary>
+        /// The last event in the stream.
+        /// </summary>
         public const int End = -1;
     }
 }

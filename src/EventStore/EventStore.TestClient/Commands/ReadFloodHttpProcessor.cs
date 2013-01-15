@@ -77,14 +77,16 @@ namespace EventStore.TestClient.Commands
             var threads = new List<Thread>();
             var autoResetEvent = new AutoResetEvent(false);
 
-            var readsCnt = 0;
+            var all = 0;
+
+            int sent = 0;
+            int received = 0;
+
+            var sw2 = new Stopwatch();
 
             for (int i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-
-                int sent = 0;
-                int received = 0;
 
                 threads.Add(new Thread(() =>
                 {
@@ -93,12 +95,20 @@ namespace EventStore.TestClient.Commands
 
                     Action<HttpResponse> onSuccess = response =>
                     {
-                        var readsLocal = Interlocked.Increment(ref readsCnt);
                         Interlocked.Increment(ref received);
 
-                        if (readsLocal % 1000 == 0)
-                            Console.Write(".");
-                        if (readsLocal == requestsCnt)
+                        var localAll = Interlocked.Increment(ref all);
+                        if (localAll % 100 == 0) Console.Write(".");
+                        if (localAll % 10000 == 0)
+                        {
+                            var elapsed = sw2.Elapsed;
+                            sw2.Restart();
+                            context.Log.Trace("\nDONE TOTAL {0} READS IN {1} ({2:0.0}/s).",
+                                              localAll,
+                                              elapsed,
+                                              1000.0 * 10000 / elapsed.TotalMilliseconds);
+                        }
+                        if (localAll == requestsCnt)
                             autoResetEvent.Set();
                     };
 
@@ -107,18 +117,21 @@ namespace EventStore.TestClient.Commands
                         client.Get(url, onSuccess, e =>
                             {
                                 context.Log.ErrorException(e, "Error during GET");
-                                var readsLocal = Interlocked.Increment(ref readsCnt);
+                                var readsLocal = Interlocked.Increment(ref all);
                                 if (readsLocal == requestsCnt)
                                     autoResetEvent.Set();
                             });
                         Interlocked.Increment(ref sent);
-                        while (sent - received > context.Client.Options.ReadWindow)
+                        while (sent - received > context.Client.Options.ReadWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }
 
             var sw = Stopwatch.StartNew();
+            sw2.Start();
             foreach (var thread in threads)
             {
                 thread.IsBackground = true;
@@ -128,7 +141,7 @@ namespace EventStore.TestClient.Commands
             autoResetEvent.WaitOne();
             sw.Stop();
 
-            context.Log.Info("Completed. READS done: {0}.", readsCnt);
+            context.Log.Info("Completed. READS done: {0}.", all);
 
             var reqPerSec = (requestsCnt + 0.0)/sw.ElapsedMilliseconds*1000;
             context.Log.Info("{0} requests completed in {1}ms ({2:0.00} reqs per sec).",
@@ -141,7 +154,7 @@ namespace EventStore.TestClient.Commands
                         PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
                                 PerfUtils.Col("requestsCnt", requestsCnt),
                                 PerfUtils.Col("ElapsedMilliseconds", sw.ElapsedMilliseconds)),
-                        PerfUtils.Row(PerfUtils.Col("readsCnt", readsCnt)));
+                        PerfUtils.Row(PerfUtils.Col("readsCnt", all)));
 
             PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt),
                                            (int) reqPerSec);

@@ -17,13 +17,14 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             {
                 for (int i=0; i<_curCount; ++i)
                 {
-                    yield return _checkpoints[i];
+                    yield return Checkpoints[i];
                 }
             }
         }
 
+        internal readonly Tuple<long, IPEndPoint>[] Checkpoints;
+
         private readonly string _name;
-        private readonly Tuple<long, IPEndPoint>[] _checkpoints;
         private int _curCount;
 
         public InMemMultiCheckpoint(int bestCount): this(Guid.NewGuid().ToString(), bestCount)
@@ -36,7 +37,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             Ensure.Positive(bestCount, "bestCount");
 
             _name = name;
-            _checkpoints = new Tuple<long, IPEndPoint>[bestCount];
+            Checkpoints = new Tuple<long, IPEndPoint>[bestCount];
             _curCount = 0;
         }
 
@@ -60,40 +61,40 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             int i;
             for (i = 0; i < _curCount; ++i)
             {
-                if (_checkpoints[i].Item2.Equals(endPoint)) // if IPEndPoint is already there
+                if (Checkpoints[i].Item2.Equals(endPoint)) // if IPEndPoint is already there
                 {
                     var check = Tuple.Create(checkpoint, endPoint);
-                    while (i+1 < _curCount && check.Item1 < _checkpoints[i+1].Item1)
+                    while (i+1 < _curCount && check.Item1 < Checkpoints[i+1].Item1)
                     {
-                        _checkpoints[i] = _checkpoints[i + 1];
+                        Checkpoints[i] = Checkpoints[i + 1];
                         i += 1;
                     }
-                    while (i-1 >= 0 && check.Item1 > _checkpoints[i-1].Item1)
+                    while (i-1 >= 0 && check.Item1 > Checkpoints[i-1].Item1)
                     {
-                        _checkpoints[i] = _checkpoints[i - 1];
+                        Checkpoints[i] = Checkpoints[i - 1];
                         i -= 1;
                     }
-                    _checkpoints[i] = check;
+                    Checkpoints[i] = check;
                     return;
                 }
             }
 
             for (i = 0; i < _curCount; ++i)
             {
-                if (_checkpoints[i].Item1 <= checkpoint)
+                if (Checkpoints[i].Item1 <= checkpoint)
                     break;
             }
 
-            if (i < _curCount || _curCount < _checkpoints.Length)
+            if (i < _curCount || _curCount < Checkpoints.Length)
             {
-                if (_curCount < _checkpoints.Length)
+                if (_curCount < Checkpoints.Length)
                     _curCount += 1;
 
                 for (int j = _curCount - 1; j - 1 >= i; --j)
                 {
-                    _checkpoints[j] = _checkpoints[j - 1]; // shift right
+                    Checkpoints[j] = Checkpoints[j - 1]; // shift right
                 }
-                _checkpoints[i] = Tuple.Create(checkpoint, endPoint);
+                Checkpoints[i] = Tuple.Create(checkpoint, endPoint);
             }
 
             // checkpoint is too small, we just ignore it
@@ -111,7 +112,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
                 checkpoint = 0;
                 return false;
             }
-            checkpoint = _checkpoints[_curCount-1].Item1; // smallest checkpoint
+            checkpoint = Checkpoints[_curCount-1].Item1; // smallest checkpoint
             return true;
         }
     }

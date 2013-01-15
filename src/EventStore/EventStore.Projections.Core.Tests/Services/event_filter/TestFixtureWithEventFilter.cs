@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_filter
             _ef = null;
             try
             {
-                _ef = _builder.Build(ProjectionMode.Persistent).EventFilter;
+                _ef = _builder.Build(ProjectionConfig.GetTest()).EventFilter;
             }
             catch (Exception ex)
             {

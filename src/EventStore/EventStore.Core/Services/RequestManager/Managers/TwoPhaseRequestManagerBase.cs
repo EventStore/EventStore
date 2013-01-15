@@ -27,6 +27,7 @@
 //  
 using System;
 using System.Diagnostics;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -35,48 +36,63 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    public class TwoPhaseRequestManagerBase :           IHandle<StorageMessage.AlreadyCommitted>,
-                                                        IHandle<StorageMessage.PrepareAck>,
-                                                        IHandle<StorageMessage.CommitAck>,
-                                                        IHandle<StorageMessage.WrongExpectedVersion>,
-                                                        IHandle<StorageMessage.StreamDeleted>,
-                                                        IHandle<StorageMessage.PreparePhaseTimeout>,
-                                                        IHandle<StorageMessage.CommitPhaseTimeout>
+    public abstract class TwoPhaseRequestManagerBase : IHandle<StorageMessage.AlreadyCommitted>,
+                                                       IHandle<StorageMessage.PrepareAck>,
+                                                       IHandle<StorageMessage.CommitAck>,
+                                                       IHandle<StorageMessage.WrongExpectedVersion>,
+                                                       IHandle<StorageMessage.StreamDeleted>,
+                                                       IHandle<StorageMessage.PreparePhaseTimeout>,
+                                                       IHandle<StorageMessage.CommitPhaseTimeout>
     {
-         
+
+        protected IEnvelope PublishEnvelope { get { return _publishEnvelope; } }
+        protected IEnvelope ResponseEnvelope { get { return _responseEnvelope; } }
+        protected Guid CorrelationId { get { return _correlationId; } }
+        protected long TransactionPosition { get { return _transactionPos; } }
         protected readonly IPublisher Publisher;
-        protected readonly IEnvelope _publishEnvelope;
-        protected IEnvelope _responseEnvelope;
-        protected Guid _correlationId;
-        protected string _eventStreamId;
 
-        protected int _awaitingPrepare;
-        protected int _awaitingCommit;
+        private readonly IEnvelope _publishEnvelope;
+        private IEnvelope _responseEnvelope;
+        private Guid _correlationId;
 
-        protected long _preparePos = -1;
+        private int _awaitingPrepare;
+        private int _awaitingCommit;
 
-        protected bool _completed;
-        protected bool _initialized;
+        private long _transactionPos = -1;
 
-        public TwoPhaseRequestManagerBase(IPublisher publisher, int prepareCount, int commitCount)
+        private bool _completed;
+        private bool _initialized;
+
+        protected TwoPhaseRequestManagerBase(IPublisher publisher, int prepareCount, int commitCount)
         {
-            if (publisher == null) 
-                throw new ArgumentNullException();
-            if (prepareCount <= 0 || commitCount <= 0) 
-                throw new ArgumentOutOfRangeException("counts for prepare and commit acks must be a positive number");
+            Ensure.NotNull(publisher, "publisher");
+            Ensure.Positive(prepareCount, "prepareCount");
+            Ensure.Positive(commitCount, "commitCount");
+
             Publisher = publisher;
             _awaitingCommit = commitCount;
             _awaitingPrepare = prepareCount;
             _publishEnvelope = new PublishEnvelope(publisher);
         }
 
+        protected void Init(IEnvelope responseEnvelope, Guid correlationId, long preparePos)
+        {
+            if (_initialized)
+                throw new InvalidOperationException();
+
+            _initialized = true;
+
+            _responseEnvelope = responseEnvelope;
+            _correlationId = correlationId;
+            _transactionPos = preparePos;
+        }
 
         public void Handle(StorageMessage.WrongExpectedVersion message)
         {
             if (_completed)
                 return;
 
-            CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.WrongExpectedVersion, "Wrong expected version.");
+            CompleteFailedRequest(message.CorrelationId, OperationResult.WrongExpectedVersion, "Wrong expected version.");
         }
 
         public void Handle(StorageMessage.StreamDeleted message)
@@ -84,7 +100,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_completed)
                 return;
 
-            CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.StreamDeleted, "Stream is deleted.");
+            CompleteFailedRequest(message.CorrelationId, OperationResult.StreamDeleted, "Stream is deleted.");
         }
 
         public void Handle(StorageMessage.PreparePhaseTimeout message)
@@ -92,7 +108,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_completed || _awaitingPrepare == 0)
                 return;
 
-            CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.PrepareTimeout, "Prepare phase timeout.");
+            CompleteFailedRequest(message.CorrelationId, OperationResult.PrepareTimeout, "Prepare phase timeout.");
         }
 
         public void Handle(StorageMessage.CommitPhaseTimeout message)
@@ -100,14 +116,14 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_completed || _awaitingCommit == 0 || _awaitingPrepare != 0)
                 return;
 
-            CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationErrorCode.CommitTimeout, "Commit phase timeout.");
+            CompleteFailedRequest(message.CorrelationId, OperationResult.CommitTimeout, "Commit phase timeout.");
         }
 
 
         public void Handle(StorageMessage.AlreadyCommitted message)
         {
-            Debug.Assert(message.EventStreamId == _eventStreamId && message.CorrelationId == _correlationId);
-            CompleteSuccessRequest(_correlationId, _eventStreamId, message.StartEventNumber);
+            Debug.Assert(message.CorrelationId == _correlationId);
+            CompleteSuccessRequest(_correlationId, message.FirstEventNumber);
         }
 
         public void Handle(StorageMessage.PrepareAck message)
@@ -116,14 +132,16 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 return;
 
             if ((message.Flags & PrepareFlags.TransactionBegin) != 0)
-                _preparePos = message.LogPosition;
+                _transactionPos = message.LogPosition;
 
             if ((message.Flags & PrepareFlags.TransactionEnd) != 0)
             {
                 _awaitingPrepare -= 1;
                 if (_awaitingPrepare == 0)
                 {
-                    Publisher.Publish(new StorageMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _preparePos));
+                    if (_transactionPos < 0)
+                        throw new Exception("PreparePos is not assigned.");
+                    Publisher.Publish(new StorageMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _transactionPos));
                     Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.CommitTimeout,
                                                                    _publishEnvelope,
                                                                    new StorageMessage.CommitPhaseTimeout(_correlationId)));
@@ -138,18 +156,18 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _awaitingCommit -= 1;
             if (_awaitingCommit == 0)
-                CompleteSuccessRequest(message.CorrelationId, _eventStreamId, message.EventNumber);
+                CompleteSuccessRequest(message.CorrelationId, message.FirstEventNumber);
         }
 
-        protected virtual void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
+        protected virtual void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
         {
             _completed = true;
             Publisher.Publish(new StorageMessage.RequestCompleted(correlationId, true));
         }
 
-        protected virtual void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
+        protected virtual void CompleteFailedRequest(Guid correlationId, OperationResult result, string error)
         {
-            Debug.Assert(errorCode != OperationErrorCode.Success);
+            Debug.Assert(result != OperationResult.Success);
             _completed = true;
             Publisher.Publish(new StorageMessage.RequestCompleted(correlationId, false));
         }

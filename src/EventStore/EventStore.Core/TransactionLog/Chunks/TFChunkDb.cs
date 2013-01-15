@@ -90,7 +90,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (versions.Length == 0)
                     {
                         throw new CorruptDatabaseException(
-                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i)));
+                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i, 0)));
                     }
 
                     for (int j=1; j<versions.Length; ++j)
@@ -156,7 +156,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                     if (versions.Length == 0)
                     {
                         throw new CorruptDatabaseException(
-                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i)));
+                            new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(i, 0)));
                     }
 
                     var chunkFileName = versions[0];
@@ -186,20 +186,39 @@ namespace EventStore.Core.TransactionLog.Chunks
             }
         }
 
-        private TFChunk LoadChunk(string chunkFileName, bool verifyHash)
+        private TFChunk.TFChunk LoadChunk(string chunkFileName, bool verifyHash)
         {
-            var chunk = TFChunk.FromCompletedFile(chunkFileName, verifyHash);
+            var chunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash);
             return chunk;
         }
 
-        private TFChunk LoadLastChunk(string chunkFileName, bool verifyHash)
+        private TFChunk.TFChunk LoadLastChunk(string chunkFileName, bool verifyHash)
         {
             var pos = Config.WriterCheckpoint.Read();
             var writerPosition = (int)(pos % Config.ChunkSize);
+
+            ChunkFooter chunkFooter;
+            using (var fs = new FileStream(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                if (fs.Length < ChunkFooter.Size + ChunkHeader.Size)
+                {
+                    throw new CorruptDatabaseException(new BadChunkInDatabaseException(
+                        string.Format("Chunk file '{0}' is bad. It even doesn't have enough size" 
+                                      + " for header and footer, file size is {1} bytes.",
+                                      chunkFileName,
+                                      fs.Length)));
+                }
+                fs.Seek(-ChunkFooter.Size, SeekOrigin.End);
+                chunkFooter = ChunkFooter.FromStream(fs);
+            }
+            
+            if (chunkFooter.Completed && chunkFooter.MapSize > 0)
+                return TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash);
+            
             if (writerPosition == 0 && pos > 0)
                 writerPosition = Config.ChunkSize;
 
-            return TFChunk.FromOngoingFile(chunkFileName, writerPosition, checkSize: false);
+            return TFChunk.TFChunk.FromOngoingFile(chunkFileName, writerPosition, checkSize: false);
         }
 
         private void EnsureNoOtherFiles(int expectedFiles)

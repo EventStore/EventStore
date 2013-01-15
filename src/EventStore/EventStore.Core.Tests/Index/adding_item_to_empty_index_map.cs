@@ -49,10 +49,10 @@ namespace EventStore.Core.Tests.Index
 
             _filename = GetTempFilePath();
             _tablename = GetTempFilePath();
-            _mergeFile = Path.Combine(PathName, "mergefile");
+            _mergeFile = GetFilePathFor("mergefile");
 
             _map = IndexMap.FromFile(_filename, x => false);
-            var memtable = new HashListMemTable(maxSize: 2000);
+            var memtable = new HashListMemTable(maxSize: 10);
             memtable.Add(0, 1, 0);
             var table = PTable.FromMemtable(memtable, _tablename);
             _result = _map.AddFile(table, 7, 11, new FakeFilenameProvider(_mergeFile));

@@ -38,16 +38,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         void Commit(CommitLogRecord record);
         ReadIndexStats GetStatistics();
         
-        ReadEventResult ReadEvent(string streamId, int eventNumber);
-        ReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
-        ReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount);
+        IndexReadEventResult ReadEvent(string streamId, int eventNumber);
+        IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount);
+        IndexReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount);
         IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount);
         IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount);
 
         bool IsStreamDeleted(string streamId);
         int GetLastStreamEventNumber(string streamId);
-        CommitCheckResult CheckCommitStartingAt(long prepareStartPosition);
-        int GetLastTransactionOffset(long writerCheckpoint, long transactionId);
+        StreamMetadata GetStreamMetadata(string streamId);
+
+        CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition);
+
+        void UpdateTransactionInfo(long transactionId, TransactionInfo transactionInfo);
+        TransactionInfo GetTransactionInfo(long writerCheckpoint, long transactionId);
        
         void Close();
         void Dispose();

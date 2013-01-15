@@ -27,7 +27,6 @@
 //  
 using System;
 using System.IO;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
@@ -52,7 +51,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void when_getting_file_for_positive_index_and_no_version_appends_index_to_name_with_zero_version()
         {
             var strategy = new VersionedPatternFileNamingStrategy("path", "prefix-");
-            Assert.AreEqual("path" + Path.DirectorySeparatorChar + "prefix-000001.000000", strategy.GetFilenameFor(1));
+            Assert.AreEqual("path" + Path.DirectorySeparatorChar + "prefix-000001.000000", strategy.GetFilenameFor(1, 0));
         }
 
         [Test]
@@ -66,7 +65,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void when_getting_file_for_negative_index_throws_argumentoutofrangeexception()
         {
             var strategy = new VersionedPatternFileNamingStrategy("Path", "prefix");
-            Assert.Throws<ArgumentOutOfRangeException>(() => strategy.GetFilenameFor(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => strategy.GetFilenameFor(-1, 0));
         }
 
         [Test]
@@ -79,70 +78,70 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void returns_all_existing_versions_of_the_same_chunk_in_descending_order_of_versions()
         {
-            File.Create(Path.Combine(PathName, "foo")).Close();
-            File.Create(Path.Combine(PathName, "bla")).Close();
+            File.Create(GetFilePathFor("foo")).Close();
+            File.Create(GetFilePathFor("bla")).Close();
 
-            File.Create(Path.Combine(PathName, "chunk-000001.000000")).Close();
-            File.Create(Path.Combine(PathName, "chunk-000002.000000")).Close();
-            File.Create(Path.Combine(PathName, "chunk-000003.000000")).Close();
+            File.Create(GetFilePathFor("chunk-000001.000000")).Close();
+            File.Create(GetFilePathFor("chunk-000002.000000")).Close();
+            File.Create(GetFilePathFor("chunk-000003.000000")).Close();
 
-            File.Create(Path.Combine(PathName, "chunk-000005.000000")).Close();
-            File.Create(Path.Combine(PathName, "chunk-000005.000007")).Close();
-            File.Create(Path.Combine(PathName, "chunk-000005.000002")).Close();
-            File.Create(Path.Combine(PathName, "chunk-000005.000005")).Close();
+            File.Create(GetFilePathFor("chunk-000005.000000")).Close();
+            File.Create(GetFilePathFor("chunk-000005.000007")).Close();
+            File.Create(GetFilePathFor("chunk-000005.000002")).Close();
+            File.Create(GetFilePathFor("chunk-000005.000005")).Close();
 
             var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
             var versions = strategy.GetAllVersionsFor(5);
             Assert.AreEqual(4, versions.Length);
-            Assert.AreEqual(Path.Combine(PathName, "chunk-000005.000007"), versions[0]);
-            Assert.AreEqual(Path.Combine(PathName, "chunk-000005.000005"), versions[1]);
-            Assert.AreEqual(Path.Combine(PathName, "chunk-000005.000002"), versions[2]);
-            Assert.AreEqual(Path.Combine(PathName, "chunk-000005.000000"), versions[3]);
+            Assert.AreEqual(GetFilePathFor("chunk-000005.000007"), versions[0]);
+            Assert.AreEqual(GetFilePathFor("chunk-000005.000005"), versions[1]);
+            Assert.AreEqual(GetFilePathFor("chunk-000005.000002"), versions[2]);
+            Assert.AreEqual(GetFilePathFor("chunk-000005.000000"), versions[3]);
         }
 
         [Test]
         public void returns_all_existing_files_with_correct_pattern()
         {
-            File.Create(Path.Combine(PathName, "foo")).Close();
-            File.Create(Path.Combine(PathName, "bla")).Close();
+            File.Create(GetFilePathFor("foo")).Close();
+            File.Create(GetFilePathFor("bla")).Close();
 
-            File.Create(Path.Combine(PathName, "chunk-000001.000000")).Close();
-            File.Create(Path.Combine(PathName, "chunk-000002.000000")).Close();
-            File.Create(Path.Combine(PathName, "chunk-000003.000000")).Close();
+            File.Create(GetFilePathFor("chunk-000001.000000")).Close();
+            File.Create(GetFilePathFor("chunk-000002.000000")).Close();
+            File.Create(GetFilePathFor("chunk-000003.000000")).Close();
 
-            File.Create(Path.Combine(PathName, "chunk-000005.000000")).Close();
-            File.Create(Path.Combine(PathName, "chunk-000005.000007")).Close();
-            File.Create(Path.Combine(PathName, "chunk-000005.000002")).Close();
-            File.Create(Path.Combine(PathName, "chunk-000005.000005")).Close();
+            File.Create(GetFilePathFor("chunk-000005.000000")).Close();
+            File.Create(GetFilePathFor("chunk-000005.000007")).Close();
+            File.Create(GetFilePathFor("chunk-000005.000002")).Close();
+            File.Create(GetFilePathFor("chunk-000005.000005")).Close();
 
             var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
             var versions = strategy.GetAllPresentFiles();
             Array.Sort(versions, StringComparer.CurrentCultureIgnoreCase);
             Assert.AreEqual(7, versions.Length);
-            Assert.AreEqual(Path.Combine(PathName, "chunk-000001.000000"), versions[0]);
-            Assert.AreEqual(Path.Combine(PathName, "chunk-000002.000000"), versions[1]);
-            Assert.AreEqual(Path.Combine(PathName, "chunk-000003.000000"), versions[2]);
-            Assert.AreEqual(Path.Combine(PathName, "chunk-000005.000000"), versions[3]);
-            Assert.AreEqual(Path.Combine(PathName, "chunk-000005.000002"), versions[4]);
-            Assert.AreEqual(Path.Combine(PathName, "chunk-000005.000005"), versions[5]);
-            Assert.AreEqual(Path.Combine(PathName, "chunk-000005.000007"), versions[6]);
+            Assert.AreEqual(GetFilePathFor("chunk-000001.000000"), versions[0]);
+            Assert.AreEqual(GetFilePathFor("chunk-000002.000000"), versions[1]);
+            Assert.AreEqual(GetFilePathFor("chunk-000003.000000"), versions[2]);
+            Assert.AreEqual(GetFilePathFor("chunk-000005.000000"), versions[3]);
+            Assert.AreEqual(GetFilePathFor("chunk-000005.000002"), versions[4]);
+            Assert.AreEqual(GetFilePathFor("chunk-000005.000005"), versions[5]);
+            Assert.AreEqual(GetFilePathFor("chunk-000005.000007"), versions[6]);
         }
 
         [Test]
         public void returns_all_temp_files_in_directory()
         {
-            File.Create(Path.Combine(PathName, "bla")).Close();
-            File.Create(Path.Combine(PathName, "bla.tmp")).Close();
-            File.Create(Path.Combine(PathName, "bla.temp")).Close();
+            File.Create(GetFilePathFor("bla")).Close();
+            File.Create(GetFilePathFor("bla.tmp")).Close();
+            File.Create(GetFilePathFor("bla.temp")).Close();
 
-            File.Create(Path.Combine(PathName, "foo.tmp")).Close();
+            File.Create(GetFilePathFor("foo.tmp")).Close();
 
             var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
             var tempFiles = strategy.GetAllTempFiles();
 
             Assert.AreEqual(2, tempFiles.Length);
-            Assert.AreEqual(Path.Combine(PathName, "bla.tmp"), tempFiles[0]);
-            Assert.AreEqual(Path.Combine(PathName, "foo.tmp"), tempFiles[1]);
+            Assert.AreEqual(GetFilePathFor("bla.tmp"), tempFiles[0]);
+            Assert.AreEqual(GetFilePathFor("foo.tmp"), tempFiles[1]);
         }
 
         [Test]

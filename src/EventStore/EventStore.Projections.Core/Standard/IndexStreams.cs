@@ -60,8 +60,15 @@ namespace EventStore.Projections.Core.Standard
         {
         }
 
+        public string GetStatePartition(
+            CheckpointTag position, string streamId, string eventType, string category, Guid eventid, int sequenceNumber,
+            string metadata, string data)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool ProcessEvent(
-            EventPosition position, CheckpointTag eventPosition, string streamId, string eventType, string category1, Guid eventId,
+            string partition, CheckpointTag eventPosition, string streamId, string eventType, string category1, Guid eventId,
             int sequenceNumber, string metadata, string data, out string newState, out EmittedEvent[] emittedEvents)
         {
             emittedEvents = null;

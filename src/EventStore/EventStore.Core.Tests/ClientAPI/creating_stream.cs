@@ -26,15 +26,34 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture]
-    internal class creating_stream
+    [TestFixture, Category("LongRunning")]
+    public class creating_stream: SpecificationWithDirectoryPerTestFixture
     {
+        private MiniNode _node;
+
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
+        {
+            base.TestFixtureSetUp();
+            _node = new MiniNode(PathName);
+            _node.Start();
+        }
+
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
+        {
+            _node.Shutdown();
+            base.TestFixtureTearDown();
+        }
+
         [Test]
         [Category("Network")]
         public void which_does_not_exist_should_be_successfull()
@@ -42,9 +61,32 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "which_does_not_exist_should_be_successfull";
             using (var connection = EventStoreConnection.Create())
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
+                connection.Connect(_node.TcpEndPoint);
+                var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
+            }
+        }
+
+        [Test]
+        [Category("Network")]
+        public void many_times_with_same_id_should_succeed()
+        {
+            const string stream = "many_times_with_same_id_should_succeed";
+            using (var connection = EventStoreConnection.Create())
+            {
+                connection.Connect(_node.TcpEndPoint);
+                var id = Guid.NewGuid();
+
+                var create1 = connection.CreateStreamAsync(stream, id, false, new byte[0]);
+                Assert.DoesNotThrow(create1.Wait);
+
+                var create2 = connection.CreateStreamAsync(stream, id, false, new byte[0]);
+                Assert.DoesNotThrow(create2.Wait);
+
+                var read = connection.ReadStreamEventsForwardAsync(stream, 0, 10, resolveLinkTos: false);
+                Assert.DoesNotThrow(read.Wait);
+
+                Assert.That(read.Result.Events.Length, Is.EqualTo(1));
             }
         }
 
@@ -55,8 +97,8 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "$which_supposed_to_be_system_should_succees__but_on_your_own_risk";
             using (var connection = EventStoreConnection.Create())
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
+                connection.Connect(_node.TcpEndPoint);
+                var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
             }
         }
@@ -68,13 +110,12 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "which_already_exists_should_fail";
             using (var connection = EventStoreConnection.Create())
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var initialCreate = connection.CreateStreamAsync(stream, false, new byte[0]);
+                connection.Connect(_node.TcpEndPoint);
+                var initialCreate = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(initialCreate.Wait);
 
-                var secondCreate = connection.CreateStreamAsync(stream, false, new byte[0]);
-                Assert.Inconclusive();
-                //Assert.That(() => secondCreate.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
+                var secondCreate = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
+                Assert.That(() => secondCreate.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }
 
@@ -85,14 +126,14 @@ namespace EventStore.Core.Tests.ClientAPI
             const string stream = "which_was_deleted_should_fail";
             using (var connection = EventStoreConnection.Create())
             {
-                connection.Connect(MiniNode.Instance.TcpEndPoint);
-                var create = connection.CreateStreamAsync(stream, false, new byte[0]);
+                connection.Connect(_node.TcpEndPoint);
+                var create = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
                 var delete = connection.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);
                 Assert.DoesNotThrow(delete.Wait);
 
-                var secondCreate = connection.CreateStreamAsync(stream, false, new byte[0]);
+                var secondCreate = connection.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.That(() => secondCreate.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<StreamDeletedException>());
             }
         }

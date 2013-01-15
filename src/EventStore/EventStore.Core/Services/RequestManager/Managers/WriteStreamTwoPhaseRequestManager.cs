@@ -27,54 +27,66 @@
 // 
 
 using System;
+using System.Diagnostics;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.RequestManager.Managers
 {
-    class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.WriteRequestCreated>
+    public class WriteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.WriteRequestCreated>
     {
-        public WriteStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
-            base(publisher, prepareCount, commitCount)
-        {}
+        private int _expectedVersion;
+        private StorageMessage.WriteRequestCreated _request;
+
+        public WriteStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount)
+                : base(publisher, prepareCount, commitCount)
+        {
+        }
 
         public void Handle(StorageMessage.WriteRequestCreated request)
         {
-            if (_initialized)
-                throw new InvalidOperationException();
+            Init(request.Envelope, request.CorrelationId, -1);
 
-            _initialized = true;
-            _responseEnvelope = request.Envelope;
-            _correlationId = request.CorrelationId;
-            _eventStreamId = request.EventStreamId;
+            _expectedVersion = request.ExpectedVersion;
+            if (_expectedVersion == ExpectedVersion.Any)
+                _request = request;
 
-            Publisher.Publish(new StorageMessage.WritePrepares(request.CorrelationId,
-                                                                   _publishEnvelope,
-                                                                   request.EventStreamId,
-                                                                   request.ExpectedVersion,
-                                                                   request.Events,
-                                                                   allowImplicitStreamCreation: true,
-                                                                   liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
+            Publisher.Publish(new StorageMessage.WritePrepares(CorrelationId,
+                                                               PublishEnvelope,
+                                                               request.EventStreamId,
+                                                               _expectedVersion,
+                                                               request.Events,
+                                                               allowImplicitStreamCreation: true,
+                                                               liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
-                                                           _publishEnvelope,
-                                                           new StorageMessage.PreparePhaseTimeout(_correlationId)));
+                                                           PublishEnvelope,
+                                                           new StorageMessage.PreparePhaseTimeout(CorrelationId)));
         }
 
-        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int startEventNumber)
+        protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
         {
-            base.CompleteSuccessRequest(correlationId, eventStreamId, startEventNumber);
-            var responseMsg = new ClientMessage.WriteEventsCompleted(
-                correlationId, eventStreamId, startEventNumber);
-            _responseEnvelope.ReplyWith(responseMsg);
+            base.CompleteSuccessRequest(correlationId, firstEventNumber);
+            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, firstEventNumber);
+            ResponseEnvelope.ReplyWith(responseMsg);
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationErrorCode errorCode, string error)
+        protected override void CompleteFailedRequest(Guid correlationId, OperationResult result, string error)
         {
-            base.CompleteFailedRequest(correlationId, eventStreamId, errorCode, error);
-            var responseMsg = new ClientMessage.WriteEventsCompleted(
-                correlationId, eventStreamId, errorCode, error);
-            _responseEnvelope.ReplyWith(responseMsg);
+            base.CompleteFailedRequest(correlationId, result, error);
+
+            if (result == OperationResult.WrongExpectedVersion && _expectedVersion == ExpectedVersion.Any)
+            {
+                // with ExpectedVersion.Any WrongExpectedVersion could happen only when multiple requests create implicitly streams
+                // so just one retry should be enough
+                Debug.Assert(_request != null);
+                Publisher.Publish(_request);
+                return;
+            }
+            
+            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, result, error);
+            ResponseEnvelope.ReplyWith(responseMsg);
         }
 
     }

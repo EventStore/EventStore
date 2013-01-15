@@ -57,6 +57,7 @@ namespace EventStore.TestClient.Commands
             context.IsAsync();
             var createStreamDto = new TcpClientMessageDto.CreateStream(
                     eventStreamId,
+                    Guid.NewGuid().ToByteArray(), 
                     Encoding.UTF8.GetBytes(metadata ?? string.Format("{{\"StreamName\": \"{0}\"}}", eventStreamId)),
                     true,
                     metadata == null);
@@ -83,17 +84,14 @@ namespace EventStore.TestClient.Commands
                         sw.Stop();
 
                         var dto = pkg.Data.Deserialize<TcpClientMessageDto.CreateStreamCompleted>();
-                        if ((OperationErrorCode)dto.ErrorCode == OperationErrorCode.Success)
+                        if (dto.Result == TcpClientMessageDto.OperationResult.Success)
                         {
-                            context.Log.Info("Successfully created stream '{0}'.", dto.EventStreamId);
+                            context.Log.Info("Successfully created stream '{0}'.", eventStreamId);
                             PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
                         }
                         else
                         {
-                            context.Log.Info("Error while creating stream {0}: {1} ({2}).",
-                                             eventStreamId,
-                                             dto.Error,
-                                             (OperationErrorCode)dto.ErrorCode);
+                            context.Log.Info("Error while creating stream {0}: {1} ({2}).", eventStreamId, dto.Message, dto.Result);
                         }
 
                         context.Log.Info("Create stream request took: {0}.", sw.Elapsed);

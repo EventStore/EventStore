@@ -30,12 +30,11 @@ using System.Collections.Generic;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using System.Linq;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionCheckpoint : IProjectionCheckpointManager
+    public class ProjectionCheckpoint : IProjectionCheckpointManager, IEventWriter
     {
         private readonly int _maxWriteBatchLength;
         private readonly ILogger _logger;
@@ -79,7 +78,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        public void EmitEvents(EmittedEvent[] events)
+        public void ValidateOrderAndEmitEvents(EmittedEvent[] events)
         {
             ValidatePosition(events);
             EnsureCheckpointNotRequested();

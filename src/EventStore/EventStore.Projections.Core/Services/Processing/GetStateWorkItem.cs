@@ -36,14 +36,13 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly string _partition;
         private readonly IEnvelope _envelope;
+        private readonly Guid _correlationId;
         private readonly Guid _projectionId;
         private readonly PartitionStateCache _partitionStateCache;
 
-        public GetStateWorkItem(IEnvelope envelope, 
-                                Guid projectionId, 
-                                CoreProjection projection, 
-                                PartitionStateCache partitionStateCache,
-                                string partition)
+        public GetStateWorkItem(
+            IEnvelope envelope, Guid correlationId, Guid projectionId, CoreProjection projection,
+            PartitionStateCache partitionStateCache, string partition)
             : base(projection, string.Empty)
         {
             if (envelope == null) throw new ArgumentNullException("envelope");
@@ -51,20 +50,22 @@ namespace EventStore.Projections.Core.Services.Processing
             if (partition == null) throw new ArgumentNullException("partition");
             _partition = partition;
             _envelope = envelope;
+            _correlationId = correlationId;
             _projectionId = projectionId;
             _partitionStateCache = partitionStateCache;
         }
 
         protected override void Load(CheckpointTag checkpointTag)
         {
-            Projection.BeginStatePartitionLoad(_partition, checkpointTag, LoadCompleted);
+            Projection.BeginGetPartitionStateAt(
+                _partition, checkpointTag, LoadCompleted, lockLoaded: false);
         }
 
-        private void LoadCompleted()
+        private void LoadCompleted(CheckpointTag checkpointTag, string state)
         {
-            var projectionState = _partitionStateCache.GetLockedPartitionState(_partition).Data;
             _envelope.ReplyWith(
-                new CoreProjectionManagementMessage.StateReport(_projectionId, _partition, projectionState));
+                new CoreProjectionManagementMessage.StateReport(
+                    _correlationId, _projectionId, _partition, state));
             NextStage();
         }
     }

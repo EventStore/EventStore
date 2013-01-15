@@ -8,29 +8,29 @@ namespace EventStore.Padmin
 {
     internal static class Command
     {
-        public static void Enable(EventStoreConnection store, string[] commandArgs)
+        public static void Enable(ProjectionsManager manager, string[] commandArgs)
         {
             var names = GetProjectionNames(commandArgs);
             foreach (var name in names)
             {
                 Log("Enabling {0}...", name);
-                store.Projections.Enable(name);
+                manager.Enable(name);
                 Log("{0} enabled", name);
             }
         }
 
-        public static void Disable(EventStoreConnection store, string[] commandArgs)
+        public static void Disable(ProjectionsManager manager, string[] commandArgs)
         {
             var names = GetProjectionNames(commandArgs);
             foreach (var name in names)
             {
                 Log("Disabling {0}...", name);
-                store.Projections.Disable(name);
+                manager.Disable(name);
                 Log("{0} disabled", name);
             }
         }
 
-        public static void Create(EventStoreConnection store, string[] commandArgs)
+        public static void Create(ProjectionsManager manager, string[] commandArgs)
         {
             if (commandArgs.Length < 2)
             {
@@ -52,22 +52,12 @@ namespace EventStore.Padmin
             {
                 case "onetime":
                     Log("Creating onetime projection...");
-                    store.Projections.CreateOneTime(query);
-                    Log("Created");
-                    break;
-                case "adhoc":
-                    Log("Creating adhoc projection {0}...", pname);
-                    store.Projections.CreateAdHoc(pname, query);
+                    manager.CreateOneTime(query);
                     Log("Created");
                     break;
                 case "continuous":
                     Log("Creating continuous projection {0}...", pname);
-                    store.Projections.CreateContinuous(pname, query);
-                    Log("Created");
-                    break;
-                case "persistent":
-                    Log("Creating persistent projection {0}...", pname);
-                    store.Projections.CreatePersistent(pname, query);
+                    manager.CreateContinuous(pname, query);
                     Log("Created");
                     break;
                 default:
@@ -76,7 +66,7 @@ namespace EventStore.Padmin
             }
         }
 
-        public static void List(EventStoreConnection store, string[] commandArgs)
+        public static void List(ProjectionsManager manager, string[] commandArgs)
         {
             if (commandArgs.Length != 1)
             {
@@ -89,28 +79,18 @@ namespace EventStore.Padmin
             {
                 case "all":
                     Log("Listing all projections...");
-                    LogUnformatted(store.Projections.ListAll());
+                    LogUnformatted(manager.ListAll());
                     Log("All projections listed");
                     break;
                 case "onetime":
                     Log("Listing onetime projections...");
-                    LogUnformatted(store.Projections.ListOneTime());
+                    LogUnformatted(manager.ListOneTime());
                     Log("Onetime projections listed");
-                    break;
-                case "adhoc":
-                    Log("Listing adhoc projections...");
-                    LogUnformatted(store.Projections.ListAdHoc());
-                    Log("Adhoc projections listed");
                     break;
                 case "continuous":
                     Log("Listing continuous projections...");
-                    LogUnformatted(store.Projections.ListContinuous());
+                    LogUnformatted(manager.ListContinuous());
                     Log("Continuous projections listed");
-                    break;
-                case "persistent":
-                    Log("Listing persistent projections...");
-                    LogUnformatted(store.Projections.ListPersistent());
-                    Log("Persistent projections listed");
                     break;
                 default:
                     Log("List mode not recognized");
@@ -118,45 +98,45 @@ namespace EventStore.Padmin
             }
         }
 
-        public static void Status(EventStoreConnection store, string[] commandArgs)
+        public static void Status(ProjectionsManager manager, string[] commandArgs)
         {
             var names = GetProjectionNames(commandArgs);
             foreach (var name in names)
             {
-                Log("{0} is '{1}'", name, store.Projections.GetStatus(name));
+                Log("{0} is '{1}'", name, manager.GetStatus(name));
             }
         }
 
-        public static void State(EventStoreConnection store, string[] commandArgs)
+        public static void State(ProjectionsManager manager, string[] commandArgs)
         {
             var names = GetProjectionNames(commandArgs);
             foreach (var name in names)
             {
-                Log("{0}'s state is : '{1}'", name, store.Projections.GetState(name));
+                Log("{0}'s state is : '{1}'", name, manager.GetState(name));
             }
         }
 
-        public static void Statistics(EventStoreConnection store, string[] commandArgs)
+        public static void Statistics(ProjectionsManager manager, string[] commandArgs)
         {
             var names = GetProjectionNames(commandArgs);
             foreach (var name in names)
             {
                 Log("{0}'s statistics :", name);
-                LogUnformatted(store.Projections.GetStatistics(name));
+                LogUnformatted(manager.GetStatistics(name));
             }
         }
 
-        public static void ShowQuery(EventStoreConnection store, string[] commandArgs)
+        public static void ShowQuery(ProjectionsManager manager, string[] commandArgs)
         {
             var names = GetProjectionNames(commandArgs);
             foreach (var name in names)
             {
                 Log("{0}'s query :", name);
-                LogUnformatted(store.Projections.GetQuery(name));
+                LogUnformatted(manager.GetQuery(name));
             }
         }
 
-        public static void UpdateQuery(EventStoreConnection store, string[] commandArgs)
+        public static void UpdateQuery(ProjectionsManager manager, string[] commandArgs)
         {
             string pname;
             var query = GetQuery(commandArgs, out pname);
@@ -164,20 +144,20 @@ namespace EventStore.Padmin
             if (query != null)
             {
                 Log("Updating query of {0}...", pname);
-                store.Projections.UpdateQuery(pname, query);
+                manager.UpdateQuery(pname, query);
                 Log("Query updated");
             }
             else
                 Log("Invalid arguments for command update query");
         }
 
-        public static void Delete(EventStoreConnection store, string[] commandArgs)
+        public static void Delete(ProjectionsManager manager, string[] commandArgs)
         {
             var names = GetProjectionNames(commandArgs);
             foreach (var name in names)
             {
                 Log("Deleting {0}...", name);
-                store.Projections.Delete(name);
+                manager.Delete(name);
                 Log("{0} deleted", name);
             }
         }

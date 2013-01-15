@@ -68,7 +68,7 @@ namespace EventStore.Core.Index
 
         public TableIndex(string directory, 
                           Func<IMemTable> memTableFactory, 
-                          int maxSizeForMemory = 1000000, 
+                          int maxSizeForMemory = 1000000,
                           int maxTablesPerLevel = 4,
                           bool additionalReclaim = false)
         {
@@ -99,9 +99,7 @@ namespace EventStore.Core.Index
 
             try
             {
-                _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename),
-                                              IsHashCollision,
-                                              _maxTablesPerLevel);
+                _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename), IsHashCollision, _maxTablesPerLevel);
                 if (_indexMap.IsCorrupt(_directory))
                 {
                     foreach (var ptable in _indexMap.InOrder())
@@ -152,17 +150,31 @@ namespace EventStore.Core.Index
             Ensure.Nonnegative(version, "version");
             Ensure.Nonnegative(position, "position");
 
+            AddEntries(commitPos, new[] { new IndexEntry(stream, version, position) });
+        }
+
+        public void AddEntries(long commitPos, IList<IndexEntry> entries)
+        {
+            Ensure.Nonnegative(commitPos, "commitPos");
+            Ensure.NotNull(entries, "entries");
+            Ensure.Positive(entries.Count, "entries.Count");
+
             //should only be called on a single thread.
-            var table = (IMemTable) _awaitingMemTables[0].Table; // always a memtable
-            table.Add(stream, version, position);
+            var table = (IMemTable)_awaitingMemTables[0].Table; // always a memtable
+
+            table.AddEntries(entries);
 
             if (table.Count >= _maxSizeForMemory)
             {
-                var prepareCheckpoint = position;
+                long prepareCheckpoint = entries[0].Position;
+                for (int i = 1, n = entries.Count; i < n; ++i)
+                {
+                    prepareCheckpoint = Math.Max(prepareCheckpoint, entries[i].Position);
+                }
 
                 lock (_awaitingTablesLock)
                 {
-                    var newTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1)};
+                    var newTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
                     newTables.AddRange(_awaitingMemTables.Select(
                         (x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos) : x));
 
@@ -444,11 +456,10 @@ namespace EventStore.Core.Index
             return idx;
         }
 
-        public void ClearAll(bool removeFiles = true)
+        public void Close(bool removeFiles = true)
         {
             //this should also make sure that no background tasks are running anymore
-
-            if (!_backgroundRunningEvent.Wait(1000))
+            if (!_backgroundRunningEvent.Wait(7000))
                 throw new TimeoutException("Could not finish background thread in reasonable time.");
 
             if (_indexMap != null)

@@ -31,8 +31,8 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.WriteEvents
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Services.Replication.WriteEvents
         public void the_envelope_is_replied_to_with_success()
         {
             Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.WriteEventsCompleted>(x => x.CorrelationId == CorrelationId &&
-                                                                                                 x.ErrorCode == OperationErrorCode.Success));
+                                                                                                 x.Result == OperationResult.Success));
         }
     }
 }

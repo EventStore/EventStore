@@ -29,7 +29,6 @@ using System;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 
@@ -85,9 +84,7 @@ namespace EventStore.TestClient.Commands
                     context.Log.Info("[{0}]: Reading all {0}...", conn.EffectiveEndPoint, forward ? "FORWARD" : "BACKWARD");
                     sw.Start();
 
-                    var readDto = forward
-                                    ? (object)new TcpClientMessageDto.ReadAllEventsForward(commitPos, preparePos, 10, false)
-                                    : new TcpClientMessageDto.ReadAllEventsBackward(commitPos, preparePos, 10, false);
+                    var readDto = new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, false);
                     var package = new TcpPackage(forward ? TcpCommand.ReadAllEventsForward : TcpCommand.ReadAllEventsBackward,
                                                  Guid.NewGuid(),
                                                  readDto.Serialize());
@@ -95,7 +92,7 @@ namespace EventStore.TestClient.Commands
                 },
                 handlePackage: (conn, pkg) =>
                 {
-                    TcpClientMessageDto.EventLinkPair[] records;
+                    TcpClientMessageDto.ResolvedEvent[] records;
                     long nextCommitPos;
                     long nextPreparePos;
 
@@ -107,7 +104,7 @@ namespace EventStore.TestClient.Commands
                             return;
                         }
 
-                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsForwardCompleted>();
+                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
                         records = dto.Events;
                         nextCommitPos = dto.NextCommitPosition;
                         nextPreparePos = dto.NextPreparePosition;
@@ -120,7 +117,7 @@ namespace EventStore.TestClient.Commands
                             return;
                         }
 
-                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsBackwardCompleted>();
+                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
                         records = dto.Events;
                         nextCommitPos = dto.NextCommitPosition;
                         nextPreparePos = dto.NextPreparePosition;
@@ -151,9 +148,7 @@ namespace EventStore.TestClient.Commands
                     }
                     context.Log.Info("Next {0} events read:\n{1}", records.Length, sb.ToString());
 
-                    var readDto = forward
-                                    ? (object)new TcpClientMessageDto.ReadAllEventsForward(nextCommitPos, nextPreparePos, 10, false)
-                                    : new TcpClientMessageDto.ReadAllEventsBackward(nextCommitPos, nextPreparePos, 10, false);
+                    var readDto = new TcpClientMessageDto.ReadAllEvents(nextCommitPos, nextPreparePos, 10, false);
                     var package = new TcpPackage(forward ? TcpCommand.ReadAllEventsForward : TcpCommand.ReadAllEventsBackward,
                                                  Guid.NewGuid(),
                                                  readDto.Serialize());

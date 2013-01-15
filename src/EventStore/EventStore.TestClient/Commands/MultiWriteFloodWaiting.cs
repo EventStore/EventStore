@@ -95,6 +95,8 @@ namespace EventStore.TestClient.Commands
                 var autoEvent = new AutoResetEvent(false);
                 var eventStreamId = "es" + Guid.NewGuid();
 
+                var received = 0;
+
                 var client = context.Client.CreateTcpConnection(
                     context,
                     (conn, pkg) =>
@@ -105,8 +107,10 @@ namespace EventStore.TestClient.Commands
                             return;
                         }
 
+                        Interlocked.Increment(ref received);
+
                         var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-                        if (dto.ErrorCode == (int)OperationErrorCode.Success)
+                        if (dto.Result == TcpClientMessageDto.OperationResult.Success)
                         {
                             if (Interlocked.Increment(ref succ) % 1000 == 0)
                                 Console.Write(".");
@@ -120,7 +124,7 @@ namespace EventStore.TestClient.Commands
                     },
                     connectionClosed: (conn, err) =>
                     {
-                        if (all < requestsCnt)
+                        if (received < count)
                             context.Fail(null, "Socket was closed, but not all requests were completed.");
                         else
                             context.Success();
@@ -134,13 +138,12 @@ namespace EventStore.TestClient.Commands
                         var writeDto = new TcpClientMessageDto.WriteEvents(
                             eventStreamId,
                             ExpectedVersion.Any,
-                            Enumerable.Range(0, writeCnt).Select(x =>
-                                                                 new TcpClientMessageDto.ClientEvent(
-                                                                     Guid.NewGuid().ToByteArray(),
-                                                                     "type",
-                                                                     false,
-                                                                     Encoding.UTF8.GetBytes(data),
-                                                                     new byte[0])).ToArray(),
+                            Enumerable.Range(0, writeCnt).Select(x => 
+                                new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+                                                                 "type",
+                                                                 false,
+                                                                 Encoding.UTF8.GetBytes(data),
+                                                                 new byte[0])).ToArray(),
                             true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), writeDto.Serialize());
                         client.EnqueueSend(package.AsByteArray());

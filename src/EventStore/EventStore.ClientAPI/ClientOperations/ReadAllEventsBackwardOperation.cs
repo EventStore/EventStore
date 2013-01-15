@@ -38,7 +38,7 @@ namespace EventStore.ClientAPI.ClientOperations
     internal class ReadAllEventsBackwardOperation : IClientOperation
     {
         private readonly TaskCompletionSource<AllEventsSlice> _source;
-        private ClientMessage.ReadAllEventsBackwardCompleted _result;
+        private ClientMessage.ReadAllEventsCompleted _result;
         private int _completed;
 
         private Guid _corrId;
@@ -81,10 +81,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessage.ReadAllEventsBackward(_position.CommitPosition,
-                                                                   _position.PreparePosition,
-                                                                   _maxCount,
-                                                                   _resolveLinkTos);
+                var dto = new ClientMessage.ReadAllEvents(_position.CommitPosition, _position.PreparePosition, _maxCount, _resolveLinkTos);
                 return new TcpPackage(TcpCommand.ReadAllEventsBackward, _corrId, dto.Serialize());
             }
         }
@@ -100,9 +97,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                                                                 package.Command.ToString()));
                 }
 
-                var data = package.Data;
-                var dto = data.Deserialize<ClientMessage.ReadAllEventsBackwardCompleted>();
-                _result = dto;
+                _result = package.Data.Deserialize<ClientMessage.ReadAllEventsCompleted>();
                 return new InspectionResult(InspectionDecision.Succeed);
             }
             catch (Exception e)
@@ -116,7 +111,12 @@ namespace EventStore.ClientAPI.ClientOperations
             if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
             {
                 if (_result != null)
-                    _source.SetResult(new AllEventsSlice(new Position(_result.NextCommitPosition, _result.NextPreparePosition), _result.Events));
+                {
+                    _source.SetResult(new AllEventsSlice(ReadDirection.Backward,
+                                                         new Position(_result.CommitPosition, _result.PreparePosition),
+                                                         new Position(_result.NextCommitPosition, _result.NextPreparePosition), 
+                                                         _result.Events));
+                }
                 else
                     _source.SetException(new NoResultException());
             }

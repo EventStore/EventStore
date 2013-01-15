@@ -27,12 +27,14 @@
 // 
 
 using System;
+using System.Linq;
+using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_starting_an_existing_projection : TestFixtureWithCoreProjection
+    public class when_starting_an_existing_projection : TestFixtureWithCoreProjectionStarted
     {
         private string _testProjectionState = @"{""test"":1}";
 
@@ -40,20 +42,16 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             ExistingEvent(
                 "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
+                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 200, ""PreparePosition"": 150, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
+                @"{""CommitPosition"": 200, ""PreparePosition"": 150}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-state", "StateUpdated",
-                @"{""CommitPosition"": 300, ""PreparePosition"": 250, ""LastSeenEvent"": """
-                + Guid.NewGuid().ToString("D") + @"""}", _testProjectionState);
+                @"{""CommitPosition"": 300, ""PreparePosition"": 250}", _testProjectionState);
         }
 
         protected override void When()
@@ -76,10 +74,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         }
 
         [Test]
-        public void should_load_projection_state_handler()
+        public void should_publish_started_message()
         {
-            Assert.AreEqual(1, _stateHandler._loadCalled);
-            Assert.AreEqual(_testProjectionState, _stateHandler._loadedState);
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Count());
+            var startedMessage = _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Started>().Single();
+            Assert.AreEqual(_projectionCorrelationId, startedMessage.ProjectionId);
         }
+
     }
 }

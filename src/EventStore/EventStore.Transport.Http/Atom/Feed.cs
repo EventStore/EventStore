@@ -40,6 +40,9 @@ namespace EventStore.Transport.Http.Atom
         public string Id { get; set; }
         public string Updated { get; set; }
         public PersonElement Author { get; set; }
+        public bool HeadOfStream { get; set; }
+        public string SelfUrl { get; set; }
+        public string ETag { get; set; }
 
         public List<LinkElement> Links { get; set; }
         public List<EntryElement> Entries { get; set; }
@@ -73,7 +76,7 @@ namespace EventStore.Transport.Http.Atom
             Author = new PersonElement(name);
         }
 
-        public void AddLink(string uri, string relation, string contentType)
+        public void AddLink(string relation, string uri, string contentType = null)
         {
             Ensure.NotNull(uri, "uri");
             Links.Add(new LinkElement(uri, relation, contentType));
@@ -121,6 +124,21 @@ namespace EventStore.Transport.Http.Atom
 
             writer.WriteEndElement();
         }
+
+        public void SetHeadOfStream(bool headOfStream)
+        {
+            this.HeadOfStream = headOfStream;
+        }
+
+        public void SetSelfUrl(string self)
+        {
+            this.SelfUrl = self;
+        }
+
+        public void SetETag(string etag)
+        {
+            this.ETag = etag;
+        }
     }
 
     public class EntryElement : IXmlSerializable
@@ -167,7 +185,7 @@ namespace EventStore.Transport.Http.Atom
             Summary = summary;
         }
 
-        public void AddLink(string uri, string relation, string type)
+        public void AddLink(string relation, string uri, string type = null)
         {
             Ensure.NotNull(uri, "uri");
             Links.Add(new LinkElement(uri, relation, type));
@@ -216,6 +234,26 @@ namespace EventStore.Transport.Http.Atom
 
             writer.WriteEndElement();
         }
+    }
+
+    public class RichEntryElement : EntryElement
+    {
+        public string EventType { get; set; }
+        public int EventNumber { get; set; }
+        public string Data { get; set; }
+        public string MetaData { get; set; }
+        public string LinkMetaData { get; set; }
+
+        public string StreamId { get; set; }
+
+        public bool IsJson { get; set; }
+
+        public bool IsMetaData { get; set; }
+        public bool IsLinkMetaData { get; set; }
+
+        public int PositionEventNumber { get; set; }
+
+        public string PositionStreamId { get; set; }
     }
 
     public class LinkElement : IXmlSerializable

@@ -34,7 +34,8 @@ namespace EventStore.Projections.Core.Services.Processing
     /// <summary>
     /// Staged processing queue allows queued processing of multi-step tasks.  The 
     /// processing order allows multiple tasks to be processed at the same time with a constraint
-    /// that all preceding tasks in the queue has already started processing at the given stage. 
+    /// a) ordered stage: all preceding tasks in the queue has already started processing at the given stage. 
+    /// b) unordered stage: no items with the same correlation_id are in the queue before current item
     /// 
     /// For instance:  multiple foreach sub-projections can request state to be loaded, then they can process
     /// it and store.  But no subprojection can process events prior to preceding projections has completed processing. 
@@ -45,12 +46,14 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             public readonly StagedTask Task;
             public bool Busy;
+            public object BusyCorrelationId;
             public bool Completed;
             public int ReadForStage;
 
             public TaskEntry(StagedTask task)
             {
                 Task = task;
+                BusyCorrelationId = task.InitialCorrelationId;
             }
 
             public override string ToString()
@@ -110,9 +113,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 previousTaskMinimumProcessingStage = Math.Min(taskStage, previousTaskMinimumProcessingStage);
                 taskStage = entry.ReadForStage;
 
-                if (_precedingCorrelations.Contains(entry.Task.CorrelationId))
-                    break;
-                _precedingCorrelations.Add(entry.Task.CorrelationId);
+                var busyCorrelationId = entry.BusyCorrelationId;
+                if (busyCorrelationId != null)
+                {
+                    if (_precedingCorrelations.Contains(busyCorrelationId))
+                        break;
+                    _precedingCorrelations.Add(busyCorrelationId);
+                }
 
                 if (entry.Busy)
                     continue;
@@ -128,17 +135,22 @@ namespace EventStore.Projections.Core.Services.Processing
 
                 // here we should be at the first StagedTask of current processing level which is not busy
                 entry.Busy = true;
-                entry.Task.Process(taskStage, readyForStage => CompleteTaskProcessing(entry, readyForStage));
+                entry.Task.Process(
+                    taskStage,
+                    (readyForStage, newCorrelationId) => CompleteTaskProcessing(entry, readyForStage, newCorrelationId));
                 return entry.Task;
             }
             return null;
         }
 
-        private void CompleteTaskProcessing(TaskEntry entry, int readyForStage)
+        private void CompleteTaskProcessing(TaskEntry entry, int readyForStage, object newCorrelationId)
         {
             if (!entry.Busy)
                 throw new InvalidOperationException("Task was not in progress");
             entry.Busy = false;
+            if (!_orderedStage[entry.ReadForStage] && !Equals(entry.BusyCorrelationId, newCorrelationId))
+                throw new InvalidOperationException("Cannot change busy correlation id at non-ordered stage");
+            entry.BusyCorrelationId = newCorrelationId;
             if (readyForStage < 0)
                 RemoveCompletedTask(entry);
             else
@@ -159,14 +171,14 @@ namespace EventStore.Projections.Core.Services.Processing
 
     public abstract class StagedTask
     {
-        public readonly object CorrelationId;
+        public readonly object InitialCorrelationId;
 
-        protected StagedTask(object correlationId)
+        protected StagedTask(object initialCorrelationId)
         {
-            CorrelationId = correlationId;
+            InitialCorrelationId = initialCorrelationId;
         }
 
-        public abstract void Process(int onStage, Action<int> readyForStage);
+        public abstract void Process(int onStage, Action<int, object> readyForStage);
 
     }
 }

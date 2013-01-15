@@ -135,8 +135,7 @@ namespace EventStore.Core.Services.Monitoring
 
             if (drive != null)
             {
-                Func<string, string, string> driveStat = 
-                    (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName, stat);
+                Func<string, string, string> driveStat = (diskName, stat) => string.Format("sys-drive-{0}-{1}", diskName, stat);
                 stats[driveStat(drive.DiskName, "availableBytes")] = drive.AvailableBytes;
                 stats[driveStat(drive.DiskName, "totalBytes")] = drive.TotalBytes;
                 stats[driveStat(drive.DiskName, "usage")] = drive.Usage;
@@ -150,6 +149,7 @@ namespace EventStore.Core.Services.Monitoring
             foreach (var queue in queues)
             {
                 stats[queueStat(queue.Name, "queueName")] = queue.Name;
+                stats[queueStat(queue.Name, "groupName")] = queue.GroupName ?? string.Empty;
                 stats[queueStat(queue.Name, "avgItemsPerSecond")] = queue.AvgItemsPerSecond;
                 stats[queueStat(queue.Name, "avgProcessingTime")] = new StatMetadata(queue.AvgProcessingTime, "Queue Stats", queue.Name +  " Avg Proc Time");
                 stats[queueStat(queue.Name, "currentIdleTime")] = queue.CurrentIdleTime.HasValue ? queue.CurrentIdleTime.Value.ToString("G", CultureInfo.InvariantCulture) : null;
@@ -160,6 +160,8 @@ namespace EventStore.Core.Services.Monitoring
                 stats[queueStat(queue.Name, "lengthLifetimePeak")] = queue.LengthLifetimePeak;
                 stats[queueStat(queue.Name, "totalItemsProcessed")] = queue.TotalItemsProcessed;
                 stats[queueStat(queue.Name, "lengthLifetimePeakFriendly")] = queue.LengthLifetimePeakFriendly;
+                stats[queueStat(queue.Name, "inProgressMessage")] = queue.InProgressMessageType != null ? queue.InProgressMessageType.Name : "<none>";
+                stats[queueStat(queue.Name, "lastProcessedMessage")] = queue.LastProcessedMessageType != null ? queue.LastProcessedMessageType.Name : "<none>";
             }
 
             return stats;
@@ -179,7 +181,7 @@ namespace EventStore.Core.Services.Monitoring
             }
             catch (Exception ex)
             {
-                _log.DebugException(ex, "couldn't get free mem on linux");
+                _log.DebugException(ex, "Couldn't get free mem on linux.");
                 return -1;
             }
         }

@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
@@ -39,6 +40,8 @@ namespace EventStore.Core.Tests.Services.Replication
 {
     public abstract class RequestManagerSpecification
     {
+        protected static readonly IPEndPoint SomeEndPoint = new IPEndPoint(IPAddress.Loopback, 7777);
+
         protected TwoPhaseRequestManagerBase manager;
         protected abstract TwoPhaseRequestManagerBase OnManager(FakePublisher publisher);
         protected List<Message> produced;

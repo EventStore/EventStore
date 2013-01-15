@@ -39,5 +39,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             MaxCount = maxCount;
             MaxAge = maxAge;
         }
+
+        public override string ToString()
+        {
+            return string.Format("MaxCount: {0}, MaxAge: {1}", MaxCount, MaxAge);
+        }
     }
 }

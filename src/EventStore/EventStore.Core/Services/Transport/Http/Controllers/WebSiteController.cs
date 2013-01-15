@@ -42,6 +42,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         private readonly MiniWeb _commonWeb;
         private readonly MiniWeb _singleNodeWeb;
+        private readonly MiniWeb _singleNodeJs;
 
         public WebSiteController(IPublisher publisher)
             : base(publisher)
@@ -51,12 +52,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             _singleNodeWeb = new MiniWeb("/web", Path.Combine(singleNodeFSRoot, @"singlenode-web"));
             _commonWeb = new MiniWeb("/web/es", Path.Combine(commonFSRoot, @"es-common-web"));
+            _singleNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(singleNodeFSRoot, @"singlenode-web\js\projections"));
         }
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
             _singleNodeWeb.RegisterControllerActions(service);
             _commonWeb.RegisterControllerActions(service);
+            _singleNodeJs.RegisterControllerActions(service);
             RegisterRedirectAction(service, "", "/web/home.htm");
             RegisterRedirectAction(service, "/web", "/web/home.htm");
             RegisterRedirectAction(service, "/web/projections", "/web/projections.htm");
@@ -70,7 +73,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                     HttpMethod.Get, 
                     Codec.NoCodecs, 
                     new ICodec[] { Codec.ManualEncoding }, Codec.ManualEncoding),
-                    (http, match) => http.Manager.Reply(
+                    (http, match) => http.Manager.ReplyTextContent(
                         "Moved", 302, "Found", "text/plain",
                         new[]
                             {

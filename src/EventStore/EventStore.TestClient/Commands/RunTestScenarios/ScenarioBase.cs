@@ -89,6 +89,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private readonly EventStoreConnection[] _connections;
         private int _nextConnectionNum = -1;
+        private readonly ProjectionsManager _projectionsManager;
 
         protected ScenarioBase(Action<IPEndPoint, byte[]> directSendOverTcp,
                                int maxConcurrentRequests,
@@ -111,6 +112,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             _tcpEndPoint = GetTcpEndPoint();
 
             _connections = new EventStoreConnection[connections];
+            _projectionsManager = new ProjectionsManager(new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000));
 
             _writeHandlers = new Dictionary<WriteMode, Func<string, int, Func<int, IEvent>, Task>>
             {
@@ -126,11 +128,18 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return _connections[connectionNum];
         }
 
+        protected ProjectionsManager GetProjectionsManager()
+        {
+            return _projectionsManager;
+        }
+
         public void Run()
         {
             for (int i = 0; i < Connections; ++i)
             {
-                _connections[i] = EventStoreConnection.Create(maxConcurrentRequests:MaxConcurrentRequests, logger: ApiLogger);
+                _connections[i] = EventStoreConnection.Create(ConnectionSettings.Create()
+                                                                                .UseLogger(ApiLogger)
+                                                                                .LimitConcurrentOperationsTo(MaxConcurrentRequests));
                 _connections[i].Connect(_tcpEndPoint);
             }
             RunInternal();   
@@ -143,9 +152,20 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             CloseConnections();
             KillStartedNodes();
 
-            Log.Info("Deleting {0}...", _dbPath);
-            Directory.Delete(_dbPath, true);
-            Log.Info("Deleted {0}", _dbPath);
+            try
+            {
+                Log.Info("Deleting {0}...", _dbPath);
+                Directory.Delete(_dbPath, true);
+                Log.Info("Deleted {0}", _dbPath);
+            }
+            catch (IOException ex)
+            {
+                Log.ErrorException(ex, "Failed to delete dir {0}, IOException was raised", _dbPath);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Log.ErrorException(ex, "Failed to delete dir {0}, UnauthorizedAccessException was raised", _dbPath);
+            }
         }
 
         protected T[][] Split<T>(IEnumerable<T> sequence, int parts)
@@ -220,7 +240,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             foreach (var stream in streams)
             {
                 var s = stream;
-                var task = store.ReadEventStreamForwardAsync(stream, 0, 1).ContinueWith(t =>
+                var task = store.ReadStreamEventsForwardAsync(stream, 0, 1, resolveLinkTos: false).ContinueWith(t =>
                 {
                     if (t.Result.Status != SliceReadStatus.StreamDeleted)
                         throw new Exception(string.Format("Stream '{0}' is not deleted, but should be!", s));
@@ -269,7 +289,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected int StartNode()
         {
-            
             var clientFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
             string fileName;
@@ -280,7 +299,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 Log.Info("Mono at {0} will be used.", pathToMono);
                 fileName = pathToMono;
-                argumentsHead = string.Format("{0} {1}", "--gc=sgen", Path.Combine(clientFolder, "EventStore.SingleNode.exe"));
+                argumentsHead = string.Format("--debug --gc=sgen {0}", Path.Combine(clientFolder, "EventStore.SingleNode.exe"));
             }
             else
             {
@@ -288,7 +307,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 argumentsHead = "";
             }
 
-            var arguments = string.Format("{0} --ip {1} -t {2} -h {3} --db {4}",
+            var arguments = string.Format("{0} --run-projections --ip {1} -t {2} -h {3} --db {4}",
                                           argumentsHead,
                                           _tcpEndPoint.Address,
                                           _tcpEndPoint.Port,
@@ -342,7 +361,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private IPEndPoint GetTcpEndPoint()
         {
-            return new IPEndPoint(GetInterIpAddress(), 1113);
+            return new IPEndPoint(GetInterIpAddress(), 31113);
         }
 
         private bool TryGetProcessById(int processId, out Process process)
@@ -428,9 +447,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected void Scavenge()
         {
-            Log.Error("!! Scavenge disabled due to not found prepare error");
-            return;
-
             Log.Info("Send scavenge command...");
             var package = new TcpPackage(TcpCommand.ScavengeDatabase, Guid.NewGuid(), null).AsByteArray();
             DirectSendOverTcp(GetTcpEndPoint(), package);
@@ -444,7 +460,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Log.Info("Starting to write {0} events to [{1}]", events, stream);
             var store = GetConnection();
             int eventVersion = 0;
-            var createTask = store.CreateStreamAsync(stream, false, Encoding.UTF8.GetBytes("metadata"));
+            var createTask = store.CreateStreamAsync(stream, Guid.NewGuid(), false, Encoding.UTF8.GetBytes("metadata"));
 
             Action<Task> fail = prevTask =>
             {
@@ -484,7 +500,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var resSource = new TaskCompletionSource<object>();
             var store = GetConnection();
             int writtenCount = 0;
-            var createTask = store.CreateStreamAsync(stream, false, Encoding.UTF8.GetBytes("metadata"));
+            var createTask = store.CreateStreamAsync(stream, Guid.NewGuid(), false, Encoding.UTF8.GetBytes("metadata"));
 
             Action<Task> fail = prevTask =>
             {
@@ -533,8 +549,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             };
 
             int writtenCount = 0;
-            long transactionId = -1;
-            var createTask = store.CreateStreamAsync(stream, false, Encoding.UTF8.GetBytes("metadata"));
+            EventStoreTransaction transaction = null;
+            var createTask = store.CreateStreamAsync(stream, Guid.NewGuid(), false, Encoding.UTF8.GetBytes("metadata"));
             createTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
 
             Action<Task> writeTransactionEvent = null;
@@ -542,7 +558,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 if (writtenCount == eventCount)
                 {
-                    var commitTask = store.CommitTransactionAsync(transactionId, stream);
+                    var commitTask = transaction.CommitAsync();
                     commitTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                     commitTask.ContinueWith(t =>
                     {
@@ -554,7 +570,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 writtenCount += 1;
 
-                var writeTask = store.TransactionalWriteAsync(transactionId, stream, new[] { createEvent(writtenCount) });
+                var writeTask = transaction.WriteAsync(createEvent(writtenCount));
                 writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 writeTask.ContinueWith(writeTransactionEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
@@ -565,7 +581,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 startTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 startTask.ContinueWith(t =>
                 {
-                    transactionId = t.Result.TransactionId;
+                    transaction = t.Result;
                     writeTransactionEvent(t);
                 }, TaskContinuationOptions.OnlyOnRanToCompletion);
 
@@ -587,7 +603,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 resSource.SetException(prevTask.Exception);
             };
 
-            var readTask = store.ReadEventStreamForwardAsync(stream, from, count);
+            var readTask = store.ReadStreamEventsForwardAsync(stream, @from, count, resolveLinkTos: false);
             readTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
             readTask.ContinueWith(t =>
             {
@@ -609,7 +625,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                     for (int i = 0; i < count; ++i)
                     {
-                        var evnt = slice.Events[i];
+                        var evnt = slice.Events[i].Event;
                         if (evnt.EventNumber != i + from)
                         {
                             throw new Exception(string.Format(

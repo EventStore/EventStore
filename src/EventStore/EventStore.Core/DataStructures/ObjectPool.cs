@@ -31,11 +31,7 @@ namespace EventStore.Core.DataStructures
 {
     public class ObjectPool<T> where T: class
     {
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentQueue<T> _items = new Common.ConcurrentCollections.ConcurrentQueue<T>();
-#else
-        private readonly System.Collections.Concurrent.ConcurrentQueue<T> _items = new System.Collections.Concurrent.ConcurrentQueue<T>();
-#endif
+        private readonly Common.Concurrent.ConcurrentQueue<T> _items = new Common.Concurrent.ConcurrentQueue<T>();
 
         private readonly int _count;
         private readonly Func<T> _creator;

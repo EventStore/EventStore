@@ -47,7 +47,6 @@ namespace EventStore.ClientAPI.ClientOperations
 
         private readonly bool _forward;
         private readonly long _transactionId;
-        private readonly string _stream;
 
         public Guid CorrelationId
         {
@@ -61,15 +60,13 @@ namespace EventStore.ClientAPI.ClientOperations
         public CommitTransactionOperation(TaskCompletionSource<object> source,
                                           Guid corrId,
                                           bool forward,
-                                          long transactionId,
-                                          string stream)
+                                          long transactionId)
         {
             _source = source;
 
             _corrId = corrId;
             _forward = forward;
             _transactionId = transactionId;
-            _stream = stream;
         }
 
         public void SetRetryId(Guid correlationId)
@@ -82,7 +79,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var commit = new ClientMessage.TransactionCommit(_transactionId, _stream, _forward);
+                var commit = new ClientMessage.TransactionCommit(_transactionId, _forward);
                 return new TcpPackage(TcpCommand.TransactionCommit, _corrId, commit.Serialize());
             }
         }
@@ -94,9 +91,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 if (package.Command == TcpCommand.DeniedToRoute)
                 {
                     var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
-                    return new InspectionResult(InspectionDecision.Reconnect,
-                                                data: new EndpointsPair(route.ExternalTcpEndPoint,
-                                                                        route.ExternalHttpEndPoint));
+                    return new InspectionResult(InspectionDecision.Reconnect, data: route.ExternalTcpEndPoint);
                 }
                 if (package.Command != TcpCommand.TransactionCommitCompleted)
                 {
@@ -109,23 +104,22 @@ namespace EventStore.ClientAPI.ClientOperations
                 var dto = data.Deserialize<ClientMessage.TransactionCommitCompleted>();
                 _result = dto;
 
-                switch ((OperationErrorCode)dto.ErrorCode)
+                switch (dto.Result)
                 {
-                    case OperationErrorCode.Success:
+                    case ClientMessage.OperationResult.Success:
                         return new InspectionResult(InspectionDecision.Succeed);
-                    case OperationErrorCode.PrepareTimeout:
-                    case OperationErrorCode.CommitTimeout:
-                    case OperationErrorCode.ForwardTimeout:
+                    case ClientMessage.OperationResult.PrepareTimeout:
+                    case ClientMessage.OperationResult.CommitTimeout:
+                    case ClientMessage.OperationResult.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
-                    case OperationErrorCode.WrongExpectedVersion:
-                        var err = string.Format("Commit transaction failed due to WrongExpectedVersion. Stream: {0}, TransactionID: {1}, CorrID: {2}.",
-                                                _stream,
+                    case ClientMessage.OperationResult.WrongExpectedVersion:
+                        var err = string.Format("Commit transaction failed due to WrongExpectedVersion. TransactionID: {0}, CorrID: {1}.",
                                                 _transactionId,
                                                 CorrelationId);
                         return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
-                    case OperationErrorCode.StreamDeleted:
-                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
-                    case OperationErrorCode.InvalidTransaction:
+                    case ClientMessage.OperationResult.StreamDeleted:
+                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException());
+                    case ClientMessage.OperationResult.InvalidTransaction:
                         return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -158,7 +152,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("TransactionId: {0}, Stream: {1}, CorrelationId: {2}", _transactionId, _stream, CorrelationId);
+            return string.Format("TransactionId: {0}, CorrelationId: {1}", _transactionId, CorrelationId);
         }
     }
 }

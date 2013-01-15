@@ -37,6 +37,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal class MassProjectionsScenario : ProjectionsKillScenario
     {
+        private readonly Random _random = new Random();
+
         public MassProjectionsScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int threads, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath) 
             : base(directSendOverTcp, maxConcurrentRequests, threads, streams, eventsPerStream, streamDeleteStep, dbParentPath)
         {
@@ -47,12 +49,17 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var success = true;
 
             var nodeProcessId = StartNode();
+            EnableProjectionByCategory();
 
             var countProjections = new List<string>();
             var bankProjections = new List<string>();
 
+            var writeTasks = new List<Task>();
+
             while (GetIterationCode() < Streams / 3)
             {
+                writeTasks.Add(WriteData());
+
                 SetNextIterationCode();
 
                 countProjections.Add(CreateCountItem());
@@ -60,13 +67,15 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 Log.Info("Created {0} and {1}", bankProjections[bankProjections.Count - 1], 
                                                 countProjections[countProjections.Count - 1]);
+
             }
 
             KillNode(nodeProcessId);
             nodeProcessId = StartNode();
 
-            var writeTask = WriteData();
-            writeTask.Wait();
+            writeTasks.Add(WriteData());
+
+            var writeTask = Task.Factory.ContinueWhenAll(writeTasks.ToArray(), tsks => Log.Info("All Data written"));
 
             KillNode(nodeProcessId);
             nodeProcessId = StartNode();
@@ -76,19 +85,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             {
                 Log.Info("Stop and start projection, remaining iterations {0}, waiting for data to be written.", count);
 
-                var t1 = StartOrStopProjection(countProjections, false);
-                var t2 = StartOrStopProjection(bankProjections, false);
+                StartOrStopProjection(countProjections, false);
+                StartOrStopProjection(bankProjections, false);
 
-                Task.WaitAll(new[] { t1, t2 });
                 Thread.Sleep(TimeSpan.FromSeconds(10));
 
-                var t3 = StartOrStopProjection(countProjections, true);
-                var t4 = StartOrStopProjection(bankProjections, true);
-
-                Task.WaitAll(new[] { t3, t4 });
-                var sleepTimeSeconds = 60 + Streams * EventsPerStream / 1000.0;
-                Log.Info("Sleep 1 for {0} seconds", sleepTimeSeconds);
-                Thread.Sleep(TimeSpan.FromSeconds(sleepTimeSeconds));
+                StartOrStopProjection(countProjections, true);
+                StartOrStopProjection(bankProjections, true);
 
                 if (writeTask.IsCompleted)
                     count -= 1;
@@ -96,15 +99,20 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 if (writeTask.IsFaulted)
                     throw new ApplicationException("Failed to write data", writeTask.Exception);
 
-                success = CheckProjectionState(GetConnection(), 
-                                                        bankProjections[bankProjections.Count - 1], 
-                                                        "success", 
-                                                        x => x == EventsPerStream.ToString());
+                success = CheckProjectionState(bankProjections[bankProjections.Count - 1], 
+                                               "success", 
+                                               x => x == EventsPerStream.ToString());
                 if (success)
                     break;
+
+                var sleepTimeSeconds = 10 + Streams * EventsPerStream / 1000.0;
+                Log.Info("Sleep 1 for {0} seconds, remaining count {1}", sleepTimeSeconds, count);
+                Thread.Sleep(TimeSpan.FromSeconds(sleepTimeSeconds));
             }
 
-            count = 10;
+            writeTask.Wait();
+
+            count = 20;
             success = false;
             while (!success && count > 0)
             {
@@ -112,14 +120,17 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 KillNode(nodeProcessId);
                 nodeProcessId = StartNode();
 
-                var sleepTimeSeconds = (Streams * EventsPerStream) / 50;
-                Log.Info("Sleep 2 for {0} seconds", sleepTimeSeconds);
+                success = CheckProjectionState(bankProjections[bankProjections.Count - 1],
+                                               "success",
+                                               x => x == EventsPerStream.ToString());
+
+                if (success)
+                    break;
+
+                var sleepTimeSeconds = 10 + (Streams * EventsPerStream) / 500;
+                Log.Info("Sleep 2 for {0} seconds, remaining count {1}", sleepTimeSeconds, count);
                 Thread.Sleep(TimeSpan.FromSeconds(sleepTimeSeconds));
 
-                success = CheckProjectionState(GetConnection(),
-                                                        bankProjections[bankProjections.Count - 1],
-                                                        "success",
-                                                        x => x == EventsPerStream.ToString());
                 count -= 1;
             }
 
@@ -127,26 +138,82 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 throw new ApplicationException("Last bank projection failed");
         }
 
-        private Task StartOrStopProjection(IEnumerable<string> projections, bool enable)
+        private class ProjectionTask
         {
-            var tasks = new List<Task>();
-            var store = GetConnection();
+            public string Name;
+            public Task Task;
 
-            foreach (string projection in projections)
+            public ProjectionTask(string name, Task task)
             {
-
-                //var isRunning = store.Projections.GetStatus(projection) == "Enabled";
-
-                tasks.Add(enable
-                              ? store.Projections.EnableAsync(projection)
-                              : store.Projections.DisableAsync(projection));
-
-                while (tasks.Count(x => !x.IsCompleted) > 4)
-                    Thread.Sleep(50);
+                Name = name;
+                Task = task;
             }
+        }
 
-            var task = Task.Factory.ContinueWhenAll(tasks.ToArray(), ts => { Task.WaitAll(ts); Log.Info("Projections enable/disable finished."); });
-            return task;
+        private void StartOrStopProjection(IEnumerable<string> projections, bool enable)
+        {
+            var manager = GetProjectionsManager();
+            const int retriesNumber = 5;
+
+            foreach (var projection in projections.ToArray())
+            {
+                var retry = 0;
+
+                int shortWait = 50 + _random.Next(100);
+                Log.Debug("Wait for {0}ms before next enable/disable projection", shortWait);
+                Thread.Sleep(shortWait);
+                
+                while (retry <= retriesNumber)
+                {
+                    var isRunning = GetProjectionIsRunning(projection);
+
+                    try
+                    {
+                        if (enable)
+                        {
+                            if (!isRunning)
+                                manager.Enable(projection);
+                            else 
+                                Log.Info("Projection '{0}' is already running and will not be enabled.", projection);
+                        }
+                        else
+                        {
+                            if (isRunning)
+                                manager.Disable(projection);
+                            else
+                                Log.Info("Projection '{0}' is already not running and will not be disabled again.", projection);
+                        }
+
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        var waitForMs = 5000 + (retry * (3000 + _random.Next(2000)));
+
+                        Log.InfoException(ex, "Failed to StartOrStopProjection (enable:{0}; isRunning:{1}) projection {2}, retry #{3}, wait {4}ms", 
+                                              enable, 
+                                              isRunning,
+                                              projection,
+                                              retry,
+                                              waitForMs);
+
+                        if (retry != 0)
+                            Thread.Sleep(waitForMs);
+
+                        if (retry == retriesNumber)
+                            throw new ApplicationException(string.Format("Failed to StartOrStopProjection (enable:{0}) projection {1}," +
+                                                                         " max number ({2}) of retries reached.", 
+                                                                         enable, 
+                                                                         projection, 
+                                                                         retry), 
+                                                           ex);
+                        
+                    }
+
+
+                    retry++;
+                }
+            }
         }
 
         private int _iterationCode;
@@ -158,11 +225,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         private void SetNextIterationCode()
         {
             _iterationCode += 1;
-        }
-
-        protected override TimeSpan IterationSleepInterval
-        {
-            get { return TimeSpan.FromMinutes(1); }
         }
     }
 }

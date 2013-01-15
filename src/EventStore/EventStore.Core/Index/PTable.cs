@@ -29,83 +29,91 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Threading;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Settings;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Index
 {
-    public enum FileType
+    public enum FileType: byte
     {
         PTableFile = 1,
         ChunkFile = 2
     }
 
-    public unsafe class PTable : ISearchTable, IDisposable
+    public partial class PTable : ISearchTable, IDisposable
     {
+        public const int IndexEntrySize = sizeof(int) + sizeof(int) + sizeof(long);
         public const int MD5Size = 16;
-        public const int Version = 1;
+        public const byte Version = 1;
+        public const int DefaultBufferSize = 8096;
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<PTable>();
 
         public Guid Id { get { return _id; } }
-        public int Count { get { return (int)(_size >> 4); } }
+        public int Count { get { return (int)(_size / IndexEntrySize); } }
         public string Filename { get { return _filename; } }
 
-        private readonly string _filename;
-        private readonly int _bufferSize;
-        private readonly int _maxReadingThreads;
-        private readonly long _size;
-        private readonly GCHandle _bufferPtr;
-        private readonly byte[] _buffer;
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentQueue<FileStream> _streams = new Common.ConcurrentCollections.ConcurrentQueue<FileStream>();
-#else
-        private readonly System.Collections.Concurrent.ConcurrentQueue<FileStream> _streams = new System.Collections.Concurrent.ConcurrentQueue<FileStream>();
-#endif
-        private readonly Midpoint[] _midpoints;
-        private readonly ManualResetEvent _destroyEvent = new ManualResetEvent(false);
         private readonly Guid _id;
+        private readonly int _bufferSize;
+        private readonly string _filename;
+        private readonly long _size;
+        private readonly Midpoint[] _midpoints;
+        private readonly Common.Concurrent.ConcurrentQueue<WorkItem> _workItems = new Common.Concurrent.ConcurrentQueue<WorkItem>();
 
+        private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
+        private volatile bool _deleteFile;
         private volatile bool _selfdestructin54321;
+        private int _workItemsLeft;
 
         private PTable(string filename, 
                        Guid id, 
-                       int bufferSize = 8096, 
-                       int maxReadingThreads = TFConsts.ReadIndexReaderCount, 
+                       int bufferSize = DefaultBufferSize, 
+                       int maxReadingThreads = ESConsts.ReadIndexReaderCount, 
                        int depth = 16)
         {
+            Ensure.NotNullOrEmpty(filename, "filename");
+            Ensure.NotEmptyGuid(id, "id");
+            Ensure.Positive(maxReadingThreads, "maxReadingThreads");
+            Ensure.Positive(bufferSize, "bufferSize");
+            Ensure.Nonnegative(depth, "depth");
+
             if (!File.Exists(filename)) 
                 throw new CorruptIndexException(new PTableNotFoundException(filename));
 
             _id = id;
-            _size = new FileInfo(filename).Length - PTableHeader.Size - MD5Size;
-
-            _filename = filename;
-            File.SetAttributes(_filename, FileAttributes.ReadOnly);
-            File.SetAttributes(_filename, FileAttributes.Temporary);
-            File.SetAttributes(_filename, FileAttributes.NotContentIndexed);
-
             _bufferSize = bufferSize;
-            _maxReadingThreads = maxReadingThreads;
-            _buffer = new byte[16];
-            _bufferPtr = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
+            _filename = filename;
+            _size = new FileInfo(_filename).Length - PTableHeader.Size - MD5Size;
+            File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
 
-            using (var stream = File.OpenRead(filename))
-            using (var reader = new BinaryReader(stream))
+            _workItemsLeft = maxReadingThreads;
+            for (int i = 0; i < maxReadingThreads; ++i)
             {
-                PTableHeader.FromStream(reader);
+                var workItem = new WorkItem(_filename, IndexEntrySize);
+                _workItems.Enqueue(workItem);
             }
-            
-            for (int i = 0; i < _maxReadingThreads;i++ )
+
+            var readerWorkItem = GetWorkItem();
+            try
             {
-                var s = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, 16, FileOptions.RandomAccess);
-                _streams.Enqueue(s);
+                readerWorkItem.Stream.Seek(0, SeekOrigin.Begin);
+                var header = PTableHeader.FromStream(readerWorkItem.Stream);
+                if (header.Version != Version)
+                    throw new CorruptIndexException(new WrongFileVersionException(_filename, header.Version, Version));
+            }
+            catch (Exception)
+            {
+                Dispose();
+                throw;
+            }
+            finally
+            {
+                ReturnWorkItem(readerWorkItem);
             }
 
             try
@@ -114,21 +122,70 @@ namespace EventStore.Core.Index
             }
             catch (PossibleToHandleOutOfMemoryException)
             {
-                Log.Info("Was unable to create midpoints for ptable. Performance hit possible OOM Exception.");
+                Log.Error("Was unable to create midpoints for PTable. Performance hit possible. OOM Exception.");
+            }
+        }
+
+        private Midpoint[] PopulateCache(int depth)
+        {
+            if (depth > 31)
+                throw new ArgumentOutOfRangeException("depth");
+            if (Count == 0)
+                throw new InvalidOperationException("Empty PTable.");
+
+            var workItem = GetWorkItem();
+            try
+            {
+                int segmentSize;
+                Midpoint[] midpoints;
+                try
+                {
+                    int midPointsCnt = 1 << depth;
+                    if (Count < midPointsCnt)
+                    {
+                        segmentSize = 1; // we cache all items
+                        midpoints = new Midpoint[Count];
+                    }
+                    else
+                    {
+                        segmentSize = Count / midPointsCnt;
+                        midpoints = new Midpoint[1 + (Count + segmentSize - 1) / segmentSize];
+                    }
+                }
+                catch (OutOfMemoryException exc)
+                {
+                    throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.", exc);
+                }
+
+                for (int x = 0, i = 0, xN = Count - 1; x < xN; x += segmentSize, i += 1)
+                {
+                    var record = ReadEntry(x, workItem);
+                    midpoints[i] = new Midpoint(record.Key, x);
+                }
+
+                // add the very last item as the last midpoint (possibly it is done twice)
+                {
+                    var record = ReadEntry(Count - 1, workItem);
+                    midpoints[midpoints.Length - 1] = new Midpoint(record.Key, Count - 1);
+                }
+                return midpoints;
+            }
+            finally
+            {
+                ReturnWorkItem(workItem);
             }
         }
 
         public void VerifyFileHash()
         {
-            var stream = GetFileStream();
+            var workItem = GetWorkItem();
             try
             {
-                stream.Seek(0, SeekOrigin.Begin);
-                var hash = MD5Hash.GetHashFor(stream, 0, stream.Length - MD5Size);
+                workItem.Stream.Seek(0, SeekOrigin.Begin);
+                var hash = MD5Hash.GetHashFor(workItem.Stream, 0, workItem.Stream.Length - MD5Size);
 
-                stream.Seek(-MD5Size, SeekOrigin.End);
                 var fileHash = new byte[MD5Size];
-                stream.Read(fileHash, 0, MD5Size);
+                workItem.Stream.Read(fileHash, 0, MD5Size);
                 
                 if (hash == null || fileHash.Length != hash.Length) 
                     throw new CorruptIndexException(new HashValidationException());
@@ -141,310 +198,28 @@ namespace EventStore.Core.Index
             }
             finally
             {
-                ReturnStream(stream);
+                ReturnWorkItem(workItem);
             }
         }
 
-        public void MarkForDestruction()
+        public IEnumerable<IndexEntry> IterateAllInOrder()
         {
-            _selfdestructin54321 = true;
-            TryDestruct();
-        }
-
-        private Midpoint[] PopulateCache(int depth)
-        {
-            if (Count == 0)
-                throw new InvalidOperationException("Empty PTable.");
-
-            var buffer = new byte[16];
-            var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            FileStream stream = null;
-            try
+            // TODO AN: integrate this with general mechanism of work items, so in the middle of iteration 
+            // TODO AN: we wouldn't delete the file
+            using (var workItem = new WorkItem(_filename, _bufferSize))
             {
-                stream = GetFileStream();
-                int midPointsCnt = 1 << depth;
-                int segmentSize;
-                Midpoint[] midpoints;
-                if (Count < midPointsCnt)
+                workItem.Stream.Seek(PTableHeader.Size, SeekOrigin.Begin);
+                for (int i = 0, n = Count; i < n; i++)
                 {
-                    segmentSize = 1; // we cache all items
-                    try
-                    {
-                        midpoints = new Midpoint[Count];
-                    }
-                    catch (OutOfMemoryException)
-                    {
-                        throw new PossibleToHandleOutOfMemoryException();
-                    }
-                }
-                else
-                {
-                    segmentSize = Count / midPointsCnt;
-                    try
-                    {
-                        midpoints = new Midpoint[1 + (Count + segmentSize - 1)/segmentSize];
-                    }
-                    catch(OutOfMemoryException)
-                    {
-                        throw new PossibleToHandleOutOfMemoryException();
-                    }
-                }
-
-                for (int x = 0, i = 0, xN = Count - 1; x < xN; x += segmentSize, i += 1)
-                {
-                    stream.Seek(PTableHeader.Size + (((long)x) << 4), SeekOrigin.Begin);
-                    var record = ReadNext(stream, buffer, handle);
-                    midpoints[i] = new Midpoint(record.Key, x);
-                }
-
-                // add the very last item as the last midpoint (possibly it is done twice)
-                {
-                    stream.Seek(PTableHeader.Size + (((long)(Count - 1)) << 4), SeekOrigin.Begin);
-                    var record = ReadNext(stream, buffer, handle);
-                    midpoints[midpoints.Length - 1] = new Midpoint(record.Key, Count - 1);
-                }
-                return midpoints;
-            }
-            finally
-            {
-                if (stream != null)
-                    ReturnStream(stream);
-                handle.Free();
-            }
-        }
-
-        ~PTable()
-        {
-            if (_bufferPtr.IsAllocated)
-            {
-                _bufferPtr.Free();
-            }
-        }
-
-        public static PTable FromFile(string filename)
-        {
-            return new PTable(filename, Guid.NewGuid());
-        }
-
-        public static PTable FromMemtable(IMemTable table, string filename, int cacheDepth = 16)
-        {
-            if (table == null) throw new ArgumentNullException("table");
-            if (filename == null) throw new ArgumentNullException("filename");
-
-            Log.Trace("Started dumping MemTable [{0}] into PTable...", table.Id);
-            using (var f = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 8096, 
-                                          FileOptions.SequentialScan))
-            {
-                f.SetLength(PTableHeader.Size + (table.Count << 4) + MD5Size); // EXACT SIZE
-                f.Seek(0, SeekOrigin.Begin);
-
-                var md5 = MD5.Create();
-                var buffer = new byte[16];
-                using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
-                using (var b = new BufferedStream(cs, 65536))
-                {
-                    // WRITE HEADER
-                    var headerBytes = new PTableHeader(Version).AsByteArray();
-                    cs.Write(headerBytes, 0, headerBytes.Length);
-
-                    // WRITE INDEX ENTRIES
-                    foreach (var record in table.IterateAllInOrder())
-                    {
-                        var x = record;
-                        AppendRecordTo(b, x.Bytes, buffer);
-                    }
-                    b.Flush();
-                    cs.FlushFinalBlock();
-
-                    // WRITE MD5
-                    var hash = md5.Hash;
-                    f.Write(hash, 0, hash.Length);
-                }
-                f.Close();
-                Log.Trace("Done dumping MemTable [{0}].", table.Id);
-            }
-            return new PTable(filename, table.Id, depth: cacheDepth);
-        }
-
-        public static PTable MergeTo(ICollection<PTable> tables, 
-                                     string outputFile, 
-                                     Func<IndexEntry, bool> isHashCollision,
-                                     int cacheDepth = 16)
-        {
-            var enumerators = tables.Select(table => table.IterateAllInOrder().GetEnumerator()).ToList();
-            var fileSize = GetFileSize(tables); // approximate file size
-            if (enumerators.Count == 2)
-                return MergeTo2(enumerators, fileSize, outputFile, isHashCollision, cacheDepth);
-            Log.Trace("PTables merge started.");
-            var watch = new Stopwatch();
-            watch.Start();
-            for (int i=0;i<enumerators.Count;i++)
-            {
-                if (!enumerators[i].MoveNext())
-                {
-                    enumerators[i].Dispose();
-                    enumerators.RemoveAt(i);
-                    i--;
+                    yield return ReadNextNoSeek(workItem);
                 }
             }
-            var bytes = new byte[16];
-            uint lastdeleted = uint.MaxValue;
-            var md5 = MD5.Create();
-            using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 1024 * 1024, 
-                                          FileOptions.SequentialScan))
-            {
-                f.SetLength(fileSize);
-                f.Seek(0, SeekOrigin.Begin);
-
-                using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
-                using (var b = new BufferedStream(cs, 65536))
-                {
-                    // WRITE HEADER
-                    var headerBytes = new PTableHeader(Version).AsByteArray();
-                    cs.Write(headerBytes, 0, headerBytes.Length);
-
-                    // WRITE INDEX ENTRIES
-                    while (enumerators.Count > 0)
-                    {
-                        var idx = GetMaxOf(enumerators);
-                        var current = enumerators[idx].Current;
-                        if (current.Version == int.MaxValue && !isHashCollision(current))
-                        {
-                            lastdeleted = current.Stream;
-                            AppendRecordTo(b, current.Bytes, bytes);
-                        }
-                        else
-                        {
-                            if (lastdeleted != current.Stream)
-                                AppendRecordTo(b, current.Bytes, bytes);
-                        }
-                        if (!enumerators[idx].MoveNext())
-                        {
-                            enumerators[idx].Dispose();
-                            enumerators.RemoveAt(idx);
-                        }
-                    }
-                    f.SetLength(f.Position + MD5Size);
-                    b.Flush();
-                    cs.FlushFinalBlock();
-                        
-                    // WRITE MD5
-                    var hash = md5.Hash;
-                    f.Write(hash, 0, hash.Length);
-                }
-            }
-            Log.Trace("PTables merge finished in " + watch.Elapsed);
-            return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);
         }
 
-        private static PTable MergeTo2(List<IEnumerator<IndexEntry>> enumerators, 
-                                       long fileSize, 
-                                       string outputFile, 
-                                       Func<IndexEntry, bool> isHashCollision,
-                                       int cacheDepth)
-        {
-            Log.Trace("PTables merge started (specialized for <= 2 tables).");
-            var watch = Stopwatch.StartNew();
-            var bytes = new byte[16];
-            uint lastdeleted = uint.MaxValue;
-            var md5 = MD5.Create();
-            using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 1000000, FileOptions.SequentialScan))
-            {
-                f.SetLength(fileSize);
-                f.Seek(0, SeekOrigin.Begin);
-
-                using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
-                using (var b = new BufferedStream(cs, 65536))
-                {
-                    // WRITE HEADER
-                    var headerBytes = new PTableHeader(Version).AsByteArray();
-                    cs.Write(headerBytes, 0, headerBytes.Length);
-
-                    // WRITE INDEX ENTRIES
-                    var enum1 = enumerators[0];
-                    var enum2 = enumerators[1];
-                    bool available1 = enum1.MoveNext();
-                    bool available2 = enum2.MoveNext();
-                    IndexEntry current;
-                    while (available1 || available2)
-                    {
-                        if (available1 && (!available2 || enum1.Current.CompareTo(enum2.Current) > 0))
-                        {
-                            current = enum1.Current;
-                            available1 = enum1.MoveNext();
-                        }
-                        else 
-                        {
-                            current = enum2.Current;
-                            available2 = enum2.MoveNext();
-                        }
-
-                        if (current.Version == int.MaxValue && !isHashCollision(current))
-                        {
-                            lastdeleted = current.Stream;
-                            AppendRecordTo(b, current.Bytes, bytes);
-                        }
-                        else
-                        {
-                            if (lastdeleted != current.Stream)
-                                AppendRecordTo(b, current.Bytes, bytes);
-                        }
-                    }
-                    f.SetLength(f.Position + MD5Size);
-                    b.Flush();
-                    cs.FlushFinalBlock();
-
-                    // WRITE MD5
-                    var hash = md5.Hash;
-                    f.Write(hash, 0, hash.Length);
-                }
-            }
-            Log.Trace("PTables merge finished in " + watch.Elapsed);
-            return new PTable(outputFile, Guid.NewGuid(), depth: cacheDepth);
-        }
-
-        private static long GetFileSize(IEnumerable<PTable> tables)
-        {
-            long ret = 0;
-            foreach(var table in tables)
-            {
-                ret += table.Count;
-            }
-            return PTableHeader.Size + (ret << 4) + MD5Size; // plus md5
-        }
-
-        private static void AppendRecordTo(Stream stream, byte* bytes, byte[] buffer)
-        {
-            Marshal.Copy(new IntPtr(bytes), buffer, 0, 16);
-            stream.Write(buffer, 0, 16);     
-        }
-
-        private static int GetMaxOf(List<IEnumerator<IndexEntry>> enumerators)
-        {
-            //TODO GFY IF WE LIMIT THIS TO FOUR WE CAN UNROLL THIS LOOP AND WILL BE FASTER
-            var max = new IndexEntry(ulong.MinValue, long.MinValue);
-            int idx = 0;
-            for (int i=0;i<enumerators.Count;i++)
-            {
-                var cur = enumerators[i].Current;
-                if (cur.CompareTo(max) > 0)
-                {
-                    max = cur;
-                    idx = i;
-                }
-            }
-            return idx;
-        }
-
-        private static ulong BuildKey(uint stream, int version)
-        {
-            return ((uint)version) | (((ulong)stream) << 32);
-        }
-
-        public bool TryGetOneValue(uint stream, int version, out long position)
+        public bool TryGetOneValue(uint stream, int number, out long position)
         {
             IndexEntry entry;
-            if (TryGetOneEntry(stream, version, version, out entry))
+            if (TryGetOneEntry(stream, number, number, out entry))
             {
                 position = entry.Position;
                 return true;
@@ -458,52 +233,38 @@ namespace EventStore.Core.Index
             return TryGetOneEntry(stream, 0, int.MaxValue, out entry);
         }
 
-        private bool TryGetOneEntry(uint stream, int startVersion, int endVersion, out IndexEntry entry)
+        private bool TryGetOneEntry(uint stream, int startNumber, int endNumber, out IndexEntry entry)
         {
-            if (startVersion < 0)
-                throw new ArgumentOutOfRangeException("startVersion");
-            if (endVersion < 0)
-                throw new ArgumentOutOfRangeException("endVersion");
-
-            if (_selfdestructin54321)
-                throw new FileBeingDeletedException();
+            Ensure.Nonnegative(startNumber, "startNumber");
+            Ensure.Nonnegative(endNumber, "endNumber");
 
             entry = TableIndex.InvalidIndexEntry;
 
-            var startKey = BuildKey(stream, startVersion);
-            var endKey = BuildKey(stream, endVersion);
+            var startKey = BuildKey(stream, startNumber);
+            var endKey = BuildKey(stream, endNumber);
 
             if (_midpoints != null && (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key))
                 return false;
 
-            var readbuffer = new byte[16];
-            var handle = GCHandle.Alloc(readbuffer, GCHandleType.Pinned);
-            FileStream file = null;
+            var workItem = GetWorkItem();
             try
             {
-                file = GetFileStream();
-
                 var recordRange = LocateRecordRange(endKey);
+
                 int low = recordRange.Item1;
                 int high = recordRange.Item2;
                 while (low < high)
                 {
                     var mid = low + (high - low) / 2;
-
-                    file.Seek(PTableHeader.Size + (((long)mid) << 4), SeekOrigin.Begin);
-                    IndexEntry midpoint = ReadNext(file, readbuffer, handle);
-
+                    IndexEntry midpoint = ReadEntry(mid, workItem);
                     if (midpoint.Key <= endKey)
                         high = mid;
                     else
                         low = mid + 1;
                 }
 
-                file.Seek(PTableHeader.Size + (((long)high) << 4), SeekOrigin.Begin);
-                var candEntry = ReadNext(file, readbuffer, handle);
-
+                var candEntry = ReadEntry(high, workItem);
                 Debug.Assert(candEntry.Key <= endKey);
-
                 if (candEntry.Key < startKey)
                     return false;
                 entry = candEntry;
@@ -511,95 +272,77 @@ namespace EventStore.Core.Index
             }
             finally
             {
-                if (file != null)
-                    ReturnStream(file);
-                handle.Free();
+                ReturnWorkItem(workItem);
             }
         }
 
-        public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion)
+        public IEnumerable<IndexEntry> GetRange(uint stream, int startNumber, int endNumber)
         {
-            //TODO GFY do we want to make interface List<> so we all know this MUST NOT be returned as yield?
-            if (startVersion < 0)
-                throw new ArgumentOutOfRangeException("startVersion");
-            if (endVersion < 0)
-                throw new ArgumentOutOfRangeException("endVersion");
+            Ensure.Nonnegative(startNumber, "startNumber");
+            Ensure.Nonnegative(endNumber, "endNumber");
 
-            if (_selfdestructin54321)
-                throw new FileBeingDeletedException();
-
-            var ret = new List<IndexEntry>();
-            var startKey = BuildKey(stream, startVersion);
-            var endKey = BuildKey(stream, endVersion);
+            var result = new List<IndexEntry>();
+            var startKey = BuildKey(stream, startNumber);
+            var endKey = BuildKey(stream, endNumber);
 
             if (_midpoints != null && (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key))
-                return ret;
+                return result;
 
-            var readbuffer = new byte[16];
-            var handle = GCHandle.Alloc(readbuffer, GCHandleType.Pinned);
-            FileStream file = null;
+            var workItem = GetWorkItem();
             try
             {
-                file = GetFileStream();
-
                 var recordRange = LocateRecordRange(endKey);
                 int low = recordRange.Item1;
                 int high = recordRange.Item2;
                 while (low < high)
                 {
                     var mid = low + (high - low) / 2;
-
-                    file.Seek(PTableHeader.Size + (((long)mid) << 4), SeekOrigin.Begin);
-                    IndexEntry midpoint = ReadNext(file, readbuffer, handle);
-
+                    IndexEntry midpoint = ReadEntry(mid, workItem);
                     if (midpoint.Key <= endKey)
                         high = mid;
                     else
                         low = mid + 1;
                 }
                 
-                for (int i=high; i<Count; ++i)
+                for (int i=high, n=Count; i<n; ++i)
                 {
-                    file.Seek(PTableHeader.Size + (((long)i) << 4), SeekOrigin.Begin);
-                    IndexEntry entry = ReadNext(file, readbuffer, handle);
-                    
+                    IndexEntry entry = ReadEntry(i, workItem);
                     Debug.Assert(entry.Key <= endKey);
-
                     if (entry.Key < startKey)
-                        return ret;
-                    ret.Add(entry);
+                        return result;
+                    result.Add(entry);
                 }
-                return ret;
+                return result;
             }
             finally
             {
-                if (file != null)
-                    ReturnStream(file);
-                handle.Free();
+                ReturnWorkItem(workItem);
             }
+        }
+
+        private static ulong BuildKey(uint stream, int version)
+        {
+            return ((uint)version) | (((ulong)stream) << 32);
         }
 
         private Tuple<int, int> LocateRecordRange(ulong stream)
         {
-            if (_midpoints == null) return Tuple.Create(0, Count);
-            int lowerMidpoint = LowerMidpointBound(stream);
-            int upperMidpoint = UpperMidpointBound(stream);
-            return Tuple.Create(_midpoints[lowerMidpoint].ItemIndex, _midpoints[upperMidpoint].ItemIndex);
+            var midpoints = _midpoints;
+            if (midpoints == null) 
+                return Tuple.Create(0, Count);
+            int lowerMidpoint = LowerMidpointBound(midpoints, stream);
+            int upperMidpoint = UpperMidpointBound(midpoints, stream);
+            return Tuple.Create(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
         }
 
-        /// <summary>
-        /// Returns the index of lower midpoint for given stream.
-        /// Assumes it always exist.
-        /// </summary>
-        private int LowerMidpointBound(ulong stream)
+        private int LowerMidpointBound(Midpoint[] midpoints, ulong stream)
         {
-            if (_midpoints == null) return 0;
             int l = 0;
-            int r = _midpoints.Length - 1;
+            int r = midpoints.Length - 1;
             while (l < r)
             {
                 int m = l + (r - l + 1) / 2;
-                if (_midpoints[m].Key > stream)
+                if (midpoints[m].Key > stream)
                     l = m;
                 else
                     r = m - 1;
@@ -607,15 +350,14 @@ namespace EventStore.Core.Index
             return l;
         }
 
-        private int UpperMidpointBound(ulong stream)
+        private int UpperMidpointBound(Midpoint[] midpoints, ulong stream)
         {
-            if (_midpoints == null) return Count;
             int l = 0;
-            int r = _midpoints.Length - 1;
+            int r = midpoints.Length - 1;
             while (l < r)
             {
                 int m = l + (r - l) / 2;
-                if (_midpoints[m].Key < stream)
+                if (midpoints[m].Key < stream)
                     r = m;
                 else
                     l = m + 1;
@@ -623,85 +365,79 @@ namespace EventStore.Core.Index
             return r;
         }
 
-        private void ReturnStream(FileStream stream)
+        private static IndexEntry ReadEntry(int indexNum, WorkItem workItem)
         {
-            _streams.Enqueue(stream);
-            if (_selfdestructin54321)
+            workItem.Stream.Seek(IndexEntrySize*(long)indexNum + PTableHeader.Size, SeekOrigin.Begin);
+            return ReadNextNoSeek(workItem);
+        }
+
+        private static IndexEntry ReadNextNoSeek(WorkItem workItem)
+        {
+            //workItem.Stream.Read(workItem.Buffer, 0, IndexEntrySize);
+            //var entry = (IndexEntry)Marshal.PtrToStructure(workItem.BufferHandle.AddrOfPinnedObject(), typeof(IndexEntry));
+            //return entry;
+            return new IndexEntry(workItem.Reader.ReadUInt64(), workItem.Reader.ReadInt64());
+        }
+
+        private WorkItem GetWorkItem()
+        {
+            for (int i = 0; i < 10; i++)
             {
+                WorkItem item;
+                if (_workItems.TryDequeue(out item))
+                    return item;
+            }
+            if (_selfdestructin54321)
+                throw new FileBeingDeletedException();
+            throw new Exception("Unable to acquire work item.");
+        }
+
+        private void ReturnWorkItem(WorkItem workItem)
+        {
+            _workItems.Enqueue(workItem);
+            if (_selfdestructin54321)
                 TryDestruct();
+        }
+
+        public void MarkForDestruction()
+        {
+            _deleteFile = true;
+            _selfdestructin54321 = true;
+            TryDestruct();
+        }
+
+        public void Dispose()
+        {
+            _deleteFile = false;
+            _selfdestructin54321 = true;
+            TryDestruct();
+        }
+
+        private void TryDestruct()
+        {
+            int workItemCount = int.MaxValue;
+
+            WorkItem workItem;
+            while (_workItems.TryDequeue(out workItem))
+            {
+                workItem.Dispose();
+                workItemCount = Interlocked.Decrement(ref _workItemsLeft);
+            }
+
+            Debug.Assert(workItemCount >= 0, "Somehow we managed to decrease count of work items below zero.");
+            if (workItemCount == 0) // we are the last who should "turn the light off" for file streams
+            {
+                File.SetAttributes(_filename, FileAttributes.Normal);
+                if (_deleteFile)
+                    File.Delete(_filename);
+                _destroyEvent.Set();
             }
         }
 
         public void WaitForDestroy(int timeout)
         {
-            if (!_destroyEvent.WaitOne(timeout))
+            if (!_destroyEvent.Wait(timeout))
                 throw new TimeoutException();
-        }
-
-        private void TryDestruct()
-        {
-            if (_streams.Count == _maxReadingThreads)
-            {
-                File.SetAttributes(_filename, FileAttributes.Normal);
-                _streams.ToList().ForEach(x => {x.Close(); x.Dispose();});
-                File.Delete(_filename);
-                _destroyEvent.Set();
-            }
-
-            ThreadPool.QueueUserWorkItem(_ =>
-            {
-                try
-                {
-                    WaitForDestroy(10000);
-                }
-                catch (Exception exc)
-                {
-                    Log.ErrorException(exc, "PTable {0} haven't destroyed in 10 seconds.", Id);
-                }
-            });
-        }
-
-        private FileStream GetFileStream()
-        {
-            FileStream stream;
-            for (int i = 0; i < 10; i++)
-            {
-                if (_selfdestructin54321)
-                    throw new FileBeingDeletedException();
-                if (_streams.TryDequeue(out stream))
-                {
-                    return stream;
-                }
-            }
-            throw new Exception("Unable to acquire stream.");
-        }
-
-        public IEnumerable<IndexEntry> IterateAllInOrder()
-        {
-            //TODO GFY this should use a stream that keeps the lock.
-            using (var f = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, _bufferSize, FileOptions.SequentialScan))
-            {
-                f.Seek(PTableHeader.Size, SeekOrigin.Begin);
-                for (int i = 0; i < Count; i++)
-                {
-                     yield return ReadNext(f, _buffer, _bufferPtr);
-                }
-            }
-        }
-
-        private static IndexEntry ReadNext(FileStream fileStream, byte [] buffer, GCHandle handle)
-        {
-            fileStream.Read(buffer, 0, 16);
-            var entry = (IndexEntry)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(IndexEntry));
-            return entry;
-        }
-
-        public void Dispose()
-        {
-            foreach (var stream in _streams)
-            {
-                stream.Dispose();
-            }
         }
 
         private struct Midpoint
@@ -713,6 +449,44 @@ namespace EventStore.Core.Index
             {
                 Key = key;
                 ItemIndex = itemIndex;
+            }
+        }
+
+        private class WorkItem: IDisposable
+        {
+            public readonly FileStream Stream;
+            //public readonly byte[] Buffer;
+            //public readonly GCHandle BufferHandle;
+            public readonly BinaryReader Reader;
+
+            public WorkItem(string filename, int bufferSize)
+            {
+                Stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.RandomAccess);
+//                Buffer = new byte[IndexEntrySize];
+//                BufferHandle = GCHandle.Alloc(Buffer, GCHandleType.Pinned);
+                Reader = new BinaryReader(Stream);
+            }
+
+            ~WorkItem()
+            {
+                Dispose(false);
+            }
+
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            private void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    Stream.Dispose();
+                    Reader.Dispose();
+//                    if (BufferHandle.IsAllocated)
+//                        BufferHandle.Free();
+                }
             }
         }
     }

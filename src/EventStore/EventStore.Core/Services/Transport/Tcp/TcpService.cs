@@ -44,16 +44,19 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private readonly TcpServerListener _serverListener;
         private readonly IPEndPoint _serverEndPoint;
+        private readonly IPublisher _networkSendQueue;
         private readonly ITcpDispatcher _tcpDispatcher;
         private readonly IPublisher _publisher;
 
-        public TcpService(IPublisher publisher, IPEndPoint serverEndPoint)
+        public TcpService(IPublisher publisher, IPEndPoint serverEndPoint, IPublisher networkSendQueue)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(serverEndPoint, "serverEndPoint");
+            Ensure.NotNull(networkSendQueue, "networkSendQueue");
 
             _publisher = publisher;
             _serverEndPoint = serverEndPoint;
+            _networkSendQueue = networkSendQueue;
             _tcpDispatcher = new ClientTcpDispatcher();
             _serverListener = new TcpServerListener(_serverEndPoint);
         }
@@ -82,7 +85,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         private void OnConnectionAccepted(TcpConnection connection)
         {
             Log.Info("Client TCP connection accepted: [{0}]", connection.EffectiveEndPoint);
-            var manager = new TcpConnectionManager("REPLICA", Guid.NewGuid(), _tcpDispatcher, _publisher, connection);
+            var manager = new TcpConnectionManager("REPLICA", Guid.NewGuid(), _tcpDispatcher, _publisher, connection, _networkSendQueue);
             manager.ConnectionClosed += OnConnectionClosed;
 
             _publisher.Publish(new TcpMessage.ConnectionEstablished(manager));

@@ -36,6 +36,8 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
+using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
@@ -49,6 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         private TestHandler<ClientMessage.ReadStreamEventsBackward> _listEventsHandler;
         private RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
         private RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
+        private ProjectionConfig _projectionConfig;
 
         [SetUp]
         public void setup()
@@ -63,9 +66,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                 _bus, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_bus));
             _bus.Subscribe(_readDispatcher);
             _bus.Subscribe(_writeDispatcher);
-            _coreProjection = new CoreProjection(
-                "projection", Guid.NewGuid(), _bus, new FakeProjectionStateHandler(),
-                new ProjectionConfig(ProjectionMode.AdHoc, 5, 10, 1000, 250, true, true, true), _readDispatcher, _writeDispatcher);
+            IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
+            _projectionConfig = new ProjectionConfig(5, 10, 1000, 250, true, true, false, false);
+            _coreProjection = CoreProjection.CreateAndPrepapre(
+                "projection", Guid.NewGuid(), _bus, projectionStateHandler, _projectionConfig, _readDispatcher,
+                _writeDispatcher, null);
             _coreProjection.Start();
         }
 
@@ -87,8 +92,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Handle(
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
-                    _listEventsHandler.HandledMessages[0].EventStreamId, new EventLinkPair[0], 
-                    RangeReadResult.NoStream, -1, -1, false, 1000));
+                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.NoStream, 
+                    new ResolvedEvent[0], string.Empty, -1, -1, true, 1000));
         }
 
         [Test]
@@ -97,8 +102,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Handle(
                 new ClientMessage.ReadStreamEventsBackwardCompleted(
                     _listEventsHandler.HandledMessages[0].CorrelationId,
-                    _listEventsHandler.HandledMessages[0].EventStreamId, new EventLinkPair[0],
-                    RangeReadResult.Success, -1, -1, false, 1000));
+                    _listEventsHandler.HandledMessages[0].EventStreamId, 100, 100, ReadStreamResult.Success,
+                    new ResolvedEvent[0], string.Empty, -1, -1, false, 1000));
         }
     }
 }

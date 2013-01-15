@@ -28,12 +28,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
@@ -84,37 +82,45 @@ namespace EventStore.TestClient.Commands
             var fail = 0;
             var all = 0;
 
-            var sw = Stopwatch.StartNew();
+            int sent = 0;
+            int received = 0;
+
+            var sw = new Stopwatch();
+            var sw2 = new Stopwatch();
             for (int i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-
-                int sent = 0;
-                int received = 0;
-
                 threads.Add(new Thread(() =>
                 {
-                    var esId = eventStreamId ?? "es" + Guid.NewGuid();
-
+                    var esId = eventStreamId ?? ("es" + Guid.NewGuid());
                     var client = new HttpAsyncClient();
 
                     Action<HttpResponse> succHandler = response =>
                     {
                         if (response.HttpStatusCode == HttpStatusCode.Created)
                         {
-                            if (Interlocked.Increment(ref succ) % 100 == 0)
-                                Console.Write(".");
+                            Interlocked.Increment(ref succ);
                         }
                         else
                         {
                             if (Interlocked.Increment(ref fail) % 10 == 0)
-                            {
                                 context.Log.Info("ANOTHER 10th WRITE FAILED. [{0}] - [{1}]", response.HttpStatusCode, response.StatusDescription);
-                            }
                         }
 
                         Interlocked.Increment(ref received);
-                        if (Interlocked.Increment(ref all) == requestsCnt)
+
+                        var localAll = Interlocked.Increment(ref all);
+                        if (localAll % 100 == 0) Console.Write(".");
+                        if (localAll % 10000 == 0)
+                        {
+                            var elapsed = sw2.Elapsed;
+                            sw2.Restart();
+                            context.Log.Trace("\nDONE TOTAL {0} WRITES IN {1} ({2:0.0}/s).",
+                                              localAll,
+                                              elapsed,
+                                              1000.0 * 10000 / elapsed.TotalMilliseconds);
+                        }
+                        if (localAll == requestsCnt)
                             autoResetEvent.Set();
                     };
 
@@ -141,13 +147,16 @@ namespace EventStore.TestClient.Commands
                         
                         Interlocked.Increment(ref sent);
 
-                        while (sent - received > context.Client.Options.WriteWindow)
+                        while (sent - received > context.Client.Options.WriteWindow/clientsCnt)
                         {
                             Thread.Sleep(1);
                         }
                     }
                 }));
             }
+
+            sw.Start();
+            sw2.Start();
 
             foreach (var thread in threads)
             {
@@ -180,10 +189,7 @@ namespace EventStore.TestClient.Commands
                 string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt),
                 100*fail/(fail + succ));
 
-            if (succ < fail)
-                context.Fail(reason:"Number of failures is greater than number of successes");
-            else
-                context.Success();
+            context.Success();
         }
     }
 }

@@ -30,18 +30,30 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Services
 {
-    public interface IProjectionStateHandler : IDisposable
+    public interface ISourceDefinitionConfigurator
     {
         void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder);
+    }
+
+    public interface IProjectionStateHandler : IDisposable, ISourceDefinitionConfigurator
+    {
         void Load(string state);
         void Initialize();
+
+        /// <summary>
+        /// Get state partition from the event
+        /// </summary>
+        /// <returns>partition name</returns>
+        string GetStatePartition(
+            CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
+            int sequenceNumber, string metadata, string data);
 
         /// <summary>
         /// Processes event and updates internal state if necessary.  
         /// </summary>
         /// <returns>true - if event was processed (new state must be returned) </returns>
         bool ProcessEvent(
-            EventPosition position, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
+            string partition, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
             int sequenceNumber, string metadata, string data, out string newState, out EmittedEvent[] emittedEvents);
     }
 }

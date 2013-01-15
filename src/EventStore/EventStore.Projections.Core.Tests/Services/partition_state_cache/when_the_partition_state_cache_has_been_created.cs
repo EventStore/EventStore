@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         {
             try
             {
-                _cache = new PartitionStateCache();
+                _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, -1));
             }
             catch (Exception ex)
             {
@@ -71,18 +71,27 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         }
 
         [Test]
-        public void random_item_cannot_be_retrieved()
+        public void random_item_cannot_be_retrieved_as_locked()
         {
             Assert.IsNull(
-                _cache.TryGetAndLockPartitionState("random", CheckpointTag.FromPosition(200, 190)),
+                _cache.TryGetAndLockPartitionState(
+                    "random", CheckpointTag.FromPosition(200, 190)),
                 "Cache should be empty");
+        }
+
+        [Test]
+        public void random_item_cannot_be_retrieved()
+        {
+            Assert.IsNull(_cache.TryGetPartitionState("random"), "Cache should be empty");
         }
 
         [Test]
         public void root_partition_state_cannot_be_retrieved()
         {
             Assert.IsNull(
-                _cache.TryGetAndLockPartitionState("", CheckpointTag.FromPosition(200, 190)), "Cache should be empty");
+                _cache.TryGetAndLockPartitionState(
+                    "", CheckpointTag.FromPosition(200, 190)),
+                "Cache should be empty");
         }
 
         [Test]

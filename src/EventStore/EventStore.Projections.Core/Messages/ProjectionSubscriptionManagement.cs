@@ -37,20 +37,24 @@ namespace EventStore.Projections.Core.Messages
         public class Subscribe : Message
         {
             private readonly Guid _correlationId;
+            private readonly Guid _subscriptionId;
             private readonly ICoreProjection _subscriber;
             private readonly CheckpointTag _fromPosition;
             private readonly CheckpointStrategy _checkpointStrategy;
             private readonly long _checkpointUnhandledBytesThreshold;
+            private readonly bool _stopOnEof;
 
             public Subscribe(
-                Guid correlationId, ICoreProjection subscriber, CheckpointTag from,
-                CheckpointStrategy checkpointStrategy, long checkpointUnhandledBytesThreshold)
+                Guid correlationId, Guid subscriptionId, ICoreProjection subscriber, CheckpointTag from,
+                CheckpointStrategy checkpointStrategy, long checkpointUnhandledBytesThreshold, bool stopOnEof = false)
             {
                 _correlationId = correlationId;
+                _subscriptionId = subscriptionId;
                 _subscriber = subscriber;
                 _fromPosition = @from;
                 _checkpointStrategy = checkpointStrategy;
                 _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
+                _stopOnEof = stopOnEof;
             }
 
             public ICoreProjection Subscriber
@@ -76,6 +80,16 @@ namespace EventStore.Projections.Core.Messages
             public long CheckpointUnhandledBytesThreshold
             {
                 get { return _checkpointUnhandledBytesThreshold; }
+            }
+
+            public bool StopOnEof
+            {
+                get { return _stopOnEof; }
+            }
+
+            public Guid SubscriptionId
+            {
+                get { return _subscriptionId; }
             }
         }
 
@@ -121,6 +135,28 @@ namespace EventStore.Projections.Core.Messages
             public Guid CorrelationId
             {
                 get { return _correlationId; }
+            }
+        }
+
+        public class ReaderAssigned : Message
+        {
+            private readonly Guid _correlationId;
+            private readonly Guid _readerId;
+
+            public ReaderAssigned(Guid correlationId, Guid readerId)
+            {
+                _correlationId = correlationId;
+                _readerId = readerId;
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+
+            public Guid ReaderId
+            {
+                get { return _readerId; }
             }
         }
     }

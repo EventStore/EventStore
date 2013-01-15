@@ -35,7 +35,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
-    public class table_index_with_two_ptables_and_memtable_on_range_query  :SpecificationWithDirectoryPerTestFixture
+    public class table_index_with_two_ptables_and_memtable_on_range_query : SpecificationWithDirectoryPerTestFixture
     {
         private TableIndex _tableIndex;
         private string _indexDir;
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Index
 
             _indexDir = base.PathName;
             _tableIndex = new TableIndex(_indexDir,
-                                         () => new HashListMemTable(maxSize: 2000),
+                                         () => new HashListMemTable(maxSize: 10),
                                          maxSizeForMemory: 2,
                                          maxTablesPerLevel: 2);
             _tableIndex.Initialize();
@@ -81,7 +81,7 @@ namespace EventStore.Core.Tests.Index
         [TestFixtureTearDown]
         public override void TestFixtureTearDown()
         {
-            _tableIndex.ClearAll();
+            _tableIndex.Close();
 
             base.TestFixtureTearDown();
         }

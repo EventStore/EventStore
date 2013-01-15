@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -35,6 +36,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
+    [MightyMooseIgnore]
     public abstract class TestFixtureWithJsProjection
     {
         private ProjectionStateHandlerFactory _stateHandlerFactory;
@@ -45,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected SourceRecorder _source;
 
         [SetUp]
-        public void setup()
+        public void Setup()
         {
             _state = null;
             _projection = null;
@@ -69,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected abstract void Given();
 
         [TearDown]
-        public void teardown()
+        public void Teardown()
         {
             if (_stateHandler != null)
                 _stateHandler.Dispose();
@@ -109,6 +111,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         public bool ByStream
         {
             get { return _byStream; }
+        }
+
+        public bool ByCustomParititions
+        {
+            get { return _byCustomPartitions; }
         }
 
         public QuerySourceOptions Options 

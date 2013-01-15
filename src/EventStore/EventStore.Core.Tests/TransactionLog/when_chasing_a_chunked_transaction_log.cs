@@ -30,6 +30,7 @@ using System.IO;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -110,10 +111,10 @@ namespace EventStore.Core.Tests.TransactionLog
                                                      data: new byte[] { 1, 2, 3, 4, 5 },
                                                      metadata: new byte[] { 7, 17 });
 
-            using (var fs = new FileStream(Path.Combine(PathName, "prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
+            using (var fs = new FileStream(GetFilePathFor("prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
             {
                 fs.SetLength(ChunkHeader.Size + ChunkFooter.Size + 10000);
-                var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, 0).AsByteArray();
+                var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false).AsByteArray();
                 var writer = new BinaryWriter(fs);
                 writer.Write(chunkHeader);
                 recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
@@ -259,7 +260,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                      eventType: "type",
                                                      data: new byte[] { 1, 2, 3, 4, 5 },
                                                      metadata: new byte[] { 7, 17 });
-            using (var fs = new FileStream(Path.Combine(PathName, "prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
+            using (var fs = new FileStream(GetFilePathFor("prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
             {
                 var writer = new BinaryWriter(fs);
                 recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
@@ -294,7 +295,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                      eventType: "type",
                                                      data: new byte[] { 1, 2, 3, 4, 5 },
                                                      metadata: new byte[] { 7, 17 });
-            using (var fs = new FileStream(Path.Combine(PathName, "prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
+            using (var fs = new FileStream(GetFilePathFor("prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
             {
                 var writer = new BinaryWriter(fs);
                 recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
@@ -317,7 +318,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var readerchk = new InMemoryCheckpoint("reader", 0);
             var config = new TransactionFileDatabaseConfig(PathName, "prefix.tf", 10000, writerchk, new[] { readerchk });
 
-            var fileName = Path.Combine(PathName, "prefix.tf0");
+            var fileName = GetFilePathFor("prefix.tf0");
             File.Create(fileName).Close();
 
             var reader = new MultifileTransactionFileChaser(config, "reader");

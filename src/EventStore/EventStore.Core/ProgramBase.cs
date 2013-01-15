@@ -28,23 +28,21 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
-using EventStore.Common.CommandLine;
-using EventStore.Common.CommandLine.lib;
-using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
-using System.Linq;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 
 namespace EventStore.Core
 {
-    public abstract class ProgramBase<TOptions> where TOptions : EventStoreCmdLineOptionsBase, new()
+    public abstract class ProgramBase<TOptions> where TOptions : IOptions, new()
     {
-        private static readonly ILogger Log = LogManager.GetLogger("ProgramBase");
+        protected readonly ILogger Log = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
 
         private int _exitCode;
         private readonly ManualResetEventSlim _exitEvent = new ManualResetEventSlim(false);
@@ -64,13 +62,18 @@ namespace EventStore.Core
                 return 0;
             }
 
+            var options = new TOptions();
             try
             {
                 Application.RegisterExitAction(Exit);
 
-                var options = new TOptions();
-                if (!CommandLineParser.Default.ParseArguments(args, options, Console.Error, Constants.EnvVarPrefix))
-                    throw new ApplicationInitializationException("Error while parsing options");
+                options.Parse(args);
+                if (options.ShowHelp)
+                {
+                    Console.WriteLine("Options:");
+                    Console.WriteLine(options.GetUsage());
+                    return 0;
+                }
 
                 Init(options);
                 Create(options);
@@ -78,13 +81,21 @@ namespace EventStore.Core
 
                 _exitEvent.Wait();
             }
+            catch (OptionException exc)
+            {
+                Console.Error.WriteLine("Error while parsing options:");
+                Console.Error.WriteLine(FormatExceptionMessage(exc));
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("Usage:");
+                Console.Error.WriteLine(options.GetUsage());
+            }
             catch (ApplicationInitializationException ex)
             {
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
             catch (Exception ex)
             {
-                Log.ErrorException(ex, "Unhandled exception while starting application: {0}", FormatExceptionMessage(ex));
+                Log.ErrorException(ex, "Unhandled exception while starting application:\n{0}", FormatExceptionMessage(ex));
                 Application.Exit(ExitCode.Error, FormatExceptionMessage(ex));
             }
             finally
@@ -95,9 +106,9 @@ namespace EventStore.Core
             return _exitCode;
         }
 
-        private void Exit(ExitCode exitCode)
+        private void Exit(int exitCode)
         {
-            _exitCode = (int)exitCode;
+            _exitCode = exitCode;
             _exitEvent.Set();
         }
 
@@ -108,14 +119,21 @@ namespace EventStore.Core
 
             Console.Title = string.Format("{0}, {1}", projName, componentName);
 
-            LogManager.Init(componentName, options.LogsDir.IsNotEmptyString() ? options.LogsDir : GetLogsDirectory(options));
-            var logger = LogManager.GetLoggerFor<ProgramBase<TOptions>>();
+            string logsDirectory = Path.GetFullPath(options.LogsDir.IsNotEmptyString() ? options.LogsDir : GetLogsDirectory(options));
+            LogManager.Init(componentName, logsDirectory);
 
-            var logsDirectory = string.Format("LOGS DIRECTORY : {0}", LogManager.LogsDirectory);
-            var systemInfo = string.Format("{0} {1}", OS.IsLinux ? "Linux" : "Windows", Runtime.IsMono ? "MONO" : ".NET");
-            var startInfo = string.Join(Environment.NewLine, 
-                                        options.GetLoadedOptionsPairs().Select(pair => string.Format("{0} : {1}", pair.Key, pair.Value)));
-            logger.Info(string.Format("{0}\n{1}\n{2}", logsDirectory, systemInfo, startInfo));
+            Log.Info("\nOS: {0} ({1})\n"
+                     + "RUNTIME: {2} ({3}-bit)\n"
+                     + "GC: {4}\n"
+                     + "LOGS: {5}\n\n"
+                     + "{6}",
+                     OS.IsLinux ? "Linux" : "Windows",
+                     Environment.OSVersion,
+                     OS.GetRuntimeVersion(),
+                     Marshal.SizeOf(typeof(IntPtr)) * 8,
+                     GC.MaxGeneration == 0 ? "NON-GENERATION (PROBABLY BOEHM)" : string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
+                     LogManager.LogsDirectory,
+                     options.DumpOptions());
         }
 
         private string FormatExceptionMessage(Exception ex)

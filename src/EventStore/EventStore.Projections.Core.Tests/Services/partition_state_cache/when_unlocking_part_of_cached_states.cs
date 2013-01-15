@@ -44,13 +44,16 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void setup()
         {
             //given
-            _cache = new PartitionStateCache();
+            _cache = new PartitionStateCache(CheckpointTag.FromPosition(0, -1));
             _cachedAtCheckpointTag1 = CheckpointTag.FromPosition(1000, 900);
             _cachedAtCheckpointTag2 = CheckpointTag.FromPosition(1200, 1100);
             _cachedAtCheckpointTag3 = CheckpointTag.FromPosition(1400, 1300);
-            _cache.CacheAndLockPartitionState("partition1", new PartitionStateCache.State("data1", _cachedAtCheckpointTag1), _cachedAtCheckpointTag1);
-            _cache.CacheAndLockPartitionState("partition2", new PartitionStateCache.State("data2", _cachedAtCheckpointTag2), _cachedAtCheckpointTag2);
-            _cache.CacheAndLockPartitionState("partition3", new PartitionStateCache.State("data3", _cachedAtCheckpointTag3), _cachedAtCheckpointTag3);
+            _cache.CacheAndLockPartitionState(
+                "partition1", new PartitionStateCache.State("data1", _cachedAtCheckpointTag1), _cachedAtCheckpointTag1);
+            _cache.CacheAndLockPartitionState(
+                "partition2", new PartitionStateCache.State("data2", _cachedAtCheckpointTag2), _cachedAtCheckpointTag2);
+            _cache.CacheAndLockPartitionState(
+                "partition3", new PartitionStateCache.State("data3", _cachedAtCheckpointTag3), _cachedAtCheckpointTag3);
             // when
             _cache.Unlock(_cachedAtCheckpointTag2);
         }
@@ -64,10 +67,12 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         [Test]
         public void partitions_locked_before_the_unlock_position_can_be_retrieved_and_relocked_at_later_position()
         {
-            var data = _cache.TryGetAndLockPartitionState("partition1", CheckpointTag.FromPosition(1600, 1500));
+            var data = _cache.TryGetAndLockPartitionState(
+                "partition1", CheckpointTag.FromPosition(1600, 1500));
             Assert.AreEqual("data1", data.Data);
         }
 
+        
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void partitions_locked_at_the_unlock_position_cannot_be_retrieved_as_locked()
         {
@@ -75,9 +80,10 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         }
 
         [Test]
-        public void partitions_locked_at_the_unlock_position_cannot_be_retrieved_as_rfelocked_at_later_position()
+        public void partitions_locked_at_the_unlock_position_cannot_be_retrieved_as_relocked_at_later_position()
         {
-            var data = _cache.TryGetAndLockPartitionState("partition2", CheckpointTag.FromPosition(1600, 1500));
+            var data = _cache.TryGetAndLockPartitionState(
+                "partition2", CheckpointTag.FromPosition(1600, 1500));
             Assert.AreEqual("data2", data.Data);
         }
 
@@ -98,7 +104,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         [Test, ExpectedException(typeof (InvalidOperationException))]
         public void cached_partition_states_cannot_be_locked_before_the_unlock_position()
         {
-            _cache.TryGetAndLockPartitionState("partition1", CheckpointTag.FromPosition(1040, 1030));
+            _cache.TryGetAndLockPartitionState(
+                "partition1", CheckpointTag.FromPosition(1040, 1030));
         }
     }
 }

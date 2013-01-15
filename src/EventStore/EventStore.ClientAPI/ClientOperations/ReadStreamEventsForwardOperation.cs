@@ -38,16 +38,16 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class ReadStreamEventsForwardOperation : IClientOperation
     {
-        private readonly TaskCompletionSource<EventStreamSlice> _source;
-        private ClientMessage.ReadStreamEventsForwardCompleted _result;
+        private readonly TaskCompletionSource<StreamEventsSlice> _source;
+        private ClientMessage.ReadStreamEventsCompleted _result;
         private int _completed;
 
         private Guid _correlationId;
         private readonly object _corrIdLock = new object();
 
         private readonly string _stream;
-        private readonly int _start;
-        private readonly int _count;
+        private readonly int _fromEventNumber;
+        private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
 
         public Guid CorrelationId
@@ -59,19 +59,19 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        public ReadStreamEventsForwardOperation(TaskCompletionSource<EventStreamSlice> source,
+        public ReadStreamEventsForwardOperation(TaskCompletionSource<StreamEventsSlice> source,
                                                 Guid corrId, 
                                                 string stream, 
-                                                int start, 
-                                                int count,
+                                                int fromEventNumber, 
+                                                int maxCount,
                                                 bool resolveLinkTos)
         {
             _source = source;
 
             _correlationId = corrId;
             _stream = stream;
-            _start = start;
-            _count = count;
+            _fromEventNumber = fromEventNumber;
+            _maxCount = maxCount;
             _resolveLinkTos = resolveLinkTos;
         }
 
@@ -85,7 +85,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessage.ReadStreamEventsForward(_stream, _start, _count, _resolveLinkTos);
+                var dto = new ClientMessage.ReadStreamEvents(_stream, _fromEventNumber, _maxCount, _resolveLinkTos);
                 return new TcpPackage(TcpCommand.ReadStreamEventsForward, _correlationId, dto.Serialize());
             }
         }
@@ -101,15 +101,12 @@ namespace EventStore.ClientAPI.ClientOperations
                                                                                 package.Command.ToString()));
                 }
 
-                var data = package.Data;
-                var dto = data.Deserialize<ClientMessage.ReadStreamEventsForwardCompleted>();
-                _result = dto;
-
-                switch ((RangeReadResult)dto.Result)
+                _result = package.Data.Deserialize<ClientMessage.ReadStreamEventsCompleted>();
+                switch (_result.Result)
                 {
-                    case RangeReadResult.Success:
-                    case RangeReadResult.StreamDeleted:
-                    case RangeReadResult.NoStream:
+                    case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.Success:
+                    case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.StreamDeleted:
+                    case ClientMessage.ReadStreamEventsCompleted.ReadStreamResult.NoStream:
                         return new InspectionResult(InspectionDecision.Succeed);
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -126,14 +123,16 @@ namespace EventStore.ClientAPI.ClientOperations
             if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
             {
                 if (_result != null)
-                    _source.SetResult(new EventStreamSlice(StatusCode.Convert((RangeReadResult) _result.Result),
+                {
+                    _source.SetResult(new StreamEventsSlice(StatusCode.Convert(_result.Result),
                                                            _stream,
-                                                           _start,
-                                                           _count,
+                                                           _fromEventNumber,
+                                                           ReadDirection.Forward, 
                                                            _result.Events,
                                                            _result.NextEventNumber,
                                                            _result.LastEventNumber,
                                                            _result.IsEndOfStream));
+                }
                 else
                     _source.SetException(new NoResultException());
             }
@@ -149,10 +148,10 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("Stream: {0}, Start: {1}, Count: {2}, ResolveLinkTos: {3}, CorrelationId: {4}", 
+            return string.Format("Stream: {0}, FromEventNumber: {1}, MaxCount: {2}, ResolveLinkTos: {3}, CorrelationId: {4}", 
                                  _stream, 
-                                 _start, 
-                                 _count, 
+                                 _fromEventNumber, 
+                                 _maxCount, 
                                  _resolveLinkTos, 
                                  CorrelationId);
         }

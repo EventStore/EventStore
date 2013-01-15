@@ -37,6 +37,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services
 {
@@ -53,6 +54,9 @@ namespace EventStore.Projections.Core.Tests.Services
             public List<ProjectionSubscriptionMessage.ProgressChanged> HandledProgress =
                 new List<ProjectionSubscriptionMessage.ProgressChanged>();
 
+            public List<ProjectionSubscriptionMessage.EofReached> HandledEof =
+                new List<ProjectionSubscriptionMessage.EofReached>();
+
             public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
             {
                 HandledMessages.Add(message);
@@ -68,11 +72,6 @@ namespace EventStore.Projections.Core.Tests.Services
                 throw new NotImplementedException();
             }
 
-            public void Handle(CoreProjectionProcessingMessage.PauseRequested message)
-            {
-                throw new NotImplementedException();
-            }
-
             public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
             {
                 throw new NotImplementedException();
@@ -83,7 +82,17 @@ namespace EventStore.Projections.Core.Tests.Services
                 HandledProgress.Add(message);
             }
 
+            public void Handle(ProjectionSubscriptionMessage.EofReached message)
+            {
+                HandledEof.Add(message);
+            }
+
             public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
             {
                 throw new NotImplementedException();
             }
@@ -108,12 +117,12 @@ namespace EventStore.Projections.Core.Tests.Services
             var result = new CheckpointStrategy.Builder();
             result.FromAll();
             result.AllEvents();
-            return result.Build(ProjectionMode.Persistent);
+            return result.Build(ProjectionConfig.GetTest());
         }
 
-        protected static Event CreateEvent()
+        protected static ResolvedEvent CreateEvent()
         {
-            return new Event(Guid.NewGuid(), "t", false, new byte[0], new byte[0]);
+            return ResolvedEvent.Sample(Guid.NewGuid(), "t", false, new byte[0], new byte[0]);
         }
     }
 }

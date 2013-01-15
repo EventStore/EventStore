@@ -60,17 +60,17 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             throw new NotImplementedException();
         }
 
-        public ReadEventResult ReadEvent(string streamId, int eventNumber)
+        public IndexReadEventResult ReadEvent(string streamId, int eventNumber)
         {
             throw new NotImplementedException();
         }
 
-        public ReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
+        public IndexReadStreamResult ReadStreamEventsBackward(string streamId, int fromEventNumber, int maxCount)
         {
             throw new NotImplementedException();
         }
 
-        public ReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
+        public IndexReadStreamResult ReadStreamEventsForward(string streamId, int fromEventNumber, int maxCount)
         {
             throw new NotImplementedException();
         }
@@ -95,12 +95,22 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             throw new NotImplementedException();
         }
 
-        public CommitCheckResult CheckCommitStartingAt(long prepareStartPosition)
+        public StreamMetadata GetStreamMetadata(string streamId)
         {
             throw new NotImplementedException();
         }
 
-        public int GetLastTransactionOffset(long writerCheckpoint, long transactionId)
+        public CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void UpdateTransactionInfo(long transactionId, TransactionInfo transactionInfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        TransactionInfo IReadIndex.GetTransactionInfo(long writerCheckpoint, long transactionId)
         {
             throw new NotImplementedException();
         }

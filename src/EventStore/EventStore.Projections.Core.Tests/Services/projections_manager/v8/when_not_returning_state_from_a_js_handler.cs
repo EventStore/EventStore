@@ -44,24 +44,24 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             ";
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_should_return_updated_state()
         {
             string state;
             EmittedEvent[] emittedEvents;
             _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category",
+                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category",
                 Guid.NewGuid(), 0, "metadata", @"{""a"":""b""}", out state, out emittedEvents);
             Assert.IsTrue(state.Contains("\"newValue\":\"new\""));
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_returns_true()
         {
             string state;
             EmittedEvent[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category",
+                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category",
                 Guid.NewGuid(), 0, "metadata", @"{""a"":""b""}", out state, out emittedEvents);
 
             Assert.IsTrue(result);

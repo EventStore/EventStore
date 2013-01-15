@@ -101,13 +101,13 @@ namespace EventStore.TestClient.Commands
 
             var requestsCnt = 0;
 
+            int sent = 0;
+            int received = 0;
+
             var watchLockRoot = new object();
             var sw = Stopwatch.StartNew();
             for (int i = 0; i < clientsCnt; i++)
             {
-                int sent = 0;
-                int received = 0;
-
                 var esId = eventStreamId ?? "Stream-" + Thread.CurrentThread.ManagedThreadId % 3;
 
                 var client = context.Client.CreateTcpConnection(
@@ -121,7 +121,7 @@ namespace EventStore.TestClient.Commands
                         }
 
                         var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-                        if (dto.ErrorCode == (int)OperationErrorCode.Success)
+                        if (dto.Result == TcpClientMessageDto.OperationResult.Success)
                         {
                             var succDone = Interlocked.Increment(ref succ);
                             if (succDone%maxPerSecond == 0)
@@ -192,14 +192,14 @@ namespace EventStore.TestClient.Commands
                             esId,
                             ExpectedVersion.Any,
                             new[]
-                                {
-                                    new TcpClientMessageDto.ClientEvent(
-                                        Guid.NewGuid().ToByteArray(),
-                                        "TakeSomeSpaceEvent",
-                                        false,
-                                        Encoding.UTF8.GetBytes("DATA" + dataSize.ToString(" 00000 ") + new string('*', dataSize)),
-                                        Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
-                                },
+                            {
+                                new TcpClientMessageDto.NewEvent(
+                                    Guid.NewGuid().ToByteArray(),
+                                    "TakeSomeSpaceEvent",
+                                    false,
+                                    Encoding.UTF8.GetBytes("DATA" + dataSize.ToString(" 00000 ") + new string('*', dataSize)),
+                                    Encoding.UTF8.GetBytes("METADATA" + new string('$', 100)))
+                            },
                             true);
                         var package = new TcpPackage(TcpCommand.WriteEvents, Guid.NewGuid(), write.Serialize());
                         client.EnqueueSend(package.AsByteArray());
@@ -209,8 +209,10 @@ namespace EventStore.TestClient.Commands
                         Thread.Sleep(sleepTime);
                         sentCount -= 1;
 
-                        while (sent - received > context.Client.Options.WriteWindow)
+                        while (sent - received > context.Client.Options.WriteWindow/clientsCnt)
+                        {
                             Thread.Sleep(1);
+                        }
                     }
                 }));
             }
@@ -251,10 +253,7 @@ namespace EventStore.TestClient.Commands
                 string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt),
                 100*fail/(fail + succ));
 
-            if (succ < fail)
-                context.Fail(reason: "Number of failures is greater than number of successes");
-            else
-                context.Success();
+            context.Success();
         }
     }
 }

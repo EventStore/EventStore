@@ -87,7 +87,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dtos = _events.Select(x => new ClientMessage.ClientEvent(x.EventId.ToByteArray(), x.Type, x.IsJson, x.Data, x.Metadata)).ToArray();
+                var dtos = _events.Select(x => new ClientMessage.NewEvent(x.EventId.ToByteArray(), x.Type, x.IsJson, x.Data, x.Metadata)).ToArray();
                 var write = new ClientMessage.WriteEvents(_stream, _expectedVersion, dtos, _forward);
                 return new TcpPackage(TcpCommand.WriteEvents, _correlationId, write.Serialize());
             }
@@ -100,9 +100,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 if (package.Command == TcpCommand.DeniedToRoute)
                 {
                     var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
-                    return new InspectionResult(InspectionDecision.Reconnect,
-                                                data: new EndpointsPair(route.ExternalTcpEndPoint,
-                                                                        route.ExternalHttpEndPoint));
+                    return new InspectionResult(InspectionDecision.Reconnect, data: route.ExternalTcpEndPoint);
                 }
                 if (package.Command != TcpCommand.WriteEventsCompleted)
                 {
@@ -115,23 +113,23 @@ namespace EventStore.ClientAPI.ClientOperations
                 var dto = data.Deserialize<ClientMessage.WriteEventsCompleted>();
                 _result = dto;
 
-                switch ((OperationErrorCode)dto.ErrorCode)
+                switch (dto.Result)
                 {
-                    case OperationErrorCode.Success:
+                    case ClientMessage.OperationResult.Success:
                         return new InspectionResult(InspectionDecision.Succeed);
-                    case OperationErrorCode.PrepareTimeout:
-                    case OperationErrorCode.CommitTimeout:
-                    case OperationErrorCode.ForwardTimeout:
+                    case ClientMessage.OperationResult.PrepareTimeout:
+                    case ClientMessage.OperationResult.CommitTimeout:
+                    case ClientMessage.OperationResult.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
-                    case OperationErrorCode.WrongExpectedVersion:
+                    case ClientMessage.OperationResult.WrongExpectedVersion:
                         var err = string.Format("Append failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}, CorrID : {2}",
                                                 _stream,
                                                 _expectedVersion,
                                                 CorrelationId);
                         return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
-                    case OperationErrorCode.StreamDeleted:
+                    case ClientMessage.OperationResult.StreamDeleted:
                         return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
-                    case OperationErrorCode.InvalidTransaction:
+                    case ClientMessage.OperationResult.InvalidTransaction:
                         return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
                     default:
                         throw new ArgumentOutOfRangeException();

@@ -34,12 +34,13 @@ using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
     public class when_receiving_a_committed_event_the_projection_with_partitioned_state_should :
-        TestFixtureWithCoreProjection
+        TestFixtureWithCoreProjectionStarted
     {
         private Guid _eventId;
 
@@ -50,10 +51,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.FromAll();
                     source.AllEvents();
                     source.SetByStream();
+                    source.SetEmitStateUpdated();
                 };
             TicksAreHandledImmediately();
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
+            NoStream("$projections-projection-partitions");
             NoStream("$projections-projection-account-01-state");
         }
 
@@ -63,10 +68,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _eventId = Guid.NewGuid();
             _consumer.HandledMessages.Clear();
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "account-01", -1, false,
-                       new Event(
-                           _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata")), 0));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "account-01", -1, false,
+                    ResolvedEvent.Sample(
+                        _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]
@@ -83,17 +89,22 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void update_state_snapshot_is_written_to_the_correct_stream()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
-            var message = _writeEventHandler.HandledMessages[0];
+            var writeEvents =
+                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "StateUpdated")).ToList();
+            Assert.AreEqual(1, writeEvents.Count);
+
+            var message = writeEvents[0];
             Assert.AreEqual("$projections-projection-account-01-state", message.EventStreamId);
         }
 
         [Test]
         public void update_state_snapshot_at_correct_position()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
+            var writeEvents =
+                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "StateUpdated")).ToList();
+            Assert.AreEqual(1, writeEvents.Count);
 
-            var metedata = _writeEventHandler.HandledMessages[0].Events[0].Metadata.ParseJson<CheckpointTag>();
+            var metedata = writeEvents[0].Events[0].Metadata.ParseJson<CheckpointTag>();
 
             Assert.AreEqual(120, metedata.CommitPosition);
             Assert.AreEqual(110, metedata.PreparePosition);
@@ -110,5 +121,23 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.AreEqual("metadata", _stateHandler._lastProcessedMetadata);
             Assert.AreEqual("data", _stateHandler._lastProcessedData);
         }
+
+        [Test]
+        public void register_new_partition_state_stream()
+        {
+            var writes =
+                _writeEventHandler.HandledMessages.Where(v => v.EventStreamId == "$projections-projection-partitions")
+                                  .ToArray();
+            Assert.AreEqual(1, writes.Length);
+            var write = writes[0];
+
+            Assert.AreEqual(1, write.Events.Length);
+
+            var @event = write.Events[0];
+
+            Assert.AreEqual("account-01", Encoding.UTF8.GetString(@event.Data));
+        }
+
+
     }
 }

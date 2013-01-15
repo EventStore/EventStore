@@ -28,15 +28,15 @@
 using System;
 using System.IO;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Chunks
 {
     [TestFixture]
-    public class when_writing_multiple_records_to_a_tfchunk
+    public class when_writing_multiple_records_to_a_tfchunk: SpecificationWithFilePerTestFixture
     {
-        private readonly string _filename = Path.Combine(Path.GetTempPath(), "foo");
         private TFChunk _chunk;
         private readonly Guid _corrId = Guid.NewGuid();
         private readonly Guid _eventId = Guid.NewGuid();
@@ -48,15 +48,16 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         private PrepareLogRecord _prepare1;
         private PrepareLogRecord _prepare2;
 
-        [SetUp]
-        public void Setup()
+        [TestFixtureSetUp]
+        public override void TestFixtureSetUp()
         {
+            base.TestFixtureSetUp();
             _prepare1 = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                              PrepareFlags.None, "Foo", new byte[12], new byte[15]);
             _prepare2 = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test2", 2, new DateTime(2000, 1, 1, 12, 0, 0),
                                              PrepareFlags.None, "Foo2", new byte[12], new byte[15]);
 
-            _chunk = TFChunk.CreateNew(_filename, 4096, 0, 0);
+            _chunk = TFChunk.CreateNew(Filename, 4096, 0, false);
             var r1 = _chunk.TryAppend(_prepare1);
             _written1 = r1.Success;
             _position1 = r1.OldPosition;
@@ -66,10 +67,11 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             _chunk.Flush();
         }
 
-        [TearDown]
-        public void TearDown()
+        [TestFixtureTearDown]
+        public override void TestFixtureTearDown()
         {
             _chunk.Dispose();
+            base.TestFixtureTearDown();
         }
 
         [Test]

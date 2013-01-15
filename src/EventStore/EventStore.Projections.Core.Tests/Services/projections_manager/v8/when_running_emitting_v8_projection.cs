@@ -47,25 +47,25 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             ";
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_returns_true()
         {
             string state;
             EmittedEvent[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
 
             Assert.IsTrue(result);
         }
 
-        [Test]
+        [Test, Category("v8")]
         public void process_event_returns_emitted_event()
         {
             string state;
             EmittedEvent[] emittedEvents;
             var result = _stateHandler.ProcessEvent(
-                new EventPosition(20, 10), CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
                 @"{""a"":""b""}", out state, out emittedEvents);
 
             Assert.IsNotNull(emittedEvents);
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.AreEqual(@"{""a"":""b""}", Encoding.UTF8.GetString(emittedEvents[0].Data));
         }
 
-        [Test, Ignore]
+        [Test, Category("v8"), Ignore]
         public void can_pass_though_millions_of_events()
         {
             for (var i = 0; i < 100000000; i++)
@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 string state;
                 EmittedEvent[] emittedEvents;
                 var result = _stateHandler.ProcessEvent(
-                    new EventPosition(i * 10 + 20, i * 10 + 10), CheckpointTag.FromPosition(i * 10 + 20, i * 10 + 10), "stream" + i, "type" + i, "category", Guid.NewGuid(), i,
+                    "", CheckpointTag.FromPosition(i * 10 + 20, i * 10 + 10), "stream" + i, "type" + i, "category", Guid.NewGuid(), i,
                     "metadata", @"{""a"":""" + i + @"""}", out state, out emittedEvents);
 
                 Assert.IsNotNull(emittedEvents);
@@ -94,8 +94,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
 
                 if (i%10000 == 0)
                 {
-                    teardown();
-                    setup(); // recompile..
+                    Teardown();
+                    Setup(); // recompile..
                     Console.Write(".");
                 }
             }

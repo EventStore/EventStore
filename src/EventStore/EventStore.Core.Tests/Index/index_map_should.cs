@@ -48,12 +48,12 @@ namespace EventStore.Core.Tests.Index
         {
             base.SetUp();
 
-            _indexMapFileName = Path.Combine(PathName, "index.map");
-            _ptableFileName = Path.Combine(PathName, "ptable");
+            _indexMapFileName = GetFilePathFor("index.map");
+            _ptableFileName = GetFilePathFor("ptable");
 
             _emptyIndexMap = IndexMap.FromFile(_indexMapFileName, x => false);
 
-            var memTable = new HashListMemTable(maxSize: 2000);
+            var memTable = new HashListMemTable(maxSize: 10);
             memTable.Add(0, 1, 2);
             _ptable = PTable.FromMemtable(memTable, _ptableFileName);
         }

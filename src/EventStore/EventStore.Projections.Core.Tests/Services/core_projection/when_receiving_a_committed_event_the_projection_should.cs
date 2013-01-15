@@ -32,11 +32,12 @@ using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_receiving_a_committed_event_the_projection_should : TestFixtureWithCoreProjection
+    public class when_receiving_a_committed_event_the_projection_should : TestFixtureWithCoreProjectionStarted
     {
         private Guid _eventId;
 
@@ -44,6 +45,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             TicksAreHandledImmediately();
             NoStream("$projections-projection-state");
+            NoStream("$projections-projection-order");
+            AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
         }
 
@@ -52,18 +55,19 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             //projection subscribes here
             _eventId = Guid.NewGuid();
             _coreProjection.Handle(
-                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(Guid.Empty, new EventPosition(120, 110), "/event_category/1", -1, false,
-                       new Event(
-                           _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                           Encoding.UTF8.GetBytes("metadata")), 0));
+                ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
+                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "/event_category/1", -1, false,
+                    ResolvedEvent.Sample(
+                        _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
+                        Encoding.UTF8.GetBytes("metadata")), 0));
         }
 
         [Test]
         public void update_state_snapshot_at_correct_position()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.Count);
+            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("StateUpdated").Count);
 
-            var metedata = _writeEventHandler.HandledMessages[0].Events[0].Metadata.ParseJson<CheckpointTag>();
+            var metedata = _writeEventHandler.HandledMessages.OfEventType("StateUpdated")[0].Metadata.ParseJson<CheckpointTag>();
 
             Assert.AreEqual(120, metedata.CommitPosition);
             Assert.AreEqual(110, metedata.PreparePosition);

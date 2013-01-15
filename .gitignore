@@ -1,6 +1,7 @@
 /Logs
 /Data
 /Data-logs
+/src/EventStore/v8
 /v8/
 ipch/
 *.o

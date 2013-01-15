@@ -27,11 +27,12 @@
 // 
 using System;
 using System.Diagnostics;
-using System.Linq;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Transport.Http.EntityManagement;
+using EventStore.Core.Services.Transport.Http.Controllers;
+using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -39,19 +40,17 @@ namespace EventStore.Core.Services.Transport.Http
     {
         public static class Atom
         {
-            public static string ListStreamsCompletedServiceDoc(HttpEntity entity, Message message)
+            public static string ListStreamsCompletedServiceDoc(HttpResponseFormatterArgs entity, Message message)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ListStreamsCompleted));
 
                 var streams = message as ClientMessage.ListStreamsCompleted;
                 return streams != null
-                           ? entity.ResponseCodec.To(Convert.ToServiceDocument(streams.Streams,
-                                                                               new string[0],
-                                                                               entity.UserHostName))
+                           ? entity.ResponseCodec.To(Convert.ToServiceDocument(streams.Streams, new string[0], entity.UserHostName))
                            : string.Empty;
             }
 
-            public static string ReadEventCompletedEntry(HttpEntity entity, Message message)
+            public static string ReadEventCompletedEntry(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
 
@@ -60,11 +59,11 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     switch (completed.Result)
                     {
-                        case SingleReadResult.Success:
-                            return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.UserHostName));
-                        case SingleReadResult.NotFound:
-                        case SingleReadResult.NoStream:
-                        case SingleReadResult.StreamDeleted:
+                        case ReadEventResult.Success:
+                            return entity.ResponseCodec.To(Convert.ToEntry(completed.Record, entity.UserHostName, embed));
+                        case ReadEventResult.NotFound:
+                        case ReadEventResult.NoStream:
+                        case ReadEventResult.StreamDeleted:
                             return string.Empty;
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -73,7 +72,7 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
             }
 
-            public static string ReadStreamEventsBackwardCompletedFeed(HttpEntity entity, Message message, int start, int count)
+            public static string ReadStreamEventsBackwardCompletedFeed(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed, bool headOfStream)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 
@@ -82,20 +81,12 @@ namespace EventStore.Core.Services.Transport.Http
                 {
                     switch (completed.Result)
                     {
-                        case RangeReadResult.Success:
-                            var updateTime = completed.Events.Length != 0
-                                                 ? completed.Events[0].Event.TimeStamp
-                                                 : DateTime.MinValue.ToUniversalTime();
-                            //TODO TR: avoid completed.Events copying ToArray
-                            return entity.ResponseCodec.To(Convert.ToFeed(completed.EventStreamId,
-                                                                          start,
-                                                                          count,
-                                                                          updateTime,
-                                                                          completed.Events.Select(x => x.Event).ToArray(),
-                                                                          Convert.ToEntry,
-                                                                          entity.UserHostName));
-                        case RangeReadResult.NoStream:
-                        case RangeReadResult.StreamDeleted:
+                        case ReadStreamResult.Success:
+                            return entity.ResponseCodec.To(Convert.ToReadStreamFeed(completed, entity.UserHostName, embed, headOfStream));
+                        case ReadStreamResult.NoStream:
+                        case ReadStreamResult.StreamDeleted:
+                        case ReadStreamResult.NotModified:
+                        case ReadStreamResult.Error:
                             return string.Empty;
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -104,40 +95,40 @@ namespace EventStore.Core.Services.Transport.Http
                 return string.Empty;
             }
 
-            public static string ReadAllEventsBackwardCompleted(HttpEntity entity, Message message)
+            public static string ReadAllEventsBackwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
 
-                var completed = message as ClientMessage.ReadAllEventsBackwardCompleted;
-                return completed != null
-                    ? entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName)) 
-                    : string.Empty;
+                var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
+                if (msg == null || msg.NotModified)
+                    return string.Empty;
+                return entity.ResponseCodec.To(Convert.ToAllEventsBackwardFeed(msg.Result, entity.UserHostName, embed));
             }
 
-            public static string ReadAllEventsForwardCompleted(HttpEntity entity, Message message)
+            public static string ReadAllEventsForwardCompleted(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
 
-                var completed = message as ClientMessage.ReadAllEventsForwardCompleted;
-                return completed != null
-                    ? entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(completed.Result, Convert.ToEntry, entity.UserHostName)) 
-                    : string.Empty;
+                var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
+                if (msg == null || msg.NotModified)
+                    return string.Empty;
+                return entity.ResponseCodec.To(Convert.ToAllEventsForwardFeed(msg.Result, entity.UserHostName, embed)); 
             }
 
-            public static string CreateStreamCompleted(HttpEntity entity, Message message)
+            public static string CreateStreamCompleted(HttpResponseFormatterArgs entity, Message message)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
                 return string.Empty;
             }
 
-            public static string DeleteStreamCompleted(HttpEntity entity, Message message)
+            public static string DeleteStreamCompleted(HttpResponseFormatterArgs entity, Message message)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.DeleteStreamCompleted));
                 return string.Empty;
             }
         }
 
-        public static string TextMessage(HttpEntity entity, Message message)
+        public static string TextMessage(HttpResponseFormatterArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(HttpMessage.TextMessage));
 
@@ -145,13 +136,13 @@ namespace EventStore.Core.Services.Transport.Http
             return textMessage != null ? entity.ResponseCodec.To(textMessage) : string.Empty;
         }
 
-        public static string WriteEventsCompleted(HttpEntity entity, Message message)
+        public static string WriteEventsCompleted(HttpResponseFormatterArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.WriteEventsCompleted));
             return string.Empty;
         }
 
-        public static string ReadEventCompleted(HttpEntity entity, Message message)
+        public static string ReadEventCompleted(HttpResponseFormatterArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
 
@@ -160,11 +151,12 @@ namespace EventStore.Core.Services.Transport.Http
             {
                 switch (completed.Result)
                 {
-                    case SingleReadResult.Success:
+                    case ReadEventResult.Success:
                         return AutoEventConverter.SmartFormat(completed, entity.ResponseCodec);
-                    case SingleReadResult.NotFound:
-                    case SingleReadResult.NoStream:
-                    case SingleReadResult.StreamDeleted:
+
+                    case ReadEventResult.NotFound:
+                    case ReadEventResult.NoStream:
+                    case ReadEventResult.StreamDeleted:
                         return string.Empty;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -173,7 +165,7 @@ namespace EventStore.Core.Services.Transport.Http
             return string.Empty;
         }
 
-        public static string GetFreshStatsCompleted(HttpEntity entity, Message message)
+        public static string GetFreshStatsCompleted(HttpResponseFormatterArgs entity, Message message)
         {
             Debug.Assert(message.GetType() == typeof(MonitoringMessage.GetFreshStatsCompleted));
 

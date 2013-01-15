@@ -27,9 +27,11 @@
 // 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 
 namespace EventStore.Core.Index
@@ -41,16 +43,14 @@ namespace EventStore.Core.Index
 
         public int Count { get { return _count; } }
         public Guid Id { get { return _id; } }
-        public long LatestPosition { get { return _latestPosition; } }
 
         private readonly Dictionary<uint, SortedList<Tuple<int, long>, byte>> _hash;
         private readonly Guid _id = Guid.NewGuid();
         private int _count;
-        private long _latestPosition;
 
         private int _isConverting;
 
-        public HashListMemTable(int maxSize = 2000000)
+        public HashListMemTable(int maxSize)
         {
             _hash = new Dictionary<uint, SortedList<Tuple<int, long>, byte>>(maxSize);
         }
@@ -62,14 +62,18 @@ namespace EventStore.Core.Index
 
         public void Add(uint stream, int version, long position)
         {
-            if (version < 0)
-                throw new ArgumentOutOfRangeException("version");
-            if (position < 0)
-                throw new ArgumentOutOfRangeException("position");
+            AddEntries(new[] { new IndexEntry(stream, version, position) });
+        }
 
-            //only one thread at a time can write
-            Interlocked.Increment(ref _count);
+        public void AddEntries(IList<IndexEntry> entries)
+        {
+            Ensure.NotNull(entries, "entries");
+            Ensure.Positive(entries.Count, "entries.Count");
 
+            // only one thread at a time can write
+            Interlocked.Add(ref _count, entries.Count);
+
+            var stream = entries[0].Stream; // NOTE: all entries should have the same stream
             SortedList<Tuple<int, long>, byte> list;
             if (!_hash.TryGetValue(stream, out list))
             {
@@ -81,28 +85,26 @@ namespace EventStore.Core.Index
                 throw new UnableToAcquireLockInReasonableTimeException();
             try
             {
-                var tuple = new Tuple<int, long>(version, position);
-                // TODO AN: why do we need to check for existing value?..
-                //if (!list.ContainsKey(tuple))
+                for (int i = 0, n = entries.Count; i < n; ++i)
                 {
-                    list.Add(tuple, 1);
-
-                    // TODO AN: positions should be strictly increasing, no need for Max
-                    //_latestPosition = Math.Max(_latestPosition, position);
-                    _latestPosition = position;
+                    var entry = entries[i];
+                    if (entry.Stream != stream)
+                        throw new Exception("Not all index entries in a bulk have the same stream hash.");
+                    Ensure.Nonnegative(entry.Version, "entry.Version");
+                    Ensure.Nonnegative(entry.Position, "entry.Position");
+                    list.Add(new Tuple<int, long>(entry.Version, entry.Position), 1);
                 }
             }
             finally
             {
                 Monitor.Exit(list);
             }
-
         }
 
-        public bool TryGetOneValue(uint stream, int version, out long position)
+        public bool TryGetOneValue(uint stream, int number, out long position)
         {
-            if (version < 0)
-                throw new ArgumentOutOfRangeException("version");
+            if (number < 0)
+                throw new ArgumentOutOfRangeException("number");
 
             position = 0;
 
@@ -112,12 +114,12 @@ namespace EventStore.Core.Index
                 if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
                 try
                 {
-                    int endIdx = list.UpperBound(Tuple.Create(version, long.MaxValue));
+                    int endIdx = list.UpperBound(Tuple.Create(number, long.MaxValue));
                     if (endIdx == -1)
                         return false;
 
                     var key = list.Keys[endIdx];
-                    if (key.Item1 == version)
+                    if (key.Item1 == number)
                     {
                         position = key.Item2;
                         return true;
@@ -178,12 +180,12 @@ namespace EventStore.Core.Index
             _hash.Clear();
         }
 
-        public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion)
+        public IEnumerable<IndexEntry> GetRange(uint stream, int startNumber, int endNumber)
         {
-            if (startVersion < 0)
-                throw new ArgumentOutOfRangeException("startVersion");
-            if (endVersion < 0)
-                throw new ArgumentOutOfRangeException("endVersion");
+            if (startNumber < 0)
+                throw new ArgumentOutOfRangeException("startNumber");
+            if (endNumber < 0)
+                throw new ArgumentOutOfRangeException("endNumber");
 
             var ret = new List<IndexEntry>();
 
@@ -193,11 +195,11 @@ namespace EventStore.Core.Index
                 if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
                 try
                 {
-                    var endIdx = list.UpperBound(Tuple.Create(endVersion, long.MaxValue));
+                    var endIdx = list.UpperBound(Tuple.Create(endNumber, long.MaxValue));
                     for (int i = endIdx; i >= 0; i--)
                     {
                         var key = list.Keys[i];
-                        if (key.Item1 < startVersion)
+                        if (key.Item1 < startNumber)
                             break;
                         ret.Add(new IndexEntry(stream, version: key.Item1, position: key.Item2));
                     }

@@ -38,18 +38,6 @@ namespace EventStore.ClientAPI.ClientOperations
 {
     internal class CreateStreamOperation : IClientOperation
     {
-        private readonly TaskCompletionSource<object> _source;
-        private ClientMessage.CreateStreamCompleted _result;
-        private int _completed;
-
-        private Guid _correlationId;
-        private readonly object _corrIdLock = new object();
-
-        private readonly bool _forward;
-        private readonly string _stream;
-        private readonly bool _isJson;
-        private readonly byte[] _metadata;
-
         public Guid CorrelationId
         {
             get
@@ -59,10 +47,24 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
+        private readonly TaskCompletionSource<object> _source;
+        private ClientMessage.CreateStreamCompleted _result;
+        private int _completed;
+
+        private Guid _correlationId;
+        private readonly object _corrIdLock = new object();
+
+        private readonly bool _forward;
+        private readonly string _stream;
+        private readonly Guid _id;
+        private readonly bool _isJson;
+        private readonly byte[] _metadata;
+        
         public CreateStreamOperation(TaskCompletionSource<object> source,
                                      Guid correlationId,
                                      bool forward,
                                      string stream,
+                                     Guid id,
                                      bool isJson,
                                      byte[] metadata)
         {
@@ -71,6 +73,7 @@ namespace EventStore.ClientAPI.ClientOperations
             _correlationId = correlationId;
             _forward = forward;
             _stream = stream;
+            _id = id;
             _isJson = isJson;
             _metadata = metadata;
         }
@@ -85,7 +88,7 @@ namespace EventStore.ClientAPI.ClientOperations
         {
             lock (_corrIdLock)
             {
-                var dto = new ClientMessage.CreateStream(_stream, _metadata, _forward, _isJson);
+                var dto = new ClientMessage.CreateStream(_stream, _id.ToByteArray(), _metadata, _forward, _isJson);
                 return new TcpPackage(TcpCommand.CreateStream, _correlationId, dto.Serialize());
             }
         }
@@ -97,9 +100,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 if (package.Command == TcpCommand.DeniedToRoute)
                 {
                     var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
-                    return new InspectionResult(InspectionDecision.Reconnect,
-                                                data: new EndpointsPair(route.ExternalTcpEndPoint,
-                                                                        route.ExternalHttpEndPoint));
+                    return new InspectionResult(InspectionDecision.Reconnect, data: route.ExternalTcpEndPoint);
                 }
                 if (package.Command != TcpCommand.CreateStreamCompleted)
                     return new InspectionResult(InspectionDecision.NotifyError, 
@@ -110,23 +111,23 @@ namespace EventStore.ClientAPI.ClientOperations
                 var dto = data.Deserialize<ClientMessage.CreateStreamCompleted>();
                 _result = dto;
 
-                switch ((OperationErrorCode)dto.ErrorCode)
+                switch (dto.Result)
                 {
-                    case OperationErrorCode.Success:
+                    case ClientMessage.OperationResult.Success:
                         return new InspectionResult(InspectionDecision.Succeed);
 
-                    case OperationErrorCode.PrepareTimeout:
-                    case OperationErrorCode.CommitTimeout:
-                    case OperationErrorCode.ForwardTimeout:
+                    case ClientMessage.OperationResult.PrepareTimeout:
+                    case ClientMessage.OperationResult.CommitTimeout:
+                    case ClientMessage.OperationResult.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
-                    case OperationErrorCode.WrongExpectedVersion:
+                    case ClientMessage.OperationResult.WrongExpectedVersion:
                         var err = string.Format("Create stream failed due to WrongExpectedVersion. Stream: {0}, CorrID: {1}.",
                                                 _stream,
                                                 CorrelationId);
                         return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
-                    case OperationErrorCode.StreamDeleted:
+                    case ClientMessage.OperationResult.StreamDeleted:
                         return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
-                    case OperationErrorCode.InvalidTransaction:
+                    case ClientMessage.OperationResult.InvalidTransaction:
                         return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
                     default:
                         throw new ArgumentOutOfRangeException();

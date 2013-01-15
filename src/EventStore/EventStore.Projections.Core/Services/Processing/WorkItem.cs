@@ -35,18 +35,19 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly CoreProjection Projection;
 
         private readonly int _lastStage;
-        private Action<int> _complete;
+        private Action<int, object> _complete;
         private int _onStage;
         private CheckpointTag _checkpointTag;
+        private object _lastStageCorrelationId;
 
-        protected WorkItem(CoreProjection projection, string stream)
-            : base(stream)
+        protected WorkItem(CoreProjection projection, object initialCorrelationId)
+            : base(initialCorrelationId)
         {
             Projection = projection;
-            _lastStage = 2;
+            _lastStage = 4;
         }
 
-        public override void Process(int onStage, Action<int> readyForStage)
+        public override void Process(int onStage, Action<int, object> readyForStage)
         {
             if (_checkpointTag == null)
                 throw new InvalidOperationException("CheckpointTag has not been initialized");
@@ -56,12 +57,18 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (onStage)
             {
                 case 0:
-                    Load(_checkpointTag);
+                    RecordEventOrder();
                     break;
                 case 1:
-                    ProcessEvent();
+                    GetStatePartition();
                     break;
                 case 2:
+                    Load(_checkpointTag);
+                    break;
+                case 3:
+                    ProcessEvent();
+                    break;
+                case 4:
                     WriteOutput();
                     break;
                 default:
@@ -70,6 +77,16 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected virtual void WriteOutput()
+        {
+            NextStage();
+        }
+
+        protected virtual void RecordEventOrder()
+        {
+            NextStage();
+        }
+
+        protected virtual void GetStatePartition()
         {
             NextStage();
         }
@@ -84,9 +101,15 @@ namespace EventStore.Projections.Core.Services.Processing
             NextStage();
         }
 
-        protected void NextStage()
+        protected void NextStage(object newCorrelationId = null)
         {
-            _complete(_onStage == _lastStage ? -1 : _onStage + 1);
+            _lastStageCorrelationId = newCorrelationId ?? _lastStageCorrelationId ?? InitialCorrelationId;
+            _complete(_onStage == _lastStage ? -1 : _onStage + 1, _lastStageCorrelationId);
+        }
+
+        protected void Complete()
+        {
+            _complete(-1, InitialCorrelationId);
         }
 
         public void SetCheckpointTag(CheckpointTag checkpointTag)

@@ -32,6 +32,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream
 {
@@ -79,15 +80,15 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
         public void read_single_events_should_return_commited_records()
         {
             var result = ReadIndex.ReadEvent("ES", 0);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_event1, result.Record);
 
             result = ReadIndex.ReadEvent("ES", 1);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_event2, result.Record);
 
             result = ReadIndex.ReadEvent("ES", 2);
-            Assert.AreEqual(SingleReadResult.Success, result.Result);
+            Assert.AreEqual(ReadEventResult.Success, result.Result);
             Assert.AreEqual(_event3, result.Record);
         }
 
@@ -95,7 +96,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
         public void read_stream_events_forward_should_return_commited_records()
         {
             var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(_event1, result.Records[0]);
             Assert.AreEqual(_event2, result.Records[1]);
             Assert.AreEqual(_event3, result.Records[2]);
@@ -105,7 +106,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
         public void read_stream_events_backward_should_return_commited_records()
         {
             var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
-            Assert.AreEqual(RangeReadResult.Success, result.Result);
+            Assert.AreEqual(ReadStreamResult.Success, result.Result);
             Assert.AreEqual(_event1, result.Records[2]);
             Assert.AreEqual(_event2, result.Records[1]);
             Assert.AreEqual(_event3, result.Records[0]);

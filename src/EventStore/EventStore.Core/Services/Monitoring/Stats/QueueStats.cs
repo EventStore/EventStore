@@ -33,6 +33,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
     public class QueueStats
     {
         public readonly string Name;
+        public readonly string GroupName;
         public readonly int Length;
         public readonly long LengthLifetimePeak;
         public readonly long LengthCurrentTryPeak;
@@ -46,10 +47,8 @@ namespace EventStore.Core.Services.Monitoring.Stats
         public readonly Type LastProcessedMessageType;
         public readonly Type InProgressMessageType;
 
-        public readonly long TotalSkippedCount;
-        public readonly long LastSkippedCount;
-
         public QueueStats(string name,
+                          string groupName,
                           int length,
                           int avgItemsPerSecond,
                           double avgProcessingTime,
@@ -60,11 +59,10 @@ namespace EventStore.Core.Services.Monitoring.Stats
                           long lengthCurrentTryPeak, 
                           long lengthLifetimePeak,
                           Type lastProcessedMessageType,
-                          Type inProgressMessageType,
-                          long totalSkippedCount,
-                          long lastSkippedCount)
+                          Type inProgressMessageType)
         {
             Name = name;
+            GroupName = groupName;
             Length = length;
             AvgItemsPerSecond = avgItemsPerSecond;
             AvgProcessingTime = avgProcessingTime;
@@ -79,16 +77,12 @@ namespace EventStore.Core.Services.Monitoring.Stats
 
             LastProcessedMessageType = lastProcessedMessageType;
             InProgressMessageType = inProgressMessageType;
-
-            TotalSkippedCount = totalSkippedCount;
-            LastSkippedCount = lastSkippedCount;
         }
 
         public override string ToString()
         {
             var str = string.Format("{0,-22} L: {1,-5}      Avg: {5,-5}i/s    AvgProcTime: {6:0.0}ms\n"
                                     + "      Idle %:{7,-5:00.0}  Peak: {2,-5}  MaxPeak: {3,-7}  TotalProcessed: {4,-7}\n" 
-                                    //+ "      Skipped: {10,-5}  Total skipped: {11,-7}\n"
                                     + "      Processing: {8}, Last: {9}",
                                     Name,
                                     Length,
@@ -99,10 +93,7 @@ namespace EventStore.Core.Services.Monitoring.Stats
                                     AvgProcessingTime,
                                     IdleTimePercent,
                                     InProgressMessageType == null ? "<none>" : InProgressMessageType.Name,
-                                    LastProcessedMessageType == null ? "<none>" : LastProcessedMessageType.Name
-//                                    LastSkippedCount,
-//                                    TotalSkippedCount
-                                    );
+                                    LastProcessedMessageType == null ? "<none>" : LastProcessedMessageType.Name);
             return str;
         }
     }

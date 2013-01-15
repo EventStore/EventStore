@@ -59,19 +59,38 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
+            _bus.Subscribe<SystemMessage.StateChangeMessage>(_manager);
 
             _bus.Subscribe<CoreProjectionManagementMessage.CreateAndPrepare>(_coreService);
+            _bus.Subscribe<CoreProjectionManagementMessage.CreatePrepared>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.Dispose>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.Start>(_coreService);
+            _bus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.Stop>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.Kill>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.GetState>(_coreService);
+            _bus.Subscribe<CoreProjectionManagementMessage.GetDebugState>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.UpdateStatistics>(_coreService);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_coreService);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.Start>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.Stop>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.Tick>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.CommittedEventDistributed>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderEof>(_coreService);
+            _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderIdle>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionManagement.Pause>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionManagement.Resume>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionManagement.Subscribe>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionManagement.Unsubscribe>(_coreService);
+            
 
-
+            Given();
             When();
+        }
+
+        protected virtual void Given()
+        {
         }
 
         protected abstract void When();

@@ -34,7 +34,6 @@ namespace EventStore.Core.Tests.Services.Storage
 {
     public class FakeTableIndex: ITableIndex
     {
-        public long LastPosition { get { throw new NotImplementedException();} }
         public long PrepareCheckpoint { get { throw new NotImplementedException(); } }
         public long CommitCheckpoint { get { throw new NotImplementedException(); } }
 
@@ -42,28 +41,33 @@ namespace EventStore.Core.Tests.Services.Storage
         {
         }
 
-        public void ClearAll(bool removeFiles = true)
+        public void Close(bool removeFiles = true)
         {
         }
 
         public void Add(long commitPos, uint stream, int version, long position)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
+        }
+
+        public void AddEntries(long commitPos, IList<IndexEntry> entries)
+        {
+            throw new NotImplementedException();
         }
 
         public bool TryGetOneValue(uint stream, int version, out long position)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public bool TryGetLatestEntry(uint stream, out IndexEntry entry)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public IEnumerable<IndexEntry> GetRange(uint stream, int startVersion, int endVersion)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
     }
 }

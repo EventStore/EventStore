@@ -37,7 +37,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
         public readonly long LogPosition;
         public readonly long TransactionPosition;
-        public readonly int EventNumber;
+        public readonly int FirstEventNumber;
         public readonly long SortKey;
         public readonly Guid CorrelationId;
         public readonly DateTime TimeStamp;
@@ -51,17 +51,17 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                Guid correlationId,
                                long transactionPosition,
                                DateTime timeStamp,
-                               int eventNumber)
+                               int firstEventNumber)
             : base(LogRecordType.Commit, CommitRecordVersion)
         {
             Ensure.Nonnegative(logPosition, "logPosition");
             Ensure.NotEmptyGuid(correlationId, "correlationId");
             Ensure.Nonnegative(transactionPosition, "TransactionPosition");
-            Ensure.Nonnegative(eventNumber, "eventNumber");
+            Ensure.Nonnegative(firstEventNumber, "eventNumber");
 
             LogPosition = logPosition;
             TransactionPosition = transactionPosition;
-            EventNumber = eventNumber;
+            FirstEventNumber = firstEventNumber;
             SortKey = logPosition;
             CorrelationId = correlationId;
             TimeStamp = timeStamp;
@@ -71,7 +71,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
         {
             LogPosition = reader.ReadInt64();
             TransactionPosition = reader.ReadInt64();
-            EventNumber = reader.ReadInt32();
+            FirstEventNumber = reader.ReadInt32();
             SortKey = reader.ReadInt64();
             CorrelationId = new Guid(reader.ReadBytes(16));
             TimeStamp = new DateTime(reader.ReadInt64());
@@ -83,7 +83,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
             writer.Write(LogPosition);
             writer.Write(TransactionPosition);
-            writer.Write(EventNumber);
+            writer.Write(FirstEventNumber);
             writer.Write(SortKey);
             writer.Write(CorrelationId.ToByteArray());
             writer.Write(TimeStamp.Ticks);
@@ -95,7 +95,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             if (ReferenceEquals(this, other)) return true;
             return other.LogPosition == LogPosition
                    && other.TransactionPosition == TransactionPosition
-                   && other.EventNumber == EventNumber
+                   && other.FirstEventNumber == FirstEventNumber
                    && other.SortKey == SortKey
                    && other.CorrelationId == CorrelationId
                    && other.TimeStamp.Equals(TimeStamp);
@@ -115,7 +115,7 @@ namespace EventStore.Core.TransactionLog.LogRecords
             {
                 int result = LogPosition.GetHashCode();
                 result = (result * 397) ^ TransactionPosition.GetHashCode();
-                result = (result * 397) ^ EventNumber.GetHashCode();
+                result = (result * 397) ^ FirstEventNumber.GetHashCode();
                 result = (result * 397) ^ SortKey.GetHashCode();
                 result = (result * 397) ^ CorrelationId.GetHashCode();
                 result = (result * 397) ^ TimeStamp.GetHashCode();
@@ -137,13 +137,13 @@ namespace EventStore.Core.TransactionLog.LogRecords
         {
             return string.Format("LogPosition: {0}, "
                                  + "TransactionPosition: {1}, "
-                                 + "EventNumber: {2}"
+                                 + "FirstEventNumber: {2}, "
                                  + "SortKey: {3}, "
                                  + "CorrelationId: {4}, " 
                                  + "TimeStamp: {5}",
                                  LogPosition,
                                  TransactionPosition,
-                                 EventNumber,
+                                 FirstEventNumber,
                                  SortKey,
                                  CorrelationId,
                                  TimeStamp);

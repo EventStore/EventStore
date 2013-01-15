@@ -27,9 +27,7 @@
 // 
 
 using System;
-using System.IO;
 using System.Text;
-using System.Xml;
 using System.Xml.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
@@ -51,7 +49,7 @@ namespace EventStore.Core.Services.Transport.Http
         public static string SmartFormat(ClientMessage.ReadEventCompleted completed, ICodec targetCodec)
         {
             var dto = new HttpClientMessageDto.ReadEventCompletedText(completed);
-            if (completed.Record.Flags.HasFlag(PrepareFlags.IsJson))
+            if (completed.Record.Event.Flags.HasFlag(PrepareFlags.IsJson))
             {
                 var deserializedData = Codec.Json.From<object>((string) dto.Data);
                 var deserializedMetadata = Codec.Json.From<object>((string) dto.Metadata);

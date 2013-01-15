@@ -151,8 +151,9 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _fileStream.SetLength(EntrySize * _memCheckpoint.CheckpointCount);
             _fileStream.Seek(0, SeekOrigin.Begin);
 
-            foreach(var check in _memCheckpoint.CurrentCheckpoints)
+            for (int i=0, n=_memCheckpoint.CheckpointCount; i<n; ++i)
             {
+                var check = _memCheckpoint.Checkpoints[i];
                 _writer.Write(check.Item1);
                 _writer.Write(check.Item2.Address.GetAddressBytes());
                 _writer.Write(check.Item2.Port);

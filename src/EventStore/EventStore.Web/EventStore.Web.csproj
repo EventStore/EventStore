@@ -43,6 +43,18 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="es-common-web\css\es.charts.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="es-common-web\js\atom\RichEntryElement.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="es-common-web\js\atom\FeedElement.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="es-common-web\js\atom\render.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="es-common-web\js\controls\es.Zoomer.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -198,6 +210,13 @@
     </Content>
     <Content Include="es-common-web\lib\jsrender\jsrender.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="es-common-web\lib\require-full.js" />
+    <Content Include="es-common-web\lib\require.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="es-common-web\lib\sprintf-0.7-beta1.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="es-common-web\tmpl\_selector.tmpl.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

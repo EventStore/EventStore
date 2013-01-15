@@ -74,10 +74,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var runIndex = 0;
             while (stopWatch.Elapsed < _executionPeriod)
             {
-                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
+                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
                                         runIndex,
                                         (int)stopWatch.Elapsed.TotalMinutes,
-                                        _executionPeriod.TotalMinutes);
+                                        _executionPeriod.TotalMinutes,
+                                        GetType().Name);
                 Log.Info(msg);
                 Log.Info("##teamcity[message '{0}']", msg);
 
@@ -97,19 +98,19 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var streams = Enumerable.Range(0, Streams).Select(i => FormatStreamName(runIndex, i)).ToArray();
             
-            var slices = Split(streams, 2);
+            var slices = Split(streams, 3);
             var singleEventSlice = slices.Take(1).SelectMany(x => x).ToArray();
             var batchSlice = slices.Skip(1).Take(1).SelectMany(x => x).ToArray();
-            //var transSlice = slices.Skip(99).Take(1).SelectMany(x => x).ToArray();
+            var transSlice = slices.Skip(2).Take(1).SelectMany(x => x).ToArray();
 
             var wr1 = Write(WriteMode.SingleEventAtTime, singleEventSlice, EventsPerStream);
             var wr2 = Write(WriteMode.Bucket, batchSlice, EventsPerStream);
-            //var wr3 = Write(WriteMode.Transactional, transSlice, EventsPerStream);
+            var wr3 = Write(WriteMode.Transactional, transSlice, EventsPerStream);
 
             if (runIndex % 4 == 0)
                 Scavenge();
 
-            Task.WaitAll(wr1, wr2/*, wr3*/);
+            Task.WaitAll(wr1, wr2, wr3);
 
             var deleted = streams.Where((s, i) => i % StreamDeleteStep == 0).ToArray();
             DeleteStreams(deleted);
@@ -183,9 +184,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                             .Select(x => string.Format("parallel-write-stream-in{0}-{1}-{2}",
                                                        runIndex,
                                                        x,
-                                                       string.Format("rnd{0}-{1}",
-                                                                     _rnd.Next(),
-                                                                     DateTime.UtcNow.Ticks)))
+                                                       string.Format("rnd{0}-{1}", _rnd.Next(), DateTime.UtcNow.Ticks)))
                             .ToArray();
 
                     var wr = Write(WriteMode.SingleEventAtTime, parallelStreams, EventsPerStream);

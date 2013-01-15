@@ -26,9 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.IO;
 using System.Text;
-using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using NLog;
 using NLog.LayoutRenderers;
@@ -46,7 +44,6 @@ namespace EventStore.Common.Log
 
     public static class LogManager
     {
-
         static LogManager()
         {
             NLog.Config.ConfigurationItemFactory.Default.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
@@ -64,6 +61,11 @@ namespace EventStore.Common.Log
                     throw new InvalidOperationException("Init method must be called");
                 return _logsDirectory;
             }
+        }
+
+        public static ILogger GetLoggerFor(Type type)
+        {
+            return GetLogger(type.Name);
         }
 
         public static ILogger GetLoggerFor<T>()
@@ -114,6 +116,7 @@ namespace EventStore.Common.Log
 
         public static void Finish()
         {
+            NLogger.FlushLog();
             NLog.LogManager.Configuration = null;
         }
     }

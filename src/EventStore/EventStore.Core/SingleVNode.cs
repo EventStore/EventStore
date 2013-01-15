@@ -26,9 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.IO;
 using System.Net;
-using EventStore.Common.Settings;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -46,24 +46,34 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Services.VNode;
 using EventStore.Common.Utils;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core
 {
     public class SingleVNode
     {
+        public QueuedHandler MainQueue { get { return _mainQueue; } }
+        public InMemoryBus Bus { get { return _mainBus; } } 
+        public HttpService HttpService { get { return _httpService; } }
+        public TimerService TimerService { get { return _timerService; } }
+        public IPublisher NetworkSendService { get { return _networkSendService; } }
+
         private readonly IPEndPoint _tcpEndPoint;
         private readonly IPEndPoint _httpEndPoint;
 
         private readonly QueuedHandler _mainQueue;
-        private readonly InMemoryBus _outputBus;
+        private readonly InMemoryBus _mainBus;
 
         private readonly SingleVNodeController _controller;
-        private HttpService _httpService;
-        private TimerService _timerService;
-
-        public SingleVNode(TFChunkDb db, SingleVNodeSettings vNodeSettings, SingleVNodeAppSettings appSettings, bool dbVerifyHashes)
+        private readonly HttpService _httpService;
+        private readonly TimerService _timerService;
+        private readonly NetworkSendService _networkSendService;
+        
+        public SingleVNode(TFChunkDb db, 
+                           SingleVNodeSettings vNodeSettings, 
+                           bool dbVerifyHashes,
+                           int memTableEntryCount = ESConsts.MemTableEntryCount)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(vNodeSettings, "vNodeSettings");
@@ -73,7 +83,7 @@ namespace EventStore.Core
             _tcpEndPoint = vNodeSettings.ExternalTcpEndPoint;
             _httpEndPoint = vNodeSettings.ExternalHttpEndPoint;
 
-            _outputBus = new InMemoryBus("OutputBus");
+            _mainBus = new InMemoryBus("MainBus");
             _controller = new SingleVNodeController(Bus, _httpEndPoint);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             _controller.SetMainQueue(MainQueue);
@@ -81,59 +91,76 @@ namespace EventStore.Core
             //MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
-            var monitoringQueue = new QueuedHandler(monitoringInnerBus, "MonitoringQueue", watchSlowMsg: true, slowMsgThresholdMs: 100);
-            var monitoring = new MonitoringService(monitoringQueue, monitoringRequestBus, db.Config.WriterCheckpoint, db.Config.Path, appSettings.StatsPeriod);
+            var monitoringQueue = new QueuedHandler(monitoringInnerBus, "MonitoringQueue", true, TimeSpan.FromMilliseconds(100));
+            var monitoring = new MonitoringService(monitoringQueue, 
+                                                   monitoringRequestBus, 
+                                                   MainQueue, 
+                                                   db.Config.WriterCheckpoint, 
+                                                   db.Config.Path, 
+                                                   vNodeSettings.StatsPeriod, 
+                                                   _httpEndPoint,
+                                                   vNodeSettings.StatsStorage);
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
+            Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
             Bus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
+            Bus.Subscribe(monitoringQueue.WidenFrom<ClientMessage.CreateStreamCompleted, Message>());
             monitoringInnerBus.Subscribe<SystemMessage.SystemInit>(monitoring);
+            monitoringInnerBus.Subscribe<SystemMessage.StateChangeMessage>(monitoring);
             monitoringInnerBus.Subscribe<SystemMessage.BecomeShuttingDown>(monitoring);
+            monitoringInnerBus.Subscribe<ClientMessage.CreateStreamCompleted>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 
             //STORAGE SUBSYSTEM
             var indexPath = Path.Combine(db.Config.Path, "index");
             var tableIndex = new TableIndex(indexPath,
-                                            () => new HashListMemTable(maxSize: 2000000),
-                                            maxSizeForMemory: 1000000,
+                                            () => new HashListMemTable(maxSize: memTableEntryCount * 2),
+                                            maxSizeForMemory: memTableEntryCount,
                                             maxTablesPerLevel: 2);
 
             var readIndex = new ReadIndex(_mainQueue, 
-                                          TFConsts.ReadIndexReaderCount, 
+                                          ESConsts.ReadIndexReaderCount, 
                                           () => new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0), 
                                           () => new TFChunkReader(db, db.Config.WriterCheckpoint), 
                                           tableIndex, 
                                           new XXHashUnsafe(),
-                                          new LRUCache<string, StreamCacheInfo>(TFConsts.MetadataCacheCapacity));
+                                          new LRUCache<string, StreamCacheInfo>(ESConsts.MetadataCacheCapacity));
             var writer = new TFChunkWriter(db);
-            var storageWriter = new StorageWriter(_mainQueue, _outputBus, writer, readIndex);
-            var storageReader = new StorageReader(_mainQueue, _outputBus, readIndex, TFConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
+            var storageWriter = new StorageWriterService(_mainQueue, _mainBus, writer, readIndex);
+            var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
+            _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
+            _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
+            _mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
             monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
             var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
-            var storageChaser = new StorageChaser(_mainQueue, chaser, readIndex);
-            _outputBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
-            _outputBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
-            _outputBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
+            var storageChaser = new StorageChaser(_mainQueue, db.Config.WriterCheckpoint, chaser, readIndex, _tcpEndPoint);
+            _mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
+            _mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
+            _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
 
             var storageScavenger = new StorageScavenger(db, readIndex);
-            _outputBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
+            _mainBus.Subscribe<SystemMessage.ScavengeDatabase>(storageScavenger);
+
+            // NETWORK SEND
+            _networkSendService = new NetworkSendService(tcpQueueCount: vNodeSettings.TcpSendingThreads, httpQueueCount: vNodeSettings.HttpSendingThreads);
 
             //TCP
-            var tcpService = new TcpService(MainQueue, _tcpEndPoint);
+            var tcpService = new TcpService(MainQueue, _tcpEndPoint, _networkSendService);
             Bus.Subscribe<SystemMessage.SystemInit>(tcpService);
             Bus.Subscribe<SystemMessage.SystemStart>(tcpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
             //HTTP
-            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpPrefixes);
+            _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
             Bus.Subscribe<HttpMessage.SendOverHttp>(HttpService);
-            Bus.Subscribe<HttpMessage.UpdatePendingRequests>(HttpService);
+            Bus.Subscribe<HttpMessage.PurgeTimedOutRequests>(HttpService);
             HttpService.SetupController(new AdminController(MainQueue));
             HttpService.SetupController(new PingController());
-            HttpService.SetupController(new StatController(monitoringQueue));
-            HttpService.SetupController(new ReadEventDataController(MainQueue));
-            HttpService.SetupController(new AtomController(MainQueue));
+            HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));
+            HttpService.SetupController(new ReadEventDataController(MainQueue, _networkSendService));
+            HttpService.SetupController(new AtomController(MainQueue, _networkSendService));
             HttpService.SetupController(new WebSiteController(MainQueue));
 
             //REQUEST MANAGEMENT
@@ -154,41 +181,14 @@ namespace EventStore.Core
             Bus.Subscribe<StorageMessage.PreparePhaseTimeout>(requestManagement);
             Bus.Subscribe<StorageMessage.CommitPhaseTimeout>(requestManagement);
 
-            var clientService = new ClientService();
-            Bus.Subscribe<TcpMessage.ConnectionClosed>(clientService);
-            Bus.Subscribe<ClientMessage.SubscribeToStream>(clientService);
-            Bus.Subscribe<ClientMessage.UnsubscribeFromStream>(clientService);
-            Bus.Subscribe<ClientMessage.SubscribeToAllStreams>(clientService);
-            Bus.Subscribe<ClientMessage.UnsubscribeFromAllStreams>(clientService);
-            Bus.Subscribe<StorageMessage.EventCommited>(clientService);
+            var subscriptionsService = new SubscriptionsService(_mainBus, readIndex);
 
             //TIMER
-            //var timer = new TimerService(new TimerBasedScheduler(new RealTimer(), new RealTimeProvider()));
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
             Bus.Subscribe<TimerMessage.Schedule>(TimerService);
 
-            MainQueue.Start();
             monitoringQueue.Start();
-        }
-
-        public QueuedHandler MainQueue
-        {
-            get { return _mainQueue; }
-        }
-
-        public InMemoryBus Bus
-        {
-            get { return _outputBus; }
-        }
-
-        public HttpService HttpService
-        {
-            get { return _httpService; }
-        }
-
-        public TimerService TimerService
-        {
-            get { return _timerService; }
+            MainQueue.Start();
         }
 
         public void Start()
@@ -198,7 +198,7 @@ namespace EventStore.Core
 
         public void Stop()
         {
-            MainQueue.Publish(new SystemMessage.BecomeShuttingDown());
+            MainQueue.Publish(new ClientMessage.RequestShutdown(exitProcessOnShutdown: false));
         }
 
         public override string ToString()

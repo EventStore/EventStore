@@ -28,14 +28,14 @@
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class ProgressWorkItem : WorkItem
+    class ProgressWorkItem : CheckpointWorkItemBase
     {
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
         private readonly float _progress;
 
         public ProgressWorkItem(
             CoreProjection projection, ICoreProjectionCheckpointManager checkpointManager, float progress)
-            : base(projection, "") // checkpoints are serialized based on string.empty token stream name
+            : base(projection) 
         {
             _checkpointManager = checkpointManager;
             _progress = progress;

@@ -28,6 +28,7 @@
 using System;
 using System.IO;
 using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
@@ -40,8 +41,9 @@ namespace EventStore.Core.TransactionLog.Chunks
         public readonly int ActualChunkSize;
         public readonly int ActualDataSize;
         public readonly int MapSize;
-        public int MapCount { get { return MapSize / sizeof(ulong); } }
-        public byte[] MD5Hash;
+        public readonly byte[] MD5Hash;
+
+        public readonly int MapCount; // calculated, not stored
 
         public ChunkFooter(bool completed, int actualChunkSize, int actualDataSize, int mapSize, byte[] md5Hash)
         {
@@ -59,6 +61,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             ActualDataSize = actualDataSize;
             MapSize = mapSize;
             MD5Hash = md5Hash;
+
+            if (MapSize % PosMap.Size != 0)
+                throw new Exception(string.Format("Wrong MapSize {0} -- not divisible by PosMap.Size {1}.", MapSize, PosMap.Size));
+            MapCount = mapSize / PosMap.Size;
         }
 
         public byte[] AsByteArray()

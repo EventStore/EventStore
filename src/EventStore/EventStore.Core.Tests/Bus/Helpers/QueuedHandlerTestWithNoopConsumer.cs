@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using NUnit.Framework;
@@ -34,14 +36,22 @@ namespace EventStore.Core.Tests.Bus.Helpers
 {
     public abstract class QueuedHandlerTestWithNoopConsumer
     {
-        protected QueuedHandler Queue;
+        private readonly Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> _queuedHandlerFactory;
+
+        protected IQueuedHandler Queue;
         protected IHandle<Message> Consumer;
+
+        protected QueuedHandlerTestWithNoopConsumer(Func<IHandle<Message>, string, TimeSpan, IQueuedHandler> queuedHandlerFactory)
+        {
+            Ensure.NotNull(queuedHandlerFactory, "queuedHandlerFactory");
+            _queuedHandlerFactory = queuedHandlerFactory;
+        }
 
         [SetUp]
         public virtual void SetUp()
         {
             Consumer = new NoopConsumer();
-            Queue = new QueuedHandler(Consumer, "test_name", watchSlowMsg: false, threadStopWaitTimeoutMs: 100);
+            Queue = _queuedHandlerFactory(Consumer, "test_name", TimeSpan.FromMilliseconds(5000));
         }
 
         [TearDown]

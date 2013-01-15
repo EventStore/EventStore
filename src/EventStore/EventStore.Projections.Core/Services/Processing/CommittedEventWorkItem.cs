@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
 
@@ -34,44 +35,63 @@ namespace EventStore.Projections.Core.Services.Processing
     class CommittedEventWorkItem : WorkItem
     {
         private readonly ProjectionSubscriptionMessage.CommittedEventReceived _message;
-        private readonly string _partition;
-        private List<EmittedEvent[]> _scheduledWrites;
+        private string _partition;
+        private readonly StatePartitionSelector _statePartitionSelector;
+        private EventProcessedResult _eventProcessedResult;
 
         public CommittedEventWorkItem(
-            CoreProjection projection, ProjectionSubscriptionMessage.CommittedEventReceived message, string partition)
-            : base(projection, message.EventStreamId)
+            CoreProjection projection, ProjectionSubscriptionMessage.CommittedEventReceived message,
+            StatePartitionSelector statePartitionSelector)
+            : base(projection, Guid.NewGuid())
         {
+            _statePartitionSelector = statePartitionSelector;
             _message = message;
-            _partition = partition;
+        }
+
+        protected override void RecordEventOrder()
+        {
+            Projection.RecordEventOrder(_message, () => NextStage());
+        }
+
+        protected override void GetStatePartition()
+        {
+            _partition = _statePartitionSelector.GetStatePartition(_message);
+            if (_partition == null)
+                // skip processing of events not mapped to any partition
+                Complete();
+            else
+                NextStage(_partition);
         }
 
         protected override void Load(CheckpointTag checkpointTag)
         {
-            Projection.BeginStatePartitionLoad(_partition, _message.CheckpointTag, LoadCompleted);
+            // we load partition state even if stopping etc.  should we skip?
+            Projection.BeginGetPartitionStateAt(
+                _partition, _message.CheckpointTag, LoadCompleted, lockLoaded: true);
         }
 
-        private void LoadCompleted()
+        private void LoadCompleted(CheckpointTag checkpointTag, string state)
         {
             NextStage();
         }
 
         protected override void ProcessEvent()
         {
-            Projection.ProcessCommittedEvent(this, _message, _partition);
+            var eventProcessedResult = Projection.ProcessCommittedEvent(_message, _partition);
+            if (eventProcessedResult != null)
+                SetEventProcessedResult(eventProcessedResult);
             NextStage();
         }
 
         protected override void WriteOutput()
         {
-            Projection.FinalizeEventProcessing(_scheduledWrites, _message.CheckpointTag, _message.Progress);
+            Projection.FinalizeEventProcessing(_eventProcessedResult, _message.CheckpointTag, _message.Progress);
             NextStage();
         }
 
-        public void ScheduleEmitEvents(EmittedEvent[] emittedEvents)
+        private void SetEventProcessedResult(EventProcessedResult eventProcessedResult)
         {
-            if (_scheduledWrites == null)
-                _scheduledWrites = new List<EmittedEvent[]>();
-            _scheduledWrites.Add(emittedEvents);
+            _eventProcessedResult = eventProcessedResult;
         }
     }
 }

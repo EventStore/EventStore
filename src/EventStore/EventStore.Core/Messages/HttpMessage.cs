@@ -29,6 +29,7 @@ using System;
 using System.Net;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Messages
 {
@@ -39,6 +40,80 @@ namespace EventStore.Core.Messages
 
     public static class HttpMessage
     {
+        public class HttpSendMessage : Message
+        {
+            public readonly IEnvelope Envelope;
+            public readonly Guid CorrelationId;
+            public readonly HttpEntityManager HttpEntityManager;
+
+            /// <param name="envelope">non-null envelope requests HttpCompleted messages in response</param>
+            protected HttpSendMessage(Guid correlationId, IEnvelope envelope, HttpEntityManager httpEntityManager)
+            {
+                CorrelationId = correlationId;
+                Envelope = envelope;
+                HttpEntityManager = httpEntityManager;
+            }
+        }
+
+        public class HttpSend : HttpSendMessage
+        {
+            public readonly string Data;
+            public readonly ResponseConfiguration Configuration;
+            public readonly Message Message;
+
+            public HttpSend(
+                HttpEntityManager httpEntityManager, ResponseConfiguration configuration, string data, Message message)
+                : base(Guid.Empty, null, httpEntityManager)
+            {
+                Data = data;
+                Configuration = configuration;
+                Message = message;
+            }
+        }
+
+        public class HttpBeginSend : HttpSendMessage
+        {
+            public readonly ResponseConfiguration Configuration;
+
+            public HttpBeginSend(Guid correlationId, IEnvelope envelope, 
+                HttpEntityManager httpEntityManager, ResponseConfiguration configuration)
+                : base(correlationId, envelope, httpEntityManager)
+            {
+                Configuration = configuration;
+            }
+        }
+
+        public class HttpSendPart : HttpSendMessage
+        {
+            public readonly string Data;
+
+            public HttpSendPart(Guid correlationId, IEnvelope envelope, HttpEntityManager httpEntityManager, string data)
+                : base(correlationId, envelope, httpEntityManager)
+            {
+                Data = data;
+            }
+        }
+
+        public class HttpEndSend : HttpSendMessage
+        {
+            public HttpEndSend(Guid correlationId, IEnvelope envelope, HttpEntityManager httpEntityManager)
+                : base(correlationId, envelope, httpEntityManager)
+            {
+            }
+        }
+
+        public class HttpCompleted : Message
+        {
+            public readonly Guid CorrelationId;
+            public readonly HttpEntityManager HttpEntityManager;
+
+            public HttpCompleted(Guid correlationId, HttpEntityManager httpEntityManager)
+            {
+                CorrelationId = correlationId;
+                HttpEntityManager = httpEntityManager;
+            }
+        }
+
         public class DeniedToHandle : Message
         {
             public readonly DenialReason Reason;
@@ -82,11 +157,11 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class UpdatePendingRequests : Message
+        public class PurgeTimedOutRequests : Message
         {
             public readonly ServiceAccessibility Accessibility;
 
-            public UpdatePendingRequests(ServiceAccessibility accessibility)
+            public PurgeTimedOutRequests(ServiceAccessibility accessibility)
             {
                 Accessibility = accessibility;
             }

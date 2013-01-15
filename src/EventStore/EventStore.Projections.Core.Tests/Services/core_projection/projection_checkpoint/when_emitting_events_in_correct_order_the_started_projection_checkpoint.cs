@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             _readyHandler = new TestCheckpointManagerMessageHandler();;
             _checkpoint = new ProjectionCheckpoint(_bus, _readyHandler, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
             _checkpoint.Start();
-            _checkpoint.EmitEvents(
+            _checkpoint.ValidateOrderAndEmitEvents(
                 new[]
                     {
                         new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2", CheckpointTag.FromPosition(120, 110), null),
@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
                         new EmittedEvent("stream2", Guid.NewGuid(), "type", "data4", CheckpointTag.FromPosition(120, 110), null),
                     }
                 );
-            _checkpoint.EmitEvents(
+            _checkpoint.ValidateOrderAndEmitEvents(
                 new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
                 CheckpointTag.FromPosition(140, 130), null)});
         }
@@ -100,14 +100,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         [Test]
         public void should_not_write_a_secong_group_until_the_first_write_completes()
         {
-            _checkpoint.EmitEvents(
+            _checkpoint.ValidateOrderAndEmitEvents(
                 new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
                 CheckpointTag.FromPosition(170, 160), null)});
-            var writeRequests =
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(v => v.EventStreamId == "stream1");
+            var writeRequests = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(v => v.EventStreamId == "stream1");
             var writeEvents = writeRequests.Single();
-            writeEvents.Envelope.ReplyWith(
-                new ClientMessage.WriteEventsCompleted(writeEvents.CorrelationId, writeEvents.EventStreamId, 0));
+            writeEvents.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writeEvents.CorrelationId, 0));
             Assert.AreEqual(2, writeRequests.Count());
         }
     }

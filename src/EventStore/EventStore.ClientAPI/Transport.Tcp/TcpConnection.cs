@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using Collections = System.Collections;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -40,6 +39,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
     internal class TcpConnection : TcpConnectionBase, ITcpConnection
     {
         private const int BufferSize = 512;
+        private const int MaxSendPacketSize = 64 * 1024;
+
+        private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool",
+                                                                                   TcpConfiguration.SendReceivePoolSize,
+                                                                                   () => new SocketAsyncEventArgs());
 
         internal static TcpConnection CreateConnectingTcpConnection(IPEndPoint remoteEndPoint,
                                                                           TcpClientConnector connector,
@@ -70,40 +74,17 @@ namespace EventStore.ClientAPI.Transport.Tcp
             return connection;
         }
 
-        private const int MaxSendPacketSize = 64 * 1024;
-
-        private static readonly SocketArgsPool SocketArgsPool =
-            new SocketArgsPool("TcpConnection.SocketArgsPool",
-                               TcpConfiguration.SendReceivePoolSize,
-                               () => new SocketAsyncEventArgs());
-
-        private int _packagesSent;
-        private long _bytesSent;
-        private int _packagesReceived;
-        private long _bytesReceived;
-
         public event Action<ITcpConnection, SocketError> ConnectionClosed;
 
         public IPEndPoint EffectiveEndPoint { get; private set; }
-
-        public int SendQueueSize
-        {
-            get { return _sendQueue.Count; }
-        }
+        public int SendQueueSize { get { return _sendQueue.Count; } }
 
         private Socket _socket;
         private SocketAsyncEventArgs _receiveSocketArgs;
         private SocketAsyncEventArgs _sendSocketArgs;
 
-#if __MonoCS__
-        private readonly Common.ConcurrentCollections.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.ConcurrentCollections.ConcurrentQueue<ArraySegment<byte>>();
-#else
-        private readonly Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Collections.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
-#endif
-
-        private readonly Queue<Tuple<ArraySegment<byte>, Action>> _receiveQueue =
-            new Queue<Tuple<ArraySegment<byte>, Action>>();
-
+        private readonly Common.Concurrent.ConcurrentQueue<ArraySegment<byte>> _sendQueue = new Common.Concurrent.ConcurrentQueue<ArraySegment<byte>>();
+        private readonly Queue<Tuple<ArraySegment<byte>, Action>> _receiveQueue = new Queue<Tuple<ArraySegment<byte>, Action>>();
         private readonly MemoryStream _memoryStream = new MemoryStream();
 
         private readonly object _receivingLock = new object();
@@ -113,6 +94,10 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
+        private int _packagesSent;
+        private long _bytesSent;
+        private int _packagesReceived;
+        private long _bytesReceived;
         private int _sentAsyncs;
         private int _sentAsyncCallbacks;
         private int _recvAsyncs;

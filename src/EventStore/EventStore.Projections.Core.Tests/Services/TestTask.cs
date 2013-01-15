@@ -35,30 +35,37 @@ namespace EventStore.Projections.Core.Tests.Services
     {
         private readonly int _steps;
         private readonly int _completeImmediatelyUpToStage;
-        private Action<int> _readyForStage;
+        private readonly object[] _stageCorrelations;
+        private Action<int, object> _readyForStage;
+        private int _startedOnStage;
 
-        public TestTask(object correlationId, int steps, int completeImmediatelyUpToStage = -1)
-            : base(correlationId)
+        public TestTask(
+            object initialCorrelationId, int steps, int completeImmediatelyUpToStage = -1, object[] stageCorrelations = null)
+            : base(initialCorrelationId)
         {
             _steps = steps;
             _completeImmediatelyUpToStage = completeImmediatelyUpToStage;
+            _stageCorrelations = stageCorrelations;
+            _startedOnStage = -1;
         }
 
-        public bool Executed { get; set; }
-        public int ExecutedOnStage { get; set; }
+        public bool StartedOn(int onStage)
+        {
+            return _startedOnStage >= onStage;
+        }
 
-        public override void Process(int onStage, Action<int> readyForStage)
+        public override void Process(int onStage, Action<int, object> readyForStage)
         {
             _readyForStage = readyForStage;
-            Executed = true;
-            ExecutedOnStage = onStage;
-            if (ExecutedOnStage <= _completeImmediatelyUpToStage)
+            _startedOnStage = onStage;
+            if (_startedOnStage <= _completeImmediatelyUpToStage)
                 Complete();
         }
 
         public void Complete()
         {
-            _readyForStage(ExecutedOnStage == _steps - 1 ? -1 : ExecutedOnStage + 1);
+            var correlationId = _stageCorrelations != null ? _stageCorrelations[_startedOnStage] : InitialCorrelationId;
+            _readyForStage(_startedOnStage == _steps - 1 ? -1 : _startedOnStage + 1, correlationId);
         }
     }
 }

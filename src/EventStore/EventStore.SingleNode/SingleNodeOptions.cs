@@ -25,57 +25,70 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.Collections.Generic;
 using System.Net;
-using EventStore.Common.CommandLine;
-using EventStore.Common.CommandLine.lib;
+using EventStore.Common.Options;
 
 namespace EventStore.SingleNode
 {
-    public class SingleNodeOptions : EventStoreCmdLineOptionsBase
+    public class SingleNodeOptions : IOptions
     {
-        [Option("t", "tcp-port", Required = true)]
-        public int TcpPort { get; set; }
+        public bool ShowHelp { get { return _helper.Get(() => ShowHelp); } }
+        public string LogsDir { get { return _helper.Get(() => LogsDir); } }
+        public string[] Configs { get { return _helper.Get(() => Configs); } }
 
-        [Option("h", "http-port", Required = true)]
-        public int HttpPort { get; set; }
+        public IPAddress Ip { get { return _helper.Get(() => Ip); } }
+        public int TcpPort { get { return _helper.Get(() => TcpPort); } }
+        public int HttpPort { get { return _helper.Get(() => HttpPort); } }
 
-        [Option("i", "ip", Required = true)]
-        public IPAddress Ip { get; set; }
+        public int StatsPeriodSec { get { return _helper.Get(() => StatsPeriodSec); } }
+        public int CachedChunks { get { return _helper.Get(() => CachedChunks); } }
+        public string DbPath { get { return _helper.Get(() => DbPath); } }
+        public bool SkipDbVerify { get { return _helper.Get(() => SkipDbVerify); } }
+        public bool RunProjections { get { return _helper.Get(() => RunProjections); } }
+        public int ProjectionThreads { get { return _helper.Get(() => ProjectionThreads); } }
+        public int TcpSendThreads { get { return _helper.Get(() => TcpSendThreads); } }
+        public int HttpReceiveThreads { get { return _helper.Get(() => HttpReceiveThreads); } }
+        public int HttpSendThreads { get { return _helper.Get(() => HttpSendThreads); } }
+        public string[] HttpPrefixes { get { return _helper.Get(() => HttpPrefixes); } }
 
-        [Option("s", "stats-period-sec", DefaultValue = 30)]
-        public int StatsPeriodSec { get; set; }
+        private readonly OptsHelper _helper;
 
-        [Option("c", "chunkcache", DefaultValue = 2)]
-        public int ChunksToCache { get; set; }
-
-        [Option(null, "db")]
-        public string DbPath { get; set; }
-
-        [Option(null, "no-projections", DefaultValue = false)]
-        public bool NoProjections { get; set; }
-
-        [Option(null, "do-not-verify-db-hashes-on-startup", DefaultValue = false)]
-        public bool DoNotVerifyDbHashesOnStartup { get; set; }
-
-        [Option(null, "projection-threads", DefaultValue = 3)]
-        public int ProjectionThreads { get; set; }
-
-        [Option(null, "prefixes")]
-        public string PrefixesString { get; set; }
-
-        public override IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
+        public SingleNodeOptions()
         {
-            foreach (var pair in base.GetLoadedOptionsPairs())
-                yield return pair;
-            yield return new KeyValuePair<string, string>("IP", Ip.ToString());
-            yield return new KeyValuePair<string, string>("TCP PORT", TcpPort.ToString());
-            yield return new KeyValuePair<string, string>("HTTP PORT", HttpPort.ToString());
-            yield return new KeyValuePair<string, string>("STATS PERIOD SEC", StatsPeriodSec.ToString());
-            yield return new KeyValuePair<string, string>("CHUNK CACHE", ChunksToCache.ToString());
-            yield return new KeyValuePair<string, string>("DB PATH", string.IsNullOrEmpty(DbPath) ? "<DEFAULT>" : DbPath);
-            yield return new KeyValuePair<string, string>("NO PROJECTIONS", NoProjections.ToString());
-            yield return new KeyValuePair<string, string>("PROJECTION THREADS", ProjectionThreads.ToString());
+            _helper = new OptsHelper(() => Configs, Opts.EnvPrefix);
+            _helper.Register(() => ShowHelp, Opts.ShowHelpCmd, Opts.ShowHelpEnv, Opts.ShowHelpJson, Opts.ShowHelpDefault, Opts.ShowHelpDescr);
+            _helper.RegisterRef(() => LogsDir, Opts.LogsCmd, Opts.LogsEnv, Opts.LogsJson, Opts.LogsDefault, Opts.LogsDescr);
+            _helper.RegisterArray(() => Configs, Opts.ConfigsCmd, Opts.ConfigsEnv, ",", Opts.ConfigsJson, Opts.ConfigsDefault, Opts.ConfigsDescr);
+
+            _helper.RegisterRef(() => Ip, "i|ip=", "IP", null, IPAddress.Loopback, "The IP address to bind to.");
+            _helper.Register(() => TcpPort, "t|tcp-port=", "TCP_PORT", null, 1113, "The port to run the TCP server on.");
+            _helper.Register(() => HttpPort, "h|http-port=", "HTTP_PORT", null, 2113, "The port to run the HTTP server on.");
+
+            _helper.Register(() => StatsPeriodSec, Opts.StatsPeriodCmd, Opts.StatsPeriodEnv, Opts.StatsPeriodJson, Opts.StatsPeriodDefault, Opts.StatsPeriodDescr);
+            _helper.Register(() => CachedChunks, Opts.CachedChunksCmd, Opts.CachedChunksEnv, Opts.CachedChunksJson, Opts.CachedChunksDefault, Opts.CachedChunksDescr);
+            _helper.RegisterRef(() => DbPath, Opts.DbPathCmd, Opts.DbPathEnv, Opts.DbPathJson, Opts.DbPathDefault, Opts.DbPathDescr);
+            _helper.Register(() => SkipDbVerify, Opts.SkipDbVerifyCmd, Opts.SkipDbVerifyEnv, Opts.SkipDbVerifyJson, Opts.SkipDbVerifyDefault, Opts.SkipDbVerifyDescr);
+            _helper.Register(() => RunProjections, Opts.RunProjectionsCmd, Opts.RunProjectionsEnv, Opts.RunProjectionsJson, Opts.RunProjectionsDefault, Opts.RunProjectionsDescr);
+            _helper.Register(() => ProjectionThreads, Opts.ProjectionThreadsCmd, Opts.ProjectionThreadsEnv, Opts.ProjectionThreadsJson, Opts.ProjectionThreadsDefault, Opts.ProjectionThreadsDescr);
+            _helper.Register(() => TcpSendThreads, Opts.TcpSendThreadsCmd, Opts.TcpSendThreadsEnv, Opts.TcpSendThreadsJson, Opts.TcpSendThreadsDefault, Opts.TcpSendThreadsDescr);
+            _helper.Register(() => HttpReceiveThreads, Opts.HttpReceiveThreadsCmd, Opts.HttpReceiveThreadsEnv, Opts.HttpReceiveThreadsJson, Opts.HttpReceiveThreadsDefault, Opts.HttpReceiveThreadsDescr);
+            _helper.Register(() => HttpSendThreads, Opts.HttpSendThreadsCmd, Opts.HttpSendThreadsEnv, Opts.HttpSendThreadsJson, Opts.HttpSendThreadsDefault, Opts.HttpSendThreadsDescr);
+            _helper.RegisterArray(() => HttpPrefixes, Opts.HttpPrefixesCmd, Opts.HttpPrefixesEnv, ",", Opts.HttpPrefixesJson, Opts.HttpPrefixesDefault, Opts.HttpPrefixesDescr);
+        }
+
+        public void Parse(params string[] args)
+        {
+            _helper.Parse(args);
+        }
+
+        public string DumpOptions()
+        {
+            return _helper.DumpOptions();
+        }
+
+        public string GetUsage()
+        {
+            return _helper.GetUsage();
         }
     }
 }
