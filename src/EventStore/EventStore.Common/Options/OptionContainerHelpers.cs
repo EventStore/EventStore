@@ -29,6 +29,7 @@
 using System;
 using System.ComponentModel;
 using System.Linq;
+using System.Net;
 using EventStore.Common.Utils;
 using Newtonsoft.Json.Linq;
 
@@ -55,6 +56,9 @@ namespace EventStore.Common.Options
                             && tt.GetGenericTypeDefinition() == typeof (Nullable<>);
             Type targetType = nullable ? tt.GetGenericArguments()[0] : typeof(T);
             TypeConverter conv = TypeDescriptor.GetConverter(targetType);
+
+            if (targetType == typeof(IPAddress))
+                conv = new IPAddressTypeConverter();
 
             return (T)conv.ConvertFromString(value);
         }

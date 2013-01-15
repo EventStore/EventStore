@@ -471,16 +471,10 @@ namespace EventStore.Common.Options
                 !tt.IsGenericTypeDefinition &&
                 tt.GetGenericTypeDefinition() == typeof(Nullable<>);
             Type targetType = nullable ? tt.GetGenericArguments()[0] : typeof(T);
-            //TypeConverter conv = TypeDescriptor.GetConverter(targetType);
+            TypeConverter conv = TypeDescriptor.GetConverter(targetType);
 
-            TypeConverter conv;
             if (targetType == typeof (IPAddress))
-            {
-                Console.WriteLine("SUBSCTITUTING OWN IPADDRESS CONVERTER IN MONO.OPTIONS.");
                 conv = new IPAddressTypeConverter();
-            }
-            else
-                conv = TypeDescriptor.GetConverter(targetType);
 
             T t = default(T);
             try
