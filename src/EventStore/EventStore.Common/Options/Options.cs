@@ -471,6 +471,10 @@ namespace EventStore.Common.Options
                 tt.GetGenericTypeDefinition() == typeof(Nullable<>);
             Type targetType = nullable ? tt.GetGenericArguments()[0] : typeof(T);
             TypeConverter conv = TypeDescriptor.GetConverter(targetType);
+
+            if (targetType == typeof(IPAddressTypeConverter))
+                conv = new IPAddressTypeConverter();
+
             T t = default(T);
             try
             {
