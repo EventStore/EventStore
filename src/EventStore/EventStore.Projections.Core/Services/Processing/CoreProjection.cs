@@ -302,7 +302,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_projectionConfig.StopOnEof)
                 throw new InvalidOperationException("!_projectionConfig.StopOnEof");
-
+            _subscribed = false; // NOTE:  stopOnEof subscriptions automatically unsuibscribe when handling this message
             Stop();
         }
 
@@ -331,6 +331,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionManagementMessage.GetState message)
         {
+            if (_state == State.LoadStateRequsted || _state == State.StateLoaded)
+            {
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.StateReport(
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, null, new Exception("Not yet available")));
+                return;
+            }
             EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
@@ -748,6 +755,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 new ProjectionSubscriptionManagement.Subscribe(
                     _projectionCorrelationId, _currentSubscriptionId, this, checkpointTag, _checkpointStrategy,
                     _projectionConfig.CheckpointUnhandledBytesThreshold, stopOnEof));
+            _subscribed = true;
             try
             {
                 GoToState(State.Subscribed);
@@ -757,7 +765,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 LoadProjectionStateFaulted(ex);
                 return;
             }
-            _subscribed = true;
         }
 
         internal void BeginGetPartitionStateAt(

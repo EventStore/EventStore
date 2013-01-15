@@ -213,7 +213,7 @@ namespace EventStore.Core.Services.Storage
                 var res = WritePrepareWithRetry(record);
 
                 // we update cache to avoid non-cached look-up on next TransactionWrite
-                ReadIndex.UpdateTransactionOffset(res.WrittenPos, shouldCreateStream ? 0 : -1); 
+                ReadIndex.UpdateTransactionInfo(res.WrittenPos, new TransactionInfo(shouldCreateStream ? 0 : -1, message.EventStreamId)); 
             }
             finally
             {
@@ -229,14 +229,9 @@ namespace EventStore.Core.Services.Storage
                 Debug.Assert(message.Events.Length > 0);
 
                 var logPosition = Writer.Checkpoint.ReadNonFlushed();
-                var transactionOffset = ReadIndex.GetTransactionOffset(Writer.Checkpoint.Read(), message.TransactionId);
-                if (transactionOffset < -1)
-                {
-                    throw new Exception(
-                        string.Format("Invalid transaction offset {0} found for transaction ID {1}. Possibly wrong transactionId provided.",
-                                      transactionOffset,
-                                      message.TransactionId));
-                }
+                var transactionInfo = ReadIndex.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
+                CheckTransactionInfo(message.TransactionId, transactionInfo);
+
                 for (int i = 0; i < message.Events.Length; ++i)
                 {
                     var evnt = message.Events[i];
@@ -244,15 +239,17 @@ namespace EventStore.Core.Services.Storage
                                                             message.CorrelationId,
                                                             evnt.EventId,
                                                             message.TransactionId,
-                                                            transactionOffset + i + 1,
-                                                            message.EventStreamId,
+                                                            transactionInfo.TransactionOffset + i + 1,
+                                                            transactionInfo.EventStreamId,
                                                             evnt.EventType,
                                                             evnt.Data,
                                                             evnt.Metadata);
                     var res = WritePrepareWithRetry(record);
                     logPosition = res.NewPos;
                 }
-                ReadIndex.UpdateTransactionOffset(message.TransactionId, transactionOffset + message.Events.Length);
+                ReadIndex.UpdateTransactionInfo(message.TransactionId,
+                                                new TransactionInfo(transactionInfo.TransactionOffset + message.Events.Length,
+                                                                    transactionInfo.EventStreamId));
             }
             finally
             {
@@ -268,16 +265,32 @@ namespace EventStore.Core.Services.Storage
                 if (message.LiveUntil < DateTime.UtcNow)
                     return;
 
+                var transactionInfo = ReadIndex.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
+                CheckTransactionInfo(message.TransactionId, transactionInfo);
+
                 var record = LogRecord.TransactionEnd(Writer.Checkpoint.ReadNonFlushed(),
                                                       message.CorrelationId,
                                                       Guid.NewGuid(),
                                                       message.TransactionId,
-                                                      message.EventStreamId);
+                                                      transactionInfo.EventStreamId);
                 WritePrepareWithRetry(record);
             }
             finally
             {
                 Flush();
+            }
+        }
+
+        private void CheckTransactionInfo(long transactionId, TransactionInfo transactionInfo)
+        {
+            if (transactionInfo.TransactionOffset < -1 || transactionInfo.EventStreamId.IsEmptyString())
+            {
+                throw new Exception(
+                        string.Format("Invalid transaction info found for transaction ID {0}. " 
+                                      + "Possibly wrong transactionId provided. TransactionOffset: {1}, EventStreamId: {2}",
+                                      transactionId,
+                                      transactionInfo.TransactionOffset,
+                                      transactionInfo.EventStreamId.IsEmptyString() ? "<null>" : transactionInfo.EventStreamId));
             }
         }
 

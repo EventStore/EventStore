@@ -27,6 +27,7 @@
 // 
 
 using System.Linq;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -55,6 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void When()
         {
             _projectionName = "test-projection";
+            _bus.Publish(new SystemMessage.BecomeWorking());
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS",
@@ -64,12 +66,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _manager.Handle(
                 new ProjectionManagementMessage.UpdateQuery(
                     new PublishEnvelope(_bus), _projectionName, "JS", _newProjectionSource, emitEnabled: null));
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            _manager.Dispose();
         }
 
         [Test, Category("v8")]

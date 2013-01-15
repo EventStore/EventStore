@@ -83,12 +83,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             throw new System.NotImplementedException();
         }
 
-        public void UpdateTransactionOffset(long transactionId, int transactionOffset)
+        public void UpdateTransactionInfo(long transactionId, Core.Services.Storage.ReaderIndex.TransactionInfo transactionInfo)
         {
             throw new NotImplementedException();
         }
 
-        public int GetTransactionOffset(long writerCheckpoint, long transactionId)
+        public Core.Services.Storage.ReaderIndex.TransactionInfo GetTransactionInfo(long writerCheckpoint, long transactionId)
         {
             throw new System.NotImplementedException();
         }

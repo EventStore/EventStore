@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
 using EventStore.Core.Messages;
@@ -41,6 +42,8 @@ namespace EventStore.TestClient.Commands
         public bool Execute(CommandProcessorContext context, string[] args)
         {
             context.IsAsync();
+
+            var streamByCorrId = new Dictionary<Guid, string>();
 
             var connection = context.Client.CreateTcpConnection(
                     context,
@@ -69,8 +72,7 @@ namespace EventStore.TestClient.Commands
                             }
                             case TcpCommand.SubscriptionDropped:
                             {
-                                var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
-                                context.Log.Error("Subscription to <{0}> WAS DROPPED!", string.IsNullOrEmpty(dto.EventStreamId) ? "ALL" : dto.EventStreamId);
+                                context.Log.Error("Subscription to <{0}> WAS DROPPED!", streamByCorrId[pkg.CorrelationId]);
                                 break;
                             }
                             default:
@@ -90,7 +92,9 @@ namespace EventStore.TestClient.Commands
             {
                 context.Log.Info("SUBSCRIBING TO ALL STREAMS...");
                 var cmd = new TcpClientMessageDto.SubscribeToStream(string.Empty, resolveLinkTos: false);
-                connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
+                Guid correlationId = Guid.NewGuid();
+                streamByCorrId[correlationId] = "$all";
+                connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, correlationId, cmd.Serialize()).AsByteArray());
             }
             else
             {
@@ -98,7 +102,9 @@ namespace EventStore.TestClient.Commands
                 {
                     context.Log.Info("SUBSCRIBING TO STREAM <{0}>...", stream);
                     var cmd = new TcpClientMessageDto.SubscribeToStream(stream, resolveLinkTos: false);
-                    connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, Guid.NewGuid(), cmd.Serialize()).AsByteArray());
+                    var correlationId = Guid.NewGuid();
+                    streamByCorrId[correlationId] = stream;
+                    connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, correlationId, cmd.Serialize()).AsByteArray());
                 }
             }
 

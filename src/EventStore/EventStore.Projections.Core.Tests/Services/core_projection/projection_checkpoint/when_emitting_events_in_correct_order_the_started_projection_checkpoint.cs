@@ -103,11 +103,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
                 CheckpointTag.FromPosition(170, 160), null)});
-            var writeRequests =
-                _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(v => v.EventStreamId == "stream1");
+            var writeRequests = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Where(v => v.EventStreamId == "stream1");
             var writeEvents = writeRequests.Single();
-            writeEvents.Envelope.ReplyWith(
-                new ClientMessage.WriteEventsCompleted(writeEvents.CorrelationId, writeEvents.EventStreamId, 0));
+            writeEvents.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writeEvents.CorrelationId, 0));
             Assert.AreEqual(2, writeRequests.Count());
         }
     }

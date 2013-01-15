@@ -48,14 +48,12 @@ namespace EventStore.Core.Services.RequestManager.Managers
         protected IEnvelope PublishEnvelope { get { return _publishEnvelope; } }
         protected IEnvelope ResponseEnvelope { get { return _responseEnvelope; } }
         protected Guid CorrelationId { get { return _correlationId; } }
-        protected string EventStreamId { get { return _eventStreamId; } }
         protected long TransactionPosition { get { return _transactionPos; } }
         protected readonly IPublisher Publisher;
 
         private readonly IEnvelope _publishEnvelope;
         private IEnvelope _responseEnvelope;
         private Guid _correlationId;
-        private string _eventStreamId;
 
         private int _awaitingPrepare;
         private int _awaitingCommit;
@@ -77,7 +75,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             _publishEnvelope = new PublishEnvelope(publisher);
         }
 
-        protected void Init(IEnvelope responseEnvelope, Guid correlationId, string eventStreamId, long preparePos)
+        protected void Init(IEnvelope responseEnvelope, Guid correlationId, long preparePos)
         {
             if (_initialized)
                 throw new InvalidOperationException();
@@ -86,7 +84,6 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _responseEnvelope = responseEnvelope;
             _correlationId = correlationId;
-            _eventStreamId = eventStreamId;
             _transactionPos = preparePos;
         }
 
@@ -95,7 +92,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_completed)
                 return;
 
-            CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationResult.WrongExpectedVersion, "Wrong expected version.");
+            CompleteFailedRequest(message.CorrelationId, OperationResult.WrongExpectedVersion, "Wrong expected version.");
         }
 
         public void Handle(StorageMessage.StreamDeleted message)
@@ -103,7 +100,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_completed)
                 return;
 
-            CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationResult.StreamDeleted, "Stream is deleted.");
+            CompleteFailedRequest(message.CorrelationId, OperationResult.StreamDeleted, "Stream is deleted.");
         }
 
         public void Handle(StorageMessage.PreparePhaseTimeout message)
@@ -111,7 +108,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_completed || _awaitingPrepare == 0)
                 return;
 
-            CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationResult.PrepareTimeout, "Prepare phase timeout.");
+            CompleteFailedRequest(message.CorrelationId, OperationResult.PrepareTimeout, "Prepare phase timeout.");
         }
 
         public void Handle(StorageMessage.CommitPhaseTimeout message)
@@ -119,14 +116,14 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_completed || _awaitingCommit == 0 || _awaitingPrepare != 0)
                 return;
 
-            CompleteFailedRequest(message.CorrelationId, _eventStreamId, OperationResult.CommitTimeout, "Commit phase timeout.");
+            CompleteFailedRequest(message.CorrelationId, OperationResult.CommitTimeout, "Commit phase timeout.");
         }
 
 
         public void Handle(StorageMessage.AlreadyCommitted message)
         {
-            Debug.Assert(message.EventStreamId == _eventStreamId && message.CorrelationId == _correlationId);
-            CompleteSuccessRequest(_correlationId, _eventStreamId, message.FirstEventNumber);
+            Debug.Assert(message.CorrelationId == _correlationId);
+            CompleteSuccessRequest(_correlationId, message.FirstEventNumber);
         }
 
         public void Handle(StorageMessage.PrepareAck message)
@@ -159,16 +156,16 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             _awaitingCommit -= 1;
             if (_awaitingCommit == 0)
-                CompleteSuccessRequest(message.CorrelationId, _eventStreamId, message.FirstEventNumber);
+                CompleteSuccessRequest(message.CorrelationId, message.FirstEventNumber);
         }
 
-        protected virtual void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int firstEventNumber)
+        protected virtual void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
         {
             _completed = true;
             Publisher.Publish(new StorageMessage.RequestCompleted(correlationId, true));
         }
 
-        protected virtual void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationResult result, string error)
+        protected virtual void CompleteFailedRequest(Guid correlationId, OperationResult result, string error)
         {
             Debug.Assert(result != OperationResult.Success);
             _completed = true;

@@ -36,6 +36,8 @@ namespace EventStore.Projections.Core.Services
 
         public string Status { get; set; }
 
+        public bool Enabled { get; set; }
+
         public ManagedProjectionState MasterStatus { get; set; }
 
         public string StateReason { get; set; }

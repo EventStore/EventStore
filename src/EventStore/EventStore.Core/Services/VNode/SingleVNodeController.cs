@@ -220,7 +220,6 @@ namespace EventStore.Core.Services.VNode
             _outputBus.Publish(new StorageMessage.TransactionWriteRequestCreated(message.CorrelationId,
                                                                                  message.Envelope,
                                                                                  message.TransactionId,
-                                                                                 message.EventStreamId,
                                                                                  message.Events));
         }
 
@@ -228,8 +227,7 @@ namespace EventStore.Core.Services.VNode
         {
             _outputBus.Publish(new StorageMessage.TransactionCommitRequestCreated(message.CorrelationId,
                                                                                   message.Envelope,
-                                                                                  message.TransactionId,
-                                                                                  message.EventStreamId));
+                                                                                  message.TransactionId));
         }
 
         private void Handle(ClientMessage.DeleteStream message)

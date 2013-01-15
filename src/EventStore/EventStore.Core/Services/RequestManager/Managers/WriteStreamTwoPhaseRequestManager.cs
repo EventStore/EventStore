@@ -47,7 +47,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(StorageMessage.WriteRequestCreated request)
         {
-            Init(request.Envelope, request.CorrelationId, request.EventStreamId, -1);
+            Init(request.Envelope, request.CorrelationId, -1);
 
             _expectedVersion = request.ExpectedVersion;
             if (_expectedVersion == ExpectedVersion.Any)
@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
             Publisher.Publish(new StorageMessage.WritePrepares(CorrelationId,
                                                                PublishEnvelope,
-                                                               EventStreamId,
+                                                               request.EventStreamId,
                                                                _expectedVersion,
                                                                request.Events,
                                                                allowImplicitStreamCreation: true,
@@ -65,16 +65,16 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                            new StorageMessage.PreparePhaseTimeout(CorrelationId)));
         }
 
-        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int firstEventNumber)
+        protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
         {
-            base.CompleteSuccessRequest(correlationId, eventStreamId, firstEventNumber);
-            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, eventStreamId, firstEventNumber);
+            base.CompleteSuccessRequest(correlationId, firstEventNumber);
+            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, firstEventNumber);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationResult result, string error)
+        protected override void CompleteFailedRequest(Guid correlationId, OperationResult result, string error)
         {
-            base.CompleteFailedRequest(correlationId, eventStreamId, result, error);
+            base.CompleteFailedRequest(correlationId, result, error);
 
             if (result == OperationResult.WrongExpectedVersion && _expectedVersion == ExpectedVersion.Any)
             {
@@ -85,7 +85,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                 return;
             }
             
-            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, eventStreamId, result, error);
+            var responseMsg = new ClientMessage.WriteEventsCompleted(correlationId, result, error);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
 

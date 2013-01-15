@@ -137,5 +137,27 @@ namespace EventStore.Projections.Core.Messages
                 get { return _correlationId; }
             }
         }
+
+        public class ReaderAssigned : Message
+        {
+            private readonly Guid _correlationId;
+            private readonly Guid _readerId;
+
+            public ReaderAssigned(Guid correlationId, Guid readerId)
+            {
+                _correlationId = correlationId;
+                _readerId = readerId;
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+
+            public Guid ReaderId
+            {
+                get { return _readerId; }
+            }
+        }
     }
 }

@@ -166,7 +166,7 @@ namespace EventStore.TestClient.Commands.DvuBasic
             var readStatuses = Enumerable.Range(0, readers).Select(x => new Status(context.Log)).ToArray();
             var readNotifications = Enumerable.Range(0, readers).Select(x => new ManualResetEventSlim(false)).ToArray();
             var writeStatuses = Enumerable.Range(0, writers).Select(x => new Status(context.Log)).ToArray();
-            var writeNotifications = Enumerable.Range(0, readers).Select(x => new ManualResetEventSlim(false)).ToArray();
+            var writeNotifications = Enumerable.Range(0, writers).Select(x => new ManualResetEventSlim(false)).ToArray();
 
             for (int i = 0; i < readers; i++)
             {

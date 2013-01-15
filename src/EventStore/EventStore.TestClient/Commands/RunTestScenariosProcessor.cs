@@ -163,6 +163,16 @@ namespace EventStore.TestClient.Commands
                                             eventsPerStream, 
                                             streamDeleteStep, 
                                             dbParentPath), 
+/*
+                new LoopingProjTranWriteScenario(directTcpSender, 
+                                            maxConcurrentRequests, 
+                                            connections, 
+                                            streams, 
+                                            eventsPerStream, 
+                                            streamDeleteStep,
+                                            TimeSpan.FromMinutes(executionPeriodMinutes),
+                                            dbParentPath), 
+*/
                 new LoopingProjectionKillScenario(directTcpSender, 
                                                   maxConcurrentRequests, 
                                                   connections, 

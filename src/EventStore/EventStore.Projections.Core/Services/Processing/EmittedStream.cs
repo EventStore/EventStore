@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -138,9 +137,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             if (_logger != null)
-                _logger.Info(
-                    "Failed to write events to stream {0}. Error: {1}", message.EventStreamId,
-                    Enum.GetName(typeof (OperationResult), message.Result));
+            {
+                _logger.Info("Failed to write events to stream {0}. Error: {1}",
+                             _streamId,
+                             Enum.GetName(typeof (OperationResult), message.Result));
+            }
             switch (message.Result)
             {
                 case OperationResult.WrongExpectedVersion:
@@ -149,7 +150,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 case OperationResult.PrepareTimeout:
                 case OperationResult.ForwardTimeout:
                 case OperationResult.CommitTimeout:
-                    if (_logger != null) _logger.Info("Retrying write to {0}", message.EventStreamId);
+                    if (_logger != null) _logger.Info("Retrying write to {0}", _streamId);
                     PublishWriteEvents();
                     break;
                 default:

@@ -213,10 +213,7 @@ namespace EventStore.Core.Services
         private void DropSubscription(Subscription subscription, bool sendDropNotification)
         {
             if (sendDropNotification)
-            {
-                subscription.Connection.SendMessage(
-                    new ClientMessage.SubscriptionDropped(subscription.CorrelationId, subscription.EventStreamId));
-            }
+                subscription.Connection.SendMessage(new ClientMessage.SubscriptionDropped(subscription.CorrelationId));
 
             List<Subscription> subscriptions;
             if (_subscriptionGroupsByStream.TryGetValue(subscription.EventStreamId, out subscriptions))
