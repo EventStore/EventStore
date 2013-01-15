@@ -133,6 +133,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Net;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Text;
@@ -470,10 +471,16 @@ namespace EventStore.Common.Options
                 !tt.IsGenericTypeDefinition &&
                 tt.GetGenericTypeDefinition() == typeof(Nullable<>);
             Type targetType = nullable ? tt.GetGenericArguments()[0] : typeof(T);
-            TypeConverter conv = TypeDescriptor.GetConverter(targetType);
+            //TypeConverter conv = TypeDescriptor.GetConverter(targetType);
 
-            if (targetType == typeof(IPAddressTypeConverter))
+            TypeConverter conv;
+            if (targetType == typeof (IPAddress))
+            {
+                Console.WriteLine("SUBSCTITUTING OWN IPADDRESS CONVERTER IN MONO.OPTIONS.");
                 conv = new IPAddressTypeConverter();
+            }
+            else
+                conv = TypeDescriptor.GetConverter(targetType);
 
             T t = default(T);
             try
