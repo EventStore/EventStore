@@ -1,10 +1,10 @@
 // Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,48 +24,18 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-
-using System.Collections.Generic;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Common;
-using EventStore.Core.Tests.Fakes;
-using NUnit.Framework;
-
-namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
+//  
+namespace EventStore.Core.Services.Storage.ReaderIndex
 {
-    public class when_transaction_commit_gets_prepare_timeout_before_prepares : RequestManagerSpecification
+    public struct TransactionInfo
     {
-        protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
-        {
-            return new TransactionCommitTwoPhaseRequestManager(publisher, 3, 3);
-        }
+        public readonly int TransactionOffset;
+        public readonly string EventStreamId;
 
-        protected override IEnumerable<Message> WithInitialMessages()
+        public TransactionInfo(int transactionOffset, string eventStreamId)
         {
-            yield return new StorageMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4);
-        }
-
-        protected override Message When()
-        {
-            return new StorageMessage.PreparePhaseTimeout(CorrelationId);
-        }
-
-        [Test]
-        public void failed_request_message_is_published()
-        {
-            Assert.That(produced.ContainsSingle<StorageMessage.RequestCompleted>(x => x.CorrelationId == CorrelationId && x.Success == false));
-        }
-
-        [Test]
-        public void the_envelope_is_replied_to_with_failure()
-        {
-            Assert.AreEqual(1, Envelope.Replies.Count);
-            var reply = (ClientMessage.TransactionCommitCompleted)Envelope.Replies[0];
-            Assert.AreEqual(CorrelationId, reply.CorrelationId);
-            Assert.AreEqual(OperationResult.PrepareTimeout, reply.Result);
+            TransactionOffset = transactionOffset;
+            EventStreamId = eventStreamId;
         }
     }
 }

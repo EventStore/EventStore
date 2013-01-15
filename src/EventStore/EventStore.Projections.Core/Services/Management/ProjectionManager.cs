@@ -36,7 +36,6 @@ using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
@@ -431,10 +430,9 @@ namespace EventStore.Projections.Core.Services.Management
         private ManagedProjection CreateManagedProjectionInstance(string name)
         {
             var projectionCorrelationId = Guid.NewGuid();
-            IPublisher queue;
             if (_lastUsedQueue >= _queues.Length)
                 _lastUsedQueue = 0;
-            queue = _queues[_lastUsedQueue];
+            IPublisher queue = _queues[_lastUsedQueue];
             _lastUsedQueue++;
 
             var managedProjectionInstance = new ManagedProjection(queue, 
@@ -447,15 +445,16 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void BeginWriteProjectionRegistration(string name, Action completed)
         {
+            const string eventStreamId = "$projections-$all";
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, true, "$projections-$all", ExpectedVersion.Any,
+                    Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "ProjectionCreated", false, Encoding.UTF8.GetBytes(name), new byte[0])),
-                m => WriteProjectionRegistrationCompleted(m, completed, name));
+                m => WriteProjectionRegistrationCompleted(m, completed, name, eventStreamId));
         }
 
         private void WriteProjectionRegistrationCompleted(
-            ClientMessage.WriteEventsCompleted message, Action completed, string name)
+            ClientMessage.WriteEventsCompleted message, Action completed, string name, string eventStreamId)
         {
             if (message.Result == OperationResult.Success)
             {
@@ -463,7 +462,7 @@ namespace EventStore.Projections.Core.Services.Management
                 return;
             }
             _logger.Info(
-                "Projection '{0}' registration has not been written to {1}. Error: {2}", name, message.EventStreamId,
+                "Projection '{0}' registration has not been written to {1}. Error: {2}", name, eventStreamId,
                 Enum.GetName(typeof (OperationResult), message.Result));
             if (message.Result == OperationResult.CommitTimeout
                 || message.Result == OperationResult.ForwardTimeout

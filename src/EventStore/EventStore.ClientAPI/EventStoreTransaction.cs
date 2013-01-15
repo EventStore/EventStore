@@ -37,7 +37,6 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class EventStoreTransaction : IDisposable
     {
-        public readonly string Stream;
         public readonly long TransactionId;
 
         private readonly EventStoreConnection _connection;
@@ -47,15 +46,12 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// Constructs a new <see cref="EventStoreTransaction"/>
         /// </summary>
-        /// <param name="stream">The stream in the transaction</param>
         /// <param name="transactionId">The transaction id of the transaction</param>
         /// <param name="connection">The connection the transaction is hooked to</param>
-        internal EventStoreTransaction(string stream, long transactionId, EventStoreConnection connection)
+        internal EventStoreTransaction(long transactionId, EventStoreConnection connection)
         {
-            Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.Nonnegative(transactionId, "transactionId");
 
-            Stream = stream;
             TransactionId = transactionId;
             _connection = connection;
         }

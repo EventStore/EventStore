@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+﻿/*// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -138,11 +138,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                     var transactionA = store.StartTransaction(streamA, ExpectedVersion.Any);
 
-                    var w1 = WriteTransactionData(transactionA.TransactionId, transactionA.Stream, writtenCountA, batchSizeA, CreateEventA);
+                    var w1 = WriteTransactionData(transactionA.TransactionId, writtenCountA, batchSizeA, CreateEventA);
                     w1.Wait();
 
                     var transactionB = store.StartTransaction(streamB, ExpectedVersion.Any);
-                    var w2 = WriteTransactionData(transactionB.TransactionId, transactionB.Stream, writtenCountB, batchSizeB, CreateEventB);
+                    var w2 = WriteTransactionData(transactionB.TransactionId, writtenCountB, batchSizeB, CreateEventB);
                     w2.Wait();
 
                     var cB = CommitTransaction(transactionB);
@@ -206,17 +206,16 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             }
         }
 
-        private Task<object> WriteTransactionData(long transactionId, string stream, int startingVersion, int eventCount, Func<int, IEvent> createEvent)
+        private Task<object> WriteTransactionData(EventStoreTransaction transaction, int startingVersion, int eventCount, Func<int, IEvent> createEvent)
         {
-            Log.Info("Starting to write {0} events in tran {1} to [{2}]", eventCount, transactionId, stream);
+            Log.Info("Starting to write {0} events in tran {1}", eventCount, transactionId);
 
             var store = GetConnection();
-
             var resSource = new TaskCompletionSource<object>();
 
             Action<Task> fail = prevTask =>
             {
-                Log.Info("WriteEventsInTransactionalWay for stream {0} failed.", stream);
+                Log.Info("WriteEventsInTransactionalWay for transaction {0} failed.", transactionId);
                 resSource.SetException(prevTask.Exception);
             };
 
@@ -233,7 +232,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 version += 1;
 
-                var writeTask = store.TransactionalWriteAsync(transactionId, stream, new[] { createEvent(version) });
+                var writeTask = store.TransactionalWriteAsync(transactionId, new[] { createEvent(version) });
                 writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 writeTask.ContinueWith(writeTransactionEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
@@ -293,4 +292,4 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             
         }
     }
-}
+}*/

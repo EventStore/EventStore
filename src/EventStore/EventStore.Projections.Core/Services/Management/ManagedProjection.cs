@@ -33,11 +33,9 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Utils;
-using System.Linq;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Services.Management
@@ -423,14 +421,15 @@ namespace EventStore.Projections.Core.Services.Management
                 return;
             }
             var managedProjectionSerializedState = _persistedState.ToJsonBytes();
+            var eventStreamId = "$projections-" + _name;
             _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), _writeDispatcher.Envelope, true, "$projections-" + _name, ExpectedVersion.Any,
+                    Guid.NewGuid(), _writeDispatcher.Envelope, true, eventStreamId, ExpectedVersion.Any,
                     new Event(Guid.NewGuid(), "ProjectionUpdated", true, managedProjectionSerializedState, new byte[0])),
-                m => WriteCompleted(m, completed));
+                m => WriteCompleted(m, completed, eventStreamId));
         }
 
-        private void WriteCompleted(ClientMessage.WriteEventsCompleted message, Action completed)
+        private void WriteCompleted(ClientMessage.WriteEventsCompleted message, Action completed, string eventStreamId)
         {
             if (message.Result == OperationResult.Success)
             {
@@ -438,9 +437,10 @@ namespace EventStore.Projections.Core.Services.Management
                 if (completed != null) completed();
                 return;
             }
-            _logger.Info(
-                "Projection '{0}' source has not been written to {1}. Error: {2}", _name, message.EventStreamId,
-                Enum.GetName(typeof (OperationResult), message.Result));
+            _logger.Info("Projection '{0}' source has not been written to {1}. Error: {2}",
+                         _name,
+                         eventStreamId,
+                         Enum.GetName(typeof (OperationResult), message.Result));
             if (message.Result == OperationResult.CommitTimeout
                 || message.Result == OperationResult.ForwardTimeout
                 || message.Result == OperationResult.PrepareTimeout

@@ -34,11 +34,20 @@ namespace EventStore.ClientAPI.Exceptions
     public class StreamDeletedException : Exception
     {
         public readonly string Stream;
+        public readonly long? TransactionId;
 
-        public StreamDeletedException(string stream): base(string.Format("Event stream '{0}' is deleted.", stream))
+        public StreamDeletedException(string stream)
+            : base(string.Format("Event stream '{0}' is deleted.", stream))
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Stream = stream;
+        }
+
+        public StreamDeletedException(long transactionId)
+            : base(string.Format("Transaction {0} failed due to underlying stream is deleted.", transactionId))
+        {
+            Stream = null;
+            TransactionId = transactionId;
         }
     }
 }

@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(StorageMessage.CreateStreamRequestCreated request)
         {
-            Init(request.Envelope, request.CorrelationId, request.EventStreamId, -1);
+            Init(request.Envelope, request.CorrelationId, -1);
 
             Publisher.Publish(
                 new StorageMessage.WritePrepares(
@@ -64,17 +64,17 @@ namespace EventStore.Core.Services.RequestManager.Managers
         }
 
 
-        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int firstEventNumber)
+        protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
         {
-            base.CompleteSuccessRequest(correlationId, eventStreamId, firstEventNumber);
-            var responseMsg = new ClientMessage.CreateStreamCompleted(correlationId, eventStreamId, OperationResult.Success, null);
+            base.CompleteSuccessRequest(correlationId, firstEventNumber);
+            var responseMsg = new ClientMessage.CreateStreamCompleted(correlationId, OperationResult.Success, null);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationResult result, string error)
+        protected override void CompleteFailedRequest(Guid correlationId, OperationResult result, string error)
         {
-            base.CompleteFailedRequest(correlationId, eventStreamId, result, error);
-            var responseMsg = new ClientMessage.CreateStreamCompleted(correlationId, eventStreamId, result, error);
+            base.CompleteFailedRequest(correlationId, result, error);
+            var responseMsg = new ClientMessage.CreateStreamCompleted(correlationId, result, error);
             ResponseEnvelope.ReplyWith(responseMsg);     
         }
     }

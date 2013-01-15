@@ -38,7 +38,6 @@ using EventStore.Transport.Http.Atom;
 using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
 using EventStore.Common.Utils;
-using Newtonsoft.Json.Serialization;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers
 {
@@ -241,7 +240,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void OnGetStreamFeedCore(
             HttpEntity entity, string stream, int start, int count, EmbedLevel embed, bool headOfStream)
         {
-            int streamVersion;
             var etag = entity.Request.Headers["If-None-Match"];
             int? validationStreamVersion = null;
             //TODO: extract 
@@ -249,10 +247,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             if (etag != null)
             {
                 var trimmed = etag.Trim('\"');
-                var splitted = trimmed.Split(new char[] {';'});
+                var splitted = trimmed.Split(new[] {';'});
                 if (splitted.Length == 2)
                 {
                     var typeHash = entity.ResponseCodec.ContentType.GetHashCode();
+                    int streamVersion;
                     validationStreamVersion = splitted[1] == typeHash.ToString(CultureInfo.InvariantCulture)
                                               && etag.IsNotEmptyString() && int.TryParse(splitted[0], out streamVersion)
                                                   ? (int?) streamVersion
@@ -485,10 +484,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
 
+            var eventStreamId = create.EventStreamId;
             var envelope = new SendToHttpEnvelope(_networkSendQueue,
                                                   entity,
                                                   Format.Atom.CreateStreamCompleted,
-                                                  Configure.CreateStreamCompleted);
+                                                  (a, m) => Configure.CreateStreamCompleted(a, m, eventStreamId));
             var msg = new ClientMessage.CreateStream(Guid.NewGuid(),
                                                      envelope,
                                                      true, 
@@ -566,7 +566,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         private void OnPostEntryRequestRead(HttpEntityManager manager, string body)
         {
             var entity = manager.HttpEntity;
-            var stream = (string)manager.AsyncState;
+            var eventStreamId = (string)manager.AsyncState;
 
             var parsed = AutoEventConverter.SmartParse(body, entity.RequestCodec);
             var expectedVersion = parsed.Item1;
@@ -578,8 +578,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                 return;
             }
 
-            var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, Format.WriteEventsCompleted, Configure.WriteEventsCompleted);
-            var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, true, stream, expectedVersion, events);
+            var envelope = new SendToHttpEnvelope(_networkSendQueue,
+                                                  entity,
+                                                  Format.WriteEventsCompleted,
+                                                  (a, m) => Configure.WriteEventsCompleted(a, m, eventStreamId));
+            var msg = new ClientMessage.WriteEvents(Guid.NewGuid(), envelope, true, eventStreamId, expectedVersion, events);
 
             Publish(msg);
         }

@@ -42,28 +42,27 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         public void Handle(StorageMessage.TransactionCommitRequestCreated request)
         {
-            Init(request.Envelope, request.CorrelationId, request.EventStreamId, request.TransactionId);
+            Init(request.Envelope, request.CorrelationId, request.TransactionId);
 
             Publisher.Publish(new StorageMessage.WriteTransactionPrepare(request.CorrelationId,
                                                                          PublishEnvelope,
                                                                          request.TransactionId,
-                                                                         request.EventStreamId,
                                                                          liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
             Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
                                                            PublishEnvelope,
                                                            new StorageMessage.PreparePhaseTimeout(CorrelationId)));
         }
 
-        protected override void CompleteSuccessRequest(Guid correlationId, string eventStreamId, int firstEventNumber)
+        protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)
         {
-            base.CompleteSuccessRequest(correlationId, eventStreamId, firstEventNumber);
+            base.CompleteSuccessRequest(correlationId, firstEventNumber);
             var responseMsg = new ClientMessage.TransactionCommitCompleted(correlationId, TransactionPosition, OperationResult.Success, null);
             ResponseEnvelope.ReplyWith(responseMsg);
         }
 
-        protected override void CompleteFailedRequest(Guid correlationId, string eventStreamId, OperationResult result, string error)
+        protected override void CompleteFailedRequest(Guid correlationId, OperationResult result, string error)
         {
-            base.CompleteFailedRequest(correlationId, eventStreamId, result, error);
+            base.CompleteFailedRequest(correlationId, result, error);
             var responseMsg = new ClientMessage.TransactionCommitCompleted(correlationId, TransactionPosition, result, error);
             ResponseEnvelope.ReplyWith(responseMsg);
         }

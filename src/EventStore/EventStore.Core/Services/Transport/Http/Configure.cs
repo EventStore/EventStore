@@ -30,7 +30,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -149,7 +148,7 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public static ResponseConfiguration WriteEventsCompleted(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration WriteEventsCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.WriteEventsCompleted));
 
@@ -168,7 +167,7 @@ namespace EventStore.Core.Services.Transport.Http
                         new KeyValuePair<string, string>("Location",
                                                          HostName.Combine(entity.UserHostName,
                                                                           "/streams/{0}/{1}",
-                                                                          Uri.EscapeDataString(completed.EventStreamId),
+                                                                          Uri.EscapeDataString(eventStreamId),
                                                                           completed.FirstEventNumber == 0 ? 1 : completed.FirstEventNumber)));
                 }
                 case OperationResult.PrepareTimeout:
@@ -197,7 +196,7 @@ namespace EventStore.Core.Services.Transport.Http
             return completed.Success ? OkNoCache(entity.ResponseCodec.ContentType) : NotFound();
         }
 
-        public static ResponseConfiguration CreateStreamCompleted(HttpResponseConfiguratorArgs entity, Message message)
+        public static ResponseConfiguration CreateStreamCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
 
@@ -216,7 +215,7 @@ namespace EventStore.Core.Services.Transport.Http
                         new KeyValuePair<string, string>("Location",
                                                          HostName.Combine(entity.UserHostName,
                                                                           "/streams/{0}",
-                                                                          Uri.EscapeDataString(completed.EventStreamId))));
+                                                                          Uri.EscapeDataString(eventStreamId))));
                 }
                 case OperationResult.PrepareTimeout:
                 case OperationResult.CommitTimeout:
