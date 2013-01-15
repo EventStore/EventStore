@@ -1,4 +1,4 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,25 +25,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-using System.Collections.Generic;
-using System.Linq;
-
-namespace EventStore.Core.Tests.Common
+namespace EventStore.Common.Options
 {
-    public static class HelperExtensions
+    public enum OptionOrigin
     {
-        public static bool IsBetween(this int n, int a, int b)
-        {
-            return n >= a && n <= b;
-        }
-
-        public static bool AreEqual<TKey, TValue>(this IDictionary<TKey, TValue> first, IDictionary<TKey, TValue> second)
-        {
-            if (first.Count != second.Count)
-                return false;
-
-            TValue value;
-            return first.All(kvp => second.TryGetValue(kvp.Key, out value) && value.Equals(kvp.Value));
-        }
+        None,
+        CommandLine,
+        Environment,
+        Config,
+        Default
     }
 }

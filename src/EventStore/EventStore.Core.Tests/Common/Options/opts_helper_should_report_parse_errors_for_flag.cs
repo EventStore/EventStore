@@ -26,49 +26,51 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Threading;
-using EventStore.Common.Utils;
-using EventStore.Core;
+using System;
+using EventStore.Common.Options;
+using NUnit.Framework;
 
-namespace EventStore.TestClient
+namespace EventStore.Core.Tests.Common.Options
 {
-    public class Program: ProgramBase<ClientOptions>
+    [TestFixture]
+    public class opts_helper_should_report_parse_errors_for_flag : OptsHelperTestBase
     {
-        private Client _client;
-
-        public static int Main(string[] args)
+        public bool Flag { get { throw new InvalidOperationException(); } }
+        
+        [Test, Ignore("Mono.Options allows this situation and ignores the value provided.")]
+        public void with_value_in_cmd_line()
         {
-            var p = new Program();
-            return p.Run(args);
+            Helper.Register(() => Flag, "f|flag", "FLAG", "settings.flag");
+
+            Helper.Parse("-f", "somevalue");
+            Assert.Fail();
         }
 
-        protected override string GetLogsDirectory(ClientOptions options)
+        [Test, Ignore("Mono.Options allows this situation and ignores the value provided.")]
+        public void if_flag_is_defined_more_than_once()
         {
-            return options.LogsDir.IsNotEmptyString() ? options.LogsDir : Helper.GetDefaultLogsDir();
+            Helper.Register(() => Flag, "f|flag", "FLAG", "settings.flag");
+
+            Assert.Throws<OptionException>(() => Helper.Parse("-f-", "-f+"));
         }
 
-        protected override string GetComponentName(ClientOptions options)
+        [Test]
+        public void with_non_bool_value_in_env()
         {
-            return "client";
+            Helper.Register(() => Flag, "f|flag", "FLAG", "settings.flag");
+            SetEnv("FLAG", "NOTBOOL");
+
+            Assert.Throws<OptionException>(() => Helper.Parse(),
+                                           "Invalid value for flag in environment variable OPTSHELPER_FLAG: 'NOTBOOL', valid values are '0' and '1'.");
         }
 
-        protected override void Create(ClientOptions options)
+        [Test]
+        public void with_wrong_type_in_json()
         {
-            _client = new Client(options);
-        }
+            Helper.Register(() => Flag, "f|flag", "FLAG", "settings.flag");
+            var cfg = WriteJsonConfig(new {settings = new {flag = "bla"}});
 
-        protected override void Start()
-        {
-            var exitCode = _client.Run();
-            if (!_client.InteractiveMode)
-            {
-                Thread.Sleep(500);
-                Application.Exit(exitCode, "Client non-interactive mode has exited.");
-            }
-        }
-
-        public override void Stop()
-        {
+            Assert.Throws<OptionException>(() => Helper.Parse("--cfg", cfg));
         }
     }
 }

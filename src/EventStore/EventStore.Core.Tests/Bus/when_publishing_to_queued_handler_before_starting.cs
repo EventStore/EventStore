@@ -30,7 +30,7 @@ using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Common;
+using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Bus
