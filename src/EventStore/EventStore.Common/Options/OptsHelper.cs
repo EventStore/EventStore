@@ -268,7 +268,14 @@ namespace EventStore.Common.Options
             var sb = new StringBuilder();
             foreach (var option in _optionContainers.Values)
             {
-                var optionName = option.Name.ToUpper().Replace("_", " ");
+                var ss = new StringBuilder();
+                foreach (var c in option.Name)
+                {
+                    if (ss.Length > 0 && char.IsLower(ss[ss.Length - 1]) && char.IsUpper(c))
+                        ss.Append(' ');
+                    ss.Append(c);
+                }
+                var optionName = ss.ToString().ToUpper();
                 var value = option.FinalValue is IEnumerable<object>
                                     ? string.Join(", ", ((IEnumerable<object>) option.FinalValue).ToArray())
                                     : option.FinalValue;

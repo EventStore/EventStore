@@ -125,7 +125,7 @@ namespace EventStore.Core
             Log.Info("\nOS: {0} ({1})\n"
                      + "RUNTIME: {2} ({3}-bit)\n"
                      + "GC: {4}\n"
-                     + "LOGS: {5}\n"
+                     + "LOGS: {5}\n\n"
                      + "{6}",
                      OS.IsLinux ? "Linux" : "Windows",
                      Environment.OSVersion,

@@ -120,11 +120,11 @@ namespace EventStore.Common.Options
          *  CLUSTER OPTIONS
          */
 
-        public const string ClusterDnsCmd = "d|cluster-dns=";
+        public const string ClusterDnsCmd = "cluster-dns=";
         public const string ClusterDnsEnv = "CLUSTER_DNS";
         public const string ClusterDnsJson = null;
         public const string ClusterDnsDescr = null;
-        public static readonly string ClusterDnsDefault = string.Empty;
+        public static readonly string ClusterDnsDefault = "fake.dns";
 
         public const string ClusterSizeCmd = "nodes-count|cluster-size=";
         public const string ClusterSizeEnv = "CLUSTER_SIZE";
