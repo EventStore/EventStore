@@ -1,10 +1,10 @@
 ﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,28 +24,49 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
+using System;
 using System.Collections.Generic;
-using EventStore.Common.CommandLine.lib;
+using System.Linq;
 
-namespace EventStore.Common.CommandLine
+namespace EventStore.Core.Tests.Helper
 {
-    public abstract class EventStoreCmdLineOptionsBase : CommandLineOptionsBase
+    public static class CollectionsExtensions
     {
-        public virtual IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
+        public static bool ContainsNo<TMessage>(this IEnumerable<object> collection)
         {
-            yield return new KeyValuePair<string, string>("LOGSDIR", LogsDir);
+            return collection.ContainsNo<TMessage>(v => true);
         }
 
-        [Option(null, "logsdir", HelpText = "Path where to keep log files.")]
-        public string LogsDir { get; set; }
-
-        [HelpOption]
-        public virtual string GetUsage()
+        public static bool ContainsNo<TMessage>(this IEnumerable<object> collection, Predicate<TMessage> predicate)
         {
-            return HelpText.AutoBuild(this, (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
+            return collection.ContainsN<TMessage>(0, predicate);
         }
 
+        public static bool ContainsSingle<TMessage>(this IEnumerable<object> collection)
+        {
+            return collection.ContainsSingle<TMessage>(v => true);
+        }
+
+        public static bool ContainsSingle<TMessage>(this IEnumerable<object> collection, Predicate<TMessage> predicate)
+        {
+            return collection.ContainsN<TMessage>(1, predicate);
+        }
+
+        public static bool ContainsN<TMessage>(this IEnumerable<object> collection, int n)
+        {
+            return collection.ContainsN<TMessage>(n, v => true);
+        }
+
+        public static bool ContainsN<TMessage>(this IEnumerable<object> collection, int n, Predicate<TMessage> predicate)
+        {
+            return collection.OfType<TMessage>().Count(v => predicate(v)) == n;
+        }
+
+        public static bool IsEmpty(this IEnumerable<object> collection)
+        {
+            return !collection.Any();
+        }
     }
 }

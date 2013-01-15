@@ -1,10 +1,10 @@
 ﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,28 +24,64 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
+// 
 
-using System.Collections.Generic;
-using EventStore.Common.CommandLine.lib;
+using System.Net;
+using NUnit.Framework;
 
-namespace EventStore.Common.CommandLine
+namespace EventStore.Core.Tests.Common.Options
 {
-    public abstract class EventStoreCmdLineOptionsBase : CommandLineOptionsBase
+    [TestFixture]
+    public class opts_helper_should_report_parse_errors_for_custom_type : OptsHelperTestBase
     {
-        public virtual IEnumerable<KeyValuePair<string, string>> GetLoadedOptionsPairs()
+        public IPAddress Ip { get; private set; }
+
+        [Test]
+        public void with_no_value_in_cmd_line()
         {
-            yield return new KeyValuePair<string, string>("LOGSDIR", LogsDir);
+            Helper.RegisterRef(() => Ip, "i|ip", "settings.ip", "IP");
+
+            Helper.Parse("-i");
+            Assert.Fail();
         }
 
-        [Option(null, "logsdir", HelpText = "Path where to keep log files.")]
-        public string LogsDir { get; set; }
-
-        [HelpOption]
-        public virtual string GetUsage()
+        [Test]
+        public void with_wrong_format_in_cmd_line()
         {
-            return HelpText.AutoBuild(this, (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
+            Helper.RegisterRef(() => Ip, "i|ip", "settings.ip", "IP");
+
+            Helper.Parse("-i", "127.0..1");
+            Assert.Fail();
         }
 
+        [Test]
+        public void with_wrong_format_in_env()
+        {
+            Helper.RegisterRef(() => Ip, "i|ip", "settings.ip", "IP");
+            SetEnv("IP", "127,0,0,1");
+
+            Helper.Parse();
+            Assert.Fail();
+        }
+
+        [Test]
+        public void with_wrong_type_in_json()
+        {
+            Helper.RegisterRef(() => Ip, "i|ip", "settings.ip", "IP");
+            var cfg = WriteJsonConfig(new { settings = new { ip = new { } } });
+
+            Helper.Parse("--cfg", cfg);
+            Assert.Fail();
+        }
+
+        [Test]
+        public void with_wrong_format_in_json()
+        {
+            Helper.RegisterRef(() => Ip, "i|ip", "settings.ip", "IP");
+            var cfg = WriteJsonConfig(new { settings = new { ip = "127:1:1:1" } });
+
+            Helper.Parse("--cfg", cfg);
+            Assert.Fail();
+        }
     }
 }
