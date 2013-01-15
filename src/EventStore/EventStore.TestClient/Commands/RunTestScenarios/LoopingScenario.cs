@@ -74,10 +74,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var runIndex = 0;
             while (stopWatch.Elapsed < _executionPeriod)
             {
-                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
+                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
                                         runIndex,
                                         (int)stopWatch.Elapsed.TotalMinutes,
-                                        _executionPeriod.TotalMinutes);
+                                        _executionPeriod.TotalMinutes,
+                                        GetType().Name);
                 Log.Info(msg);
                 Log.Info("##teamcity[message '{0}']", msg);
 

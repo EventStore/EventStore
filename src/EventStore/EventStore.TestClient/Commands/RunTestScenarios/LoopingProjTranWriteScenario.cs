@@ -1,4 +1,4 @@
-﻿/*// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -101,10 +101,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var runIndex = 0;
             while (stopWatch.Elapsed < _executionPeriod)
             {
-                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
+                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
                                         runIndex,
                                         (int)stopWatch.Elapsed.TotalMinutes,
-                                        _executionPeriod.TotalMinutes);
+                                        _executionPeriod.TotalMinutes,
+                                        GetType().Name);
                 Log.Info(msg);
                 Log.Info("##teamcity[message '{0}']", msg);
 
@@ -138,11 +139,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                     var transactionA = store.StartTransaction(streamA, ExpectedVersion.Any);
 
-                    var w1 = WriteTransactionData(transactionA.TransactionId, writtenCountA, batchSizeA, CreateEventA);
+                    var w1 = WriteTransactionData(transactionA, writtenCountA, batchSizeA, CreateEventA);
                     w1.Wait();
 
                     var transactionB = store.StartTransaction(streamB, ExpectedVersion.Any);
-                    var w2 = WriteTransactionData(transactionB.TransactionId, writtenCountB, batchSizeB, CreateEventB);
+                    var w2 = WriteTransactionData(transactionB, writtenCountB, batchSizeB, CreateEventB);
                     w2.Wait();
 
                     var cB = CommitTransaction(transactionB);
@@ -196,7 +197,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 var projectionManager = GetProjectionsManager();
                 projectionManager.CreateContinuous(projectionName, projection);
 
-                WaitAndCheckIfIsFaulted(store, projectionName);
+                WaitAndCheckIfIsFaulted(projectionName);
 
                 Log.Debug(string.Format("Done iteration {0}", runIndex));
             }
@@ -208,14 +209,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private Task<object> WriteTransactionData(EventStoreTransaction transaction, int startingVersion, int eventCount, Func<int, IEvent> createEvent)
         {
-            Log.Info("Starting to write {0} events in tran {1}", eventCount, transactionId);
+            Log.Info("Starting to write {0} events in tran {1}", eventCount, transaction.TransactionId);
 
-            var store = GetConnection();
             var resSource = new TaskCompletionSource<object>();
 
             Action<Task> fail = prevTask =>
             {
-                Log.Info("WriteEventsInTransactionalWay for transaction {0} failed.", transactionId);
+                Log.Info("WriteEventsInTransactionalWay for transaction {0} failed.", transaction.TransactionId);
                 resSource.SetException(prevTask.Exception);
             };
 
@@ -232,7 +232,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
                 version += 1;
 
-                var writeTask = store.TransactionalWriteAsync(transactionId, new[] { createEvent(version) });
+                var writeTask = transaction.WriteAsync(new[] { createEvent(version) });
                 writeTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
                 writeTask.ContinueWith(writeTransactionEvent, TaskContinuationOptions.OnlyOnRanToCompletion);
             };
@@ -244,28 +244,26 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private Task<object> CommitTransaction(EventStoreTransaction transaction)
         {
-            var store = GetConnection();
-
             var resSource = new TaskCompletionSource<object>();
 
             Action<Task> fail = prevTask =>
             {
-                Log.Info("WriteEventsInTransactionalWay for stream {0} failed.", transaction.Stream);
+                Log.Info("WriteEventsInTransactionalWay for tran {0} failed", transaction.TransactionId);
                 resSource.SetException(prevTask.Exception);
             };
 
-            var commitTask = store.CommitTransactionAsync(transaction.TransactionId, transaction.Stream);
+            var commitTask = transaction.CommitAsync();
             commitTask.ContinueWith(fail, TaskContinuationOptions.OnlyOnFaulted);
             commitTask.ContinueWith(t =>
             {
-                Log.Info("Committed tran {0} in [{1}]", transaction.TransactionId, transaction.Stream);
+                Log.Info("Committed tran {0}", transaction.TransactionId);
                 resSource.SetResult(null);
             }, TaskContinuationOptions.OnlyOnRanToCompletion);
 
             return resSource.Task;
         }
 
-        private void WaitAndCheckIfIsFaulted(EventStoreConnection store, string projectionName)
+        private void WaitAndCheckIfIsFaulted(string projectionName)
         {
             var stopWatch = new Stopwatch();
             
@@ -292,4 +290,4 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             
         }
     }
-}*/
+}
