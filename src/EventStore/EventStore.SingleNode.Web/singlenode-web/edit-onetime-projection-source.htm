@@ -9,18 +9,35 @@
     <script id="r-head">
         es.tmpl.renderHead();
     </script>
+    <style>
+        .container
+        {
+            width: inherit;
+            margin-left: 50px;
+            margin-right: 50px;
+        }
+    </style>
 </head>
 <body>
     <div id="content">
-        <h1>
-            One Time Projection</h1>
+        <h1>One Time Projection</h1>
         <h2 id="status"></h2>
+        <div class="row">
+            <div class="span12">
+                <div id="commands-container">
+                    <ul style="display: inline;">
+                        <li><a href="#" id="btn-start" class="btn btn-success">Run</a></li>
+                        <li><a href="#" id="btn-stop" class="btn btn-danger">Break</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
         <div>
             <div class="control-group">
                 <label class="control-label" for="source">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <textarea id="source" class="json" spellcheck="false" wrap="off" cols="100"></textarea>
+                    <textarea id="source" class="json" spellcheck="false" wrap="off" style="display: block; width: 100%;"></textarea>
                 </div>
             </div>
             <div class="control-group">
@@ -32,7 +49,8 @@
             </div>
             <div class="control-group">
                 <label class="control-label" for="emit"><strong>Emit Enabled</strong></label>
-                <div class="controls"><input type="checkbox" id="emit" /></div>
+                <div class="controls">
+                    <input type="checkbox" id="emit" /></div>
             </div>
             <div class="control-group">
                 <div class="controls" id="update-source-container">
@@ -40,7 +58,7 @@
                         Update</button>
                 </div>
             </div>
-        </div> 
+        </div>
 
         <script id="r-body">
             es.tmpl.renderBody();
@@ -54,98 +72,38 @@
             },
         });
 
-        require(['projections/state-status-monitor'], function (monitor) {
+        require(['projections/Controller', 'projections/ui/Editor'], function (controller, editor) {
+
+            var lastSource = "";
 
             function statusChanged(status) {
-                $("#status").html(status.status + ($.isNumeric(status.progress) && status.progress != -1 ? ("(" + status.progress.toFixed(1) + "%)"): ""));
+                $("#status").html(status.status + ($.isNumeric(status.progress) && status.progress != -1 ? ("(" + status.progress.toFixed(1) + "%)") : ""));
             }
 
             function stateChanged(state) {
                 $("#state").text(state);
             }
 
-            $(function() {
-                var projectionStatusUrl = location.hash.substr(1);
-                var projectionMonitor = monitor(projectionStatusUrl);
-                projectionMonitor.start(statusChanged, stateChanged);
-            });
-        });
-
-        (function () {
-
-            var projectionStatusUrl = "";
+            function sourceChanged(source) {
+                var current = $("#source").text();
+                if (current !== source.query) {
+                    if (lastSource === current) {
+                        $("#source").text(source.query);
+                    } else {
+                        console.log("Ignoring query source changed outside. There are local pending changes.");
+                    }
+                }
+                $("#emit").attr("checked", source.emitEnabled);
+            }
 
             $(function () {
-                $.templates("editSourceTemplate", "#editSourceTemplate");
-                projectionStatusUrl = location.hash.substr(1);
+                var projectionStatusUrl = location.hash.substr(1);
+                var projectionMonitor = controller.create(projectionStatusUrl);
+                projectionMonitor.subscribe({ statusChanged: statusChanged, stateChanged: stateChanged, sourceChanged: sourceChanged });
 
-                $('#update-button').click(function (ev) {
-                    var params = $.param({
-                        emit: $("#emit").attr("checked") ? "yes" : "no",
-                    });
-                    $.ajax(projectionStatusUrl + "/query?" + params, {
-                        headers: {
-                            Accept: "application/json",
-                        },
-
-                        type: "PUT",
-                        data: $("#source").val(),
-                        success: successUpdateSource,
-                        error: function (xhr) {
-                            var msg = es.util.formatError("Couldn't delete projection", xhr);
-                            alert(msg);
-                        }
-                    });
-                });
-
-                requestProjectionState();
-                requestProjectionSource();
+                var projectionEditor = editor.create(projectionStatusUrl, projectionMonitor);
             });
-
-            function requestProjectionState() {
-                $.ajax(projectionStatusUrl + "/state", {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    success: successState,
-                    error: errorState
-                });
-
-                function successState(data, status, xhr) {
-                    var state = JSON.stringify(data);
-                    $("#projection-state").text(state);
-                }
-
-                function errorState(xhr, status) {
-                    setTimeout(requestProjectionState, 1000);
-                }
-            }
-
-            function requestProjectionSource() {
-                $.ajax(projectionStatusUrl + "/query?config=yes", {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    dataType: "json",
-                    success: successSource,
-                    error: errorSource
-                });
-
-                function successSource(data, status, xhr) {
-                    $("#source").text(data.query);
-                    $("#emit").attr("checked", data.emitEnabled);
-                }
-
-                function errorSource(xhr, status) {
-                    setTimeout(requestProjectionSource, 1000);
-                }
-            }
-
-            function successUpdateSource(data, status, xhr) {
-                window.location = "view-projection.htm#" + projectionStatusUrl;
-            }
-
-        })();
+        });
 
     </script>
 </body>
