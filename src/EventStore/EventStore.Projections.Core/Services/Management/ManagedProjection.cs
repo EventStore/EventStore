@@ -602,6 +602,7 @@ namespace EventStore.Projections.Core.Services.Management
             {
                 case ManagedProjectionState.Stopped:
                 case ManagedProjectionState.Faulted:
+                case ManagedProjectionState.Loaded:
                     if (completed != null) completed();
                     return;
                 case ManagedProjectionState.Loading:
