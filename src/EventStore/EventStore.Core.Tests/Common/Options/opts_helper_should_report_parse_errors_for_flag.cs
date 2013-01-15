@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System;
+using Mono.Options;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Common.Options
@@ -32,9 +35,9 @@ namespace EventStore.Core.Tests.Common.Options
     [TestFixture]
     public class opts_helper_should_report_parse_errors_for_flag : OptsHelperTestBase
     {
-        public bool Flag { get; private set; }
+        public bool Flag { get { throw new InvalidOperationException(); } }
         
-        [Test]
+        [Test, Ignore("Mono.Options allows this situation and ignores the value provided.")]
         public void with_value_in_cmd_line()
         {
             Helper.RegisterFlag(() => Flag, "f|flag", "settings.flag", "FLAG");
@@ -43,14 +46,22 @@ namespace EventStore.Core.Tests.Common.Options
             Assert.Fail();
         }
 
+        [Test, Ignore("Mono.Options allows this situation and ignores the value provided.")]
+        public void if_flag_is_defined_more_than_once()
+        {
+            Helper.RegisterFlag(() => Flag, "f|flag", "settings.flag", "FLAG");
+
+            Assert.Throws<OptionException>(() => Helper.Parse("-f-", "-f+"));
+        }
+
         [Test]
         public void with_non_bool_value_in_env()
         {
             Helper.RegisterFlag(() => Flag, "f|flag", "settings.flag", "FLAG");
             SetEnv("FLAG", "NOTBOOL");
 
-            Helper.Parse();
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse(),
+                                           "Invalid value for flag in environment variable OPTSHELPER_FLAG: 'NOTBOOL', valid values are '0' and '1'.");
         }
 
         [Test]
@@ -59,8 +70,7 @@ namespace EventStore.Core.Tests.Common.Options
             Helper.RegisterFlag(() => Flag, "f|flag", "settings.flag", "FLAG");
             var cfg = WriteJsonConfig(new {settings = new {flag = "bla"}});
 
-            Helper.Parse("--cfg", cfg);
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse("--cfg", cfg));
         }
     }
 }

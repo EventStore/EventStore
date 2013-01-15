@@ -26,7 +26,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Net;
+using Mono.Options;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Common.Options
@@ -34,54 +36,57 @@ namespace EventStore.Core.Tests.Common.Options
     [TestFixture]
     public class opts_helper_should_report_parse_errors_for_custom_type : OptsHelperTestBase
     {
-        public IPAddress Ip { get; private set; }
+        public IPAddress Ip { get { throw new InvalidOperationException(); } }
 
         [Test]
         public void with_no_value_in_cmd_line()
         {
-            Helper.RegisterRef(() => Ip, "i|ip", "settings.ip", "IP");
+            Helper.RegisterRef(() => Ip, "i|ip=", "settings.ip", "IP");
 
-            Helper.Parse("-i");
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse("-i"));
+        }
+
+        [Test]
+        public void if_value_is_provided_more_than_once()
+        {
+            Helper.RegisterRef(() => Ip, "i|ip=", "settings.ip", "IP");
+
+            Assert.Throws<OptionException>(() => Helper.Parse("-i", "192.168.1.1", "--ip", "192.168.1.1"));
         }
 
         [Test]
         public void with_wrong_format_in_cmd_line()
         {
-            Helper.RegisterRef(() => Ip, "i|ip", "settings.ip", "IP");
+            Helper.RegisterRef(() => Ip, "i|ip=", "settings.ip", "IP");
 
-            Helper.Parse("-i", "127.0..1");
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse("-i", "127.0..1"));
         }
 
         [Test]
         public void with_wrong_format_in_env()
         {
-            Helper.RegisterRef(() => Ip, "i|ip", "settings.ip", "IP");
+            Helper.RegisterRef(() => Ip, "i|ip=", "settings.ip", "IP");
             SetEnv("IP", "127,0,0,1");
 
-            Helper.Parse();
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse());
         }
 
         [Test]
         public void with_wrong_type_in_json()
         {
-            Helper.RegisterRef(() => Ip, "i|ip", "settings.ip", "IP");
+            Helper.RegisterRef(() => Ip, "i|ip=", "settings.ip", "IP");
             var cfg = WriteJsonConfig(new { settings = new { ip = new { } } });
 
-            Helper.Parse("--cfg", cfg);
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse("--cfg", cfg));
         }
 
         [Test]
         public void with_wrong_format_in_json()
         {
-            Helper.RegisterRef(() => Ip, "i|ip", "settings.ip", "IP");
+            Helper.RegisterRef(() => Ip, "i|ip=", "settings.ip", "IP");
             var cfg = WriteJsonConfig(new { settings = new { ip = "127:1:1:1" } });
 
-            Helper.Parse("--cfg", cfg);
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse("--cfg", cfg));
         }
     }
 }

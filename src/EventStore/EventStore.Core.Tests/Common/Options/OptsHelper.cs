@@ -28,13 +28,17 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using Mono.Options;
+using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.Common.Options
 {
@@ -45,17 +49,18 @@ namespace EventStore.Core.Tests.Common.Options
             TypeDescriptor.AddAttributes(typeof(IPAddress), new TypeConverterAttribute(typeof(IPAddressTypeConverter)));
         }
 
-        public IEnumerable<OptionInfo> Options { get { throw new NotImplementedException(); } }
-
         private readonly string _envPrefix;
+        private readonly string _configMember;
         private readonly OptionSet _optionSet;
+        private readonly Dictionary<string, IOptionContainer> _optionContainers = new Dictionary<string, IOptionContainer>();
 
         public OptsHelper(Expression<Func<string[]>> configs, string envPrefix)
         {
+            Ensure.NotNull(envPrefix, "envPrefix");
+
             _envPrefix = envPrefix;
-
-            var configMember = MemberName(configs);
-
+            _configMember = configs == null ? null : MemberName(configs);
+            _optionSet = new OptionSet();
         }
 
         private static string MemberName<T>(Expression<Func<T>> expr)
@@ -72,38 +77,177 @@ namespace EventStore.Core.Tests.Common.Options
         public void RegisterFlag(Expression<Func<bool>> member, string cmdPrototype, string jsonPath, string envName, 
                                  bool? @default = null, string description = null)
         {
-            throw new NotImplementedException();
+            Ensure.NotNull(member, "member");
+
+            var optionName = MemberName(member);
+            var option = new OptionFlagContainer(optionName,
+                                                 cmdPrototype,
+                                                 GetEnvVarName(envName),
+                                                 GetJsonPath(jsonPath),
+                                                 @default);
+            _optionContainers.Add(optionName, option);
+            if (cmdPrototype.IsNotEmptyString())
+                _optionSet.Add(cmdPrototype, description, option.ParsingFromCmdLine);
         }
 
         public void Register<T>(Expression<Func<T>> member, string cmdPrototype, string jsonPath, string envName, 
-                             T? @default = null, string description = null) 
+                                T? @default = null, string description = null) 
             where T : struct
         {
-            throw new NotImplementedException();
+            Ensure.NotNull(member, "member");
+
+            var optionName = MemberName(member);
+            var option = new OptionValueContainer<T>(optionName,
+                                                     cmdPrototype,
+                                                     GetEnvVarName(envName),
+                                                     GetJsonPath(jsonPath),
+                                                     @default.HasValue,
+                                                     @default ?? default(T));
+            _optionContainers.Add(optionName, option);
+            if (cmdPrototype.IsNotEmptyString())
+                _optionSet.Add(cmdPrototype, description, (T value) => option.ParsingFromCmdLine(value));
         }
 
         public void RegisterRef<T>(Expression<Func<T>> member, string cmdPrototype, string jsonPath, string envName, 
                                    T @default = null, string description = null) 
             where T : class
         {
-            throw new NotImplementedException();
+            Ensure.NotNull(member, "member");
+
+            var optionName = MemberName(member);
+            var option = new OptionValueContainer<T>(optionName,
+                                                     cmdPrototype,
+                                                     GetEnvVarName(envName),
+                                                     GetJsonPath(jsonPath),
+                                                     @default != null,
+                                                     @default);
+            _optionContainers.Add(optionName, option);
+            if (cmdPrototype.IsNotEmptyString())
+                _optionSet.Add(cmdPrototype, description, (T value) => option.ParsingFromCmdLine(value));
         }
 
         public void RegisterArray<T>(Expression<Func<T[]>> member, string cmdPrototype, string jsonPath, 
-                                     string envName, string envSeparator,
+                                     string envName, string separator,
                                      T[] @default = null, string description = null)
         {
-            throw new NotImplementedException();
+            Ensure.NotNull(member, "member");
+
+            var optionName = MemberName(member);
+            var option = new OptionArrayContainer<T>(optionName,
+                                                     cmdPrototype,
+                                                     GetEnvVarName(envName),
+                                                     separator,
+                                                     GetJsonPath(jsonPath),
+                                                     @default);
+            _optionContainers.Add(optionName, option);
+            if (cmdPrototype.IsNotEmptyString())
+                _optionSet.Add(cmdPrototype, description, (T value) => option.ParsingFromCmdLine(value));
+        }
+
+        private string GetEnvVarName(string envVarName)
+        {
+            return envVarName.IsEmptyString() ? null : (_envPrefix + envVarName).ToUpper();
+        }
+
+        private string[] GetJsonPath(string jsonPath)
+        {
+            if (jsonPath.IsEmptyString())
+                return null;
+            var parts = jsonPath.Split('.');
+            foreach (var part in parts)
+            {
+                if (part.IsEmptyString() || part.Contains(" "))
+                    throw new ArgumentException(string.Format("Wrong format of part of JSON path: {0}", part));
+            }
+            Debug.Assert(parts.Length > 0);
+            return parts;
         }
 
         public void Parse(params string[] args)
         {
-            throw new NotImplementedException();
+            _optionSet.Parse(args);
+
+            foreach (var optionContainer in _optionContainers.Values)
+            {
+                if (optionContainer.IsSet)
+                    continue;
+
+                optionContainer.ParseFromEnvironment();
+            }
+
+            var jsonConfigPaths = new List<string>();
+            var jsonConfigs = new List<Tuple<JObject, string>>();
+
+            IOptionContainer configOption;
+            if (_configMember != null && _optionContainers.TryGetValue(_configMember, out configOption))
+            {
+                var configOpt = configOption as OptionArrayContainer<string>;
+                if (configOpt == null)
+                    throw new InvalidOperationException(string.Format("Config option '{0}' is not of array of string type.", _configMember));
+
+                if (configOpt.IsSet)
+                    jsonConfigPaths.AddRange(configOpt.FinalValue);
+            }
+
+            // add default configs, if they exist
+            jsonConfigPaths.Add(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "config.json"));
+
+            foreach (var configPath in jsonConfigPaths.Where(File.Exists))
+            {
+                try
+                {
+                    JObject json = JObject.Parse(File.ReadAllText(configPath));
+                    jsonConfigs.Add(Tuple.Create(json, configPath));
+                }
+                catch (Exception exc)
+                {
+                    throw new Exception(string.Format("Couldn't parse JSON config at '{0}': {1}", configPath, exc.Message), exc);
+                }
+            }
+
+            foreach (var optionContainer in _optionContainers.Values)
+            {
+                foreach (var jsonConfig in jsonConfigs)
+                {
+                    if (optionContainer.IsSet)
+                        continue;
+
+                    optionContainer.ParseFromConfig(jsonConfig.Item1, jsonConfig.Item2);
+                }
+            }
+
+            foreach (var optionContainer in _optionContainers.Values)
+            {
+                if (!optionContainer.IsSet && !optionContainer.HasDefault)
+                {
+                    throw new OptionException(string.Format("No value is provided for option '{0}'.", optionContainer.Name),
+                                              optionContainer.Name);
+                }
+            }
         }
 
         public T Get<T>(Expression<Func<T>> member)
         {
-            throw new NotImplementedException();
+            Ensure.NotNull(member, "member");
+            var optionName = MemberName(member);
+
+            IOptionContainer optionContainer;
+            if (!_optionContainers.TryGetValue(optionName, out optionContainer))
+                throw new InvalidOperationException(string.Format("No option '{0}' was registered.", optionName));
+
+            Debug.Assert(optionContainer.IsSet || optionContainer.HasDefault);
+            Debug.Assert(optionContainer.FinalValue != null);
+
+            if (typeof (T) != optionContainer.FinalValue.GetType())
+            {
+                throw new InvalidOperationException(
+                        string.Format("Wrong type of requested option {0}. Registered type: {1}, requested type: {2}.",
+                                      optionName,
+                                      optionContainer.FinalValue.GetType().Name,
+                                      typeof (T).Name));
+            }
+
+            return (T) optionContainer.FinalValue;
         }
 
         public string GetUsage()
@@ -119,14 +263,14 @@ namespace EventStore.Core.Tests.Common.Options
         public string DumpOptions()
         {
             var sb = new StringBuilder();
-            foreach (var option in Options)
+            foreach (var option in _optionContainers.Values)
             {
                 sb.AppendFormat("{0}: {1} ({2} at {3}{4})",
                                 option.Name.ToUpper().Replace("_", " "),
-                                option.Value,
+                                option.FinalValue,
                                 option.OriginOptionName,
                                 option.Origin,
-                                option.Origin == OptionOrigin.Config ? option.OriginName : string.Empty);
+                                option.Origin == OptionOrigin.Config ? " " + option.OriginName : string.Empty);
             }
             return sb.ToString();
         }

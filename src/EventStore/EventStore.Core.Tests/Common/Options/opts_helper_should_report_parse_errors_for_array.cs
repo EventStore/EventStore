@@ -26,7 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Net;
+using System;
+using Mono.Options;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Common.Options
@@ -34,74 +35,67 @@ namespace EventStore.Core.Tests.Common.Options
     [TestFixture]
     public class opts_helper_should_report_parse_errors_for_array : OptsHelperTestBase
     {
-        public int[] Array { get; private set; }
+        public int[] Array { get { throw new InvalidOperationException(); } }
 
         [Test]
         public void with_no_value_in_cmd_line()
         {
-            Helper.RegisterArray(() => Array, "a|arr", "settings.arr", "ARR", ",");
+            Helper.RegisterArray(() => Array, "a|arr=", "settings.arr", "ARR", ",");
 
-            Helper.Parse("-a");
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse("-a"));
         }
 
         [Test]
         public void with_wrong_format_of_element_in_cmd_line()
         {
-            Helper.RegisterArray(() => Array, "a|arr", "settings.arr", "ARR", ",");
+            Helper.RegisterArray(() => Array, "a|arr=", "settings.arr", "ARR", ",");
 
-            Helper.Parse("-a", "123", "-a", "abc");
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse("-a", "123", "-a", "abc"));
         }
 
         [Test]
         public void with_wrong_format_of_element_in_env()
         {
-            Helper.RegisterArray(() => Array, "a|arr", "settings.arr", "ARR", ",");
+            Helper.RegisterArray(() => Array, "a|arr=", "settings.arr", "ARR", ",");
             SetEnv("ARR", "127,abc");
 
-            Helper.Parse();
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse());
         }
 
         [Test]
         public void with_missing_elements_in_env()
         {
-            Helper.RegisterArray(() => Array, "a|arr", "settings.arr", "ARR", ",");
+            Helper.RegisterArray(() => Array, "a|arr=", "settings.arr", "ARR", ",");
             SetEnv("ARR", "127,,721");
 
-            Helper.Parse();
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse());
         }
 
         [Test]
         public void with_wrong_type_in_json()
         {
-            Helper.RegisterArray(() => Array, "a|arr", "settings.arr", "ARR", ",");
+            Helper.RegisterArray(() => Array, "a|arr=", "settings.arr", "ARR", ",");
             var cfg = WriteJsonConfig(new { settings = new { arr = new { } } });
 
-            Helper.Parse("--cfg", cfg);
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse("--cfg", cfg));
         }
 
         [Test]
         public void with_string_instead_of_array_in_json()
         {
-            Helper.RegisterArray(() => Array, "a|arr", "settings.arr", "ARR", ",");
+            Helper.RegisterArray(() => Array, "a|arr=", "settings.arr", "ARR", ",");
             var cfg = WriteJsonConfig(new { settings = new { arr = "1,2,3" } });
 
-            Helper.Parse("--cfg", cfg);
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse("--cfg", cfg));
         }
 
         [Test]
         public void with_wrong_format_of_element_in_json()
         {
-            Helper.RegisterArray(() => Array, "a|arr", "settings.arr", "ARR", ",");
+            Helper.RegisterArray(() => Array, "a|arr=", "settings.arr", "ARR", ",");
             var cfg = WriteJsonConfig(new {settings = new {arr = new object[] {123, "abc"}}});
 
-            Helper.Parse("--cfg", cfg);
-            Assert.Fail();
+            Assert.Throws<OptionException>(() => Helper.Parse("--cfg", cfg));
         }
     }
 }
