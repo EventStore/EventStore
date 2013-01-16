@@ -66,13 +66,14 @@
             },
         });
 
-        require(['projections/Controller', 'projections/ui/Editor'], function (controller, editor) {
+        require(['projections/Observer', 'projections/Controller', 'projections/ui/Editor'], function (observer, controller, editor) {
 
             $(function () {
                 var projectionStatusUrl = location.hash.substr(1);
-                var projectionMonitor = controller.create(projectionStatusUrl);
+                var projectionObserver = observer.create(projectionStatusUrl);
+                var projectionController = controller.create(projectionStatusUrl, projectionObserver);
 
-                var projectionEditor = editor.create(projectionStatusUrl, projectionMonitor, {
+                var projectionEditor = editor.create(projectionStatusUrl, projectionObserver, projectionController, {
                     status: $("#status"),
                     source: $("#source"),
                     state: $("#state"),

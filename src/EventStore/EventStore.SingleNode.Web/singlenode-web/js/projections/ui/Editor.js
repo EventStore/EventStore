@@ -2,7 +2,7 @@
 
 define(function () {
     return {
-        create: function (name, controller, controls) {
+        create: function (name, observer, controller, controls) {
 
             var lastSource = "";
 
@@ -40,17 +40,17 @@ define(function () {
             function updateAndStart() {
                 var current = controls.source.val();
                 if (lastSource === current) {
-                    controller.commands.start();
+                    controller.start();
                 } else {
-                    controller.commands.update(current, controls.emit.attr("checked"));
+                    controller.update(current, controls.emit.attr("checked"));
                 }
             }
 
             return {
                 bind: function() {
-                    controller.subscribe({ statusChanged: statusChanged, stateChanged: stateChanged, sourceChanged: sourceChanged });
+                    observer.subscribe({ statusChanged: statusChanged, stateChanged: stateChanged, sourceChanged: sourceChanged });
                     controls.start.click(function () { event.preventDefault(); updateAndStart(); });
-                    controls.stop.click(function () { event.preventDefault(); controller.commands.stop(); });
+                    controls.stop.click(function () { event.preventDefault(); controller.stop(); });
                 }
             };
         }

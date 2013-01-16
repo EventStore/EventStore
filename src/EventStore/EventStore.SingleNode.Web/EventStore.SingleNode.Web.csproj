@@ -57,6 +57,9 @@
     <Content Include="singlenode-web\edit-onetime-projection-source.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="singlenode-web\js\projections\Observer.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="singlenode-web\js\projections\ResourceMonitor.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
