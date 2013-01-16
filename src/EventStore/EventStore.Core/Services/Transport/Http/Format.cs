@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Diagnostics;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -40,16 +39,6 @@ namespace EventStore.Core.Services.Transport.Http
     {
         public static class Atom
         {
-            public static string ListStreamsCompletedServiceDoc(HttpResponseFormatterArgs entity, Message message)
-            {
-                Debug.Assert(message.GetType() == typeof(ClientMessage.ListStreamsCompleted));
-
-                var streams = message as ClientMessage.ListStreamsCompleted;
-                return streams != null
-                           ? entity.ResponseCodec.To(Convert.ToServiceDocument(streams.Streams, new string[0], entity.UserHostName))
-                           : string.Empty;
-            }
-
             public static string ReadEventCompletedEntry(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed)
             {
                 Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
