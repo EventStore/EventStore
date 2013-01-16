@@ -20,8 +20,8 @@
 </head>
 <body>
     <div id="content">
-        <h1>One Time Projection</h1>
-        <h2 id="status"></h2>
+        <h1>Change Projection</h1>
+        <h3><span id="projection-name"></span> - <span id="status"></span></h3>
         <div id="message" class="error" style="display: none;"></div>
         <div class="row">
             <div class="span12">
@@ -76,6 +76,7 @@
 
                 var projectionEditor = editor.create(projectionStatusUrl, projectionObserver, projectionController, {
                     status: $("#status"),
+                    name: $("#projection-name"),
                     source: $("#source"),
                     state: $("#state"),
                     message: $("#message"),
