@@ -3,7 +3,7 @@
 define(["projections/ResourceMonitor"], function (resourceMonitor) {
     //TODO: handle errors
     return {
-        create: function createController(baseUrl) {
+        create: function (baseUrl) {
             var stateMonitor = null;
             var statusMonitor = null;
             var sourceMonitor = null;

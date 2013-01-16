@@ -42,15 +42,15 @@ define(function () {
                 if (lastSource === current) {
                     controller.start();
                 } else {
-                    controller.update(current, controls.emit.attr("checked"));
+                    controller.update(current, controls.emit.attr("checked"), controller.start.bind(controller));
                 }
             }
 
             return {
                 bind: function() {
                     observer.subscribe({ statusChanged: statusChanged, stateChanged: stateChanged, sourceChanged: sourceChanged });
-                    controls.start.click(function () { event.preventDefault(); updateAndStart(); });
-                    controls.stop.click(function () { event.preventDefault(); controller.stop(); });
+                    controls.start.click(function (event) { event.preventDefault(); updateAndStart(); });
+                    controls.stop.click(function (event) { event.preventDefault(); controller.stop(); });
                 }
             };
         }
