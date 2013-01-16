@@ -60,9 +60,9 @@ namespace EventStore.SingleNode
             _helper.RegisterRef(() => LogsDir, Opts.LogsCmd, Opts.LogsEnv, Opts.LogsJson, Opts.LogsDefault, Opts.LogsDescr);
             _helper.RegisterArray(() => Configs, Opts.ConfigsCmd, Opts.ConfigsEnv, ",", Opts.ConfigsJson, Opts.ConfigsDefault, Opts.ConfigsDescr);
 
-            _helper.RegisterRef(() => Ip, "i|ip=", "IP", null, IPAddress.Loopback, "The IP address to bind to.");
-            _helper.Register(() => TcpPort, "t|tcp-port=", "TCP_PORT", null, 1113, "The port to run the TCP server on.");
-            _helper.Register(() => HttpPort, "h|http-port=", "HTTP_PORT", null, 2113, "The port to run the HTTP server on.");
+            _helper.RegisterRef(() => Ip, "i|ip=", "IP", "ip", IPAddress.Loopback, "The IP address to bind to.");
+            _helper.Register(() => TcpPort, "t|tcp-port=", "TCP_PORT", "tcpPort", 1113, "The port to run the TCP server on.");
+            _helper.Register(() => HttpPort, "h|http-port=", "HTTP_PORT", "httpPort", 2113, "The port to run the HTTP server on.");
 
             _helper.Register(() => StatsPeriodSec, Opts.StatsPeriodCmd, Opts.StatsPeriodEnv, Opts.StatsPeriodJson, Opts.StatsPeriodDefault, Opts.StatsPeriodDescr);
             _helper.Register(() => CachedChunks, Opts.CachedChunksCmd, Opts.CachedChunksEnv, Opts.CachedChunksJson, Opts.CachedChunksDefault, Opts.CachedChunksDescr);

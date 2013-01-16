@@ -27,7 +27,6 @@
 // 
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -279,25 +278,34 @@ namespace EventStore.Common.Options
                 var value = option.FinalValue is IEnumerable<object>
                                     ? string.Join(", ", ((IEnumerable<object>) option.FinalValue).ToArray())
                                     : option.FinalValue;
+                if (value is string && (string)value == "")
+                    value = "<empty>";
                 switch (option.Origin)
                 {
                     case OptionOrigin.None:
                         throw new InvalidOperationException("Shouldn't get here ever.");
                     case OptionOrigin.CommandLine:
-                        sb.AppendFormat("{0}: {1} ({2} from command line)\n", optionName, value, option.OriginOptionName);
+                        sb.AppendFormat("{0,-25} {1} ({2}{3} from command line)\n",
+                                        optionName + ":",
+                                        value,
+                                        option.OriginOptionName.Length == 1 ? "-" : "--",
+                                        option.OriginOptionName);
                         break;
                     case OptionOrigin.Environment:
-                        sb.AppendFormat("{0}: {1} ({2} environment variable)\n", optionName, value, option.OriginOptionName);
+                        sb.AppendFormat("{0,-25} {1} ({2} environment variable)\n",
+                                        optionName + ":",
+                                        value,
+                                        option.OriginOptionName);
                         break;
                     case OptionOrigin.Config:
-                        sb.AppendFormat("{0}: {1} ({2} in config at '{3}')\n",
-                                        option.Name.ToUpper().Replace("_", " "),
+                        sb.AppendFormat("{0,-25} {1} ({2} in config at '{3}')\n",
+                                        optionName + ":",
                                         value,
                                         option.OriginOptionName,
                                         option.OriginName);
                         break;
                     case OptionOrigin.Default:
-                        sb.AppendFormat("{0}: {1} (<DEFAULT>)\n", optionName, value);
+                        sb.AppendFormat("{0,-25} {1} (<DEFAULT>)\n", optionName + ":", value);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
