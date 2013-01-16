@@ -163,9 +163,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\EventStore.SingleNode\app.config">
-      <Link>app.config</Link>
-    </None>
     <None Include="..\EventStore.SingleNode\NLog.config">
       <Link>NLog.config</Link>
     </None>

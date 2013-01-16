@@ -57,7 +57,7 @@ namespace EventStore.TestClient
             _helper.Register(() => ShowHelp, Opts.ShowHelpCmd, Opts.ShowHelpEnv, Opts.ShowHelpJson, Opts.ShowHelpDefault, Opts.ShowHelpDescr);
             _helper.RegisterRef(() => LogsDir, Opts.LogsCmd, Opts.LogsEnv, Opts.LogsJson, Opts.LogsDefault, Opts.LogsDescr);
 
-            _helper.RegisterRef(() => Ip, "i|ip=", null, "ip", IPAddress.Loopback, "IP address of server.");
+            _helper.RegisterRef(() => Ip, "i|ip=", null, null, IPAddress.Loopback, "IP address of server.");
             _helper.Register(() => TcpPort, "t|tcp-port=", null, null, 1113, "TCP port on server.");
             _helper.Register(() => HttpPort, "h|http-port=", null, null, 2113, "HTPP port on server.");
             _helper.Register(() => Timeout, "timeout=", null, null, -1, "Timeout for command execution in seconds, -1 for infinity.");

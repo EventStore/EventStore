@@ -72,7 +72,7 @@ namespace EventStore.SingleNode
         protected override void Create(SingleNodeOptions options)
         {
             var dbPath = Path.GetFullPath(ResolveDbPath(options.DbPath, options.HttpPort));
-            Log.Info("\nDATABASE: {0}", dbPath);
+            Log.Info("\n{0,-25} {1}\n", "DATABASE:", dbPath);
             var db = new TFChunkDb(CreateDbConfig(dbPath, options.CachedChunks));
             var vnodeSettings = GetVNodeSettings(options);
             var dbVerifyHashes = !options.SkipDbVerify;

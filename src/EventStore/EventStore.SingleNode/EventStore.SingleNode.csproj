@@ -66,11 +66,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config">
-      <SubType>Designer</SubType>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
       <Project>{B4C9BE3D-43B1-4049-A23A-5DC53DB3F0B0}</Project>
       <Name>EventStore.Common</Name>
