@@ -13,6 +13,13 @@ define(function () {
                     control.attr("disabled", "disabled");
             }
             
+            function setReadonly(control, readonly) {
+                if (readonly)
+                    control.removeAttr("readonly");
+                else
+                    control.attr("readonly", "readonly");
+            }
+
 
             function statusChanged(status) {
                 controls.name.text(status.name);
@@ -22,6 +29,11 @@ define(function () {
                 controls.message.text(status.stateReason);
                 setEnabled(controls.start, status.availableCommands.start);
                 setEnabled(controls.stop, status.availableCommands.stop);
+                setReadonly(controls.source, status.availableCommands.start);
+                if (!status.availableCommands.start)
+                    controls.source.attr("title", "Projection is running");
+                else 
+                    controls.source.removeAttr("title");
             }
 
             function stateChanged(state) {
