@@ -691,28 +691,6 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class ListStreams : ReadRequestMessage
-        {
-            public readonly IEnvelope Envelope;
-
-            public ListStreams(IEnvelope envelope)
-            {
-                Envelope = envelope;
-            }
-        }
-
-        public class ListStreamsCompleted : ReadResponseMessage
-        {
-            public readonly string[] Streams;
-            public readonly bool Success;
-
-            public ListStreamsCompleted(bool success, string[] streams)
-            {
-                Success = success;
-                Streams = streams;
-            }
-        }
-
         public class SubscribeToStream : ReadRequestMessage
         {
             public readonly TcpConnectionManager Connection;

@@ -27,13 +27,11 @@
 // 
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Exceptions;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -45,8 +43,7 @@ namespace EventStore.Core.Services.Storage
                                       IHandle<ClientMessage.ReadStreamEventsBackward>,
                                       IHandle<ClientMessage.ReadStreamEventsForward>,
                                       IHandle<ClientMessage.ReadAllEventsForward>,
-                                      IHandle<ClientMessage.ReadAllEventsBackward>,
-                                      IHandle<ClientMessage.ListStreams>
+                                      IHandle<ClientMessage.ReadAllEventsBackward>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<StorageReaderWorker>();
 
@@ -317,42 +314,6 @@ namespace EventStore.Core.Services.Storage
                 }
             }
             return new ReadAllResult(resolved, res.MaxCount, res.CurrentPos, res.NextPos, res.PrevPos, res.TfEofPosition);
-        }
-
-        void IHandle<ClientMessage.ListStreams>.Handle(ClientMessage.ListStreams message)
-        {
-            try
-            {
-                // from 1 to skip $stream-created event in $streams stream
-                var result = _readIndex.ReadStreamEventsForward(SystemStreams.StreamsStream, 1, int.MaxValue);
-                if (result.Result != ReaderIndex.ReadStreamResult.Success)
-                    throw new SystemStreamNotFoundException(
-                            string.Format("Couldn't find system stream {0}, which should've been created with projection 'Index By Streams'",
-                                          SystemStreams.StreamsStream));
-
-                var streamIds = result.Records
-                                      .Select(e =>
-                                      {
-                                          var dataStr = Encoding.UTF8.GetString(e.Data);
-                                          var parts = dataStr.Split('@');
-                                          if (parts.Length < 2)
-                                          {
-                                              throw new FormatException(string.Format("{0} stream event data is in bad format: {1}. Expected: eventNumber@streamid",
-                                                                                      SystemStreams.StreamsStream,
-                                                                                      dataStr));
-                                          }
-                                          var streamid = parts[1];
-                                          return streamid;
-                                      })
-                                      .ToArray();
-
-                message.Envelope.ReplyWith(new ClientMessage.ListStreamsCompleted(true, streamIds));
-            }
-            catch (Exception ex)
-            {
-                Log.ErrorException(ex, "Error while reading stream ids.");
-                message.Envelope.ReplyWith(new ClientMessage.ListStreamsCompleted(false, null));
-            }
         }
     }
 }
