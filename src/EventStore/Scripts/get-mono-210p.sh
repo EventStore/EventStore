@@ -5,6 +5,8 @@ function err() {
   exit 1
 }
 
+apt-get install -y bison || err
+
 curdir=`dirname $0`
 
 org="$curdir/mono/0001-ES-patch-for2-10.patch"
