@@ -1,6 +1,7 @@
 ﻿"use strict";
 // projection monitor
 define(["projections/ResourceMonitor"], function (resourceMonitor) {
+    //TODO: handle errors
     return {
         create: function createController(baseUrl) {
             var stateMonitor = null;
@@ -9,7 +10,6 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
             var commandErrorHandler = null;
 
             function enrichStatus(status) {
-                console.log(status);
                 status.availableCommands = {
                     stop: status.status.indexOf("Running") === 0,
                     start:
@@ -19,6 +19,47 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                     update: true,
                 };
                 return status;
+            }
+
+            function postCommand(command) {
+                $.ajax(baseUrl + "/command/" + command, {
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    type: "POST",
+                    success: successPostCommand,
+                    error: errorPostCommand,
+                });
+            }
+
+            function postSource(source, emit) {
+                var params = $.param({
+                    emit: emit ? "yes" : "no",
+                });
+                $.ajax(baseUrl + "/query?" + params, {
+                    headers: {
+                        Accept: "application/json",
+                    },
+
+                    type: "PUT",
+                    data: source,
+                    success: successPostCommand,
+                    error: errorPostCommand,
+                });
+            }
+
+            function poll() {
+                stateMonitor.poll();
+                statusMonitor.poll();
+                sourceMonitor.poll();
+            }
+
+            function successPostCommand(data, status, xhr) {
+                poll();
+            }
+
+            function errorPostCommand(xhr, status, error) {
+                poll();
             }
 
             return {
@@ -60,13 +101,13 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
 
                 commands: {
                     start: function () {
-                        console.log("start()");
+                        postCommand("enable");
                     },
                     stop: function() {
-                        console.log("stop()");
+                        postCommand("disable");
                     },
-                    update: function (query) {
-                        console.log("update(" + query + ")");
+                    update: function (query, emit) {
+                        postSource(query, emit);
                     }
                 }
             };

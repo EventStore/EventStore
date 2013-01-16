@@ -29,6 +29,7 @@ define(function () {
                 if (current !== source.query) {
                     if (lastSource === current) {
                         controls.source.text(source.query);
+                        lastSource = source.query;
                     } else {
                         console.log("Ignoring query source changed outside. There are local pending changes.");
                     }
@@ -36,11 +37,20 @@ define(function () {
                 controls.emit.attr("checked", source.emitEnabled);
             }
 
+            function updateAndStart() {
+                var current = controls.source.val();
+                if (lastSource === current) {
+                    controller.commands.start();
+                } else {
+                    controller.commands.update(current, controls.emit.attr("checked"));
+                }
+            }
+
             return {
                 bind: function() {
                     controller.subscribe({ statusChanged: statusChanged, stateChanged: stateChanged, sourceChanged: sourceChanged });
-                    controls.start.click(controller.commands.start);
-                    controls.stop.click(controller.commands.stop);
+                    controls.start.click(function () { event.preventDefault(); updateAndStart(); });
+                    controls.stop.click(function () { event.preventDefault(); controller.commands.stop(); });
                 }
             };
         }
