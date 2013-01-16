@@ -259,16 +259,6 @@ namespace EventStore.Core.Services.Transport.Http
             }
         }
 
-        public static ResponseConfiguration ListStreamsCompletedServiceDoc(HttpResponseConfiguratorArgs entity, Message message)
-        {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ListStreamsCompleted));
-
-            var completed = message as ClientMessage.ListStreamsCompleted;
-            return completed != null && completed.Success
-                       ? Ok(entity.ResponseCodec.ContentType)
-                       : InternalServerError("Couldn't get streams list. Try turning projection 'Index By Streams' on.");
-        }
-
         public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
         {
             Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));

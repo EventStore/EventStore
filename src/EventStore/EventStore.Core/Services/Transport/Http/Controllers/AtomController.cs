@@ -98,12 +98,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
             service.RegisterControllerAction(new ControllerAction("/streams",
-                                                                  HttpMethod.Get,
-                                                                  Codec.NoCodecs,
-                                                                  ServiceDocCodecs, 
-                                                                  DefaultResponseCodec),
-                                             OnGetServiceDocument);
-            service.RegisterControllerAction(new ControllerAction("/streams",
                                                                   HttpMethod.Post,
                                                                   AtomCodecs,
                                                                   AtomCodecs,
@@ -164,17 +158,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                                   AtomWithHtmlCodecs,
                                                                   DefaultResponseCodec),
                                              OnGetAllAfterFeed);
-        }
-
-        //SERVICE DOCUMENT
-
-        private void OnGetServiceDocument(HttpEntity entity, UriTemplateMatch match)
-        {
-            var envelope = new SendToHttpEnvelope(_networkSendQueue,
-                                                  entity,
-                                                  Format.Atom.ListStreamsCompletedServiceDoc,
-                                                  Configure.ListStreamsCompletedServiceDoc);
-            Publish(new ClientMessage.ListStreams(envelope));
         }
 
         //FEED
