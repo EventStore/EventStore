@@ -58,13 +58,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             _random = new Random();
         }
 
-        private IEvent CreateEventA(int version)
+        private EventData CreateEventA(int version)
         {
             var @event = new JsonEventContainer(new VersionnedEventA(version));
             return @event;
         }
 
-        private IEvent CreateEventB(int version)
+        private EventData CreateEventB(int version)
         {
             var @event = new JsonEventContainer(new VersionnedEventB(version));
             return @event;
@@ -207,7 +207,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             }
         }
 
-        private Task<object> WriteTransactionData(EventStoreTransaction transaction, int startingVersion, int eventCount, Func<int, IEvent> createEvent)
+        private Task<object> WriteTransactionData(EventStoreTransaction transaction, int startingVersion, int eventCount, Func<int, EventData> createEvent)
         {
             Log.Info("Starting to write {0} events in tran {1}", eventCount, transaction.TransactionId);
 

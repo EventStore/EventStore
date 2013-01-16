@@ -49,7 +49,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         private readonly bool _forward;
         private readonly long _transactionId;
-        private readonly IEnumerable<IEvent> _events;
+        private readonly IEnumerable<EventData> _events;
 
         public Guid CorrelationId
         {
@@ -60,7 +60,7 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        public TransactionalWriteOperation(TaskCompletionSource<object> source, Guid corrId, bool forward, long transactionId, IEnumerable<IEvent> events)
+        public TransactionalWriteOperation(TaskCompletionSource<object> source, Guid corrId, bool forward, long transactionId, IEnumerable<EventData> events)
         {
             _source = source;
 
