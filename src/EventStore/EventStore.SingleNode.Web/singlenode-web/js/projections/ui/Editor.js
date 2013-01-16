@@ -15,7 +15,9 @@ define(function () {
             
 
             function statusChanged(status) {
-                controls.status.html(status.status + ($.isNumeric(status.progress) && status.progress != -1 ? ("(" + status.progress.toFixed(1) + "%)") : ""));
+                controls.status.text(status.status + ($.isNumeric(status.progress) && status.progress != -1 ? ("(" + status.progress.toFixed(1) + "%)") : ""));
+                if (status.stateReason) controls.message.show(); else controls.message.hide();
+                controls.message.text(status.stateReason);
                 setEnabled(controls.start, status.availableCommands.start);
                 setEnabled(controls.stop, status.availableCommands.stop);
             }

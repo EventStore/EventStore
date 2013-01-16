@@ -22,6 +22,7 @@
     <div id="content">
         <h1>One Time Projection</h1>
         <h2 id="status"></h2>
+        <div id="message" class="error" style="display: none;"></div>
         <div class="row">
             <div class="span12">
                 <div id="commands-container">
@@ -77,6 +78,7 @@
                     status: $("#status"),
                     source: $("#source"),
                     state: $("#state"),
+                    message: $("#message"),
                     emit: $("#emit"),
                     start: $("#btn-run"),
                     stop: $("#btn-break"),
