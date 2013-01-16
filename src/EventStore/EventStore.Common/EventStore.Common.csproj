@@ -89,6 +89,7 @@
     <Compile Include="Utils\IPEndpointExtensions.cs" />
     <Compile Include="Utils\Ensure.cs" />
     <Compile Include="Utils\Runtime.cs" />
+    <Compile Include="Version\Version.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
