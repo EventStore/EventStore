@@ -20,11 +20,21 @@ namespace EventStore.Common.Utils
             var assembly = Assembly.GetAssembly(typeof (VersionInfo));
             var location = assembly.Location;
 
-            AssemblyVersion = assembly.GetName().Version.ToString();
-            FileVersion = FileVersionInfo.GetVersionInfo(location).FileVersion;
-            ProductVersion = FileVersionInfo.GetVersionInfo(location).ProductVersion;
+            AssemblyVersion = assembly.GetName().Version.ToString() ?? string.Empty;
+            FileVersion = FileVersionInfo.GetVersionInfo(location).FileVersion ?? string.Empty;
+            ProductVersion = FileVersionInfo.GetVersionInfo(location).ProductVersion ?? string.Empty;
+
+            if (ProductVersion.IsEmptyString())
+            {
+                var attr = Attribute.GetCustomAttribute(assembly, typeof(AssemblyInformationalVersionAttribute)) as AssemblyInformationalVersionAttribute;
+                if (attr != null)
+                    ProductVersion = attr.InformationalVersion ?? string.Empty;
+            }
 
             var pointIndex = ProductVersion.LastIndexOf('.');
+            if (pointIndex == -1)
+                return;
+
             Version = ProductVersion.Substring(0, pointIndex);
 
             var parts = ProductVersion.Substring(pointIndex + 1).Split(new[] { '@' }, StringSplitOptions.RemoveEmptyEntries);
