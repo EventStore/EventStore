@@ -3,10 +3,13 @@
 function err() {
   echo Failed! ${1:-"Unknown error"}
   if [ -e "/tmp/es-ver.tmp" ] ; then rm /tmp/es-ver.tmp; fi
+  popd
   exit 1
 }
 
 MSBuildProjectDirectory=$1
+
+pushd $MSBuildProjectDirectory
 
 if [ ! -e $MSBuildProjectDirectory/Properties/ESVersion.txt ] ; then err "No ESVersion.txt file found with current version!"; fi
 if [ ! -e $MSBuildProjectDirectory/Properties/AssemblyVersion.cs ] ; then err "No AssemblyVersion.cs file found in EventStore.Common!"; fi
@@ -33,3 +36,4 @@ fi
 if [ -e "/tmp/es-ver.tmp" ] ; then rm /tmp/es-ver.tmp; fi
 
 echo "Done."
+popd
