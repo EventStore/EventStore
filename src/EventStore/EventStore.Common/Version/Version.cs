@@ -2,8 +2,8 @@
 {
     public static class EventStoreVersion
     {
-        public const string Version = "<VERSION>";
-        public const string Hashtag = "<HASHTAG>";
-        public const string Branch = "<BRANCH>";
+        public const string Version = "1.0.0";
+        public const string Hashtag = "1f777721607ad73b1c2f8bbde97821b158c770ad";
+        public const string Branch = "master";
     }
 }
