@@ -146,7 +146,7 @@ exit 1
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
     <PreBuildEvent>
-$(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh
+$(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProjectDirectory)
     </PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
