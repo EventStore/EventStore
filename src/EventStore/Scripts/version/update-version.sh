@@ -7,9 +7,9 @@ function err() {
   exit 1
 }
 
-pushd $MSBuildProjectDirectory
-
 MSBuildProjectDirectory=$1
+
+pushd $MSBuildProjectDirectory
 
 if [ ! -e $MSBuildProjectDirectory/Properties/ESVersion.txt ] ; then err "No ESVersion.txt file found with current version!"; fi
 if [ ! -e $MSBuildProjectDirectory/Properties/AssemblyVersion.cs ] ; then err "No AssemblyVersion.cs file found in EventStore.Common!"; fi
