@@ -75,6 +75,16 @@ namespace EventStore.Core
                     return 0;
                 }
 
+                if (options.ShowVersion)
+                {
+                    Console.WriteLine("EventStore version {0} ({1}/{2}, {3})",
+                                      VersionInfo.Version,
+                                      VersionInfo.Branch,
+                                      VersionInfo.Hashtag,
+                                      VersionInfo.Timestamp);
+                    return 0;
+                }
+
                 Init(options);
                 Create(options);
                 Start();
