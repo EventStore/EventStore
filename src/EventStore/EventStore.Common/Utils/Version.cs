@@ -22,14 +22,11 @@ namespace EventStore.Common.Utils
 
             AssemblyVersion = assembly.GetName().Version.ToString() ?? string.Empty;
             FileVersion = FileVersionInfo.GetVersionInfo(location).FileVersion ?? string.Empty;
-            ProductVersion = FileVersionInfo.GetVersionInfo(location).ProductVersion ?? string.Empty;
+            ProductVersion = string.Empty;
 
-            if (ProductVersion.IsEmptyString())
-            {
-                var attr = Attribute.GetCustomAttribute(assembly, typeof(AssemblyInformationalVersionAttribute)) as AssemblyInformationalVersionAttribute;
-                if (attr != null)
-                    ProductVersion = attr.InformationalVersion ?? string.Empty;
-            }
+            var attr = Attribute.GetCustomAttribute(assembly, typeof(AssemblyInformationalVersionAttribute)) as AssemblyInformationalVersionAttribute;
+            if (attr != null)
+                ProductVersion = attr.InformationalVersion ?? string.Empty;
 
             var pointIndex = ProductVersion.LastIndexOf('.');
             if (pointIndex == -1)
