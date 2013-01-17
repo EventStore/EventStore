@@ -146,6 +146,7 @@ exit 1
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
     <PreBuildEvent>
+chmod +x $(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh
 $(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProjectDirectory)
     </PreBuildEvent>
   </PropertyGroup>
