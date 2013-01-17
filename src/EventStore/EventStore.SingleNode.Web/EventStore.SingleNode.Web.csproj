@@ -39,6 +39,9 @@
     <OutputPath>..\..\..\bin\eventstore\release\x86\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

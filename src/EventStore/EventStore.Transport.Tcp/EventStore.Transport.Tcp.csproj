@@ -53,6 +53,9 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
     <Compile Include="Framing\PackageFramingException.cs" />
     <Compile Include="Framing\LengthPrefixMessageFramerWithBufferPool.cs" />
     <Compile Include="IMonitoredTcpConnection.cs" />
