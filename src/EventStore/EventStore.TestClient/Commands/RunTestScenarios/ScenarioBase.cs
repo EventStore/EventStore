@@ -179,7 +179,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         
         protected Task Write(WriteMode mode, string[] streams, int eventsPerStream)
         {
-            Func<int, EventData> createEvent = v => new TestEvent(v);
+            Func<int, EventData> createEvent = TestEvent.NewTestEvent;
             return Write(mode, streams, eventsPerStream, createEvent);
         }
 

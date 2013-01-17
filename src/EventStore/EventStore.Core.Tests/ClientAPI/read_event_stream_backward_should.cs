@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
-                var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())).ToArray();
+                var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
                 var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write10.Wait);
 
@@ -152,7 +152,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
-                var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())).ToArray();
+                var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
                 var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write10.Wait);
 
@@ -174,7 +174,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
-                var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())).ToArray();
+                var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
                 var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write10.Wait);
 
@@ -196,7 +196,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
-                var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())).ToArray();
+                var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
                 var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write10.Wait);
 
@@ -218,7 +218,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
-                var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())).ToArray();
+                var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
                 var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write10.Wait);
 
@@ -240,7 +240,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                 Assert.DoesNotThrow(create.Wait);
 
-                var testEvents = Enumerable.Range(0, 10).Select(x => new TestEvent((x + 1).ToString())).ToArray();
+                var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
                 var write10 = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
                 Assert.DoesNotThrow(write10.Wait);
 

@@ -47,7 +47,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         private EventData CreateBankEvent(int version)
         {
             var accountObject = BankAccountEventFactory.CreateAccountObject(version);
-            var @event = new BankAccountEvent(accountObject);
+            var @event = BankAccountEvent.FromEvent(accountObject);
             return @event;
         }
 

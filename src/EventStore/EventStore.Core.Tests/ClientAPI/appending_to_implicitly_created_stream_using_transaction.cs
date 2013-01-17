@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
@@ -111,7 +111,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
@@ -131,7 +131,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
@@ -148,7 +148,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
@@ -165,7 +165,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 1).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
@@ -185,7 +185,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 1).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
@@ -205,7 +205,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 1).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
@@ -225,7 +225,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 3).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 3).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
@@ -245,11 +245,11 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 2).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 2).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new TransactionalWriter(store, stream);
 
                 Assert.DoesNotThrow(() => writer.StartTransaction(-1).Write(events).Commit());
-                Assert.That(() => writer.StartTransaction(-1).Write(events.Concat(new[] { new TestEvent(Guid.NewGuid()) }).ToArray()).Commit(),
+                Assert.That(() => writer.StartTransaction(-1).Write(events.Concat(new[] { TestEvent.NewTestEvent(Guid.NewGuid()) }).ToArray()).Commit(),
                             Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }

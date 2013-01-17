@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.ClientAPI
             var connection = EventStoreConnection.Create();
 
             var s = "stream";
-            var events = new[] { new TestEvent() };
+            var events = new[] { TestEvent.NewTestEvent() };
             var bytes = new byte[0];
 
             Assert.Throws<InvalidOperationException>(() => connection.CreateStream(s, Guid.NewGuid(), false, bytes));

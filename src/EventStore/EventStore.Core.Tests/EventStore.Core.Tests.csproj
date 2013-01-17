@@ -103,7 +103,6 @@
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
     <Compile Include="ClientAPI\subscribe_should.cs" />
-    <Compile Include="ClientAPI\Helpers\EventDataComparer.cs" />
     <Compile Include="ClientAPI\transaction.cs" />
     <Compile Include="Common\Options\OptsHelperTestBase.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_array.cs" />
@@ -115,6 +114,7 @@
     <Compile Include="Common\Options\opts_helper_for_bool_flag_should.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_flag.cs" />
     <Compile Include="Helper\CollectionsExtensions.cs" />
+    <Compile Include="ClientAPI\Helpers\EventDataComparer.cs" />
     <Compile Include="Helper\HelperExtensions.cs" />
     <Compile Include="DataStructures\pairing_heap_should.cs" />
     <Compile Include="Fakes\FakeLogger.cs" />

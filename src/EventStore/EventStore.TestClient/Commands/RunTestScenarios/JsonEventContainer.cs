@@ -6,19 +6,17 @@ using EventStore.Core.Services.Transport.Http.Codecs;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {
-    internal class JsonEventContainer : EventData
+    internal static class JsonEventContainer
     {
-        public JsonEventContainer(object @event)
+        public static EventData ForEvent(object @event)
         {
             if (@event == null)
                 throw new ArgumentNullException("event");
 
-            EventId = Guid.NewGuid();
-            Type = @event.GetType().Name;
-            IsJson = true;
+            var encodedData = Encoding.UTF8.GetBytes(Codec.Json.To(@event));
+            var encodedMetadata = Encoding.UTF8.GetBytes(Codec.Json.To(new Dictionary<string, object> { { "IsEmpty", true } }));
 
-            Data = Encoding.UTF8.GetBytes(Codec.Json.To(@event));
-            Metadata = Encoding.UTF8.GetBytes(Codec.Json.To(new Dictionary<string, object> { { "IsEmpty", true } }));
+            return new EventData(Guid.NewGuid(), @event.GetType().Name, true, encodedData, encodedMetadata);
         }
     }
 }

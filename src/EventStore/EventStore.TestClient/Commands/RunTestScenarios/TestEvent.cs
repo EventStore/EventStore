@@ -32,20 +32,16 @@ using EventStore.ClientAPI;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {
-    internal class TestEvent : EventData
+    internal class TestEvent
     {
-        public TestEvent(int index)
+        public static EventData NewTestEvent(int index)
         {
             var subIndex = (index % 50);
-
-            EventId = Guid.NewGuid();
-            Type = "TestEvent-" + subIndex.ToString();
-
+            var type = "TestEvent-" + subIndex.ToString();
             var body = new string('#', 1 + subIndex * subIndex);
+            var encodedData = Encoding.UTF8.GetBytes(string.Format("{0}-{1}-{2}", index, body.Length, body));
 
-            IsJson = false;
-            Data = Encoding.UTF8.GetBytes(string.Format("{0}-{1}-{2}", index, body.Length, body));
-            Metadata = new byte[0];
+            return new EventData(Guid.NewGuid(), type, false, encodedData, new byte[0]);
         }
 
         public static void VerifyIfMatched(RecordedEvent evnt)

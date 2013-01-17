@@ -32,35 +32,19 @@ using EventStore.ClientAPI;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
-    internal class TestEvent : EventData
+    internal class TestEvent
     {
-        public TestEvent(string data = null, string metadata = null)
+        public static EventData NewTestEvent(string data = null, string metadata = null)
         {
-            EventId = Guid.NewGuid();
-            Type = GetType().FullName;
-
-            IsJson = false;
-            Data = Encoding.UTF8.GetBytes(data ?? EventId.ToString());
-            Metadata = Encoding.UTF8.GetBytes(metadata ?? "metadata");
+            return NewTestEvent(Guid.NewGuid(), data, metadata);
         }
 
-        public TestEvent(Guid id, string data = null, string metadata = null)
+        public static EventData NewTestEvent(Guid eventId, string data = null, string metadata = null)
         {
-            EventId = id;
-            Type = GetType().FullName;
+            var encodedData = Encoding.UTF8.GetBytes(data ?? eventId.ToString());
+            var encodedMetadata = Encoding.UTF8.GetBytes(metadata ?? "metadata");
 
-            IsJson = false;
-            Data = Encoding.UTF8.GetBytes(data ?? EventId.ToString());
-            Metadata = Encoding.UTF8.GetBytes(metadata ?? "metadata");
-        }
-
-        public override string ToString()
-        {
-            return string.Format("EventId: {0}, Type: {1}, Data: {2}, Metadata: {3}",
-                                 EventId,
-                                 Type,
-                                 Encoding.UTF8.GetString(Data ?? new byte[0]),
-                                 Encoding.UTF8.GetString(Metadata ?? new byte[0]));
+            return new EventData(eventId, "TestEvent", false, encodedData, encodedMetadata);
         }
     }
 }

@@ -60,13 +60,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private EventData CreateEventA(int version)
         {
-            var @event = new JsonEventContainer(new VersionnedEventA(version));
+            var @event = JsonEventContainer.ForEvent(new VersionnedEventA(version));
             return @event;
         }
 
         private EventData CreateEventB(int version)
         {
-            var @event = new JsonEventContainer(new VersionnedEventB(version));
+            var @event = JsonEventContainer.ForEvent(new VersionnedEventB(version));
             return @event;
         }
 
