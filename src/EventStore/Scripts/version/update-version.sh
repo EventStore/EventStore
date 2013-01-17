@@ -1,5 +1,5 @@
 #!/bin/bash
-
+ 
 function err() {
   echo Failed! ${1:-"Unknown error"}
   if [ -e "/tmp/es-ver.tmp" ] ; then rm /tmp/es-ver.tmp; fi
