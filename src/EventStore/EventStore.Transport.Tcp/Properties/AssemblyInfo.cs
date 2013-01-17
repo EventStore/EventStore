@@ -35,9 +35,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("EventStore.Transport.Tcp")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Eleks")]
+[assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("EventStore.Transport.Tcp")]
-[assembly: AssemblyCopyright("Copyright © Eleks 2012")]
+[assembly: AssemblyCopyright("Copyright © 2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

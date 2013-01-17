@@ -36,9 +36,9 @@ using NUnit.Framework;
 [assembly: AssemblyTitle("EventStore.Core.Tests")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Eleks")]
+[assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("EventStore.Core.Tests")]
-[assembly: AssemblyCopyright("Copyright © Eleks 2012")]
+[assembly: AssemblyCopyright("Copyright © 2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
