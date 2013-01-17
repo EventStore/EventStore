@@ -3,8 +3,11 @@
 function err() {
   echo Failed! ${1:-"Unknown error"}
   if [ -e "/tmp/es-ver.tmp" ] ; then rm /tmp/es-ver.tmp; fi
+  popd
   exit 1
 }
+
+pushd $MSBuildProjectDirectory
 
 MSBuildProjectDirectory=$1
 
@@ -12,9 +15,9 @@ if [ ! -e $MSBuildProjectDirectory/Properties/ESVersion.txt ] ; then err "No ESV
 if [ ! -e $MSBuildProjectDirectory/Properties/AssemblyVersion.cs ] ; then err "No AssemblyVersion.cs file found in EventStore.Common!"; fi
 
 _es_version=`cat $MSBuildProjectDirectory/Properties/ESVersion.txt` || err "Read version"
-_es_branch=`git rev-parse --abbrev-ref --git-dir=$MSBuildProjectDirectory/../../../.git --work-tree=$MSBuildProjectDirectory/../../.. HEAD` || err "Read branch"
-_es_hashtag=`git rev-parse --git-dir=$MSBuildProjectDirectory/../../../.git --work-tree=$MSBuildProjectDirectory/../../.. HEAD` || err "Get hashtag"
-_es_timestamp=`git log HEAD -n1 --pretty="%aD" --git-dir=$MSBuildProjectDirectory/../../../.git --work-tree=$MSBuildProjectDirectory/../../.. ` || err "Get timestamp"
+_es_branch=`git rev-parse --abbrev-ref HEAD` || err "Read branch"
+_es_hashtag=`git rev-parse HEAD` || err "Get hashtag"
+_es_timestamp=`git log HEAD -n1 --pretty="%aD"` || err "Get timestamp"
 
 if [ ! -n "$_es_branch" ] ; then err "Empty branch variable"; fi;
 if [ ! -n "$_es_hashtag" ] ; then err "Empty hashtag variable"; fi;
@@ -33,3 +36,4 @@ fi
 if [ -e "/tmp/es-ver.tmp" ] ; then rm /tmp/es-ver.tmp; fi
 
 echo "Done."
+popd
