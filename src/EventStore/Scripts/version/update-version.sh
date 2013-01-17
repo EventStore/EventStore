@@ -20,9 +20,9 @@ if [ ! -n "$_es_branch" ] ; then err "Empty branch variable"; fi;
 if [ ! -n "$_es_hashtag" ] ; then err "Empty hashtag variable"; fi;
 if [ ! -n "$_es_timestamp" ] ; then err "Empty timestamp variable"; fi;
 
-echo '[assembly: System.Reflection.AssemblyVersion('"$_es_version.0.0"')]' > /tmp/es-ver.tmp || err "Write es-ver.tmp"
-echo '[assembly: System.Reflection.AssemblyFileVersion('"$_es_version.0.0"')]' >> /tmp/es-ver.tmp || err "Write es-ver.tmp"
-echo '[assembly: System.Reflection.AssemblyInformationalVersion("'"$_es_version.0.$_es_branch@$_es_hashtag@$_es_timestamp"'")]' >> /tmp/es-ver.tmp || err "Write es-ver.tmp"
+echo '[assembly: System.Reflection.AssemblyVersion("'"$_es_version.0"'")]' > /tmp/es-ver.tmp || err "Write es-ver.tmp"
+echo '[assembly: System.Reflection.AssemblyFileVersion("'"$_es_version.0"'")]' >> /tmp/es-ver.tmp || err "Write es-ver.tmp"
+echo '[assembly: System.Reflection.AssemblyInformationalVersion("'"$_es_version.$_es_branch@$_es_hashtag@$_es_timestamp"'")]' >> /tmp/es-ver.tmp || err "Write es-ver.tmp"
 
 if diff /tmp/es-ver.tmp $MSBuildProjectDirectory/Properties/AssemblyVersion.cs >/dev/null ; then
    echo "Skip, version is the same"
