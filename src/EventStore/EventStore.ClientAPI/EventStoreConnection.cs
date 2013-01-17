@@ -332,9 +332,9 @@ namespace EventStore.ClientAPI
         /// <param name="stream">The name of the stream to append the events to.</param>
         /// <param name="expectedVersion">The expected version of the stream</param>
         /// <param name="events">The events to write to the stream</param>
-        public void AppendToStream(string stream, int expectedVersion, params IEvent[] events)
+        public void AppendToStream(string stream, int expectedVersion, params EventData[] events)
         {
-            AppendToStreamAsync(stream, expectedVersion, (IEnumerable<IEvent>) events).Wait();
+            AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>) events).Wait();
         }
 
         /// <summary>
@@ -354,7 +354,7 @@ namespace EventStore.ClientAPI
         /// <param name="stream">The name of the stream to append the events to.</param>
         /// <param name="expectedVersion">The expected version of the stream</param>
         /// <param name="events">The events to write to the stream</param>
-        public void AppendToStream(string stream, int expectedVersion, IEnumerable<IEvent> events)
+        public void AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events)
         {
             AppendToStreamAsync(stream, expectedVersion, events).Wait();
         }
@@ -377,9 +377,9 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="events">The events to append to the stream</param>
         /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
-        public Task AppendToStreamAsync(string stream, int expectedVersion, params IEvent[] events)
+        public Task AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events)
         {
-            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<IEvent>) events);
+            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>) events);
         }
 
         /// <summary>
@@ -400,7 +400,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="events">The events to append to the stream</param>
         /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
-        public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<IEvent> events)
+        public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
@@ -480,7 +480,7 @@ namespace EventStore.ClientAPI
         /// <param name="transaction">The <see cref="EventStoreTransaction"/> to write to.</param>
         /// <param name="events">The events to write</param>
         /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
-        internal Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<IEvent> events)
+        internal Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events)
         {
             Ensure.NotNull(transaction, "transaction");
             Ensure.NotNull(events, "events");

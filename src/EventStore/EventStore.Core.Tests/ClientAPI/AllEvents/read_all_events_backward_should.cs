@@ -133,7 +133,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var read = store.ReadAllEventsBackwardAsync(Position.End, testEvents.Length + 1, false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(TestEventsComparer.Equal(testEvents.Reverse().ToArray(), 
+                Assert.That(EventDataComparer.Equal(testEvents.Reverse().ToArray(), 
                                                      read.Result.Events.Select(x => x.Event).Take(testEvents.Length).ToArray()));
             }
         }
@@ -184,7 +184,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                     position = slice.NextPosition;
                 }
 
-                Assert.That(TestEventsComparer.Equal(testEvents.Reverse().ToArray(), all.Take(testEvents.Length).ToArray()));
+                Assert.That(EventDataComparer.Equal(testEvents.Reverse().ToArray(), all.Take(testEvents.Length).ToArray()));
             }
         }
 
@@ -213,7 +213,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                     position = slice.NextPosition;
                 }
 
-                Assert.That(TestEventsComparer.Equal(testEvents.Reverse().ToArray(), all.Take(testEvents.Length).ToArray()));
+                Assert.That(EventDataComparer.Equal(testEvents.Reverse().ToArray(), all.Take(testEvents.Length).ToArray()));
             }
         }
 
@@ -252,7 +252,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 }
 
                 Assert.Inconclusive();
-                //Assert.That(TestEventsComparer.Equal(testEvents.Reverse().ToArray(), all.Take(testEvents.Length).ToArray()));
+                //Assert.That(EventDataComparer.Equal(testEvents.Reverse().ToArray(), all.Take(testEvents.Length).ToArray()));
             }
         }
 

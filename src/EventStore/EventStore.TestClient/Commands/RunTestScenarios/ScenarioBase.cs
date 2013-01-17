@@ -85,7 +85,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             get { return TimeSpan.FromSeconds(12); }
         }
 
-        private readonly Dictionary<WriteMode, Func<string, int, Func<int, IEvent>, Task>> _writeHandlers;
+        private readonly Dictionary<WriteMode, Func<string, int, Func<int, EventData>, Task>> _writeHandlers;
 
         private readonly EventStoreConnection[] _connections;
         private int _nextConnectionNum = -1;
@@ -114,7 +114,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             _connections = new EventStoreConnection[connections];
             _projectionsManager = new ProjectionsManager(new IPEndPoint(_tcpEndPoint.Address, _tcpEndPoint.Port + 1000));
 
-            _writeHandlers = new Dictionary<WriteMode, Func<string, int, Func<int, IEvent>, Task>>
+            _writeHandlers = new Dictionary<WriteMode, Func<string, int, Func<int, EventData>, Task>>
             {
                     {WriteMode.SingleEventAtTime, WriteSingleEventAtTime},
                     {WriteMode.Bucket, WriteBucketOfEventsAtTime},
@@ -179,18 +179,18 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         
         protected Task Write(WriteMode mode, string[] streams, int eventsPerStream)
         {
-            Func<int, IEvent> createEvent = v => new TestEvent(v);
+            Func<int, EventData> createEvent = v => new TestEvent(v);
             return Write(mode, streams, eventsPerStream, createEvent);
         }
 
-        protected Task Write(WriteMode mode, string[] streams, int eventsPerStream, Func<int, IEvent> createEvent)
+        protected Task Write(WriteMode mode, string[] streams, int eventsPerStream, Func<int, EventData> createEvent)
         {
             Log.Info("Writing. Mode : {0,-15} Streams : {1,-10} Events per stream : {2,-10}",
                      mode,
                      streams.Length,
                      eventsPerStream);
 
-            Func<string, int, Func<int, IEvent>, Task> handler;
+            Func<string, int, Func<int, EventData>, Task> handler;
             if (!_writeHandlers.TryGetValue(mode, out handler))
                 throw new ArgumentOutOfRangeException("mode");
 
@@ -453,7 +453,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             Log.Info("Scavenge command was sent.");
         }
 
-        private Task WriteSingleEventAtTime(string stream, int events, Func<int, IEvent> createEvent)
+        private Task WriteSingleEventAtTime(string stream, int events, Func<int, EventData> createEvent)
         {
             var resSource = new TaskCompletionSource<object>();
 
@@ -492,7 +492,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return resSource.Task;
         }
 
-        private Task WriteBucketOfEventsAtTime(string stream, int eventCount, Func<int, IEvent> createEvent)
+        private Task WriteBucketOfEventsAtTime(string stream, int eventCount, Func<int, EventData> createEvent)
         {
             const int bucketSize = 25;
             Log.Info("Starting to write {0} events to [{1}] ({2} events at once)", eventCount, stream, bucketSize);
@@ -534,8 +534,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             return resSource.Task;
         }
-
-        private Task WriteEventsInTransactionalWay(string stream, int eventCount, Func<int, IEvent> createEvent)
+        
+        private Task WriteEventsInTransactionalWay(string stream, int eventCount, Func<int, EventData> createEvent)
         {
             Log.Info("Starting to write {0} events to [{1}] (in single transaction)", eventCount, stream);
 

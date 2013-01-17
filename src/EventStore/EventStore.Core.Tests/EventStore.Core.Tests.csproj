@@ -96,14 +96,14 @@
     <Compile Include="ClientAPI\deleting_stream.cs" />
     <Compile Include="ClientAPI\creating_stream.cs" />
     <Compile Include="ClientAPI\event_store_connection_should.cs" />
+    <Compile Include="ClientAPI\Helpers\TestEvent.cs" />
     <Compile Include="ClientAPI\Helpers\Writer.cs" />
     <Compile Include="ClientAPI\Helpers\EventsStream.cs" />
     <Compile Include="ClientAPI\Helpers\MiniNode.cs" />
     <Compile Include="ClientAPI\read_event_stream_backward_should.cs" />
     <Compile Include="ClientAPI\read_event_stream_forward_should.cs" />
     <Compile Include="ClientAPI\subscribe_should.cs" />
-    <Compile Include="ClientAPI\Helpers\TestEvent.cs" />
-    <Compile Include="ClientAPI\Helpers\TestEventsComparer.cs" />
+    <Compile Include="ClientAPI\Helpers\EventDataComparer.cs" />
     <Compile Include="ClientAPI\transaction.cs" />
     <Compile Include="Common\Options\OptsHelperTestBase.cs" />
     <Compile Include="Common\Options\opts_helper_should_report_parse_errors_for_array.cs" />

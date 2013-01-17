@@ -6,14 +6,8 @@ using EventStore.Core.Services.Transport.Http.Codecs;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {
-    internal class JsonEventContainer : IEvent
+    internal class JsonEventContainer : EventData
     {
-        public Guid EventId { get; private set; }
-        public string Type { get; private set; }
-        public bool IsJson { get; private set; }
-        public byte[] Data { get; private set; }
-        public byte[] Metadata { get; private set; }
-
         public JsonEventContainer(object @event)
         {
             if (@event == null)

@@ -32,16 +32,8 @@ using EventStore.ClientAPI;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
-    internal class TestEvent : IEvent
+    internal class TestEvent : EventData
     {
-        public Guid EventId { get; private set; }
-        public string Type { get; private set; }
-
-        public bool IsJson { get; private set; }
-
-        public byte[] Data { get; private set; }
-        public byte[] Metadata { get; private set; }
-
         public TestEvent(string data = null, string metadata = null)
         {
             EventId = Guid.NewGuid();

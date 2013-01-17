@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var read = store.ReadStreamEventsBackwardAsync(stream, StreamPosition.End, testEvents.Length, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(TestEventsComparer.Equal(testEvents.Reverse().ToArray(), read.Result.Events.Select(x => x.Event).ToArray()));
+                Assert.That(EventDataComparer.Equal(testEvents.Reverse().ToArray(), read.Result.Events.Select(x => x.Event).ToArray()));
             }
         }
 
@@ -181,7 +181,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var read = store.ReadStreamEventsBackwardAsync(stream, 7, 1, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(TestEventsComparer.Equal(testEvents[6], read.Result.Events.Single().Event));
+                Assert.That(EventDataComparer.Equal(testEvents[6], read.Result.Events.Single().Event));
             }
         }
 
@@ -225,7 +225,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var read = store.ReadStreamEventsBackwardAsync(stream, StreamPosition.End, 1, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(TestEventsComparer.Equal(testEvents.Last(), read.Result.Events.Single().Event));
+                Assert.That(EventDataComparer.Equal(testEvents.Last(), read.Result.Events.Single().Event));
             }
         }
 
@@ -247,7 +247,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 var read = store.ReadStreamEventsBackwardAsync(stream, 3, 2, resolveLinkTos: false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(TestEventsComparer.Equal(testEvents.Skip(1).Take(2).Reverse().ToArray(), 
+                Assert.That(EventDataComparer.Equal(testEvents.Skip(1).Take(2).Reverse().ToArray(), 
                                                      read.Result.Events.Select(x => x.Event).ToArray()));
             }
         }

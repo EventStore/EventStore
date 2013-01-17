@@ -124,7 +124,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 var read = store.ReadAllEventsForwardAsync(Position.Start, testEvents.Length*2 + 2, false);
                 Assert.DoesNotThrow(read.Wait);
 
-                Assert.That(TestEventsComparer.Equal(
+                Assert.That(EventDataComparer.Equal(
                     testEvents.Concat(testEvents).ToArray(),
                     read.Result.Events.Skip(1).Take(testEvents.Length)
                         .Concat(read.Result.Events.Skip(testEvents.Length + 2).Take(testEvents.Length))
@@ -178,7 +178,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                     position = slice.NextPosition;
                 }
 
-                Assert.That(TestEventsComparer.Equal(testEvents, all.Skip(1).ToArray()));
+                Assert.That(EventDataComparer.Equal(testEvents, all.Skip(1).ToArray()));
             }
         }
 
@@ -207,7 +207,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                     position = slice.NextPosition;
                 }
 
-                Assert.That(TestEventsComparer.Equal(testEvents, all.Skip(1).ToArray()));
+                Assert.That(EventDataComparer.Equal(testEvents, all.Skip(1).ToArray()));
             }
         }
 
@@ -269,7 +269,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                     position = slice.NextPosition;
                 }
 
-                Assert.That(TestEventsComparer.Equal(testEvents, all.Skip(1).ToArray()));
+                Assert.That(EventDataComparer.Equal(testEvents, all.Skip(1).ToArray()));
             }
         }
 
@@ -378,7 +378,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
 
                     var expected = testEvents.Concat(testEvents).ToArray();
                     var actual = catched.Concat(missed.Result.Events.Skip(1).Select(x => x.Event)).ToArray();//skip 1 because readallforward is inclusive
-                    Assert.That(TestEventsComparer.Equal(expected, actual));
+                    Assert.That(EventDataComparer.Equal(expected, actual));
                 }
             }
         }
