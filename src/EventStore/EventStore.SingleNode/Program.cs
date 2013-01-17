@@ -43,6 +43,8 @@ namespace EventStore.SingleNode
         private Projections.Core.Projections _projections;
         private readonly DateTime _startupTimeStamp = DateTime.UtcNow;
 
+        private bool _showVersion = false;
+        
         public static int Main(string[] args)
         {
             var p = new Program();
@@ -71,6 +73,21 @@ namespace EventStore.SingleNode
 
         protected override void Create(SingleNodeOptions options)
         {
+            if (options.ShowVersion)
+            {
+                _showVersion = true;
+
+                var version = string.Format("\nEventStore version: {0}, branch: {1}, hashtag: {2}", 
+                    Common.Version.EventStoreVersion.Version, 
+                    Common.Version.EventStoreVersion.Branch, 
+                    Common.Version.EventStoreVersion.Hashtag);
+
+                Log.Info(version);
+
+                Application.Exit(ExitCode.Success, "Version");
+                return;
+            }
+
             var dbPath = Path.GetFullPath(ResolveDbPath(options.DbPath, options.HttpPort));
             Log.Info("\n{0,-25} {1}\n", "DATABASE:", dbPath);
             var db = new TFChunkDb(CreateDbConfig(dbPath, options.CachedChunks));
@@ -108,6 +125,9 @@ namespace EventStore.SingleNode
 
         protected override void Start()
         {
+            if (_showVersion)
+                return;
+
             _node.Start();
 
             if (_projections != null)
@@ -116,6 +136,9 @@ namespace EventStore.SingleNode
 
         public override void Stop()
         {
+            if (_showVersion)
+                return;
+
             _node.Stop();
         }
     }
