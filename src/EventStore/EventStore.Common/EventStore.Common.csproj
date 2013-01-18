@@ -96,12 +96,12 @@
     <Content Include="Properties\ESVersion.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(OS)' == 'Release|Windows_NT' ">
     <PreBuildEvent >
 $(MSBuildProjectDirectory)\..\Scripts\version\update-version.cmd $(MSBuildProjectDirectory)
     </PreBuildEvent>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
+  <PropertyGroup Condition=" ('$(OS)' != 'Windows_NT') And ('$(Configuration)' == 'Release') ">
     <PreBuildEvent>
 $(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProjectDirectory)
     </PreBuildEvent>
