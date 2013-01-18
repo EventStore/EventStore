@@ -1,3 +1,3 @@
 [assembly: System.Reflection.AssemblyVersion("1.0.0.0")] 
 [assembly: System.Reflection.AssemblyFileVersion("1.0.0.0")] 
-[assembly: System.Reflection.AssemblyInformationalVersion("1.0.0.master@4f6d7fbca043d9263173552874cdfb0d8e73b221@Thu, 17 Jan 2013 21:07:36 +0200")] 
+[assembly: System.Reflection.AssemblyInformationalVersion("1.0.0.dev@60d1ca86887f3646941c86ea2cb360183c325df8@Fri, 18 Jan 2013 15:40:39 +0200")] 
