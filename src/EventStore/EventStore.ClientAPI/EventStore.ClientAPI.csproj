@@ -78,6 +78,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="ClientOperations\CommitTransactionOperation.cs" />
     <Compile Include="ClientOperations\ReadAllEventsBackwardOperation.cs" />

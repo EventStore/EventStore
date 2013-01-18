@@ -30,6 +30,7 @@ namespace EventStore.Common.Options
     public interface IOptions
     {
         bool ShowHelp { get; }
+        bool ShowVersion { get; }
         string LogsDir { get; }
 
         void Parse(params string[] args);

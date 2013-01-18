@@ -102,6 +102,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
     <Compile Include="Other\json_serialization.cs" />
     <Compile Include="Other\when_matching_remaining_path.cs" />
     <Compile Include="Playground\BusTestingExtentions.cs" />
