@@ -15,6 +15,7 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                     start:
                         status.status.indexOf("Loaded") === 0 ||
                         status.status.indexOf("Stopped") === 0 ||
+                        status.status.indexOf("Completed") === 0 ||
                         status.status.indexOf("Faulted") === 0,
                     update: true,
                 };

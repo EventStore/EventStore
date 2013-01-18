@@ -25,21 +25,23 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
-namespace EventStore.Projections.Core.Services.Management
+
+namespace EventStore.Projections.Core.Services.Processing
 {
-    public enum ManagedProjectionState
+    class CompletedWorkItem : CheckpointWorkItemBase
     {
-        Creating,
-        Loading,
-        Loaded,
-        Preparing,
-        Prepared,
-        Stopped,
-        Completed,
-        Faulted,
-        Starting,
-        LoadingState,
-        Running,
-        Stopping,
+        private readonly CoreProjection _projection;
+
+        public CompletedWorkItem(CoreProjection projection)
+            : base(projection)
+        {
+            _projection = projection;
+        }
+
+        protected override void WriteOutput()
+        {
+            _projection.Complete();
+            NextStage();
+        }
     }
 }

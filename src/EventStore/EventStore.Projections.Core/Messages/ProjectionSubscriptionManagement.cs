@@ -48,6 +48,9 @@ namespace EventStore.Projections.Core.Messages
                 Guid correlationId, Guid subscriptionId, ICoreProjection subscriber, CheckpointTag from,
                 CheckpointStrategy checkpointStrategy, long checkpointUnhandledBytesThreshold, bool stopOnEof = false)
             {
+                if (subscriber == null) throw new ArgumentNullException("subscriber");
+                if (@from == null) throw new ArgumentNullException("from");
+                if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
                 _correlationId = correlationId;
                 _subscriptionId = subscriptionId;
                 _subscriber = subscriber;

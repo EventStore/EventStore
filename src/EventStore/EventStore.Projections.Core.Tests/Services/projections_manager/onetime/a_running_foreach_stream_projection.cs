@@ -28,17 +28,18 @@
 
 using System;
 using System.Linq;
+using System.Text;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 {
-    public class a_running_projection
+    public class a_running_foreach_stream_projection
     {
-
         public abstract class Base : a_new_posted_projection.Base
         {
             protected Guid _reader;
@@ -46,6 +47,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             protected override void Given()
             {
                 base.Given();
+                _fakeProjectionType = typeof (FakeForeachStreamProjection);
+                _projectionMode = ProjectionMode.OneTime;
+                _checkpointsEnabled = true;
+                _emitEnabled = true;
+                AllWritesSucceed();
+                NoStream("$projections-test-projection-checkpoint");
+                //NOTE: do not respond to reads from the following stream
+                //NoStream("$projections-test-projection-stream-checkpoint");
             }
 
             protected override void When()
@@ -59,12 +68,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 _bus.Publish(
                     new ProjectionCoreServiceMessage.CommittedEventDistributed(
                         _reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false,
-                        ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0]), 100, 33.3f));
+                        ResolvedEvent.Sample(Guid.NewGuid(), "type", false, Encoding.UTF8.GetBytes("1"), new byte[0]), 100, 33.3f));
             }
         }
 
         [TestFixture]
-        public class when_handling_eof : Base
+        public class when_receiving_eof : Base
         {
             protected override void When()
             {
@@ -73,60 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             }
 
             [Test]
-            public void pause_message_is_published()
-            {
-                Assert.Inconclusive("actually in unsubscribes...");
-            }
-
-
-            [Test]
-            public void the_projection_status_becomes_completed_enabled()
-            {
-                _manager.Handle(
-                    new ProjectionManagementMessage.GetStatistics(
-                        new PublishEnvelope(_bus), null, _projectionName, false));
-
-                Assert.AreEqual(1, _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Count());
-                Assert.AreEqual(
-                    1,
-                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
-                             .Single()
-                             .Projections.Length);
-                Assert.AreEqual(
-                    _projectionName,
-                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
-                             .Single()
-                             .Projections.Single()
-                             .Name);
-                Assert.AreEqual(
-                    ManagedProjectionState.Completed,
-                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
-                             .Single()
-                             .Projections.Single()
-                             .MasterStatus);
-                Assert.AreEqual(
-                    true,
-                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
-                             .Single()
-                             .Projections.Single()
-                             .Enabled);
-            }
-        }
-
-        [TestFixture]
-        public class when_handling_event : Base
-        {
-            protected override void When()
-            {
-                base.When();
-                _bus.Publish(
-                    new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                        _reader, new EventPosition(200, 150), "stream", 2, "stream", 1, false,
-                        ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0]), 100, 33.3f));
-            }
-
-            [Test]
-            public void the_projection_status_remains_running_enabled()
+            public void the_projection_status_remains_running()
             {
                 _manager.Handle(
                     new ProjectionManagementMessage.GetStatistics(
@@ -150,14 +106,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                              .Single()
                              .Projections.Single()
                              .MasterStatus);
-                Assert.AreEqual(
-                    true,
-                    _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
-                             .Single()
-                             .Projections.Single()
-                             .Enabled);
             }
-        }
 
+        }
+        
     }
 }

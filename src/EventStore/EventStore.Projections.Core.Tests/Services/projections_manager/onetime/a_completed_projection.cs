@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             }
 
             [Test]
-            public void the_projection_status_becomes_stopped_disabled()
+            public void the_projection_status_becomes_completed_disabled()
             {
                 _manager.Handle(
                     new ProjectionManagementMessage.GetStatistics(
@@ -92,7 +92,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                              .Projections.Single()
                              .Name);
                 Assert.AreEqual(
-                    ManagedProjectionState.Stopped,
+                    ManagedProjectionState.Completed,
                     _consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
                              .Single()
                              .Projections.Single()

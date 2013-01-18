@@ -252,16 +252,19 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name, ProjectionNamesBuilder namingBuilder)
         {
+            var emitAny = projectionConfig.EmitEventEnabled;
             var emitPartitionCheckpoints = UseCheckpoints && !EmitStateUpdated && (_byCustomPartitions || _byStream);
 
-            if (_allStreams && _useEventIndexes && _events != null && _events.Count > 1)
+            //NOTE: not emitting one-time/transient projections are always handled by default checkpoint manager
+            // as they don't depend on stable event order
+            if (emitAny && _allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
                     projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated,
                     emitPartitionCheckpoints);
             }
-            else if (_streams != null && _streams.Count > 1)
+            else if (emitAny && _streams != null && _streams.Count > 1)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,

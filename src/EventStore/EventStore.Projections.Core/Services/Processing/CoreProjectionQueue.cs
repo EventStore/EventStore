@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _lastEnqueuedEventTag = default(CheckpointTag);
             _subscriptionPaused = false;
-
+            _unsubscribed = false;
             _queuePendingEvents.Initialize();
         }
 
@@ -120,7 +120,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void PauseSubscription()
         {
-            if (!_subscriptionPaused)
+            if (!_subscriptionPaused && !_unsubscribed)
             {
                 _subscriptionPaused = true;
                 _publisher.Publish(
@@ -130,8 +130,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ResumeSubscription()
         {
-            if (_subscriptionPaused)
+            if (_subscriptionPaused && !_unsubscribed)
             {
+
                 _subscriptionPaused = false;
                 _publisher.Publish(
                     new ProjectionSubscriptionManagement.Resume(_projectionCorrelationId));
@@ -139,6 +140,7 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private DateTime _lastReportedStatisticsTimeStamp = default(DateTime);
+        private bool _unsubscribed;
 
         private void ProcessOneEvent()
         {
@@ -156,5 +158,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastReportedStatisticsTimeStamp = DateTime.UtcNow;
         }
 
+        public void Unsubscribed()
+        {
+            _unsubscribed = true;
+        }
     }
 }

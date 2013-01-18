@@ -265,7 +265,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.Stopped message)
         {
-            _state = ManagedProjectionState.Stopped;
+            _state = message.Completed ? ManagedProjectionState.Completed : ManagedProjectionState.Stopped;
             FireStoppedOrFaulted();
         }
 
@@ -601,6 +601,7 @@ namespace EventStore.Projections.Core.Services.Management
             switch (_state)
             {
                 case ManagedProjectionState.Stopped:
+                case ManagedProjectionState.Completed:
                 case ManagedProjectionState.Faulted:
                 case ManagedProjectionState.Loaded:
                     if (completed != null) completed();
