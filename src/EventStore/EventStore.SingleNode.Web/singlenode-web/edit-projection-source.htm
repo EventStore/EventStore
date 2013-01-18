@@ -4,42 +4,56 @@
     <title>Edit Projection Source</title>
     <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
     <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
+    <script src="/web/es/lib/require.js" type="text/javascript"></script>
     <script src="/web/es/js/es.tmpl.js" type="text/javascript"></script>
     <script id="r-head">
         es.tmpl.renderHead();
     </script>
+    <style>
+        .container
+        {
+            width: inherit;
+            margin-left: 50px;
+            margin-right: 50px;
+        }
+    </style>
 </head>
 <body>
     <div id="content">
-        <h1>
-            Edit Projection Source</h1>
-        <div class="form-horizontal">
-            <div class="control-group">
-                <label class="control-label" for="projection-state">
-                    <strong>State</strong></label>
-                <div class="controls">
-                    <div id="projection-state">
-                    </div>
+        <h1>Change Projection</h1>
+        <h3><span id="projection-name"></span> - <span id="status"></span></h3>
+        <div id="message" class="error" style="display: none;"></div>
+        <div class="row">
+            <div class="span12">
+                <div id="commands-container">
+                    <ul style="display: inline;">
+                        <li><a href="#" id="btn-run" class="btn btn-success">Run</a></li>
+                        <li><a href="#" id="btn-break" class="btn btn-danger">Stop</a></li>
+                    </ul>
                 </div>
             </div>
+        </div>
+        <div>
             <div class="control-group">
                 <label class="control-label" for="source">
                     <strong>Source</strong></label>
                 <div class="controls">
-                    <textarea id="source" spellcheck="false" wrap="off" cols="100"></textarea>
+                    <textarea id="source" class="json" spellcheck="false" wrap="off" style="display: block; width: 100%;"></textarea>
                 </div>
             </div>
             <div class="control-group">
                 <label class="control-label" for="emit"><strong>Emit Enabled</strong></label>
-                <div class="controls"><input type="checkbox" id="emit" /></div>
+                <div class="controls">
+                    <input type="checkbox" id="emit" /></div>
             </div>
             <div class="control-group">
-                <div class="controls" id="update-source-container">
-                    <button id="update-button" class="btn btn-success">
-                        Update</button>
+                <label class="control-label" for="source">
+                    <strong>State</strong></label>
+                <div class="controls">
+                    <textarea id="state" spellcheck="false" wrap="off" cols="100" rows="20" readonly="readonly"></textarea>
                 </div>
             </div>
-        </div> 
+        </div>
 
         <script id="r-body">
             es.tmpl.renderBody();
@@ -47,82 +61,33 @@
     </div>
 
     <script type="text/javascript">
+        require.config({
+            baseUrl: "/web/es/js",
+            paths: {
+            },
+        });
 
-        (function() {
+        require(['projections/Observer', 'projections/Controller', 'projections/ui/Editor'], function (observer, controller, editor) {
 
-            var projectionStatusUrl = "";
+            $(function () {
+                var projectionStatusUrl = location.hash.substr(1);
+                var projectionObserver = observer.create(projectionStatusUrl);
+                var projectionController = controller.create(projectionStatusUrl, projectionObserver);
 
-            $(function() {
-                $.templates("editSourceTemplate", "#editSourceTemplate");
-                projectionStatusUrl = location.hash.substr(1);
-
-                $('#update-button').click(function(ev) {
-                    var params = $.param({
-                        emit: $("#emit").attr("checked") ? "yes" : "no",
-                    });
-                    $.ajax(projectionStatusUrl + "/query?" + params, {
-                        headers: {
-                            Accept: "application/json",
-                        },
-
-                        type: "PUT",
-                        data: $("#source").val(),
-                        success: successUpdateSource,
-                        error: function(xhr) {
-                             var msg = es.util.formatError("Couldn't delete projection", xhr);
-                            alert(msg);
-                        }
-                    });
+                var projectionEditor = editor.create(projectionStatusUrl, projectionObserver, projectionController, {
+                    status: $("#status"),
+                    name: $("#projection-name"),
+                    source: $("#source"),
+                    state: $("#state"),
+                    message: $("#message"),
+                    emit: $("#emit"),
+                    start: $("#btn-run"),
+                    stop: $("#btn-break"),
                 });
 
-                requestProjectionState();
-                requestProjectionSource();
+                projectionEditor.bind();
             });
-
-            function requestProjectionState() {
-                $.ajax(projectionStatusUrl + "/state", {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    success: successState,
-                    error: errorState
-                });
-
-                function successState(data, status, xhr) {
-                    var state = JSON.stringify(data);
-                    $("#projection-state").text(state);
-                }
-
-                function errorState(xhr, status) {
-                    setTimeout(requestProjectionState, 1000);
-                }
-            }
-
-            function requestProjectionSource() {
-                $.ajax(projectionStatusUrl + "/query?config=yes", {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    dataType: "json",
-                    success: successSource,
-                    error: errorSource
-                });
-
-                function successSource(data, status, xhr) {
-                    $("#source").text(data.query);
-                    $("#emit").attr("checked", data.emitEnabled);
-                }
-
-                function errorSource(xhr, status) {
-                    setTimeout(requestProjectionSource, 1000);
-                }
-            }
-
-            function successUpdateSource(data, status, xhr) {
-                window.location = "view-projection.htm#" + projectionStatusUrl;
-            }            
-            
-        })();
+        });
 
     </script>
 </body>
