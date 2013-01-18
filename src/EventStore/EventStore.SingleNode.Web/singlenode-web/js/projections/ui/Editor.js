@@ -15,10 +15,14 @@ define(function () {
             }
             
             function setReadonly(control, readonly) {
-                if (readonly)
-                    control.removeAttr("readonly");
-                else
-                    control.attr("readonly", "readonly");
+                if (control.setReadOnly) {
+                    control.setReadOnly(readonly);
+                } else {
+                    if (readonly)
+                        control.removeAttr("readonly");
+                    else
+                        control.attr("readonly", "readonly");
+                }
             }
 
 
@@ -42,10 +46,10 @@ define(function () {
             }
 
             function sourceChanged(source) {
-                var current = controls.source.text();
+                var current = controls.source.getValue();
                 if (current !== source.query) {
                     if (lastSource === current) {
-                        controls.source.text(source.query);
+                        controls.source.setValue(source.query);
                         lastSource = source.query;
                     } else {
                         console.log("Ignoring query source changed outside. There are local pending changes.");
@@ -56,7 +60,7 @@ define(function () {
             }
 
             function updateAndStart() {
-                var current = controls.source.val();
+                var current = controls.source.getValue();
                 var emitEnabled = !!controls.emit.attr("checked");
                 if (lastSource === current && lastEmitEnabled === emitEnabled) {
                     controller.start();
