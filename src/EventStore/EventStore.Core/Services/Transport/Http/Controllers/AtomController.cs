@@ -54,14 +54,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     {
         private static readonly HtmlFeedCodec HtmlFeedCodec = new HtmlFeedCodec(); // initialization order matters
 
-        private static readonly ICodec[] ServiceDocCodecs = new[]
-                                                            {
-                                                                Codec.Xml,
-                                                                Codec.ApplicationXml,
-                                                                Codec.CreateCustom(Codec.Xml, ContentType.AtomServiceDoc),
-                                                                Codec.Json,
-                                                                Codec.CreateCustom(Codec.Json, ContentType.AtomServiceDocJson)
-                                                            };
         private static readonly ICodec[] AtomCodecs = new[]
                                                       {
                                                           Codec.Xml,
@@ -220,8 +212,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
             OnGetStreamFeedCore(entity, stream, startIdx, cnt, embed, headOfStream: false);
         }
 
-        private void OnGetStreamFeedCore(
-            HttpEntity entity, string stream, int start, int count, EmbedLevel embed, bool headOfStream)
+        private void OnGetStreamFeedCore(HttpEntity entity, string stream, int start, int count, EmbedLevel embed, bool headOfStream)
         {
             var etag = entity.Request.Headers["If-None-Match"];
             int? validationStreamVersion = null;

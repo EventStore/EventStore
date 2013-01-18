@@ -94,9 +94,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var successTask = Task.Factory.StartNew<bool>(() =>
             {
-                var store = GetConnection();
-                var manager = GetProjectionsManager();
-
                 var success = true;
                 var stopWatch = new Stopwatch();
                 

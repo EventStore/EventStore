@@ -27,7 +27,6 @@
 //  
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
@@ -40,7 +39,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
     {
         private readonly TimeSpan _executionPeriod;
 
-        private Dictionary<string, string> _transactionsPool;
         private readonly Random _random;
 
         public LoopingProjTranWriteScenario(Action<IPEndPoint, byte[]> directSendOverTcp, 
@@ -54,7 +52,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
         {
             _executionPeriod = executionPeriod;
-            _transactionsPool = new Dictionary<string, string>();
             _random = new Random();
         }
 
