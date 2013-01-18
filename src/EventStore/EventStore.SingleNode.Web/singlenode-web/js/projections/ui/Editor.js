@@ -16,7 +16,6 @@ define(function () {
             
             function setReadonly(control, readonly) {
                 if (control.setReadOnly) {
-                    console.log("setReadOnly: " + readonly);
                     control.setReadOnly(readonly);
                 } else {
                     if (readonly)
