@@ -3,13 +3,10 @@
 function err() {
   echo Failed! ${1:-"Unknown error"}
   if [ -e "/tmp/es-ver.tmp" ] ; then rm /tmp/es-ver.tmp; fi
-  popd
   exit 1
 }
 
 MSBuildProjectDirectory=$1
-
-pushd $MSBuildProjectDirectory
 
 if [ ! -e $MSBuildProjectDirectory/Properties/ESVersion.txt ] ; then err "No ESVersion.txt file found with current version!"; fi
 
@@ -35,4 +32,3 @@ fi
 if [ -e "/tmp/es-ver.tmp" ] ; then rm /tmp/es-ver.tmp; fi
 
 echo "Done."
-popd
