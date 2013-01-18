@@ -12,7 +12,6 @@ MSBuildProjectDirectory=$1
 pushd $MSBuildProjectDirectory
 
 if [ ! -e $MSBuildProjectDirectory/Properties/ESVersion.txt ] ; then err "No ESVersion.txt file found with current version!"; fi
-if [ ! -e $MSBuildProjectDirectory/Properties/AssemblyVersion.cs ] ; then err "No AssemblyVersion.cs file found in EventStore.Common!"; fi
 
 _es_version=`cat $MSBuildProjectDirectory/Properties/ESVersion.txt` || err "Read version"
 _es_branch=`git rev-parse --abbrev-ref HEAD` || err "Read branch"

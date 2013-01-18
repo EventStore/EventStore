@@ -101,7 +101,6 @@
 @echo off   
 
 if not exist $(MSBuildProjectDirectory)\Properties\ESVersion.txt goto VERSION_NOT_FOUND
-if not exist $(MSBuildProjectDirectory)\Properties\AssemblyVersion.cs goto ASSEMBLY_VERSION_NOT_FOUND
 
 set /p _es_version=&lt;$(MSBuildProjectDirectory)\Properties\ESVersion.txt || goto ERROR
 
@@ -135,10 +134,6 @@ exit 0
 echo No ESVersion.txt file found with current version!
 exit 1
 
-:ASSEMBLY_VERSION_NOT_FOUND
-echo No AssemblyVersion.cs file found in EventStore.Common!
-exit 1
-
 :ERROR
 echo Unknown error happened!
 exit 1
@@ -146,7 +141,6 @@ exit 1
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
     <PreBuildEvent>
-chmod +x $(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh
 $(MSBuildProjectDirectory)\..\Scripts\version\update-version.sh $(MSBuildProjectDirectory)
     </PreBuildEvent>
   </PropertyGroup>

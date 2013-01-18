@@ -5,7 +5,6 @@ set MSBuildProjectDirectory = %1
 echo %MSBuildProjectDirectory%
 
 if not exist %1\Properties\ESVersion.txt goto VERSION_NOT_FOUND
-if not exist %1\Properties\AssemblyVersion.cs goto ASSEMBLY_VERSION_NOT_FOUND
 
 set /p _es_version=<%1\Properties\ESVersion.txt || goto ERROR
 
@@ -37,10 +36,6 @@ exit /b 0
 
 :VERSION_NOT_FOUND
 echo No ESVersion.txt file found with current version!
-exit /b 1
-
-:ASSEMBLY_VERSION_NOT_FOUND
-echo No AssemblyVersion.cs file found in EventStore.Common!
 exit /b 1
 
 :ERROR
