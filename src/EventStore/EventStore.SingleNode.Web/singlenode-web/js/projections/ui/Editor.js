@@ -50,6 +50,7 @@ define(function () {
                 if (current !== source.query) {
                     if (lastSource === current) {
                         controls.source.setValue(source.query);
+                        controls.source.navigateFileStart();
                         lastSource = source.query;
                     } else {
                         console.log("Ignoring query source changed outside. There are local pending changes.");
