@@ -302,7 +302,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (!_projectionConfig.StopOnEof)
                 throw new InvalidOperationException("!_projectionConfig.StopOnEof");
-            _subscribed = false; // NOTE:  stopOnEof subscriptions automatically unsuibscribe when handling this message
+            _subscribed = false; // NOTE:  stopOnEof subscriptions automatically unsubscribe when handling this message
             Stop();
         }
 
