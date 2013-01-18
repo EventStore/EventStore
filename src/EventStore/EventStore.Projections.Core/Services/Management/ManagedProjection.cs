@@ -157,16 +157,23 @@ namespace EventStore.Projections.Core.Services.Management
             if (_lastReceivedStatistics == null)
             {
                 status = new ProjectionStatistics
-                    {Name = _name, Mode = GetMode(), Status = _state.EnumValueName(), MasterStatus = _state};
+                    {
+                        Name = _name,
+                        Mode = GetMode(),
+                        Status = _state.EnumValueName(),
+                        MasterStatus = _state
+                    };
             }
             else
             {
                 status = _lastReceivedStatistics.Clone();
                 status.Mode = GetMode();
                 status.Name = _name;
-                status.Status = !status.Status.StartsWith(_state.EnumValueName())
-                                    ? _state.EnumValueName() + "/" + status.Status
-                                    : status.Status;
+                status.Status = status.Status == "Stopped" && _state == ManagedProjectionState.Completed
+                                    ? _state.EnumValueName()
+                                    : (!status.Status.StartsWith(_state.EnumValueName())
+                                           ? _state.EnumValueName() + "/" + status.Status
+                                           : status.Status);
                 status.MasterStatus = _state;
             }
             if (_state == ManagedProjectionState.Faulted)
@@ -222,8 +229,7 @@ namespace EventStore.Projections.Core.Services.Management
             else
             {
                 //TODO: report right state here
-                message.Envelope.ReplyWith(
-                    new ProjectionManagementMessage.ProjectionDebugState(message.Name, null));
+                message.Envelope.ReplyWith(new ProjectionManagementMessage.ProjectionDebugState(message.Name, null));
             }
         }
 
@@ -236,12 +242,14 @@ namespace EventStore.Projections.Core.Services.Management
         {
             if (Enabled && _state == ManagedProjectionState.Running)
             {
-                message.Envelope.ReplyWith(new ProjectionManagementMessage.OperationFailed("Already enabled and running"));
+                message.Envelope.ReplyWith(
+                    new ProjectionManagementMessage.OperationFailed("Already enabled and running"));
                 return;
             }
             if (!Enabled)
                 Enable();
-            Action completed = () => Start(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
+            Action completed =
+                () => Start(() => message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name)));
             Prepare(() => BeginWrite(completed));
         }
 
@@ -263,7 +271,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(CoreProjectionManagementMessage.Stopped message)
         {
-            _state = ManagedProjectionState.Stopped;
+            _state = message.Completed ? ManagedProjectionState.Completed : ManagedProjectionState.Stopped;
             FireStoppedOrFaulted();
         }
 
@@ -343,8 +351,8 @@ namespace EventStore.Projections.Core.Services.Management
         {
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), _readDispatcher.Envelope, "$projections-" + name, -1, 1, resolveLinks: false, validationStreamVersion: null),
-                LoadCompleted);
+                    Guid.NewGuid(), _readDispatcher.Envelope, "$projections-" + name, -1, 1, resolveLinks: false,
+                    validationStreamVersion: null), LoadCompleted);
         }
 
         private void LoadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed)
@@ -376,7 +384,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void FixupOldProjectionModes(PersistedState persistedState)
         {
-            switch ((int)persistedState.Mode)
+            switch ((int) persistedState.Mode)
             {
                 case 2: // old continuous
                     persistedState.Mode = ProjectionMode.Continuous;
@@ -440,9 +448,8 @@ namespace EventStore.Projections.Core.Services.Management
             _logger.Info("Projection '{0}' source has not been written to {1}. Error: {2}",
                          _name,
                          eventStreamId,
-                         Enum.GetName(typeof (OperationResult), message.Result));
-            if (message.Result == OperationResult.CommitTimeout
-                || message.Result == OperationResult.ForwardTimeout
+                Enum.GetName(typeof (OperationResult), message.Result));
+            if (message.Result == OperationResult.CommitTimeout || message.Result == OperationResult.ForwardTimeout
                 || message.Result == OperationResult.PrepareTimeout
                 || message.Result == OperationResult.WrongExpectedVersion)
             {
@@ -456,7 +463,7 @@ namespace EventStore.Projections.Core.Services.Management
         private void Prepare(Action onPrepared)
         {
             var config = CreateDefaultProjectionConfiguration();
-            DisposeCoreProjection(); 
+            DisposeCoreProjection();
             BeginCreateAndPrepare(_projectionStateHandlerFactory, config, onPrepared);
         }
 
@@ -584,7 +591,8 @@ namespace EventStore.Projections.Core.Services.Management
             //TODO: load configuration from the definition
 
             if (_persistedState.SourceDefintion == null)
-                throw new Exception("The projection cannot be loaded as stopped as it was stored in the old format.  Update the projection query text to force prepare");
+                throw new Exception(
+                    "The projection cannot be loaded as stopped as it was stored in the old format.  Update the projection query text to force prepare");
 
             var createProjectionMessage =
                 new CoreProjectionManagementMessage.CreatePrepared(
@@ -601,6 +609,7 @@ namespace EventStore.Projections.Core.Services.Management
             switch (_state)
             {
                 case ManagedProjectionState.Stopped:
+                case ManagedProjectionState.Completed:
                 case ManagedProjectionState.Faulted:
                 case ManagedProjectionState.Loaded:
                     if (completed != null) completed();
@@ -648,7 +657,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             var projectionConfig = new ProjectionConfig(
                 checkpointHandledThreshold, checkpointUnhandledBytesThreshold, pendingEventsThreshold,
-                maxWriteBatchLength, emitEventEnabled, checkpointsEnabled, createTempStreams, stopOnEof); 
+                maxWriteBatchLength, emitEventEnabled, checkpointsEnabled, createTempStreams, stopOnEof);
             return projectionConfig;
         }
 

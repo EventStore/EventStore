@@ -45,6 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _orderStreamReadingCompleted;
         private int _loadingItemsCount;
         private readonly Stack<Item> _loadQueue = new Stack<Item>();
+        private CheckpointTag _loadingPrerecordedEventsFrom;
 
         public MultiStreamMultiOutputCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
@@ -121,6 +122,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void BeginLoadPrerecordedEventsChunk(CheckpointTag checkpointTag, int fromEventNumber)
         {
+            _loadingPrerecordedEventsFrom = checkpointTag;
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
                     Guid.NewGuid(), _readDispatcher.Envelope, _namingBuilder.GetOrderStreamName(), fromEventNumber, 100,
@@ -208,7 +210,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 }
 
                 _loadingItemsCount = -1; // completed - do not dispatch one more time
-                PrerecordedEventsLoaded(lastTag);
+                PrerecordedEventsLoaded(lastTag ?? _loadingPrerecordedEventsFrom);
             }
         }
 

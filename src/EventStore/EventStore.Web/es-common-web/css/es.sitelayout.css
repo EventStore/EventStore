@@ -103,6 +103,7 @@ General UI
 Projections common
 ========================================================================== */
 
+
 .json, .source-code, #source {
     height: 350px;
     overflow-y: auto;
