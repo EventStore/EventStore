@@ -5,6 +5,7 @@ define(function () {
         create: function (name, observer, controller, controls) {
 
             var lastSource = "";
+            var lastEmitEnabled = false;
 
             function setEnabled(control, enabled) {
                 if (enabled)
@@ -51,22 +52,37 @@ define(function () {
                     }
                 }
                 controls.emit.attr("checked", source.emitEnabled);
+                lastEmitEnabled = source.emitEnabled;
             }
 
             function updateAndStart() {
                 var current = controls.source.val();
-                if (lastSource === current) {
+                var emitEnabled = !!controls.emit.attr("checked");
+                if (lastSource === current && lastEmitEnabled === emitEnabled) {
                     controller.start();
                 } else {
-                    controller.update(current, controls.emit.attr("checked"), controller.start.bind(controller));
+                    controller.update(current, emitEnabled, controller.start.bind(controller));
                 }
+            }
+
+            function stop() {
+                controller.stop();
+            }
+
+            function bindClick(control, handler) {
+                control.click(function(event) {
+                    event.preventDefault();
+                    if ($(this).attr("disabled"))
+                        return;
+                    handler();
+                });
             }
 
             return {
                 bind: function() {
                     observer.subscribe({ statusChanged: statusChanged, stateChanged: stateChanged, sourceChanged: sourceChanged });
-                    controls.start.click(function (event) { event.preventDefault(); updateAndStart(); });
-                    controls.stop.click(function (event) { event.preventDefault(); controller.stop(); });
+                    bindClick(controls.start, updateAndStart);
+                    bindClick(controls.stop, stop);
                 }
             };
         }
