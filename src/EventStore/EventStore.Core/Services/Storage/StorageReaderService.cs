@@ -69,7 +69,6 @@ namespace EventStore.Core.Services.Storage
             storageReaderBus.Subscribe<ClientMessage.ReadStreamEventsForward>(readerWorker);
             storageReaderBus.Subscribe<ClientMessage.ReadAllEventsForward>(readerWorker);
             storageReaderBus.Subscribe<ClientMessage.ReadAllEventsBackward>(readerWorker);
-            storageReaderBus.Subscribe<ClientMessage.ListStreams>(readerWorker);
 
             _workersMultiHandler = new MultiQueuedHandler(
                 _threadCount,
@@ -81,7 +80,6 @@ namespace EventStore.Core.Services.Storage
             subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadStreamEventsForward, Message>());
             subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsForward, Message>());
             subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ReadAllEventsBackward, Message>());
-            subscriber.Subscribe(_workersMultiHandler.WidenFrom<ClientMessage.ListStreams, Message>());
         }
 
         void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message)

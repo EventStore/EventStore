@@ -293,7 +293,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 throw new Exception("Invalid socket args received");
             Interlocked.Increment(ref _recvAsyncCallbacks);
 
-            // socket closed normally or some error occured
+            // socket closed normally or some error occurred
             if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
             {
                 NotifyReceiveCompleted(0);
@@ -306,22 +306,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
             Interlocked.Increment(ref _packagesReceived);
             Interlocked.Add(ref _bytesReceived, socketArgs.BytesTransferred);
 
-            //Console.WriteLine(string.Format("{0:mmss.fff}", DateTime.UtcNow) + " received " + socketArgs.BytesTransferred + " bytes.");
-            // OK, so what does this line of code do? It makes an ArraySegment<byte> representing the data 
-            // that we actually read.
-            // Then it constructs a little array to meet the IEnumerable interface.
-            // Then it makes original buffer (ArraySegment<byte>) we used for receive operation.
-            // Then it builds an IEnumerable that will dispose of our buffer (returning it to the buffer pool) 
-            // later (as in later when some other thread (but it may be on this thread, we aren't sure) processes 
-            // this buffer).
-            // This should be benchmarked vs copying the byte array every time into a new byte array
-            var receiveBufferSegment =
-                new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
-
+            var receiveBufferSegment = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
+            Action disposeBufferAction = () => { };
+            
             lock (_receivingLock)
             {
-                var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count);
-                Action disposeBufferAction = () => {};
                 _receiveQueue.Enqueue(Tuple.Create(receiveBufferSegment, disposeBufferAction));
             }
 

@@ -40,7 +40,6 @@ namespace EventStore.Transport.Http.EntityManagement
 
         public readonly ICodec RequestCodec;
         public readonly ICodec ResponseCodec;
-        private readonly HttpListenerContext _context;
 
         public readonly HttpListenerRequest Request;
         internal readonly HttpListenerResponse Response;
@@ -63,7 +62,6 @@ namespace EventStore.Transport.Http.EntityManagement
 
             RequestCodec = requestCodec;
             ResponseCodec = responseCodec;
-            _context = context;
 
             Request = context.Request;
             Response = context.Response;

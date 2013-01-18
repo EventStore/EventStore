@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 
-using System;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
@@ -38,7 +37,6 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
     public class when_having_stream_with_maxcount_specified : ReadIndexTestScenario
     {
         private EventRecord _r1;
-        private EventRecord _r2;
         private EventRecord _r3;
         private EventRecord _r4;
         private EventRecord _r5;
@@ -49,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
             const string metadata = @"{""$maxCount"":4}";
             
             _r1 = WriteStreamCreated("ES", metadata);
-            _r2 = WriteSingleEvent("ES", 1, "bla1");
+                  WriteSingleEvent("ES", 1, "bla1");
             _r3 = WriteSingleEvent("ES", 2, "bla1");
             _r4 = WriteSingleEvent("ES", 3, "bla1");
             _r5 = WriteSingleEvent("ES", 4, "bla1");

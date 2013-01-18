@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Services.Processing
             committed();
         }
 
-        private void WriteCheckpointEventCompleted(ClientMessage.WriteEventsCompleted message)
+        private void WriteCheckpointEventCompleted(ClientMessage.WriteEventsCompleted message, string eventStreamId)
         {
             EnsureStarted();
             if (_inCheckpointWriteAttempt == 0)
@@ -103,9 +103,11 @@ namespace EventStore.Projections.Core.Services.Processing
             else
             {
                 if (_logger != null)
-                    _logger.Info(
-                        "Failed to write projection checkpoint to stream {0}. Error: {1}", message.EventStreamId,
-                        Enum.GetName(typeof (OperationResult), message.Result));
+                {
+                    _logger.Info("Failed to write projection checkpoint to stream {0}. Error: {1}",
+                                 eventStreamId,
+                                 Enum.GetName(typeof (OperationResult), message.Result));
+                }
                 switch (message.Result)
                 {
                     case OperationResult.WrongExpectedVersion:
@@ -114,7 +116,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     case OperationResult.PrepareTimeout:
                     case OperationResult.ForwardTimeout:
                     case OperationResult.CommitTimeout:
-                        if (_logger != null) _logger.Info("Retrying write checkpoint to {0}", message.EventStreamId);
+                        if (_logger != null) _logger.Info("Retrying write checkpoint to {0}", eventStreamId);
                         _inCheckpointWriteAttempt++;
                         PublishWriteCheckpointEvent();
                         break;
@@ -133,7 +135,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _writeRequestId = _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
                     Guid.NewGuid(), _writeDispatcher.Envelope, true, _projectionCheckpointStreamId,
-                    _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished), WriteCheckpointEventCompleted);
+                    _lastWrittenCheckpointEventNumber, _checkpointEventToBePublished), 
+                    msg => WriteCheckpointEventCompleted(msg, _projectionCheckpointStreamId));
         }
 
         public override void Initialize()

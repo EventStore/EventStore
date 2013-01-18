@@ -174,19 +174,13 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long TransactionId;
-            public readonly string EventStreamId;
             public readonly Event[] Events;
 
-            public WriteTransactionData(Guid correlationId, 
-                                        IEnvelope envelope, 
-                                        long transactionId, 
-                                        string eventStreamId, 
-                                        Event[] events)
+            public WriteTransactionData(Guid correlationId, IEnvelope envelope, long transactionId, Event[] events)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 TransactionId = transactionId;
-                EventStreamId = eventStreamId;
                 Events = events;
             }
         }
@@ -196,20 +190,14 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long TransactionId;
-            public readonly string EventStreamId;
 
             public readonly DateTime LiveUntil;
 
-            public WriteTransactionPrepare(Guid correlationId, 
-                                           IEnvelope envelope, 
-                                           long transactionId, 
-                                           string eventStreamId,
-                                           DateTime liveUntil)
+            public WriteTransactionPrepare(Guid correlationId, IEnvelope envelope, long transactionId, DateTime liveUntil)
             {
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 TransactionId = transactionId;
-                EventStreamId = eventStreamId;
 
                 LiveUntil = liveUntil;
             }
@@ -358,21 +346,18 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long TransactionId;
-            public readonly string EventStreamId;
             public readonly Event[] Events;
 
-            public TransactionWriteRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId, string eventStreamId, Event[] events)
+            public TransactionWriteRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId, Event[] events)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.Nonnegative(transactionId, "transactionId");
-                Ensure.NotNull(eventStreamId, "eventStreamId");
                 Ensure.NotNull(events, "events");
 
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 TransactionId = transactionId;
-                EventStreamId = eventStreamId;
                 Events = events;
             }
         }
@@ -382,19 +367,16 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly IEnvelope Envelope;
             public readonly long TransactionId;
-            public readonly string EventStreamId;
 
-            public TransactionCommitRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId, string eventStreamId)
+            public TransactionCommitRequestCreated(Guid correlationId, IEnvelope envelope, long transactionId)
             {
                 Ensure.NotEmptyGuid(correlationId, "correlationId");
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.Nonnegative(transactionId, "transactionId");
-                Ensure.NotNull(eventStreamId, "eventStreamID");
 
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 TransactionId = transactionId;
-                EventStreamId = eventStreamId;
             }
         }
 

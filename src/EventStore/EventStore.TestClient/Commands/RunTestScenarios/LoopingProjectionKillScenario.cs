@@ -48,7 +48,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             _executionPeriod = executionPeriod;
 
             _iterationLoopDuration = TimeSpan.FromMilliseconds(10 * (Streams * EventsPerStream + Streams) + 20 * 1000);
-            _firstKillInterval = TimeSpan.FromSeconds(_iterationLoopDuration.TotalSeconds / 3);
+            _firstKillInterval = TimeSpan.FromSeconds(_iterationLoopDuration.TotalSeconds / 2);
         }
 
         protected override int GetIterationCode()
@@ -71,10 +71,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             while (stopWatch.Elapsed < _executionPeriod)
             {
 
-                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes =================== ",
+                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
                                         GetIterationCode(),
                                         (int)stopWatch.Elapsed.TotalMinutes,
-                                        _executionPeriod.TotalMinutes);
+                                        _executionPeriod.TotalMinutes,
+                                        GetType().Name);
                 Log.Info(msg);
                 Log.Info("##teamcity[message '{0}']", msg);
 
@@ -105,8 +106,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
             var expectedEventsPerStream = EventsPerStream.ToString();
 
-            var manager = GetProjectionsManager();
-
             var successTask = Task.Factory.StartNew(() => 
                 {
                     var success = false;
@@ -127,7 +126,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         if (success)
                             break;
 
-                        Thread.Sleep(2000);
+                        Thread.Sleep(4000);
 
                     }
                     return success;

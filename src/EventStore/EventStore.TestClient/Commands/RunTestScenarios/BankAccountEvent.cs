@@ -30,32 +30,22 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using EventStore.ClientAPI;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Codecs;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {
-    internal class BankAccountEvent : IEvent
+    internal class BankAccountEvent
     {
-        public Guid EventId { get; private set; }
-        public string Type { get; private set; }
-
-        public bool IsJson { get; private set; }
-
-        public byte[] Data { get; private set; }
-        public byte[] Metadata { get; private set; }
-
-        public BankAccountEvent(object accountObject)   
+        public static EventData FromEvent(object accountObject)
         {
             if (accountObject == null)
                 throw new ArgumentNullException("accountObject");
 
-            EventId = Guid.NewGuid();
-            Type = accountObject.GetType().Name;
+            var type = accountObject.GetType().Name;
+            var encodedData = Encoding.UTF8.GetBytes(Codec.Json.To(accountObject));
+            var encodedMetadata = Encoding.UTF8.GetBytes(Codec.Json.To(new Dictionary<string, object> { { "IsEmpty", true } }));
 
-            IsJson = true;
-            Data = Encoding.UTF8.GetBytes(Codec.Json.To(accountObject));
-            Metadata = Encoding.UTF8.GetBytes(Codec.Json.To(new Dictionary<string, object> { { "IsEmpty", true } }));
+            return new EventData(Guid.NewGuid(), type, true, encodedData, encodedMetadata);
         }
     }
 }

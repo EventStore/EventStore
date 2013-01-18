@@ -35,10 +35,17 @@ namespace EventStore.ClientAPI.Exceptions
     {
         public readonly string Stream;
 
-        public StreamDeletedException(string stream): base(string.Format("Event stream '{0}' is deleted.", stream))
+        public StreamDeletedException(string stream)
+            : base(string.Format("Event stream '{0}' is deleted.", stream))
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Stream = stream;
+        }
+
+        public StreamDeletedException()
+            : base("Transaction failed due to underlying stream being deleted.")
+        {
+            Stream = null;
         }
     }
 }

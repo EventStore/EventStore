@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly IHasher _hasher;
         private readonly IPublisher _bus;
         private readonly ILRUCache<string, StreamCacheInfo> _streamInfoCache;
-        private readonly ILRUCache<long, int> _transactionOffsetsCache = new LRUCache<long, int>(50000); 
+        private readonly ILRUCache<long, TransactionInfo> _transactionInfoCache = new LRUCache<long, TransactionInfo>(50000); 
 
         private long _persistedPrepareCheckpoint = -1;
         private long _persistedCommitCheckpoint = -1;
@@ -889,25 +889,25 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        void IReadIndex.UpdateTransactionOffset(long transactionId, int transactionOffset)
+        void IReadIndex.UpdateTransactionInfo(long transactionId, TransactionInfo transactionInfo)
         {
-            _transactionOffsetsCache.Put(transactionId, transactionOffset);
+            _transactionInfoCache.Put(transactionId, transactionInfo);
         }
 
-        int IReadIndex.GetTransactionOffset(long writerCheckpoint, long transactionId)
+        TransactionInfo IReadIndex.GetTransactionInfo(long writerCheckpoint, long transactionId)
         {
-            int transactionOffset;
-            if (!_transactionOffsetsCache.TryGet(transactionId, out transactionOffset))
+            TransactionInfo transactionInfo;
+            if (!_transactionInfoCache.TryGet(transactionId, out transactionInfo))
             {
-                if (GetTransactionOffsetUncached(writerCheckpoint, transactionId, out transactionOffset))
-                    _transactionOffsetsCache.Put(transactionId, transactionOffset);
+                if (GetTransactionInfoUncached(writerCheckpoint, transactionId, out transactionInfo))
+                    _transactionInfoCache.Put(transactionId, transactionInfo);
                 else
-                    transactionOffset = int.MinValue;
+                    transactionInfo = new TransactionInfo(int.MinValue, null);
             }
-            return transactionOffset;
+            return transactionInfo;
         }
 
-        private bool GetTransactionOffsetUncached(long writerCheckpoint, long transactionId, out int transactionOffset)
+        private bool GetTransactionInfoUncached(long writerCheckpoint, long transactionId, out TransactionInfo transactionInfo)
         {
             var seqReader = GetSeqReader();
             try
@@ -923,7 +923,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     var prepare = (PrepareLogRecord)result.LogRecord;
                     if (prepare.TransactionPosition == transactionId)
                     {
-                        transactionOffset = prepare.TransactionOffset;
+                        transactionInfo = new TransactionInfo(prepare.TransactionOffset, prepare.EventStreamId);
                         return true;
                     }
                 }
@@ -932,7 +932,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             {
                 ReturnSeqReader(seqReader);
             }
-            transactionOffset = int.MinValue;
+            transactionInfo = new TransactionInfo(int.MinValue, null);
             return false;
         }
 

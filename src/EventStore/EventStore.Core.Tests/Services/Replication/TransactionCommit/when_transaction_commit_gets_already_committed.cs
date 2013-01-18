@@ -30,8 +30,8 @@ using System.Collections.Generic;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Tests.Common;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Helper;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.Services.Replication.TransactionCommit
 
         protected override IEnumerable<Message> WithInitialMessages()
         {
-            yield return new StorageMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4, "test123");
+            yield return new StorageMessage.TransactionCommitRequestCreated(CorrelationId, Envelope, 4);
         }
 
         protected override Message When()

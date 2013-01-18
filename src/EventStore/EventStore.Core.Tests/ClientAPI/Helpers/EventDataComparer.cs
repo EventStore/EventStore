@@ -3,9 +3,9 @@ using EventStore.ClientAPI;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers
 {
-    internal static class TestEventsComparer
+    internal static class EventDataComparer
     {
-        public static bool Equal(TestEvent expected, RecordedEvent actual)
+        public static bool Equal(EventData expected, RecordedEvent actual)
         {
             if (expected.EventId != actual.EventId)
                 return false;
@@ -22,12 +22,12 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             return expectedDataString == actualDataString && expectedMetadataString == actualMetadataDataString;
         }
 
-        public static bool Equal(TestEvent[] expected, RecordedEvent[] actual)
+        public static bool Equal(EventData[] expected, RecordedEvent[] actual)
         {
             if (expected.Length != actual.Length)
                 return false;
 
-            for (int i = 0; i < expected.Length; i++)
+            for (var i = 0; i < expected.Length; i++)
             {
                 if (!Equal(expected[i], actual[i]))
                     return false;

@@ -26,8 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.IO;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -89,7 +87,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [Test]
         public void the_second_record_was_written()
         {
-            Assert.IsTrue(_written1);
+            Assert.IsTrue(_written2);
         }
 
         [Test]

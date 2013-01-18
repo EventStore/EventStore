@@ -13,7 +13,6 @@
     <releaseNotes>Initial release of the client API</releaseNotes>
     <copyright>Copyright 2012-2013 Event Store LLP</copyright>
     <dependencies>
-      <dependency id="Newtonsoft.Json" version="4.0.8"/>
       <dependency id="protobuf-net" version="2.0.0.601"/>
     </dependencies>
   </metadata>

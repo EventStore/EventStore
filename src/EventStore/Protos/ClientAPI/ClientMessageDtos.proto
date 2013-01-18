@@ -56,9 +56,8 @@ message CreateStream {
 }
 
 message CreateStreamCompleted {
-	required string event_stream_id = 1;
-	required OperationResult result = 2;
-	optional string message = 3;
+	required OperationResult result = 1;
+	optional string message = 2;
 }
 
 message WriteEvents {
@@ -69,10 +68,9 @@ message WriteEvents {
 }
 
 message WriteEventsCompleted {
-	required string event_stream_id = 1;
-	required OperationResult result = 2;
-	optional string message = 3;
-	required int32 first_event_number = 4;
+	required OperationResult result = 1;
+	optional string message = 2;
+	required int32 first_event_number = 3;
 }
 
 message DeleteStream {
@@ -82,9 +80,8 @@ message DeleteStream {
 }
 
 message DeleteStreamCompleted {
-	required string event_stream_id = 1;
-	required OperationResult result = 2;
-	optional string message = 3;
+	required OperationResult result = 1;
+	optional string message = 2;
 }
 
 message ReadEvent {
@@ -102,9 +99,8 @@ message ReadEventCompleted {
 		StreamDeleted = 3;
 	}
 
-	required string event_stream_id = 1;
-	required ReadEventResult result = 2;
-	required ResolvedIndexedEvent event = 3;
+	required ReadEventResult result = 1;
+	required ResolvedIndexedEvent event = 2;
 }
 
 message ReadStreamEvents {
@@ -124,13 +120,12 @@ message ReadStreamEventsCompleted {
 		Error = 4;
 	}
 
-	required string event_stream_id = 1;
-	repeated ResolvedIndexedEvent events = 2;
-	required ReadStreamResult result = 3;
-	required int32 next_event_number = 4;
-	required int32 last_event_number = 5;
-	required bool is_end_of_stream = 6;
-	required int64 last_commit_position = 7;
+	repeated ResolvedIndexedEvent events = 1;
+	required ReadStreamResult result = 2;
+	required int32 next_event_number = 3;
+	required int32 last_event_number = 4;
+	required bool is_end_of_stream = 5;
+	required int64 last_commit_position = 6;
 }
 
 message ReadAllEvents {
@@ -156,29 +151,25 @@ message TransactionStart {
 
 message TransactionStartCompleted {
 	required int64 transaction_id = 1;
-	required string event_stream_id = 2;
-	required OperationResult result = 3;
-	optional string message = 4;
+	required OperationResult result = 2;
+	optional string message = 3;
 }
 
 message TransactionWrite {
 	required int64 transaction_id = 1;
-	required string event_stream_id = 2;
-	repeated NewEvent events = 3;
-	required bool allow_forwarding = 4;
+	repeated NewEvent events = 2;
+	required bool allow_forwarding = 3;
 }
 
 message TransactionWriteCompleted {
 	required int64 transaction_id = 1;
-	required string event_stream_id = 2;
-	required OperationResult result = 3;
-	optional string message = 4;
+	required OperationResult result = 2;
+	optional string message = 3;
 }
 
 message TransactionCommit {
 	required int64 transaction_id = 1;
-	required string event_stream_id = 2;
-	required bool allow_forwarding = 3;
+	required bool allow_forwarding = 2;
 }
 
 message TransactionCommitCompleted {
@@ -205,5 +196,4 @@ message UnsubscribeFromStream {
 }
 
 message SubscriptionDropped {
-	required string event_stream_id = 1;
 }

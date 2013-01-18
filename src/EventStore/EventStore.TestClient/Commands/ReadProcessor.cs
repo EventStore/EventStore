@@ -93,7 +93,7 @@ namespace EventStore.TestClient.Commands
                                      + "\tMetadata:      {7}\n",
                                      eventStreamId,
                                      package.CorrelationId,
-                                     dto.EventStreamId,
+                                     eventStreamId,
                                      dto.Event.Event.EventNumber,
                                      (ReadEventResult)dto.Result,
                                      dto.Event.Event.EventType,

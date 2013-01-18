@@ -33,40 +33,40 @@ namespace EventStore.BufferManagement.Tests
     [TestFixture]
     public class when_creating_a_buffer_manager
     {
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void a_zero_chunk_size_causes_an_argumentexception()
         {
-            BufferManager manager = new BufferManager(1024, 0, 1024);
+            Assert.Throws<ArgumentException>(() => new BufferManager(1024, 0, 1024));
         }
 
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void a_negative_chunk_size_causes_an_argumentexception()
         {
-            BufferManager manager = new BufferManager(200, -1, 200);
+            Assert.Throws<ArgumentException>(() => new BufferManager(200, -1, 200));
         }
 
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void a_negative_chunks_per_segment_causes_an_argumentexception()
         {
-            BufferManager manager = new BufferManager(-1, 1024, 8);
+            Assert.Throws<ArgumentException>(() => new BufferManager(-1, 1024, 8));
         }
 
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void a_zero_chunks_per_segment_causes_an_argumentexception()
         {
-            BufferManager manager = new BufferManager(0, 1024, 8);
+            Assert.Throws<ArgumentException>(() => new BufferManager(0, 1024, 8));
         }
 
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void a_negative_number_of_segments_causes_an_argumentexception()
         {
-            BufferManager manager = new BufferManager(1024, 1024, -1);
+            Assert.Throws<ArgumentException>(() => new BufferManager(1024, 1024, -1));
         }
 
         [Test]
         public void can_create_a_manager_with_zero_inital_segments()
         {
-            BufferManager manager = new BufferManager(1024, 1024, 0);
+            Assert.DoesNotThrow(() => new BufferManager(1024, 1024, 0));
         }
     }
 
@@ -85,7 +85,7 @@ namespace EventStore.BufferManagement.Tests
         public void should_decrement_available_buffers()
         {
             BufferManager manager = new BufferManager(1, 1000, 1);
-            ArraySegment<byte> buffer = manager.CheckOut();
+            manager.CheckOut();
             Assert.AreEqual(0, manager.AvailableBuffers);
         }
 
@@ -93,17 +93,17 @@ namespace EventStore.BufferManagement.Tests
         public void should_create_a_segment_if_none_are_availabke()
         {
             BufferManager manager = new BufferManager(10, 1000, 0);
-            ArraySegment<byte> buffer = manager.CheckOut();
+            manager.CheckOut();
             Assert.AreEqual(9, manager.AvailableBuffers);
         }
 
-        [Test, ExpectedException(typeof(UnableToCreateMemoryException))]
+        [Test]
         public void should_throw_an_unabletocreatememoryexception_if_acquiring_memory_is_disabled_and_out_of_memory()
         {
             BufferManager manager = new BufferManager(1, 1000, 1, false);
-            ArraySegment<byte> buffer = manager.CheckOut();
-            //should be none left, boom
             manager.CheckOut();
+            //should be none left, boom
+            Assert.Throws<UnableToCreateMemoryException>(() => manager.CheckOut());
         }
     }
 

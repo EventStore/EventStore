@@ -72,10 +72,10 @@ namespace EventStore.SingleNode
         protected override void Create(SingleNodeOptions options)
         {
             var dbPath = Path.GetFullPath(ResolveDbPath(options.DbPath, options.HttpPort));
-            Log.Info("\nDATABASE: {0}", dbPath);
-            var db = new TFChunkDb(CreateDbConfig(dbPath, options.ChunksToCache));
+            Log.Info("\n{0,-25} {1}\n", "DATABASE:", dbPath);
+            var db = new TFChunkDb(CreateDbConfig(dbPath, options.CachedChunks));
             var vnodeSettings = GetVNodeSettings(options);
-            var dbVerifyHashes = !options.DoNotVerifyDbHashesOnStartup;
+            var dbVerifyHashes = !options.SkipDbVerify;
             _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes);
 
             if (options.RunProjections)
@@ -94,10 +94,7 @@ namespace EventStore.SingleNode
         {
             var tcpEndPoint = new IPEndPoint(options.Ip, options.TcpPort);
             var httpEndPoint = new IPEndPoint(options.Ip, options.HttpPort);
-            var prefixes = options.PrefixesString.IsNotEmptyString()
-                                   ? options.PrefixesString.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)
-                                   : new[] {httpEndPoint.ToHttpUrl()};
-
+            var prefixes = options.HttpPrefixes.IsNotEmpty() ? options.HttpPrefixes : new[] {httpEndPoint.ToHttpUrl()};
             var vnodeSettings = new SingleVNodeSettings(tcpEndPoint,
                                                         httpEndPoint, 
                                                         prefixes.Select(p => p.Trim()).ToArray(),

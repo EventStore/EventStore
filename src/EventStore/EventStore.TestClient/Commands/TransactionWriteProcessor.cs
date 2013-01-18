@@ -104,7 +104,6 @@ namespace EventStore.TestClient.Commands
                                     {
                                         var writeDto = new TcpClientMessageDto.TransactionWrite(
                                             transactionId,
-                                            eventStreamId,
                                             new[] 
                                             { 
                                                 new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray() ,
@@ -144,7 +143,7 @@ namespace EventStore.TestClient.Commands
                                         context.Log.Info("Written all events. Committing...");
 
                                         stage = Stage.Committing;
-                                        var commitDto = new TcpClientMessageDto.TransactionCommit(transactionId, eventStreamId, true);
+                                        var commitDto = new TcpClientMessageDto.TransactionCommit(transactionId, true);
                                         var package = new TcpPackage(TcpCommand.TransactionCommit, Guid.NewGuid(), commitDto.Serialize());
                                         conn.EnqueueSend(package.AsByteArray());
                                     }

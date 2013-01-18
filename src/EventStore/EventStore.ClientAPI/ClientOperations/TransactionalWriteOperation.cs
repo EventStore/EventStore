@@ -49,8 +49,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         private readonly bool _forward;
         private readonly long _transactionId;
-        private readonly string _stream;
-        private readonly IEnumerable<IEvent> _events;
+        private readonly IEnumerable<EventData> _events;
 
         public Guid CorrelationId
         {
@@ -61,19 +60,13 @@ namespace EventStore.ClientAPI.ClientOperations
             }
         }
 
-        public TransactionalWriteOperation(TaskCompletionSource<object> source,
-                                           Guid corrId,
-                                           bool forward,
-                                           long transactionId,
-                                           string stream,
-                                           IEnumerable<IEvent> events)
+        public TransactionalWriteOperation(TaskCompletionSource<object> source, Guid corrId, bool forward, long transactionId, IEnumerable<EventData> events)
         {
             _source = source;
 
             _corrId = corrId;
             _forward = forward;
             _transactionId = transactionId;
-            _stream = stream;
             _events = events;
         }
 
@@ -88,7 +81,7 @@ namespace EventStore.ClientAPI.ClientOperations
             lock (_corrIdLock)
             {
                 var dtos = _events.Select(x => new ClientMessage.NewEvent(x.EventId.ToByteArray(), x.Type, x.IsJson, x.Data, x.Metadata)).ToArray();
-                var write = new ClientMessage.TransactionWrite(_transactionId, _stream, dtos, _forward);
+                var write = new ClientMessage.TransactionWrite(_transactionId, dtos, _forward);
                 return new TcpPackage(TcpCommand.TransactionWrite, _corrId, write.Serialize());
             }
         }
@@ -121,16 +114,6 @@ namespace EventStore.ClientAPI.ClientOperations
                     case ClientMessage.OperationResult.CommitTimeout:
                     case ClientMessage.OperationResult.ForwardTimeout:
                         return new InspectionResult(InspectionDecision.Retry);
-                    case ClientMessage.OperationResult.WrongExpectedVersion:
-                        var err = string.Format("Transactional write failed due to WrongExpectedVersion. Stream: {0}, TransactionID: {1}, CorrID: {2}.",
-                                                _stream,
-                                                _transactionId,
-                                                CorrelationId);
-                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
-                    case ClientMessage.OperationResult.StreamDeleted:
-                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
-                    case ClientMessage.OperationResult.InvalidTransaction:
-                        return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -162,7 +145,7 @@ namespace EventStore.ClientAPI.ClientOperations
 
         public override string ToString()
         {
-            return string.Format("Stream: {0}, TransactionId: {1}, CorrelationId: {2}", _stream, _transactionId, CorrelationId);
+            return string.Format("TransactionId: {0}, CorrelationId: {1}", _transactionId, CorrelationId);
         }
     }
 }

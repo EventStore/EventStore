@@ -332,9 +332,9 @@ namespace EventStore.ClientAPI
         /// <param name="stream">The name of the stream to append the events to.</param>
         /// <param name="expectedVersion">The expected version of the stream</param>
         /// <param name="events">The events to write to the stream</param>
-        public void AppendToStream(string stream, int expectedVersion, params IEvent[] events)
+        public void AppendToStream(string stream, int expectedVersion, params EventData[] events)
         {
-            AppendToStreamAsync(stream, expectedVersion, (IEnumerable<IEvent>) events).Wait();
+            AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>) events).Wait();
         }
 
         /// <summary>
@@ -354,7 +354,7 @@ namespace EventStore.ClientAPI
         /// <param name="stream">The name of the stream to append the events to.</param>
         /// <param name="expectedVersion">The expected version of the stream</param>
         /// <param name="events">The events to write to the stream</param>
-        public void AppendToStream(string stream, int expectedVersion, IEnumerable<IEvent> events)
+        public void AppendToStream(string stream, int expectedVersion, IEnumerable<EventData> events)
         {
             AppendToStreamAsync(stream, expectedVersion, events).Wait();
         }
@@ -377,9 +377,9 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="events">The events to append to the stream</param>
         /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
-        public Task AppendToStreamAsync(string stream, int expectedVersion, params IEvent[] events)
+        public Task AppendToStreamAsync(string stream, int expectedVersion, params EventData[] events)
         {
-            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<IEvent>) events);
+            return AppendToStreamAsync(stream, expectedVersion, (IEnumerable<EventData>) events);
         }
 
         /// <summary>
@@ -400,7 +400,7 @@ namespace EventStore.ClientAPI
         /// <param name="expectedVersion">The <see cref="ExpectedVersion"/> of the stream to append to</param>
         /// <param name="events">The events to append to the stream</param>
         /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
-        public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<IEvent> events)
+        public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events)
         {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
@@ -454,6 +454,22 @@ namespace EventStore.ClientAPI
         }
 
         /// <summary>
+        /// Continues transaction by provided transaction ID.
+        /// </summary>
+        /// <remarks>
+        /// A <see cref="EventStoreTransaction"/> allows the calling of multiple writes with multiple
+        /// round trips over long periods of time between the caller and the event store. This method
+        /// is only available through the TCP interface and no equivalent exists for the RESTful interface.
+        /// </remarks>
+        /// <param name="transactionId">The transaction ID that needs to be continued.</param>
+        /// <returns><see cref="EventStoreTransaction"/> object.</returns>
+        public EventStoreTransaction ContinueTransaction(long transactionId)
+        {
+            Ensure.Nonnegative(transactionId, "transactionId");
+            return new EventStoreTransaction(transactionId, this);
+        }
+
+        /// <summary>
         /// Writes to a transaction in the event store asynchronously
         /// </summary>
         /// <remarks>
@@ -464,14 +480,14 @@ namespace EventStore.ClientAPI
         /// <param name="transaction">The <see cref="EventStoreTransaction"/> to write to.</param>
         /// <param name="events">The events to write</param>
         /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
-        internal Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<IEvent> events)
+        internal Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events)
         {
             Ensure.NotNull(transaction, "transaction");
             Ensure.NotNull(events, "events");
             EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transaction.TransactionId, transaction.Stream, events);
+            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transaction.TransactionId, events);
 
             EnqueueOperation(operation);
             return source.Task;
@@ -488,69 +504,11 @@ namespace EventStore.ClientAPI
             EnsureActive();
 
             var source = new TaskCompletionSource<object>();
-            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transaction.TransactionId, transaction.Stream);
+            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transaction.TransactionId);
 
             EnqueueOperation(operation);
             return source.Task;
         }
-
-        /// <summary>
-        /// Writes to a transaction in the event store asynchronously
-        /// </summary>
-        /// <param name="transactionId">The transaction id of the transaction to commit</param>
-        /// <param name="stream">The stream to commit the transaction on</param>
-        /// <param name="events">The events to write</param>
-        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
-        public void TransactionalWrite(long transactionId, string stream, IEnumerable<IEvent> events)
-        {
-            TransactionalWriteAsync(transactionId, stream, events).Wait();
-        }
-
-        /// <summary>
-        /// Writes to a transaction in the event store asynchronously
-        /// </summary>
-        /// <param name="transactionId">The transaction id of the transaction to commit</param>
-        /// <param name="stream">The stream to commit the transaction on</param>
-        /// <param name="events">The events to write</param>
-        /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
-        public Task TransactionalWriteAsync(long transactionId, string stream, IEnumerable<IEvent> events)
-        {
-            Ensure.NotNull(events, "events");
-            EnsureActive();
-
-            var source = new TaskCompletionSource<object>();
-            var operation = new TransactionalWriteOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transactionId, stream, events);
-
-            EnqueueOperation(operation);
-            return source.Task;
-        }
-
-        /// <summary>
-        /// Commits a multi-write transaction in the Event Store
-        /// </summary>
-        /// <param name="transactionId">The transaction id of the transaction to commit</param>
-        /// <param name="stream">The stream to commit the transaction on</param>
-        public void CommitTransaction(long transactionId, string stream)
-        {
-            CommitTransactionAsync(transactionId, stream).Wait();
-        }
-
-        /// <summary>
-        /// Commits a multi-write transaction in the Event Store
-        /// </summary>
-        /// <param name="transactionId">The transaction id of the transaction to commit</param>
-        /// <param name="stream">The stream to commit the transaction on</param>
-        public Task CommitTransactionAsync(long transactionId, string stream)
-        {
-            EnsureActive();
-
-            var source = new TaskCompletionSource<object>();
-            var operation = new CommitTransactionOperation(source, Guid.NewGuid(), _settings.AllowForwarding, transactionId, stream);
-
-            EnqueueOperation(operation);
-            return source.Task;
-        }
-
 
         /// <summary>
         /// Reads count Events from an Event Stream forwards (e.g. oldest to newest) starting from position start

@@ -112,8 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected void OneWriteCompletes()
         {
             var message = _writesQueue.Dequeue();
-            message.Envelope.ReplyWith(
-                new ClientMessage.WriteEventsCompleted(message.CorrelationId, message.EventStreamId, 0));
+            message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, 0));
         }
 
         protected void AllWriteComplete()
@@ -218,8 +217,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     list.Add(eventRecord);
                 }
 
-                message.Envelope.ReplyWith(
-                    new ClientMessage.WriteEventsCompleted(message.CorrelationId, message.EventStreamId, 0));
+                message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, 0));
             }
             else if (_allWritesQueueUp)
                 _writesQueue.Enqueue(message);

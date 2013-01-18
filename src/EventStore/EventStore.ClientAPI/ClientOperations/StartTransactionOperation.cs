@@ -142,7 +142,7 @@ namespace EventStore.ClientAPI.ClientOperations
             if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
             {
                 if (_result != null)
-                    _source.SetResult(new EventStoreTransaction(_result.EventStreamId, _result.TransactionId, _parentConnection));
+                    _source.SetResult(new EventStoreTransaction(_result.TransactionId, _parentConnection));
                 else
                     _source.SetException(new NoResultException());
             }

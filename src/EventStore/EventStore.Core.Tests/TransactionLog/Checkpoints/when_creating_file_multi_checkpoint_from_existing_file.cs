@@ -10,7 +10,6 @@ namespace EventStore.Core.Tests.TransactionLog.Checkpoints
         private static readonly IPEndPoint EndPoint1 = new IPEndPoint(IPAddress.Loopback, 1000);
         private static readonly IPEndPoint EndPoint2 = new IPEndPoint(IPAddress.Loopback, 2000);
         private static readonly IPEndPoint EndPoint3 = new IPEndPoint(IPAddress.Loopback, 3000);
-        private static readonly IPEndPoint EndPoint4 = new IPEndPoint(IPAddress.Loopback, 4000);
 
         [SetUp]
         public override void SetUp()

@@ -26,9 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System.Net;
 using System.Threading;
-using EventStore.Common.Exceptions;
 using EventStore.Common.Utils;
 using EventStore.Core;
 
@@ -56,10 +54,6 @@ namespace EventStore.TestClient
 
         protected override void Create(ClientOptions options)
         {
-            IPAddress ipAddr;
-            if (!IPAddress.TryParse(options.Ip, out ipAddr))
-                throw new ApplicationInitializationException(string.Format("Wrong IP address provided: {0}.", options.Ip));
-
             _client = new Client(options);
         }
 

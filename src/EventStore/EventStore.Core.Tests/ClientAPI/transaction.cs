@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.NoStream))
                 {
-                    var write = transaction.WriteAsync(new[] {new TestEvent()});
+                    var write = transaction.WriteAsync(new[] { TestEvent.NewTestEvent() });
                     Assert.DoesNotThrow(write.Wait);
                     var commit = transaction.CommitAsync();
                     Assert.DoesNotThrow(commit.Wait);
@@ -85,7 +85,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.Any))
                 {
-                    var write = transaction.WriteAsync(new[] {new TestEvent()});
+                    var write = transaction.WriteAsync(new[] {TestEvent.NewTestEvent()});
                     Assert.DoesNotThrow(write.Wait);
                     var commit = transaction.CommitAsync();
                     Assert.DoesNotThrow(commit.Wait);
@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
                 {
-                    var write = transaction.WriteAsync(new TestEvent());
+                    var write = transaction.WriteAsync(TestEvent.NewTestEvent());
                     Assert.DoesNotThrow(write.Wait);
                     var commit = transaction.CommitAsync();
                     Assert.That(() => commit.Wait(), 
@@ -144,7 +144,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
                 using (var transaction = store.StartTransaction(stream, 100500))
                 {
-                    var write = transaction.WriteAsync(new TestEvent());
+                    var write = transaction.WriteAsync(TestEvent.NewTestEvent());
                     Assert.DoesNotThrow(write.Wait);
                     var commit = transaction.CommitAsync();
                     Assert.That(() => commit.Wait(),
@@ -188,7 +188,7 @@ namespace EventStore.Core.Tests.ClientAPI
                             if (i%10 == 0)
                                 writes.RemoveAll(write => write.IsCompleted);
 
-                            writes.Add(transaction.WriteAsync(new TestEvent((i + 1).ToString(), "trans write")));
+                            writes.Add(transaction.WriteAsync(TestEvent.NewTestEvent((i + 1).ToString(), "trans write")));
                         }
 
                         Task.WaitAll(writes.ToArray());
@@ -213,7 +213,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                         writes.Add(store.AppendToStreamAsync(stream,
                                                              ExpectedVersion.Any,
-                                                             new[] {new TestEvent((i + 1).ToString(), "plain write")}));
+                                                             new[] {TestEvent.NewTestEvent((i + 1).ToString(), "plain write")}));
                     }
 
                     Task.WaitAll(writes.ToArray());
@@ -253,10 +253,10 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
                 {
-                    var append = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {new TestEvent()});
+                    var append = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()});
                     Assert.DoesNotThrow(append.Wait);
 
-                    var write = transaction.WriteAsync(new TestEvent());
+                    var write = transaction.WriteAsync(TestEvent.NewTestEvent());
                     Assert.DoesNotThrow(write.Wait);
 
                     var commit = transaction.CommitAsync();
@@ -283,10 +283,10 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
                 using (var transaction = store.StartTransaction(stream, 1))
                 {
-                    var append = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {new TestEvent()});
+                    var append = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, new[] {TestEvent.NewTestEvent()});
                     Assert.DoesNotThrow(append.Wait);
 
-                    var write = transaction.WriteAsync(new TestEvent());
+                    var write = transaction.WriteAsync(TestEvent.NewTestEvent());
                     Assert.DoesNotThrow(write.Wait);
 
                     var commit = transaction.CommitAsync();
@@ -311,7 +311,7 @@ namespace EventStore.Core.Tests.ClientAPI
                 store.Connect(_node.TcpEndPoint);
                 using (var transaction = store.StartTransaction(stream, ExpectedVersion.EmptyStream))
                 {
-                    var write = transaction.WriteAsync(new TestEvent());
+                    var write = transaction.WriteAsync(TestEvent.NewTestEvent());
                     Assert.DoesNotThrow(write.Wait);
 
                     var delete = store.DeleteStreamAsync(stream, ExpectedVersion.EmptyStream);

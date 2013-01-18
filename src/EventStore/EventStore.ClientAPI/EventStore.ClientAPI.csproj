@@ -78,6 +78,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="ClientOperations\CommitTransactionOperation.cs" />
     <Compile Include="ClientOperations\ReadAllEventsBackwardOperation.cs" />
@@ -93,6 +96,7 @@
     <Compile Include="Connection\ClusterExplorer.cs" />
     <Compile Include="Connection\SubscriptionsChannel.cs" />
     <Compile Include="Connection\WorkItem.cs" />
+    <Compile Include="EventData.cs" />
     <Compile Include="EventStoreSubscription.cs" />
     <Compile Include="ReadDirection.cs" />
     <Compile Include="ResolvedEvent.cs" />

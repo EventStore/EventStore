@@ -50,8 +50,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         CommitCheckResult CheckCommitStartingAt(long transactionPosition, long commitPosition);
 
-        void UpdateTransactionOffset(long transactionId, int transactionOffset);
-        int GetTransactionOffset(long writerCheckpoint, long transactionId);
+        void UpdateTransactionInfo(long transactionId, TransactionInfo transactionInfo);
+        TransactionInfo GetTransactionInfo(long writerCheckpoint, long transactionId);
        
         void Close();
         void Dispose();
