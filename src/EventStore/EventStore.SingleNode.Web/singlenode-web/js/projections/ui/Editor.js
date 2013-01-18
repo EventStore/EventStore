@@ -16,6 +16,7 @@ define(function () {
             
             function setReadonly(control, readonly) {
                 if (control.setReadOnly) {
+                    console.log("setReadOnly: " + readonly);
                     control.setReadOnly(readonly);
                 } else {
                     if (readonly)
@@ -34,7 +35,7 @@ define(function () {
                 controls.message.text(status.stateReason);
                 setEnabled(controls.start, status.availableCommands.start);
                 setEnabled(controls.stop, status.availableCommands.stop);
-                setReadonly(controls.source, status.availableCommands.start);
+                setReadonly(controls.source, !status.availableCommands.start);
                 if (!status.availableCommands.start)
                     controls.source.attr("title", "Projection is running");
                 else 
