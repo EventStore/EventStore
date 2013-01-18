@@ -98,45 +98,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <PreBuildEvent >
-@echo off   
-
-if not exist $(MSBuildProjectDirectory)\Properties\ESVersion.txt goto VERSION_NOT_FOUND
-
-set /p _es_version=&lt;$(MSBuildProjectDirectory)\Properties\ESVersion.txt || goto ERROR
-
-set _es_branch = ""
-for /f "delims=" %25%25a in ('git rev-parse --abbrev-ref HEAD') do @set _es_branch=%25%25a || goto ERROR
-
-set _es_hashtag = ""
-for /f "delims=" %25%25a in ('git rev-parse HEAD') do @set _es_hashtag=%25%25a || goto ERROR
-
-call $(MSBuildProjectDirectory)\..\Scripts\version\output-timestamp.cmd
-set /p _es_timestamp=&lt; %25TEMP%25\es-timestamp.tmp || goto ERROR
-
-if "%25_es_branch: =%25" == "" goto ERROR
-if "%25_es_hashtag: =%25" == "" goto ERROR
-
-echo [assembly: System.Reflection.AssemblyVersion("%25_es_version: =%25.0")] &gt; %25TEMP%25\es-ver.tmp
-echo [assembly: System.Reflection.AssemblyFileVersion("%25_es_version: =%25.0")] &gt;&gt; %25TEMP%25\es-ver.tmp
-echo [assembly: System.Reflection.AssemblyInformationalVersion("%25_es_version: =%25.%25_es_branch: =%25@%25_es_hashtag: =%25@%25_es_timestamp%25")] &gt;&gt; %25TEMP%25\es-ver.tmp
-
-fc %25TEMP%25\es-ver.tmp $(MSBuildProjectDirectory)\Properties\AssemblyVersion.cs &gt; nul &amp;&amp; goto IDENTICAL
-
-copy %25TEMP%25\es-ver.tmp $(MSBuildProjectDirectory)\Properties\AssemblyVersion.cs
-
-:IDENTICAL
-
-rem del %25TEMP%25\es-ver.tmp 
-
-exit 0
-
-:VERSION_NOT_FOUND
-echo No ESVersion.txt file found with current version!
-exit 1
-
-:ERROR
-echo Unknown error happened!
-exit 1
+$(MSBuildProjectDirectory)\..\Scripts\version\update-version.cmd $(MSBuildProjectDirectory)
     </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
