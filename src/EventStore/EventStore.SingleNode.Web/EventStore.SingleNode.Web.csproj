@@ -57,6 +57,9 @@
     <Content Include="singlenode-web\chat.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="singlenode-web\query.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="singlenode-web\edit-projection-source.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -241,9 +244,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="singlenode-web\js\projections\lib\ace\mode-tcl.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="singlenode-web\js\projections\lib\ace\mode-tex.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="singlenode-web\js\projections\lib\ace\mode-text.js">
