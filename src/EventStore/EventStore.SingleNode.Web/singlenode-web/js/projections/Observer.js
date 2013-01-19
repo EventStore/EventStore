@@ -10,14 +10,15 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
             var commandErrorHandler = null;
 
             function enrichStatus(status) {
-                status.availableCommands = {
-                    stop: status.status.indexOf("Running") === 0,
-                    start:
-                        status.status.indexOf("Loaded") === 0 ||
+                var startUpdateAvailable =
+                    status.status.indexOf("Loaded") === 0 ||
                         status.status.indexOf("Stopped") === 0 ||
                         status.status.indexOf("Completed") === 0 ||
-                        status.status.indexOf("Faulted") === 0,
-                    update: true,
+                        status.status.indexOf("Faulted") === 0;
+                status.availableCommands = {
+                    stop: status.status.indexOf("Running") === 0,
+                    start:startUpdateAvailable,
+                    update: startUpdateAvailable,
                 };
                 return status;
             }

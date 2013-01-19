@@ -1,8 +1,16 @@
 ﻿"use strict";
 
-define(function () {
+define(["ace/ace"], function (ace) {
     return {
         create: function (name, observer, controller, controls) {
+
+            var sourceEditor = ace.edit(controls.source.attr("id"));
+            sourceEditor.setTheme("ace/theme/chrome");
+            sourceEditor.getSession().setMode("ace/mode/javascript");
+
+            sourceEditor.attr = controls.source.attr.bind(controls.source);
+            sourceEditor.removeAttr = controls.source.removeAttr.bind(controls.source);
+
 
             var lastSource = "";
             var lastEmitEnabled = false;
@@ -34,11 +42,12 @@ define(function () {
                 controls.message.text(status.stateReason);
                 setEnabled(controls.start, status.availableCommands.start);
                 setEnabled(controls.stop, status.availableCommands.stop);
-                setReadonly(controls.source, !status.availableCommands.start);
+                setEnabled(controls.save, status.availableCommands.update);
+                setReadonly(sourceEditor, !status.availableCommands.start);
                 if (!status.availableCommands.start)
-                    controls.source.attr("title", "Projection is running");
+                    sourceEditor.attr("title", "Projection is running");
                 else 
-                    controls.source.removeAttr("title");
+                    sourceEditor.removeAttr("title");
             }
 
             function stateChanged(state) {
@@ -46,11 +55,11 @@ define(function () {
             }
 
             function sourceChanged(source) {
-                var current = controls.source.getValue();
+                var current = sourceEditor.getValue();
                 if (current !== source.query) {
                     if (lastSource === current) {
-                        controls.source.setValue(source.query);
-                        controls.source.navigateFileStart();
+                        sourceEditor.setValue(source.query);
+                        sourceEditor.navigateFileStart();
                         lastSource = source.query;
                     } else {
                         console.log("Ignoring query source changed outside. There are local pending changes.");
@@ -61,13 +70,19 @@ define(function () {
             }
 
             function updateAndStart() {
-                var current = controls.source.getValue();
+                var current = sourceEditor.getValue();
                 var emitEnabled = !!controls.emit.attr("checked");
                 if (lastSource === current && lastEmitEnabled === emitEnabled) {
                     controller.start();
                 } else {
                     controller.update(current, emitEnabled, controller.start.bind(controller));
                 }
+            }
+
+            function save() {
+                var current = sourceEditor.getValue();
+                var emitEnabled = !!controls.emit.attr("checked");
+                controller.update(current, emitEnabled);
             }
 
             function stop() {
@@ -88,6 +103,7 @@ define(function () {
                     observer.subscribe({ statusChanged: statusChanged, stateChanged: stateChanged, sourceChanged: sourceChanged });
                     bindClick(controls.start, updateAndStart);
                     bindClick(controls.stop, stop);
+                    bindClick(controls.save, save);
                 }
             };
         }

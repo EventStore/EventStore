@@ -15,7 +15,7 @@
  * AGPL (http://www.gnu.org/licenses/agpl-3.0.txt) for more details.
  *
  */
-ace.define('ace/mode/r', ['require', 'exports', 'module' , 'ace/editor', 'ace/edit_session', 'ace/range', 'ace/lib/oop', 'ace/mode/text', 'ace/tokenizer', 'ace/mode/text_highlight_rules', 'ace/mode/r_highlight_rules', 'ace/mode/matching_brace_outdent', 'ace/unicode'], function(require, exports, module) {
+define('ace/mode/r', ['require', 'exports', 'module' , 'ace/editor', 'ace/edit_session', 'ace/range', 'ace/lib/oop', 'ace/mode/text', 'ace/tokenizer', 'ace/mode/text_highlight_rules', 'ace/mode/r_highlight_rules', 'ace/mode/matching_brace_outdent', 'ace/unicode'], function(require, exports, module) {
    
 
    var Editor = require("ace/editor").Editor;
@@ -131,7 +131,7 @@ ace.define('ace/mode/r', ['require', 'exports', 'module' , 'ace/editor', 'ace/ed
    }).call(Mode.prototype);
    exports.Mode = Mode;
 });
-ace.define('ace/mode/r_highlight_rules', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/lib/lang', 'ace/mode/text_highlight_rules', 'ace/mode/tex_highlight_rules'], function(require, exports, module) {
+define('ace/mode/r_highlight_rules', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/lib/lang', 'ace/mode/text_highlight_rules', 'ace/mode/tex_highlight_rules'], function(require, exports, module) {
 
    var oop = require("ace/lib/oop");
    var lang = require("ace/lib/lang");
@@ -289,7 +289,7 @@ ace.define('ace/mode/r_highlight_rules', ['require', 'exports', 'module' , 'ace/
 
    exports.RHighlightRules = RHighlightRules;
 });
-ace.define('ace/mode/tex_highlight_rules', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/lib/lang', 'ace/mode/text_highlight_rules'], function(require, exports, module) {
+define('ace/mode/tex_highlight_rules', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/lib/lang', 'ace/mode/text_highlight_rules'], function(require, exports, module) {
 
 
 var oop = require("ace/lib/oop");
@@ -368,7 +368,7 @@ oop.inherits(TexHighlightRules, TextHighlightRules);
 exports.TexHighlightRules = TexHighlightRules;
 });
 
-ace.define('ace/mode/matching_brace_outdent', ['require', 'exports', 'module' , 'ace/range'], function(require, exports, module) {
+define('ace/mode/matching_brace_outdent', ['require', 'exports', 'module' , 'ace/range'], function(require, exports, module) {
 
 
 var Range = require("../range").Range;
