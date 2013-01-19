@@ -60,6 +60,15 @@
     <Content Include="singlenode-web\edit-projection-source.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="singlenode-web\js\projections\es.api.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="singlenode-web\js\projections\es.projection.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="singlenode-web\js\projections\es.projections.environment.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="singlenode-web\js\projections\lib\ace\ace.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

@@ -612,7 +612,10 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (_state)
             {
                 case State.Running:
-                    return InternalProcessCommittedEvent(partition, message);
+                    var result = InternalProcessCommittedEvent(partition, message);
+                    if (_state == State.FaultedStopping || _state == State.Faulted)
+                        InternalCollectEventForDebugging(partition, message);
+                    return result;
                 case State.FaultedStopping:
                 case State.Stopping:
                 case State.Faulted:
@@ -889,14 +892,22 @@ namespace EventStore.Projections.Core.Services.Processing
 
         internal void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action completed)
         {
-            if (_state == State.Running)
+            switch (_state)
             {
-                _checkpointManager.RecordEventOrder(
-                    message, () =>
-                        {
-                            completed();
-                            EnsureTickPending();
-                        });
+                case State.Running:
+                    _checkpointManager.RecordEventOrder(
+                        message, () =>
+                            {
+                                completed();
+                                EnsureTickPending();
+                            });
+                    break;
+                case State.FaultedStopping:
+                case State.Stopping:
+                case State.Faulted:
+                case State.Stopped:
+                    completed(); // allow collecting events for debugging
+                    break;
             }
         }
     }
