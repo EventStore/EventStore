@@ -20,6 +20,7 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                     stop: status.status.indexOf("Running") === 0,
                     start:startUpdateAvailable,
                     update: startUpdateAvailable,
+                    debug: status.status.indexOf("Faulted") === 0,
                 };
                 return status;
             }

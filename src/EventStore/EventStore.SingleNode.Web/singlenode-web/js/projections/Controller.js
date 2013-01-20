@@ -5,7 +5,7 @@ define(function () {
 
     function internalCreate(mode, url, observer) {
         var baseUrl = url;
-        var created = mode === "projection";
+        var created = (mode === "projection") || (mode === "query" && url);
         var commandErrorHandler = null;
 
         function postCommand(command, success) {
@@ -99,6 +99,9 @@ define(function () {
         },
         createQuery: function(observer) {
             return internalCreate("query", null, observer);
+        },
+        openQuery: function(url, observer) {
+            return internalCreate("query", url, observer);
         }
     };
 });

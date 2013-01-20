@@ -30,6 +30,8 @@
                     <ul style="display: inline;">
                         <li><a href="#" id="btn-run" class="btn btn-success">Run</a></li>
                         <li><a href="#" id="btn-break" class="btn btn-danger">Break</a></li>
+                        <li>     </li>
+                        <li><a href="#" id="btn-debug" class="btn">Debug</a></li>
                     </ul>
                 </div>
             </div>
@@ -111,9 +113,8 @@
         require.config({ baseUrl: "/web/es/js" });
         require(['projections/Observer', 'projections/Controller', 'projections/ui/Editor'],
             function (observer, controller, editor) {
-                $(function () {
-
-                    var projectionEditor = editor.createQuery({
+                $(function() {
+                    var controls = {
                         status: $("#status"),
                         source: $("#ace-source"),
                         state: $("#state"),
@@ -121,8 +122,15 @@
                         start: $("#btn-run"),
                         stop: $("#btn-break"),
                         save: $("#btn-save"),
-                    });
-
+                        debug: $("#btn-debug"),
+                    };
+                    var url = window.location.hash.substr(1);
+                    var projectionEditor;
+                    if (url) {
+                        projectionEditor = editor.openQuery(url, controls);
+                    } else {
+                        projectionEditor = editor.createQuery(controls);
+                    }
                     projectionEditor.bind();
                 });
         });

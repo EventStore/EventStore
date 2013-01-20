@@ -10,8 +10,13 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
             controller = controllerFactory.create(url, observer);
         }
         else if (mode === "query") {
-            observer = observerFactory.create();
-            controller = controllerFactory.createQuery(observer);
+            if (url){
+                observer = observerFactory.create(url);
+                controller = controllerFactory.openQuery(url, observer);
+            } else {
+                observer = observerFactory.create();
+                controller = controllerFactory.createQuery(observer);
+            }
         }
 
         var sourceEditor = ace.edit(controls.source.attr("id"));
@@ -22,10 +27,14 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
         sourceEditor.removeAttr = controls.source.removeAttr.bind(controls.source);
 
 
-        var lastSource = "";
+        var lastSource = sourceEditor.getValue();
         var lastEmitEnabled = false;
+        var lastStatusUrl = url;
+        var lastName = null;
 
         function setEnabled(control, enabled) {
+            if (!control)
+                return;
             if (enabled)
                 control.removeAttr("disabled");
             else
@@ -33,6 +42,8 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
         }
             
         function setReadonly(control, readonly) {
+            if (!control)
+                return;
             if (control.setReadOnly) {
                 control.setReadOnly(readonly);
             } else {
@@ -54,11 +65,16 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
             setEnabled(controls.start, status.availableCommands.start);
             setEnabled(controls.stop, status.availableCommands.stop);
             setEnabled(controls.save, status.availableCommands.update);
+            setEnabled(controls.debug, status.availableCommands.debug);
             setReadonly(sourceEditor, !status.availableCommands.start);
             if (!status.availableCommands.start)
                 sourceEditor.attr("title", "Projection is running");
             else 
                 sourceEditor.removeAttr("title");
+            if (lastStatusUrl !== status.statusUrl)
+                window.location.hash = status.statusUrl;
+            lastStatusUrl = status.statusUrl;
+            lastName = status.name;
         }
 
         function stateChanged(state) {
@@ -97,12 +113,18 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
             controller.update(current, emitEnabled);
         }
 
+        function debug() {
+            window.open("/web/debug-projection.htm#" + lastStatusUrl, "debug-" + lastName);
+        }
+
         function stop() {
             controller.stop();
         }
 
         function bindClick(control, handler) {
-            control.click(function(event) {
+            if (!control)
+                return;
+            control.click(function (event) {
                 event.preventDefault();
                 if ($(this).attr("disabled"))
                     return;
@@ -116,6 +138,7 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
                 bindClick(controls.start, updateAndStart);
                 bindClick(controls.stop, stop);
                 bindClick(controls.save, save);
+                bindClick(controls.debug, debug);
             }
         };
     }
@@ -129,5 +152,8 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
             return internalCreate("query", null, controls);
         },
 
+        openQuery: function (url, controls) {
+            return internalCreate("query", url, controls);
+        },
     };
 });
