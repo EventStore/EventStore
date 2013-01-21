@@ -75,6 +75,10 @@ namespace EventStore.Projections.Core.Services.Http
                 OnProjectionsGetAny);
             service.RegisterControllerAction(
                 new ControllerAction(
+                    "/projections/transient", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
+                OnProjectionsGetTransient);
+            service.RegisterControllerAction(
+                new ControllerAction(
                     "/projections/onetime", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
                 OnProjectionsGetOneTime);
             service.RegisterControllerAction(
@@ -83,8 +87,13 @@ namespace EventStore.Projections.Core.Services.Http
                 OnProjectionsGetContinuous);
             service.RegisterControllerAction(
                 new ControllerAction(
-                    "/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}",
+                    "/projections/transient?name={name}&type={type}&enabled={enabled}",
                     HttpMethod.Post, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, DefaultResponseCodec),
+                OnProjectionsPostTransient);
+            service.RegisterControllerAction(
+                new ControllerAction(
+                    "/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}",
+                    HttpMethod.Post, new ICodec[] { Codec.ManualEncoding }, SupportedCodecs, DefaultResponseCodec),
                 OnProjectionsPostOneTime);
             service.RegisterControllerAction(
                 new ControllerAction(
@@ -150,6 +159,11 @@ namespace EventStore.Projections.Core.Services.Http
             ProjectionsGet(http, match, null);
         }
 
+        private void OnProjectionsGetTransient(HttpEntity http, UriTemplateMatch match)
+        {
+            ProjectionsGet(http, match, ProjectionMode.Transient);
+        }
+
         private void OnProjectionsGetOneTime(HttpEntity http, UriTemplateMatch match)
         {
             ProjectionsGet(http, match, ProjectionMode.OneTime);
@@ -158,6 +172,11 @@ namespace EventStore.Projections.Core.Services.Http
         private void OnProjectionsGetContinuous(HttpEntity http, UriTemplateMatch match)
         {
             ProjectionsGet(http, match, ProjectionMode.Continuous);
+        }
+
+        private void OnProjectionsPostTransient(HttpEntity http, UriTemplateMatch match)
+        {
+            ProjectionsPost(http, match, ProjectionMode.Transient, match.BoundVariables["name"]);
         }
 
         private void OnProjectionsPostOneTime(HttpEntity http, UriTemplateMatch match)

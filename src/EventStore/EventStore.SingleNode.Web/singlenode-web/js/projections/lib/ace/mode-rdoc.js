@@ -10,7 +10,7 @@
  * AGPL (http://www.gnu.org/licenses/agpl-3.0.txt) for more details.
  *
  */
-ace.define('ace/mode/rdoc', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text', 'ace/tokenizer', 'ace/mode/text_highlight_rules', 'ace/mode/rdoc_highlight_rules', 'ace/mode/matching_brace_outdent'], function(require, exports, module) {
+define('ace/mode/rdoc', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text', 'ace/tokenizer', 'ace/mode/text_highlight_rules', 'ace/mode/rdoc_highlight_rules', 'ace/mode/matching_brace_outdent'], function(require, exports, module) {
 
 
 var oop = require("ace/lib/oop");
@@ -34,7 +34,7 @@ oop.inherits(Mode, TextMode);
 
 exports.Mode = Mode;
 });
-ace.define('ace/mode/rdoc_highlight_rules', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/lib/lang', 'ace/mode/text_highlight_rules', 'ace/mode/latex_highlight_rules'], function(require, exports, module) {
+define('ace/mode/rdoc_highlight_rules', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/lib/lang', 'ace/mode/text_highlight_rules', 'ace/mode/latex_highlight_rules'], function(require, exports, module) {
 
 
 var oop = require("ace/lib/oop");
@@ -110,7 +110,7 @@ oop.inherits(RDocHighlightRules, TextHighlightRules);
 
 exports.RDocHighlightRules = RDocHighlightRules;
 });
-ace.define('ace/mode/latex_highlight_rules', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text_highlight_rules'], function(require, exports, module) {
+define('ace/mode/latex_highlight_rules', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text_highlight_rules'], function(require, exports, module) {
 
 
 var oop = require("../lib/oop");
@@ -143,7 +143,7 @@ exports.LatexHighlightRules = LatexHighlightRules;
 
 });
 
-ace.define('ace/mode/matching_brace_outdent', ['require', 'exports', 'module' , 'ace/range'], function(require, exports, module) {
+define('ace/mode/matching_brace_outdent', ['require', 'exports', 'module' , 'ace/range'], function(require, exports, module) {
 
 
 var Range = require("../range").Range;
