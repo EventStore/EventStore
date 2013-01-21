@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Text;
 using EventStore.Transport.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Codecs
@@ -38,12 +39,12 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
 
         public static readonly JsonCodec Json = new JsonCodec();
         public static readonly XmlCodec Xml = new XmlCodec();
-        public static readonly CustomCodec ApplicationXml = new CustomCodec(Xml, ContentType.ApplicationXml);
+        public static readonly CustomCodec ApplicationXml = new CustomCodec(Xml, ContentType.ApplicationXml, Encoding.UTF8);
         public static readonly TextCodec Text = new TextCodec();
 
-        public static ICodec CreateCustom(ICodec codec, string contentType)
+        public static ICodec CreateCustom(ICodec codec, string contentType, Encoding encoding)
         {
-            return new CustomCodec(codec, contentType);
+            return new CustomCodec(codec, contentType, encoding);
         }
     }
 }

@@ -58,17 +58,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
                                                       {
                                                           Codec.Xml,
                                                           Codec.ApplicationXml,
-                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom),
+                                                          Codec.CreateCustom(Codec.Xml, ContentType.Atom, Encoding.UTF8),
                                                           Codec.Json,
-                                                          Codec.CreateCustom(Codec.Json, ContentType.AtomJson)
+                                                          Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Encoding.UTF8)
                                                       };
         private static readonly ICodec[] AtomWithHtmlCodecs = new[]
                                                               {
                                                                   Codec.Xml,
                                                                   Codec.ApplicationXml,
-                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom),
+                                                                  Codec.CreateCustom(Codec.Xml, ContentType.Atom, Encoding.UTF8),
                                                                   Codec.Json,
-                                                                  Codec.CreateCustom(Codec.Json, ContentType.AtomJson),
+                                                                  Codec.CreateCustom(Codec.Json, ContentType.AtomJson, Encoding.UTF8),
                                                                   HtmlFeedCodec // initialization order matters
                                                               };
 
@@ -360,6 +360,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
     class HtmlFeedCodec : ICodec, IRichAtomCodec
     {
         public string ContentType  { get { return "text/html"; } }
+        public Encoding Encoding { get { return Encoding.UTF8; } }
 
         public bool CanParse(string format)
         {

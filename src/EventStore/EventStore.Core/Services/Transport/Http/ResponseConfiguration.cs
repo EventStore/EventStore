@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System.Collections.Generic;
+using System.Text;
 
 namespace EventStore.Core.Services.Transport.Http
 {
@@ -34,20 +35,27 @@ namespace EventStore.Core.Services.Transport.Http
         public readonly int Code;
         public readonly string Description;
         public readonly string ContentType;
+        private readonly Encoding _encoding;
 
         public readonly IEnumerable<KeyValuePair<string, string>> Headers;
 
-        public ResponseConfiguration(int code, string description, string contentType, params KeyValuePair<string, string>[] headers)
-                : this(code, description, contentType, headers as IEnumerable<KeyValuePair<string, string>>)
+        public ResponseConfiguration(int code, string description, string contentType, Encoding encoding, params KeyValuePair<string, string>[] headers)
+                : this(code, description, contentType, encoding, headers as IEnumerable<KeyValuePair<string, string>>)
         {
         }
 
-        public ResponseConfiguration(int code, string description, string contentType, IEnumerable<KeyValuePair<string, string>> headers)
+        public ResponseConfiguration(int code, string description, string contentType, Encoding encoding, IEnumerable<KeyValuePair<string, string>> headers)
         {
             Code = code;
             Description = description;
             ContentType = contentType;
+            _encoding = encoding;
             Headers = headers;
+        }
+
+        public Encoding Encoding
+        {
+            get { return _encoding; }
         }
     }
 }

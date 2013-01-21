@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http;
 
@@ -36,19 +37,22 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
     {
         public ICodec BaseCodec { get { return _codec; } }
         public string ContentType { get { return _contentType; } }
+        public Encoding Encoding { get { return _encoding; } }
 
         private readonly ICodec _codec;
         private readonly string _contentType;
         private readonly string _type;
         private readonly string _subtype;
+        private readonly Encoding _encoding;
 
-        internal CustomCodec(ICodec codec, string contentType)
+        internal CustomCodec(ICodec codec, string contentType, Encoding encoding)
         {
             Ensure.NotNull(codec, "codec");
             Ensure.NotNull(contentType, "contentType");
 
             _codec = codec;
             _contentType = contentType;
+            _encoding = encoding;
             var parts = contentType.Split(new[] {'/'}, 2);
             if (parts.Length != 2)
                 throw new ArgumentException("contentType");

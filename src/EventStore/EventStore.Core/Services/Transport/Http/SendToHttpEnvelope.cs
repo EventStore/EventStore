@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -130,7 +131,7 @@ namespace EventStore.Core.Services.Transport.Http
             catch (InvalidCastException)
             {
                 //NOTE: using exceptions to allow handling errors in debugger
-                return new ResponseConfiguration(500, "Internal server error", "text/plain");
+                return new ResponseConfiguration(500, "Internal server error", "text/plain", Encoding.UTF8);
             }
         }
 

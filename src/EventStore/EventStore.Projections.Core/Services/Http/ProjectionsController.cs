@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
@@ -293,7 +294,7 @@ namespace EventStore.Projections.Core.Services.Http
                         var localPath = string.Format("/projection/{0}", message.Name);
                         var url = MakeUrl(match, localPath);
                         return new ResponseConfiguration(
-                            201, "Created", codec.ContentType, new KeyValuePair<string, string>("Location", url));
+                            201, "Created", codec.ContentType, codec.Encoding, new KeyValuePair<string, string>("Location", url));
                     }, ErrorsEnvelope(http));
             http.Manager.ReadTextRequestAsync(
                 (o, s) =>
@@ -322,12 +323,12 @@ namespace EventStore.Projections.Core.Services.Http
             if (state.Exception != null)
                 return Configure.InternalServerError();
             else
-                return Configure.OkNoCache("application/json");
+                return Configure.OkNoCache("application/json", Encoding.UTF8);
         }
 
         private ResponseConfiguration DebugStateConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionDebugState state)
         {
-            return Configure.OkNoCache("application/json");
+            return Configure.OkNoCache("application/json", Encoding.UTF8);
         }
 
         private string StateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionState state)
@@ -345,7 +346,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration QueryConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
         {
-            return Configure.OkNoCache("application/javascript");
+            return Configure.OkNoCache("application/javascript", Encoding.UTF8);
         }
 
         private string QueryFormatter(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
@@ -360,17 +361,17 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration QueryConfigConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
         {
-            return Configure.OkNoCache("application/json");
+            return Configure.OkNoCache("application/json", Encoding.UTF8);
         }
 
         private ResponseConfiguration OkResponseConfigurator<T>(ICodec codec, T message)
         {
-            return new ResponseConfiguration(200, "OK", codec.ContentType);
+            return new ResponseConfiguration(200, "OK", codec.ContentType, Encoding.UTF8);
         }
 
         private ResponseConfiguration OkNoCacheResponseConfigurator<T>(ICodec codec, T message)
         {
-            return Configure.OkNoCache(codec.ContentType);
+            return Configure.OkNoCache(codec.ContentType, codec.Encoding);
         }
 
         private IEnvelope ErrorsEnvelope(HttpEntity http)
@@ -383,7 +384,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration NotFoundConfigurator(ICodec codec, ProjectionManagementMessage.NotFound message)
         {
-            return new ResponseConfiguration(404, "Not Found", "text/plain");
+            return new ResponseConfiguration(404, "Not Found", "text/plain", Encoding.UTF8);
         }
 
         private string NotFoundFormatter(ICodec codec, ProjectionManagementMessage.NotFound message)
@@ -394,7 +395,7 @@ namespace EventStore.Projections.Core.Services.Http
         private ResponseConfiguration OperationFailedConfigurator(
             ICodec codec, ProjectionManagementMessage.OperationFailed message)
         {
-            return new ResponseConfiguration(500, "Failed", "text/plain");
+            return new ResponseConfiguration(500, "Failed", "text/plain", Encoding.UTF8);
         }
 
         private string OperationFailedFormatter(ICodec codec, ProjectionManagementMessage.OperationFailed message)

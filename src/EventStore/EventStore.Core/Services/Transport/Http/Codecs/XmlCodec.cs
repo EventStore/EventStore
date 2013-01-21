@@ -42,6 +42,7 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
         private static readonly UTF8Encoding UTF8 = new UTF8Encoding(false); // we use our own encoding which doesn't produce BOM
 
         public string ContentType { get { return EventStore.Transport.Http.ContentType.Xml; } }
+        public Encoding Encoding { get { return Encoding.UTF8; } }
 
         public bool CanParse(string format)
         {

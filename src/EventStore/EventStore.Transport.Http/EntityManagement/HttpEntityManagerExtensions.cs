@@ -36,7 +36,7 @@ namespace EventStore.Transport.Http.EntityManagement
     {
         public static void ReplyStatus(this HttpEntityManager self, int code, string description, Action<Exception> onError)
         {
-            self.Reply(null, code, description, null, null, onError);
+            self.Reply(null, code, description, null, null, null, onError);
         }
 
         public static void ReplyTextContent(this HttpEntityManager self, 
@@ -48,7 +48,7 @@ namespace EventStore.Transport.Http.EntityManagement
                                             Action<Exception> onError)
         {
             //TODO: add encoding header???
-            self.Reply(Encoding.UTF8.GetBytes(response ?? string.Empty), code, description, type, headers, onError);
+            self.Reply(Encoding.UTF8.GetBytes(response ?? string.Empty), code, description, type, Encoding.UTF8, headers, onError);
         }
 
         public static void ContinueReplyTextContent(
