@@ -68,7 +68,7 @@ es.projection = function (settings) {
 
     function startPolling(streamId, callback) {
 
-        var lastPageUrl = '/streams/' + encodeURIComponent(streamId);
+        var firstPageUrl = '/streams/' + encodeURIComponent(streamId);
         var lastProcessedPageUrl = null;
         var lastProcessedEntry = null;
 
@@ -82,7 +82,7 @@ es.projection = function (settings) {
             lastProcessedPageUrl = fromPageUrl;
             lastProcessedEntry = fromEntry;
 
-            readLastPage({
+            readFirstPage({
                 pageRead: pageRead,
                 noEntries: noEntries,
                 fail: defaultFail
@@ -116,13 +116,13 @@ es.projection = function (settings) {
             }
         }
 
-        function readLastPage(sets) {
+        function readFirstPage(sets) {
 
             var pageRead = sets.pageRead;
             var noEntries = sets.noEntries;
             var fail = sets.fail;
 
-            $.ajax(lastPageUrl, {
+            $.ajax(firstPageUrl, {
                 headers: {
                     'Accept': 'application/json'
                 },
@@ -131,11 +131,11 @@ es.projection = function (settings) {
                         noEntries();
                     }
                     var lastEntry = page.entries[0];
-                    var firstPage = $.grep(page.links, function (link) { return link.relation === 'first'; })[0].uri;
-                    pageRead(firstPage, lastEntry);
+                    var lastPage = $.grep(page.links, function (link) { return link.relation === 'last'; })[0].uri;
+                    pageRead(lastPage, lastEntry);
                 },
                 error: function (jqXhr, status, error) {
-                    setTimeout(function () { readLastPage(sets); }, 1000);
+                    setTimeout(function () { readFirstPage(sets); }, 1000);
                     //fail.apply(window, arguments);
                 }
             });
