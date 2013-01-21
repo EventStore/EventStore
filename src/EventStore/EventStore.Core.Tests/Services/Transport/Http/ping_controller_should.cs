@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public void return_response_in_json_if_requested_by_query_param_and_set_content_type_header()
         {
             var url = _serverEndPoint.ToHttpUrl("/ping?format=json");
-            Func<HttpResponse, bool> verifier = response => string.Equals(response.Headers[HttpResponseHeader.ContentType],
+            Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.Headers[HttpResponseHeader.ContentType]),
                                                             ContentType.Json,
                                                             StringComparison.InvariantCultureIgnoreCase);
 
@@ -87,7 +87,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public void return_response_in_xml_if_requested_by_query_param_and_set_content_type_header()
         {
             var url = _serverEndPoint.ToHttpUrl("/ping?format=xml");
-            Func<HttpResponse, bool> verifier = response => string.Equals(response.Headers[HttpResponseHeader.ContentType],
+            Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.Headers[HttpResponseHeader.ContentType]),
                                                             ContentType.Xml,
                                                             StringComparison.InvariantCultureIgnoreCase);
 
@@ -99,12 +99,22 @@ namespace EventStore.Core.Tests.Services.Transport.Http
         public void return_response_in_plaintext_if_requested_by_query_param_and_set_content_type_header()
         {
             var url = _serverEndPoint.ToHttpUrl("/ping?format=text");
-            Func<HttpResponse, bool> verifier = response => string.Equals(response.Headers[HttpResponseHeader.ContentType],
+            Func<HttpResponse, bool> verifier = response => string.Equals(StripAdditionalAttributes(response.Headers[HttpResponseHeader.ContentType]),
                                                             ContentType.PlainText,
                                                             StringComparison.InvariantCultureIgnoreCase);
 
             var result = _portableServer.StartServiceAndSendRequest(HttpBootstrap.RegisterPing, url, verifier);
             Assert.IsTrue(result.Item1, result.Item2);
+        }
+
+        private string StripAdditionalAttributes(string value)
+        {
+            var index = value.IndexOf(';');
+            if (index < 0)
+                return value;
+            else
+                return value.Substring(0, index);
+
         }
     }
 }
