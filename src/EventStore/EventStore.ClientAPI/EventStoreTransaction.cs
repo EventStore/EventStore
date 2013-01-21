@@ -80,7 +80,7 @@ namespace EventStore.ClientAPI
         /// Writes to a transaction in the event store asynchronously
         /// </summary>
         /// <param name="events">The events to write</param>
-        public void Write(IEnumerable<IEvent> events)
+        public void Write(IEnumerable<EventData> events)
         {
             WriteAsync(events).Wait();
         }
@@ -89,9 +89,9 @@ namespace EventStore.ClientAPI
         /// Writes to a transaction in the event store asynchronously
         /// </summary>
         /// <param name="events">The events to write</param>
-        public void Write(params IEvent[] events)
+        public void Write(params EventData[] events)
         {
-            WriteAsync((IEnumerable<IEvent>)events).Wait();
+            WriteAsync((IEnumerable<EventData>)events).Wait();
         }
 
         /// <summary>
@@ -99,9 +99,9 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="events">The events to write</param>
         /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
-        public Task WriteAsync(params IEvent[] events)
+        public Task WriteAsync(params EventData[] events)
         {
-            return WriteAsync((IEnumerable<IEvent>)events);
+            return WriteAsync((IEnumerable<EventData>)events);
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace EventStore.ClientAPI
         /// </summary>
         /// <param name="events">The events to write</param>
         /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
-        public Task WriteAsync(IEnumerable<IEvent> events)
+        public Task WriteAsync(IEnumerable<EventData> events)
         {
             if (_isRolledBack) throw new InvalidOperationException("can't write to a rolledback transaction");
             if (_isCommitted) throw new InvalidOperationException("Transaction is already committed");

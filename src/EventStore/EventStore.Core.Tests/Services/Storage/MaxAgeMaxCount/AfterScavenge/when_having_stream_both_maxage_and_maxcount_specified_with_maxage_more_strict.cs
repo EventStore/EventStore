@@ -38,9 +38,6 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
     public class when_having_stream_both_maxage_and_maxcount_specified_with_maxage_more_strict : ReadIndexTestScenario
     {
         private EventRecord _r1;
-        private EventRecord _r2;
-        private EventRecord _r3;
-        private EventRecord _r4;
         private EventRecord _r5;
         private EventRecord _r6;
 
@@ -50,9 +47,9 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.AfterScavenge
 
             var metadata = string.Format(@"{{""$maxAge"":{0},""$maxCount"":4}}", (int)TimeSpan.FromMinutes(10).TotalSeconds);
             _r1 = WriteStreamCreated("ES", metadata, now.AddMinutes(-100));
-            _r2 = WriteSingleEvent("ES", 1, "bla1", now.AddMinutes(-50));
-            _r3 = WriteSingleEvent("ES", 2, "bla1", now.AddMinutes(-20));
-            _r4 = WriteSingleEvent("ES", 3, "bla1", now.AddMinutes(-11));
+                  WriteSingleEvent("ES", 1, "bla1", now.AddMinutes(-50));
+                  WriteSingleEvent("ES", 2, "bla1", now.AddMinutes(-20));
+                  WriteSingleEvent("ES", 3, "bla1", now.AddMinutes(-11));
             _r5 = WriteSingleEvent("ES", 4, "bla1", now.AddMinutes(-5));
             _r6 = WriteSingleEvent("ES", 5, "bla1", now.AddMinutes(-1));
 

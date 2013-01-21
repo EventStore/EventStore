@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new StreamWriter(store, stream, -1);
 
                 Assert.DoesNotThrow(() => writer.Append(events).Then(events.First(), -1));
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new StreamWriter(store, stream, -1);
 
                 Assert.DoesNotThrow(() => writer.Append(events).Then(events.First(), ExpectedVersion.Any));
@@ -109,7 +109,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new StreamWriter(store, stream, -1);
 
                 Assert.DoesNotThrow(() => writer.Append(events).Then(events.First(), 6));
@@ -128,7 +128,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new StreamWriter(store, stream, -1);
 
                 var first6 = writer.Append(events);
@@ -145,7 +145,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 6).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 6).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new StreamWriter(store, stream, -1);
 
                 var first6 = writer.Append(events);
@@ -162,7 +162,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 1).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new StreamWriter(store, stream, -1);
 
                 Assert.DoesNotThrow(() => writer.Append(events).Then(events.First(), 1));
@@ -181,7 +181,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 1).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new StreamWriter(store, stream, -1);
 
                 Assert.DoesNotThrow(() => writer.Append(events).Then(events.First(), ExpectedVersion.Any));
@@ -200,7 +200,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 1).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 1).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new StreamWriter(store, stream, -1);
 
                 Assert.DoesNotThrow(() => writer.Append(events).Then(events.First(), -1));
@@ -219,7 +219,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 3).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 3).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var writer = new StreamWriter(store, stream, -1);
 
                 Assert.DoesNotThrow(() => writer.Append(events).Then(events[1], ExpectedVersion.Any).Then(events[1], ExpectedVersion.Any));
@@ -238,7 +238,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 2).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 2).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var append = store.AppendToStreamAsync(stream, -1, events);
                 Assert.DoesNotThrow(append.Wait);
 
@@ -259,7 +259,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 2).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 2).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var append = store.AppendToStreamAsync(stream, -1, events);
                 Assert.DoesNotThrow(append.Wait);
 
@@ -280,7 +280,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 2).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 2).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var append = store.AppendToStreamAsync(stream, -1, events);
                 Assert.DoesNotThrow(append.Wait);
 
@@ -301,7 +301,7 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 2).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 2).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var append = store.AppendToStreamAsync(stream, -1, events);
                 Assert.DoesNotThrow(append.Wait);
 
@@ -322,11 +322,11 @@ namespace EventStore.Core.Tests.ClientAPI
             {
                 store.Connect(_node.TcpEndPoint);
 
-                var events = Enumerable.Range(1, 2).Select(x => new TestEvent(Guid.NewGuid())).ToArray();
+                var events = Enumerable.Range(1, 2).Select(x => TestEvent.NewTestEvent(Guid.NewGuid())).ToArray();
                 var append = store.AppendToStreamAsync(stream, -1, events);
                 Assert.DoesNotThrow(append.Wait);
 
-                var app2 = store.AppendToStreamAsync(stream, -1, events.Concat(new[] { new TestEvent(Guid.NewGuid()) }));
+                var app2 = store.AppendToStreamAsync(stream, -1, events.Concat(new[] { TestEvent.NewTestEvent(Guid.NewGuid()) }));
                 Assert.That(() => app2.Wait(), Throws.Exception.TypeOf<AggregateException>().With.InnerException.TypeOf<WrongExpectedVersionException>());
             }
         }

@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
         private EventRecord _p4;
         private EventRecord _p5;
 
-        private long _pos6, _pos7, _pos8, _pos9;
+        private long _pos6, _pos7, _pos8;
 
         private long _t1CommitPos;
         private long _t2CommitPos;
@@ -71,7 +71,8 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             var r7 = LogRecord.Prepare(_pos7, Guid.NewGuid(), Guid.NewGuid(), _pos7, 0, "t1", -1, PrepareFlags.SingleWrite, "et", LogRecord.NoData, LogRecord.NoData);
             Writer.Write(r7, out _pos8);
             var r8 = LogRecord.Prepare(_pos8, Guid.NewGuid(), Guid.NewGuid(), _pos8, 0, "t1", -1, PrepareFlags.SingleWrite, "et", LogRecord.NoData, LogRecord.NoData);
-            Writer.Write(r8, out _pos9);
+            long pos9;
+            Writer.Write(r8, out pos9);
         }
 
         [Test]

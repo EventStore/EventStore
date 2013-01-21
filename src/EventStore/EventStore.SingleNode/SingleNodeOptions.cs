@@ -33,6 +33,7 @@ namespace EventStore.SingleNode
     public class SingleNodeOptions : IOptions
     {
         public bool ShowHelp { get { return _helper.Get(() => ShowHelp); } }
+        public bool ShowVersion { get { return _helper.Get(() => ShowVersion); } }
         public string LogsDir { get { return _helper.Get(() => LogsDir); } }
         public string[] Configs { get { return _helper.Get(() => Configs); } }
 
@@ -56,7 +57,9 @@ namespace EventStore.SingleNode
         public SingleNodeOptions()
         {
             _helper = new OptsHelper(() => Configs, Opts.EnvPrefix);
+            
             _helper.Register(() => ShowHelp, Opts.ShowHelpCmd, Opts.ShowHelpEnv, Opts.ShowHelpJson, Opts.ShowHelpDefault, Opts.ShowHelpDescr);
+            _helper.Register(() => ShowVersion, Opts.ShowVersionCmd, Opts.ShowVersionEnv, Opts.ShowVersionJson, Opts.ShowVersionDefault, Opts.ShowVersionDescr);
             _helper.RegisterRef(() => LogsDir, Opts.LogsCmd, Opts.LogsEnv, Opts.LogsJson, Opts.LogsDefault, Opts.LogsDescr);
             _helper.RegisterArray(() => Configs, Opts.ConfigsCmd, Opts.ConfigsEnv, ",", Opts.ConfigsJson, Opts.ConfigsDefault, Opts.ConfigsDescr);
 

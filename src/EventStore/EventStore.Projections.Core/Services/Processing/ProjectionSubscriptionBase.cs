@@ -129,7 +129,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public EventReader CreatePausedEventReader(IPublisher publisher, Guid eventReaderId)
         {
             if (_eofReached)
-                throw new InvalidOperationException("Onetime projection has alerady reached the eof position");
+                throw new InvalidOperationException("Onetime projection has already reached the eof position");
             _logger.Trace("Creating an event distribution point at '{0}'", _positionTracker.LastTag);
             return _checkpointStrategy.CreatePausedEventReader(
                 eventReaderId, publisher, _positionTracker.LastTag, _stopOnEof);
@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 EofReached();
                 _eofHandler.Handle(
                     new ProjectionSubscriptionMessage.EofReached(
-                        _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, _progress,
+                        _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag,
                         _subscriptionMessageSequenceNumber++));
             }
         }

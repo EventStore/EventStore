@@ -50,7 +50,7 @@ namespace EventStore.ClientAPI.ClientOperations
         private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;
-        private readonly IEnumerable<IEvent> _events;
+        private readonly IEnumerable<EventData> _events;
 
         public Guid CorrelationId
         {
@@ -66,7 +66,7 @@ namespace EventStore.ClientAPI.ClientOperations
                                        bool forward,
                                        string stream,
                                        int expectedVersion,
-                                       IEnumerable<IEvent> events)
+                                       IEnumerable<EventData> events)
         {
             _source = source;
 

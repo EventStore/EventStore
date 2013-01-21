@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             _version = version;
         }
 
-        public TailWriter Append(params TestEvent[] events)
+        public TailWriter Append(params EventData[] events)
         {
             var appends = new Task[events.Length];
 
@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             _stream = stream;
         }
 
-        public TailWriter Then(TestEvent @event, int expectedVersion)
+        public TailWriter Then(EventData @event, int expectedVersion)
         {
             _store.AppendToStream(_stream, expectedVersion, new[] {@event});
             return this;
@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             _transaction = transaction;
         }
 
-        public OngoingTransaction Write(params IEvent[] events)
+        public OngoingTransaction Write(params EventData[] events)
         {
             _transaction.Write(events);
             return this;

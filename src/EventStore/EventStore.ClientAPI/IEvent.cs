@@ -29,13 +29,13 @@ using System;
 
 namespace EventStore.ClientAPI
 {
-    public interface IEvent
-    {
-        Guid EventId { get; }
-        string Type { get; }
-        bool IsJson { get; }
+    //public interface IEvent
+    //{
+    //    Guid EventId { get; }
+    //    string Type { get; }
+    //    bool IsJson { get; }
 
-        byte[] Data { get; }
-        byte[] Metadata { get; }
-    }
+    //    byte[] Data { get; }
+    //    byte[] Metadata { get; }
+    //}
 }

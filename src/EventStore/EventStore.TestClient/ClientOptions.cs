@@ -37,6 +37,7 @@ namespace EventStore.TestClient
     public sealed class ClientOptions : IOptions
     {
         public bool ShowHelp { get { return _helper.Get(() => ShowHelp); } }
+        public bool ShowVersion { get { return _helper.Get(() => ShowVersion); } }
         public string LogsDir { get { return _helper.Get(() => LogsDir); } }
 
         public IPAddress Ip { get { return _helper.Get(() => Ip); } }
@@ -55,6 +56,7 @@ namespace EventStore.TestClient
         {
             _helper = new OptsHelper(null, Opts.EnvPrefix);
             _helper.Register(() => ShowHelp, Opts.ShowHelpCmd, Opts.ShowHelpEnv, Opts.ShowHelpJson, Opts.ShowHelpDefault, Opts.ShowHelpDescr);
+            _helper.Register(() => ShowVersion, Opts.ShowVersionCmd, Opts.ShowVersionEnv, Opts.ShowVersionJson, Opts.ShowVersionDefault, Opts.ShowVersionDescr);
             _helper.RegisterRef(() => LogsDir, Opts.LogsCmd, Opts.LogsEnv, Opts.LogsJson, Opts.LogsDefault, Opts.LogsDescr);
 
             _helper.RegisterRef(() => Ip, "i|ip=", null, null, IPAddress.Loopback, "IP address of server.");

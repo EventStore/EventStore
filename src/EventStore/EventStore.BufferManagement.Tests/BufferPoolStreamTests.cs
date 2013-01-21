@@ -31,9 +31,10 @@ using NUnit.Framework;
 
 namespace EventStore.BufferManagement.Tests
 {
-    public class has_buffer_pool_fixture : has_buffer_manager_fixture
+    public abstract class has_buffer_pool_fixture : has_buffer_manager_fixture
     {
         protected BufferPool BufferPool;
+
         [SetUp]
         public override void Setup()
         {
@@ -45,10 +46,10 @@ namespace EventStore.BufferManagement.Tests
     [TestFixture]
     public class when_insantiating_a_buffer_pool_stream : has_buffer_pool_fixture
     {
-        [Test, ExpectedException(typeof(ArgumentNullException))]
+        [Test]
         public void a_null_buffer_pool_throws_an_argumentnullexception()
         {
-            BufferPoolStream stream = new BufferPoolStream(null);
+            Assert.Throws<ArgumentNullException>(() => new BufferPoolStream(null));
         }
 
         [Test]
@@ -70,7 +71,7 @@ namespace EventStore.BufferManagement.Tests
             stream.Write(new byte[500], 0, 500);
             stream.Seek(0, SeekOrigin.Begin);
             Assert.AreEqual(0, stream.Position);
-            int read = stream.Read(new byte[50], 0, 50);
+            stream.Read(new byte[50], 0, 50);
             Assert.AreEqual(50, stream.Position);
         }
 

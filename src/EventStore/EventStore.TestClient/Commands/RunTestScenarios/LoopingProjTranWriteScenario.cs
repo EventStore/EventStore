@@ -27,7 +27,6 @@
 //  
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
@@ -40,7 +39,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
     {
         private readonly TimeSpan _executionPeriod;
 
-        private Dictionary<string, string> _transactionsPool;
         private readonly Random _random;
 
         public LoopingProjTranWriteScenario(Action<IPEndPoint, byte[]> directSendOverTcp, 
@@ -54,19 +52,18 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
         {
             _executionPeriod = executionPeriod;
-            _transactionsPool = new Dictionary<string, string>();
             _random = new Random();
         }
 
-        private IEvent CreateEventA(int version)
+        private EventData CreateEventA(int version)
         {
-            var @event = new JsonEventContainer(new VersionnedEventA(version));
+            var @event = JsonEventContainer.ForEvent(new VersionnedEventA(version));
             return @event;
         }
 
-        private IEvent CreateEventB(int version)
+        private EventData CreateEventB(int version)
         {
-            var @event = new JsonEventContainer(new VersionnedEventB(version));
+            var @event = JsonEventContainer.ForEvent(new VersionnedEventB(version));
             return @event;
         }
 
@@ -207,7 +204,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             }
         }
 
-        private Task<object> WriteTransactionData(EventStoreTransaction transaction, int startingVersion, int eventCount, Func<int, IEvent> createEvent)
+        private Task<object> WriteTransactionData(EventStoreTransaction transaction, int startingVersion, int eventCount, Func<int, EventData> createEvent)
         {
             Log.Info("Starting to write {0} events in tran {1}", eventCount, transaction.TransactionId);
 

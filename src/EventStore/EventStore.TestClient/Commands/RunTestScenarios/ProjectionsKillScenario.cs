@@ -46,10 +46,10 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         {
         }
 
-        private IEvent CreateBankEvent(int version)
+        private EventData CreateBankEvent(int version)
         {
             var accountObject = BankAccountEventFactory.CreateAccountObject(version);
-            var @event = new BankAccountEvent(accountObject);
+            var @event = BankAccountEvent.FromEvent(accountObject);
             return @event;
         }
 
@@ -73,7 +73,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var expectedEventsPerStream = EventsPerStream.ToString();
 
             var isWatchStarted = false;
-            var manager = GetProjectionsManager();
             
             var stopWatch = new Stopwatch();
             

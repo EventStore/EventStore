@@ -86,6 +86,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\EventStore.Common\Properties\AssemblyVersion.cs">
+      <Link>Properties\AssemblyVersion.cs</Link>
+    </Compile>
     <Compile Include="EventPosition.cs" />
     <Compile Include="Json.cs" />
     <Compile Include="Messages\CoreProjectionManagementMessage.cs" />
@@ -110,6 +113,7 @@
     <Compile Include="Services\Processing\CheckpointSuggestedWorkItem.cs" />
     <Compile Include="Services\Processing\CheckpointWorkItemBase.cs" />
     <Compile Include="Services\Processing\CommittedEventWorkItem.cs" />
+    <Compile Include="Services\Processing\CompletedWorkItem.cs" />
     <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\DefaultCheckpointManager.cs" />
     <Compile Include="Services\Processing\EventIndexEventReader.cs" />

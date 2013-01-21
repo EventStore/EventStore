@@ -74,11 +74,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         public void UnFrameData(ArraySegment<byte> data)
         {
-            if (data == null)
-                throw new ArgumentNullException("data");
-
             Parse(data);
         }
+
         /// <summary>
         /// Parses a stream chunking based on length-prefixed framing. Calls are re-entrant and hold state internally.
         /// </summary>

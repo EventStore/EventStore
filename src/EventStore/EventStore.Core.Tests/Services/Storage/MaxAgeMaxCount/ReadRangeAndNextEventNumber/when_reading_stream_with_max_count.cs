@@ -1,5 +1,31 @@
-﻿using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
+﻿// Copyright (c) 2012, Event Store LLP
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+// Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+// Neither the name of the Event Store LLP nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 
+using EventStore.Core.Data;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
@@ -7,18 +33,15 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
 {
     public class when_reading_stream_with_max_count: ReadIndexTestScenario
     {
-        private EventRecord _event0;
-        private EventRecord _event1;
-        private EventRecord _event2;
         private EventRecord _event3;
         private EventRecord _event4;
         private EventRecord _event5;
         
         protected override void WriteTestScenario()
         {
-            _event0 = WriteStreamCreated("ES", @"{""$maxCount"":3}");
-            _event1 = WriteSingleEvent("ES", 1, "bla");
-            _event2 = WriteSingleEvent("ES", 2, "bla");
+            WriteStreamCreated("ES", @"{""$maxCount"":3}");
+            WriteSingleEvent("ES", 1, "bla");
+            WriteSingleEvent("ES", 2, "bla");
             _event3 = WriteSingleEvent("ES", 3, "bla");
             _event4 = WriteSingleEvent("ES", 4, "bla");
             _event5 = WriteSingleEvent("ES", 5, "bla");

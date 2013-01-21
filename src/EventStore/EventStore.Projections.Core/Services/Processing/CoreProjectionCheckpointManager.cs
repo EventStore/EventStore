@@ -171,6 +171,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopped = true;
         }
 
+        protected void PrerecordedEventsLoaded(CheckpointTag checkpointTag)
+        {
+            _coreProjection.Handle(
+                new CoreProjectionProcessingMessage.PrerecordedEventsLoaded(_projectionCorrelationId, checkpointTag));
+        }
+
         public virtual void GetStatistics(ProjectionStatistics info)
         {
             info.Position = _lastProcessedEventPosition.LastTag;
@@ -370,12 +376,6 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         protected abstract void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
-
-        protected void PrerecordedEventsLoaded(CheckpointTag checkpointTag)
-        {
-            _coreProjection.Handle(
-                new CoreProjectionProcessingMessage.PrerecordedEventsLoaded(_projectionCorrelationId, checkpointTag));
-        }
 
         protected void RequestRestart(string reason)
         {

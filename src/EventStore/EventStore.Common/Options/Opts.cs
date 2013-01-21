@@ -56,6 +56,12 @@ namespace EventStore.Common.Options
         public const string ShowHelpDescr = "Show help.";
         public const bool ShowHelpDefault = false;
 
+        public const string ShowVersionCmd = "version";
+        public const string ShowVersionEnv = null;
+        public const string ShowVersionJson = null;
+        public const string ShowVersionDescr = "Show version.";
+        public const bool ShowVersionDefault = false;
+
         public const string StatsPeriodCmd = "s|stats-period-sec=";
         public const string StatsPeriodEnv = "STATS_PERIOD_SEC";
         public const string StatsPeriodJson = "statsPeriodSec";
