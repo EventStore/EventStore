@@ -36,13 +36,7 @@ This step produces a file named js1.dll, which contains the projections framewor
 
 	C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe /p:Configuration=Debug;Platform=x64 src\EventStore\EventStore.sln
 
-<em>NOTE:
-
-EventStore.sln platform mapping are configured to be compatible with both xbuild on mono and msbuild in .NET.
-
-The "Any CPU" platform in the EventStore.sln solution is actually x64, but due to build problems in mono it has to be "Any CPU"
-
-Projections.Dev.WindowsOnly.sln platform mappings are configured to be used in Windows only.  These settings are compatible with ContinuousTests and R# (unit test runner starts 64-bit runner and loads js1.dll corectly)</em>
+*NOTE: EventStore.sln has build configurations set up to be compatible with either xbuild or msbuild. Although named "Any CPU", it in fact targets x64 only.*
 
 ###Debug Builds on Linux (Ubuntu 12.04) / Mono
 
