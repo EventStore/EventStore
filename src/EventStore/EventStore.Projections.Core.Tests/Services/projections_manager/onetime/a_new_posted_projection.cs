@@ -45,6 +45,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
         {
             protected string _projectionName;
             protected string _projectionSource;
+            protected Type _fakeProjectionType;
+            protected ProjectionMode _projectionMode;
+            protected bool _checkpointsEnabled;
+            protected bool _emitEnabled;
 
             protected override void Given()
             {
@@ -52,6 +56,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 
                 _projectionName = "test-projection";
                 _projectionSource = @"";
+                _fakeProjectionType = typeof(FakeProjection);
+                _projectionMode = ProjectionMode.Transient;
+                _checkpointsEnabled = false;
+                _emitEnabled = false;
             }
 
             protected override void When()
@@ -59,9 +67,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 _manager.Handle(new SystemMessage.BecomeWorking());
                 _manager.Handle(
                     new ProjectionManagementMessage.Post(
-                        new PublishEnvelope(_bus), ProjectionMode.Transient, _projectionName,
-                        "native:" + typeof(FakeProjection).AssemblyQualifiedName, _projectionSource, enabled: true,
-                        checkpointsEnabled: false, emitEnabled: false));
+                        new PublishEnvelope(_bus), _projectionMode, _projectionName,
+                        "native:" + _fakeProjectionType.AssemblyQualifiedName, _projectionSource, enabled: true,
+                        checkpointsEnabled: _checkpointsEnabled, emitEnabled: _emitEnabled));
             }
         }
 

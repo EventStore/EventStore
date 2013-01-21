@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -94,11 +95,11 @@ namespace EventStore.Transport.Http.EntityManagement
             }
         }
 
-        private void SetContentType(string contentType)
+        private void SetContentType(string contentType, Encoding encoding)
         {
             try
             {
-                HttpEntity.Response.ContentType = contentType;
+                HttpEntity.Response.ContentType = contentType + (encoding != null ? ("; charset: " + encoding.WebName) : "");
             }
             catch (ObjectDisposedException e)
             {
@@ -179,7 +180,7 @@ namespace EventStore.Transport.Http.EntityManagement
             copier.Start();
         }
 
-        public bool BeginReply(int code, string description, string contentType, IEnumerable<KeyValuePair<string, string>> headers)
+        public bool BeginReply(int code, string description, string contentType, Encoding encoding, IEnumerable<KeyValuePair<string, string>> headers)
         {
             bool isAlreadyProcessing = Interlocked.CompareExchange(ref _processing, 1, 0) == 1;
             if (isAlreadyProcessing)
@@ -187,7 +188,7 @@ namespace EventStore.Transport.Http.EntityManagement
 
             SetResponseCode(code);
             SetResponseDescription(description);
-            SetContentType(contentType);
+            SetContentType(contentType, encoding);
             SetRequiredHeaders();
             SetAdditionalHeaders(headers.Safe());
             return true;
@@ -218,12 +219,13 @@ namespace EventStore.Transport.Http.EntityManagement
                           int code,
                           string description, 
                           string contentType, 
+                          Encoding encoding,  
                           IEnumerable<KeyValuePair<string, string>> headers,
                           Action<Exception> onError)
         {
             Ensure.NotNull(onError, "onError");
 
-            if (!BeginReply(code, description, contentType, headers))
+            if (!BeginReply(code, description, contentType, encoding, headers))
                 return;
 
             if (response == null || response.Length == 0)

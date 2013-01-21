@@ -50,9 +50,17 @@ namespace EventStore.Projections.Core.Messages
 
         public class Stopped : CoreProjectionManagementMessage
         {
-            public Stopped(Guid projectionId)
+            private bool _completed;
+
+            public Stopped(Guid projectionId, bool completed)
                 : base(projectionId)
             {
+                _completed = completed;
+            }
+
+            public bool Completed
+            {
+                get { return _completed; }
             }
         }
 

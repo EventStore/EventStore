@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Text;
 using EventStore.Transport.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Codecs
@@ -34,6 +35,7 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
     public class TextCodec : ICodec
     {
         public string ContentType { get { return EventStore.Transport.Http.ContentType.PlainText; } }
+        public Encoding Encoding { get { return Encoding.UTF8; } }
 
         public bool CanParse(string format)
         {

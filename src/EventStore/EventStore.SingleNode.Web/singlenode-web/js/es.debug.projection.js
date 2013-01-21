@@ -11,7 +11,7 @@
 
         $.templates("editSourceTemplate", "#editSourceTemplate");
         projectionStatusUrl = location.hash.substr(1);
-
+        console.log(projectionStatusUrl);
         $('#update-button').click(function (ev) {
             $.ajax(projectionStatusUrl + "/query", {
                 headers: {
@@ -100,7 +100,7 @@
                 '<script src="' + projectionStatusUrl + '/query?1"><' + '/' + 'script>');
 
 
-        $.ajax(projectionStatusUrl + "/state?partition=" + first.Partition, {
+        $.ajax(projectionStatusUrl + "/state?partition=" + first.partition, {
             headers: {
                 Accept: "application/json",
             },
@@ -120,19 +120,19 @@
                 else
                     processor.set_state(data);
                 processor.process_event(
-                    first.BodyRaw,
-                    first.StreamId,
-                    first.EventType,
-                    first.Category,
-                    first.SequenceNumber,
-                    first.MetadataRaw,
-                    first.LogPposition);
+                    first.bodyRaw,
+                    first.streamId,
+                    first.eventType,
+                    first.category,
+                    first.sequenceNumber,
+                    first.metadataRaw,
+                    first.logPposition);
             });
 
         }
 
         function errorPartitionState(xhr, status) {
-            alert("Failed to get state for partition: " + first.Partition);
+            alert("Failed to get state for partition: " + first.partition);
         }
 
     }

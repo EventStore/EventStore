@@ -50,31 +50,27 @@ namespace EventStore.Core.Tests.DataStructures
         }
 
         [Test]
-        [ExpectedException(typeof(ArgumentNullException))]
         public void throw_argumentnullexception_when_given_null_comparer()
         {
-            new PairingHeap<int>(null as IComparer<int>);
+            Assert.Throws<ArgumentNullException>(() => new PairingHeap<int>(null as IComparer<int>));
         }
 
         [Test]
-        [ExpectedException(typeof(ArgumentNullException))]
         public void throw_argumentnullexception_when_given_null_compare_func()
         {
-            new PairingHeap<int>(null as Func<int, int, bool>);
+            Assert.Throws<ArgumentNullException>(() => new PairingHeap<int>(null as Func<int, int, bool>));
         }
 
         [Test]
-        [ExpectedException(typeof(InvalidOperationException))]
         public void throw_invalidoperationexception_when_trying_to_find_min_element_on_empty_queue()
         {
-            var x = _heap.FindMin();
+            Assert.Throws<InvalidOperationException>(() => _heap.FindMin());
         }
 
         [Test]
-        [ExpectedException(typeof(InvalidOperationException))]
         public void throw_invalidoperationexception_when_trying_to_delete_min_element_on_empty_queue()
         {
-            var x = _heap.FindMin();
+            Assert.Throws<InvalidOperationException>(() => _heap.DeleteMin());
         }
 
         [Test]
@@ -138,6 +134,7 @@ namespace EventStore.Core.Tests.DataStructures
             Assert.That(returned, Is.EquivalentTo(reference));
         }
 
+        [Test]
         public void handle_a_lot_of_elements_and_not_loose_any_elements()
         {
             var elements = new List<int>();

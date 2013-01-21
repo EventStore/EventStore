@@ -145,7 +145,7 @@ namespace EventStore.Core.Services
             {
                 var config = message.Configuration;
 
-                message.HttpEntityManager.BeginReply(config.Code, config.Description, config.ContentType, config.Headers);
+                message.HttpEntityManager.BeginReply(config.Code, config.Description, config.ContentType, config.Encoding, config.Headers);
                 if (message.Envelope != null)
                     message.Envelope.ReplyWith(new HttpMessage.HttpCompleted(message.CorrelationId, message.HttpEntityManager));
             }

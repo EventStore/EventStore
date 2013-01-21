@@ -25,11 +25,15 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using System.Text;
+
 namespace EventStore.Transport.Http
 {
     public interface ICodec
     {
         string ContentType { get; }
+        Encoding Encoding { get; }
         bool CanParse(string format);
         bool SuitableForReponse(AcceptComponent component);
 

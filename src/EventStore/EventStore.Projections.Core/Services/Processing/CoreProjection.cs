@@ -158,6 +158,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool _subscribed;
         private bool _startOnLoad;
+        private bool _completed;
+
+
         private StatePartitionSelector _statePartitionSelector;
 
         private CoreProjection(
@@ -300,9 +303,33 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(ProjectionSubscriptionMessage.EofReached message)
         {
+            if (IsOutOfOrderSubscriptionMessage(message))
+                return;
+            RegisterSubscriptionMessage(message);
+
+            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            try
+            {
+                _processingQueue.Unsubscribed();
+                var progressWorkItem = new CompletedWorkItem(this);
+                _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
+                _processingQueue.ProcessEvent();
+            }
+            catch (Exception ex)
+            {
+                SetFaulted(ex);
+            }
+        }
+
+        internal void Complete()
+        {
+            if (_state != State.Running)
+                return;
             if (!_projectionConfig.StopOnEof)
                 throw new InvalidOperationException("!_projectionConfig.StopOnEof");
-            _subscribed = false; // NOTE:  stopOnEof subscriptions automatically unsuibscribe when handling this message
+            _completed = true;
+            _checkpointManager.Progress(100.0f);
+            _subscribed = false; // NOTE:  stopOnEof subscriptions automatically unsubscribe when handling this message
             Stop();
         }
 
@@ -467,6 +494,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterInitial()
         {
             _handlerPartition = null;
+            _completed = false;
+            _subscribed = false;
             _partitionStateCache.Initialize();
             _processingQueue.Initialize();
             _checkpointManager.Initialize();
@@ -521,7 +550,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void EnterStopped()
         {
             UpdateStatistics();
-            _publisher.Publish(new CoreProjectionManagementMessage.Stopped(_projectionCorrelationId));
+            _publisher.Publish(new CoreProjectionManagementMessage.Stopped(_projectionCorrelationId, _completed));
         }
 
         private void EnterFaultedStopping()
@@ -585,7 +614,10 @@ namespace EventStore.Projections.Core.Services.Processing
             switch (_state)
             {
                 case State.Running:
-                    return InternalProcessCommittedEvent(partition, message);
+                    var result = InternalProcessCommittedEvent(partition, message);
+                    if (_state == State.FaultedStopping || _state == State.Faulted)
+                        InternalCollectEventForDebugging(partition, message);
+                    return result;
                 case State.FaultedStopping:
                 case State.Stopping:
                 case State.Faulted:
@@ -599,7 +631,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly List<CoreProjectionManagementMessage.DebugState.Event> _eventsForDebugging =
             new List<CoreProjectionManagementMessage.DebugState.Event>();
-
 
         private void InternalCollectEventForDebugging(string partition, ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
@@ -863,14 +894,22 @@ namespace EventStore.Projections.Core.Services.Processing
 
         internal void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action completed)
         {
-            if (_state == State.Running)
+            switch (_state)
             {
-                _checkpointManager.RecordEventOrder(
-                    message, () =>
-                        {
-                            completed();
-                            EnsureTickPending();
-                        });
+                case State.Running:
+                    _checkpointManager.RecordEventOrder(
+                        message, () =>
+                            {
+                                completed();
+                                EnsureTickPending();
+                            });
+                    break;
+                case State.FaultedStopping:
+                case State.Stopping:
+                case State.Faulted:
+                case State.Stopped:
+                    completed(); // allow collecting events for debugging
+                    break;
             }
         }
     }

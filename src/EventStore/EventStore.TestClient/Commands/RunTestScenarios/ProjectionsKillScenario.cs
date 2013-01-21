@@ -73,7 +73,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var expectedEventsPerStream = EventsPerStream.ToString();
 
             var isWatchStarted = false;
-            var manager = GetProjectionsManager();
             
             var stopWatch = new Stopwatch();
             

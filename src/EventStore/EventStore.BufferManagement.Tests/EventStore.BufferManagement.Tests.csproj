@@ -65,6 +65,10 @@
       <Project>{a794d3fb-06ac-471f-ab8d-6e98cbfa0021}</Project>
       <Name>EventStore.BufferManagement</Name>
     </ProjectReference>
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
+      <Project>{b4c9be3d-43b1-4049-a23a-5dc53db3f0b0}</Project>
+      <Name>EventStore.Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

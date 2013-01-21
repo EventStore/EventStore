@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections.Generic;
 using EventStore.Common.Log;
 
 namespace EventStore.Common.Utils
@@ -41,6 +42,8 @@ namespace EventStore.Common.Utils
         protected static readonly ILogger Log = LogManager.GetLoggerFor<Application>();
 
         private static Action<int> _exit;
+
+        private static readonly HashSet<string> _defines = new HashSet<string>();
 
         public static void RegisterExitAction(Action<int> exitAction)
         {
@@ -66,6 +69,20 @@ namespace EventStore.Common.Utils
             var exit = _exit;
             if (exit != null)
                 exit(exitCode);
+        }
+
+        public static void AddDefines(IEnumerable<string> defines)
+        {
+            foreach (var define in defines.Safe())
+            {
+                _defines.Add(define.ToUpper());
+            }
+        }
+
+        public static bool IsDefined(string define)
+        {
+            Ensure.NotNull(define, "define");
+            return _defines.Contains(define.ToUpper());
         }
     }
 }

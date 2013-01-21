@@ -2,13 +2,13 @@
 
 namespace EventStore.ClientAPI
 {
-    public class EventData
+    public sealed class EventData
     {
-        public Guid EventId { get; protected set; }
-        public string Type { get; protected set; }
-        public bool IsJson { get; protected set; }
-        public byte[] Data { get; protected set; }
-        public byte[] Metadata { get; protected set; }
+        public readonly Guid EventId;
+        public readonly string Type;
+        public readonly bool IsJson;
+        public readonly byte[] Data;
+        public readonly byte[] Metadata;
 
         public EventData(Guid eventId, string type, bool isJson, byte[] data, byte[] metadata)
         {

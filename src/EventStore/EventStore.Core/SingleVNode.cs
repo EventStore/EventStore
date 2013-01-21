@@ -125,7 +125,7 @@ namespace EventStore.Core
                                           new XXHashUnsafe(),
                                           new LRUCache<string, StreamCacheInfo>(ESConsts.MetadataCacheCapacity));
             var writer = new TFChunkWriter(db);
-            var storageWriter = new StorageWriterService(_mainQueue, _mainBus, writer, readIndex);
+            new StorageWriterService(_mainQueue, _mainBus, writer, readIndex); // subscribes internally
             var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
@@ -181,7 +181,7 @@ namespace EventStore.Core
             Bus.Subscribe<StorageMessage.PreparePhaseTimeout>(requestManagement);
             Bus.Subscribe<StorageMessage.CommitPhaseTimeout>(requestManagement);
 
-            var subscriptionsService = new SubscriptionsService(_mainBus, readIndex);
+            new SubscriptionsService(_mainBus, readIndex); // subcribes internally
 
             //TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));

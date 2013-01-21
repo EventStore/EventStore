@@ -86,9 +86,10 @@ namespace EventStore.Core.Services.Transport.Http
                 while (_pending.Count > 0 && now - _pending.Peek().TimeStamp > MaxRequestDuration)
                 {
                     var request = _pending.Dequeue();
-#if DO_NOT_TIMEOUT_REQUESTS
-                    continue;
-#endif
+                    
+                    if (Application.IsDefined("DO_NOT_TIMEOUT_REQUESTS"))
+                        continue;
+
                     if (!request.Manager.IsProcessing)
                     {
                         request.Manager.ReplyStatus(

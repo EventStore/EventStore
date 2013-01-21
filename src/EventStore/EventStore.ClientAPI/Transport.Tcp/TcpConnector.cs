@@ -50,7 +50,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                                                       Action<TcpTypedConnection> connectionEstablished,
                                                       Action<TcpTypedConnection, IPEndPoint, SocketError> connectionClosed)
         {
-            var connectionCreatedEvent = new AutoResetEvent(false);
+            var connectionCreatedEvent = new ManualResetEventSlim();
             TcpTypedConnection typedConnection = null;
 
             var connection = _connector.ConnectTo(
@@ -58,7 +58,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
                 tcpConnection =>
                 {
                     _log.Debug("Connected to [{0}].", tcpConnection.EffectiveEndPoint);
-                    connectionCreatedEvent.WaitOne(500);
+                    connectionCreatedEvent.Wait(500);
                     connectionEstablished(typedConnection);
                 },
                 (conn, error) =>

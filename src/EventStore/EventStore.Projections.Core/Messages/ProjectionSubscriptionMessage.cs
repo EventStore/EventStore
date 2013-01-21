@@ -78,9 +78,9 @@ namespace EventStore.Projections.Core.Messages
         public class EofReached : ProjectionSubscriptionMessage
         {
             public EofReached(
-                Guid correlationId, Guid subscriptionId, CheckpointTag checkpointTag, float progress,
+                Guid correlationId, Guid subscriptionId, CheckpointTag checkpointTag,
                 long subscriptionMessageSequenceNumber)
-                : base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber)
+                : base(subscriptionId, checkpointTag, 100.0f, subscriptionMessageSequenceNumber)
             {
             }
         }

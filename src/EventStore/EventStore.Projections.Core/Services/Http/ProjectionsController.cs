@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
@@ -75,6 +76,10 @@ namespace EventStore.Projections.Core.Services.Http
                 OnProjectionsGetAny);
             service.RegisterControllerAction(
                 new ControllerAction(
+                    "/projections/transient", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
+                OnProjectionsGetTransient);
+            service.RegisterControllerAction(
+                new ControllerAction(
                     "/projections/onetime", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
                 OnProjectionsGetOneTime);
             service.RegisterControllerAction(
@@ -83,8 +88,13 @@ namespace EventStore.Projections.Core.Services.Http
                 OnProjectionsGetContinuous);
             service.RegisterControllerAction(
                 new ControllerAction(
-                    "/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}",
+                    "/projections/transient?name={name}&type={type}&enabled={enabled}",
                     HttpMethod.Post, new ICodec[] {Codec.ManualEncoding}, SupportedCodecs, DefaultResponseCodec),
+                OnProjectionsPostTransient);
+            service.RegisterControllerAction(
+                new ControllerAction(
+                    "/projections/onetime?name={name}&type={type}&enabled={enabled}&checkpoints={checkpoints}&emit={emit}",
+                    HttpMethod.Post, new ICodec[] { Codec.ManualEncoding }, SupportedCodecs, DefaultResponseCodec),
                 OnProjectionsPostOneTime);
             service.RegisterControllerAction(
                 new ControllerAction(
@@ -150,6 +160,11 @@ namespace EventStore.Projections.Core.Services.Http
             ProjectionsGet(http, match, null);
         }
 
+        private void OnProjectionsGetTransient(HttpEntity http, UriTemplateMatch match)
+        {
+            ProjectionsGet(http, match, ProjectionMode.Transient);
+        }
+
         private void OnProjectionsGetOneTime(HttpEntity http, UriTemplateMatch match)
         {
             ProjectionsGet(http, match, ProjectionMode.OneTime);
@@ -158,6 +173,11 @@ namespace EventStore.Projections.Core.Services.Http
         private void OnProjectionsGetContinuous(HttpEntity http, UriTemplateMatch match)
         {
             ProjectionsGet(http, match, ProjectionMode.Continuous);
+        }
+
+        private void OnProjectionsPostTransient(HttpEntity http, UriTemplateMatch match)
+        {
+            ProjectionsPost(http, match, ProjectionMode.Transient, match.BoundVariables["name"]);
         }
 
         private void OnProjectionsPostOneTime(HttpEntity http, UriTemplateMatch match)
@@ -274,7 +294,7 @@ namespace EventStore.Projections.Core.Services.Http
                         var localPath = string.Format("/projection/{0}", message.Name);
                         var url = MakeUrl(match, localPath);
                         return new ResponseConfiguration(
-                            201, "Created", codec.ContentType, new KeyValuePair<string, string>("Location", url));
+                            201, "Created", codec.ContentType, codec.Encoding, new KeyValuePair<string, string>("Location", url));
                     }, ErrorsEnvelope(http));
             http.Manager.ReadTextRequestAsync(
                 (o, s) =>
@@ -303,12 +323,12 @@ namespace EventStore.Projections.Core.Services.Http
             if (state.Exception != null)
                 return Configure.InternalServerError();
             else
-                return Configure.OkNoCache("application/json");
+                return Configure.OkNoCache("application/json", Encoding.UTF8);
         }
 
         private ResponseConfiguration DebugStateConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionDebugState state)
         {
-            return Configure.OkNoCache("application/json");
+            return Configure.OkNoCache("application/json", Encoding.UTF8);
         }
 
         private string StateFormatter(ICodec codec, ProjectionManagementMessage.ProjectionState state)
@@ -326,7 +346,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration QueryConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
         {
-            return Configure.OkNoCache("application/javascript");
+            return Configure.OkNoCache("application/javascript", Encoding.UTF8);
         }
 
         private string QueryFormatter(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
@@ -341,17 +361,17 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration QueryConfigConfigurator(ICodec codec, ProjectionManagementMessage.ProjectionQuery state)
         {
-            return Configure.OkNoCache("application/json");
+            return Configure.OkNoCache("application/json", Encoding.UTF8);
         }
 
         private ResponseConfiguration OkResponseConfigurator<T>(ICodec codec, T message)
         {
-            return new ResponseConfiguration(200, "OK", codec.ContentType);
+            return new ResponseConfiguration(200, "OK", codec.ContentType, Encoding.UTF8);
         }
 
         private ResponseConfiguration OkNoCacheResponseConfigurator<T>(ICodec codec, T message)
         {
-            return Configure.OkNoCache(codec.ContentType);
+            return Configure.OkNoCache(codec.ContentType, codec.Encoding);
         }
 
         private IEnvelope ErrorsEnvelope(HttpEntity http)
@@ -364,7 +384,7 @@ namespace EventStore.Projections.Core.Services.Http
 
         private ResponseConfiguration NotFoundConfigurator(ICodec codec, ProjectionManagementMessage.NotFound message)
         {
-            return new ResponseConfiguration(404, "Not Found", "text/plain");
+            return new ResponseConfiguration(404, "Not Found", "text/plain", Encoding.UTF8);
         }
 
         private string NotFoundFormatter(ICodec codec, ProjectionManagementMessage.NotFound message)
@@ -375,7 +395,7 @@ namespace EventStore.Projections.Core.Services.Http
         private ResponseConfiguration OperationFailedConfigurator(
             ICodec codec, ProjectionManagementMessage.OperationFailed message)
         {
-            return new ResponseConfiguration(500, "Failed", "text/plain");
+            return new ResponseConfiguration(500, "Failed", "text/plain", Encoding.UTF8);
         }
 
         private string OperationFailedFormatter(ICodec codec, ProjectionManagementMessage.OperationFailed message)

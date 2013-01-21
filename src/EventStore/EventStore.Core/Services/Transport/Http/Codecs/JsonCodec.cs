@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Text;
 using EventStore.Common.Log;
 using EventStore.Transport.Http;
 using Newtonsoft.Json;
@@ -57,6 +58,7 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
 
 
         public string ContentType { get { return EventStore.Transport.Http.ContentType.Json; } }
+        public Encoding Encoding { get { return Encoding.UTF8; } }
 
         public bool CanParse(string format)
         {

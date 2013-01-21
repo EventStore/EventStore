@@ -45,16 +45,16 @@ namespace EventStore.BufferManagement.Tests
     [TestFixture]
     public class when_instantiating_a_bufferpool : has_buffer_manager_fixture
     {
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void a_negative_initial_buffers_throws_an_argumentexception()
         {
-            BufferPool pool = new BufferPool(-1, BufferManager);
+            Assert.Throws<ArgumentException>(() => new BufferPool(-1, BufferManager));
         }
 
-        [Test, ExpectedException(typeof(ArgumentNullException))]
+        [Test]
         public void a_null_buffer_manager_throws_an_argumentnullexception()
         {
-            BufferPool pool = new BufferPool(12, null);
+            Assert.Throws<ArgumentNullException>(() => new BufferPool(12, null));
         }
 
         [Test]
@@ -67,20 +67,20 @@ namespace EventStore.BufferManagement.Tests
         [Test]
         public void the_requested_buffers_should_be_removed_from_the_buffer_manager()
         {
-            int InitialBuffers = BufferManager.AvailableBuffers;
-            BufferPool pool = new BufferPool(10, BufferManager);
-            Assert.AreEqual(InitialBuffers - 10, BufferManager.AvailableBuffers);
+            int initialBuffers = BufferManager.AvailableBuffers;
+            new BufferPool(10, BufferManager);
+            Assert.AreEqual(initialBuffers - 10, BufferManager.AvailableBuffers);
         }
     }
 
     [TestFixture]
     public class when_changing_data_in_a_bufferpool_via_indexer : has_buffer_manager_fixture
     {
-        [Test, ExpectedException(typeof(ArgumentException))]
+        [Test]
         public void an_index_under_zero_throws_an_argument_exception()
         {
             BufferPool pool = new BufferPool(12, BufferManager);
-            pool[-1] = 4;
+            Assert.Throws<ArgumentException>(() => pool[-1] = 4);
         }
 
         [Test]
@@ -226,7 +226,7 @@ namespace EventStore.BufferManagement.Tests
         public void if_the_index_is_past_the_length_an_argumentoutofrangeexception_is_thrown()
         {
             BufferPool pool = new BufferPool(1, BufferManager);
-            byte b = pool[3];
+            var b = pool[3];
         }
     }
 
@@ -238,7 +238,7 @@ namespace EventStore.BufferManagement.Tests
         public void buffers_are_released_back_to_the_buffer_pool()
         {
             int initial = BufferManager.AvailableBuffers;
-            using (BufferPool pool = new BufferPool(20, BufferManager))
+            using (new BufferPool(20, BufferManager))
             {
                 //sanity check (make sure they are actually gone)
                 Assert.AreEqual(initial - 20, BufferManager.AvailableBuffers);

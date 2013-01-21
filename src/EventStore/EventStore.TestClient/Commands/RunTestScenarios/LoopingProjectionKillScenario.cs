@@ -106,8 +106,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var expectedAllEventsCount = (Streams * EventsPerStream).ToString();
             var expectedEventsPerStream = EventsPerStream.ToString();
 
-            var manager = GetProjectionsManager();
-
             var successTask = Task.Factory.StartNew(() => 
                 {
                     var success = false;

@@ -50,7 +50,13 @@ namespace EventStore.Common.Options
         public const string ConfigsDescr = "Configuration files.";
         public static readonly string[] ConfigsDefault = new string[0];
 
-        public const string ShowHelpCmd = "help";
+        public const string DefinesCmd = "def|define=";
+        public const string DefinesEnv = "DEFINES";
+        public const string DefinesJson = "defines";
+        public const string DefinesDescr = "Run-time conditionals.";
+        public static readonly string[] DefinesDefault = new string[0];
+
+        public const string ShowHelpCmd = "?|help";
         public const string ShowHelpEnv = null;
         public const string ShowHelpJson = null;
         public const string ShowHelpDescr = "Show help.";
