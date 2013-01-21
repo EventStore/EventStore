@@ -45,6 +45,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
+      <Project>{b4c9be3d-43b1-4049-a23a-5dc53db3f0b0}</Project>
+      <Name>EventStore.Common</Name>
+    </ProjectReference>
     <ProjectReference Include="..\EventStore.Web\EventStore.Web.csproj">
       <Project>{68065B8C-0FDC-473F-9C32-54078E32FD5C}</Project>
       <Name>EventStore.Web</Name>

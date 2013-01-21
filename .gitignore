@@ -16,6 +16,8 @@ ipch/
 /src/Public/ipch/
 /research/ci/CompatibilityInfo
 
+src/EventStore/EventStore.Common/Properties/AssemblyVersion.cs
+
 *.o
 *.ii
 *.s
