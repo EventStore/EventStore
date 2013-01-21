@@ -32,6 +32,7 @@ namespace EventStore.Common.Options
         bool ShowHelp { get; }
         bool ShowVersion { get; }
         string LogsDir { get; }
+        string[] Defines { get; }
 
         void Parse(params string[] args);
         string DumpOptions();

@@ -84,7 +84,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionSubscriptionManagement.Subscribe>(_coreService);
             _bus.Subscribe<ProjectionSubscriptionManagement.Unsubscribe>(_coreService);
             
-
             Given();
             When();
         }

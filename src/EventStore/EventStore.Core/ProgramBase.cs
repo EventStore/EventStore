@@ -56,12 +56,6 @@ namespace EventStore.Core
 
         public int Run(string[] args)
         {
-            if (args.Length == 1 && (args[0] == "--help" || args[0] == "/?"))
-            {
-                Console.WriteLine(new TOptions().GetUsage());
-                return 0;
-            }
-
             var options = new TOptions();
             try
             {
@@ -124,6 +118,8 @@ namespace EventStore.Core
 
         private void Init(TOptions options)
         {
+            Application.AddDefines(options.Defines);
+
             var projName = Assembly.GetEntryAssembly().GetName().Name.Replace(".", " - ");
             var componentName = GetComponentName(options);
 

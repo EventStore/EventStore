@@ -933,8 +933,8 @@ namespace EventStore.Common.Options
         {
             Action<T> action;
 
-            public ActionOption(string prototype, string description, Action<T> action)
-                : base(prototype, description, 1)
+            public ActionOption(string prototype, string description, Action<T> action, bool hidden)
+                : base(prototype, description, 1, hidden)
             {
                 if (action == null)
                     throw new ArgumentNullException("action");
@@ -951,8 +951,8 @@ namespace EventStore.Common.Options
         {
             OptionAction<TKey, TValue> action;
 
-            public ActionOption(string prototype, string description, OptionAction<TKey, TValue> action)
-                : base(prototype, description, 2)
+            public ActionOption(string prototype, string description, OptionAction<TKey, TValue> action, bool hidden)
+                : base(prototype, description, 2, hidden)
             {
                 if (action == null)
                     throw new ArgumentNullException("action");
@@ -972,9 +972,9 @@ namespace EventStore.Common.Options
             return Add(prototype, null, action);
         }
 
-        public OptionSet Add<T>(string prototype, string description, Action<T> action)
+        public OptionSet Add<T>(string prototype, string description, Action<T> action, bool hidden = false)
         {
-            return Add(new ActionOption<T>(prototype, description, action));
+            return Add(new ActionOption<T>(prototype, description, action, hidden));
         }
 
         public OptionSet Add<TKey, TValue>(string prototype, OptionAction<TKey, TValue> action)
@@ -982,9 +982,9 @@ namespace EventStore.Common.Options
             return Add(prototype, null, action);
         }
 
-        public OptionSet Add<TKey, TValue>(string prototype, string description, OptionAction<TKey, TValue> action)
+        public OptionSet Add<TKey, TValue>(string prototype, string description, OptionAction<TKey, TValue> action, bool hidden = false)
         {
-            return Add(new ActionOption<TKey, TValue>(prototype, description, action));
+            return Add(new ActionOption<TKey, TValue>(prototype, description, action, hidden));
         }
 
         public OptionSet Add(ArgumentSource source)

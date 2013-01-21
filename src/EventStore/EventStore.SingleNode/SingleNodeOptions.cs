@@ -36,6 +36,7 @@ namespace EventStore.SingleNode
         public bool ShowVersion { get { return _helper.Get(() => ShowVersion); } }
         public string LogsDir { get { return _helper.Get(() => LogsDir); } }
         public string[] Configs { get { return _helper.Get(() => Configs); } }
+        public string[] Defines { get { return _helper.Get(() => Defines); } }
 
         public IPAddress Ip { get { return _helper.Get(() => Ip); } }
         public int TcpPort { get { return _helper.Get(() => TcpPort); } }
@@ -62,6 +63,7 @@ namespace EventStore.SingleNode
             _helper.Register(() => ShowVersion, Opts.ShowVersionCmd, Opts.ShowVersionEnv, Opts.ShowVersionJson, Opts.ShowVersionDefault, Opts.ShowVersionDescr);
             _helper.RegisterRef(() => LogsDir, Opts.LogsCmd, Opts.LogsEnv, Opts.LogsJson, Opts.LogsDefault, Opts.LogsDescr);
             _helper.RegisterArray(() => Configs, Opts.ConfigsCmd, Opts.ConfigsEnv, ",", Opts.ConfigsJson, Opts.ConfigsDefault, Opts.ConfigsDescr);
+            _helper.RegisterArray(() => Defines, Opts.DefinesCmd, Opts.DefinesEnv, ",", Opts.DefinesJson, Opts.DefinesDefault, Opts.DefinesDescr, hidden: true);
 
             _helper.RegisterRef(() => Ip, "i|ip=", "IP", "ip", IPAddress.Loopback, "The IP address to bind to.");
             _helper.Register(() => TcpPort, "t|tcp-port=", "TCP_PORT", "tcpPort", 1113, "The port to run the TCP server on.");

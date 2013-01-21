@@ -74,7 +74,7 @@ namespace EventStore.Common.Options
         }
         
         public void Register<T>(Expression<Func<T>> member, string cmdPrototype, string envName, string jsonPath,
-                                T? @default = null, string description = null)
+                                T? @default = null, string description = null, bool hidden = false)
             where T : struct
         {
             Ensure.NotNull(member, "member");
@@ -89,7 +89,7 @@ namespace EventStore.Common.Options
                                                      (bool?)(object)@default);
                 _optionContainers.Add(optionName, option);
                 if (cmdPrototype.IsNotEmptyString())
-                    _optionSet.Add(cmdPrototype, description, option.ParsingFromCmdLine);
+                    _optionSet.Add(cmdPrototype, description, option.ParsingFromCmdLine, hidden);
             }
             else
             {
@@ -101,12 +101,12 @@ namespace EventStore.Common.Options
                                                          @default ?? default(T));
                 _optionContainers.Add(optionName, option);
                 if (cmdPrototype.IsNotEmptyString())
-                    _optionSet.Add(cmdPrototype, description, (T value) => option.ParsingFromCmdLine(value));
+                    _optionSet.Add(cmdPrototype, description, (T value) => option.ParsingFromCmdLine(value), hidden);
             }
         }
 
-        public void RegisterRef<T>(Expression<Func<T>> member, string cmdPrototype, string envName, string jsonPath, 
-                                   T @default = null, string description = null) 
+        public void RegisterRef<T>(Expression<Func<T>> member, string cmdPrototype, string envName, string jsonPath,
+                                   T @default = null, string description = null, bool hidden = false) 
             where T : class
         {
             Ensure.NotNull(member, "member");
@@ -120,11 +120,11 @@ namespace EventStore.Common.Options
                                                      @default);
             _optionContainers.Add(optionName, option);
             if (cmdPrototype.IsNotEmptyString())
-                _optionSet.Add(cmdPrototype, description, (T value) => option.ParsingFromCmdLine(value));
+                _optionSet.Add(cmdPrototype, description, (T value) => option.ParsingFromCmdLine(value), hidden);
         }
 
-        public void RegisterArray<T>(Expression<Func<T[]>> member, string cmdPrototype, string envName, string separator, 
-                                     string jsonPath, T[] @default = null, string description = null)
+        public void RegisterArray<T>(Expression<Func<T[]>> member, string cmdPrototype, string envName, string separator,
+                                     string jsonPath, T[] @default = null, string description = null, bool hidden = false)
         {
             Ensure.NotNull(member, "member");
 
@@ -137,7 +137,7 @@ namespace EventStore.Common.Options
                                                      @default);
             _optionContainers.Add(optionName, option);
             if (cmdPrototype.IsNotEmptyString())
-                _optionSet.Add(cmdPrototype, description, (T value) => option.ParsingFromCmdLine(value));
+                _optionSet.Add(cmdPrototype, description, (T value) => option.ParsingFromCmdLine(value), hidden);
         }
 
         private string GetEnvVarName(string envVarName)
