@@ -85,6 +85,12 @@ General UI
     display: none;
 }
 
+.container {
+    width: auto;
+    margin-left: 50px;
+    margin-right: 50px;
+}
+
 .error {
 	min-width: 40%;
 	margin: 10px auto;

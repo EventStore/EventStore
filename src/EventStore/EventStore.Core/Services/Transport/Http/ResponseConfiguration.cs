@@ -35,8 +35,7 @@ namespace EventStore.Core.Services.Transport.Http
         public readonly int Code;
         public readonly string Description;
         public readonly string ContentType;
-        private readonly Encoding _encoding;
-
+        public readonly Encoding Encoding;
         public readonly IEnumerable<KeyValuePair<string, string>> Headers;
 
         public ResponseConfiguration(int code, string description, string contentType, Encoding encoding, params KeyValuePair<string, string>[] headers)
@@ -49,13 +48,8 @@ namespace EventStore.Core.Services.Transport.Http
             Code = code;
             Description = description;
             ContentType = contentType;
-            _encoding = encoding;
+            Encoding = encoding;
             Headers = headers;
-        }
-
-        public Encoding Encoding
-        {
-            get { return _encoding; }
         }
     }
 }
