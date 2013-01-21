@@ -11,7 +11,7 @@
 
         $.templates("editSourceTemplate", "#editSourceTemplate");
         projectionStatusUrl = location.hash.substr(1);
-
+        console.log(projectionStatusUrl);
         $('#update-button').click(function (ev) {
             $.ajax(projectionStatusUrl + "/query", {
                 headers: {
