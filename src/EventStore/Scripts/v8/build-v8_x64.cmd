@@ -50,12 +50,12 @@ exit /b 0
 :copy-files
 	
     pushd build\Debug\lib  || goto :error
-    mkdir ..\..\..\..\Libs\x64 || goto :error
+    mkdir ..\..\..\..\Libs\x64
     copy *.lib ..\..\..\..\Libs\x64 || goto: error
     popd || goto :error
 
     pushd include || goto :error
-    mkdir ..\..\Libs\include || goto :error
+    mkdir ..\..\Libs\include
     copy *.h ..\..\Libs\include || goto: error
     popd || goto :error
 
