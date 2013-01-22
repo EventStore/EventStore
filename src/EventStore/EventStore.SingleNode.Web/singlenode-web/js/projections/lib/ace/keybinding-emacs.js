@@ -28,7 +28,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-ace.define('ace/keyboard/emacs', ['require', 'exports', 'module' , 'ace/lib/dom', 'ace/keyboard/hash_handler', 'ace/lib/keys'], function(require, exports, module) {
+define('ace/keyboard/emacs', ['require', 'exports', 'module' , 'ace/lib/dom', 'ace/keyboard/hash_handler', 'ace/lib/keys'], function(require, exports, module) {
 
 
 var dom = require("../lib/dom");

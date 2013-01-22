@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Text;
 using EventStore.Transport.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Codecs
@@ -34,6 +35,7 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
     public class ManualEncoding : ICodec
     {
         public string ContentType { get { throw new InvalidOperationException(); } }
+        public Encoding Encoding { get { throw new InvalidOperationException(); } }
 
         public bool CanParse(string format)
         {

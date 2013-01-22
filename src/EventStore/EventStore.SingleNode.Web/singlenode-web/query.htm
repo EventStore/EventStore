@@ -1,7 +1,7 @@
 ﻿<!doctype html>
 <html>
 <head>
-    <title>Change Projection</title>
+    <title>Query</title>
     <script src="/web/es/lib/jquery/jquery-1.8.0.min.js" type="text/javascript"></script>
     <script src="/web/es/lib/jsrender/jsrender.js" type="text/javascript"></script>
     <script src="/web/es/lib/require-full.js" type="text/javascript"></script>
@@ -10,28 +10,20 @@
     <script id="r-head">
         es.tmpl.renderHead();
     </script>
-    <style>
-        .container
-        {
-            width: inherit;
-            margin-left: 50px;
-            margin-right: 50px;
-        }
-    </style>
 </head>
 <body>
     <div id="content">
-        <h1>Change Projection</h1>
-        <h3><span id="projection-name"></span> - <span id="status"></span></h3>
+        <h1>Query</h1>
+        <h3><span id="status"></span></h3>
         <div id="message" class="error" style="display: none;"></div>
         <div class="row">
             <div class="span12">
                 <div id="commands-container">
                     <ul style="display: inline;">
-                        <li><a href="#" id="btn-run" class="btn btn-success">Start</a></li>
-                        <li><a href="#" id="btn-break" class="btn btn-danger">Stop</a></li>
-                        <li>    </li>
-                        <li><a href="#" id="btn-save" class="btn btn-info">Save</a></li>
+                        <li><a href="#" id="btn-run" class="btn btn-success">Run</a></li>
+                        <li><a href="#" id="btn-break" class="btn btn-danger">Break</a></li>
+                        <li>     </li>
+                        <li><a href="#" id="btn-debug" class="btn btn-info">Debug</a></li>
                     </ul>
                 </div>
             </div>
@@ -45,7 +37,46 @@
                         <label class="control-label" for="ace-source">
                             <strong>Source</strong></label>
                         <div class="uneditable-input" style="position: relative; display: block; height: 500px; margin-bottom: 0px; ">
-                            <div id="ace-source" style="position: absolute; left: 0px; right: 0px; top: 0px; bottom: 0px;" spellcheck="false" wrap="off"></div>
+                            <div id="ace-source" style="position: absolute; left: 0px; right: 0px; top: 0px; bottom: 0px;" spellcheck="false" wrap="off">
+    // NOTE: this sample query immediately stops unless you have 
+    // either event_type1 or event_type1 events in the store
+    options({
+                useEventIndexes: true,            // makes a fromAll() projection to use event indexes 
+                                                  // NOTE: $by_event_type standard projection should be enabled
+                // reorderEvents: false,          // enables event reordering in a multi-stream projection
+                                                  // event reordering atempts to feed the projection with events in a 
+                                                  // their natural order
+                // processingLag: 0,              // processing lag in ms allowing event reordering to happen
+    });
+
+    fromAll() 
+    // fromStream('streamId') | fromStreams(['sream1', 'stream2']) | fromCategory('category')
+       //NOTE: fromCategory requires $by_category standard projection to be enabled
+
+    // .foreachStream() | .paritionBy(function(e) { return e.body.useId; })
+
+    .when({
+        $init: function () {
+            return { count1: 0, count2: 0, }; // initial state
+        },
+      
+        event_type1: function(s, e) {
+            s.count1 += 1;
+            return s;
+        },
+                        
+        event_type2: function(s, e) {
+            s.count2 += 1;
+            return s;
+        },
+                        
+                        
+        /* $any: function (s, e) ... // NOTE: $any is exclusive and cannot be used in combination with 
+                                     // other event filters
+        */
+    })
+                                
+                            </div>
                         </div>
 
                     </div>
@@ -65,14 +96,6 @@
             </div>
         </div>
 
-        <div>
-            <div class="control-group">
-                <label class="control-label" for="emit"><strong>Emit Enabled</strong></label>
-                <div class="controls">
-                    <input type="checkbox" id="emit" /></div>
-            </div>
-        </div>
-
         <script id="r-body">
             es.tmpl.renderBody();
         </script>
@@ -82,21 +105,24 @@
         require.config({ baseUrl: "/web/es/js" });
         require(['projections/Observer', 'projections/Controller', 'projections/ui/Editor'],
             function (observer, controller, editor) {
-                $(function () {
-                    var projectionStatusUrl = location.hash.substr(1);
-
-                    var projectionEditor = editor.create(projectionStatusUrl, {
+                $(function() {
+                    var controls = {
                         status: $("#status"),
-                        name: $("#projection-name"),
                         source: $("#ace-source"),
                         state: $("#state"),
                         message: $("#message"),
-                        emit: $("#emit"),
                         start: $("#btn-run"),
                         stop: $("#btn-break"),
                         save: $("#btn-save"),
-                    });
-
+                        debug: $("#btn-debug"),
+                    };
+                    var url = window.location.hash.substr(1);
+                    var projectionEditor;
+                    if (url) {
+                        projectionEditor = editor.openQuery(url, controls);
+                    } else {
+                        projectionEditor = editor.createQuery(controls);
+                    }
                     projectionEditor.bind();
                 });
         });

@@ -78,7 +78,7 @@ namespace js1
 		v8::Persistent<v8::Context> temp_context = v8::Context::New();
 		v8::Context::Scope temp_context_scope(temp_context);
 
-		v8::Handle<v8::Value> query_script_wrap = v8::External::Wrap(this);
+		v8::Handle<v8::Value> query_script_wrap = v8::External::New(this);
 
 		std::vector<v8::Handle<v8::Value> > arguments(2);
 		arguments[0] = v8::FunctionTemplate::New(on_callback, query_script_wrap)->GetFunction();
@@ -139,15 +139,15 @@ namespace js1
 
 	v8::Handle<v8::Value> QueryScript::on_callback(const v8::Arguments& args) 
 	{
-		v8::Handle<v8::Value> data = args.Data();
-		QueryScript *query_script = reinterpret_cast<QueryScript *>(v8::External::Unwrap(data));
+		v8::Handle<v8::External> data = args.Data().As<v8::External>();
+		QueryScript *query_script = reinterpret_cast<QueryScript *>(data->Value());
 		return query_script->on(args);
 	};
 
 	v8::Handle<v8::Value> QueryScript::notify_callback(const v8::Arguments& args) 
 	{
-		v8::Handle<v8::Value> data = args.Data();
-		QueryScript *query_script = reinterpret_cast<QueryScript *>(v8::External::Unwrap(data));
+		v8::Handle<v8::External> data = args.Data().As<v8::External>();
+		QueryScript *query_script = reinterpret_cast<QueryScript *>(data->Value());
 		return query_script->notify(args);
 	};
 

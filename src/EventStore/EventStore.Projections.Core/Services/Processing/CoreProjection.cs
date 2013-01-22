@@ -323,6 +323,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         internal void Complete()
         {
+            if (_state != State.Running)
+                return;
             if (!_projectionConfig.StopOnEof)
                 throw new InvalidOperationException("!_projectionConfig.StopOnEof");
             _completed = true;

@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -44,57 +45,58 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration Ok(string contentType)
         {
-            return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType);
+            return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType, Encoding.UTF8);
         }
 
-        public static ResponseConfiguration OkCache(string contentType, int seconds)
+        public static ResponseConfiguration OkCache(string contentType, Encoding encoding, int seconds)
         {
             return new ResponseConfiguration(
                 HttpStatusCode.OK,
                 "OK",
                 contentType,
+                encoding, 
                 new KeyValuePair<string, string>("Cache-Control", string.Format("max-age={0}, public", seconds)),
                 new KeyValuePair<string, string>("Vary", "Accept"));
         }
 
-        public static ResponseConfiguration OkNoCache(string contentType, params KeyValuePair<string, string>[] headers)
+        public static ResponseConfiguration OkNoCache(string contentType, Encoding encoding, params KeyValuePair<string, string>[] headers)
         {
-            return OkNoCache(contentType, null, headers);
+            return OkNoCache(contentType, encoding, null, headers);
         }
 
-        public static ResponseConfiguration OkNoCache(string contentType, string etag, params KeyValuePair<string, string>[] headers)
+        public static ResponseConfiguration OkNoCache(string contentType, Encoding encoding, string etag, params KeyValuePair<string, string>[] headers)
         {
             var headrs = new List<KeyValuePair<string, string>>(headers);
             headrs.Add(new KeyValuePair<string, string>("Cache-Control", "max-age=0, no-cache, must-revalidate"));
             headrs.Add(new KeyValuePair<string, string>("Vary", "Accept"));
             if (etag.IsNotEmptyString())
                 headrs.Add(new KeyValuePair<string, string>("ETag", string.Format("\"{0}\"", etag + ";" + contentType.GetHashCode())));
-            return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType, headrs);
+            return new ResponseConfiguration(HttpStatusCode.OK, "OK", contentType, encoding, headrs);
         }
 
         public static ResponseConfiguration NotFound()
         {
-            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", null);
+            return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", null, Encoding.UTF8);
         }
 
         public static ResponseConfiguration Gone(string description = null)
         {
-            return new ResponseConfiguration(HttpStatusCode.Gone, description ?? "Deleted", null);
+            return new ResponseConfiguration(HttpStatusCode.Gone, description ?? "Deleted", null, Encoding.UTF8);
         }
 
         public static ResponseConfiguration NotModified()
         {
-            return new ResponseConfiguration(HttpStatusCode.NotModified, "Not Modified", null);
+            return new ResponseConfiguration(HttpStatusCode.NotModified, "Not Modified", null, Encoding.UTF8);
         }
 
         public static ResponseConfiguration BadRequest(string description = null)
         {
-            return new ResponseConfiguration(HttpStatusCode.BadRequest, description ?? "Bad Request", null);
+            return new ResponseConfiguration(HttpStatusCode.BadRequest, description ?? "Bad Request", null, Encoding.UTF8);
         }
 
         public static ResponseConfiguration InternalServerError(string description = null)
         {
-            return new ResponseConfiguration(HttpStatusCode.InternalServerError, description ?? "Internal Server Error", null);
+            return new ResponseConfiguration(HttpStatusCode.InternalServerError, description ?? "Internal Server Error", null, Encoding.UTF8);
         }
 
         public static ResponseConfiguration ReadEventCompleted(HttpResponseConfiguratorArgs entity, Message message)
@@ -108,7 +110,7 @@ namespace EventStore.Core.Services.Transport.Http
             switch (completed.Result)
             {
                 case ReadEventResult.Success:
-                    return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
+                    return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
                 case ReadEventResult.NotFound:
                 case ReadEventResult.NoStream:
                     return NotFound();
@@ -132,8 +134,8 @@ namespace EventStore.Core.Services.Transport.Http
                 case ReadStreamResult.Success:
                 {
                     if (msg.LastEventNumber >= msg.FromEventNumber && !headOfStream)
-                        return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
-                    return OkNoCache(entity.ResponseCodec.ContentType, msg.LastEventNumber.ToString(CultureInfo.InvariantCulture));
+                        return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
+                    return OkNoCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, msg.LastEventNumber.ToString(CultureInfo.InvariantCulture));
                 }
                 case ReadStreamResult.NoStream:
                     return NotFound();
@@ -164,6 +166,7 @@ namespace EventStore.Core.Services.Transport.Http
                         HttpStatusCode.Created,
                         "Created",
                         null,
+                        Encoding.UTF8,
                         new KeyValuePair<string, string>("Location",
                                                          HostName.Combine(entity.UserHostName,
                                                                           "/streams/{0}/{1}",
@@ -193,7 +196,7 @@ namespace EventStore.Core.Services.Transport.Http
             if (completed == null)
                 return InternalServerError();
 
-            return completed.Success ? OkNoCache(entity.ResponseCodec.ContentType) : NotFound();
+            return completed.Success ? OkNoCache(entity.ResponseCodec.ContentType, Encoding.UTF8) : NotFound();
         }
 
         public static ResponseConfiguration CreateStreamCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)
@@ -212,6 +215,7 @@ namespace EventStore.Core.Services.Transport.Http
                         HttpStatusCode.Created,
                         "Stream created",
                         null,
+                        Encoding.UTF8,
                         new KeyValuePair<string, string>("Location",
                                                          HostName.Combine(entity.UserHostName,
                                                                           "/streams/{0}",
@@ -242,7 +246,7 @@ namespace EventStore.Core.Services.Transport.Http
             switch (completed.Result)
             {
                 case OperationResult.Success:
-                    return new ResponseConfiguration(HttpStatusCode.NoContent, "Stream deleted", null);
+                    return new ResponseConfiguration(HttpStatusCode.NoContent, "Stream deleted", null, Encoding.UTF8);
 
                 case OperationResult.PrepareTimeout:
                 case OperationResult.CommitTimeout:
@@ -269,8 +273,8 @@ namespace EventStore.Core.Services.Transport.Http
             if (msg.NotModified)
                 return NotModified();
             if (!headOfTf && msg.Result.CurrentPos.CommitPosition <= msg.Result.TfEofPosition)
-                return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
-            return OkNoCache(entity.ResponseCodec.ContentType, msg.Result.TfEofPosition.ToString(CultureInfo.InvariantCulture));
+                return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
+            return OkNoCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, msg.Result.TfEofPosition.ToString(CultureInfo.InvariantCulture));
         }
 
         public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
@@ -283,8 +287,8 @@ namespace EventStore.Core.Services.Transport.Http
             if (msg.NotModified)
                 return NotModified();
             if (!headOfTf && msg.Result.Events.Length == msg.Result.MaxCount)
-                return OkCache(entity.ResponseCodec.ContentType, MaxPossibleAge);
-            return OkNoCache(entity.ResponseCodec.ContentType, msg.Result.TfEofPosition.ToString(CultureInfo.InvariantCulture));
+                return OkCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, MaxPossibleAge);
+            return OkNoCache(entity.ResponseCodec.ContentType, entity.ResponseCodec.Encoding, msg.Result.TfEofPosition.ToString(CultureInfo.InvariantCulture));
         }
     }
 }

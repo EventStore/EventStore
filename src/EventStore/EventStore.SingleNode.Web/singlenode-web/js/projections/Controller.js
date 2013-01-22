@@ -2,62 +2,106 @@
 // projection monitor
 define(function () {
     //TODO: handle errors
-    return {
-        create: function (baseUrl, observer) {
-            var commandErrorHandler = null;
 
-            function postCommand(command, success) {
-                $.ajax(baseUrl + "/command/" + command, {
-                    headers: {
-                        Accept: "application/json",
-                    },
-                    type: "POST",
-                    success: successPostCommand(success),
-                    error: errorPostCommand,
-                });
-            }
+    function internalCreate(mode, url, observer) {
+        var baseUrl = url;
+        var created = (mode === "projection") || (mode === "query" && url);
+        var commandErrorHandler = null;
 
-            function postSource(source, emit, success) {
-                var params = $.param({
-                    emit: emit ? "yes" : "no",
-                });
-                $.ajax(baseUrl + "/query?" + params, {
-                    headers: {
-                        Accept: "application/json",
-                    },
+        function postCommand(command, success) {
+            $.ajax(baseUrl + "/command/" + command, {
+                headers: {
+                    Accept: "application/json",
+                },
+                type: "POST",
+                success: successPostCommand(success),
+                error: errorPostCommand,
+            });
+        }
 
-                    type: "PUT",
-                    data: source,
-                    success: successPostCommand(success),
-                    error: errorPostCommand,
-                });
-            }
+        function postSource(source, emit, success) {
+            var params = $.param({
+                emit: emit ? "yes" : "no",
+            });
+            $.ajax(baseUrl + "/query?" + params, {
+                headers: {
+                    Accept: "application/json",
+                },
 
-            function successPostCommand(success) {
-                return function (data, status, xhr) {
-                    if (success)
-                        success();
-                    if (observer)
-                        observer.poll();
-                };
-            }
+                type: "PUT",
+                data: source,
+                success: successPostCommand(success),
+                error: errorPostCommand,
+            });
+        }
 
-            function errorPostCommand(xhr, status, error) {
+        function postNew(source, emit, success) {
+
+            var params = $.param({
+                emit: "no",
+                checkpoints: "no",
+                enabled: "no",
+            });
+
+            var url = "/projections/transient?" + params;
+
+            $.ajax(url, {
+                headers: {
+                    Accept: "application/json",
+                },
+                data: source,
+                type: 'POST',
+                success: function (data, textStatus, jqXHR) {
+                    created = true;
+                    baseUrl = jqXHR.getResponseHeader('Location');
+                    observer.configureUrl(baseUrl);
+                    successPostCommand(success)(data, textStatus, jqXHR);
+                },
+                error: errorPostCommand,
+            });
+        }
+
+        function successPostCommand(success) {
+            return function (data, status, xhr) {
+                if (success)
+                    success();
                 if (observer)
                     observer.poll();
-            }
-
-            return {
-                start: function (success) {
-                    postCommand("enable", success);
-                },
-                stop: function (success) {
-                    postCommand("disable", success);
-                },
-                update: function (query, emit, success) {
-                    postSource(query, emit, success);
-                }
             };
+        }
+
+        function errorPostCommand(xhr, status, error) {
+            if (observer)
+                observer.poll();
+        }
+
+        return {
+            start: function (success) {
+                if (created)
+                    postCommand("enable", success);
+            },
+            stop: function (success) {
+                if (created)
+                    postCommand("disable", success);
+            },
+            update: function (query, emit, success) {
+                if (created)
+                    postSource(query, emit, success);
+                else
+                    postNew(query, emit, success);
+            }
+        };
+    }
+
+    return {
+        create: function(url, observer) {
+            return internalCreate("projection", url, observer);
+        },
+        createQuery: function(observer) {
+            return internalCreate("query", null, observer);
+        },
+        openQuery: function(url, observer) {
+            return internalCreate("query", url, observer);
         }
     };
 });

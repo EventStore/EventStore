@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Text;
 using EventStore.Transport.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Codecs
@@ -34,6 +35,7 @@ namespace EventStore.Core.Services.Transport.Http.Codecs
     public class NoCodec : ICodec
     {
         public string ContentType { get { throw new NotSupportedException(); } }
+        public Encoding Encoding { get { throw new NotSupportedException(); } }
 
         public bool CanParse(string format)
         {
