@@ -63,15 +63,15 @@ exit /b 0
   pushd . || goto :error
   if not exist %to% (
       echo Checking out %what% ...
-      git.exe clone  %from% %to% || goto :error
+      call git clone  %from% %to% || goto :error
       cd %to% || goto :error
   ) else (
       cd %to% || goto :error
       echo Updating %what% ...
-      git.exe checkout master || goto :error
-      git.exe pull || goto :error
+      call git checkout master || goto :error
+      call git pull || goto :error
   )
-  git.exe checkout %rev%
+  call git checkout %rev%
   popd || goto :error
 
 exit /b 0
