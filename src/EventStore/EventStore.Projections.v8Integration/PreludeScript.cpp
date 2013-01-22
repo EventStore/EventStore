@@ -90,8 +90,8 @@ namespace js1
 	{
 		//TODO: move actual callbacks out of this script into C# code
 		v8::Persistent<v8::ObjectTemplate> prelude = v8::Persistent<v8::ObjectTemplate>::New(v8::ObjectTemplate::New());
-		prelude->Set(v8::String::New("$log"), v8::FunctionTemplate::New(log_callback, v8::External::Wrap(this)));
-		prelude->Set(v8::String::New("$load_module"), v8::FunctionTemplate::New(load_module_callback, v8::External::Wrap(this)));
+		prelude->Set(v8::String::New("$log"), v8::FunctionTemplate::New(log_callback, v8::External::New(this)));
+		prelude->Set(v8::String::New("$load_module"), v8::FunctionTemplate::New(load_module_callback, v8::External::New(this)));
 		return prelude;
 	}
 
@@ -115,8 +115,8 @@ namespace js1
 
 		// TODO: do we need to check argument data type?
 
-		v8::Handle<v8::Value> data = args.Data();
-		PreludeScript *prelude = reinterpret_cast<PreludeScript *>(v8::External::Unwrap(data));
+		v8::Handle<v8::External> data = args.Data().As<v8::External>();
+		PreludeScript *prelude = reinterpret_cast<PreludeScript *>(data->Value());
 
 		//TODO: make sure correct value type passed
 		v8::String::Value message(args[0].As<v8::String>());
@@ -136,8 +136,8 @@ namespace js1
 		if (!args[0]->IsString()) 
 			return v8::ThrowException(v8::Exception::Error(v8::String::New("The 'load_module' handler argument must be a string")));
 
-		v8::Handle<v8::Value> data = args.Data();
-		PreludeScript *prelude = reinterpret_cast<PreludeScript *>(v8::External::Unwrap(data));
+		v8::Handle<v8::External> data = args.Data().As<v8::External>();
+		PreludeScript *prelude = reinterpret_cast<PreludeScript *>(data->Value());
 
 		//TODO: make sure correct value type passed
 		v8::String::Value module_name(args[0].As<v8::String>());

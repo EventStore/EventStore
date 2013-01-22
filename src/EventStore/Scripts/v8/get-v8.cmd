@@ -19,7 +19,8 @@ exit /b 1
 :a8140cb930617054ed0487e6e1287c81cd51718e
 
 :get-v8
-  call :get-from-git V8 https://github.com/v8/v8.git v8 0140fb7c08054e6ef1bdfeffebd2eff7b57749ab || goto :error
+  : this is 3.16.7
+  call :get-from-git V8 https://github.com/v8/v8.git v8 ba55532e3bfbdccec1f5e09a420aad61e1f1a287 || goto :error
 exit /b 0
 
 :get-python
