@@ -106,16 +106,14 @@ namespace EventStore.Core.TransactionLog.Chunks
             var commits = new Dictionary<long, CommitInfo>();
 
             TraverseChunk(oldChunk,
-                          prepare =>
-                          {
-                              // NOOP
-                          },
+                          prepare => { /* NOOP */ },
                           commit =>
                           {
                               if (commit.TransactionPosition < chunkStartPosition)
                                   return;
                               commits.Add(commit.TransactionPosition, new CommitInfo(commit));
-                          });
+                          },
+                          system => { /* NOOP */ });
 
             var positionMapping = new List<PosMap>();
             TraverseChunk(oldChunk,
@@ -134,6 +132,12 @@ namespace EventStore.Core.TransactionLog.Chunks
                                   var posMap = WriteRecord(newChunk, commit);
                                   positionMapping.Add(posMap);
                               }
+                          },
+                          system =>
+                          {
+                              // we always keep system log records for now
+                                var posMap = WriteRecord(newChunk, system);
+                                positionMapping.Add(posMap);
                           });
 
             var oldSize = oldChunk.ChunkFooter.ActualChunkSize + oldChunk.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
@@ -312,7 +316,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             return true;
         }
 
-        private void TraverseChunk(TFChunk.TFChunk chunk, Action<PrepareLogRecord> processPrepare, Action<CommitLogRecord> processCommit)
+        private void TraverseChunk(TFChunk.TFChunk chunk, 
+                                   Action<PrepareLogRecord> processPrepare, 
+                                   Action<CommitLogRecord> processCommit,
+                                   Action<SystemLogRecord> processSystem)
         {
             var result = chunk.TryReadFirst();
             while (result.Success)
@@ -330,6 +337,12 @@ namespace EventStore.Core.TransactionLog.Chunks
                     {
                         var commit = (CommitLogRecord)record;
                         processCommit(commit);
+                        break;
+                    }
+                    case LogRecordType.System:
+                    {
+                        var system = (SystemLogRecord)record;
+                        processSystem(system);
                         break;
                     }
                     default:

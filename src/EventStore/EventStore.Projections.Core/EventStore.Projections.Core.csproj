@@ -90,7 +90,6 @@
       <Link>Properties\AssemblyVersion.cs</Link>
     </Compile>
     <Compile Include="EventPosition.cs" />
-    <Compile Include="Json.cs" />
     <Compile Include="Messages\CoreProjectionManagementMessage.cs" />
     <Compile Include="Messages\CoreProjectionProcessingMessage.cs" />
     <Compile Include="Messages\ICoreProjection.cs" />

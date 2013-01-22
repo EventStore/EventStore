@@ -142,6 +142,8 @@ namespace EventStore.Core.Services.Storage
                             _queueStats.ProcessingEnded(1);
                             break;
                         }
+                        case LogRecordType.System:
+                            break;
                         default:
                             throw new ArgumentOutOfRangeException();
                     }

@@ -204,11 +204,14 @@
     <Compile Include="TransactionLog\ITransactionFileChaser.cs" />
     <Compile Include="TransactionLog\ITransactionFileReader.cs" />
     <Compile Include="TransactionLog\ITransactionFileSequentialReader.cs" />
+    <Compile Include="TransactionLog\LogRecords\EpochRecord.cs" />
+    <Compile Include="TransactionLog\LogRecords\SystemLogRecord.cs" />
     <Compile Include="TransactionLog\ReadResults.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk\TFChunk.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkManager.cs" />
     <Compile Include="TransactionLog\RecordWriteResult.cs" />
     <Compile Include="TransactionLog\FileNamingStrategy\VersionedPatternFileNamingStrategy.cs" />
+    <Compile Include="Util\Json.cs" />
     <Compile Include="Util\MD5Hash.cs" />
     <Compile Include="Messages\TcpClientMessageDto.cs" />
     <Compile Include="Messages\MonitoringMessage.cs" />
@@ -287,7 +290,6 @@
     <Compile Include="TransactionLog\Checkpoint\WriteThroughFileCheckpoint.cs" />
     <Compile Include="TransactionLog\LogRecords\CommitLogRecord.cs" />
     <Compile Include="TransactionLog\LogRecords\LogRecord.cs" />
-    <Compile Include="TransactionLog\LogRecords\LogRecordType.cs" />
     <Compile Include="TransactionLog\LogRecords\PrepareLogRecord.cs" />
     <Compile Include="TransactionLog\ITransactionFileWriter.cs" />
     <Compile Include="TransactionLog\FileNamingStrategy\IFileNamingStrategy.cs" />

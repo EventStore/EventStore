@@ -126,18 +126,21 @@ namespace EventStore.Core.Services
                     }
 
                     message.HttpEntityManager.ReplyStatus(
-                        code, deniedToHandle.Details,
-                        exc =>
-                        Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
+                        code, 
+                        deniedToHandle.Details,
+                        exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
                 }
                 else
                 {
                     var response = message.Data;
                     var config = message.Configuration;
                     message.HttpEntityManager.ReplyTextContent(
-                        response, config.Code, config.Description, config.ContentType, config.Headers,
-                        exc =>
-                        Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
+                        response, 
+                        config.Code, 
+                        config.Description, 
+                        config.ContentType, 
+                        config.Headers,
+                        exc => Log.ErrorException(exc, "Error occurred while replying to HTTP with message {0}", message.Message));
                 }
             }
 

@@ -32,6 +32,13 @@ using EventStore.Core.Services;
 
 namespace EventStore.Core.TransactionLog.LogRecords
 {
+    public enum LogRecordType
+    {
+        Prepare = 0,
+        Commit = 1,
+        System = 2
+    }
+
     public abstract class LogRecord
     {
         public static readonly byte[] NoData = new byte[0];
@@ -52,6 +59,8 @@ namespace EventStore.Core.TransactionLog.LogRecords
                     return new PrepareLogRecord(reader, version);
                 case LogRecordType.Commit:
                     return new CommitLogRecord(reader, version);
+                case LogRecordType.System:
+                    return new SystemLogRecord(reader, version);
                 default:
                     throw new ArgumentOutOfRangeException("recordType");
             }

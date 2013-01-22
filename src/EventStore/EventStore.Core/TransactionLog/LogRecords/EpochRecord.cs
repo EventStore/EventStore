@@ -25,11 +25,46 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+using System;
+
 namespace EventStore.Core.TransactionLog.LogRecords
 {
-    public enum LogRecordType
+    public class EpochRecord
     {
-        Prepare = 0,
-        Commit = 1
+        public readonly long LogPosition;
+        public readonly DateTime TimeStamp;
+
+        public readonly Guid EpochId;
+        public readonly int EpochNumber;
+        public readonly long WriterCheckpoint;
+
+        public readonly long PrevEpochPosition;
+
+        public EpochRecord(long logPosition, DateTime timeStamp, Guid epochId, int epochNumber, long writerCheckpoint, long prevEpochPosition)
+        {
+            LogPosition = logPosition;
+            TimeStamp = timeStamp;
+            EpochId = epochId;
+            EpochNumber = epochNumber;
+            WriterCheckpoint = writerCheckpoint;
+            PrevEpochPosition = prevEpochPosition;
+        }
+
+        internal EpochRecord(EpochRecordDto dto)
+                : this(dto.LogPosition, dto.TimeStamp, dto.EpochId, dto.EpochNumber, dto.WriterCheckpoint, dto.PrevEpochPosition)
+        {
+        }
+
+        internal class EpochRecordDto
+        {
+            public long LogPosition{ get; set; }
+            public DateTime TimeStamp{ get; set; }
+
+            public Guid EpochId{ get; set; }
+            public int EpochNumber{ get; set; }
+            public long WriterCheckpoint{ get; set; }
+
+            public long PrevEpochPosition{ get; set; }
+        }
     }
 }

@@ -165,6 +165,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                         case LogRecordType.Commit:
                             Commit((CommitLogRecord)result.LogRecord);
                             break;
+                        case LogRecordType.System:
+                            break;
                         default:
                             throw new ArgumentOutOfRangeException("recordType", string.Format("Unknown RecordType: {0}", result.LogRecord.RecordType));
                     }
