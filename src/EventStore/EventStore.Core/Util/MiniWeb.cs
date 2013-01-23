@@ -74,9 +74,8 @@ namespace EventStore.Core.Util
         {
             //NOTE: this is fix for Mono incompatibility in UriTemplate behavior for /a/b{*C}
             if (("/" + contentLocalPath).StartsWith(_localWebRootPath))
-            {
                 contentLocalPath = contentLocalPath.Substring(_localWebRootPath.Length);
-            }
+
             //_logger.Trace("{0} requested from mini web", contentLocalPath);
             try
             {
@@ -97,7 +96,7 @@ namespace EventStore.Core.Util
 
                 string contentType;
                 if (string.IsNullOrEmpty(extension)
-                    || !extensionToContentType.TryGetValue(extension, out contentType)
+                    || !extensionToContentType.TryGetValue(extension.ToLower(), out contentType)
                     || !File.Exists(fullPath))
                 {
                     _logger.Info("Replying 404 for {0} ==> {1}", contentLocalPath, fullPath);

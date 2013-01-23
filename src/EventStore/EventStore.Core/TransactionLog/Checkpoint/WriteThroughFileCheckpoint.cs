@@ -68,7 +68,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
 
         public WriteThroughFileCheckpoint(string filename, string name) : this(filename, name, false) {}
 
-        public WriteThroughFileCheckpoint(string filename, string name, bool cached)
+        public WriteThroughFileCheckpoint(string filename, string name, bool cached, long initValue = 0)
         {
             _filename = filename;
             _name = name;
@@ -89,15 +89,18 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _stream.SetLength(4096);
             _reader = new BinaryReader(_stream);
             _writer = new BinaryWriter(_memStream);
-            if (!exists) {Write(0); Flush();}
-            var initial = exists ? ReadCurrent() : 0;
+            if (!exists)
+            {
+                Write(initValue);
+                Flush();
+            }
+            var initial = exists ? ReadCurrent() : initValue;
             _last = _lastFlushed = initial;
         }
 
 
         [DllImport("kernel32.dll")]
         static extern bool FlushFileBuffers(IntPtr hFile);
-
 
         public void Close()
         {

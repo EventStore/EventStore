@@ -77,20 +77,15 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public SeqReadResult TryReadNext()
         {
-            return TryReadNextInternal(_curPos, 0, allowNonFlushed: false);
+            return TryReadNextInternal(_curPos, 0);
         }
 
-        public SeqReadResult TryReadNextNonFlushed()
-        {
-            return TryReadNextInternal(_curPos, 0, allowNonFlushed: true);
-        }
-
-        private SeqReadResult TryReadNextInternal(long position, int retries, bool allowNonFlushed)
+        private SeqReadResult TryReadNextInternal(long position, int retries)
         {
             var pos = position;
             while (true)
             {
-                var writerChk = allowNonFlushed ? _writerCheckpoint.ReadNonFlushed() : _writerCheckpoint.Read();
+                var writerChk = _writerCheckpoint.Read();
                 if (pos >= writerChk)
                     return SeqReadResult.Failure;
 
@@ -110,7 +105,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {
                     if (retries > MaxRetries)
                         throw new Exception(string.Format("Got a file that was being deleted {0} times from TFChunkDb, likely a bug there.", MaxRetries));
-                    return TryReadNextInternal(position, retries + 1, allowNonFlushed);
+                    return TryReadNextInternal(position, retries + 1);
                 }
 
                 if (result.Success)
@@ -134,20 +129,15 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public SeqReadResult TryReadPrev()
         {
-            return TryReadPrevInternal(_curPos, 0, allowNonFlushed: false);
+            return TryReadPrevInternal(_curPos, 0);
         }
 
-        public SeqReadResult TryReadPrevNonFlushed()
-        {
-            return TryReadPrevInternal(_curPos, 0, allowNonFlushed: true);
-        }
-
-        private SeqReadResult TryReadPrevInternal(long position, int retries, bool allowNonFlushed)
+        private SeqReadResult TryReadPrevInternal(long position, int retries)
         {
             var pos = position;
             while (true)
             {
-                var writerChk = allowNonFlushed ? _writerCheckpoint.ReadNonFlushed() : _writerCheckpoint.Read();
+                var writerChk = _writerCheckpoint.Read();
                 // we allow == writerChk, that means read the very last record
                 if (pos > writerChk)
                     throw new ArgumentOutOfRangeException("position", string.Format("Requested position {0} is greater than writer checkpoint {1} when requesting to read previous record from TF.", pos, writerChk));
@@ -184,7 +174,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 {
                     if (retries > MaxRetries)
                         throw new Exception(string.Format("Got a file that was being deleted {0} times from TFChunkDb, likely a bug there.", MaxRetries));
-                    return TryReadPrevInternal(position, retries + 1, allowNonFlushed);
+                    return TryReadPrevInternal(position, retries + 1);
                 }
 
                 if (result.Success)

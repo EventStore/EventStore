@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.TransactionLog.LogRecords
 {
@@ -34,25 +35,28 @@ namespace EventStore.Core.TransactionLog.LogRecords
         public readonly long LogPosition;
         public readonly DateTime TimeStamp;
 
-        public readonly Guid EpochId;
         public readonly int EpochNumber;
-        public readonly long WriterCheckpoint;
+        public readonly Guid EpochId;
 
         public readonly long PrevEpochPosition;
 
-        public EpochRecord(long logPosition, DateTime timeStamp, Guid epochId, int epochNumber, long writerCheckpoint, long prevEpochPosition)
+        public EpochRecord(long logPosition, DateTime timeStamp, int epochNumber, Guid epochId, long prevEpochPosition)
         {
             LogPosition = logPosition;
             TimeStamp = timeStamp;
-            EpochId = epochId;
             EpochNumber = epochNumber;
-            WriterCheckpoint = writerCheckpoint;
+            EpochId = epochId;
             PrevEpochPosition = prevEpochPosition;
         }
 
         internal EpochRecord(EpochRecordDto dto)
-                : this(dto.LogPosition, dto.TimeStamp, dto.EpochId, dto.EpochNumber, dto.WriterCheckpoint, dto.PrevEpochPosition)
+                : this(dto.LogPosition, dto.TimeStamp, dto.EpochNumber, dto.EpochId, dto.PrevEpochPosition)
         {
+        }
+
+        public byte[] AsSerialized()
+        {
+            return new EpochRecordDto(this).ToJsonBytes();
         }
 
         internal class EpochRecordDto
@@ -60,11 +64,22 @@ namespace EventStore.Core.TransactionLog.LogRecords
             public long LogPosition{ get; set; }
             public DateTime TimeStamp{ get; set; }
 
-            public Guid EpochId{ get; set; }
             public int EpochNumber{ get; set; }
+            public Guid EpochId{ get; set; }
             public long WriterCheckpoint{ get; set; }
 
             public long PrevEpochPosition{ get; set; }
+
+            public EpochRecordDto(EpochRecord rec)
+            {
+                LogPosition = rec.LogPosition;
+                TimeStamp = rec.TimeStamp;
+
+                EpochNumber = rec.EpochNumber;
+                EpochId = rec.EpochId;
+
+                PrevEpochPosition = rec.PrevEpochPosition;
+            }
         }
     }
 }

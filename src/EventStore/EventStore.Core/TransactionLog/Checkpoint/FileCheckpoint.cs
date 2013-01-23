@@ -51,7 +51,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         {
         }
 
-        public FileCheckpoint(string filename, string name, bool cached = false, bool mustExist = false)
+        public FileCheckpoint(string filename, string name, bool cached = false, bool mustExist = false, long initValue = 0)
         {
             _filename = filename;
             _name = name;
@@ -67,6 +67,8 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _writer = new BinaryWriter(_fileStream);
             if (old)
                 _lastFlushed = _last = ReadCurrent();
+            else
+                _lastFlushed = _lastFlushed = initValue;
         }
 
         private long ReadCurrent()

@@ -133,6 +133,7 @@
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />
     <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
+    <Compile Include="Services\Storage\EpochManager\IEpochManager.cs" />
     <Compile Include="Services\Storage\ReaderIndex\TransactionInfo.cs" />
     <Compile Include="Services\SubscriptionsService.cs" />
     <Compile Include="Services\NetworkSendService.cs" />

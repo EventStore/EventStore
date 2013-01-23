@@ -59,11 +59,12 @@ namespace EventStore.Core.TransactionLog.Checkpoint
         {
         }
 
-        public MemoryMappedFileCheckpoint(string filename, string name, bool cached, bool mustExist = false)
+        public MemoryMappedFileCheckpoint(string filename, string name, bool cached, bool mustExist = false, long initValue = 0)
         {
             _filename = filename;
             _name = name;
             _cached = cached;
+            var old = File.Exists(_filename);
             var filestream = new FileStream(_filename,
                                             mustExist ? FileMode.Open : FileMode.OpenOrCreate,
                                             FileAccess.ReadWrite,
@@ -76,7 +77,10 @@ namespace EventStore.Core.TransactionLog.Checkpoint
                                                     HandleInheritability.None,
                                                     false);
             _accessor = _file.CreateViewAccessor(0, 8);
-            _last = _lastFlushed = ReadCurrent();
+            if (old)
+                _last = _lastFlushed = ReadCurrent();
+            else
+                _last = _lastFlushed = initValue;
         }
 
         public void Close()
