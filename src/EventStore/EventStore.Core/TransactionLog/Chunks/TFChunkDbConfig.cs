@@ -42,6 +42,8 @@ namespace EventStore.Core.TransactionLog.Chunks
         public readonly int CachedChunkCount;
         public readonly ICheckpoint WriterCheckpoint;
         public readonly ICheckpoint ChaserCheckpoint;
+        public readonly ICheckpoint EpochCheckpoint;
+        public readonly ICheckpoint TruncateCheckpoint;
         public readonly IFileNamingStrategy FileNamingStrategy;
 
         private readonly IDictionary<string, ICheckpoint> _namedCheckpoints;
@@ -52,6 +54,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                                int cachedChunkCount,
                                ICheckpoint writerCheckpoint, 
                                ICheckpoint chaserCheckpoint,
+                               ICheckpoint epochCheckpoint,
+                               ICheckpoint truncateCheckpoint,
                                params ICheckpoint[] namedCheckpoints)
         {
             Ensure.NotNullOrEmpty(path, "path");
@@ -60,6 +64,8 @@ namespace EventStore.Core.TransactionLog.Chunks
             Ensure.Nonnegative(cachedChunkCount, "cachedChunkCount");
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
+            Ensure.NotNull(epochCheckpoint, "epochCheckpoint");
+            Ensure.NotNull(truncateCheckpoint, "truncateCheckpoint");
             Ensure.NotNull(namedCheckpoints, "namedCheckpoints");
 
 //            if ((chunkSize & (chunkSize-1)) != 0)
@@ -70,15 +76,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             CachedChunkCount = cachedChunkCount;
             WriterCheckpoint = writerCheckpoint;
             ChaserCheckpoint = chaserCheckpoint;
+            EpochCheckpoint = epochCheckpoint;
+            TruncateCheckpoint = truncateCheckpoint;
             FileNamingStrategy = fileNamingStrategy;
             _namedCheckpoints = namedCheckpoints.ToDictionary(x => x.Name);
-        }
-
-        public ICheckpoint GetNamedCheckpoint(string name)
-        {
-            ICheckpoint item;
-            _namedCheckpoints.TryGetValue(name, out item);
-            return item;
         }
     }
 }

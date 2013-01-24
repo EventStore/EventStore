@@ -41,13 +41,15 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void with_a_writer_checksum_of_nonzero_and_no_files_a_corrupted_database_exception_is_thrown()
         {
+            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                        new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                                        10000,
                                                        0,
                                                        new InMemoryCheckpoint(500),
                                                        new InMemoryCheckpoint(),
-                                                       new ICheckpoint[0]));
+                                                       new InMemoryCheckpoint(-1),
+                                                       new InMemoryCheckpoint(-1)));
             var exc = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean());
             Assert.IsInstanceOf<ChunkNotFoundException>(exc.InnerException);
             db.Dispose();
@@ -56,13 +58,15 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void with_a_writer_checksum_of_zero_and_no_files_is_valid()
         {
+            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                        new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                                        10000,
                                                        0,
                                                        new InMemoryCheckpoint(0),
                                                        new InMemoryCheckpoint(),
-                                                       new ICheckpoint[0]));
+                                                       new InMemoryCheckpoint(-1),
+                                                       new InMemoryCheckpoint(-1)));
             Assert.DoesNotThrow(() => db.OpenVerifyAndClean());
             db.Dispose();
         }

@@ -27,7 +27,6 @@
 //  
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests.ClientAPI.Helpers;

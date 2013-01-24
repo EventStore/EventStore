@@ -47,13 +47,15 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void a_null_checkpoint_throws_argument_null_exception()
         {
+            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(0),
                                              new InMemoryCheckpoint(0),
-                                             new ICheckpoint[0]);
+                                             new InMemoryCheckpoint(-1),
+                                             new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             Assert.Throws<ArgumentNullException>(() => new TFChunkReader(db, null));
         }

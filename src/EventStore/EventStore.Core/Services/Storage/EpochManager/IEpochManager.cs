@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -9,10 +9,10 @@ namespace EventStore.Core.Services.Storage.EpochManager
 {
     public interface IEpochManager
     {
-        int EpochCount { get; }
+        int LastEpochNumber { get; }
+        EpochRecord LastEpoch { get; }
 
         void Init();
-        EpochRecord GetLastEpoch();
         EpochRecord GetEpoch(int epochNumber);
 
         void SetLastEpoch(int epochNumber, Guid epochId);
@@ -22,16 +22,18 @@ namespace EventStore.Core.Services.Storage.EpochManager
     {
         public const int CachedEpochCount = 100;
 
-        public int EpochCount { get { return _epochCount; } }
+        public int LastEpochNumber { get { return _lastEpochNumber; } }
+        public EpochRecord LastEpoch { get { return GetLastEpoch(); } }
 
-        private readonly ConcurrentDictionary<int, EpochRecord> _epochs = new ConcurrentDictionary<int, EpochRecord>();
         private readonly ICheckpoint _checkpoint;
         private readonly ITransactionFileReader _reader;
         private readonly ITransactionFileSequentialReader _seqReader;
         private readonly ITransactionFileWriter _writer;
 
-        private volatile int _epochCount;
-        private volatile int _minCachedEpochNumber = int.MaxValue;
+        private readonly object _locker = new object();
+        private readonly Dictionary<int, EpochRecord> _epochs = new Dictionary<int, EpochRecord>();
+        private int _lastEpochNumber = -1;
+        private int _minCachedEpochNumber = int.MaxValue;
 
         public EpochManager(ICheckpoint checkpoint, 
                             ITransactionFileReader reader, 
@@ -51,60 +53,71 @@ namespace EventStore.Core.Services.Storage.EpochManager
 
         public void Init()
         {
-            long epochPos = _checkpoint.Read();
-            if (epochPos < 0) // we probably have lost/uninitialized epoch checkpoint
+            lock (_locker)
             {
-                _seqReader.Reposition(_writer.Checkpoint.Read());
-
-                SeqReadResult result;
-                while ((result = _seqReader.TryReadPrev()).Success)
+                long epochPos = _checkpoint.Read();
+                if (epochPos < 0) // we probably have lost/uninitialized epoch checkpoint
                 {
-                    if (result.LogRecord.RecordType != LogRecordType.System || ((SystemLogRecord) result.LogRecord).SystemRecordType != SystemRecordType.Epoch)
-                        continue;
-                    epochPos = result.RecordPrePosition;
-                    break;
+                    _seqReader.Reposition(_writer.Checkpoint.Read());
+
+                    SeqReadResult result;
+                    while ((result = _seqReader.TryReadPrev()).Success)
+                    {
+                        if (result.LogRecord.RecordType != LogRecordType.System 
+                            || ((SystemLogRecord) result.LogRecord).SystemRecordType != SystemRecordType.Epoch)
+                            continue;
+                        epochPos = result.RecordPrePosition;
+                        break;
+                    }
                 }
-            }
 
-            int cnt = 0;
-            while (epochPos >= 0 && cnt < CachedEpochCount)
-            {
-                var result = _reader.TryReadAt(epochPos);
-                if (!result.Success)
-                    throw new Exception(string.Format("Couldn't find Epoch record at LogPosition {0}.", epochPos));
-                if (result.LogRecord.RecordType != LogRecordType.System 
-                    || ((SystemLogRecord) result.LogRecord).SystemRecordType != SystemRecordType.Epoch)
-                    throw new Exception(string.Format("Epoch LogRecord is of unexpected type: {0}.", result.LogRecord));
+                int cnt = 0;
+                while (epochPos >= 0 && cnt < CachedEpochCount)
+                {
+                    var result = _reader.TryReadAt(epochPos);
+                    if (!result.Success)
+                        throw new Exception(string.Format("Couldn't find Epoch record at LogPosition {0}.", epochPos));
+                    if (result.LogRecord.RecordType != LogRecordType.System
+                        || ((SystemLogRecord) result.LogRecord).SystemRecordType != SystemRecordType.Epoch)
+                        throw new Exception(string.Format("Epoch LogRecord is of unexpected type: {0}.",
+                                                          result.LogRecord));
 
-                var epoch = ((SystemLogRecord)result.LogRecord).GetEpochRecord();
-                _epochs.AddOrUpdate(epoch.EpochNumber, epoch, (i, record) => epoch);
-                _epochCount = Math.Max(_epochCount, epoch.EpochNumber + 1);
-                _minCachedEpochNumber = Math.Min(_minCachedEpochNumber, epoch.EpochNumber);
-                cnt += 1;
+                    var epoch = ((SystemLogRecord) result.LogRecord).GetEpochRecord();
+                    _epochs[epoch.EpochNumber] = epoch;
+                    _lastEpochNumber = Math.Max(_lastEpochNumber, epoch.EpochNumber);
+                    _minCachedEpochNumber = Math.Min(_minCachedEpochNumber, epoch.EpochNumber);
 
-                epochPos = epoch.PrevEpochPosition;
+                    epochPos = epoch.PrevEpochPosition;
+                    cnt += 1;
+                }
             }
         }
 
-        public EpochRecord GetLastEpoch()
+        private EpochRecord GetLastEpoch()
         {
-            return GetEpoch(_epochCount - 1);
+            lock (_locker)
+            {
+                return _lastEpochNumber < 0 ? null : GetEpoch(_lastEpochNumber);
+            }
         }
 
         public EpochRecord GetEpoch(int epochNumber)
         {
-            if (epochNumber < _minCachedEpochNumber)
+            lock (_locker)
             {
-                throw new ArgumentOutOfRangeException(
-                        "epochNumber",
-                        string.Format("EpochNumber requested shouldn't be cached. Requested: {0}, min cached: {1}.",
-                                      epochNumber,
-                                      _minCachedEpochNumber));
+                if (epochNumber < _minCachedEpochNumber)
+                {
+                    throw new ArgumentOutOfRangeException(
+                            "epochNumber",
+                            string.Format("EpochNumber requested shouldn't be cached. Requested: {0}, min cached: {1}.",
+                                          epochNumber,
+                                          _minCachedEpochNumber));
+                }
+                var epoch = _epochs[epochNumber];
+                if (epoch == null)
+                    throw new Exception(string.Format("Concurrency failure, epoch #{0} shouldn't be null.", epochNumber));
+                return epoch;
             }
-            var epoch = _epochs[epochNumber];
-            if (epoch == null)
-                throw new Exception(string.Format("Concurrency failure, epoch #{0} shouldn't be null.", epochNumber));
-            return epoch;
         }
 
         public void SetLastEpoch(int epochNumber, Guid epochId)
@@ -126,11 +139,13 @@ namespace EventStore.Core.Services.Storage.EpochManager
             // and update EpochManager's state, by adjusting cache of records, epoch count and un-caching 
             // excessive record, if present
             var epoch = WriteEpochRecordWithRetry(epochNumber, epochId, lastEpochPosition);
-            _epochs.AddOrUpdate(epochNumber, epoch, (_, __) => epoch);
-            _epochCount = epochNumber + 1;
-            _minCachedEpochNumber = Math.Max(_minCachedEpochNumber, epochNumber - CachedEpochCount + 1);
-            EpochRecord tmp;
-            _epochs.TryRemove(_minCachedEpochNumber - 1, out tmp);
+            lock (_locker)
+            {
+                _epochs[epochNumber] = epoch;
+                _lastEpochNumber = epochNumber;
+                _minCachedEpochNumber = Math.Max(_minCachedEpochNumber, epochNumber - CachedEpochCount + 1);
+                _epochs.Remove(_minCachedEpochNumber - 1);
+            }
 
             // Now update epoch checkpoint, so on restart we don't scan sequentially TF.
             _checkpoint.Write(epoch.LogPosition);

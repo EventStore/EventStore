@@ -40,13 +40,15 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void with_a_writer_checksum_of_zero_the_first_chunk_is_created_with_correct_name()
         {
+            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(0),
                                              new InMemoryCheckpoint(0),
-                                             new ICheckpoint[0]);
+                                             new InMemoryCheckpoint(-1),
+                                             new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             db.OpenVerifyAndClean();
             db.Dispose();

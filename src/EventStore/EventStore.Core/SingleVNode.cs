@@ -39,6 +39,7 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.Storage;
+using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
@@ -125,6 +126,11 @@ namespace EventStore.Core
                                           new XXHashUnsafe(),
                                           new LRUCache<string, StreamCacheInfo>(ESConsts.MetadataCacheCapacity));
             var writer = new TFChunkWriter(db);
+            var epochManager = new EpochManager(db.Config.EpochCheckpoint,
+                                                new TFChunkReader(db, db.Config.WriterCheckpoint),
+                                                new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0),
+                                                writer);
+            epochManager.Init();
             new StorageWriterService(_mainQueue, _mainBus, writer, readIndex); // subscribes internally
             var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);

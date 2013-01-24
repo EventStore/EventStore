@@ -191,13 +191,15 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                 _writerChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Writer + ".chk"), Checkpoint.Writer, cached: true);
                 _chaserChk = new MemoryMappedFileCheckpoint(Path.Combine(dbPath, Checkpoint.Chaser + ".chk"), Checkpoint.Chaser, cached: true);
             }
+            ICheckpoint[] namedCheckpoints = new[] {_writerChk, _chaserChk};
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
                                                  chunkSize,
                                                  chunksToCache,
                                                  _writerChk,
                                                  _chaserChk,
-                                                 new[] {_writerChk, _chaserChk});
+                                                 new InMemoryCheckpoint(-1),
+                                                 new InMemoryCheckpoint(-1));
 
             return nodeConfig;
         }

@@ -49,13 +49,15 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             base.TestFixtureSetUp();
 
+            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
             _db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                     new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                     4096,
                                                     0,
                                                     new InMemoryCheckpoint(),
                                                     new InMemoryCheckpoint(),
-                                                    new ICheckpoint[0]));
+                                                    new InMemoryCheckpoint(-1),
+                                                    new InMemoryCheckpoint(-1)));
             _db.OpenVerifyAndClean();
 
             var chunk = _db.Manager.GetChunk(0);

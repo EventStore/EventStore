@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -47,7 +46,9 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        10000,
                                                        0,
                                                        writerchk,
-                                                       new InMemoryCheckpoint()));
+                                                       new InMemoryCheckpoint(),
+                                                       new InMemoryCheckpoint(-1),
+                                                       new InMemoryCheckpoint(-1)));
             db.OpenVerifyAndClean();
 
             var reader = new TFChunkSequentialReader(db, writerchk, 0);
@@ -66,7 +67,9 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        10000,
                                                        0,
                                                        writerchk,
-                                                       new InMemoryCheckpoint()));
+                                                       new InMemoryCheckpoint(),
+                                                       new InMemoryCheckpoint(-1),
+                                                       new InMemoryCheckpoint(-1)));
             db.OpenVerifyAndClean();
 
             var writer = new TFChunkWriter(db);

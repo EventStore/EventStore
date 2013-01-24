@@ -26,13 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.TransactionLog.Chunks
 {
@@ -66,7 +64,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 }
             }
 
-            ValidateReaderChecksumsMustBeLess(Config.WriterCheckpoint, Config.Checkpoints);
+            ValidateReaderChecksumsMustBeLess(Config);
 
             var checkpoint = Config.WriterCheckpoint.Read();
 
@@ -81,9 +79,8 @@ namespace EventStore.Core.TransactionLog.Chunks
             else
             {
                 if (checkpoint == 0)
-                {
                     correctFileCount = expectedFiles = 1;
-                }
+
                 for (int i=0; i<expectedFiles; ++i)
                 {
                     var versions = Config.FileNamingStrategy.GetAllVersionsFor(i);
@@ -136,18 +133,17 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         public void OpenForRead(bool verifyHashes = true)
         {
-            ValidateReaderChecksumsMustBeLess(Config.WriterCheckpoint, Config.Checkpoints);
+            ValidateReaderChecksumsMustBeLess(Config);
 
             var checkpoint = Config.WriterCheckpoint.Read();
 
-            var expectedFiles = (int)((checkpoint + Config.ChunkSize - 1) / Config.ChunkSize);
             if (checkpoint == 0 && Config.FileNamingStrategy.GetAllVersionsFor(0).Length == 0)
             {
                 Manager.AddNewChunk();
-                expectedFiles = 1;
             }
             else
             {
+                var expectedFiles = (int)((checkpoint + Config.ChunkSize - 1) / Config.ChunkSize);
                 if (checkpoint == 0)
                     expectedFiles = 1;
                 for (int i = 0; i < expectedFiles; ++i)
@@ -176,10 +172,10 @@ namespace EventStore.Core.TransactionLog.Chunks
             Manager.EnableCaching();
         }
 
-        private void ValidateReaderChecksumsMustBeLess(ICheckpoint writerCheckpoint, IEnumerable<ICheckpoint> readerCheckpoints)
+        private void ValidateReaderChecksumsMustBeLess(TFChunkDbConfig config)
         {
-            var current = writerCheckpoint.Read();
-            foreach (var checkpoint in readerCheckpoints)
+            var current = config.WriterCheckpoint.Read();
+            foreach (var checkpoint in new[] { config.ChaserCheckpoint, config.EpochCheckpoint, config.TruncateCheckpoint})
             {
                 if (checkpoint.Read() > current)
                     throw new CorruptDatabaseException(new ReaderCheckpointHigherThanWriterException(checkpoint.Name));
