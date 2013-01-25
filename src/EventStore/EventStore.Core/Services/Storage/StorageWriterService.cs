@@ -142,7 +142,6 @@ namespace EventStore.Core.Services.Storage
 
         public void Handle(SystemMessage.BecomeMaster message)
         {
-            Interlocked.Decrement(ref FlushMessagesInQueue);
             _epochManager.SetLastEpoch(_epochManager.LastEpochNumber + 1, Guid.NewGuid()); // forces flush
         }
 
