@@ -27,8 +27,8 @@
 // 
 using System;
 using System.Diagnostics;
-using System.Net.Sockets;
 using System.Text;
+using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 
@@ -76,68 +76,40 @@ namespace EventStore.TestClient.Commands
 
             int total = 0;
             var sw = new Stopwatch();
+            var tcpCommand = forward ? TcpCommand.ReadAllEventsForward : TcpCommand.ReadAllEventsBackward;
 
             context.Client.CreateTcpConnection(
                 context,
                 connectionEstablished: conn =>
                 {
                     context.Log.Info("[{0}]: Reading all {0}...", conn.EffectiveEndPoint, forward ? "FORWARD" : "BACKWARD");
-                    sw.Start();
 
                     var readDto = new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, false);
-                    var package = new TcpPackage(forward ? TcpCommand.ReadAllEventsForward : TcpCommand.ReadAllEventsBackward,
-                                                 Guid.NewGuid(),
-                                                 readDto.Serialize());
-                    conn.EnqueueSend(package.AsByteArray());
+                    var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
+                    sw.Start();
+                    conn.EnqueueSend(package);
                 },
                 handlePackage: (conn, pkg) =>
                 {
-                    TcpClientMessageDto.ResolvedEvent[] records;
-                    long nextCommitPos;
-                    long nextPreparePos;
-
-                    if (forward)
+                    if (pkg.Command != tcpCommand)
                     {
-                        if (pkg.Command != TcpCommand.ReadAllEventsForwardCompleted)
-                        {
-                            context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
-                            return;
-                        }
-
-                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
-                        records = dto.Events;
-                        nextCommitPos = dto.NextCommitPosition;
-                        nextPreparePos = dto.NextPreparePosition;
-                    }
-                    else
-                    {
-                        if (pkg.Command != TcpCommand.ReadAllEventsBackwardCompleted)
-                        {
-                            context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
-                            return;
-                        }
-
-                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
-                        records = dto.Events;
-                        nextCommitPos = dto.NextCommitPosition;
-                        nextPreparePos = dto.NextPreparePosition;
+                        context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
+                        return;
                     }
 
-                    if (records == null || records.Length == 0)
+                    var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
+                    if (dto.Events.IsEmpty())
                     {
                         sw.Stop();
-                        context.Log.Info("=== Reading ALL {2} completed in {0}. Total read: {1}",
-                                         sw.Elapsed,
-                                         total,
-                                         forward ? "FORWARD" : "BACKWARD");
-                        conn.Close();
+                        context.Log.Info("=== Reading ALL {2} completed in {0}. Total read: {1}", sw.Elapsed, total, forward ? "FORWARD" : "BACKWARD");
                         context.Success();
+                        conn.Close();
                         return;
                     }
                     var sb = new StringBuilder();
-                    for (int i = 0; i < records.Length; ++i)
+                    for (int i = 0; i < dto.Events.Length; ++i)
                     {
-                        var evnt = records[i].Event;
+                        var evnt = dto.Events[i].Event;
                         sb.AppendFormat("\n{0}:\tStreamId: {1},\n\tEventNumber: {2},\n\tData:\n{3},\n\tEventType: {4}\n",
                                         total,
                                         evnt.EventStreamId,
@@ -146,23 +118,13 @@ namespace EventStore.TestClient.Commands
                                         evnt.EventType);
                         total += 1;
                     }
-                    context.Log.Info("Next {0} events read:\n{1}", records.Length, sb.ToString());
+                    context.Log.Info("Next {0} events read:\n{1}", dto.Events.Length, sb.ToString());
 
-                    var readDto = new TcpClientMessageDto.ReadAllEvents(nextCommitPos, nextPreparePos, 10, false);
-                    var package = new TcpPackage(forward ? TcpCommand.ReadAllEventsForward : TcpCommand.ReadAllEventsBackward,
-                                                 Guid.NewGuid(),
-                                                 readDto.Serialize());
-                    conn.EnqueueSend(package.AsByteArray());
-
-
+                    var readDto = new TcpClientMessageDto.ReadAllEvents(dto.NextCommitPosition, dto.NextPreparePosition, 10, false);
+                    var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
+                    conn.EnqueueSend(package);
                 },
-                connectionClosed: (connection, error) =>
-                {
-                    if (error == SocketError.Success)
-                        context.Success();
-                    else
-                        context.Fail();
-                });
+                connectionClosed: (connection, error) => context.Fail(reason: "Connection was closed prematurely."));
 
             context.WaitForCompletion();
             return true;

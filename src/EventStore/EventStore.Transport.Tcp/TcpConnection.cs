@@ -35,6 +35,7 @@ using System.Threading;
 using EventStore.BufferManagement;
 using EventStore.Common.Locks;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Tcp
 {
@@ -51,13 +52,14 @@ namespace EventStore.Transport.Tcp
         internal static TcpConnection CreateConnectingTcpConnection(IPEndPoint remoteEndPoint, 
                                                                     TcpClientConnector connector, 
                                                                     Action<TcpConnection> onConnectionEstablished, 
-                                                                    Action<TcpConnection, SocketError> onConnectionFailed)
+                                                                    Action<TcpConnection, SocketError> onConnectionFailed,
+                                                                    bool verbose)
         {
-            var connection = new TcpConnection(remoteEndPoint);
+            var connection = new TcpConnection(remoteEndPoint, verbose);
             connector.InitConnect(remoteEndPoint,
                                   (_, socket) =>
                                   {
-                                      connection.InitSocket(socket);
+                                      connection.InitSocket(socket, verbose);
                                       if (onConnectionEstablished != null)
                                           onConnectionEstablished(connection);
                                       connection.TrySend();
@@ -70,10 +72,10 @@ namespace EventStore.Transport.Tcp
             return connection;
         }
 
-        internal static TcpConnection CreateAcceptedTcpConnection(IPEndPoint effectiveEndPoint, Socket socket)
+        internal static TcpConnection CreateAcceptedTcpConnection(IPEndPoint effectiveEndPoint, Socket socket, bool verbose)
         {
-            var connection = new TcpConnection(effectiveEndPoint);
-            connection.InitSocket(socket);
+            var connection = new TcpConnection(effectiveEndPoint, verbose);
+            connection.InitSocket(socket, verbose);
             return connection;
         }
 
@@ -106,17 +108,20 @@ namespace EventStore.Transport.Tcp
         private int _recvAsyncs;
         private int _recvAsyncCallbacks;
 
-        private TcpConnection(IPEndPoint effectiveEndPoint)
+        private readonly bool _verbose;
+
+        private TcpConnection(IPEndPoint effectiveEndPoint, bool verbose)
         {
-            if (effectiveEndPoint == null)
-                throw new ArgumentNullException("effectiveEndPoint");
+            Ensure.NotNull(effectiveEndPoint, "effectiveEndPoint");
 
             EffectiveEndPoint = effectiveEndPoint;
+            _verbose = verbose;
         }
 
-        private void InitSocket(Socket socket)
+        private void InitSocket(Socket socket, bool verbose)
         {
-            Console.WriteLine("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
+            if (verbose)
+                Console.WriteLine("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
 
             base.InitSocket(socket, EffectiveEndPoint);
             using (_sendingLock.Acquire()) 
@@ -387,17 +392,20 @@ namespace EventStore.Transport.Tcp
 
             NotifyClosed();
 
-            Console.WriteLine(
-                "[{0}]:\nReceived packages: {1}, bytes: {2}\nSend packages: {3}, bytes: {4}\nSendAsync calls: {5}, callbacks: {6}\nReceiveAsync calls: {7}, callbacks: {8}\n",
-                EffectiveEndPoint,
-                _packagesReceived,
-                _bytesReceived,
-                _packagesSent,
-                _bytesSent,
-                _sentAsyncs,
-                _sentAsyncCallbacks,
-                _recvAsyncs,
-                _recvAsyncCallbacks);
+            if (_verbose)
+            {
+                Console.WriteLine("[{0}]:\nReceived packages: {1}, bytes: {2}\nSend packages: {3}, bytes: {4}\n"
+                                  + "SendAsync calls: {5}, callbacks: {6}\nReceiveAsync calls: {7}, callbacks: {8}\n",
+                                  EffectiveEndPoint,
+                                  _packagesReceived,
+                                  _bytesReceived,
+                                  _packagesSent,
+                                  _bytesSent,
+                                  _sentAsyncs,
+                                  _sentAsyncCallbacks,
+                                  _recvAsyncs,
+                                  _recvAsyncCallbacks);
+            }
 
             if (_socket != null)
             {

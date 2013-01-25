@@ -54,7 +54,6 @@ namespace EventStore.TestClient.Commands
                 {
                     clientsCnt = int.Parse(args[0]);
                     requestsCnt = long.Parse(args[1]);
-
                     if (args.Length == 3)
                         eventStreamId = args[2];
                 }
@@ -74,102 +73,92 @@ namespace EventStore.TestClient.Commands
 
             var clients = new List<TcpTypedConnection<byte[]>>();
             var threads = new List<Thread>();
-            var autoResetEvent = new AutoResetEvent(false);
+            var doneEvent = new ManualResetEventSlim(false);
             var sw2 = new Stopwatch();
-
+            long succ = 0;
+            long fail = 0;
             long all = 0;
-            int sent = 0;
-            int received = 0;
-
             for (int i = 0; i < clientsCnt; i++)
             {
                 var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-
+                long received = 0;
+                long sent = 0;
                 var client = context.Client.CreateTcpConnection(
                     context,
                     (conn, pkg) =>
                     {
-                        Interlocked.Increment(ref received);
+                        if (pkg.Command != TcpCommand.ReadEventCompleted)
+                        {
+                            context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
+                            return;
+                        }
 
+                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
+                        if (dto.Result == TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Success)
+                        {
+                            if (Interlocked.Increment(ref succ) % 1000 == 0) Console.Write(".");
+                        }
+                        else
+                        {
+                            if (Interlocked.Increment(ref fail) % 1000 == 0) Console.Write("#");
+                        }
+
+                        Interlocked.Increment(ref received);
                         var localAll = Interlocked.Increment(ref all);
-                        if (localAll % 1000 == 0) Console.Write(".");
                         if (localAll % 100000 == 0)
                         {
                             var elapsed = sw2.Elapsed;
                             sw2.Restart();
-                            context.Log.Trace("\nDONE TOTAL {0} READS IN {1} ({2:0.0}/s).",
-                                              localAll,
-                                              elapsed,
-                                              1000.0*100000/elapsed.TotalMilliseconds);
+                            context.Log.Trace("\nDONE TOTAL {0} READS IN {1} ({2:0.0}/s).", localAll, elapsed, 1000.0*100000/elapsed.TotalMilliseconds);
                         }
                         if (localAll == requestsCnt)
-                            autoResetEvent.Set();
-                    },
-                    connectionClosed: (conn, err) =>
-                    {
-                        if (received < count)
-                            context.Fail(null, "Socket was closed, but not all requests were completed.");
-                        else
+                        {
                             context.Success();
-                    });
-
-                client.ConnectionClosed += (_, __) => context.Log.Debug("READS sent: {0}, received: {1}", sent, received);
+                            doneEvent.Set();
+                        }
+                    },
+                    connectionClosed: (conn, err) => context.Fail(reason: "Connection was closed prematurely."));
                 clients.Add(client);
 
                 threads.Add(new Thread(() => 
                 {
                     for (int j = 0; j < count; ++j)
                     {
-                        var corrid = Guid.NewGuid();
                         var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos: false);
-                        var package = new TcpPackage(TcpCommand.ReadEvent, corrid, read.Serialize());
+                        var package = new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), read.Serialize());
                         client.EnqueueSend(package.AsByteArray());
                         
-                        Interlocked.Increment(ref sent);
-                        while (sent - received > context.Client.Options.ReadWindow/clientsCnt)
+                        var localSent = Interlocked.Increment(ref sent);
+                        while (localSent - Interlocked.Read(ref received) > context.Client.Options.ReadWindow/clientsCnt)
                         {
                             Thread.Sleep(1);
                         }
                     }
-                }));
+                }) { IsBackground = true });
             }
 
             var sw = Stopwatch.StartNew();
             sw2.Start();
-            foreach (var thread in threads)
-            {
-                thread.IsBackground = true;
-                thread.Start();
-            }
-
-            autoResetEvent.WaitOne();
+            threads.ForEach(thread => thread.Start());
+            doneEvent.Wait();
             sw.Stop();
+            clients.ForEach(client => client.Close());
 
-            foreach (var client in clients)
-            {
-                client.Close();
-            }
+            var reqPerSec = (all + 0.0) / sw.ElapsedMilliseconds * 1000;
+            context.Log.Info("Completed. READS succ: {0}, fail: {1}.", Interlocked.Read(ref succ), Interlocked.Read(ref fail));
+            context.Log.Info("{0} requests completed in {1}ms ({2:0.00} reqs per sec).", all, sw.ElapsedMilliseconds, reqPerSec);
 
-            context.Log.Info("Completed. READS done: {0}.", all);
+            PerfUtils.LogData(Keyword,
+                              PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
+                                            PerfUtils.Col("requestsCnt", requestsCnt),
+                                            PerfUtils.Col("ElapsedMilliseconds", sw.ElapsedMilliseconds)),
+                              PerfUtils.Row(PerfUtils.Col("readsCnt", all)));
+            PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt), (int)reqPerSec);
 
-            var reqPerSec = (requestsCnt + 0.0)/sw.ElapsedMilliseconds*1000;
-            context.Log.Info("{0} requests completed in {1}ms ({2:0.00} reqs per sec).",
-                             requestsCnt,
-                             sw.ElapsedMilliseconds,
-                             reqPerSec);
-
-            PerfUtils.LogData(
-                        Keyword,
-                            PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
-                                 PerfUtils.Col("requestsCnt", requestsCnt),
-                                 PerfUtils.Col("ElapsedMilliseconds", sw.ElapsedMilliseconds)),
-                        PerfUtils.Row(PerfUtils.Col("readsCnt", all))
-            );
-
-            PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt),
-                        (int)reqPerSec);
-         
-            context.Success();
+            if (succ != requestsCnt)
+                context.Fail(reason: "There were errors or not all requests completed.");
+            else
+                context.Success();
         }
     }
 }

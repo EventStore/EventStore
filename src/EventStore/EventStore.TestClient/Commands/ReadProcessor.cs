@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Diagnostics;
-using System.Net.Sockets;
 using System.Text;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -49,50 +48,44 @@ namespace EventStore.TestClient.Commands
             {
                 if (args.Length > 2)
                     return false;
-
                 eventStreamId = args[0];
-
                 if (args.Length == 2)
                     fromNumber = int.Parse(args[1]);
             }
 
             context.IsAsync();
 
-            var readDto = new TcpClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos: false);
-            var package = new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), readDto.Serialize());
-
             var sw = new Stopwatch();
-            bool dataReceived = false;
             context.Client.CreateTcpConnection(
                 context,
                 connectionEstablished: conn =>
                 {
                     context.Log.Info("[{0}]: Reading...", conn.EffectiveEndPoint);
+                    var readDto = new TcpClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos: false);
+                    var package = new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
                     sw.Start();
-                    conn.EnqueueSend(package.AsByteArray());
+                    conn.EnqueueSend(package);
                 },
                 handlePackage: (conn, pkg) =>
                 {
+                    sw.Stop();
+                    context.Log.Info("Read request took: {0}.", sw.Elapsed);
+
                     if (pkg.Command != TcpCommand.ReadEventCompleted)
                     {
                         context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
                         return;
                     }
-                    dataReceived = true;
-                    sw.Stop();
 
                     var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
-
                     context.Log.Info("READ events from <{0}>:\n\n"
-                                     + "\tCorrelationId: {1}\n"
-                                     + "\tEventStreamId: {2}\n"
-                                     + "\tEventNumber:   {3}\n"
-                                     + "\tReadResult:    {4}\n"
-                                     + "\tEventType:     {5}\n"
-                                     + "\tData:          {6}\n"
-                                     + "\tMetadata:      {7}\n",
+                                     + "\tEventStreamId: {1}\n"
+                                     + "\tEventNumber:   {2}\n"
+                                     + "\tReadResult:    {3}\n"
+                                     + "\tEventType:     {4}\n"
+                                     + "\tData:          {5}\n"
+                                     + "\tMetadata:      {6}\n",
                                      eventStreamId,
-                                     package.CorrelationId,
                                      eventStreamId,
                                      dto.Event.Event.EventNumber,
                                      (ReadEventResult)dto.Result,
@@ -100,20 +93,18 @@ namespace EventStore.TestClient.Commands
                                      Encoding.UTF8.GetString(dto.Event.Event.Data ?? new byte[0]),
                                      Encoding.UTF8.GetString(dto.Event.Event.Metadata ?? new byte[0]));
 
-                    context.Log.Info("Read request took: {0}.", sw.Elapsed);
 
-                    PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
-
-                    conn.Close();
-                    context.Success();
-                },
-                connectionClosed: (connection, error) =>
-                {
-                    if (dataReceived || error == SocketError.Success)
+                    if (dto.Result == TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Success)
+                    {
+                        PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
                         context.Success();
+                    }
                     else
                         context.Fail();
-                });
+
+                    conn.Close();
+                },
+                connectionClosed: (connection, error) => context.Fail(reason: "Connection was closed prematurely."));
 
             context.WaitForCompletion();
             return true;

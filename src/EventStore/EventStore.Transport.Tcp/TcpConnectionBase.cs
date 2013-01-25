@@ -38,8 +38,6 @@ namespace EventStore.Transport.Tcp
         private Socket _socket;
         private IPEndPoint _endPoint;
 
-        //TODO GFY THERE ARE SOME DATETIMES IN HERE THAT ARE NOT LOCKED. MIGHT WANT TO STORE AS LONGS THOUGH
-        //I DONT THINK THEY ARE EVER CHECKED FROM ANOTHER THREAD!
         private long _lastSendStarted = -1;
         private long _lastReceiveStarted = -1;
         private bool _isClosed;
@@ -50,15 +48,30 @@ namespace EventStore.Transport.Tcp
         private long _totaBytesSent;
         private long _totaBytesReceived;
 
-        public TcpConnectionBase()
+        protected TcpConnectionBase()
         {
             TcpConnectionMonitor.Default.Register(this);
         }
 
-        public IPEndPoint EndPoint
+        protected void InitSocket(Socket socket, IPEndPoint endPoint)
         {
-            get { return _endPoint; }
+            Ensure.NotNull(socket, "socket");
+            Ensure.NotNull(endPoint, "endPoint");
+
+            _socket = socket;
+            _endPoint = endPoint;
         }
+
+        public IPEndPoint EndPoint { get { return _endPoint; } }
+        public bool IsInitialized { get { return _socket != null; } }
+        public bool IsClosed { get { return _isClosed; } }
+        public bool InSend { get { return Interlocked.Read(ref _lastSendStarted) >= 0; } }
+        public bool InReceive { get { return Interlocked.Read(ref _lastReceiveStarted) >= 0; } }
+        public int PendingSendBytes { get { return _pendingSendBytes; } }
+        public int InSendBytes { get { return _inSendBytes; } }
+        public int PendingReceivedBytes { get { return _pendingReceivedBytes; } }
+        public long TotalBytesSent { get { return Interlocked.Read(ref _totaBytesReceived); } }
+        public long TotalBytesReceived { get { return Interlocked.Read(ref _totaBytesReceived); } }
 
         public bool IsReadyForSend
         {
@@ -92,11 +105,6 @@ namespace EventStore.Transport.Tcp
             }
         }
 
-        public bool IsInitialized
-        {
-            get { return _socket != null; }
-        }
-
         public bool IsFaulted
         {
             get
@@ -113,22 +121,7 @@ namespace EventStore.Transport.Tcp
             }
         }
 
-        public bool IsClosed
-        {
-            get { return _isClosed; }
-        }
-
-        public bool InSend
-        {
-            get { return Interlocked.Read(ref _lastSendStarted) >= 0; }
-        }
-
-        public bool InReceive
-        {
-            get { return Interlocked.Read(ref _lastReceiveStarted) >= 0; }
-        }
-
-        public DateTime? LastSendStarted
+        public DateTime? LastSendStarted 
         {
             get
             {
@@ -144,46 +137,6 @@ namespace EventStore.Transport.Tcp
                 var ticks = Interlocked.Read(ref _lastReceiveStarted);
                 return ticks >= 0 ? new DateTime(ticks) : (DateTime?)null;
             }
-        }
-
-        public int PendingSendBytes
-        {
-            get { return _pendingSendBytes; }
-        }
-
-        public int InSendBytes
-        {
-            get { return _inSendBytes; }
-        }
-
-        public int PendingReceivedBytes
-        {
-            get { return _pendingReceivedBytes; }
-        }
-
-        public long TotalBytesSent
-        {
-            get
-            {
-                return Interlocked.Read(ref _totaBytesReceived);
-            }
-        }
-
-        public long TotalBytesReceived
-        {
-            get
-            {
-                return Interlocked.Read(ref _totaBytesReceived);
-            }
-        }
-
-        protected void InitSocket(Socket socket, IPEndPoint endPoint)
-        {
-            Ensure.NotNull(socket, "socket");
-            Ensure.NotNull(endPoint, "endPoint");
-
-            _socket = socket;
-            _endPoint = endPoint;
         }
 
         protected void NotifySendScheduled(int bytes)
