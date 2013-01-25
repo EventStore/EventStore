@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.Bus
             Queue.Publish(new TestMessage());
 
             Consumer.Wait();
-            Assert.That(Consumer.HandledMessages.ContainsSingle<TestMessage>());
+            Assert.IsTrue(Consumer.HandledMessages.ContainsSingle<TestMessage>());
         }
 
         [Test]
@@ -85,8 +85,8 @@ namespace EventStore.Core.Tests.Bus
 
             Consumer.Wait();
 
-            Assert.That(Consumer.HandledMessages.ContainsSingle<TestMessage>() &&
-                        Consumer.HandledMessages.ContainsSingle<TestMessage2>());
+            Assert.IsTrue(Consumer.HandledMessages.ContainsSingle<TestMessage>());
+            Assert.IsTrue(Consumer.HandledMessages.ContainsSingle<TestMessage2>());
         }
 
         [Test]
@@ -118,7 +118,8 @@ namespace EventStore.Core.Tests.Bus
                 }
             }
 
-            Assert.That(msg1ThreadId == msg2ThreadId && msg2ThreadId == msg3ThreadId);
+            Assert.AreEqual(msg1ThreadId, msg2ThreadId);
+            Assert.AreEqual(msg2ThreadId, msg3ThreadId);
         }
 
         [Test]
@@ -136,13 +137,13 @@ namespace EventStore.Core.Tests.Bus
             Consumer.Wait();
 
             var typedMessages = Consumer.HandledMessages.OfType<TestMessageWithId>().ToArray();
-            Assert.That(typedMessages.Length == 6 &&
-                        typedMessages[0].Id == 4 &&
-                        typedMessages[1].Id == 8 &&
-                        typedMessages[2].Id == 15 &&
-                        typedMessages[3].Id == 16 &&
-                        typedMessages[4].Id == 23 &&
-                        typedMessages[5].Id == 42);
+            Assert.AreEqual(6, typedMessages.Length);
+            Assert.AreEqual(4, typedMessages[0].Id);
+            Assert.AreEqual(8, typedMessages[1].Id);
+            Assert.AreEqual(15, typedMessages[2].Id);
+            Assert.AreEqual(16, typedMessages[3].Id);
+            Assert.AreEqual(23, typedMessages[4].Id);
+            Assert.AreEqual(42, typedMessages[5].Id);
         }
 
         [Test]
