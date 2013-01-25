@@ -84,7 +84,7 @@ namespace EventStore.Core.Services.VNode
                     .When<SystemMessage.SystemInit>().Do(Handle)
                     .When<SystemMessage.SystemStart>().Do(Handle)
                     .When<SystemMessage.BecomeShuttingDown>().Do(Handle)
-                    .When<SystemMessage.BecomeWorking>().Do(Handle)
+                    .When<SystemMessage.BecomeMaster>().Do(Handle)
                     .When<SystemMessage.BecomeShutdown>().Do(Handle)
                 .InState(VNodeState.Initializing)
                     .When<SystemMessage.StorageReaderInitializationDone>().Do(Handle)
@@ -130,10 +130,10 @@ namespace EventStore.Core.Services.VNode
             Log.Info("========= SystemStart: SingleVNodeController =========");
             _outputBus.Publish(message);
 
-            _mainQueue.Publish(new SystemMessage.BecomeWorking());
+            _mainQueue.Publish(new SystemMessage.BecomeMaster());
         }
 
-        private void Handle(SystemMessage.BecomeWorking message)
+        private void Handle(SystemMessage.BecomeMaster message)
         {
             Log.Info("[{0}] IS WORKING!!! SPARTA!!!111", _httpEndPoint);
 

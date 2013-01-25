@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void When()
         {
             _projectionName = "test-projection";
-            _manager.Handle(new SystemMessage.BecomeWorking());
+            _manager.Handle(new SystemMessage.BecomeMaster());
         }
 
         [Test]

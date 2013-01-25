@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -41,6 +42,7 @@ namespace EventStore.Core.Services.Storage
 {
     public class StorageWriterService : IHandle<Message>,
                                         IHandle<SystemMessage.SystemInit>,
+                                        IHandle<SystemMessage.BecomeMaster>,
                                         IHandle<SystemMessage.BecomeShuttingDown>,
                                         IHandle<StorageMessage.WritePrepares>,
                                         IHandle<StorageMessage.WriteDelete>,
@@ -54,6 +56,7 @@ namespace EventStore.Core.Services.Storage
 
         protected readonly TFChunkWriter Writer;
         protected readonly IReadIndex ReadIndex;
+        private readonly IEpochManager _epochManager;
 
         protected readonly IPublisher Bus;
         private readonly ISubscriber _subscriber;
@@ -67,16 +70,18 @@ namespace EventStore.Core.Services.Storage
 
         protected int FlushMessagesInQueue;
 
-        public StorageWriterService(IPublisher bus, ISubscriber subscriber, TFChunkWriter writer, IReadIndex readIndex)
+        public StorageWriterService(IPublisher bus, ISubscriber subscriber, TFChunkWriter writer, IReadIndex readIndex, IEpochManager epochManager)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(subscriber, "subscriber");
             Ensure.NotNull(writer, "writer");
             Ensure.NotNull(readIndex, "readIndex");
+            Ensure.NotNull(epochManager, "epochManager");
 
             Bus = bus;
             _subscriber = subscriber;
             ReadIndex = readIndex;
+            _epochManager = epochManager;
 
             _flushDelay = 0;
             _lastFlush = _watch.ElapsedTicks;
@@ -90,6 +95,7 @@ namespace EventStore.Core.Services.Storage
 
             SubscribeToMessage<SystemMessage.SystemInit>();
             SubscribeToMessage<SystemMessage.BecomeShuttingDown>();
+            SubscribeToMessage<SystemMessage.BecomeMaster>();
             SubscribeToMessage<StorageMessage.WritePrepares>();
             SubscribeToMessage<StorageMessage.WriteDelete>();
             SubscribeToMessage<StorageMessage.WriteTransactionStart>();
@@ -132,6 +138,12 @@ namespace EventStore.Core.Services.Storage
         void IHandle<SystemMessage.BecomeShuttingDown>.Handle(SystemMessage.BecomeShuttingDown message)
         {
             Writer.Close();
+        }
+
+        public void Handle(SystemMessage.BecomeMaster message)
+        {
+            Interlocked.Decrement(ref FlushMessagesInQueue);
+            _epochManager.SetLastEpoch(_epochManager.LastEpochNumber + 1, Guid.NewGuid()); // forces flush
         }
 
         void IHandle<StorageMessage.WritePrepares>.Handle(StorageMessage.WritePrepares message)
@@ -325,9 +337,8 @@ namespace EventStore.Core.Services.Storage
                                                                                        result.EndEventNumber));
                         break;
                     case CommitDecision.CorruptedIdempotency:
-                        //TODO AN add messages and error code for invalid idempotent request
-                        //TODO AN for now 
-                        //throw new Exception("The request was partially committed and other part is different.");
+                        // in case of corrupted idempotency (part of transaction is ok, other is different)
+                        // then we can say that the transaction is not idempotent, so WrongExpectedVersion is ok answer
                         message.Envelope.ReplyWith(new StorageMessage.WrongExpectedVersion(message.CorrelationId));
                         break;
                     case CommitDecision.InvalidTransaction:
@@ -452,10 +463,10 @@ namespace EventStore.Core.Services.Storage
                        && ReadIndex.GetLastStreamEventNumber(message.EventStreamId) == ExpectedVersion.NoStream);
         }
 
-        protected bool Flush()
+        protected bool Flush(bool force = false)
         {
             var start = _watch.ElapsedTicks;
-            if (start - _lastFlush >= _flushDelay + MinFlushDelay || FlushMessagesInQueue == 0)
+            if (force || FlushMessagesInQueue == 0 || start - _lastFlush >= _flushDelay + MinFlushDelay)
             {
                 Writer.Flush();
 

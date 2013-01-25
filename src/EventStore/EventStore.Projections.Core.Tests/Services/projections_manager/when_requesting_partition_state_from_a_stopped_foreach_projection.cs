@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             _projectionName = "test-projection";
             // when
-            _manager.Handle(new SystemMessage.BecomeWorking());
+            _manager.Handle(new SystemMessage.BecomeMaster());
         }
 
         [Test]

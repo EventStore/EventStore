@@ -66,9 +66,12 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             _reader = new BinaryReader(_fileStream);
             _writer = new BinaryWriter(_fileStream);
             if (old)
-                _lastFlushed = _last = ReadCurrent();
+                _last = _lastFlushed = ReadCurrent();
             else
-                _lastFlushed = _lastFlushed = initValue;
+            {
+                _last = initValue;
+                Flush();
+            }
         }
 
         private long ReadCurrent()

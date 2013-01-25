@@ -94,8 +94,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint
                 Write(initValue);
                 Flush();
             }
-            var initial = exists ? ReadCurrent() : initValue;
-            _last = _lastFlushed = initial;
+            _last = _lastFlushed = ReadCurrent();
         }
 
 

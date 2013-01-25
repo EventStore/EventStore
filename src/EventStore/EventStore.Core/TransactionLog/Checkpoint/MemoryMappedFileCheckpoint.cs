@@ -80,7 +80,10 @@ namespace EventStore.Core.TransactionLog.Checkpoint
             if (old)
                 _last = _lastFlushed = ReadCurrent();
             else
-                _last = _lastFlushed = initValue;
+            {
+                _last = initValue;
+                Flush();
+            }
         }
 
         public void Close()

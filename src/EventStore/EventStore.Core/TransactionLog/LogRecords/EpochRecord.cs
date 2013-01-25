@@ -66,9 +66,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
             public int EpochNumber{ get; set; }
             public Guid EpochId{ get; set; }
-            public long WriterCheckpoint{ get; set; }
 
             public long PrevEpochPosition{ get; set; }
+
+            public EpochRecordDto()
+            {
+            }
 
             public EpochRecordDto(EpochRecord rec)
             {

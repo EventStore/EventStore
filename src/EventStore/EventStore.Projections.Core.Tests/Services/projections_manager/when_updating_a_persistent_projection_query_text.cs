@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void When()
         {
             _projectionName = "test-projection";
-            _bus.Publish(new SystemMessage.BecomeWorking());
+            _bus.Publish(new SystemMessage.BecomeMaster());
             _manager.Handle(
                 new ProjectionManagementMessage.Post(
                     new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName, "JS",

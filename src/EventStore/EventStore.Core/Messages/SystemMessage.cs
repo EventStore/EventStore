@@ -61,9 +61,9 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class BecomeWorking: StateChangeMessage
+        public class BecomeMaster: StateChangeMessage
         {
-            public BecomeWorking(): base(VNodeState.Master)
+            public BecomeMaster(): base(VNodeState.Master)
             {
             }
         }

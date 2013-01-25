@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
 
             protected override void When()
             {
-                _manager.Handle(new SystemMessage.BecomeWorking());
+                _manager.Handle(new SystemMessage.BecomeMaster());
                 _manager.Handle(
                     new ProjectionManagementMessage.Post(
                         new PublishEnvelope(_bus), _projectionMode, _projectionName,

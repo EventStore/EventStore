@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         private ProjectionCoreService _coreService;
 
         [SetUp]
-        public void setup()
+        public void Setup()
         {
             //TODO: this became a n integration test - proper ProjectionCoreService and ProjectionManager testing is required instead
             _bus.Subscribe(_consumer);
@@ -86,10 +86,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             
             Given();
             When();
-        }
-
-        protected virtual void Given()
-        {
         }
 
         protected abstract void When();

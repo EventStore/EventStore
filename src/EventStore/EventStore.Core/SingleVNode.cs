@@ -131,7 +131,7 @@ namespace EventStore.Core
                                                 new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0),
                                                 writer);
             epochManager.Init();
-            new StorageWriterService(_mainQueue, _mainBus, writer, readIndex); // subscribes internally
+            new StorageWriterService(_mainQueue, _mainBus, writer, readIndex, epochManager); // subscribes internally
             var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);

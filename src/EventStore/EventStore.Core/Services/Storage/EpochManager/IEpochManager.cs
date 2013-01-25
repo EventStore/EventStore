@@ -125,6 +125,9 @@ namespace EventStore.Core.Services.Storage.EpochManager
             // This method should be called from single thread.
             Ensure.NotEmptyGuid(epochId, "epochId");
 
+            if (epochNumber > _lastEpochNumber + 1)
+                throw new Exception(string.Format("New epoch is far too in the future. LastEpochNumber: {0}, new epoch number: {1}.", _lastEpochNumber, epochNumber));
+
             // if we are writing the very first epoch, last position will be -1.
             long lastEpochPosition = epochNumber == 0 ? -1 : GetEpoch(epochNumber - 1).LogPosition; 
 
