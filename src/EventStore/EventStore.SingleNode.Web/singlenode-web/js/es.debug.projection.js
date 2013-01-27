@@ -97,7 +97,7 @@
                 '<script src="/web/es/js/projections/es.projection.js"><' + '/script>' +
                 '<script src="/web/es/js/projections/es.api.js"><' + '/script>' +
                 '<script>window.processor = $initialize_hosted_projections(); processor.set_debugging();<' + '/script>' +
-                '<script src="' + projectionStatusUrl + '/query?1"><' + '/' + 'script>');
+                '<script src="' + projectionStatusUrl + '/query"><' + '/' + 'script>');
 
 
         $.ajax(projectionStatusUrl + "/state?partition=" + first.partition, {

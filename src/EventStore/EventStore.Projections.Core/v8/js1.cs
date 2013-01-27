@@ -46,6 +46,9 @@ namespace EventStore.Projections.Core.v8
 
         public delegate void ReportErrorDelegate(int erroe_code, [MarshalAs(UnmanagedType.LPWStr)] string error_message);
 
+        public delegate bool EnterCancellableRegionDelegate();
+
+        public delegate bool ExitCancellableRegionDelegate();
 
         [DllImport("js1", EntryPoint = "js1_api_version")]
         public static extern IntPtr ApiVersion();
@@ -58,7 +61,8 @@ namespace EventStore.Projections.Core.v8
         [DllImport("js1", EntryPoint = "compile_prelude")]
         public static extern IntPtr CompilePrelude(
             [MarshalAs(UnmanagedType.LPWStr)] string prelude, [MarshalAs(UnmanagedType.LPWStr)] string fileName,
-            LoadModuleDelegate loadModuleHandler, LogDelegate logHandler);
+            LoadModuleDelegate loadModuleHandler, EnterCancellableRegionDelegate enterCancellableRegionHandler,
+            ExitCancellableRegionDelegate exitCancellableRegionHandler, LogDelegate logHandler);
 
         [DllImport("js1", EntryPoint = "compile_query")]
         public static extern IntPtr CompileQuery(
@@ -79,6 +83,9 @@ namespace EventStore.Projections.Core.v8
 
         [DllImport("js1", EntryPoint = "free_result")]
         public static extern void FreeResult(IntPtr resultHandle);
+
+        [DllImport("js1", EntryPoint = "terminate_execution")]
+        public static extern void TerminateExecution(IntPtr scriptHandle);
 
         [DllImport("js1", EntryPoint = "report_errors")]
         public static extern void ReportErrors(IntPtr scriptHandle, ReportErrorDelegate reportErrorCallback);

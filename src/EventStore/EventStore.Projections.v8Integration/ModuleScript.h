@@ -17,7 +17,7 @@ namespace js1 {
 		virtual ~ModuleScript();
 
 		bool compile_script(const uint16_t *module_source, const uint16_t *module_file_name);
-		void run();
+		bool try_run();
 
 		v8::Handle<v8::Object> get_module_object();
 

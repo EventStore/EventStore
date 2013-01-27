@@ -30,9 +30,16 @@ namespace js1
 
 	}
 
-	v8::Handle<v8::Value> QueryScript::run() 
+	bool QueryScript::try_run() 
 	{
-		return run_script(get_context());
+		if (!prelude->enter_cancellable_region())
+			return false;
+
+		v8:Handle<v8::Value> result = run_script(get_context());
+		if (!prelude->exit_cancellable_region())
+			return false;
+
+		return true;
 	}
 
 	v8::Persistent<v8::String> QueryScript::execute_handler(void *event_handler_handle, const uint16_t *data_json, const uint16_t *data_other[], int32_t other_length) 
@@ -54,7 +61,22 @@ namespace js1
 		v8::Handle<v8::Object> global = get_context()->Global();
 
 		v8::TryCatch try_catch;
+
+		if (!prelude->enter_cancellable_region())
+		{
+			v8::Persistent<v8::String> empty;
+			return empty;
+		}
 		v8::Handle<v8::Value> result = event_handler->get_handler()->Call(global, 1 + other_length, argv);
+		if (!prelude->exit_cancellable_region())
+		{
+		{
+			printf ("Terminated?");
+			v8::Persistent<v8::String> empty;
+			return empty;
+		}
+		}
+
 		set_last_error(result.IsEmpty(), try_catch);
 		v8::Handle<v8::String> empty;
 		if (result.IsEmpty())

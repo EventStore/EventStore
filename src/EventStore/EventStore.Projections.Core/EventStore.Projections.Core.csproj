@@ -191,7 +191,6 @@
     <Compile Include="v8\js1.cs" />
     <Compile Include="v8\Js1Exception.cs" />
     <Compile Include="v8\PreludeScript.cs" />
-    <Compile Include="v8\Program.cs" />
     <Compile Include="v8\QueryScript.cs" />
   </ItemGroup>
   <ItemGroup>

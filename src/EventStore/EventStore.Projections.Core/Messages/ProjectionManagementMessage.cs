@@ -493,5 +493,20 @@ namespace EventStore.Projections.Core.Messages
                 get { return _name; }
             }
         }
+
+        public class CancelExecutionMessage : Message
+        {
+            private readonly Action _action;
+
+            public CancelExecutionMessage(Action action)
+            {
+                _action = action;
+            }
+
+            public Action Action
+            {
+                get { return _action; }
+            }
+        }
     }
 }

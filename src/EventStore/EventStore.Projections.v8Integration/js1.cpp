@@ -12,6 +12,7 @@ extern "C"
 {
 	JS1_API int js1_api_version()
 	{
+		// NOTE: this also verifies whether this build can work at all
 		v8::HandleScope scope;
 		v8::Persistent<v8::Context> context = v8::Context::New();
 		v8::TryCatch try_catch;
@@ -21,7 +22,6 @@ extern "C"
 	//TODO: revise error reporting - it is no the best way to create faulted objects and then immediately dispose them
 	JS1_API void * STDCALL compile_module(void *prelude, const uint16_t *script, const uint16_t *file_name)
 	{
-		printf("compile_module\n");
 		js1::PreludeScript *prelude_script = reinterpret_cast<js1::PreludeScript *>(prelude);
 		js1::ModuleScript *module_script;
 
@@ -32,23 +32,26 @@ extern "C"
 		module_script = new js1::ModuleScript(prelude_script);
 
 		if (module_script->compile_script(script, file_name))
-			module_script->run();
-		return module_script;
+			if (module_script->try_run())
+				return module_script;
+		delete module_script;
+		return NULL;
 	};
 
-	JS1_API void * STDCALL compile_prelude(const uint16_t *prelude, const uint16_t *file_name, LOAD_MODULE_CALLBACK load_module_callback, LOG_CALLBACK log_callback)
+	JS1_API void * STDCALL compile_prelude(const uint16_t *prelude, const uint16_t *file_name, LOAD_MODULE_CALLBACK load_module_callback, 
+		ENTER_CANCELLABLE_REGION enter_calcellable_region_callback, EXIT_CANCELLABLE_REGION exit_cancellable_region_callback, LOG_CALLBACK log_callback)
 	{
-		printf("compile_prelude\n");
 		js1::PreludeScript *prelude_script;
-		prelude_script = new js1::PreludeScript(load_module_callback, log_callback);
+		prelude_script = new js1::PreludeScript(load_module_callback, enter_calcellable_region_callback, exit_cancellable_region_callback, log_callback);
 		js1::PreludeScope prelude_scope(prelude_script);
 
 		v8::HandleScope scope;
 
 		if (prelude_script->compile_script(prelude, file_name))
-			prelude_script->run();
-
-		return prelude_script;
+			if (prelude_script->try_run())
+				return prelude_script;
+		delete prelude_script;
+		return NULL;
 	};
 
 	JS1_API void * STDCALL compile_query(
@@ -70,8 +73,10 @@ extern "C"
 		query_script = new js1::QueryScript(prelude_script, register_command_handler_callback, reverse_command_callback);
 
 		if (query_script->compile_script(script, file_name))
-			query_script->run();
-		return query_script;
+			if (query_script->try_run())
+				return query_script;
+		delete query_script;
+		return NULL;
 	};
 
 	JS1_API void STDCALL dispose_script(void *script_handle)
@@ -108,6 +113,14 @@ extern "C"
 	{
 		v8::String::Value * result_buffer = reinterpret_cast<v8::String::Value *>(result);		
 		delete result_buffer;
+	};
+
+	JS1_API void STDCALL terminate_execution(void *script_handle)
+	{
+		js1::QueryScript *query_script;
+		query_script = reinterpret_cast<js1::QueryScript *>(script_handle);
+
+		query_script->isolate_terminate_execution();
 	};
 
 	//TODO: revise error reporting completely (we are loosing error messages from the load_module this way)

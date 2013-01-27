@@ -9,6 +9,7 @@ namespace js1 {
 		CompiledScript();
 		virtual ~CompiledScript();
 		void report_errors(REPORT_ERROR_CALLBACK report_error_callback);
+		void isolate_terminate_execution();
 	protected:
 		virtual v8::Isolate *get_isolate() = 0;
 		virtual v8::Persistent<v8::ObjectTemplate> create_global_template() = 0;

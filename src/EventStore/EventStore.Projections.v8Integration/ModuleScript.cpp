@@ -22,13 +22,19 @@ namespace js1
 		return CompiledScript::compile_script(source, file_name);
 	}
 
-	void ModuleScript::run()
+	bool ModuleScript::try_run()
 	{
 		v8::Context::Scope context_scope(get_context());
 		module_object.Dispose();
 		module_object.Clear();
 
+		if (prelude != NULL && !prelude->enter_cancellable_region()) 
+			return false;
 		v8::Handle<v8::Value> result = run_script(get_context());
+		if (prelude != NULL) 
+			if (!prelude->exit_cancellable_region())
+				return false;
+
 		if (result->IsObject())
 		{
 			module_object = v8::Persistent<v8::Object>::New(result.As<v8::Object>());
@@ -37,6 +43,7 @@ namespace js1
 		{
 			set_last_error(v8::String::New("Module script must return an object"));
 		}
+		return true;
 	}
 
 	v8::Handle<v8::Object> ModuleScript::get_module_object()

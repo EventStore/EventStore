@@ -69,7 +69,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 _logged = new List<string>();
                 _stateHandlerFactory = new ProjectionStateHandlerFactory();
                 _stateHandler = _stateHandlerFactory.Create(
-                    "JS", _projection, s =>
+                    "JS", _projection, logger: s =>
                         {
                             if (!s.StartsWith("P:")) _logged.Add(s);
                             else _logDelegate(s);
@@ -106,6 +106,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 using (
                     var prelude = new PreludeScript(
                         preludeSource.Item1, preludeSource.Item2, DefaultV8ProjectionStateHandler.GetModuleSource,
+                        (i1, action) => { },
                         _logger))
                 {
                 }
@@ -118,7 +119,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             _loadModuleDelegate = name => IntPtr.Zero;
             for (var i = 0; i < 10000000; i++)
             {
-                IntPtr prelude = Js1.CompilePrelude("return {};", "test.js", _loadModuleDelegate, _logDelegate);
+                IntPtr prelude = Js1.CompilePrelude("return {};", "test.js", _loadModuleDelegate, () => true, () => true, _logDelegate);
                 Js1.DisposeScript(prelude);
             }
         }

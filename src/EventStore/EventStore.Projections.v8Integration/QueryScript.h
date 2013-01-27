@@ -29,9 +29,8 @@ namespace js1 {
 		virtual ~QueryScript();
 
 		bool compile_script(const uint16_t *query_source, const uint16_t *file_name);
-		v8::Handle<v8::Value> run();
+		bool try_run();
 		v8::Persistent<v8::String> execute_handler(void* event_handler_handle, const uint16_t *data_json, const uint16_t *data_other[], int32_t other_length);
-
 	protected:
 		virtual v8::Isolate *get_isolate();
 		virtual v8::Persistent<v8::ObjectTemplate> create_global_template();

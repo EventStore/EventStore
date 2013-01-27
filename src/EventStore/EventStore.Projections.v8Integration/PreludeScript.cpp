@@ -20,17 +20,24 @@ namespace js1
 		return CompiledScript::compile_script(prelude_source, prelude_file_name);
 	}
 
-	bool PreludeScript::run()
+	bool PreludeScript::try_run()
 	{
 		v8::Context::Scope context_scope(get_context());
 		global_template_factory.Dispose();
 		global_template_factory.Clear();
 		//TODO: check whether proper type of value returned
+
+		if (!enter_cancellable_region()) 
+			return false;
+
 		v8::Handle<v8::Value> prelude_result = run_script(get_context());
+		if (!exit_cancellable_region())
+			return false;
+
 		if (prelude_result.IsEmpty())
 		{
-			set_last_error(v8::String::New("Prelude script did not return any value"));
-			return false;
+//			set_last_error(v8::String::New("Prelude script did not return any value"));
+			return true;
 		}
 		if (prelude_result->IsFunction()) 
 		{
@@ -40,7 +47,7 @@ namespace js1
 		else 
 		{
 			set_last_error(v8::String::New("Prelude script must return a function"));
-			return false;
+			return true;
 		}
 	}
 
@@ -52,7 +59,14 @@ namespace js1
 		v8::Handle<v8::Value> prelude_result;
 		v8::Handle<v8::Object> prelude_result_object;
 		v8::TryCatch try_catch;
+
+		if (!enter_cancellable_region()) 
+			return result;
+
 		prelude_result = global_template_factory->Call(global, (int)prelude_arguments.size(), prelude_arguments.data());
+		if (!exit_cancellable_region())
+			return result;
+
 		set_last_error(prelude_result.IsEmpty(), try_catch);
 		if (prelude_result.IsEmpty())
 		{
@@ -79,6 +93,15 @@ namespace js1
 		}
 
 		return result;
+	}
+
+	bool PreludeScript::exit_cancellable_region() 
+	{ 
+		if (v8::V8::IsExecutionTerminating()) 
+		{
+			printf("Terminating!");
+		}
+		return exit_cancellable_region_callback(); 
 	}
 
 	v8::Isolate *PreludeScript::get_isolate()

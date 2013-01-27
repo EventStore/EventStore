@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _logged = new List<string>();
             _stateHandlerFactory = new ProjectionStateHandlerFactory();
             _stateHandler = _stateHandlerFactory.Create(
-                "JS", _projection, s =>
+                "JS", _projection, logger: s =>
                     {
                         if (!s.StartsWith("P:")) _logged.Add(s);
                         else Console.WriteLine(s);
