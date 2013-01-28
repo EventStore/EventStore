@@ -102,7 +102,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [Test]
         public void all_records_could_be_read_with_forward_pass()
         {
-            var seqReader = new TFChunkSequentialReader(_db, _db.Config.WriterCheckpoint, 0);
+            var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, 0);
 
             SeqReadResult res;
             int count = 0;
@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [Test]
         public void all_records_could_be_read_with_backward_pass()
         {
-            var seqReader = new TFChunkSequentialReader(_db, _db.Config.WriterCheckpoint, _db.Config.WriterCheckpoint.Read());
+            var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, _db.Config.WriterCheckpoint.Read());
 
             SeqReadResult res;
             int count = 0;
@@ -140,7 +140,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         [Test]
         public void all_records_could_be_read_doing_forward_backward_pass()
         {
-            var seqReader = new TFChunkSequentialReader(_db, _db.Config.WriterCheckpoint, 0);
+            var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, 0);
 
             SeqReadResult res;
             int count1 = 0;
@@ -173,7 +173,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             for (int i = 0; i < RecordsCount; ++i)
             {
-                var seqReader = new TFChunkSequentialReader(_db, _db.Config.WriterCheckpoint, _records[i].Position);
+                var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, _records[i].Position);
 
                 SeqReadResult res;
                 int count = 0;
@@ -195,7 +195,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         {
             for (int i = 0; i < RecordsCount; ++i)
             {
-                var seqReader = new TFChunkSequentialReader(_db, _db.Config.WriterCheckpoint, _records[i].Position);
+                var seqReader = new TFChunkReader(_db, _db.Config.WriterCheckpoint, _records[i].Position);
 
                 SeqReadResult res;
                 int count = 0;

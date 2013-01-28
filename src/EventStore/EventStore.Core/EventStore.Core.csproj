@@ -133,6 +133,7 @@
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />
     <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
+    <Compile Include="Services\Storage\EpochManager\EpochManager.cs" />
     <Compile Include="Services\Storage\EpochManager\IEpochManager.cs" />
     <Compile Include="Services\Storage\ReaderIndex\TransactionInfo.cs" />
     <Compile Include="Services\SubscriptionsService.cs" />
@@ -196,7 +197,6 @@
     <Compile Include="TransactionLog\Chunks\TFChunkDbConfig.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkDb.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkReader.cs" />
-    <Compile Include="TransactionLog\Chunks\TFChunkSequentialReader.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunkWriter.cs" />
     <Compile Include="TransactionLog\Chunks\TFConsts.cs" />
     <Compile Include="Exceptions\UnableToReadPastEndOfStreamException.cs" />
@@ -204,7 +204,6 @@
     <Compile Include="Exceptions\CorruptDatabaseException.cs" />
     <Compile Include="TransactionLog\ITransactionFileChaser.cs" />
     <Compile Include="TransactionLog\ITransactionFileReader.cs" />
-    <Compile Include="TransactionLog\ITransactionFileSequentialReader.cs" />
     <Compile Include="TransactionLog\LogRecords\EpochRecord.cs" />
     <Compile Include="TransactionLog\LogRecords\SystemLogRecord.cs" />
     <Compile Include="TransactionLog\ReadResults.cs" />

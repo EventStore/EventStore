@@ -29,10 +29,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.Util;
@@ -63,22 +63,21 @@ namespace EventStore.Core.Index
         private readonly string _filename;
         private readonly long _size;
         private readonly Midpoint[] _midpoints;
-        private readonly Common.Concurrent.ConcurrentQueue<WorkItem> _workItems = new Common.Concurrent.ConcurrentQueue<WorkItem>();
+        private readonly ObjectPool<WorkItem> _workItems;
 
         private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
         private volatile bool _deleteFile;
-        private volatile bool _selfdestructin54321;
-        private int _workItemsLeft;
 
         private PTable(string filename, 
                        Guid id, 
                        int bufferSize = DefaultBufferSize, 
-                       int maxReadingThreads = ESConsts.ReadIndexReaderCount, 
+                       int initialReaders = ESConsts.PTableInitialReaderCount, 
+                       int maxReaders = ESConsts.PTableMaxReaderCount, 
                        int depth = 16)
         {
             Ensure.NotNullOrEmpty(filename, "filename");
             Ensure.NotEmptyGuid(id, "id");
-            Ensure.Positive(maxReadingThreads, "maxReadingThreads");
+            Ensure.Positive(maxReaders, "maxReaders");
             Ensure.Positive(bufferSize, "bufferSize");
             Ensure.Nonnegative(depth, "depth");
 
@@ -91,12 +90,12 @@ namespace EventStore.Core.Index
             _size = new FileInfo(_filename).Length - PTableHeader.Size - MD5Size;
             File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
 
-            _workItemsLeft = maxReadingThreads;
-            for (int i = 0; i < maxReadingThreads; ++i)
-            {
-                var workItem = new WorkItem(_filename, IndexEntrySize);
-                _workItems.Enqueue(workItem);
-            }
+            _workItems = new ObjectPool<WorkItem>(string.Format("PTable {0} work items", _id),
+                                                  initialReaders,
+                                                  maxReaders,
+                                                  () => new WorkItem(filename, IndexEntrySize),
+                                                  workItem => workItem.Dispose(),
+                                                  pool => OnAllWorkItemsDisposed());
 
             var readerWorkItem = GetWorkItem();
             try
@@ -381,57 +380,43 @@ namespace EventStore.Core.Index
 
         private WorkItem GetWorkItem()
         {
-            for (int i = 0; i < 10; i++)
+            try
             {
-                WorkItem item;
-                if (_workItems.TryDequeue(out item))
-                    return item;
+                return _workItems.Get();
             }
-            if (_selfdestructin54321)
+            catch (ObjectPoolDisposingException)
+            {
                 throw new FileBeingDeletedException();
-            throw new Exception("Unable to acquire work item.");
+            }
+            catch (ObjectPoolMaxLimitReachedException)
+            {
+                throw new Exception("Unable to acquire work item.");
+            }
         }
 
         private void ReturnWorkItem(WorkItem workItem)
         {
-            _workItems.Enqueue(workItem);
-            if (_selfdestructin54321)
-                TryDestruct();
+            _workItems.Return(workItem);
         }
 
         public void MarkForDestruction()
         {
             _deleteFile = true;
-            _selfdestructin54321 = true;
-            TryDestruct();
+            _workItems.MarkForDisposal();
         }
 
         public void Dispose()
         {
             _deleteFile = false;
-            _selfdestructin54321 = true;
-            TryDestruct();
+            _workItems.MarkForDisposal();
         }
 
-        private void TryDestruct()
+        private void OnAllWorkItemsDisposed()
         {
-            int workItemCount = int.MaxValue;
-
-            WorkItem workItem;
-            while (_workItems.TryDequeue(out workItem))
-            {
-                workItem.Dispose();
-                workItemCount = Interlocked.Decrement(ref _workItemsLeft);
-            }
-
-            Debug.Assert(workItemCount >= 0, "Somehow we managed to decrease count of work items below zero.");
-            if (workItemCount == 0) // we are the last who should "turn the light off" for file streams
-            {
-                File.SetAttributes(_filename, FileAttributes.Normal);
-                if (_deleteFile)
-                    File.Delete(_filename);
-                _destroyEvent.Set();
-            }
+            File.SetAttributes(_filename, FileAttributes.Normal);
+            if (_deleteFile)
+                File.Delete(_filename);
+            _destroyEvent.Set();
         }
 
         public void WaitForDestroy(int timeout)
@@ -455,15 +440,11 @@ namespace EventStore.Core.Index
         private class WorkItem: IDisposable
         {
             public readonly FileStream Stream;
-            //public readonly byte[] Buffer;
-            //public readonly GCHandle BufferHandle;
             public readonly BinaryReader Reader;
 
             public WorkItem(string filename, int bufferSize)
             {
                 Stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.RandomAccess);
-//                Buffer = new byte[IndexEntrySize];
-//                BufferHandle = GCHandle.Alloc(Buffer, GCHandleType.Pinned);
                 Reader = new BinaryReader(Stream);
             }
 
@@ -484,8 +465,6 @@ namespace EventStore.Core.Index
                 {
                     Stream.Dispose();
                     Reader.Dispose();
-//                    if (BufferHandle.IsAllocated)
-//                        BufferHandle.Free();
                 }
             }
         }

@@ -61,8 +61,8 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
 
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       2,
-                                      () => new TFChunkSequentialReader(Db, WriterChecksum, 0),
-                                      () => new TFChunkReader(Db, WriterChecksum),
+                                      2,
+                                      () => new TFChunkReader(Db, WriterChecksum, 0),
                                       TableIndex,
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamCacheInfo>());

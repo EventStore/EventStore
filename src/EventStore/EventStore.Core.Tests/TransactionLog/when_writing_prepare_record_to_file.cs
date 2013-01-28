@@ -123,11 +123,8 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void trying_to_read_past_writer_checksum_returns_false()
         {
-            using (var reader = new TFChunkReader(_db, _writerCheckpoint))
-            {
-                reader.Open();
-                Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read()).Success);
-            }
+            var reader = new TFChunkReader(_db, _writerCheckpoint);
+            Assert.IsFalse(reader.TryReadAt(_writerCheckpoint.Read()).Success);
         }
     }
 }

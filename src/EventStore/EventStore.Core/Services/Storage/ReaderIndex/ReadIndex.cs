@@ -44,6 +44,7 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Messages;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json.Linq;
@@ -60,14 +61,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _succReadCount;
         private long _failedReadCount;
 
-        private readonly Common.Concurrent.ConcurrentStack<ITransactionFileReader> _readers = new Common.Concurrent.ConcurrentStack<ITransactionFileReader>();
-        private readonly Common.Concurrent.ConcurrentStack<ITransactionFileSequentialReader> _seqReaders = new Common.Concurrent.ConcurrentStack<ITransactionFileSequentialReader>();
+        private readonly ObjectPool<ITransactionFileReader> _readers;
 
         private readonly ITableIndex _tableIndex;
         private readonly IHasher _hasher;
         private readonly IPublisher _bus;
         private readonly ILRUCache<string, StreamCacheInfo> _streamInfoCache;
-        private readonly ILRUCache<long, TransactionInfo> _transactionInfoCache = new LRUCache<long, TransactionInfo>(50000); 
+        private readonly ILRUCache<long, TransactionInfo> _transactionInfoCache = new LRUCache<long, TransactionInfo>(ESConsts.TransactionMetadataCacheCapacity); 
 
         private long _persistedPrepareCheckpoint = -1;
         private long _persistedCommitCheckpoint = -1;
@@ -75,19 +75,21 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private bool _indexRebuild = true;
 
         private readonly BoundedCache<Guid, Tuple<string, int>> _committedEvents = 
-            new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, 10*1024*1024, x => 16 + 4 + 2*x.Item1.Length);
+            new BoundedCache<Guid, Tuple<string, int>>(int.MaxValue, ESConsts.CommitedEventsMemCacheLimit, x => 16 + 4 + 2*x.Item1.Length);
 
         public ReadIndex(IPublisher bus,
-                         int readerCount,
-                         Func<ITransactionFileSequentialReader> seqReaderFactory,
+                         int initialReaderCount,
+                         int maxReaderCount,
                          Func<ITransactionFileReader> readerFactory,
                          ITableIndex tableIndex,
                          IHasher hasher,
                          ILRUCache<string, StreamCacheInfo> streamInfoCache)
         {
             Ensure.NotNull(bus, "bus");
-            Ensure.Positive(readerCount, "readerCount");
-            Ensure.NotNull(seqReaderFactory, "seqReaderFactory");
+            Ensure.Positive(initialReaderCount, "initialReaderCount");
+            Ensure.Positive(maxReaderCount, "maxReaderCount");
+            if (initialReaderCount > maxReaderCount)
+                throw new ArgumentOutOfRangeException("initialReaderCount", "initialReaderCount is greater than maxReaderCount.");
             Ensure.NotNull(readerFactory, "readerFactory");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(hasher, "hasher");
@@ -98,37 +100,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _hasher = hasher;
             _streamInfoCache = streamInfoCache;
 
-            for (int i = 0; i < readerCount; ++i)
-            {
-                _seqReaders.Push(seqReaderFactory());
-                _readers.Push(readerFactory());
-            }
-        }
-
-        private ITransactionFileReader GetReader()
-        {
-            ITransactionFileReader reader;
-            if (!_readers.TryPop(out reader))
-                throw new InvalidOperationException("Unable to acquire reader in ReadIndex.");
-            return reader;
-        }
-
-        private ITransactionFileSequentialReader GetSeqReader()
-        {
-            ITransactionFileSequentialReader seqReader;
-            if (!_seqReaders.TryPop(out seqReader))
-                throw new InvalidOperationException("Unable to acquire sequential reader in ReadIndex.");
-            return seqReader;
-        }
-
-        private void ReturnReader(ITransactionFileReader reader)
-        {
-            _readers.Push(reader);
-        }
-
-        private void ReturnSeqReader(ITransactionFileSequentialReader seqReader)
-        {
-            _seqReaders.Push(seqReader);
+            _readers = new ObjectPool<ITransactionFileReader>("ReadIndex readers pool", initialReaderCount, maxReaderCount, readerFactory);
         }
 
         public void Build()
@@ -138,18 +110,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _persistedCommitCheckpoint = _tableIndex.CommitCheckpoint;
             _lastCommitPosition = _tableIndex.CommitCheckpoint;
 
-            foreach (var rdr in _readers)
-            {
-                rdr.Open();
-            }
-            foreach (var seqRdr in _seqReaders)
-            {
-                seqRdr.Open();
-            }
-
             _indexRebuild = true;
-
-            var seqReader = GetSeqReader();
+            var seqReader = _readers.Get();
             try
             {
                 seqReader.Reposition(Math.Max(0, _persistedCommitCheckpoint));
@@ -178,7 +140,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
             finally
             {
-                ReturnSeqReader(seqReader);
+                _readers.Return(seqReader);
             }
 
             _indexRebuild = false;
@@ -281,7 +243,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private IEnumerable<PrepareLogRecord> GetTransactionPrepares(long transactionPos, long commitPos)
         {
-            var seqReader = GetSeqReader();
+            var seqReader = _readers.Get();
             try
             {
                 seqReader.Reposition(transactionPos);
@@ -304,20 +266,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
             finally
             {
-                ReturnSeqReader(seqReader);
+                _readers.Return(seqReader);
             }
         }
 
         IndexReadEventResult IReadIndex.ReadEvent(string streamId, int eventNumber)
         {
-            var reader = GetReader();
+            var reader = _readers.Get();
             try
             {
                 return ReadEventInternal(reader, streamId, eventNumber);
             }
             finally
             {
-                ReturnReader(reader);
+                _readers.Return(reader);
             }
         }
 
@@ -359,7 +321,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.Positive(maxCount, "maxCount");
 
             var streamHash = _hasher.Hash(streamId);
-            var reader = GetReader();
+            var reader = _readers.Get();
             try
             {
                 var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
@@ -401,7 +363,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
             finally
             {
-                ReturnReader(reader);
+                _readers.Return(reader);
             }
         }
 
@@ -411,7 +373,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.Positive(maxCount, "maxCount");
 
             var streamHash = _hasher.Hash(streamId);
-            var reader = GetReader();
+            var reader = _readers.Get();
             try
             {
                 var lastEventNumber = GetLastStreamEventNumberCached(reader, streamId);
@@ -460,7 +422,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
             finally
             {
-                ReturnReader(reader);
+                _readers.Return(reader);
             }
         }
 
@@ -530,14 +492,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
 
-            var reader = GetReader();
+            var reader = _readers.Get();
             try
             {
                 return GetLastStreamEventNumberCached(reader, streamId);
             }
             finally
             {
-                ReturnReader(reader);
+                _readers.Return(reader);
             }
         }
 
@@ -589,14 +551,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         {
             Ensure.NotNullOrEmpty(streamId, "streamId");
 
-            var reader = GetReader();
+            var reader = _readers.Get();
             try
             {
                 return GetStreamMetadataCached(reader, streamId);
             }
             finally
             {
-                ReturnReader(reader);
+                _readers.Return(reader);
             }
         }
 
@@ -616,7 +578,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var prevPos = new TFPos(pos.CommitPosition, int.MaxValue);
             var count = 0;
             bool firstCommit = true;
-            ITransactionFileSequentialReader seqReader = GetSeqReader();
+            ITransactionFileReader seqReader = _readers.Get();
             try
             {
                 long nextCommitPos = pos.CommitPosition;
@@ -684,7 +646,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
             finally
             {
-                ReturnSeqReader(seqReader);
+                _readers.Return(seqReader);
             }
             return new IndexReadAllResult(records, maxCount, pos, nextPos, prevPos, lastCommitPosition);
         }
@@ -705,7 +667,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var prevPos = new TFPos(pos.CommitPosition, 0);
             var count = 0;
             bool firstCommit = true;            
-            ITransactionFileSequentialReader seqReader = GetSeqReader();
+            ITransactionFileReader seqReader = _readers.Get();
             try
             {
                 long nextCommitPostPos = pos.CommitPosition;
@@ -776,14 +738,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
             finally
             {
-                ReturnSeqReader(seqReader);
+                _readers.Return(seqReader);
             }
             return new IndexReadAllResult(records, maxCount, pos, nextPos, prevPos, lastCommitPosition);
         }
 
         CommitCheckResult IReadIndex.CheckCommitStartingAt(long transactionPosition, long commitPosition)
         {
-            var reader = GetReader();
+            var reader = _readers.Get();
             try
             {
                 string streamId;
@@ -887,7 +849,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
             finally
             {
-                ReturnReader(reader);
+                _readers.Return(reader);
             }
         }
 
@@ -911,7 +873,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private bool GetTransactionInfoUncached(long writerCheckpoint, long transactionId, out TransactionInfo transactionInfo)
         {
-            var seqReader = GetSeqReader();
+            var seqReader = _readers.Get();
             try
             {
                 seqReader.Reposition(writerCheckpoint);
@@ -932,7 +894,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
             finally
             {
-                ReturnSeqReader(seqReader);
+                _readers.Return(seqReader);
             }
             transactionInfo = new TransactionInfo(int.MinValue, null);
             return false;
@@ -990,14 +952,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         public void Close()
         {
-            foreach (var reader in _readers)
-            {
-                reader.Close();
-            }
-            foreach (var seqReader in _seqReaders)
-            {
-                seqReader.Close();
-            }
             try
             {
                 _tableIndex.Close(removeFiles: false);

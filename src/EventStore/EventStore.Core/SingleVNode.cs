@@ -119,20 +119,19 @@ namespace EventStore.Core
                                             maxTablesPerLevel: 2);
 
             var readIndex = new ReadIndex(_mainQueue, 
-                                          ESConsts.ReadIndexReaderCount, 
-                                          () => new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0), 
-                                          () => new TFChunkReader(db, db.Config.WriterCheckpoint), 
+                                          ESConsts.PTableInitialReaderCount, 
+                                          ESConsts.PTableMaxReaderCount, 
+                                          () => new TFChunkReader(db, db.Config.WriterCheckpoint, 0), 
                                           tableIndex, 
                                           new XXHashUnsafe(),
-                                          new LRUCache<string, StreamCacheInfo>(ESConsts.MetadataCacheCapacity));
+                                          new LRUCache<string, StreamCacheInfo>(ESConsts.StreamMetadataCacheCapacity));
             var writer = new TFChunkWriter(db);
             var epochManager = new EpochManager(db.Config.EpochCheckpoint,
-                                                new TFChunkReader(db, db.Config.WriterCheckpoint),
-                                                new TFChunkSequentialReader(db, db.Config.WriterCheckpoint, 0),
+                                                () => new TFChunkReader(db, db.Config.WriterCheckpoint, 0),
                                                 writer);
             epochManager.Init();
             new StorageWriterService(_mainQueue, _mainBus, writer, readIndex, epochManager); // subscribes internally
-            var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderHandlerCount, db.Config.WriterCheckpoint);
+            var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderThreadCount, db.Config.WriterCheckpoint);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
             _mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);

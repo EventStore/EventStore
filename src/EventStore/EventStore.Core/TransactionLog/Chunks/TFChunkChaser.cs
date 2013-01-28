@@ -35,7 +35,7 @@ namespace EventStore.Core.TransactionLog.Chunks
     public class TFChunkChaser : ITransactionFileChaser
     {
         private readonly ICheckpoint _chaserCheckpoint;
-        private readonly TFChunkSequentialReader _reader;
+        private readonly TFChunkReader _reader;
 
         public TFChunkChaser(TFChunkDb db, ICheckpoint writerCheckpoint, ICheckpoint chaserCheckpoint)
         {
@@ -44,7 +44,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
 
             _chaserCheckpoint = chaserCheckpoint;
-            _reader = new TFChunkSequentialReader(db, writerCheckpoint, _chaserCheckpoint.Read());
+            _reader = new TFChunkReader(db, writerCheckpoint, _chaserCheckpoint.Read());
         }
 
         public void Open()

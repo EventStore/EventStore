@@ -115,7 +115,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public static TFChunk FromCompletedFile(string filename, bool verifyHash)
         {
-            var chunk = new TFChunk(filename, ESConsts.TFChunkReaderCount, TFConsts.MidpointsDepth);
+            var chunk = new TFChunk(filename, ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth);
             try
             {
                 chunk.InitCompleted(verifyHash);
@@ -130,7 +130,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize)
         {
-            var chunk = new TFChunk(filename, ESConsts.TFChunkReaderCount, TFConsts.MidpointsDepth);
+            var chunk = new TFChunk(filename, ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth);
             try
             {
                 chunk.InitOngoing(writePosition, checkSize);
@@ -157,7 +157,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public static TFChunk CreateWithHeader(string filename, ChunkHeader header, int fileSize)
         {
-            var chunk = new TFChunk(filename, ESConsts.TFChunkReaderCount, TFConsts.MidpointsDepth);
+            var chunk = new TFChunk(filename, ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth);
             try
             {
                 chunk.InitNew(header, fileSize);

@@ -97,7 +97,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
-    <PreBuildEvent >
+    <PreBuildEvent>
 $(MSBuildProjectDirectory)\..\Scripts\version\update-version.cmd $(MSBuildProjectDirectory)
     </PreBuildEvent>
   </PropertyGroup>

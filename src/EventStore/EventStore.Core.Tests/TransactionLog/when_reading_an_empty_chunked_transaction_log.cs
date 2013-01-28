@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        new InMemoryCheckpoint(-1)));
             db.OpenVerifyAndClean();
 
-            var reader = new TFChunkSequentialReader(db, writerchk, 0);
+            var reader = new TFChunkReader(db, writerchk, 0);
             LogRecord record;
             Assert.IsFalse(reader.TryReadNext(out record));
 
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var writer = new TFChunkWriter(db);
             writer.Open();
 
-            var reader = new TFChunkSequentialReader(db, writerchk, 0);
+            var reader = new TFChunkReader(db, writerchk, 0);
 
             LogRecord record;
             Assert.IsFalse(reader.TryReadNext(out record));
@@ -89,7 +89,6 @@ namespace EventStore.Core.Tests.TransactionLog
             Assert.IsTrue(reader.TryReadNext(out record));
             Assert.AreEqual(rec, record);
 
-            reader.Close();
             db.Close();
         }
     }

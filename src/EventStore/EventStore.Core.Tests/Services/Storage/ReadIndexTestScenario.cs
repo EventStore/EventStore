@@ -98,11 +98,10 @@ namespace EventStore.Core.Tests.Services.Storage
                                         () => new HashListMemTable(MaxEntriesInMemTable * 2),
                                         MaxEntriesInMemTable);
 
-            var reader = new TFChunkReader(Db, Db.Config.WriterCheckpoint);
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       2,
-                                      () => new TFChunkSequentialReader(Db, Db.Config.WriterCheckpoint, 0),
-                                      () => reader,
+                                      2,
+                                      () => new TFChunkReader(Db, Db.Config.WriterCheckpoint, 0),
                                       TableIndex,
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamCacheInfo>());
