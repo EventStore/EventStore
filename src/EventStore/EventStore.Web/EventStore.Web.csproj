@@ -205,7 +205,9 @@
     <Content Include="es-common-web\lib\jsrender\jsrender.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="es-common-web\lib\require-full.js" />
+    <Content Include="es-common-web\lib\require-full.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="es-common-web\lib\require.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
