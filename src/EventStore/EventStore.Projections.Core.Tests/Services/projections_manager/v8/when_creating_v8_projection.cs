@@ -138,6 +138,48 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             }
         }
 
+        [Test, Explicit, Category("v8"), Category("Manual")]
+        public void long_execution_times_out_many()
+        {
+            string m = null;
+            for (var i = 0; i < 10; i++)
+            {
+                Console.WriteLine(i);
+                try
+                {
+                    using (var h = _stateHandlerFactory.Create(
+                        "JS", @"
+                    fromAll().when({
+                        $any: function (s, e) {
+                            log('1');
+                            var i = 0;
+                            while (true) i++;
+                        }
+                    });
+                ", logger: Console.WriteLine,
+                        cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(
+                            state =>
+                                {
+                                    Console.WriteLine("Calling a callback in " + timeout + "ms");
+                                    Thread.Sleep(timeout);
+                                    action();
+                                })))
+                    {
+                        h.Initialize();
+                        string newState;
+                        EmittedEvent[] emittedevents;
+                        h.ProcessEvent(
+                            "partition", CheckpointTag.FromPosition(100, 50), "stream", "event", "", Guid.NewGuid(), 1,
+                            "", "{}", out newState, out emittedevents);
+                    }
+                }
+                catch (Js1Exception ex)
+                {
+                }
+            }
+            Assert.Pass();
+        }
+
 
     }
 }
