@@ -122,6 +122,9 @@ namespace EventStore.Core.DataStructures
             if (_queue.TryDequeue(out item))
                 return item;
 
+            if (_disposing)
+                throw new ObjectPoolDisposingException(ObjectPoolName);
+
             var newCount = Interlocked.Increment(ref _count);
             if (newCount > _maxCount)
                 throw new ObjectPoolMaxLimitReachedException(ObjectPoolName, _maxCount);

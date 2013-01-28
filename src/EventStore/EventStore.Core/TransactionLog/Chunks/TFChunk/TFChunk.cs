@@ -78,10 +78,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private ChunkHeader _chunkHeader;
         private ChunkFooter _chunkFooter;
         
-        private readonly int _maxReadThreads;
+        private readonly int _maxReaderCount;
         private readonly Common.Concurrent.ConcurrentQueue<ReaderWorkItem> _fileStreams = new Common.Concurrent.ConcurrentQueue<ReaderWorkItem>();
         private readonly Common.Concurrent.ConcurrentQueue<ReaderWorkItem> _memStreams = new Common.Concurrent.ConcurrentQueue<ReaderWorkItem>();
-        private volatile int _fileStreamCount;
+        private int _internalStreamsCount;
+        private int _fileStreamCount;
         private int _memStreamCount;
 
         private WriterWorkItem _writerWorkItem;
@@ -97,14 +98,18 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private IChunkReadSide _readSide;
 
-        private TFChunk(string filename, int maxReadThreads, int midpointsDepth)
+        private TFChunk(string filename, int initialReaderCount, int maxReaderCount, int midpointsDepth)
         {
             Ensure.NotNullOrEmpty(filename, "filename");
-            Ensure.Positive(maxReadThreads, "maxReadThreads");
+            Ensure.Positive(initialReaderCount, "initialReaderCount");
+            Ensure.Positive(maxReaderCount, "maxReaderCount");
+            if (initialReaderCount > maxReaderCount)
+                throw new ArgumentOutOfRangeException("initialReaderCount", "initialReaderCount is greater than maxReaderCount.");
             Ensure.Nonnegative(midpointsDepth, "midpointsDepth");
 
             _filename = filename;
-            _maxReadThreads = maxReadThreads;
+            _internalStreamsCount = initialReaderCount;
+            _maxReaderCount = maxReaderCount;
             MidpointsDepth = midpointsDepth;
         }
 
@@ -115,7 +120,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public static TFChunk FromCompletedFile(string filename, bool verifyHash)
         {
-            var chunk = new TFChunk(filename, ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth);
+            var chunk = new TFChunk(filename, ESConsts.TFChunkInitialReaderCount, ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth);
             try
             {
                 chunk.InitCompleted(verifyHash);
@@ -130,7 +135,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public static TFChunk FromOngoingFile(string filename, int writePosition, bool checkSize)
         {
-            var chunk = new TFChunk(filename, ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth);
+            var chunk = new TFChunk(filename, ESConsts.TFChunkInitialReaderCount, ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth);
             try
             {
                 chunk.InitOngoing(writePosition, checkSize);
@@ -157,7 +162,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public static TFChunk CreateWithHeader(string filename, ChunkHeader header, int fileSize)
         {
-            var chunk = new TFChunk(filename, ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth);
+            var chunk = new TFChunk(filename, ESConsts.TFChunkInitialReaderCount, ESConsts.TFChunkMaxReaderCount, TFConsts.MidpointsDepth);
             try
             {
                 chunk.InitNew(header, fileSize);
@@ -260,14 +265,19 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private void CreateReaderStreams()
         {
-            Interlocked.Add(ref _fileStreamCount, _maxReadThreads);
-            for (int i = 0; i < _maxReadThreads; i++)
+            Interlocked.Add(ref _fileStreamCount, _internalStreamsCount);
+            for (int i = 0; i < _internalStreamsCount; i++)
             {
-                var stream = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-                                            ReadBufferSize, FileOptions.RandomAccess);
-                var reader = new BinaryReader(stream);
-                _fileStreams.Enqueue(new ReaderWorkItem(stream, reader, false));
+                _fileStreams.Enqueue(CreateInternalReaderWorkItem());
             }
+        }
+
+        private ReaderWorkItem CreateInternalReaderWorkItem()
+        {
+            var stream = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
+                                        ReadBufferSize, FileOptions.RandomAccess);
+            var reader = new BinaryReader(stream);
+            return new ReaderWorkItem(stream, reader, false);
         }
 
         private void CreateWriterWorkItemForNewChunk(ChunkHeader chunkHeader, int fileSize)
@@ -497,8 +507,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         private void BuildCacheReaders()
         {
-            Interlocked.Add(ref _memStreamCount, _maxReadThreads);
-            for (int i = 0; i < _maxReadThreads; i++)
+            Interlocked.Add(ref _memStreamCount, _maxReaderCount);
+            for (int i = 0; i < _maxReaderCount; i++)
             {
                 var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
                 var reader = new BinaryReader(stream);
@@ -739,7 +749,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 fileStreamCount = Interlocked.Decrement(ref _fileStreamCount);
             }
 
-            Debug.Assert(fileStreamCount >= 0, "Somehow we managed to decrease count of file streams below zero.");
+            if (fileStreamCount < 0)
+                throw new Exception("Somehow we managed to decrease count of file streams below zero.");
             if (fileStreamCount == 0) // we are the last who should "turn the light off" for file streams
                 CleanUpFileStreamDestruction();
         }
@@ -768,7 +779,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
             {
                 memStreamCount = Interlocked.Decrement(ref _memStreamCount);
             }
-            Debug.Assert(memStreamCount >= 0, "Somehow we managed to decrease count of memory streams below zero.");
+            if (memStreamCount < 0)
+                throw new Exception("Somehow we managed to decrease count of memory streams below zero.");
             if (memStreamCount == 0) // we are the last who should "turn the light off" for memory streams
                 FreeCachedData();
         }
@@ -787,20 +799,35 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         }
 
         private ReaderWorkItem GetReaderWorkItem()
-        { 
-            for (int i = 0; i < 10; i++)
-            {
-                ReaderWorkItem item;
-
-                // try get memory stream reader first
-                if (_memStreams.TryDequeue(out item))
-                    return item;
-                if (_fileStreams.TryDequeue(out item))
-                    return item;
-            }
+        {
             if (_selfdestructin54321)
                 throw new FileBeingDeletedException();
-            throw new Exception("Unable to acquire reader work item.");
+
+            ReaderWorkItem item;
+            // try get memory stream reader first
+            if (_memStreams.TryDequeue(out item))
+                return item;
+            if (_fileStreams.TryDequeue(out item))
+                return item;
+
+            if (_selfdestructin54321)
+                throw new FileBeingDeletedException();
+
+            var internalStreamCount = Interlocked.Increment(ref _internalStreamsCount);
+            if (internalStreamCount > _maxReaderCount)
+                throw new Exception("Unable to acquire reader work item. Max internal streams limit reached.");
+
+            Interlocked.Increment(ref _fileStreamCount);
+            if (_selfdestructin54321)
+            {
+                if (Interlocked.Decrement(ref _fileStreamCount) == 0)
+                    CleanUpFileStreamDestruction(); // now we should "turn light off"
+                throw new FileBeingDeletedException();
+            }
+
+            // if we get here, then we reserved TFChunk for sure so no one should dispose of chunk file
+            // until client returns the reader
+            return CreateInternalReaderWorkItem();
         }
 
         private void ReturnReaderWorkItem(ReaderWorkItem item)
@@ -844,8 +871,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public void ReleaseReader(TFChunkBulkReader reader)
         {
-            Interlocked.Decrement(ref _fileStreamCount);
-            if (_selfdestructin54321 && _fileStreamCount == 0)
+            var fileStreamCount = Interlocked.Decrement(ref _fileStreamCount);
+            if (fileStreamCount < 0)
+                throw new Exception("Somehow we managed to decrease count of file streams below zero.");
+            if (_selfdestructin54321 && fileStreamCount == 0)
                 CleanUpFileStreamDestruction();
         }
 
