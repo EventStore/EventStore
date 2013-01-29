@@ -125,7 +125,7 @@
                 }
 
                 function postToEachProjection(relativeUrl) {
-                    $.ajax("/projections/continuous", {
+                    $.ajax("/projections/all-non-transient", {
                         headers: {
                             Accept: "application/json",
                         },
@@ -187,7 +187,7 @@
             var lastRequest = {};
 
             function requestList() {
-                $.ajax("/projections/continuous", {
+                $.ajax("/projections/all-non-transient", {
                     headers: {
                         Accept: "application/json",
                     },

@@ -35,5 +35,6 @@ namespace EventStore.Projections.Core.Services
         //____2 = 2,
         //____3 = 3,
         Continuous = 4,
+        AllNonTransient = 999,
     }
 }

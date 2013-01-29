@@ -310,7 +310,7 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                _processingQueue.Unsubscribed();
+                Unsubscribed();
                 var progressWorkItem = new CompletedWorkItem(this);
                 _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 _processingQueue.ProcessEvent();
@@ -321,6 +321,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        private void Unsubscribed()
+        {
+            _subscribed = false;
+            _processingQueue.Unsubscribed();
+        }
+
         internal void Complete()
         {
             if (_state != State.Running)
@@ -329,7 +335,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("!_projectionConfig.StopOnEof");
             _completed = true;
             _checkpointManager.Progress(100.0f);
-            _subscribed = false; // NOTE:  stopOnEof subscriptions automatically unsubscribe when handling this message
+            Unsubscribed(); // NOTE:  stopOnEof subscriptions automatically unsubscribe when handling this message
             Stop();
         }
 
@@ -432,7 +438,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_subscribed)
             {
-                _subscribed = false;
+                Unsubscribed();
                 _publisher.Publish(new ProjectionSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
             }
         }
