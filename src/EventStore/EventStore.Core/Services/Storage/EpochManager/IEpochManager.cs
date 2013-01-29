@@ -37,8 +37,9 @@ namespace EventStore.Core.Services.Storage.EpochManager
 
         void Init();
         EpochRecord GetEpoch(int epochNumber);
-        bool ExistsCorrectEpochAt(long logPosition, int epochNumber, Guid epochId);
+        bool IsCorrectEpochAt(long logPosition, int epochNumber, Guid epochId);
 
-        void SetLastEpoch(int epochNumber, Guid epochId);
+        void WriteLastEpoch(int epochNumber, Guid epochId);
+        void SetLastEpoch(EpochRecord epoch);
     }
 }

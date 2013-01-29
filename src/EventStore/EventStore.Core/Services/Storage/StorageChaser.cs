@@ -33,6 +33,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring.Stats;
+using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -55,6 +56,7 @@ namespace EventStore.Core.Services.Storage
         private readonly ICheckpoint _writerCheckpoint;
         private readonly ITransactionFileChaser _chaser;
         private readonly IReadIndex _readIndex;
+        private readonly IEpochManager _epochManager;
         private readonly IPEndPoint _vnodeEndPoint;
         private Thread _thread;
         private volatile bool _stop;
@@ -65,17 +67,24 @@ namespace EventStore.Core.Services.Storage
         private long _flushDelay;
         private long _lastFlush;
 
-        public StorageChaser(IPublisher masterBus, ICheckpoint writerCheckpoint, ITransactionFileChaser chaser, IReadIndex readIndex, IPEndPoint vnodeEndPoint)
+        public StorageChaser(IPublisher masterBus, 
+                             ICheckpoint writerCheckpoint, 
+                             ITransactionFileChaser chaser, 
+                             IReadIndex readIndex, 
+                             IEpochManager epochManager,
+                             IPEndPoint vnodeEndPoint)
         {
             Ensure.NotNull(masterBus, "masterBus");
             Ensure.NotNull(chaser, "chaser");
             Ensure.NotNull(readIndex, "readIndex");
+            Ensure.NotNull(epochManager, "epochManager");
             Ensure.NotNull(vnodeEndPoint, "vnodeEndPoint");
 
             _masterBus = masterBus;
             _writerCheckpoint = writerCheckpoint;
             _chaser = chaser;
             _readIndex = readIndex;
+            _epochManager = epochManager;
             _vnodeEndPoint = vnodeEndPoint;
 
             _flushDelay = 0;
@@ -109,28 +118,24 @@ namespace EventStore.Core.Services.Storage
 
                 if (result.Success)
                 {
+                    _queueStats.ProcessingStarted(result.LogRecord.GetType(), 0);
                     switch (result.LogRecord.RecordType)
                     {
                         case LogRecordType.Prepare:
                         {
-                            _queueStats.ProcessingStarted<PrepareLogRecord>(0);
-
                             var record = (PrepareLogRecord) result.LogRecord;
                             if ((record.Flags & (PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd)) != 0)
                             {
-                                _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId,
+                                _masterBus.Publish(new StorageMessage.PrepareAck(record.CorrelationId, 
                                                                                  _vnodeEndPoint,
                                                                                  record.LogPosition,
                                                                                  record.Flags));
                             }
 
-                            _queueStats.ProcessingEnded(1);
                             break;
                         }
                         case LogRecordType.Commit:
                         {
-                            _queueStats.ProcessingStarted<CommitLogRecord>(0);
-
                             var record = (CommitLogRecord)result.LogRecord;
                             _masterBus.Publish(new StorageMessage.CommitAck(record.CorrelationId, 
                                                                             _vnodeEndPoint,
@@ -138,15 +143,26 @@ namespace EventStore.Core.Services.Storage
                                                                             record.TransactionPosition,
                                                                             record.FirstEventNumber));
                             _readIndex.Commit(record);
-                            
-                            _queueStats.ProcessingEnded(1);
                             break;
                         }
                         case LogRecordType.System:
+                        {
+                            var record = (SystemLogRecord)result.LogRecord;
+                            if (record.SystemRecordType == SystemRecordType.Epoch)
+                            {
+                                // Epoch record is written to TF, but possibly is not added to EpochManager 
+                                // as we could be in Slave\Clone mode. We try to add epoch to EpochManager 
+                                // every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent, 
+                                // but does integrity checks.
+                                var epoch = record.GetEpochRecord();
+                                _epochManager.SetLastEpoch(epoch); 
+                            }
                             break;
+                        }
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
+                    _queueStats.ProcessingEnded(1);
                 }
 
                 var start = _watch.ElapsedTicks;

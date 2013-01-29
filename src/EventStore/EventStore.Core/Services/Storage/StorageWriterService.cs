@@ -146,7 +146,7 @@ namespace EventStore.Core.Services.Storage
 
         public void Handle(SystemMessage.BecomeMaster message)
         {
-            _epochManager.SetLastEpoch(_epochManager.LastEpochNumber + 1, Guid.NewGuid()); // forces flush
+            _epochManager.WriteLastEpoch(_epochManager.LastEpochNumber + 1, Guid.NewGuid()); // forces flush
         }
 
         void IHandle<StorageMessage.WritePrepares>.Handle(StorageMessage.WritePrepares message)

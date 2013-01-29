@@ -48,7 +48,8 @@ namespace EventStore.Core.Services.Storage.EpochManager
         private readonly object _locker = new object();
         private readonly Dictionary<int, EpochRecord> _epochs = new Dictionary<int, EpochRecord>();
         private volatile int _lastEpochNumber = -1;
-        private volatile int _minCachedEpochNumber = -1;
+        private long _lastEpochPosition = -1;
+        private int _minCachedEpochNumber = -1;
 
         public EpochManager(int cachedEpochCount, 
                             ICheckpoint checkpoint, 
@@ -111,6 +112,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
                         var epoch = sysRec.GetEpochRecord();
                         _epochs[epoch.EpochNumber] = epoch;
                         _lastEpochNumber = Math.Max(_lastEpochNumber, epoch.EpochNumber);
+                        _lastEpochPosition = Math.Max(_lastEpochPosition, epoch.EpochPosition);
                         _minCachedEpochNumber = epoch.EpochNumber;
 
                         epochPos = epoch.PrevEpochPosition;
@@ -151,7 +153,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
             }
         }
 
-        public bool ExistsCorrectEpochAt(long logPosition, int epochNumber, Guid epochId)
+        public bool IsCorrectEpochAt(long logPosition, int epochNumber, Guid epochId)
         {
             Ensure.Nonnegative(logPosition, "logPosition");
 
@@ -162,7 +164,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 if (epochNumber >= _minCachedEpochNumber)
                 {
                     var epoch = _epochs[epochNumber];
-                    return epoch.EpochId == epochId && epoch.LogPosition == logPosition;
+                    return epoch.EpochId == epochId && epoch.EpochPosition == logPosition;
                 }
             }
             
@@ -186,7 +188,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
             }
         }
 
-        public void SetLastEpoch(int epochNumber, Guid epochId)
+        public void WriteLastEpoch(int epochNumber, Guid epochId)
         {
             // This method should be called from single thread.
             Ensure.NotEmptyGuid(epochId, "epochId");
@@ -194,9 +196,6 @@ namespace EventStore.Core.Services.Storage.EpochManager
 
             if (epochNumber > _lastEpochNumber + 1)
                 throw new Exception(string.Format("New epoch is far too in the future. LastEpochNumber: {0}, new epoch number: {1}.", _lastEpochNumber, epochNumber));
-
-            // if we are writing the very first epoch, last position will be -1.
-            long lastEpochPosition = epochNumber == 0 ? -1 : GetEpoch(epochNumber - 1).LogPosition; 
 
             // Set epoch checkpoint to -1, so if we crash after new epoch record was written, 
             // but epoch checkpoint wasn't updated, on restart we don't miss the latest epoch.
@@ -207,37 +206,68 @@ namespace EventStore.Core.Services.Storage.EpochManager
 
             // Now we write epoch record (with possible retry, if we are at the end of chunk) 
             // and update EpochManager's state, by adjusting cache of records, epoch count and un-caching 
-            // excessive record, if present
-            var epoch = WriteEpochRecordWithRetry(epochNumber, epochId, lastEpochPosition);
-            lock (_locker)
-            {
-                _epochs[epochNumber] = epoch;
-                _lastEpochNumber = epochNumber;
-                _minCachedEpochNumber = Math.Max(_minCachedEpochNumber, epochNumber - CachedEpochCount + 1);
-                _epochs.Remove(_minCachedEpochNumber - 1);
-            }
+            // excessive record, if present.
+            // If we are writing the very first epoch, last position will be -1.
+            var epoch = WriteEpochRecordWithRetry(epochNumber, epochId, _lastEpochPosition);
+            AddEpoch(epoch);
 
             // Now update epoch checkpoint, so on restart we don't scan sequentially TF.
-            _checkpoint.Write(epoch.LogPosition);
+            _checkpoint.Write(epoch.EpochPosition);
             _checkpoint.Flush();
         }
 
         private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition)
         {
             long pos = _writer.Checkpoint.ReadNonFlushed();
-            var epoch = new EpochRecord(pos, DateTime.UtcNow, epochNumber, epochId, lastEpochPosition);
-            var rec = new SystemLogRecord(epoch.LogPosition, epoch.TimeStamp, SystemRecordType.Epoch, SystemRecordSerialization.Json, epoch.AsSerialized());
+            var epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow);
+            var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch, SystemRecordSerialization.Json, epoch.AsSerialized());
 
             if (!_writer.Write(rec, out pos))
             {
-                epoch = new EpochRecord(pos, DateTime.UtcNow, epochNumber, epochId, lastEpochPosition);
-                rec = new SystemLogRecord(epoch.LogPosition, epoch.TimeStamp, SystemRecordType.Epoch, SystemRecordSerialization.Json, epoch.AsSerialized());
+                epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow);
+                rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch, SystemRecordSerialization.Json, epoch.AsSerialized());
                 if (!_writer.Write(rec, out pos))
-                    throw new Exception(string.Format("Second write try failed at {0}.", epoch.LogPosition));
+                    throw new Exception(string.Format("Second write try failed at {0}.", epoch.EpochPosition));
             }
             _writer.Flush();
 
             return epoch;
+        }
+
+        public void SetLastEpoch(EpochRecord epoch)
+        {
+            Ensure.NotNull(epoch, "epoch");
+
+            lock (_locker)
+            {
+                if (epoch.EpochPosition > _lastEpochPosition)
+                {
+                    AddEpoch(epoch);
+                    return;
+                }
+            }
+
+            // Epoch record must have been already written, so we need to make sure it is where we expect it to be.
+            // If this check fails, then there is something very wrong with epochs, data corruption is possible.
+            if (!IsCorrectEpochAt(epoch.EpochPosition, epoch.EpochNumber, epoch.EpochId))
+            {
+                throw new Exception(string.Format("Not found epoch at {0} with epoch number: {1} and epoch ID: {2}. SetLastEpoch FAILED! Data corruption risk!",
+                                                  epoch.EpochPosition,
+                                                  epoch.EpochNumber,
+                                                  epoch.EpochId));
+            }
+        }
+
+        private void AddEpoch(EpochRecord epoch)
+        {
+            lock (_locker)
+            {
+                _epochs[epoch.EpochNumber] = epoch;
+                _lastEpochNumber = epoch.EpochNumber;
+                _lastEpochPosition = epoch.EpochPosition;
+                _minCachedEpochNumber = Math.Max(_minCachedEpochNumber, epoch.EpochNumber - CachedEpochCount + 1);
+                _epochs.Remove(_minCachedEpochNumber - 1);
+            }
         }
     }
 }

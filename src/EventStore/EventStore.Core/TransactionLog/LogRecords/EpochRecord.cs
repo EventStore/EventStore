@@ -32,25 +32,24 @@ namespace EventStore.Core.TransactionLog.LogRecords
 {
     public class EpochRecord
     {
-        public readonly long LogPosition;
-        public readonly DateTime TimeStamp;
-
+        public readonly long EpochPosition;
         public readonly int EpochNumber;
         public readonly Guid EpochId;
 
         public readonly long PrevEpochPosition;
+        public readonly DateTime TimeStamp;
 
-        public EpochRecord(long logPosition, DateTime timeStamp, int epochNumber, Guid epochId, long prevEpochPosition)
+        public EpochRecord(long epochPosition, int epochNumber, Guid epochId, long prevEpochPosition, DateTime timeStamp)
         {
-            LogPosition = logPosition;
-            TimeStamp = timeStamp;
+            EpochPosition = epochPosition;
             EpochNumber = epochNumber;
             EpochId = epochId;
             PrevEpochPosition = prevEpochPosition;
+            TimeStamp = timeStamp;
         }
 
         internal EpochRecord(EpochRecordDto dto)
-                : this(dto.LogPosition, dto.TimeStamp, dto.EpochNumber, dto.EpochId, dto.PrevEpochPosition)
+                : this(dto.EpochPosition, dto.EpochNumber, dto.EpochId, dto.PrevEpochPosition, dto.TimeStamp)
         {
         }
 
@@ -59,15 +58,24 @@ namespace EventStore.Core.TransactionLog.LogRecords
             return new EpochRecordDto(this).ToJsonBytes();
         }
 
+        public override string ToString()
+        {
+            return string.Format("EpochPosition: {0}, EpochNumber: {1}, EpochId: {2}, PrevEpochPosition: {3}, TimeStamp: {4}, ",
+                                 EpochPosition,
+                                 EpochNumber,
+                                 EpochId,
+                                 PrevEpochPosition,
+                                 TimeStamp);
+        }
+
         internal class EpochRecordDto
         {
-            public long LogPosition{ get; set; }
-            public DateTime TimeStamp{ get; set; }
-
+            public long EpochPosition{ get; set; }
             public int EpochNumber{ get; set; }
             public Guid EpochId{ get; set; }
 
             public long PrevEpochPosition{ get; set; }
+            public DateTime TimeStamp{ get; set; }
 
             public EpochRecordDto()
             {
@@ -75,13 +83,12 @@ namespace EventStore.Core.TransactionLog.LogRecords
 
             public EpochRecordDto(EpochRecord rec)
             {
-                LogPosition = rec.LogPosition;
-                TimeStamp = rec.TimeStamp;
-
+                EpochPosition = rec.EpochPosition;
                 EpochNumber = rec.EpochNumber;
                 EpochId = rec.EpochId;
 
                 PrevEpochPosition = rec.PrevEpochPosition;
+                TimeStamp = rec.TimeStamp;
             }
         }
     }
