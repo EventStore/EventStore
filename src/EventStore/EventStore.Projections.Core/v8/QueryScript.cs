@@ -30,17 +30,18 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace EventStore.Projections.Core.v8
 {
-    class QueryScript : IDisposable
+    internal class QueryScript : IDisposable
     {
+        private readonly PreludeScript _prelude;
         private readonly CompiledScript _script;
         private readonly Dictionary<string, IntPtr> _registeredHandlers = new Dictionary<string, IntPtr>();
 
         private Func<string, string[], string> _getStatePartition;
         private Action<string, string[]> _processEvent;
-        private Func<string, string[], string> _testArray;
         private Func<string> _getState;
         private Action<string> _setState;
         private Action _initialize;
@@ -57,6 +58,7 @@ namespace EventStore.Projections.Core.v8
 
         public QueryScript(PreludeScript prelude, string script, string fileName)
         {
+            _prelude = prelude;
             _commandHandlerRegisteredCallback = CommandHandlerRegisteredCallback;
             _reverseCommandHandlerDelegate = ReverseCommandHandler;
 
@@ -75,9 +77,11 @@ namespace EventStore.Projections.Core.v8
 
         private CompiledScript CompileScript(PreludeScript prelude, string script, string fileName)
         {
+            prelude.ScheduleTerminateExecution();
             IntPtr query = Js1.CompileQuery(
                 prelude.GetHandle(), script, fileName, _commandHandlerRegisteredCallback, _reverseCommandHandlerDelegate);
-            CompiledScript.CheckResult(query, disposeScriptOnException: true);
+            var terminated = prelude.CancelTerminateExecution();
+            CompiledScript.CheckResult(query, terminated, disposeScriptOnException: true);
             return new CompiledScript(query, fileName);
         }
 
@@ -119,7 +123,6 @@ namespace EventStore.Projections.Core.v8
                     _processEvent = (json, other) => ExecuteHandler(handlerHandle, json, other);
                     break;
                 case "test_array":
-                    _testArray = (json, other) => ExecuteHandler(handlerHandle, json, other);
                     break;
                 case "get_state":
                     _getState = () => ExecuteHandler(handlerHandle, "");
@@ -179,12 +182,17 @@ namespace EventStore.Projections.Core.v8
         private string ExecuteHandler(IntPtr commandHandlerHandle, string json, string[] other = null)
         {
             _reverseCommandHandlerException = null;
+
+            _prelude.ScheduleTerminateExecution();
+
             IntPtr resultJsonPtr;
             IntPtr resultHandle = Js1.ExecuteCommandHandler(
                 _script.GetHandle(), commandHandlerHandle, json, other, other != null ? other.Length : 0,
                 out resultJsonPtr);
+
+            var terminated = _prelude.CancelTerminateExecution();
             if (resultHandle == IntPtr.Zero)
-                CompiledScript.CheckResult(_script.GetHandle(), disposeScriptOnException: false);
+                CompiledScript.CheckResult(_script.GetHandle(), terminated, disposeScriptOnException: false);
             //TODO: do we need to free resulktJsonPtr in case of exception thrown a line above
             string resultJson = Marshal.PtrToStringUni(resultJsonPtr);
             Js1.FreeResult(resultHandle);

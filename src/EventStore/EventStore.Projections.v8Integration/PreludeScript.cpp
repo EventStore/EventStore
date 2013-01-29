@@ -15,54 +15,58 @@ namespace js1
 	}
 
 
-	bool PreludeScript::compile_script(const uint16_t *prelude_source, const uint16_t *prelude_file_name)
+	Status PreludeScript::compile_script(const uint16_t *prelude_source, const uint16_t *prelude_file_name)
 	{
 		return CompiledScript::compile_script(prelude_source, prelude_file_name);
 	}
 
-	bool PreludeScript::run()
+	Status PreludeScript::try_run()
 	{
 		v8::Context::Scope context_scope(get_context());
 		global_template_factory.Dispose();
 		global_template_factory.Clear();
-		//TODO: check whether proper type of value returned
+
+		if (!enter_cancellable_region()) 
+			return S_TERMINATED;
+
 		v8::Handle<v8::Value> prelude_result = run_script(get_context());
+		if (!exit_cancellable_region())
+			return S_TERMINATED;
+
 		if (prelude_result.IsEmpty())
-		{
 			set_last_error(v8::String::New("Prelude script did not return any value"));
-			return false;
-		}
-		if (prelude_result->IsFunction()) 
-		{
-			global_template_factory = v8::Persistent<v8::Function>::New(prelude_result.As<v8::Function>());
-			return true;
-		}
-		else 
-		{
+		else if (!prelude_result->IsFunction()) 
 			set_last_error(v8::String::New("Prelude script must return a function"));
-			return false;
-		}
+		else 
+			global_template_factory = v8::Persistent<v8::Function>::New(prelude_result.As<v8::Function>());
+		return S_OK;
 	}
 
-	v8::Persistent<v8::ObjectTemplate> PreludeScript::get_template(std::vector<v8::Handle<v8::Value> > &prelude_arguments)
+	Status PreludeScript::get_template(std::vector<v8::Handle<v8::Value> > &prelude_arguments, v8::Persistent<v8::ObjectTemplate> &result)
 	{
 		v8::Context::Scope context_scope(get_context());
 		v8::Handle<v8::Object> global = get_context()->Global();
-		v8::Persistent<v8::ObjectTemplate> result;
 		v8::Handle<v8::Value> prelude_result;
 		v8::Handle<v8::Object> prelude_result_object;
 		v8::TryCatch try_catch;
+
+		if (!enter_cancellable_region()) 
+			return S_TERMINATED; // initialized with 0 by default
+
 		prelude_result = global_template_factory->Call(global, (int)prelude_arguments.size(), prelude_arguments.data());
+		if (!exit_cancellable_region())
+			return S_TERMINATED; // initialized with 0 by default
+
 		set_last_error(prelude_result.IsEmpty(), try_catch);
 		if (prelude_result.IsEmpty())
 		{
 			set_last_error(v8::String::New("Global template factory did not return any value"));
-			return result; // initialized with 0 by default
+			return S_ERROR; // initialized with 0 by default
 		}
 		if (!prelude_result->IsObject()) 
 		{
 			set_last_error(v8::String::New("Prelude script must return a function"));
-			return result; // initialized with 0 by default
+			return S_ERROR; // initialized with 0 by default
 		}
 
 		prelude_result_object = prelude_result.As<v8::Object>();
@@ -78,7 +82,16 @@ namespace js1
 			result->Set(global_property_name, global_property_value);
 		}
 
-		return result;
+		return S_OK;
+	}
+
+	bool PreludeScript::exit_cancellable_region() 
+	{ 
+		if (v8::V8::IsExecutionTerminating()) 
+		{
+			printf("Terminating!");
+		}
+		return exit_cancellable_region_callback(); 
 	}
 
 	v8::Isolate *PreludeScript::get_isolate()
@@ -86,13 +99,13 @@ namespace js1
 		return isolate;
 	}
 
-	v8::Persistent<v8::ObjectTemplate> PreludeScript::create_global_template() 
+	Status PreludeScript::create_global_template(v8::Persistent<v8::ObjectTemplate> &result) 
 	{
 		//TODO: move actual callbacks out of this script into C# code
-		v8::Persistent<v8::ObjectTemplate> prelude = v8::Persistent<v8::ObjectTemplate>::New(v8::ObjectTemplate::New());
-		prelude->Set(v8::String::New("$log"), v8::FunctionTemplate::New(log_callback, v8::External::New(this)));
-		prelude->Set(v8::String::New("$load_module"), v8::FunctionTemplate::New(load_module_callback, v8::External::New(this)));
-		return prelude;
+		result = v8::Persistent<v8::ObjectTemplate>::New(v8::ObjectTemplate::New());
+		result->Set(v8::String::New("$log"), v8::FunctionTemplate::New(log_callback, v8::External::New(this)));
+		result->Set(v8::String::New("$load_module"), v8::FunctionTemplate::New(load_module_callback, v8::External::New(this)));
+		return S_OK;
 	}
 
 	ModuleScript * PreludeScript::load_module(uint16_t *module_name)

@@ -22,8 +22,22 @@ namespace js1
 		last_exception.Dispose();
 	}
 
+	void CompiledScript::isolate_terminate_execution() 
+	{
+		v8::Isolate* isolate = get_isolate();
+		v8::V8::TerminateExecution(isolate);
+	}
+
 	void CompiledScript::report_errors(REPORT_ERROR_CALLBACK report_error_callback)
 	{
+		v8::Isolate* isolate = get_isolate();
+		if (v8::V8::IsDead() || v8::V8::IsExecutionTerminating(isolate)) 
+		{
+			//TODO: define error codes
+			report_error_callback(2, NULL);
+			return;
+		}
+
 		v8::HandleScope handle_scope;
 		v8::Context::Scope local(get_context());
 
@@ -40,13 +54,17 @@ namespace js1
 		return context;
 	}
 
-	bool CompiledScript::compile_script(const uint16_t *script_source, const uint16_t *file_name)
+	Status CompiledScript::compile_script(const uint16_t *script_source, const uint16_t *file_name)
 	{
 		v8::HandleScope handle_scope;
+		//TODO: why dispose? do we call caompile_script multiple times?
 		script.Dispose();
 		script.Clear();
 
-		global = create_global_template();
+		Status status = create_global_template(global);
+		if (status != S_OK)
+			return status;
+
 		context = v8::Context::New(NULL, global);
 		v8::Context::Scope scope(context);
 
@@ -54,8 +72,11 @@ namespace js1
 		v8::Handle<v8::Script> result = v8::Script::Compile(v8::String::New(script_source), v8::String::New(file_name));
 		set_last_error(result.IsEmpty(), try_catch);
 
+		if (result.IsEmpty())
+			return S_ERROR;
+
 		script = v8::Persistent<v8::Script>::New(result);
-		return !script.IsEmpty();
+		return S_OK;
 	}
 
 	v8::Handle<v8::Value> CompiledScript::run_script(v8::Persistent<v8::Context> context)
@@ -69,6 +90,9 @@ namespace js1
 
 	void CompiledScript::set_last_error(bool is_error, v8::TryCatch &try_catch)
 	{
+		if (!is_error && !try_catch.Exception().IsEmpty()) {
+			printf("Caught exception which was not indicated as an error");
+		}
 		if (is_error) 
 		{
 			Handle<Value> exception = try_catch.Exception();

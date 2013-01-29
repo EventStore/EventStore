@@ -440,7 +440,7 @@ namespace EventStore.Projections.Core.Services.Management
             _lastUsedQueue++;
 
             var managedProjectionInstance = new ManagedProjection(queue, 
-                projectionCorrelationId, name, _logger, _writeDispatcher, _readDispatcher, _inputQueue,
+                projectionCorrelationId, name, _logger, _writeDispatcher, _readDispatcher, _inputQueue, _publisher,
                 _projectionStateHandlerFactory);
             _projectionsMap.Add(projectionCorrelationId, name);
             _projections.Add(name, managedProjectionInstance);
