@@ -47,7 +47,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [Test, Category("v8")]
-        public void api_can_be_used()
+        public void api_can_be_used() 
+        {
+            var ver = Js1.ApiVersion();
+            Console.WriteLine(ver);
+        }
+
+        [Test, Category("v8")]
+        public void api_can_be_used2()
         {
             var ver = Js1.ApiVersion();
             Console.WriteLine(ver);

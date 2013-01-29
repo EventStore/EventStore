@@ -64,6 +64,7 @@ namespace js1
 
 		if (!prelude->enter_cancellable_region())
 		{
+			printf ("Terminated? (1)");
 			v8::Persistent<v8::String> empty;
 			return empty;
 		}
@@ -71,7 +72,7 @@ namespace js1
 		if (!prelude->exit_cancellable_region())
 		{
 		{
-			printf ("Terminated?");
+			printf ("Terminated? (2)");
 			v8::Persistent<v8::String> empty;
 			return empty;
 		}

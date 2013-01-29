@@ -12,10 +12,16 @@ extern "C"
 {
 	JS1_API int js1_api_version()
 	{
+		v8::Isolate *isolate = v8::Isolate::New();
+		isolate->Enter();
 		// NOTE: this also verifies whether this build can work at all
-		v8::HandleScope scope;
-		v8::Persistent<v8::Context> context = v8::Context::New();
-		v8::TryCatch try_catch;
+		{
+			v8::HandleScope scope;
+			v8::Persistent<v8::Context> context = v8::Context::New();
+			v8::TryCatch try_catch;
+		}
+		isolate->Exit();
+		isolate->Dispose();
 		return 1;
 	}
 
