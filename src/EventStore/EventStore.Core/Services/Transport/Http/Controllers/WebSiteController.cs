@@ -52,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 
             _singleNodeWeb = new MiniWeb("/web", Path.Combine(singleNodeFSRoot, @"singlenode-web"));
             _commonWeb = new MiniWeb("/web/es", Path.Combine(commonFSRoot, @"es-common-web"));
-            _singleNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(singleNodeFSRoot, @"singlenode-web\js\projections"));
+            _singleNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(singleNodeFSRoot, Path.Combine("singlenode-web", "js", "projections")));
         }
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)

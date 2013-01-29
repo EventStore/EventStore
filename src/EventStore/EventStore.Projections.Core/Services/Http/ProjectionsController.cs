@@ -76,6 +76,10 @@ namespace EventStore.Projections.Core.Services.Http
                 OnProjectionsGetAny);
             service.RegisterControllerAction(
                 new ControllerAction(
+                    "/projections/all-non-transient", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
+                OnProjectionsGetAllNonTransient);
+            service.RegisterControllerAction(
+                new ControllerAction(
                     "/projections/transient", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, DefaultResponseCodec),
                 OnProjectionsGetTransient);
             service.RegisterControllerAction(
@@ -158,6 +162,11 @@ namespace EventStore.Projections.Core.Services.Http
         private void OnProjectionsGetAny(HttpEntity http, UriTemplateMatch match)
         {
             ProjectionsGet(http, match, null);
+        }
+
+        private void OnProjectionsGetAllNonTransient(HttpEntity http, UriTemplateMatch match)
+        {
+            ProjectionsGet(http, match, ProjectionMode.AllNonTransient);
         }
 
         private void OnProjectionsGetTransient(HttpEntity http, UriTemplateMatch match)
