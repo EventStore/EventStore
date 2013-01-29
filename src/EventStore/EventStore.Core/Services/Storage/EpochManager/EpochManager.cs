@@ -37,8 +37,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
 {
     public class EpochManager: IEpochManager
     {
-        public const int CachedEpochCount = 100;
-
+        public readonly int CachedEpochCount;
         public int LastEpochNumber { get { return _lastEpochNumber; } }
         public EpochRecord LastEpoch { get { return GetLastEpoch(); } }
 
@@ -48,17 +47,28 @@ namespace EventStore.Core.Services.Storage.EpochManager
 
         private readonly object _locker = new object();
         private readonly Dictionary<int, EpochRecord> _epochs = new Dictionary<int, EpochRecord>();
-        private int _lastEpochNumber = -1;
-        private int _minCachedEpochNumber = int.MaxValue;
+        private volatile int _lastEpochNumber = -1;
+        private volatile int _minCachedEpochNumber = int.MaxValue;
 
-        public EpochManager(ICheckpoint checkpoint, Func<ITransactionFileReader> readerFactory, ITransactionFileWriter writer)
+        public EpochManager(int cachedEpochCount, 
+                            ICheckpoint checkpoint, 
+                            ITransactionFileWriter writer,
+                            int initialReaderCount,
+                            int maxReaderCount, 
+                            Func<ITransactionFileReader> readerFactory)
         {
+            Ensure.Nonnegative(cachedEpochCount, "cachedEpochCount");
             Ensure.NotNull(checkpoint, "checkpoint");
-            Ensure.NotNull(readerFactory, "readerFactory");
             Ensure.NotNull(writer, "chunkWriter");
+            Ensure.Nonnegative(initialReaderCount, "initialReaderCount");
+            Ensure.Positive(maxReaderCount, "maxReaderCount");
+            if (initialReaderCount > maxReaderCount)
+                throw new ArgumentOutOfRangeException("initialReaderCount", "initialReaderCount is greater than maxReaderCount.");
+            Ensure.NotNull(readerFactory, "readerFactory");
 
+            CachedEpochCount = cachedEpochCount;
             _checkpoint = checkpoint;
-            _readers = new ObjectPool<ITransactionFileReader>("EpochManager readers pool", 1, 5, readerFactory);
+            _readers = new ObjectPool<ITransactionFileReader>("EpochManager readers pool", initialReaderCount, maxReaderCount, readerFactory);
             _writer = writer;
         }
 
@@ -77,10 +87,10 @@ namespace EventStore.Core.Services.Storage.EpochManager
                         SeqReadResult result;
                         while ((result = reader.TryReadPrev()).Success)
                         {
-                            if (result.LogRecord.RecordType != LogRecordType.System
-                                || ((SystemLogRecord)result.LogRecord).SystemRecordType != SystemRecordType.Epoch)
+                            var rec = result.LogRecord;
+                            if (rec.RecordType != LogRecordType.System || ((SystemLogRecord)rec).SystemRecordType != SystemRecordType.Epoch)
                                 continue;
-                            epochPos = result.RecordPrePosition;
+                            epochPos = rec.Position;
                             break;
                         }
                     }
@@ -91,12 +101,14 @@ namespace EventStore.Core.Services.Storage.EpochManager
                         var result = reader.TryReadAt(epochPos);
                         if (!result.Success)
                             throw new Exception(string.Format("Couldn't find Epoch record at LogPosition {0}.", epochPos));
-                        if (result.LogRecord.RecordType != LogRecordType.System
-                            || ((SystemLogRecord) result.LogRecord).SystemRecordType != SystemRecordType.Epoch)
-                            throw new Exception(string.Format("Epoch LogRecord is of unexpected type: {0}.",
-                                                              result.LogRecord));
+                        if (result.LogRecord.RecordType != LogRecordType.System)
+                            throw new Exception(string.Format("LogRecord is not SystemLogRecord: {0}.", result.LogRecord));
+                        
+                        var sysRec = (SystemLogRecord) result.LogRecord;
+                        if (sysRec.SystemRecordType != SystemRecordType.Epoch)
+                            throw new Exception(string.Format("SystemLogRecord is not of Epoch sub-type: {0}.", result.LogRecord));
 
-                        var epoch = ((SystemLogRecord) result.LogRecord).GetEpochRecord();
+                        var epoch = sysRec.GetEpochRecord();
                         _epochs[epoch.EpochNumber] = epoch;
                         _lastEpochNumber = Math.Max(_lastEpochNumber, epoch.EpochNumber);
                         _minCachedEpochNumber = Math.Min(_minCachedEpochNumber, epoch.EpochNumber);
@@ -136,6 +148,41 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 if (epoch == null)
                     throw new Exception(string.Format("Concurrency failure, epoch #{0} shouldn't be null.", epochNumber));
                 return epoch;
+            }
+        }
+
+        public bool ExistsCorrectEpochAt(long logPosition, int epochNumber, Guid epochId)
+        {
+            Ensure.Nonnegative(logPosition, "logPosition");
+
+            lock (_locker)
+            {
+                if (epochNumber > _lastEpochNumber)
+                    return false;
+                if (epochNumber >= _minCachedEpochNumber)
+                {
+                    var epoch = _epochs[epochNumber];
+                    return epoch.EpochId == epochId && epoch.LogPosition == logPosition;
+                }
+            }
+            
+            // epochNumber < _minCachedEpochNumber
+            var reader = _readers.Get();
+            try
+            {
+                var res = reader.TryReadAt(logPosition);
+                if (!res.Success || res.LogRecord.RecordType != LogRecordType.System)
+                    return false;
+                var sysRec = (SystemLogRecord) res.LogRecord;
+                if (sysRec.SystemRecordType != SystemRecordType.Epoch)
+                    return false;
+
+                var epoch = sysRec.GetEpochRecord();
+                return epoch.EpochNumber == epochNumber && epoch.EpochId == epochId;
+            }
+            finally
+            {
+                _readers.Return(reader);
             }
         }
 

@@ -121,14 +121,17 @@ namespace EventStore.Core
             var readIndex = new ReadIndex(_mainQueue, 
                                           ESConsts.PTableInitialReaderCount, 
                                           ESConsts.PTableMaxReaderCount, 
-                                          () => new TFChunkReader(db, db.Config.WriterCheckpoint, 0), 
+                                          () => new TFChunkReader(db, db.Config.WriterCheckpoint), 
                                           tableIndex, 
                                           new XXHashUnsafe(),
                                           new LRUCache<string, StreamCacheInfo>(ESConsts.StreamMetadataCacheCapacity));
             var writer = new TFChunkWriter(db);
-            var epochManager = new EpochManager(db.Config.EpochCheckpoint,
-                                                () => new TFChunkReader(db, db.Config.WriterCheckpoint, 0),
-                                                writer);
+            var epochManager = new EpochManager(ESConsts.CachedEpochCount,
+                                                db.Config.EpochCheckpoint,
+                                                writer,
+                                                initialReaderCount: 1,
+                                                maxReaderCount: 5,
+                                                readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint));
             epochManager.Init();
             new StorageWriterService(_mainQueue, _mainBus, writer, readIndex, epochManager); // subscribes internally
             var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderThreadCount, db.Config.WriterCheckpoint);

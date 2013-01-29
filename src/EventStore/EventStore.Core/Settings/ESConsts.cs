@@ -51,5 +51,6 @@ namespace EventStore.Core.Settings
         public const int StreamMetadataCacheCapacity = 100000;
         public const int TransactionMetadataCacheCapacity = 50000;
         public const int CommitedEventsMemCacheLimit = 8*1024*1024;
+        public const int CachedEpochCount = 1000;
     }
 }
