@@ -47,7 +47,6 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        0,
                                                        writerchk,
                                                        new InMemoryCheckpoint(),
-                                                       new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
             db.OpenVerifyAndClean();
 
@@ -62,13 +61,13 @@ namespace EventStore.Core.Tests.TransactionLog
         public void try_read_does_not_cache_anything_and_returns_record_once_it_is_written_later()
         {
             var writerchk = new InMemoryCheckpoint(0);
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                        new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                        10000,
                                                        0,
                                                        writerchk,
                                                        new InMemoryCheckpoint(),
-                                                       new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
             db.OpenVerifyAndClean();
 

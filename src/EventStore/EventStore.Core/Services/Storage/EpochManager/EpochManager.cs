@@ -48,7 +48,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
         private readonly object _locker = new object();
         private readonly Dictionary<int, EpochRecord> _epochs = new Dictionary<int, EpochRecord>();
         private volatile int _lastEpochNumber = -1;
-        private volatile int _minCachedEpochNumber = int.MaxValue;
+        private volatile int _minCachedEpochNumber = -1;
 
         public EpochManager(int cachedEpochCount, 
                             ICheckpoint checkpoint, 
@@ -111,7 +111,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
                         var epoch = sysRec.GetEpochRecord();
                         _epochs[epoch.EpochNumber] = epoch;
                         _lastEpochNumber = Math.Max(_lastEpochNumber, epoch.EpochNumber);
-                        _minCachedEpochNumber = Math.Min(_minCachedEpochNumber, epoch.EpochNumber);
+                        _minCachedEpochNumber = epoch.EpochNumber;
 
                         epochPos = epoch.PrevEpochPosition;
                         cnt += 1;
@@ -190,6 +190,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
         {
             // This method should be called from single thread.
             Ensure.NotEmptyGuid(epochId, "epochId");
+            Ensure.Nonnegative(epochNumber, "epochNumber");
 
             if (epochNumber > _lastEpochNumber + 1)
                 throw new Exception(string.Format("New epoch is far too in the future. LastEpochNumber: {0}, new epoch number: {1}.", _lastEpochNumber, epochNumber));

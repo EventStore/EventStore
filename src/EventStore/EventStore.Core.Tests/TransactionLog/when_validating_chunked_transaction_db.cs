@@ -48,7 +48,6 @@ namespace EventStore.Core.Tests.TransactionLog
                                              0,
                                              new InMemoryCheckpoint(500),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             File.WriteAllText(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), "this is just some test blahbydy blah");
@@ -60,13 +59,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test, Ignore("Not valid test now after disabling size validation on ongoing TFChunk ")]
         public void with_wrong_actual_chunk_size_in_chunk_footer()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              12000,
                                              0,
                                              new InMemoryCheckpoint(10000),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), 10000, 12000);
@@ -78,13 +77,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void with_not_enough_files_to_reach_checksum_throws()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(15000),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
@@ -96,13 +95,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void allows_with_exactly_enough_file_to_reach_checksum()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(10000),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
@@ -113,13 +112,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void allows_next_new_chunk_when_checksum_is_exactly_in_between_two_chunks()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(10000),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
@@ -131,13 +130,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test, Ignore("Not valid test now after disabling size validation on ongoing TFChunk ")]
         public void with_wrong_size_file_less_than_checksum_throws()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(15000),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
@@ -150,13 +149,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_in_first_extraneous_files_throws_corrupt_database_exception()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(9000),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
@@ -169,13 +168,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_in_multiple_extraneous_files_throws_corrupt_database_exception()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(15000),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
 
             var db = new TFChunkDb(config);
@@ -190,13 +189,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_in_brand_new_extraneous_files_throws_corrupt_database_exception()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(0),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(4, 0)), config.ChunkSize, config.ChunkSize);
@@ -208,13 +207,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_a_chaser_checksum_is_ahead_of_writer_checksum_throws_corrupt_database_exception()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(0),
                                              new InMemoryCheckpoint(11),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
@@ -225,30 +224,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_an_epoch_checksum_is_ahead_of_writer_checksum_throws_corrupt_database_exception()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(0),
                                              new InMemoryCheckpoint(0),
-                                             new InMemoryCheckpoint(11),
-                                             new InMemoryCheckpoint(-1));
-            var db = new TFChunkDb(config);
-            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
-            Assert.IsInstanceOf<ReaderCheckpointHigherThanWriterException>(ex.InnerException);
-            db.Dispose();
-        }
-
-        [Test]
-        public void when_a_truncate_checksum_is_ahead_of_writer_checksum_throws_corrupt_database_exception()
-        {
-            var config = new TFChunkDbConfig(PathName,
-                                             new PrefixFileNamingStrategy(PathName, "prefix.tf"),
-                                             10000,
-                                             0,
-                                             new InMemoryCheckpoint(0),
-                                             new InMemoryCheckpoint(0),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(11));
             var db = new TFChunkDb(config);
             var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
@@ -259,13 +241,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void allows_no_files_when_checkpoint_is_zero()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
@@ -275,13 +257,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void allows_first_correct_file_when_checkpoint_is_zero()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
                                              0,
                                              new InMemoryCheckpoint(),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
@@ -295,13 +277,13 @@ namespace EventStore.Core.Tests.TransactionLog
             File.Create(GetFilePathFor("foo")).Close();
             File.Create(GetFilePathFor("bla")).Close();
 
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
                                              0,
                                              new InMemoryCheckpoint(350),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
 
@@ -330,13 +312,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_checkpoint_is_on_boundary_of_chunk_last_chunk_is_removed_if_present_and_new_empty_one_is_created()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
 
@@ -357,13 +339,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_checkpoint_is_on_boundary_of_new_chunk_excessive_last_chunks_are_removed_if_present_and_new_empty_one_is_created()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
 
@@ -385,13 +367,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_checkpoint_is_exactly_on_the_boundary_of_chunk_the_last_chunk_could_be_not_present_but_should_be_created()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
 
@@ -412,13 +394,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_checkpoint_is_exactly_on_the_boundary_of_chunk_the_last_chunk_could_be_present()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
 
@@ -440,13 +422,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_checkpoint_is_on_boundary_of_new_chunk_and_last_chunk_is_truncated_no_exception_is_thrown()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
 
@@ -467,13 +449,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test, Ignore("Not valid test now after disabling size validation on ongoing TFChunk ")]
         public void when_checkpoint_is_on_boundary_of_new_chunk_and_last_chunk_is_truncated_but_not_completed_exception_is_thrown()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
                                              0,
                                              new InMemoryCheckpoint(200),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
 
@@ -489,13 +471,13 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void temporary_files_are_removed()
         {
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
                                              0,
                                              new InMemoryCheckpoint(150),
                                              new InMemoryCheckpoint(),
-                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
 

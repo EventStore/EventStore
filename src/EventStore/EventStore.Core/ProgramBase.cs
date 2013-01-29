@@ -167,20 +167,17 @@ namespace EventStore.Core
             var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
             var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
             var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
-            var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
             if (Runtime.IsMono)
             {
                 writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
                 chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
                 epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-                truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
             }
             else
             {
                 writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
                 chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
                 epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-                truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
             }
             var nodeConfig = new TFChunkDbConfig(dbPath,
                                                  new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
@@ -188,8 +185,7 @@ namespace EventStore.Core
                                                  chunksToCache,
                                                  writerChk,
                                                  chaserChk,
-                                                 epochChk,
-                                                 truncateChk);
+                                                 epochChk);
             return nodeConfig;
         }
     }

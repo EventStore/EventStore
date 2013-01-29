@@ -49,10 +49,6 @@ namespace EventStore.Core.Messages
         {
         }
 
-        public interface IAckMessage
-        {
-        }
-
         public interface IMasterWriteMessage
         {
              
@@ -203,7 +199,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class PrepareAck : Message, IAckMessage
+        public class PrepareAck : Message
         {
             public readonly Guid CorrelationId;
             public readonly IPEndPoint VNodeEndPoint;
@@ -223,7 +219,7 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class CommitAck : Message, IAckMessage
+        public class CommitAck : Message
         {
             public readonly Guid CorrelationId;
             public readonly IPEndPoint VNodeEndPoint;

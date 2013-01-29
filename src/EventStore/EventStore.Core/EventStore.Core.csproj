@@ -178,9 +178,6 @@
     <Compile Include="Settings\ESConsts.cs" />
     <Compile Include="Settings\VNodeSettings.cs" />
     <Compile Include="TransactionLog\Checkpoint\Checkpoint.cs" />
-    <Compile Include="TransactionLog\Checkpoint\FileMultiCheckpoint.cs" />
-    <Compile Include="TransactionLog\Checkpoint\IMultiCheckpoint.cs" />
-    <Compile Include="TransactionLog\Checkpoint\InMemMultiCheckpoint.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk\BulkReadResult.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk\PosMap.cs" />
     <Compile Include="TransactionLog\Chunks\TFChunk\TFChunkReadSide.cs" />

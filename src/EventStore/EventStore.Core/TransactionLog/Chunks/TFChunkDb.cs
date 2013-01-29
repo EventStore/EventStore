@@ -175,7 +175,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private void ValidateReaderChecksumsMustBeLess(TFChunkDbConfig config)
         {
             var current = config.WriterCheckpoint.Read();
-            foreach (var checkpoint in new[] { config.ChaserCheckpoint, config.EpochCheckpoint, config.TruncateCheckpoint})
+            foreach (var checkpoint in new[] { config.ChaserCheckpoint, config.EpochCheckpoint })
             {
                 if (checkpoint.Read() > current)
                     throw new CorruptDatabaseException(new ReaderCheckpointHigherThanWriterException(checkpoint.Name));

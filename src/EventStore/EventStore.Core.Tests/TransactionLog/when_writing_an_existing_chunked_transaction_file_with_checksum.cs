@@ -56,13 +56,13 @@ namespace EventStore.Core.Tests.TransactionLog
 
             _checkpoint = new InMemoryCheckpoint(137);
             ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                        new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                                        10000,
                                                        0,
                                                        _checkpoint,
                                                        new InMemoryCheckpoint(),
-                                                       new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
             db.OpenVerifyAndClean();
             var tf = new TFChunkWriter(db);

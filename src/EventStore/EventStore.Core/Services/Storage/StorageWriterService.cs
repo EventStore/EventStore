@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.Storage
         private readonly IEpochManager _epochManager;
 
         protected readonly IPublisher Bus;
-        private readonly ISubscriber _subscriber;
+        private readonly ISubscriber _subscribeToBus;
 
         private readonly QueuedHandler _storageWriterQueue;
         private readonly InMemoryBus _writerBus;
@@ -70,16 +70,20 @@ namespace EventStore.Core.Services.Storage
 
         protected int FlushMessagesInQueue;
 
-        public StorageWriterService(IPublisher bus, ISubscriber subscriber, TFChunkWriter writer, IReadIndex readIndex, IEpochManager epochManager)
+        public StorageWriterService(IPublisher bus, 
+                                    ISubscriber subscribeToBus, 
+                                    TFChunkWriter writer, 
+                                    IReadIndex readIndex,
+                                    IEpochManager epochManager)
         {
             Ensure.NotNull(bus, "bus");
-            Ensure.NotNull(subscriber, "subscriber");
+            Ensure.NotNull(subscribeToBus, "subscribeToBus");
             Ensure.NotNull(writer, "writer");
             Ensure.NotNull(readIndex, "readIndex");
             Ensure.NotNull(epochManager, "epochManager");
 
             Bus = bus;
-            _subscriber = subscriber;
+            _subscribeToBus = subscribeToBus;
             ReadIndex = readIndex;
             _epochManager = epochManager;
 
@@ -107,7 +111,7 @@ namespace EventStore.Core.Services.Storage
         protected void SubscribeToMessage<T>() where T: Message
         {
             _writerBus.Subscribe((IHandle<T>)this);
-            _subscriber.Subscribe(this.WidenFrom<T, Message>());
+            _subscribeToBus.Subscribe(this.WidenFrom<T, Message>());
         }
 
         void IHandle<Message>.Handle(Message message)

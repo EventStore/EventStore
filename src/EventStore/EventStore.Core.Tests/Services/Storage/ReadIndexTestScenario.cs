@@ -73,13 +73,13 @@ namespace EventStore.Core.Tests.Services.Storage
             ChaserChecksum = new InMemoryCheckpoint(0);
 
             ICheckpoint[] namedCheckpoints = new[] { WriterChecksum, ChaserChecksum };
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             Db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                    new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                    10000,
                                                    0,
                                                    WriterChecksum,
                                                    ChaserChecksum,
-                                                   new InMemoryCheckpoint(-1),
                                                    new InMemoryCheckpoint(-1)));
 
             Db.OpenVerifyAndClean();

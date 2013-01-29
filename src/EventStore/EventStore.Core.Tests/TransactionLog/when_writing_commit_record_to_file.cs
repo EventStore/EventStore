@@ -56,7 +56,6 @@ namespace EventStore.Core.Tests.TransactionLog
                                                     0,
                                                     _writerCheckpoint,
                                                     new InMemoryCheckpoint(),
-                                                    new InMemoryCheckpoint(-1),
                                                     new InMemoryCheckpoint(-1)));
             _db.OpenVerifyAndClean();
             _writer = new TFChunkWriter(_db);

@@ -26,7 +26,6 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
                                                0,
                                                new InMemoryCheckpoint(0),
                                                new InMemoryCheckpoint(0),
-                                               new InMemoryCheckpoint(-1),
                                                new InMemoryCheckpoint(-1));
             var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
             _dbResult = CreateDb(dbCreationHelper);

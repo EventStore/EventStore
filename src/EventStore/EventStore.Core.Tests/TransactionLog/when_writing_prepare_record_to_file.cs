@@ -51,13 +51,13 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             _writerCheckpoint = new InMemoryCheckpoint();
             ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
+            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             _db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                     new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                     1024,
                                                     0,
                                                     _writerCheckpoint,
                                                     new InMemoryCheckpoint(),
-                                                    new InMemoryCheckpoint(-1),
                                                     new InMemoryCheckpoint(-1)));
             _db.OpenVerifyAndClean();
             _writer = new TFChunkWriter(_db);
