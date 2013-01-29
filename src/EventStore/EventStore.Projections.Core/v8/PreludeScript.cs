@@ -48,9 +48,10 @@ namespace EventStore.Projections.Core.v8
 
         private readonly Action<int, Action> _cancelCallbackFactory;
 
-        private int _cancelToken = 0;
-        private int _terminateRequested = 0;
-        private int _currentCancelToken = 1;
+        private int _cancelTokenOrStatus = 0; // bot hcore and timer threads
+        private Func<bool> _terminateRequested; // core thread only
+        private int _currentCancelToken = 1; // core thread only
+
         private readonly Js1.EnterCancellableRegionDelegate _enterCancellableRegion;
         private readonly Js1.ExitCancellableRegionDelegate _exitCancellableRegion;
 
@@ -74,7 +75,7 @@ namespace EventStore.Projections.Core.v8
             IntPtr prelude = Js1.CompilePrelude(
                 script, fileName, _loadModuleDelegate, _enterCancellableRegion, _exitCancellableRegion, _logDelegate);
             var terminated = CancelTerminateExecution();
-            CompiledScript.CheckResult(prelude, terminated, disposeScriptOnException: true);
+            CompiledScript.CheckResult(prelude, false, disposeScriptOnException: true);
             return new CompiledScript(prelude, fileName);
         }
 
@@ -92,7 +93,7 @@ namespace EventStore.Projections.Core.v8
             {
                 var moduleSourceAndFileName = GetModuleSourceAndFileName(moduleName);
                 // NOTE: no need to schedule termination; modules are loaded only in context 
-                if (_cancelToken == NonScheduled)
+                if (_cancelTokenOrStatus == NonScheduled)
                     throw new InvalidOperationException("Requires scheduled terminate execution");
                 var compiledModuleHandle = Js1.CompileModule(
                     GetHandle(), moduleSourceAndFileName.Item1, moduleSourceAndFileName.Item2);
@@ -134,44 +135,52 @@ namespace EventStore.Projections.Core.v8
             Js1.TerminateExecution(scriptHandle);
         }
 
-        private void AnotherThreadCancel(int cancelToken, IntPtr scriptHandle)
+        private void AnotherThreadCancel(int cancelToken, IntPtr scriptHandle, Action expired)
         {
-            Interlocked.Exchange(ref _terminateRequested, 1);
-            if (Interlocked.CompareExchange(ref _cancelToken, Terminating, cancelToken) == cancelToken)
+            expired(); // always set our termination timout expired 
+            if (Interlocked.CompareExchange(ref _cancelTokenOrStatus, Terminating, cancelToken) == cancelToken)
             {
-                Interlocked.Exchange(ref _terminateRequested, 2);
-                CancelExecution(scriptHandle);
-                if (Interlocked.CompareExchange(ref _cancelToken, Scheduled, Terminating) != Terminating)
+                if (scriptHandle != IntPtr.Zero) // prelude itself does not yet handle.  // TODO: handle somehow?
+                    CancelExecution(scriptHandle);
+                if (Interlocked.CompareExchange(ref _cancelTokenOrStatus, Scheduled, Terminating) != Terminating)
                     throw new Exception();
             }
         }
 
         public void ScheduleTerminateExecution()
         {
-            Interlocked.Exchange(ref _terminateRequested, 0); //TODO: remove interlocked?
-            _currentCancelToken++;
-            if (Interlocked.CompareExchange(ref _cancelToken, Scheduled, NonScheduled) != NonScheduled) //TODO: no need for interlocked?
+            int currentCancelToken = ++_currentCancelToken;
+            if (Interlocked.CompareExchange(ref _cancelTokenOrStatus, Scheduled, NonScheduled) != NonScheduled) //TODO: no need for interlocked?
                 throw new InvalidOperationException("ScheduleTerminateExecution cannot be called while previous one has not been canceled");
             if (_cancelCallbackFactory != null) // allow nulls in tests
-                _cancelCallbackFactory(1000, () => AnotherThreadCancel(_currentCancelToken, GetHandle()));
+            {
+                bool terminated = false;
+                _terminateRequested = () => terminated;
+                _cancelCallbackFactory(
+                    1000, () => AnotherThreadCancel(currentCancelToken, GetHandle(), () => terminated = true));
+            }
+            else
+            {
+                _terminateRequested = () => false;
+            }
         }
 
         public bool CancelTerminateExecution()
         {
             //NOTE: cannot be attempted while running, but it can be attempted while terminating
-            while (Interlocked.CompareExchange(ref _cancelToken, NonScheduled, Scheduled) != Scheduled)
+            while (Interlocked.CompareExchange(ref _cancelTokenOrStatus, NonScheduled, Scheduled) != Scheduled)
                 Thread.SpinWait(1);
             // exit only if terminated or canceled
-            return _terminateRequested == 2;
+            return _terminateRequested();
         }
 
         private bool EnterCancellableRegion()
         {
-            var entered = Interlocked.CompareExchange(ref _cancelToken, _currentCancelToken, Scheduled) == Scheduled;
-            var result = entered && _terminateRequested == 0;
+            var entered = Interlocked.CompareExchange(ref _cancelTokenOrStatus, _currentCancelToken, Scheduled) == Scheduled;
+            var result = entered && !_terminateRequested();
             if (!result && entered)
             {
-                if (Interlocked.CompareExchange(ref _cancelToken, Scheduled, _currentCancelToken) != _currentCancelToken)
+                if (Interlocked.CompareExchange(ref _cancelTokenOrStatus, Scheduled, _currentCancelToken) != _currentCancelToken)
                     throw new Exception();
             }
             return result;
@@ -183,8 +192,8 @@ namespace EventStore.Projections.Core.v8
         /// <returns></returns>
         private bool ExitCancellableRegion()
         {
-            return Interlocked.CompareExchange(ref _cancelToken, Scheduled, _currentCancelToken) == _currentCancelToken
-                   && _terminateRequested == 0;
+            return Interlocked.CompareExchange(ref _cancelTokenOrStatus, Scheduled, _currentCancelToken) == _currentCancelToken
+                   && !_terminateRequested();
         }
 
     }

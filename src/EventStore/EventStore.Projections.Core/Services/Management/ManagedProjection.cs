@@ -60,6 +60,7 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
         private readonly IPublisher _inputQueue;
+        private readonly IPublisher _output;
 
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
@@ -95,10 +96,11 @@ namespace EventStore.Projections.Core.Services.Management
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            IPublisher inputQueue, ProjectionStateHandlerFactory projectionStateHandlerFactory)
+            IPublisher inputQueue, IPublisher output, ProjectionStateHandlerFactory projectionStateHandlerFactory)
         {
             if (id == Guid.Empty) throw new ArgumentException("id");
             if (name == null) throw new ArgumentNullException("name");
+            if (output == null) throw new ArgumentNullException("output");
             if (name == "") throw new ArgumentException("name");
             _coreQueue = coreQueue;
             _id = id;
@@ -107,6 +109,7 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher = writeDispatcher;
             _readDispatcher = readDispatcher;
             _inputQueue = inputQueue;
+            _output = output;
             _projectionStateHandlerFactory = projectionStateHandlerFactory;
             _getStateDispatcher =
                 new RequestResponseDispatcher
@@ -557,7 +560,7 @@ namespace EventStore.Projections.Core.Services.Management
                                 stateHandler = handlerFactory.Create(HandlerType, Query, 
                                     logger: Console.WriteLine, 
                                     cancelCallbackFactory: (ms, action) => 
-                                        _coreQueue.Publish(
+                                        _output.Publish(
                                             TimerMessage.Schedule.Create(
                                                 TimeSpan.FromMilliseconds(ms), new SendToThisEnvelope(this), 
                                                 new ProjectionManagementMessage.CancelExecutionMessage(action))));
