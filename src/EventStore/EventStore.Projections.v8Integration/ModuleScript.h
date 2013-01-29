@@ -16,15 +16,15 @@ namespace js1 {
 
 		virtual ~ModuleScript();
 
-		bool compile_script(const uint16_t *module_source, const uint16_t *module_file_name);
-		bool try_run();
+		Status compile_script(const uint16_t *module_source, const uint16_t *module_file_name);
+		Status try_run();
 
 		v8::Handle<v8::Object> get_module_object();
 
 
 	protected:
 		virtual v8::Isolate *get_isolate();
-		virtual v8::Persistent<v8::ObjectTemplate> create_global_template();
+		virtual Status create_global_template(v8::Persistent<v8::ObjectTemplate> &result);
 
 	private:
 		v8::Isolate *isolate;

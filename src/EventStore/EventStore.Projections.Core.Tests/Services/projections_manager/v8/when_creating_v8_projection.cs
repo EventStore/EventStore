@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             Assert.AreEqual("Message1", m);
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception))]
+        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "SyntaxError:", MatchType = MessageMatch.StartsWith)]
         public void js_syntax_errors_are_reported()
         {
             string m = null;

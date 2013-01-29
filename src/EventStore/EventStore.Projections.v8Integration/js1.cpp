@@ -37,9 +37,13 @@ extern "C"
 
 		module_script = new js1::ModuleScript(prelude_script);
 
-		if (module_script->compile_script(script, file_name))
-			if (module_script->try_run())
-				return module_script;
+		js1::Status status;
+		if ((status = module_script->compile_script(script, file_name)) == js1::S_OK)
+			status = module_script->try_run();
+
+		if (status != js1::S_TERMINATED)
+			return module_script;
+
 		delete module_script;
 		return NULL;
 	};
@@ -53,9 +57,13 @@ extern "C"
 
 		v8::HandleScope scope;
 
-		if (prelude_script->compile_script(prelude, file_name))
-			if (prelude_script->try_run())
-				return prelude_script;
+		js1::Status status;
+		if ((status = prelude_script->compile_script(prelude, file_name)) == js1::S_OK)
+			status = prelude_script->try_run();
+
+		if (status != js1::S_TERMINATED)
+			return prelude_script;
+
 		delete prelude_script;
 		return NULL;
 	};
@@ -78,11 +86,16 @@ extern "C"
 
 		query_script = new js1::QueryScript(prelude_script, register_command_handler_callback, reverse_command_callback);
 
-		if (query_script->compile_script(script, file_name))
-			if (query_script->try_run())
-				return query_script;
+		js1::Status status;
+		if ((status = query_script->compile_script(script, file_name)) == js1::S_OK)
+			status = query_script->try_run();
+
+		if (status != js1::S_TERMINATED)
+			return query_script;
+
 		delete query_script;
 		return NULL;
+
 	};
 
 	JS1_API void STDCALL dispose_script(void *script_handle)

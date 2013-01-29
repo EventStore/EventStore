@@ -22,7 +22,7 @@ namespace js1
 		isolate_release(isolate);
 	}
 
-	bool QueryScript::compile_script(const uint16_t *script_source, const uint16_t *file_name)
+	Status QueryScript::compile_script(const uint16_t *script_source, const uint16_t *file_name)
 	{
 		this->register_command_handler_callback = register_command_handler_callback;
 
@@ -30,16 +30,16 @@ namespace js1
 
 	}
 
-	bool QueryScript::try_run() 
+	Status QueryScript::try_run() 
 	{
 		if (!prelude->enter_cancellable_region())
-			return false;
+			return S_TERMINATED;
 
 		v8:Handle<v8::Value> result = run_script(get_context());
 		if (!prelude->exit_cancellable_region())
-			return false;
+			return S_TERMINATED;
 
-		return true;
+		return S_OK;
 	}
 
 	v8::Persistent<v8::String> QueryScript::execute_handler(void *event_handler_handle, const uint16_t *data_json, const uint16_t *data_other[], int32_t other_length) 
@@ -71,11 +71,9 @@ namespace js1
 		v8::Handle<v8::Value> result = event_handler->get_handler()->Call(global, 1 + other_length, argv);
 		if (!prelude->exit_cancellable_region())
 		{
-		{
 			printf ("Terminated? (2)");
 			v8::Persistent<v8::String> empty;
 			return empty;
-		}
 		}
 
 		set_last_error(result.IsEmpty(), try_catch);
@@ -96,7 +94,7 @@ namespace js1
 		return isolate;
 	}
 
-	v8::Persistent<v8::ObjectTemplate> QueryScript::create_global_template()
+	Status QueryScript::create_global_template(v8::Persistent<v8::ObjectTemplate> &result)
 	{
 		v8::Persistent<v8::Context> temp_context = v8::Context::New();
 		v8::Context::Scope temp_context_scope(temp_context);
@@ -107,9 +105,11 @@ namespace js1
 		arguments[0] = v8::FunctionTemplate::New(on_callback, query_script_wrap)->GetFunction();
 		arguments[1] = v8::FunctionTemplate::New(notify_callback, query_script_wrap)->GetFunction();
 
-		v8::Persistent<v8::ObjectTemplate> result = prelude->get_template(arguments);
+		Status status = prelude->get_template(arguments, result);
+		if (status != S_OK)
+			return status;
 		temp_context.Dispose();
-		return result;
+		return S_OK;
 	}
 
 	v8::Handle<v8::Value> QueryScript::on(const v8::Arguments& args) 
