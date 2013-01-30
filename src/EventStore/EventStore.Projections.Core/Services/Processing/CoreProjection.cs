@@ -425,13 +425,16 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
+            EnsureState(State.Running);
             _logger.Info(
                 "Projection '{0}'({1}) restart has been requested due to: '{2}'", _name, _projectionCorrelationId,
                 message.Reason);
-            //
+
+                //
             EnsureUnsubscribed();
             GoToState(State.Initial);
             Start();
+            
         }
 
         private void EnsureUnsubscribed()
@@ -846,7 +849,7 @@ namespace EventStore.Projections.Core.Services.Processing
         internal void EnsureTickPending()
         {
             // ticks are requested when an async operation is completed or when an item is being processed
-            // thus, the tick message is rmeoved from the queue when it does not process any work item (and 
+            // thus, the tick message is removed from the queue when it does not process any work item (and 
             // it is renewed therefore)
             if (_tickPending)
                 return;

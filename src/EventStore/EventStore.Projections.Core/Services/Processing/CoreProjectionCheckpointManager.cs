@@ -79,6 +79,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _stateRequested;
         private string _currentProjectionState;
         private PartitionStateUpdateManager _partitionStateUpdateManager;
+        private int _readRequestsInProgress;
+        private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
 
         protected CoreProjectionCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
@@ -132,12 +134,15 @@ namespace EventStore.Projections.Core.Services.Processing
             _stateLoaded = false;
             _started = false;
             _stopping = false;
+            _stopped = false;
             _stateRequested = false;
             _currentProjectionState = null;
 
             foreach (var requestId in _loadStateRequests)
                 _readDispatcher.Cancel(requestId);
             _loadStateRequests.Clear();
+            _partitionStateUpdateManager = null;
+            _readRequestsInProgress = 0;
         }
 
         public virtual void Start(CheckpointTag checkpointTag)
@@ -449,9 +454,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     newState.CausedBy, oldState.CausedBy));
             return result;
         }
-
-        private int _readRequestsInProgress;
-        private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
 
 
         public abstract void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed);
