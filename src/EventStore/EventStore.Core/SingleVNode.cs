@@ -89,7 +89,7 @@ namespace EventStore.Core
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             _controller.SetMainQueue(MainQueue);
 
-            //MONITORING
+            // MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
             var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
             var monitoringQueue = new QueuedHandler(monitoringInnerBus, "MonitoringQueue", true, TimeSpan.FromMilliseconds(100));
@@ -111,7 +111,7 @@ namespace EventStore.Core
             monitoringInnerBus.Subscribe<ClientMessage.CreateStreamCompleted>(monitoring);
             monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 
-            //STORAGE SUBSYSTEM
+            // STORAGE SUBSYSTEM
             var indexPath = Path.Combine(db.Config.Path, "index");
             var tableIndex = new TableIndex(indexPath,
                                             () => new HashListMemTable(maxSize: memTableEntryCount * 2),
@@ -152,13 +152,13 @@ namespace EventStore.Core
             // NETWORK SEND
             _networkSendService = new NetworkSendService(tcpQueueCount: vNodeSettings.TcpSendingThreads, httpQueueCount: vNodeSettings.HttpSendingThreads);
 
-            //TCP
-            var tcpService = new TcpService(MainQueue, _tcpEndPoint, _networkSendService);
+            // TCP
+            var tcpService = new TcpService(MainQueue, _tcpEndPoint, _networkSendService, TcpServiceType.External, new ClientTcpDispatcher());
             Bus.Subscribe<SystemMessage.SystemInit>(tcpService);
             Bus.Subscribe<SystemMessage.SystemStart>(tcpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(tcpService);
 
-            //HTTP
+            // HTTP
             _httpService = new HttpService(ServiceAccessibility.Private, MainQueue, vNodeSettings.HttpReceivingThreads, vNodeSettings.HttpPrefixes);
             Bus.Subscribe<SystemMessage.SystemInit>(HttpService);
             Bus.Subscribe<SystemMessage.BecomeShuttingDown>(HttpService);
@@ -171,7 +171,7 @@ namespace EventStore.Core
             HttpService.SetupController(new AtomController(MainQueue, _networkSendService));
             HttpService.SetupController(new WebSiteController(MainQueue));
 
-            //REQUEST MANAGEMENT
+            // REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(MainQueue, 1, 1);
             Bus.Subscribe<StorageMessage.CreateStreamRequestCreated>(requestManagement);
             Bus.Subscribe<StorageMessage.WriteRequestCreated>(requestManagement);
@@ -191,7 +191,7 @@ namespace EventStore.Core
 
             new SubscriptionsService(_mainBus, readIndex); // subcribes internally
 
-            //TIMER
+            // TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
             Bus.Subscribe<TimerMessage.Schedule>(TimerService);
 

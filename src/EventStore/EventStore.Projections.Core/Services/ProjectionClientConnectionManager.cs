@@ -108,7 +108,7 @@ namespace EventStore.Projections.Core.Services
         {
             _bus.Publish(new ProjectionCoreServiceMessage.Stop());
             _running = false;
-            _connectionManager.Stop();
+            _connectionManager.Stop("Node is shutting down.");
         }
     }
 }

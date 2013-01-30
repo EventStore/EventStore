@@ -39,4 +39,12 @@ namespace EventStore.Core.Cluster
         ShuttingDown,
         Shutdown
     }
+
+    public static class VNodeStateExtensions
+    {
+        public static bool IsReplica(this VNodeState state)
+        {
+            return state == VNodeState.CatchingUp || state == VNodeState.Clone || state == VNodeState.Slave;
+        }
+    }
 }

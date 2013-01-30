@@ -46,6 +46,7 @@ namespace EventStore.Core.Services.Transport.Tcp
         CreateChunk = 0x12,
         PhysicalChunkBulk = 0x13,
         LogicalChunkBulk = 0x14,
+        SubscribeReplicaTryLater = 0x15,
 
         // CLIENT COMMANDS
         CreateStream = 0x80,

@@ -36,29 +36,51 @@ using EventStore.Transport.Tcp;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
+    public enum TcpServiceType
+    {
+        Internal, 
+        External
+    }
+
     public class TcpService : IHandle<SystemMessage.SystemInit>,
                               IHandle<SystemMessage.SystemStart>,
                               IHandle<SystemMessage.BecomeShuttingDown>
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpService>();
 
-        private readonly TcpServerListener _serverListener;
-        private readonly IPEndPoint _serverEndPoint;
-        private readonly IPublisher _networkSendQueue;
-        private readonly ITcpDispatcher _tcpDispatcher;
         private readonly IPublisher _publisher;
+        private readonly IPEndPoint _serverEndPoint;
+        private readonly TcpServerListener _serverListener;
+        private readonly IPublisher _networkSendQueue;
+        private readonly TcpServiceType _serviceType;
+        private readonly Func<Guid, IPEndPoint, ITcpDispatcher> _dispatcherFactory;
 
-        public TcpService(IPublisher publisher, IPEndPoint serverEndPoint, IPublisher networkSendQueue)
+        public TcpService(IPublisher publisher,
+                          IPEndPoint serverEndPoint,
+                          IPublisher networkSendQueue,
+                          TcpServiceType serviceType,
+                          ITcpDispatcher dispatcher)
+            : this(publisher, serverEndPoint, networkSendQueue, serviceType, (_, __) => dispatcher)
+        {
+        }
+
+        public TcpService(IPublisher publisher, 
+                          IPEndPoint serverEndPoint, 
+                          IPublisher networkSendQueue, 
+                          TcpServiceType serviceType,
+                          Func<Guid, IPEndPoint, ITcpDispatcher> dispatcherFactory)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.NotNull(serverEndPoint, "serverEndPoint");
             Ensure.NotNull(networkSendQueue, "networkSendQueue");
+            Ensure.NotNull(dispatcherFactory, "dispatcherFactory");
 
             _publisher = publisher;
             _serverEndPoint = serverEndPoint;
-            _networkSendQueue = networkSendQueue;
-            _tcpDispatcher = new ClientTcpDispatcher();
             _serverListener = new TcpServerListener(_serverEndPoint);
+            _networkSendQueue = networkSendQueue;
+            _serviceType = serviceType;
+            _dispatcherFactory = dispatcherFactory;
         }
 
         public void Handle(SystemMessage.SystemInit message)
@@ -84,8 +106,16 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnConnectionAccepted(TcpConnection connection)
         {
-            Log.Info("Client TCP connection accepted: [{0}]", connection.EffectiveEndPoint);
-            var manager = new TcpConnectionManager("REPLICA", Guid.NewGuid(), _tcpDispatcher, _publisher, connection, _networkSendQueue);
+            var connectionId = Guid.NewGuid();
+            Log.Info("{0} TCP connection accepted: [{1}], connection ID: {2}.", _serviceType, connection.EffectiveEndPoint, connectionId);
+            
+            var dispatcher = _dispatcherFactory(connectionId, _serverEndPoint);
+            var manager = new TcpConnectionManager(string.Format("REPLICA [{0}, {1}]", connection.EffectiveEndPoint, connectionId),
+                                                   connectionId,
+                                                   dispatcher,
+                                                   _publisher,
+                                                   connection,
+                                                   _networkSendQueue);
             manager.ConnectionClosed += OnConnectionClosed;
 
             _publisher.Publish(new TcpMessage.ConnectionEstablished(manager));

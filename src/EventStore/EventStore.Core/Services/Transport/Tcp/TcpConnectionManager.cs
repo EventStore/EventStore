@@ -29,6 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -170,7 +171,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             catch (PackageFramingException exc)
             {
                 Log.InfoException(exc, "Invalid TCP frame received.");
-                Stop();
+                SendBadRequestAndClose(string.Format("Invalid TCP frame received. Error: {0}.", exc.Message));
                 return;
             }
             _connection.ReceiveAsync(OnRawDataReceived);
@@ -186,8 +187,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             catch (Exception e)
             {
                 Log.InfoException(e, "Received bad network package");
-                SendPackage(new TcpPackage(TcpCommand.BadRequest, Guid.Empty, null));
-                Stop();
+                SendBadRequestAndClose(string.Format("Received bad network package. Error: {0}", e.Message));
                 return;
             }
 
@@ -203,24 +203,44 @@ namespace EventStore.Core.Services.Transport.Tcp
                 case TcpCommand.HeartbeatRequestCommand:
                     SendPackage(new TcpPackage(TcpCommand.HeartbeatResponseCommand, package.CorrelationId, null));
                     break;
+                case TcpCommand.BadRequest:
+                {
+                    string reason = string.Empty;
+                    Helper.EatException(() => reason = Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
+                    var exitMessage = string.Format("Bad request received, will stop server. CorrelationId: {0:B}. Error: {1}",
+                                                    package.CorrelationId,
+                                                    reason.IsEmptyString() ? "<reason missing>" : reason);
+                    Log.Error(exitMessage);
+                    Application.Exit(1, exitMessage);
+                    break;
+                }
                 default:
                 {
                     var message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, this);
                     if (message != null)
                         _publisher.Publish(message);
                     else
-                    {
-                        SendPackage(new TcpPackage(TcpCommand.BadRequest, package.CorrelationId, null));
-                        Stop();
-                    }
+                        SendBadRequestAndClose(string.Format("Couldn't unwrap network package for command {0}.", package.Command), package.CorrelationId);
                     break;
                 }
             }
         }
 
-        public void Stop()
+        public void SendBadRequestAndClose(string message, Guid? correlationId = null)
         {
-            Log.Trace("Closing connection {0}", EndPoint);
+            Ensure.NotNull(message, "message");
+
+            SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId ?? Guid.NewGuid(), Encoding.UTF8.GetBytes(message)));
+            Log.Error("Closing connection [{0}, {1:B}] due to error. Reason: {2}", EndPoint, _connectionId, message);
+            _connection.Close();
+        }
+
+        public void Stop(string reason = null)
+        {
+            Log.Trace("Closing connection [{0}, {1:B}] cleanly.{2}",
+                      EndPoint,
+                      _connectionId,
+                      reason.IsEmpty() ? string.Empty : " Reason: " + reason);
             _connection.Close();
         }
 
