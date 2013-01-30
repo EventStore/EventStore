@@ -51,6 +51,7 @@ namespace EventStore.Projections.Core.Services.Http
         private static readonly ICodec DefaultResponseCodec = Codec.Json;
 
         private readonly MiniWeb _miniWebPrelude;
+        private readonly MiniWeb _miniWebResources;
         private readonly IPublisher _networkSendQueue;
 
         public ProjectionsController(IPublisher publisher, IPublisher networkSendQueue)
@@ -60,12 +61,17 @@ namespace EventStore.Projections.Core.Services.Http
             var fileSystemWebRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Projections.Core");
             _miniWebPrelude = new MiniWeb(
                 "/web/es/js/projections/v8/Prelude", Path.Combine(fileSystemWebRoot, @"Prelude"));
+            
+            _miniWebResources = new MiniWeb(
+                "/web/es/js/projections/resources", Path.Combine(fileSystemWebRoot, Path.Combine("web-resources", "js")));
         }
-
+        
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
             _miniWebPrelude.RegisterControllerActions(service);
+            _miniWebResources.RegisterControllerActions(service);
+
             service.RegisterControllerAction(
                 new ControllerAction(
                     "/projections", HttpMethod.Get, Codec.NoCodecs, new ICodec[] {Codec.ManualEncoding},
