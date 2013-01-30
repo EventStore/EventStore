@@ -133,7 +133,7 @@ namespace EventStore.Core
                                                 maxReaderCount: 5,
                                                 readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint));
             epochManager.Init();
-            new StorageWriterService(_mainQueue, _mainBus, writer, readIndex, epochManager); // subscribes internally
+            new StorageWriterService(_mainQueue, _mainBus, db, writer, readIndex, epochManager); // subscribes internally
             var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex, ESConsts.StorageReaderThreadCount, db.Config.WriterCheckpoint);
             _mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
             _mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);

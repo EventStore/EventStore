@@ -59,7 +59,6 @@ namespace EventStore.Core.Bus
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
         private readonly TimeSpan _threadStopWaitTimeout;
 
-        // monitoring
         private readonly QueueMonitor _queueMonitor;
         private readonly QueueStatsCollector _queueStats;
         

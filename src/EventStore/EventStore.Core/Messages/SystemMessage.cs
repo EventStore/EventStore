@@ -121,5 +121,19 @@ namespace EventStore.Core.Messages
         public class ScavengeDatabase: Message
         {
         }
+
+        public class WaitForChaserToCatchUp : Message
+        {
+            public readonly TimeSpan TotalTimeWasted;
+
+            public WaitForChaserToCatchUp(TimeSpan totalTimeWasted)
+            {
+                TotalTimeWasted = totalTimeWasted;
+            }
+        }
+
+        public class ChaserCaughtUp : Message
+        {
+        }
     }
 }

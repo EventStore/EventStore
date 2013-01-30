@@ -28,8 +28,10 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -42,8 +44,8 @@ namespace EventStore.Core.Services.Storage
 {
     public class StorageWriterService : IHandle<Message>,
                                         IHandle<SystemMessage.SystemInit>,
-                                        IHandle<SystemMessage.BecomeMaster>,
-                                        IHandle<SystemMessage.BecomeShuttingDown>,
+                                        IHandle<SystemMessage.StateChangeMessage>,
+                                        IHandle<SystemMessage.WaitForChaserToCatchUp>,
                                         IHandle<StorageMessage.WritePrepares>,
                                         IHandle<StorageMessage.WriteDelete>,
                                         IHandle<StorageMessage.WriteTransactionStart>,
@@ -51,16 +53,19 @@ namespace EventStore.Core.Services.Storage
                                         IHandle<StorageMessage.WriteTransactionPrepare>,
                                         IHandle<StorageMessage.WriteCommit>
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<StorageWriterService>();
+
         protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
         private static readonly int MinFlushDelay = 2*TicksPerMs;
+        private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(1000);
 
+        protected readonly TFChunkDb Db;
         protected readonly TFChunkWriter Writer;
         protected readonly IReadIndex ReadIndex;
         private readonly IEpochManager _epochManager;
 
         protected readonly IPublisher Bus;
         private readonly ISubscriber _subscribeToBus;
-
         private readonly QueuedHandler _storageWriterQueue;
         private readonly InMemoryBus _writerBus;
 
@@ -69,21 +74,26 @@ namespace EventStore.Core.Services.Storage
         private long _lastFlush;
 
         protected int FlushMessagesInQueue;
+        private VNodeState _vnodeState = VNodeState.Initializing;
+        private bool _allowWrites = true;
 
         public StorageWriterService(IPublisher bus, 
-                                    ISubscriber subscribeToBus, 
+                                    ISubscriber subscribeToBus,
+                                    TFChunkDb db,
                                     TFChunkWriter writer, 
                                     IReadIndex readIndex,
                                     IEpochManager epochManager)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.NotNull(subscribeToBus, "subscribeToBus");
+            Ensure.NotNull(db, "db");
             Ensure.NotNull(writer, "writer");
             Ensure.NotNull(readIndex, "readIndex");
             Ensure.NotNull(epochManager, "epochManager");
 
             Bus = bus;
             _subscribeToBus = subscribeToBus;
+            Db = db;
             ReadIndex = readIndex;
             _epochManager = epochManager;
 
@@ -98,8 +108,8 @@ namespace EventStore.Core.Services.Storage
             _storageWriterQueue.Start();
 
             SubscribeToMessage<SystemMessage.SystemInit>();
-            SubscribeToMessage<SystemMessage.BecomeShuttingDown>();
-            SubscribeToMessage<SystemMessage.BecomeMaster>();
+            SubscribeToMessage<SystemMessage.StateChangeMessage>();
+            SubscribeToMessage<SystemMessage.WaitForChaserToCatchUp>();
             SubscribeToMessage<StorageMessage.WritePrepares>();
             SubscribeToMessage<StorageMessage.WriteDelete>();
             SubscribeToMessage<StorageMessage.WriteTransactionStart>();
@@ -119,8 +129,11 @@ namespace EventStore.Core.Services.Storage
             EnqueueMessage(message);
         }
 
-        protected virtual void EnqueueMessage(Message message)
+        private void EnqueueMessage(Message message)
         {
+            if (!_allowWrites && message is StorageMessage.IMasterWriteMessage)
+                return;
+
             if (message is StorageMessage.IFlushableMessage)
                 Interlocked.Increment(ref FlushMessagesInQueue);
 
@@ -139,14 +152,51 @@ namespace EventStore.Core.Services.Storage
             Bus.Publish(new SystemMessage.StorageWriterInitializationDone());
         }
 
-        void IHandle<SystemMessage.BecomeShuttingDown>.Handle(SystemMessage.BecomeShuttingDown message)
+        public virtual void Handle(SystemMessage.StateChangeMessage message)
         {
-            Writer.Close();
+            _vnodeState = message.State;
+            _allowWrites = false;
+
+            switch (message.State)
+            {
+                case VNodeState.Master:
+                {
+                    _epochManager.WriteNewEpoch(); // forces flush
+                    Handle(new SystemMessage.WaitForChaserToCatchUp(TimeSpan.Zero));
+                    break;
+                }
+                case VNodeState.ShuttingDown:
+                {
+                    Writer.Close();
+                    break;
+                }
+            }
         }
 
-        public void Handle(SystemMessage.BecomeMaster message)
+        public void Handle(SystemMessage.WaitForChaserToCatchUp message)
         {
-            _epochManager.WriteLastEpoch(_epochManager.LastEpochNumber + 1, Guid.NewGuid()); // forces flush
+            if (_vnodeState != VNodeState.Master) // if we are not master, then no need to wait for chaser
+                return;
+
+            _allowWrites = false;
+            var sw = Stopwatch.StartNew();
+
+            while (Db.Config.ChaserCheckpoint.Read() < Db.Config.WriterCheckpoint.Read() && sw.Elapsed < WaitForChaserSingleIterationTimeout)
+            {
+                Thread.Sleep(1);
+            }
+
+            if (Db.Config.ChaserCheckpoint.Read() == Db.Config.WriterCheckpoint.Read())
+            {
+                Log.Trace("Waited till chaser caught up!!!...");
+                _allowWrites = true;
+                Bus.Publish(new SystemMessage.ChaserCaughtUp());
+                return;
+            }
+
+            var totalTime = message.TotalTimeWasted + sw.Elapsed;
+            Log.Debug("Still waiting for chaser to catch up already for {0}...", totalTime);
+            Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(totalTime));
         }
 
         void IHandle<StorageMessage.WritePrepares>.Handle(StorageMessage.WritePrepares message)

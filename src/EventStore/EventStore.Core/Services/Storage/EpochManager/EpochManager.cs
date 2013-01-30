@@ -188,32 +188,28 @@ namespace EventStore.Core.Services.Storage.EpochManager
             }
         }
 
-        public void WriteLastEpoch(int epochNumber, Guid epochId)
+        // This method should be called from single thread.
+        public void WriteNewEpoch()
         {
-            // This method should be called from single thread.
-            Ensure.NotEmptyGuid(epochId, "epochId");
-            Ensure.Nonnegative(epochNumber, "epochNumber");
-
-            if (epochNumber > _lastEpochNumber + 1)
-                throw new Exception(string.Format("New epoch is far too in the future. LastEpochNumber: {0}, new epoch number: {1}.", _lastEpochNumber, epochNumber));
-
             // Set epoch checkpoint to -1, so if we crash after new epoch record was written, 
             // but epoch checkpoint wasn't updated, on restart we don't miss the latest epoch.
             // So on node start, if there is no epoch checkpoint or it contains negative position, 
             // we do sequential scan from the end of TF to find the latest epoch record.
-            _checkpoint.Write(-1);
-            _checkpoint.Flush();
+            //NOTE AN: It seems we don't need to pessimistically set epoch checkpoint to -1, because
+            //NOTE AN: if crash occurs in the middle of writing epoch or updating epoch checkpoint,
+            //NOTE AN: then on restart we'll start from chaser checkpoint (which is not updated yet)
+            //NOTE AN: and process all records till the writer checkpoint, so all epochs will be processed 
+            //NOTE AN: and epoch checkpoint will ultimately contain correct last epoch position. This process
+            //NOTE AN: is similar to index rebuild process.
+            //_checkpoint.Write(-1);
+            //_checkpoint.Flush();
 
             // Now we write epoch record (with possible retry, if we are at the end of chunk) 
             // and update EpochManager's state, by adjusting cache of records, epoch count and un-caching 
             // excessive record, if present.
             // If we are writing the very first epoch, last position will be -1.
-            var epoch = WriteEpochRecordWithRetry(epochNumber, epochId, _lastEpochPosition);
-            AddEpoch(epoch);
-
-            // Now update epoch checkpoint, so on restart we don't scan sequentially TF.
-            _checkpoint.Write(epoch.EpochPosition);
-            _checkpoint.Flush();
+            var epoch = WriteEpochRecordWithRetry(_lastEpochNumber + 1, Guid.NewGuid(), _lastEpochPosition);
+            UpdateLastEpoch(epoch);
         }
 
         private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition)
@@ -242,7 +238,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
             {
                 if (epoch.EpochPosition > _lastEpochPosition)
                 {
-                    AddEpoch(epoch);
+                    UpdateLastEpoch(epoch);
                     return;
                 }
             }
@@ -251,14 +247,15 @@ namespace EventStore.Core.Services.Storage.EpochManager
             // If this check fails, then there is something very wrong with epochs, data corruption is possible.
             if (!IsCorrectEpochAt(epoch.EpochPosition, epoch.EpochNumber, epoch.EpochId))
             {
-                throw new Exception(string.Format("Not found epoch at {0} with epoch number: {1} and epoch ID: {2}. SetLastEpoch FAILED! Data corruption risk!",
+                throw new Exception(string.Format("Not found epoch at {0} with epoch number: {1} and epoch ID: {2}. "
+                                                  + "SetLastEpoch FAILED! Data corruption risk!",
                                                   epoch.EpochPosition,
                                                   epoch.EpochNumber,
                                                   epoch.EpochId));
             }
         }
 
-        private void AddEpoch(EpochRecord epoch)
+        private void UpdateLastEpoch(EpochRecord epoch)
         {
             lock (_locker)
             {
@@ -267,6 +264,10 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 _lastEpochPosition = epoch.EpochPosition;
                 _minCachedEpochNumber = Math.Max(_minCachedEpochNumber, epoch.EpochNumber - CachedEpochCount + 1);
                 _epochs.Remove(_minCachedEpochNumber - 1);
+
+                // Now update epoch checkpoint, so on restart we don't scan sequentially TF.
+                _checkpoint.Write(epoch.EpochPosition);
+                _checkpoint.Flush();
             }
         }
     }

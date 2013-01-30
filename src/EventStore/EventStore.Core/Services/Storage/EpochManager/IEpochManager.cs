@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
         EpochRecord GetEpoch(int epochNumber);
         bool IsCorrectEpochAt(long logPosition, int epochNumber, Guid epochId);
 
-        void WriteLastEpoch(int epochNumber, Guid epochId);
+        void WriteNewEpoch();
         void SetLastEpoch(EpochRecord epoch);
     }
 }
