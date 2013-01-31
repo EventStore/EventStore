@@ -152,7 +152,7 @@ namespace EventStore.Core.Services.Storage
             // everything else will be done by chaser as during replication
             // with no concurrency issues with writer, as writer before jumping 
             // into master-mode and accepting writes will wait till chaser caught up.
-            ReadIndex.BuildTillPosition(Db.Config.ChaserCheckpoint.Read());
+            ReadIndex.Init(Db.Config.WriterCheckpoint.Read(), Db.Config.ChaserCheckpoint.Read());
             Bus.Publish(new SystemMessage.StorageWriterInitializationDone());
         }
 

@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
 
         private PrepareLogRecord WriteDeletePrepare(string eventStreamId)
         {
-            var prepare = LogRecord.DeleteTombstone(WriterChecksum.ReadNonFlushed(),
+            var prepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(),
                                                     Guid.NewGuid(),
                                                     eventStreamId,
                                                     ExpectedVersion.Any);
@@ -80,7 +80,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge
         private CommitLogRecord WriteDeleteCommit(PrepareLogRecord prepare)
         {
             long pos;
-            var commit = LogRecord.Commit(WriterChecksum.ReadNonFlushed(),
+            var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(),
                                           prepare.CorrelationId,
                                           prepare.LogPosition,
                                           EventNumber.DeletedStream);

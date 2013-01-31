@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
 
             long pos;
 
-            var prepare1 = LogRecord.SingleWrite(WriterChecksum.ReadNonFlushed(),    // prepare1
+            var prepare1 = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),    // prepare1
                                                  Guid.NewGuid(),
                                                  Guid.NewGuid(),
                                                  "ES",
@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
                                                  DateTime.UtcNow);
             Assert.IsTrue(Writer.Write(prepare1, out pos));
 
-            var prepare2 = LogRecord.SingleWrite(WriterChecksum.ReadNonFlushed(),    // prepare2
+            var prepare2 = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),    // prepare2
                                                  Guid.NewGuid(),
                                                  Guid.NewGuid(),
                                                  "ES",
@@ -71,14 +71,14 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
             Assert.IsTrue(Writer.Write(prepare2, out pos));
 
 
-            var deletePrepare = LogRecord.DeleteTombstone(WriterChecksum.ReadNonFlushed(), // delete prepare
+            var deletePrepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(), // delete prepare
                                                           Guid.NewGuid(),
                                                           "ES",
                                                           0);
             _deleteTombstone = new EventRecord(EventNumber.DeletedStream, deletePrepare);
             Assert.IsTrue(Writer.Write(deletePrepare, out pos));
 
-            var prepare3 = LogRecord.SingleWrite(WriterChecksum.ReadNonFlushed(),     // prepare3
+            var prepare3 = LogRecord.SingleWrite(WriterCheckpoint.ReadNonFlushed(),     // prepare3
                                                  Guid.NewGuid(),
                                                  Guid.NewGuid(),
                                                  "ES",
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream
                                                  DateTime.UtcNow);
             Assert.IsTrue(Writer.Write(prepare3, out pos));
 
-            var commit = LogRecord.Commit(WriterChecksum.ReadNonFlushed(),     // committing delete
+            var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(),     // committing delete
                                           deletePrepare.CorrelationId,
                                           deletePrepare.LogPosition,
                                           EventNumber.DeletedStream);

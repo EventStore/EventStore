@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.Index
 
             _indexDir = PathName;
             _tableIndex = new TableIndex(_indexDir, () => new HashListMemTable(maxSize: 10), maxSizeForMemory: 5);
-            _tableIndex.Initialize();
+            _tableIndex.Initialize(long.MaxValue);
 
             _tableIndex.Add(0, 0xDEAD, 0, 0xFF00);
             _tableIndex.Add(0, 0xDEAD, 1, 0xFF01); 

@@ -62,11 +62,11 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       2,
                                       2,
-                                      () => new TFChunkReader(Db, WriterChecksum, 0),
+                                      () => new TFChunkReader(Db, WriterCheckpoint, 0),
                                       TableIndex,
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamCacheInfo>());
-            ReadIndex.BuildTillPosition(long.MaxValue);
+            ReadIndex.Init(WriterCheckpoint.Read(), ChaserCheckpoint.Read());
         }
 
         protected override void WriteTestScenario()

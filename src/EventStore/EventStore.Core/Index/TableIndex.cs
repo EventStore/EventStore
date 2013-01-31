@@ -87,19 +87,22 @@ namespace EventStore.Core.Index
             _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
         }
 
-        public void Initialize()
+        public void Initialize(long writerCheckpoint)
         {
+            Ensure.Nonnegative(writerCheckpoint, "writerCheckpoint");
+
             //NOT THREAD SAFE (assumes one thread)
             if (_initialized)
-                throw new IOException("TableIndex is already initialized.");
-            
+                throw new IOException("TableIndex is already initialized.");           
             _initialized = true;
             
             CreateIfDoesNotExist(_directory);
-
             var indexmapFile = Path.Combine(_directory, IndexMapFilename);
             var backupFile = Path.Combine(_directory, IndexMapBackupFilename);
 
+            // if TableIndex's CommitCheckpoint is >= amount of written TFChunk data, 
+            // we'll have to remove some of PTables as they point to non-existent data
+            // this can happen (very unlikely, though) on master crash
             try
             {
                 _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
@@ -107,6 +110,11 @@ namespace EventStore.Core.Index
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
                     throw new CorruptIndexException("IndexMap is in unsafe state.");
+                }
+                if (_indexMap.CommitCheckpoint >= writerCheckpoint)
+                {
+                    _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
+                    throw new CorruptIndexException("IndexMap's CommitCheckpoint is greater than WriterCheckpoint.");
                 }
             }
             catch (CorruptIndexException exc)
@@ -121,12 +129,19 @@ namespace EventStore.Core.Index
                     try
                     {
                         _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
+                        if (_indexMap.CommitCheckpoint >= writerCheckpoint)
+                        {
+                            _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
+                            throw new CorruptIndexException("Back-up IndexMap's CommitCheckpoint is still greater than WriterCheckpoint.");
+                        }
                         createEmptyIndexMap = false;
                         Log.Info("Using back-up index map...");
                     }
                     catch (CorruptIndexException ex)
                     {
                         Log.ErrorException(ex, "Backup IndexMap is also corrupted...");
+                        File.Delete(indexmapFile);
+                        File.Delete(backupFile);
                     }
                 }
 
@@ -136,8 +151,12 @@ namespace EventStore.Core.Index
                 if (createEmptyIndexMap)
                     _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
             }
+            _prepareCheckpoint = _indexMap.PrepareCheckpoint;
+            _commitCheckpoint = _indexMap.CommitCheckpoint;
 
-            var indexFiles = _indexMap.InOrder().Select(x => Path.GetFileName(x.Filename)).Union(new[] { IndexMapFilename });
+            // clean up all other remaining files
+            var indexFiles = _indexMap.InOrder().Select(x => Path.GetFileName(x.Filename))
+                                                .Union(new[] { IndexMapFilename, IndexMapBackupFilename });
             var toDeleteFiles = Directory.EnumerateFiles(_directory).Select(Path.GetFileName)
                                          .Except(indexFiles, StringComparer.OrdinalIgnoreCase);
             foreach (var filePath in toDeleteFiles)
@@ -146,9 +165,6 @@ namespace EventStore.Core.Index
                 File.SetAttributes(file, FileAttributes.Normal);
                 File.Delete(file);
             }
-
-            _prepareCheckpoint = _indexMap.PrepareCheckpoint;
-            _commitCheckpoint = _indexMap.CommitCheckpoint;
         }
 
         private bool IsHashCollision(IndexEntry entry)
@@ -282,7 +298,9 @@ namespace EventStore.Core.Index
                         _awaitingMemTables = memTables;
                     }
 
-                    Helper.EatException(() => File.Delete(backupFile));
+                    // We'll keep indexmap.backup in case of crash. In case of crash we hope that all necessary 
+                    // PTables for previous version of IndexMap are still there, so we can rebuild
+                    // from last step, not to do full rebuild.
                     mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
                 }
             }

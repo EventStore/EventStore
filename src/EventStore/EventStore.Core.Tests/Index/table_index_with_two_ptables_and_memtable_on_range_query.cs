@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Index
                                          () => new HashListMemTable(maxSize: 10),
                                          maxSizeForMemory: 2,
                                          maxTablesPerLevel: 2);
-            _tableIndex.Initialize();
+            _tableIndex.Initialize(long.MaxValue);
 
             // ptable level 2
             _tableIndex.Add(0, 0xDEAD, 0, 0xFF00); 

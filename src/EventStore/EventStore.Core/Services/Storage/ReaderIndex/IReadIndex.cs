@@ -34,7 +34,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
     {
         long LastCommitPosition { get; }
 
-        void BuildTillPosition(long position);
+        void Init(long writerCheckpoint, long buildToPosition);
         void Commit(CommitLogRecord record);
         ReadIndexStats GetStatistics();
         

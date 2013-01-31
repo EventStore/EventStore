@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             _streams = streams;
         }
 
-        public void BuildTillPosition(long position)
+        public void Init(long writerCheckpoint, long buildToPosition)
         {
         }
 

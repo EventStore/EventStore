@@ -103,12 +103,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             _readers = new ObjectPool<ITransactionFileReader>("ReadIndex readers pool", initialReaderCount, maxReaderCount, readerFactory);
         }
 
-        public void BuildTillPosition(long position)
+        public void Init(long writerCheckpoint, long buildToPosition)
         {
-            _tableIndex.Initialize();
+            _tableIndex.Initialize(writerCheckpoint);
             _persistedPrepareCheckpoint = _tableIndex.PrepareCheckpoint;
             _persistedCommitCheckpoint = _tableIndex.CommitCheckpoint;
             _lastCommitPosition = _tableIndex.CommitCheckpoint;
+
+            Debug.Assert(_lastCommitPosition < writerCheckpoint);
 
             _indexRebuild = true;
             var seqReader = _readers.Get();
@@ -118,7 +120,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                 long processed = 0;
                 SeqReadResult result;
-                while ((result = seqReader.TryReadNext()).Success && result.LogRecord.Position < position)
+                while ((result = seqReader.TryReadNext()).Success && result.LogRecord.Position < buildToPosition)
                 {
                     switch (result.LogRecord.RecordType)
                     {

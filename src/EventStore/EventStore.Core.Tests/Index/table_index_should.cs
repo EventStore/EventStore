@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Index
         {
             base.TestFixtureSetUp();
             _tableIndex = new TableIndex(PathName, () => new HashListMemTable(maxSize: 20), maxSizeForMemory: 10);
-            _tableIndex.Initialize();
+            _tableIndex.Initialize(long.MaxValue);
         }
 
         public override void TestFixtureTearDown()

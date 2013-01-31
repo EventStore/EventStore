@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.Index
             base.TestFixtureSetUp();
 
             _tableIndex = new TableIndex(PathName, () => new HashListMemTable(maxSize: 40), maxSizeForMemory: 20);
-            _tableIndex.Initialize();
+            _tableIndex.Initialize(long.MaxValue);
 
             _tableIndex.Add(0, 0xDEAD, 0, 0xFF00);
             _tableIndex.Add(0, 0xDEAD, 1, 0xFF01); 

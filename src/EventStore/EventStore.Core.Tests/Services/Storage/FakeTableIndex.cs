@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Services.Storage
         public long PrepareCheckpoint { get { throw new NotImplementedException(); } }
         public long CommitCheckpoint { get { throw new NotImplementedException(); } }
 
-        public void Initialize()
+        public void Initialize(long writerCheckpoint)
         {
         }
 
