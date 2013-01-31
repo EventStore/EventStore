@@ -38,13 +38,12 @@ using EventStore.TestClient.Commands.DvuBasic;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios
 {
-    internal class ProjKillForeachScenario : ProjectionsScenarioBase
+    internal class ProjForeachForcedCommonNameScenario : ProjectionsScenarioBase
     {
         private int _iterationCode = 0;
         private TimeSpan _executionPeriod;
 
-
-        public ProjKillForeachScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath)
+        public ProjForeachForcedCommonNameScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath)
             : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
         {
             _executionPeriod = executionPeriod;
@@ -60,6 +59,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
         protected virtual int GetIterationCode()
         {
             return _iterationCode;
+        }
+
+        protected virtual bool ShouldRestartNode
+        {
+            get { return true; }
         }
 
         protected override void RunInternal()
@@ -84,7 +88,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         private void InnerRun()
         {
-            var nodeProcessId = StartNode();
+
+            int nodeProcessId = -1;
+
+            if (ShouldRestartNode)
+                nodeProcessId = StartNode();
+
             EnableProjectionByCategory();
 
             var sumCheckForBankAccounts = CreateSumCheckForBankAccounts("sumCheckForBankAccounts", "1");
@@ -130,8 +139,11 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                 if (failed)
                     break;
 
-                KillNode(nodeProcessId);
-                nodeProcessId = StartNode();
+                if (ShouldRestartNode)
+                {
+                    KillNode(nodeProcessId);
+                    nodeProcessId = StartNode();
+                }
 
                 if (isWatchStarted)
                     stopWatch.Start();
@@ -139,9 +151,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             writeTask.Wait();
 
-            for (int i = 0; i < 10; ++i)
+            for (int i = 3; i < 11; ++i)
             {
-                var newSumCheckForBankAccounts = CreateSumCheckForBankAccounts("sumCheckForBankAccounts", (3 + i).ToString());
+                var newSumCheckForBankAccounts = CreateSumCheckForBankAccounts("sumCheckForBankAccounts", i.ToString());
                 Thread.Sleep(200);
                 failed = CheckIsFaulted(new[] { newSumCheckForBankAccounts }, out failReason);
 
@@ -149,8 +161,8 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     break;
             }
             
-
-            KillNode(nodeProcessId);
+            if (ShouldRestartNode)
+                KillNode(nodeProcessId);
 
             if (failed)
                 throw new ApplicationException(string.Format("Projection failed due to reason: {0}.", failReason));
@@ -240,6 +252,32 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             GetProjectionsManager().CreateContinuous(fullProjectionName, countItemsProjection);
 
             return fullProjectionName;
+        }
+    }
+
+    internal class ProjForeachForcedCommonNameNoRestartScenario : ProjForeachForcedCommonNameScenario
+    {
+        public ProjForeachForcedCommonNameNoRestartScenario(Action<IPEndPoint, byte[]> directSendOverTcp, 
+                                                            int maxConcurrentRequests, 
+                                                            int connections, 
+                                                            int streams, 
+                                                            int eventsPerStream, 
+                                                            int streamDeleteStep, 
+                                                            TimeSpan executionPeriod, 
+                                                            string dbParentPath)
+            : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, executionPeriod, dbParentPath)
+        {
+        }
+
+        protected override bool ShouldRestartNode
+        {
+            get { return false; }
+        }
+
+        protected override void RunInternal()
+        {
+            StartNode();
+            base.RunInternal();
         }
     }
 }

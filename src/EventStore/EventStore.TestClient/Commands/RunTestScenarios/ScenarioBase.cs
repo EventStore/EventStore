@@ -343,25 +343,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return nodeProcess.Id;
         }
 
-        private IPAddress GetInterIpAddress()
-        {
-            var interIp = IPAddress.None;
-
-            var host = Dns.GetHostEntry(Dns.GetHostName());
-            foreach (IPAddress ip in host.AddressList.Reverse())
-            {
-                if (ip.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    interIp = ip;
-                    break;
-                }
-            }
-            return interIp;
-        }
-
         private IPEndPoint GetTcpEndPoint()
         {
-            return new IPEndPoint(GetInterIpAddress(), 31113);
+            return new IPEndPoint(IPAddress.Loopback, 31113);
         }
 
         private bool TryGetProcessById(int processId, out Process process)

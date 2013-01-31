@@ -64,7 +64,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var dic = GetProjectionStatistics(projectionName);
 
             string value;
-            var isRunning = dic.TryGetValue("status", out value) && value == "Running";
+            var isRunning = dic != null && dic.TryGetValue("status", out value) && value == "Running";
 
             return isRunning;
         }
@@ -76,7 +76,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             long result = -1;
 
             string value;
-            if (dic.TryGetValue("position", out value))
+            if (dic != null && dic.TryGetValue("position", out value))
                 result = long.Parse(value.Split(':')[1]);
 
             return result;
@@ -87,7 +87,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             var dic = GetProjectionStatistics(projectionName);
 
             string status;
-            var isFaulted = dic.TryGetValue("status", out status) && status.StartsWith("Faulted");
+            var isFaulted = dic != null && dic.TryGetValue("status", out status) && status.StartsWith("Faulted");
 
             if (isFaulted)
                 dic.TryGetValue("stateReason", out reason);
