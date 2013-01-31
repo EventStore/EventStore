@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -39,9 +40,14 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 {
     internal class ProjKillForeachScenario : ProjectionsScenarioBase
     {
-        public ProjKillForeachScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, string dbParentPath)
+        private int _iterationCode = 0;
+        private TimeSpan _executionPeriod;
+
+
+        public ProjKillForeachScenario(Action<IPEndPoint, byte[]> directSendOverTcp, int maxConcurrentRequests, int connections, int streams, int eventsPerStream, int streamDeleteStep, TimeSpan executionPeriod, string dbParentPath)
             : base(directSendOverTcp, maxConcurrentRequests, connections, streams, eventsPerStream, streamDeleteStep, dbParentPath)
         {
+            _executionPeriod = executionPeriod;
         }
 
         private EventData CreateBankEvent(int version)
@@ -53,15 +59,38 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
         protected virtual int GetIterationCode()
         {
-            return 0;
+            return _iterationCode;
         }
 
         protected override void RunInternal()
         {
+            var started = DateTime.Now;
+
+            while ((DateTime.Now - started) < _executionPeriod)
+            {
+                var msg = string.Format("=================== Start run #{0}, elapsed {1} of {2} minutes, {3} =================== ",
+                                        GetIterationCode(),
+                                        (int)(DateTime.Now - started).TotalMinutes,
+                                        _executionPeriod.TotalMinutes,
+                                        GetType().Name);
+                Log.Info(msg);
+                Log.Info("##teamcity[message '{0}']", msg);
+
+                
+                InnerRun();
+                _iterationCode += 1;
+            }
+        }
+
+        private void InnerRun()
+        {
             var nodeProcessId = StartNode();
             EnableProjectionByCategory();
 
-            var sumCheckForBankAccounts = CreateSumCheckForBankAccounts();
+            var sumCheckForBankAccounts = CreateSumCheckForBankAccounts("sumCheckForBankAccounts", "1");
+            var sumCheckForBankAccounts2 = CreateSumCheckForBankAccounts("sumCheckForBankAccounts", "2");
+            
+            var projections = new[] { sumCheckForBankAccounts, sumCheckForBankAccounts2 };
 
             var writeTask = WriteData();
 
@@ -85,22 +114,21 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                     isWatchStarted = true;
                 }
 
-                failed = GetProjectionIsFaulted(sumCheckForBankAccounts, out failReason);
-
-                if (failed)
-                    break;
-
-                var position = GetProjectionPosition(sumCheckForBankAccounts);
-                if (position == expectedAllEventsCount)
-                {
-                    Log.Debug("Expected position reached, done.");
-                    break;
-                }
-                
                 if (isWatchStarted)
                     stopWatch.Stop();
 
-                Thread.Sleep((int)(waitDuration.TotalMilliseconds / 10));
+                failed = CheckIsFaulted(projections, out failReason);
+                if (failed)
+                    break;
+
+                if (CheckIsCompleted(projections, expectedAllEventsCount))
+                    break;
+
+                Thread.Sleep((int)(waitDuration.TotalMilliseconds / 6));
+
+                failed = CheckIsFaulted(projections, out failReason);
+                if (failed)
+                    break;
 
                 KillNode(nodeProcessId);
                 nodeProcessId = StartNode();
@@ -111,10 +139,47 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             writeTask.Wait();
 
+            for (int i = 0; i < 10; ++i)
+            {
+                var newSumCheckForBankAccounts = CreateSumCheckForBankAccounts("sumCheckForBankAccounts", (3 + i).ToString());
+                Thread.Sleep(200);
+                failed = CheckIsFaulted(new[] { newSumCheckForBankAccounts }, out failReason);
+
+                if (failed)
+                    break;
+            }
+            
+
             KillNode(nodeProcessId);
 
             if (failed)
                 throw new ApplicationException(string.Format("Projection failed due to reason: {0}.", failReason));
+        }
+
+        private bool CheckIsFaulted(IEnumerable<string> projectionsNames, out string failReason)
+        {
+            var faulted = false;
+            failReason = null;
+            foreach (var projectionName in projectionsNames)
+            {
+                faulted = faulted || GetProjectionIsFaulted(projectionName, out failReason);
+            }
+            return faulted;
+        }
+
+        private bool CheckIsCompleted(IEnumerable<string> projectionsNames, int expectedAllEventsCount)
+        {
+            var completed = false;
+            foreach (var projectionName in projectionsNames)
+            {
+                var position = GetProjectionPosition(projectionName);
+                if (position == expectedAllEventsCount)
+                {
+                    Log.Debug("Expected position reached in {0}, done.", projectionName);
+                    completed = true;
+                }
+            }
+            return completed;
         }
 
         protected Task WriteData()
@@ -130,11 +195,13 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return task.ContinueWith(x => Log.Info("Data written for iteration {0}.", GetIterationCode()));
         }
 
-        protected string CreateSumCheckForBankAccounts()
+        protected string CreateSumCheckForBankAccounts(string projectionName, string suffix = "")
         {
-            string countItemsProjectionName = string.Format("CheckSumsInAccounts_it{0}", GetIterationCode());
-            string countItemsProjection = string.Format(@"
-                fromCategory('bank_account_it{0}').foreachStream().when({{
+            var fullProjectionName = string.Format("{0}_it{1}_{2}", projectionName, GetIterationCode(), suffix);
+            var countItemsProjection = string.Format(@"
+                options({{$forceProjectionName: ""{0}_it{1}""}});
+
+                fromCategory('bank_account_it{1}').foreachStream().when({{
                     $init: function() {{ 
                         return {{credited:0, credsum:'', debited:0, debsum:''}}; 
                     }},
@@ -167,12 +234,12 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
                         }}
                         state.success=event.sequenceNumber;
                     }}
-                }})                
-", GetIterationCode());
+                }})
+", projectionName, GetIterationCode());
 
-            GetProjectionsManager().CreateContinuous(countItemsProjectionName, countItemsProjection);
+            GetProjectionsManager().CreateContinuous(fullProjectionName, countItemsProjection);
 
-            return countItemsProjectionName;
+            return fullProjectionName;
         }
     }
 }
