@@ -27,9 +27,10 @@
 // 
 
 using System;
-using EventStore.Core.Tests.Bus.Helpers;
+using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -38,38 +39,65 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
     [TestFixture]
     public class when_creating_a_projection_checkpoint
     {
+        private FakePublisher _fakePublisher;
         private TestCheckpointManagerMessageHandler _readyHandler;
+
+        private
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
+            _readDispatcher;
+
+        private RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
+            _writeDispatcher;
 
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
+            _readyHandler = new TestCheckpointManagerMessageHandler();
+            ;
+            _fakePublisher = new FakePublisher();
+            _readDispatcher =
+                new RequestResponseDispatcher
+                    <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
+                    _fakePublisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_fakePublisher));
+            _writeDispatcher =
+                new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
+                    _fakePublisher, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_fakePublisher));
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
-        public void null_publisher_throws_argument_null_exception()
+        public void null_read_dispatcher_throws_argument_null_exception()
         {
-            var c = new ProjectionCheckpoint(null, _readyHandler, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
+            var c = new ProjectionCheckpoint(null, _writeDispatcher, _readyHandler, CheckpointTag.FromPosition(100, 50),
+                CheckpointTag.FromPosition(0, -1), 250);
+        }
+
+        [Test, ExpectedException(typeof (ArgumentNullException))]
+        public void null_write_dispatcher_throws_argument_null_exception()
+        {
+            var c = new ProjectionCheckpoint(_readDispatcher, null, _readyHandler, CheckpointTag.FromPosition(100, 50),
+                CheckpointTag.FromPosition(0, -1), 250);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
         public void null_ready_handler_throws_argument_null_exception()
         {
-            var c = new ProjectionCheckpoint(new FakePublisher(), null, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
+            var c = new ProjectionCheckpoint(_readDispatcher, _writeDispatcher, null, CheckpointTag.FromPosition(100, 50),
+                CheckpointTag.FromPosition(0, -1), 250);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
         public void commit_position_less_than_or_equal_to_prepare_position_throws_argument_exception()
         {
-            var c = new ProjectionCheckpoint(
-                new FakePublisher(), _readyHandler, CheckpointTag.FromPosition(100, 101), CheckpointTag.FromPosition(0, -1), 250);
+            var c = new ProjectionCheckpoint(_readDispatcher, _writeDispatcher, _readyHandler, CheckpointTag.FromPosition(100, 101),
+                CheckpointTag.FromPosition(0, -1), 250);
         }
 
         [Test]
         public void it_can_be_created()
         {
-            var c = new ProjectionCheckpoint(
-                new FakePublisher(), _readyHandler, CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(0, -1), 250);
+            var c = new ProjectionCheckpoint(_readDispatcher, _writeDispatcher, _readyHandler, CheckpointTag.FromPosition(100, 50),
+                CheckpointTag.FromPosition(0, -1), 250);
         }
     }
 }

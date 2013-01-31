@@ -31,12 +31,13 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint
 {
     [TestFixture]
-    public class when_the_projection_checkpoint_has_been_started
+    public class when_the_projection_checkpoint_has_been_started: TestFixtureWithReadWriteDisaptchers
     {
         private ProjectionCheckpoint _checkpoint;
         private TestCheckpointManagerMessageHandler _readyHandler;
@@ -44,9 +45,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _checkpoint = new ProjectionCheckpoint(
-                new FakePublisher(), _readyHandler, CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), 250);
+            _readyHandler = new TestCheckpointManagerMessageHandler();
+            _checkpoint = new ProjectionCheckpoint(_readDispatcher, _writeDispatcher, _readyHandler, CheckpointTag.FromPosition(0, -1),
+                CheckpointTag.FromPosition(0, -1), 250);
             _checkpoint.Start();
         }
 
