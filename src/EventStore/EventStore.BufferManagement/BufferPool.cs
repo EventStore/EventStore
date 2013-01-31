@@ -249,21 +249,21 @@ namespace EventStore.BufferManagement
         public int ReadFrom(int position, ArraySegment<byte> data)
         {
             CheckDisposed();
-            if (position + data.Count > _length) 
-                throw new ArgumentOutOfRangeException("data");
+            if (position > _length)
+                return 0;
             int copied = 0;
             int currentLocation = position;
             do
             {
                 Position l = GetPositionFor(currentLocation);
                 ArraySegment<byte> current = _buffers[l.Index];
-                int bytesToRead = _chunkSize - l.Offset;
+                int bytesToRead = Math.Min(_chunkSize - l.Offset, (_length - position) % _chunkSize);
                 bytesToRead = bytesToRead > data.Count - copied ? data.Count - copied : bytesToRead;
                 if (bytesToRead > 0)
                     Buffer.BlockCopy(current.Array, current.Offset + l.Offset, data.Array, data.Offset + copied, bytesToRead);
                 copied += bytesToRead;
                 currentLocation += bytesToRead;
-            } while (copied < data.Count);
+            } while (copied < data.Count && currentLocation < _length);
             return copied;            
         }
 
