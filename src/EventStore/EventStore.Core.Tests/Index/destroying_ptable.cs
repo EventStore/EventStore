@@ -49,20 +49,20 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void the_file_is_deleted()
         {
-            _table.WaitForDestroy(1000);
+            _table.WaitForDisposal(1000);
             Assert.IsFalse(File.Exists(Filename));
         }
 
         [Test]
         public void wait_for_destruction_returns()
         {
-            Assert.DoesNotThrow(() => _table.WaitForDestroy(1000));
+            Assert.DoesNotThrow(() => _table.WaitForDisposal(1000));
         }
 
         [TearDown]
         public void Teardown()
         {
-            _table.WaitForDestroy(1000);
+            _table.WaitForDisposal(1000);
             File.Delete(Filename);
         }
     }

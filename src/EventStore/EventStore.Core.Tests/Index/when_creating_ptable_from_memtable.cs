@@ -54,11 +54,11 @@ namespace EventStore.Core.Tests.Index
             var table = new HashListMemTable(maxSize: 10);
             table.Add(0x0101, 0x0001, 0x0001);
             var ptable = PTable.FromMemtable(table, Filename);
-            Assert.Throws<TimeoutException>(() => ptable.WaitForDestroy(1));
+            Assert.Throws<TimeoutException>(() => ptable.WaitForDisposal(1));
 
             // tear down
             ptable.MarkForDestruction();
-            ptable.WaitForDestroy(1000);
+            ptable.WaitForDisposal(1000);
         }
 
         //[Test]

@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
             _isStreamDeleted = isStreamDeleted;
         }
         
-        public void Build()
+        public void BuildTillPosition(long position)
         {
             throw new NotImplementedException();
         }

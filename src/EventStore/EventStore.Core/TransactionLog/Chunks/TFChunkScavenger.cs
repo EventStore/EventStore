@@ -70,6 +70,12 @@ namespace EventStore.Core.TransactionLog.Chunks
                     Log.Trace("Stopping scavenging due to non-completed TFChunk #{0}.", i);
                     break;
                 }
+                if (_db.Config.ChaserCheckpoint.Read() < chunk.ChunkHeader.ChunkStartNumber * (long)_db.Config.ChunkSize)
+                {
+                    Log.Trace("Stopping scavenging due to chaser hasn't yet processed TFChunk #{0} completely.", i);
+                    break;
+                }
+
                 ScavengeChunk(chunk, alwaysKeepScavenged);
             }
 

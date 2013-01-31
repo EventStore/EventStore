@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
                                       TableIndex,
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamCacheInfo>());
-            ReadIndex.Build();
+            ReadIndex.BuildTillPosition(long.MaxValue);
         }
 
         protected override void WriteTestScenario()

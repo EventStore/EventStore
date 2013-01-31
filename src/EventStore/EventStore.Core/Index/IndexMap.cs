@@ -337,5 +337,17 @@ namespace EventStore.Core.Index
             var indexMap = new IndexMap(Version, tables, prepareCheckpoint, commitCheckpoint, _isHashCollision, _maxTablesPerLevel);
             return new MergeResult(indexMap, toDelete);
         }
+
+        public void Dispose(TimeSpan timeout)
+        {
+            foreach (var ptable in InOrder())
+            {
+                ptable.Dispose();
+            }
+            foreach (var ptable in InOrder())
+            {
+                ptable.WaitForDisposal(timeout);
+            }
+        }
     }
 }

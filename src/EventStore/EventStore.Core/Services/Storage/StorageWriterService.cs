@@ -148,7 +148,11 @@ namespace EventStore.Core.Services.Storage
 
         void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message)
         {
-            ReadIndex.Build();
+            // We rebuild index till the chaser position, because
+            // everything else will be done by chaser as during replication
+            // with no concurrency issues with writer, as writer before jumping 
+            // into master-mode and accepting writes will wait till chaser caught up.
+            ReadIndex.BuildTillPosition(Db.Config.ChaserCheckpoint.Read());
             Bus.Publish(new SystemMessage.StorageWriterInitializationDone());
         }
 
@@ -161,7 +165,6 @@ namespace EventStore.Core.Services.Storage
             {
                 case VNodeState.Master:
                 {
-                    _epochManager.WriteNewEpoch(); // forces flush
                     Handle(new SystemMessage.WaitForChaserToCatchUp(TimeSpan.Zero));
                     break;
                 }
@@ -190,6 +193,8 @@ namespace EventStore.Core.Services.Storage
             {
                 Log.Trace("Waited till chaser caught up!!!...");
                 _allowWrites = true;
+
+                _epochManager.WriteNewEpoch(); // forces flush
                 Bus.Publish(new SystemMessage.ChaserCaughtUp());
                 return;
             }

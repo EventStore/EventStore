@@ -39,6 +39,7 @@ namespace EventStore.Core.Index
     public class TableIndex : ITableIndex
     {
         public const string IndexMapFilename = "indexmap";
+        public const string IndexMapBackupFilename = "indexmap.backup";
         private const int MaxMemoryTables = 1;
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<TableIndex>();
@@ -89,7 +90,6 @@ namespace EventStore.Core.Index
         public void Initialize()
         {
             //NOT THREAD SAFE (assumes one thread)
-
             if (_initialized)
                 throw new IOException("TableIndex is already initialized.");
             
@@ -97,33 +97,55 @@ namespace EventStore.Core.Index
             
             CreateIfDoesNotExist(_directory);
 
+            var indexmapFile = Path.Combine(_directory, IndexMapFilename);
+            var backupFile = Path.Combine(_directory, IndexMapBackupFilename);
+
             try
             {
-                _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename), IsHashCollision, _maxTablesPerLevel);
+                _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
                 if (_indexMap.IsCorrupt(_directory))
                 {
-                    foreach (var ptable in _indexMap.InOrder())
-                    {
-                        ptable.MarkForDestruction();
-                    }
-                    foreach (var ptable in _indexMap.InOrder())
-                    {
-                        ptable.WaitForDestroy(5000);
-                    }
+                    _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
                     throw new CorruptIndexException("IndexMap is in unsafe state.");
                 }
             }
             catch (CorruptIndexException exc)
             {
-                Log.ErrorException(exc, "ReadIndex was corrupted. Rebuilding from scratch...");
-                foreach (var filePath in Directory.EnumerateFiles(_directory))
+                Log.ErrorException(exc, "ReadIndex is corrupted...");
+                File.Delete(indexmapFile);
+
+                bool createEmptyIndexMap = true;
+                if (File.Exists(backupFile))
                 {
-                    File.Delete(filePath);
+                    File.Copy(backupFile, indexmapFile);
+                    try
+                    {
+                        _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
+                        createEmptyIndexMap = false;
+                        Log.Info("Using back-up index map...");
+                    }
+                    catch (CorruptIndexException ex)
+                    {
+                        Log.ErrorException(ex, "Backup IndexMap is also corrupted...");
+                    }
                 }
-                _indexMap = IndexMap.FromFile(Path.Combine(_directory, IndexMapFilename),
-                                              IsHashCollision,
-                                              _maxTablesPerLevel);
-            } 
+
+                if (_indexMap.IsCorrupt(_directory))
+                    _indexMap.LeaveUnsafeState(_directory);
+
+                if (createEmptyIndexMap)
+                    _indexMap = IndexMap.FromFile(indexmapFile, IsHashCollision, _maxTablesPerLevel);
+            }
+
+            var indexFiles = _indexMap.InOrder().Select(x => Path.GetFileName(x.Filename)).Union(new[] { IndexMapFilename });
+            var toDeleteFiles = Directory.EnumerateFiles(_directory).Select(Path.GetFileName)
+                                         .Except(indexFiles, StringComparer.OrdinalIgnoreCase);
+            foreach (var filePath in toDeleteFiles)
+            {
+                var file = Path.Combine(_directory, filePath);
+                File.SetAttributes(file, FileAttributes.Normal);
+                File.Delete(file);
+            }
 
             _prepareCheckpoint = _indexMap.PrepareCheckpoint;
             _commitCheckpoint = _indexMap.CommitCheckpoint;
@@ -224,20 +246,27 @@ namespace EventStore.Core.Index
                     else
                         ptable = (PTable) tableItem.Table;
 
+                    // backup current version of IndexMap in case following switch will be left in unsafe state
+                    // this will allow to rebuild just part of index
+                    var backupFile = Path.Combine(_directory, IndexMapBackupFilename);
+                    var indexmapFile = Path.Combine(_directory, IndexMapFilename);
+                    Helper.EatException(() =>
+                    {
+                        if (File.Exists(backupFile))
+                            File.Delete(backupFile);
+                        File.Copy(indexmapFile, backupFile);
+                    });
+
                     _indexMap.EnterUnsafeState(_directory);
 
-                    var mergeResult = _indexMap.AddFile(ptable,
-                                                        tableItem.PrepareCheckpoint,
-                                                        tableItem.CommitCheckpoint,
-                                                        _fileNameProvider);
+                    var mergeResult = _indexMap.AddFile(ptable, tableItem.PrepareCheckpoint, tableItem.CommitCheckpoint, _fileNameProvider);
                     _indexMap = mergeResult.MergedMap;
-                    _indexMap.SaveToFile(Path.Combine(_directory, IndexMapFilename));
+                    _indexMap.SaveToFile(indexmapFile);
 
                     _indexMap.LeaveUnsafeState(_directory);
-                    
+
                     lock (_awaitingTablesLock)
                     {
-                        //oh well at least its only a small lock that is very unlikely to ever be hit
                         var memTables = _awaitingMemTables.ToList();
 
                         var corrTable = memTables.First(x => x.Table.Id == ptable.Id);
@@ -253,6 +282,7 @@ namespace EventStore.Core.Index
                         _awaitingMemTables = memTables;
                     }
 
+                    Helper.EatException(() => File.Delete(backupFile));
                     mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
                 }
             }
@@ -467,12 +497,13 @@ namespace EventStore.Core.Index
                 if (removeFiles)
                 {
                     _indexMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
-                    _indexMap.InOrder().ToList().ForEach(x => x.WaitForDestroy(1000));
+                    _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
                     File.Delete(Path.Combine(_directory, IndexMapFilename));
                 }
                 else
                 {
                     _indexMap.InOrder().ToList().ForEach(x => x.Dispose());
+                    _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
                 }
             }
         }

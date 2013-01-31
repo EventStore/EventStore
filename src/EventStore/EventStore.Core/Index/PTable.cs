@@ -419,7 +419,13 @@ namespace EventStore.Core.Index
             _destroyEvent.Set();
         }
 
-        public void WaitForDestroy(int timeout)
+        public void WaitForDisposal(int timeout)
+        {
+            if (!_destroyEvent.Wait(timeout))
+                throw new TimeoutException();
+        }
+
+        public void WaitForDisposal(TimeSpan timeout)
         {
             if (!_destroyEvent.Wait(timeout))
                 throw new TimeoutException();

@@ -106,7 +106,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                       new ByLengthHasher(),
                                       new NoLRUCache<string, StreamCacheInfo>());
 
-            ReadIndex.Build();
+            ReadIndex.BuildTillPosition(long.MaxValue);
 
             // scavenge must run after readIndex is built
             if (_scavenge)

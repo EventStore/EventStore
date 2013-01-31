@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Index
         public override void TearDown()
         {
             _table.MarkForDestruction();
-            _table.WaitForDestroy(1000);
+            _table.WaitForDisposal(1000);
 
             base.TearDown();
         }

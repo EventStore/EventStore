@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.Index
         public void Teardown()
         {
             _table.MarkForDestruction();
-            _table.WaitForDestroy(1000);
+            _table.WaitForDisposal(1000);
             File.Delete(_filename);
             File.Delete(_copiedfilename);
         }

@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Index
         {
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
             _result.MergedMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
-            _result.MergedMap.InOrder().ToList().ForEach(x => x.WaitForDestroy(1000));
+            _result.MergedMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(1000));
             base.TestFixtureTearDown();
         }
 
