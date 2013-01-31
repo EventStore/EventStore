@@ -292,13 +292,24 @@ namespace EventStore.BufferManagement.Tests
             pool.ReadFrom(0, new byte[5], 4, 2);
         }
 
-        [Test, ExpectedException(typeof(ArgumentOutOfRangeException))]
-        public void a_count_and_offset_together_are_longer_than_pool_length_throws_an_argumentoutofrangeexception()
+        [Test]
+        public void reading_from_a_position_bigger_than_buffer_length_reads_nothing()
         {
             BufferPool pool = new BufferPool(1, BufferManager);
             pool[0] = 12;
             pool[1] = 13;
-            pool.ReadFrom(3, new byte[5], 0, 5);
+            int read = pool.ReadFrom(3, new byte[5], 0, 5);
+            Assert.AreEqual(read, 0);
+        }
+
+        [Test]
+        public void reading_from_a_position_plus_count_bigger_than_buffer_length_reads_the_right_amount()
+        {
+            BufferPool pool = new BufferPool(1, BufferManager);
+            pool[0] = 12;
+            pool[1] = 13;
+            int read = pool.ReadFrom(0, new byte[5], 0, 5);
+            Assert.AreEqual(read, 2);
         }
 
         [Test]
