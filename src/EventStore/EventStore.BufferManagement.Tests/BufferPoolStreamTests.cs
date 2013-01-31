@@ -86,6 +86,19 @@ namespace EventStore.BufferManagement.Tests
             read = stream.Read(new byte[500], 0, 500);
             Assert.AreEqual(0, read);
         }
+
+        [Test]
+        public void reading_from_the_stream_with_StreamCopyTo_returns_all_data()
+        {
+            BufferPoolStream stream = new BufferPoolStream(BufferPool);
+            int size = 20123;
+            stream.Write(new byte[size], 0, size);
+            stream.Position = 0;
+
+            var destination = new MemoryStream();
+            stream.CopyTo(destination);
+            Assert.AreEqual(destination.Length, size);
+        }
     }
 
     [TestFixture]
@@ -98,6 +111,7 @@ namespace EventStore.BufferManagement.Tests
             stream.Write(new byte[500], 0, 500);
             Assert.AreEqual(500, stream.Position);
         }
+
     }
 
     [TestFixture]
@@ -146,5 +160,6 @@ namespace EventStore.BufferManagement.Tests
             stream.Seek(501, SeekOrigin.Begin);
         }
     }
+
 
 }
