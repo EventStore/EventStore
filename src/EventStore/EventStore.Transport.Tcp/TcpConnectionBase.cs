@@ -35,33 +35,6 @@ namespace EventStore.Transport.Tcp
 {
     public class TcpConnectionBase : IMonitoredTcpConnection
     {
-        private Socket _socket;
-        private IPEndPoint _endPoint;
-
-        private long _lastSendStarted = -1;
-        private long _lastReceiveStarted = -1;
-        private bool _isClosed;
-
-        private int _pendingSendBytes;
-        private int _inSendBytes;
-        private int _pendingReceivedBytes;
-        private long _totaBytesSent;
-        private long _totaBytesReceived;
-
-        protected TcpConnectionBase()
-        {
-            TcpConnectionMonitor.Default.Register(this);
-        }
-
-        protected void InitSocket(Socket socket, IPEndPoint endPoint)
-        {
-            Ensure.NotNull(socket, "socket");
-            Ensure.NotNull(endPoint, "endPoint");
-
-            _socket = socket;
-            _endPoint = endPoint;
-        }
-
         public IPEndPoint EndPoint { get { return _endPoint; } }
         public bool IsInitialized { get { return _socket != null; } }
         public bool IsClosed { get { return _isClosed; } }
@@ -121,12 +94,12 @@ namespace EventStore.Transport.Tcp
             }
         }
 
-        public DateTime? LastSendStarted 
+        public DateTime? LastSendStarted
         {
             get
             {
                 var ticks = Interlocked.Read(ref _lastSendStarted);
-                return ticks >= 0 ? new DateTime(ticks) : (DateTime?) null;
+                return ticks >= 0 ? new DateTime(ticks) : (DateTime?)null;
             }
         }
 
@@ -137,6 +110,33 @@ namespace EventStore.Transport.Tcp
                 var ticks = Interlocked.Read(ref _lastReceiveStarted);
                 return ticks >= 0 ? new DateTime(ticks) : (DateTime?)null;
             }
+        }
+
+        private Socket _socket;
+        private IPEndPoint _endPoint;
+
+        private long _lastSendStarted = -1;
+        private long _lastReceiveStarted = -1;
+        private bool _isClosed;
+
+        private int _pendingSendBytes;
+        private int _inSendBytes;
+        private int _pendingReceivedBytes;
+        private long _totaBytesSent;
+        private long _totaBytesReceived;
+
+        public TcpConnectionBase()
+        {
+            TcpConnectionMonitor.Default.Register(this);
+        }
+
+        protected void InitSocket(Socket socket, IPEndPoint endPoint)
+        {
+            Ensure.NotNull(socket, "socket");
+            Ensure.NotNull(endPoint, "endPoint");
+
+            _socket = socket;
+            _endPoint = endPoint;
         }
 
         protected void NotifySendScheduled(int bytes)

@@ -107,7 +107,6 @@ namespace EventStore.Common.Locks
             }
         }
 
-        //TODO AN: make this use struct again after bug in mono JIT is fixed!!!
         public LockReleaserSlim Acquire()
         {
             bool taken;
@@ -143,39 +142,6 @@ namespace EventStore.Common.Locks
         public void Dispose()
         {
             _spinLock.Exit();
-        }
-    }
-
-    public class LockReleaser : IDisposable
-    {
-        private readonly SpinLock2 _spinLock2;
-        private bool _disposed = false;
-
-        public LockReleaser(SpinLock2 spinLock2)
-        {
-            _spinLock2 = spinLock2;
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (!disposing && !_disposed) 
-                throw new Exception("Lock is being finalized without being released!");
-            if (!_disposed)
-            {
-                _spinLock2.Exit();
-                _disposed = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        ~LockReleaser()
-        {
-            Dispose(false);
         }
     }
 }
