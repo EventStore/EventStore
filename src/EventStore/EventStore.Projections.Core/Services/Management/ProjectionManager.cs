@@ -71,6 +71,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _inputQueue;
         private readonly IPublisher _publisher;
         private readonly IPublisher[] _queues;
+        private readonly ITimeProvider _timeProvider;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
         private readonly Dictionary<string, ManagedProjection> _projections;
         private readonly Dictionary<Guid, string> _projectionsMap;
@@ -84,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private int _readEventsBatchSize = 100;
 
-        public ProjectionManager(IPublisher inputQueue, IPublisher publisher, IPublisher[] queues)
+        public ProjectionManager(IPublisher inputQueue, IPublisher publisher, IPublisher[] queues, ITimeProvider timeProvider)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -94,6 +95,7 @@ namespace EventStore.Projections.Core.Services.Management
             _inputQueue = inputQueue;
             _publisher = publisher;
             _queues = queues;
+            _timeProvider = timeProvider;
 
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
@@ -273,7 +275,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private void CleanupExpired()
         {
-            foreach (var managedProjection in _projections)
+            foreach (var managedProjection in _projections.ToArray())
             {
                 managedProjection.Value.Handle(new ProjectionManagementMessage.Internal.CleanupExpired());
             }
@@ -468,7 +470,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             var managedProjectionInstance = new ManagedProjection(queue, 
                 projectionCorrelationId, name, _logger, _writeDispatcher, _readDispatcher, _inputQueue, _publisher,
-                _projectionStateHandlerFactory);
+                _projectionStateHandlerFactory, _timeProvider);
             _projectionsMap.Add(projectionCorrelationId, name);
             _projections.Add(name, managedProjectionInstance);
             return managedProjectionInstance;

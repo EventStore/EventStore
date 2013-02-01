@@ -30,6 +30,8 @@ using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Tests.Services.core_projection;
@@ -40,6 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     [TestFixture]
     public class when_starting_the_projection_manager_with_existing_projection : TestFixtureWithExistingEvents
     {
+        private ITimeProvider _timeProvider;
         private ProjectionManager _manager;
 
         protected override void Given()
@@ -50,10 +53,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 @"{""Query"":""fromAll(); on_any(function(){});log('hello-from-projection-definition');"", ""Mode"":""3"", ""Enabled"":true, ""HandlerType"":""JS""}");
         }
 
+
         [SetUp]
         public void setup()
         {
-            _manager = new ProjectionManager(_bus, _bus, new IPublisher[]{_bus});
+            _timeProvider = new FakeTimeProvider();
+            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, _timeProvider);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
             _manager.Handle(new SystemMessage.BecomeWorking());
