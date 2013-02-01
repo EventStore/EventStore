@@ -33,10 +33,10 @@ namespace EventStore.Core.Services.Storage.EpochManager
     public interface IEpochManager
     {
         int LastEpochNumber { get; }
-        EpochRecord LastEpoch { get; }
 
         void Init();
-        EpochRecord GetEpoch(int epochNumber);
+        EpochRecord GetLastEpoch();
+        EpochRecord GetEpoch(int epochNumber, bool throwIfNotFound);
         bool IsCorrectEpochAt(long logPosition, int epochNumber, Guid epochId);
 
         void WriteNewEpoch();

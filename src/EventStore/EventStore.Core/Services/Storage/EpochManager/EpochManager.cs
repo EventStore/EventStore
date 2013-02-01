@@ -39,7 +39,6 @@ namespace EventStore.Core.Services.Storage.EpochManager
     {
         public readonly int CachedEpochCount;
         public int LastEpochNumber { get { return _lastEpochNumber; } }
-        public EpochRecord LastEpoch { get { return GetLastEpoch(); } }
 
         private readonly ICheckpoint _checkpoint;
         private readonly ObjectPool<ITransactionFileReader> _readers;
@@ -126,28 +125,30 @@ namespace EventStore.Core.Services.Storage.EpochManager
             }
         }
 
-        private EpochRecord GetLastEpoch()
+        public EpochRecord GetLastEpoch()
         {
             lock (_locker)
             {
-                return _lastEpochNumber < 0 ? null : GetEpoch(_lastEpochNumber);
+                return _lastEpochNumber < 0 ? null : GetEpoch(_lastEpochNumber, throwIfNotFound: true);
             }
         }
 
-        public EpochRecord GetEpoch(int epochNumber)
+        public EpochRecord GetEpoch(int epochNumber, bool throwIfNotFound)
         {
             lock (_locker)
             {
                 if (epochNumber < _minCachedEpochNumber)
                 {
+                    if (!throwIfNotFound)
+                        return null;
                     throw new ArgumentOutOfRangeException(
                             "epochNumber",
                             string.Format("EpochNumber requested shouldn't be cached. Requested: {0}, min cached: {1}.",
-                                          epochNumber,
-                                          _minCachedEpochNumber));
+                                            epochNumber,
+                                            _minCachedEpochNumber));
                 }
-                var epoch = _epochs[epochNumber];
-                if (epoch == null)
+                EpochRecord epoch;
+                if (!_epochs.TryGetValue(epochNumber, out epoch) && throwIfNotFound)
                     throw new Exception(string.Format("Concurrency failure, epoch #{0} shouldn't be null.", epochNumber));
                 return epoch;
             }
@@ -156,6 +157,8 @@ namespace EventStore.Core.Services.Storage.EpochManager
         public bool IsCorrectEpochAt(long logPosition, int epochNumber, Guid epochId)
         {
             Ensure.Nonnegative(logPosition, "logPosition");
+            Ensure.Nonnegative(epochNumber, "epochNumber");
+            Ensure.NotEmptyGuid(epochId, "epochId");
 
             lock (_locker)
             {
