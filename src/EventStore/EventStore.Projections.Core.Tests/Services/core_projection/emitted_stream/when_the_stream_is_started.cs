@@ -31,23 +31,23 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class when_the_stream_is_started
+    public class when_the_stream_is_started: TestFixtureWithReadWriteDisaptchers
     {
         private EmittedStream _stream;
-        private FakePublisher _publisher;
         private TestCheckpointManagerMessageHandler _readyHandler;
 
         [SetUp]
         public void setup()
         {
-            _publisher = new FakePublisher();
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _publisher, _readyHandler, 50);
+            _readyHandler = new TestCheckpointManagerMessageHandler();
+            _stream = new EmittedStream(
+                "test", CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler, 50);
             _stream.Start();
         }
 

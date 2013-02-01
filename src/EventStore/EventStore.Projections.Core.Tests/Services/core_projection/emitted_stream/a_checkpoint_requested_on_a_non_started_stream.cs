@@ -31,15 +31,15 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class a_checkpoint_requested_on_a_non_started_stream
+    public class a_checkpoint_requested_on_a_non_started_stream: TestFixtureWithReadWriteDisaptchers
     {
         private EmittedStream _stream;
-        private FakePublisher _publisher;
 
         private TestCheckpointManagerMessageHandler _readyHandler;
         private Exception _caughtException;
@@ -47,9 +47,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         [SetUp]
         public void setup()
         {
-            _publisher = new FakePublisher();
             _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _stream = new EmittedStream("test", CheckpointTag.FromPosition(0, -1), _publisher, _readyHandler, 50);
+            _stream = new EmittedStream(
+                "test", CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler, 50);
             try
             {
                 _stream.Checkpoint();

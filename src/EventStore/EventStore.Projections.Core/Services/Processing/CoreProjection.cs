@@ -310,7 +310,7 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
             try
             {
-                _processingQueue.Unsubscribed();
+                Unsubscribed();
                 var progressWorkItem = new CompletedWorkItem(this);
                 _processingQueue.EnqueueTask(progressWorkItem, message.CheckpointTag, allowCurrentPosition: true);
                 _processingQueue.ProcessEvent();
@@ -321,6 +321,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
+        private void Unsubscribed()
+        {
+            _subscribed = false;
+            _processingQueue.Unsubscribed();
+        }
+
         internal void Complete()
         {
             if (_state != State.Running)
@@ -329,7 +335,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("!_projectionConfig.StopOnEof");
             _completed = true;
             _checkpointManager.Progress(100.0f);
-            _subscribed = false; // NOTE:  stopOnEof subscriptions automatically unsubscribe when handling this message
+            Unsubscribed(); // NOTE:  stopOnEof subscriptions automatically unsubscribe when handling this message
             Stop();
         }
 
@@ -419,20 +425,23 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
+            EnsureState(State.Running);
             _logger.Info(
                 "Projection '{0}'({1}) restart has been requested due to: '{2}'", _name, _projectionCorrelationId,
                 message.Reason);
-            //
+
+                //
             EnsureUnsubscribed();
             GoToState(State.Initial);
             Start();
+            
         }
 
         private void EnsureUnsubscribed()
         {
             if (_subscribed)
             {
-                _subscribed = false;
+                Unsubscribed();
                 _publisher.Publish(new ProjectionSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
             }
         }
@@ -840,7 +849,7 @@ namespace EventStore.Projections.Core.Services.Processing
         internal void EnsureTickPending()
         {
             // ticks are requested when an async operation is completed or when an item is being processed
-            // thus, the tick message is rmeoved from the queue when it does not process any work item (and 
+            // thus, the tick message is removed from the queue when it does not process any work item (and 
             // it is renewed therefore)
             if (_tickPending)
                 return;

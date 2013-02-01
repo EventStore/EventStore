@@ -28,13 +28,13 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Common.Log;
-using EventStore.Core.Bus;
 using System.Linq;
+using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionCheckpoint : IProjectionCheckpointManager, IEventWriter
+    public class ProjectionCheckpoint : IDisposable, IProjectionCheckpointManager, IEventWriter
     {
         private readonly int _maxWriteBatchLength;
         private readonly ILogger _logger;
@@ -42,7 +42,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Dictionary<string, EmittedStream> _emittedStreams = new Dictionary<string, EmittedStream>();
         private readonly CheckpointTag _from;
         private CheckpointTag _last;
-        private readonly IPublisher _publisher;
         private readonly IProjectionCheckpointManager _readyHandler;
 
         private bool _checkpointRequested = false;
@@ -50,16 +49,27 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _started = false;
         private readonly CheckpointTag _zero;
 
-        public ProjectionCheckpoint(
-            IPublisher publisher, IProjectionCheckpointManager readyHandler, CheckpointTag from, CheckpointTag zero, int maxWriteBatchLength,
+        private readonly RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
+            _readDispatcher;
+
+        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
+            _writeDispatcher;
+
+        public ProjectionCheckpoint(RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+            IProjectionCheckpointManager readyHandler, CheckpointTag from, CheckpointTag zero, int maxWriteBatchLength,
             ILogger logger = null)
         {
-            if (publisher == null) throw new ArgumentNullException("publisher");
+            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
+            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (zero == null) throw new ArgumentNullException("zero");
             if (from.CommitPosition <= from.PreparePosition) throw new ArgumentException("from");
             //NOTE: fromCommit can be equal fromPrepare on 0 position.  Is it possible anytime later? Ignoring for now.
-            _publisher = publisher;
+            _readDispatcher = readDispatcher;
+            _writeDispatcher = writeDispatcher;
             _readyHandler = readyHandler;
             _zero = zero;
             _from = _last = from;
@@ -137,7 +147,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_emittedStreams.TryGetValue(streamId, out stream))
             {
                 stream = new EmittedStream(
-                    streamId, _zero, _publisher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength,
+                    streamId, _zero, _readDispatcher, _writeDispatcher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength,
                     logger: _logger);
                 if (_started)
                     stream.Start();
@@ -178,6 +188,14 @@ namespace EventStore.Projections.Core.Services.Processing
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
             _readyHandler.Handle(message);
+        }
+
+        public void Dispose()
+        {
+            if (_emittedStreams != null)
+                foreach (var stream in _emittedStreams.Values)
+                    stream.Dispose();
+
         }
     }
 }

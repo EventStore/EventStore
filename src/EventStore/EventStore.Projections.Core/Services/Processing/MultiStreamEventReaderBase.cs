@@ -300,7 +300,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             _preparePositions[streamId] = preparePosition;
             if (_preparePositions.All(v => v.Value != null))
-                _safePositionToJoin = _preparePositions.Min(v => v.Value);
+                _safePositionToJoin = _preparePositions.Min(v => v.Value.GetValueOrDefault());
         }
 
         private void DeliverEvent(EventRecord @event, EventRecord positionEvent, float progress)

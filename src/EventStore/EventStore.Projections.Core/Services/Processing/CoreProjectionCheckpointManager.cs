@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Text;
 using EventStore.Common.Log;
@@ -79,6 +80,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _stateRequested;
         private string _currentProjectionState;
         private PartitionStateUpdateManager _partitionStateUpdateManager;
+        private int _readRequestsInProgress;
+        private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
 
         protected CoreProjectionCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
@@ -118,6 +121,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public virtual void Initialize()
         {
+            if (_currentCheckpoint != null) _currentCheckpoint.Dispose();
+            if (_closingCheckpoint != null) _closingCheckpoint.Dispose();
             _currentCheckpoint = null;
             _closingCheckpoint = null;
             _handledEventsAfterCheckpoint = 0;
@@ -132,16 +137,20 @@ namespace EventStore.Projections.Core.Services.Processing
             _stateLoaded = false;
             _started = false;
             _stopping = false;
+            _stopped = false;
             _stateRequested = false;
             _currentProjectionState = null;
 
             foreach (var requestId in _loadStateRequests)
                 _readDispatcher.Cancel(requestId);
             _loadStateRequests.Clear();
+            _partitionStateUpdateManager = null;
+            _readRequestsInProgress = 0;
         }
 
         public virtual void Start(CheckpointTag checkpointTag)
         {
+            Contract.Requires(_currentCheckpoint == null);
             if (!_stateLoaded)
                 throw new InvalidOperationException("State is not loaded");
             if (_started)
@@ -151,8 +160,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastProcessedEventProgress = -1;
             _lastCompletedCheckpointPosition = checkpointTag;
             _requestedCheckpointPosition = null;
-            _currentCheckpoint = new ProjectionCheckpoint(
-                _publisher, this, _lastProcessedEventPosition.LastTag, _positionTagger.MakeZeroCheckpointTag(), _projectionConfig.MaxWriteBatchLength, _logger);
+            _currentCheckpoint = new ProjectionCheckpoint(_readDispatcher, _writeDispatcher, this, _lastProcessedEventPosition.LastTag,
+                _positionTagger.MakeZeroCheckpointTag(), _projectionConfig.MaxWriteBatchLength, _logger);
             _currentCheckpoint.Start();
         }
 
@@ -313,6 +322,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void StartCheckpoint(PositionTracker lastProcessedEventPosition, string projectionState)
         {
+            Contract.Requires(_closingCheckpoint == null);
             CheckpointTag requestedCheckpointPosition = lastProcessedEventPosition.LastTag;
             if (requestedCheckpointPosition == _lastCompletedCheckpointPosition)
                 return; // either suggested or requested to stop
@@ -327,10 +337,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _requestedCheckpointPosition = requestedCheckpointPosition;
             _requestedCheckpointState = projectionState;
             _handledEventsAfterCheckpoint = 0;
-
             _closingCheckpoint = _currentCheckpoint;
-            _currentCheckpoint = new ProjectionCheckpoint(
-                _publisher, this, requestedCheckpointPosition, _positionTagger.MakeZeroCheckpointTag(), _projectionConfig.MaxWriteBatchLength, _logger);
+            _currentCheckpoint = new ProjectionCheckpoint(_readDispatcher, _writeDispatcher, this, requestedCheckpointPosition,
+                _positionTagger.MakeZeroCheckpointTag(), _projectionConfig.MaxWriteBatchLength, _logger);
             // checkpoint only after assigning new current checkpoint, as it may call back immediately
             _closingCheckpoint.Prepare(requestedCheckpointPosition);
         }
@@ -403,7 +412,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected void CheckpointWritten()
         {
+            Contract.Requires(_closingCheckpoint != null);
             _lastCompletedCheckpointPosition = _requestedCheckpointPosition;
+            _closingCheckpoint.Dispose();
             _closingCheckpoint = null;
             if (!_stopping)
                 // ignore any writes pending in the current checkpoint (this is not the best, but they will never hit the storage, so it is safe)
@@ -449,9 +460,6 @@ namespace EventStore.Projections.Core.Services.Processing
                     newState.CausedBy, oldState.CausedBy));
             return result;
         }
-
-        private int _readRequestsInProgress;
-        private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
 
 
         public abstract void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed);

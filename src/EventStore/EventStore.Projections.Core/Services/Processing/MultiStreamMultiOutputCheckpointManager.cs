@@ -38,7 +38,6 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class MultiStreamMultiOutputCheckpointManager : DefaultCheckpointManager
     {
-        private readonly IPublisher _publisher;
         private readonly PositionTagger _positionTagger;
         private CheckpointTag _lastOrderCheckpointTag; //TODO: use position tracker to ensure order?
         private EmittedStream _orderStream;
@@ -59,7 +58,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
                 name, positionTagger, namingBuilder, useCheckpoints, emitStateUpdated, emitPartitionCheckpoints)
         {
-            _publisher = publisher;
             _positionTagger = positionTagger;
         }
 
@@ -67,6 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             base.Initialize();
             _lastOrderCheckpointTag = null;
+            if (_orderStream != null) _orderStream.Dispose();
             _orderStream = null;
         }
 
@@ -99,8 +98,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private EmittedStream CreateOrderStream()
         {
             return new EmittedStream(
-                _namingBuilder.GetOrderStreamName(), _positionTagger.MakeZeroCheckpointTag(), _publisher,
-                /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger, noCheckpoints: true);
+                _namingBuilder.GetOrderStreamName(), _positionTagger.MakeZeroCheckpointTag(),
+                _readDispatcher, _writeDispatcher, /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger,
+                noCheckpoints: true);
         }
 
         public override void GetStatistics(ProjectionStatistics info)

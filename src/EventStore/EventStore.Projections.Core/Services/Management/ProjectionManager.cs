@@ -223,7 +223,11 @@ namespace EventStore.Projections.Core.Services.Management
                 var statuses = (from projectionNameValue in _projections
                                 let projection = projectionNameValue.Value
                                 where !projection.Deleted
-                                where message.Mode == null || message.Mode == projection.GetMode()
+                                where 
+                                    message.Mode == null || 
+                                    message.Mode == projection.GetMode() || 
+                                    (message.Mode.GetValueOrDefault() == ProjectionMode.AllNonTransient 
+                                        && projection.GetMode() != ProjectionMode.Transient)
                                 let status = projection.GetStatistics()
                                 select status).ToArray();
                 message.Envelope.ReplyWith(
@@ -436,7 +440,7 @@ namespace EventStore.Projections.Core.Services.Management
             _lastUsedQueue++;
 
             var managedProjectionInstance = new ManagedProjection(queue, 
-                projectionCorrelationId, name, _logger, _writeDispatcher, _readDispatcher, _inputQueue,
+                projectionCorrelationId, name, _logger, _writeDispatcher, _readDispatcher, _inputQueue, _publisher,
                 _projectionStateHandlerFactory);
             _projectionsMap.Add(projectionCorrelationId, name);
             _projections.Add(name, managedProjectionInstance);
