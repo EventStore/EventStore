@@ -90,6 +90,7 @@ namespace EventStore.Projections.Core.Services.Management
         private ProjectionStatistics _lastReceivedStatistics;
         private Action _onPrepared;
         private Action _onStarted;
+        private DateTime _lastAccessed; 
 
         public ManagedProjection(
             IPublisher coreQueue, Guid id, string name, ILogger logger,
@@ -115,6 +116,7 @@ namespace EventStore.Projections.Core.Services.Management
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>(
                     coreQueue, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+            _lastAccessed = DateTime.UtcNow;
         }
 
         private string HandlerType
@@ -188,17 +190,20 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.GetQuery message)
         {
+            _lastAccessed = DateTime.UtcNow;
             var emitEnabled = _persistedState.EmitEnabled ?? false;
             message.Envelope.ReplyWith(new ProjectionManagementMessage.ProjectionQuery(_name, Query, emitEnabled));
         }
 
         public void Handle(ProjectionManagementMessage.UpdateQuery message)
         {
+            _lastAccessed = DateTime.UtcNow;
             Stop(() => DoUpdateQuery(message));
         }
 
         public void Handle(ProjectionManagementMessage.GetState message)
         {
+            _lastAccessed = DateTime.UtcNow;
             if (_state >= ManagedProjectionState.Stopped)
             {
                 _getStateDispatcher.Publish(
@@ -217,6 +222,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.GetDebugState message)
         {
+            _lastAccessed = DateTime.UtcNow;
             if (_state >= ManagedProjectionState.Stopped)
             {
                 var needRequest = false;
@@ -239,11 +245,13 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Disable message)
         {
+            _lastAccessed = DateTime.UtcNow;
             Stop(() => DoDisable(message));
         }
 
         public void Handle(ProjectionManagementMessage.Enable message)
         {
+            _lastAccessed = DateTime.UtcNow;
             if (Enabled && _state == ManagedProjectionState.Running)
             {
                 message.Envelope.ReplyWith(
@@ -259,6 +267,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Delete message)
         {
+            _lastAccessed = DateTime.UtcNow;
             Stop(() => DoDelete(message));
         }
 
@@ -321,6 +330,15 @@ namespace EventStore.Projections.Core.Services.Management
             _debugStateRequests = null;
             foreach (var request in debugStateRequests)
                 request.ReplyWith(new ProjectionManagementMessage.ProjectionDebugState(_name, message.Events));
+        }
+
+        public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
+        {
+            //TODO: configurable expiration
+            if (Mode == ProjectionMode.Transient && _lastAccessed.AddMinutes(5) < DateTime.UtcNow)
+            {
+                Stop(() => Handle(new ProjectionManagementMessage.Delete(new NoopEnvelope(), _name, false, false)));
+            }
         }
 
         public void InitializeNew(ProjectionManagementMessage.Post message, Action completed)
@@ -715,8 +733,9 @@ namespace EventStore.Projections.Core.Services.Management
             Delete();
             Action completed = () =>
                 {
-                    message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name));
+                    message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(_name));
                     DisposeCoreProjection();
+                    _output.Publish(new ProjectionManagementMessage.Internal.Deleted(_name, _id));
                 };
             if (Enabled)
                 Prepare(() => BeginWrite(completed));
