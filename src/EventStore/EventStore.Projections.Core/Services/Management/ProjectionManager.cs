@@ -269,8 +269,8 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
         {
-            CleanupExpired();
             ScheduleExpire();
+            CleanupExpired();
         }
 
         private void CleanupExpired()

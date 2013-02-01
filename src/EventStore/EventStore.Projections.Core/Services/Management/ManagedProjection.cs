@@ -338,9 +338,17 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
         {
             //TODO: configurable expiration
-            if (Mode == ProjectionMode.Transient && _lastAccessed.AddMinutes(5) < _timeProvider.Now)
+            if (Mode == ProjectionMode.Transient)
             {
-                Stop(() => Handle(new ProjectionManagementMessage.Delete(new NoopEnvelope(), _name, false, false)));
+                if (_lastAccessed.AddMinutes(5) < _timeProvider.Now)
+                {
+                    if (_state == ManagedProjectionState.Creating)
+                    {
+                        // NOTE: workaround for stop not working on creating state (just ignore them)
+                        return;
+                    }
+                    Stop(() => Handle(new ProjectionManagementMessage.Delete(new NoopEnvelope(), _name, false, false)));
+                }
             }
         }
 

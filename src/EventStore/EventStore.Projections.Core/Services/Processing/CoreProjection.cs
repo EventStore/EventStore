@@ -425,10 +425,15 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
         {
-            EnsureState(State.Running);
+            EnsureState(State.Running | State.Stopping | State.FaultedStopping);
             _logger.Info(
                 "Projection '{0}'({1}) restart has been requested due to: '{2}'", _name, _projectionCorrelationId,
                 message.Reason);
+            if (_state != State.Running)
+            {
+                SetFaulted("A concurrency violation detected while stopping");
+                return;
+            }
 
                 //
             EnsureUnsubscribed();
