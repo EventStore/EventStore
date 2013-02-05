@@ -101,13 +101,10 @@ namespace EventStore.Core.Services.VNode
             return new VNodeFSMStatesDefinition(this, states);
         }
 
-        public VNodeFSMStatesDefinition InOtherStates()
+        public VNodeFSMStatesDefinition InAllStatesExcept(VNodeState[] states)
         {
-            var unspecifiedStates = _handlers.Select((x, i) => x == null ? i : -1)
-                .Where(x => x >= 0)
-                .Cast<VNodeState>()
-                .ToArray();
-            return new VNodeFSMStatesDefinition(this, unspecifiedStates);
+            var s = Enum.GetValues(typeof (VNodeState)).Cast<VNodeState>().Except(states).ToArray();
+            return new VNodeFSMStatesDefinition(this, s);
         }
 
         public VNodeFSM Build()

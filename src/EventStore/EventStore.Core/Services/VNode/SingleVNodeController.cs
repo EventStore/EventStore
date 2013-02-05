@@ -84,6 +84,7 @@ namespace EventStore.Core.Services.VNode
                     .When<SystemMessage.SystemInit>().Do(Handle)
                     .When<SystemMessage.SystemStart>().Do(Handle)
                     .When<SystemMessage.BecomeShuttingDown>().Do(Handle)
+                    .When<SystemMessage.BecomeChaserCatchUp>().Do(Handle)
                     .When<SystemMessage.BecomeMaster>().Do(Handle)
                     .When<SystemMessage.BecomeShutdown>().Do(Handle)
                 .InState(VNodeState.Initializing)
@@ -91,7 +92,20 @@ namespace EventStore.Core.Services.VNode
                     .When<SystemMessage.StorageWriterInitializationDone>().Do(Handle)
                     .When<ClientMessage.ReadRequestMessage>().Ignore()
                     .When<ClientMessage.WriteRequestMessage>().Ignore()
-                    .WhenOther().Do(m => _outputBus.Publish(m))
+                    .WhenOther().ForwardTo(_outputBus)
+                .InState(VNodeState.ChaserCatchUp)
+                    .When<ClientMessage.CreateStream>().Ignore()
+                    .When<ClientMessage.WriteEvents>().Ignore()
+                    .When<ClientMessage.TransactionStart>().Ignore()
+                    .When<ClientMessage.TransactionWrite>().Ignore()
+                    .When<ClientMessage.TransactionCommit>().Ignore()
+                    .When<ClientMessage.DeleteStream>().Ignore()
+                    .When<SystemMessage.WaitForChaserToCatchUp>().ForwardTo(_outputBus)
+                    .When<SystemMessage.ChaserCaughtUp>().Do(Handle)
+                    .WhenOther().ForwardTo(_outputBus)
+                .InAllStatesExcept(VNodeState.ChaserCatchUp)
+                    .When<SystemMessage.WaitForChaserToCatchUp>().Ignore()
+                    .When<SystemMessage.ChaserCaughtUp>().Ignore()
                 .InState(VNodeState.Master)
                     .When<ClientMessage.CreateStream>().Do(Handle)
                     .When<ClientMessage.WriteEvents>().Do(Handle)
@@ -99,15 +113,15 @@ namespace EventStore.Core.Services.VNode
                     .When<ClientMessage.TransactionWrite>().Do(Handle)
                     .When<ClientMessage.TransactionCommit>().Do(Handle)
                     .When<ClientMessage.DeleteStream>().Do(Handle)
-                    .WhenOther().Do(m => _outputBus.Publish(m))
-                .InStates(VNodeState.Initializing, VNodeState.Master)
+                    .WhenOther().ForwardTo(_outputBus)
+                .InStates(VNodeState.Initializing, VNodeState.Master, VNodeState.ChaserCatchUp)
                     .When<ClientMessage.RequestShutdown>().Do(Handle)
                 .InStates(VNodeState.ShuttingDown, VNodeState.Shutdown)
                     .When<SystemMessage.ServiceShutdown>().Do(Handle)
                 // TODO AN reply with correct status code, that system is shutting down (or already shut down)
                     .When<ClientMessage.ReadRequestMessage>().Ignore()
                     .When<ClientMessage.WriteRequestMessage>().Ignore()
-                    .WhenOther().Do(m => _outputBus.Publish(m))
+                    .WhenOther().ForwardTo(_outputBus)
                 .InState(VNodeState.ShuttingDown)
                     .When<SystemMessage.ShutdownTimeout>().Do(Handle)
                 .Build();
@@ -121,30 +135,34 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(SystemMessage.SystemInit message)
         {
-            Log.Info("========= SystemInit: SingleVNodeController =========");
+            Log.Info("========== [{0}] SYSTEM INIT...", _httpEndPoint);
             _outputBus.Publish(message);
         }
 
         private void Handle(SystemMessage.SystemStart message)
         {
-            Log.Info("========= SystemStart: SingleVNodeController =========");
+            Log.Info("========== [{0}] SYSTEM START....", _httpEndPoint);
             _outputBus.Publish(message);
+            _mainQueue.Publish(new SystemMessage.BecomeChaserCatchUp());
+        }
 
-            _mainQueue.Publish(new SystemMessage.BecomeMaster());
+        private void Handle(SystemMessage.BecomeChaserCatchUp message)
+        {
+            Log.Info("========== [{0}] CHASER IS CATCHING UP...", _httpEndPoint);
+            _state = VNodeState.ChaserCatchUp;
+            _outputBus.Publish(message);
         }
 
         private void Handle(SystemMessage.BecomeMaster message)
         {
-            Log.Info("[{0}] IS WORKING!!! SPARTA!!!111", _httpEndPoint);
-
+            Log.Info("========== [{0}] IS WORKING!!! SPARTA!!!", _httpEndPoint);
             _state = VNodeState.Master;
-
             _outputBus.Publish(message);
         }
 
         private void Handle(SystemMessage.BecomeShuttingDown message)
         {
-            Log.Info("[{0}] IS SHUTTING DOWN!!! FAREWELL, WORLD...", _httpEndPoint);
+            Log.Info("========== [{0}] IS SHUTTING DOWN!!! FAREWELL, WORLD...", _httpEndPoint);
 
             _state = VNodeState.ShuttingDown;
 
@@ -156,7 +174,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(SystemMessage.BecomeShutdown message)
         {
-            Log.Info("[{0}] IS SHUT DOWN!!! SWEET DREAMS!!!111", _httpEndPoint);
+            Log.Info("========== [{0}] IS SHUT DOWN!!! SWEET DREAMS!!!", _httpEndPoint);
 
             _state = VNodeState.Shutdown;
 
@@ -186,6 +204,12 @@ namespace EventStore.Core.Services.VNode
         {
             if (_storageReaderInitialized && _storageWriterInitialized)
                 _mainQueue.Publish(new SystemMessage.SystemStart());
+        }
+
+        private void Handle(SystemMessage.ChaserCaughtUp message)
+        {
+            _outputBus.Publish(message);
+            _mainQueue.Publish(new SystemMessage.BecomeMaster());   
         }
 
         private void Handle(ClientMessage.CreateStream message)
@@ -246,12 +270,12 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(SystemMessage.ServiceShutdown message)
         {
-            Log.Info("Service [{0}] has shut down.", message.ServiceName);
+            Log.Info("========== [{0}] Service '{1}' has shut down.", _httpEndPoint, message.ServiceName);
 
             --_serviceShutdownsToExpect;
             if (_serviceShutdownsToExpect == 0)
             {
-                Log.Info("========== All Services Shutdown: SingleVNodeController =========");
+                Log.Info("========== [{0}] All Services Shutdown.", _httpEndPoint);
                 Shutdown();
             }
         }
@@ -261,7 +285,7 @@ namespace EventStore.Core.Services.VNode
             if (_state != VNodeState.ShuttingDown)
                 return;
 
-            Log.Info("========== Shutdown Timeout: SingleVNodeController =========");
+            Log.Info("========== [{0}] Shutdown Timeout.", _httpEndPoint);
             Shutdown();
         }
 

@@ -199,14 +199,6 @@ namespace EventStore.Core.Services.Monitoring
                     CreateStatsStream();
                     break;
                 }
-                case VNodeState.Initializing:
-                case VNodeState.Unknown:
-                case VNodeState.Manager:
-                case VNodeState.ShuttingDown:
-                case VNodeState.Shutdown:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
             }
         }
 

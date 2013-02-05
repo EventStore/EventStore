@@ -25,6 +25,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
+using EventStore.Common.Utils;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messaging;
 
@@ -61,9 +63,10 @@ namespace EventStore.Core.Services.VNode
             return FSM.InStates(states);
         }
 
-        public VNodeFSMStatesDefinition InOtherStates()
+        public VNodeFSMStatesDefinition InAllStatesExcept(params VNodeState[] states)
         {
-            return FSM.InOtherStates();
+            Ensure.Positive(states.Length, "states.Length");
+            return FSM.InAllStatesExcept(states);
         }
 
         public VNodeFSM Build()

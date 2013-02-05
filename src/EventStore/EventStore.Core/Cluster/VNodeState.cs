@@ -31,6 +31,8 @@ namespace EventStore.Core.Cluster
     {
         Initializing,
         Unknown,
+        PreReplica,
+        ChaserCatchUp,
         CatchingUp,
         Clone,
         Slave,

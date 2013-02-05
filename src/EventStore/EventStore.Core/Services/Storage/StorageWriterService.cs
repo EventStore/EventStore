@@ -57,7 +57,7 @@ namespace EventStore.Core.Services.Storage
 
         protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
         private static readonly int MinFlushDelay = 2*TicksPerMs;
-        private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(1000);
+        private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(100);
 
         protected readonly TFChunkDb Db;
         protected readonly TFChunkWriter Writer;
@@ -75,7 +75,6 @@ namespace EventStore.Core.Services.Storage
 
         protected int FlushMessagesInQueue;
         private VNodeState _vnodeState = VNodeState.Initializing;
-        private bool _allowWrites = true;
 
         public StorageWriterService(IPublisher bus, 
                                     ISubscriber subscribeToBus,
@@ -131,8 +130,11 @@ namespace EventStore.Core.Services.Storage
 
         private void EnqueueMessage(Message message)
         {
-            if (!_allowWrites && message is StorageMessage.IMasterWriteMessage)
+            if (_vnodeState != VNodeState.Master && message is StorageMessage.IMasterWriteMessage)
+            {
+                Log.Error("{0} appeared in StorageWriter during state {1}.", message.GetType().Name, _vnodeState);
                 return;
+            }
 
             if (message is StorageMessage.IFlushableMessage)
                 Interlocked.Increment(ref FlushMessagesInQueue);
@@ -159,13 +161,12 @@ namespace EventStore.Core.Services.Storage
         public virtual void Handle(SystemMessage.StateChangeMessage message)
         {
             _vnodeState = message.State;
-            _allowWrites = false;
 
             switch (message.State)
             {
-                case VNodeState.Master:
+                case VNodeState.ChaserCatchUp:
                 {
-                    Handle(new SystemMessage.WaitForChaserToCatchUp(TimeSpan.Zero));
+                    Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(TimeSpan.Zero));
                     break;
                 }
                 case VNodeState.ShuttingDown:
@@ -176,14 +177,12 @@ namespace EventStore.Core.Services.Storage
             }
         }
 
-        public void Handle(SystemMessage.WaitForChaserToCatchUp message)
+        void IHandle<SystemMessage.WaitForChaserToCatchUp>.Handle(SystemMessage.WaitForChaserToCatchUp message)
         {
-            if (_vnodeState != VNodeState.Master) // if we are not master, then no need to wait for chaser
-                return;
+            if (_vnodeState != VNodeState.ChaserCatchUp) // if we are not master, then no need to wait for chaser
+                throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
 
-            _allowWrites = false;
             var sw = Stopwatch.StartNew();
-
             while (Db.Config.ChaserCheckpoint.Read() < Db.Config.WriterCheckpoint.Read() && sw.Elapsed < WaitForChaserSingleIterationTimeout)
             {
                 Thread.Sleep(1);
@@ -191,9 +190,6 @@ namespace EventStore.Core.Services.Storage
 
             if (Db.Config.ChaserCheckpoint.Read() == Db.Config.WriterCheckpoint.Read())
             {
-                Log.Trace("Waited till chaser caught up!!!...");
-                _allowWrites = true;
-
                 _epochManager.WriteNewEpoch(); // forces flush
                 Bus.Publish(new SystemMessage.ChaserCaughtUp());
                 return;

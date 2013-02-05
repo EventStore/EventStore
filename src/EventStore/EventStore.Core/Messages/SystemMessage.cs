@@ -27,7 +27,6 @@
 // 
 using System;
 using System.Net;
-using EventStore.Common.Utils;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messaging;
 
@@ -58,6 +57,14 @@ namespace EventStore.Core.Messages
             protected StateChangeMessage(VNodeState state)
             {
                 State = state;
+            }
+        }
+
+        public class BecomeChaserCatchUp : StateChangeMessage
+        {
+            public BecomeChaserCatchUp()
+                : base(VNodeState.ChaserCatchUp)
+            {
             }
         }
 
