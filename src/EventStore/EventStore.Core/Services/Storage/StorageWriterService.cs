@@ -166,7 +166,13 @@ namespace EventStore.Core.Services.Storage
             {
                 case VNodeState.ChaserCatchUp:
                 {
-                    Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(TimeSpan.Zero));
+                    var msg = (SystemMessage.BecomeChaserCatchUp) message;
+                    Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(msg.CorrelationId, TimeSpan.Zero));
+                    break;
+                }
+                case VNodeState.Master:
+                {
+                    _epochManager.WriteNewEpoch(); // forces flush
                     break;
                 }
                 case VNodeState.ShuttingDown:
@@ -190,14 +196,13 @@ namespace EventStore.Core.Services.Storage
 
             if (Db.Config.ChaserCheckpoint.Read() == Db.Config.WriterCheckpoint.Read())
             {
-                _epochManager.WriteNewEpoch(); // forces flush
-                Bus.Publish(new SystemMessage.ChaserCaughtUp());
+                Bus.Publish(new SystemMessage.ChaserCaughtUp(message.CorrelationId));
                 return;
             }
 
             var totalTime = message.TotalTimeWasted + sw.Elapsed;
             Log.Debug("Still waiting for chaser to catch up already for {0}...", totalTime);
-            Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(totalTime));
+            Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(message.CorrelationId, totalTime));
         }
 
         void IHandle<StorageMessage.WritePrepares>.Handle(StorageMessage.WritePrepares message)

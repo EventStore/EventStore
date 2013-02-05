@@ -32,6 +32,7 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
+using System.Linq;
 
 namespace EventStore.Core.Services.Storage.EpochManager
 {
@@ -255,6 +256,14 @@ namespace EventStore.Core.Services.Storage.EpochManager
                                                   epoch.EpochPosition,
                                                   epoch.EpochNumber,
                                                   epoch.EpochId));
+            }
+        }
+
+        public IEnumerable<EpochRecord> GetCachedEpochs()
+        {
+            lock (_locker)
+            {
+                return _epochs.Values.ToArray();
             }
         }
 

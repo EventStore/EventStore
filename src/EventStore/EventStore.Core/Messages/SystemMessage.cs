@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Net;
+using EventStore.Common.Utils;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messaging;
 
@@ -62,9 +63,16 @@ namespace EventStore.Core.Messages
 
         public class BecomeChaserCatchUp : StateChangeMessage
         {
-            public BecomeChaserCatchUp()
-                : base(VNodeState.ChaserCatchUp)
+            public readonly Guid CorrelationId;
+            public readonly StateChangeMessage NextState;
+
+            public BecomeChaserCatchUp(Guid correlationId, StateChangeMessage nextState): base(VNodeState.ChaserCatchUp)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.NotNull(nextState, "nextState");
+
+                CorrelationId = correlationId;
+                NextState = nextState;
             }
         }
 
@@ -131,16 +139,28 @@ namespace EventStore.Core.Messages
 
         public class WaitForChaserToCatchUp : Message
         {
+            public readonly Guid CorrelationId;
             public readonly TimeSpan TotalTimeWasted;
 
-            public WaitForChaserToCatchUp(TimeSpan totalTimeWasted)
+            public WaitForChaserToCatchUp(Guid correlationId, TimeSpan totalTimeWasted)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+
+                CorrelationId = correlationId;
                 TotalTimeWasted = totalTimeWasted;
             }
         }
 
         public class ChaserCaughtUp : Message
         {
+            public readonly Guid CorrelationId;
+
+            public ChaserCaughtUp(Guid correlationId)
+            {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+
+                CorrelationId = correlationId;
+            }
         }
     }
 }

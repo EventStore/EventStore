@@ -143,7 +143,7 @@ namespace EventStore.Core.Services.VNode
         {
             Log.Info("========== [{0}] SYSTEM START....", _httpEndPoint);
             _outputBus.Publish(message);
-            _mainQueue.Publish(new SystemMessage.BecomeChaserCatchUp());
+            _mainQueue.Publish(new SystemMessage.BecomeChaserCatchUp(Guid.NewGuid(), new SystemMessage.BecomeMaster()));
         }
 
         private void Handle(SystemMessage.BecomeChaserCatchUp message)
