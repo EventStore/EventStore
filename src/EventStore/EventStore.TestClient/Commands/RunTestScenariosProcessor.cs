@@ -30,6 +30,7 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Services.Transport.Tcp;
@@ -205,7 +206,8 @@ namespace EventStore.TestClient.Commands
                                             dbParentPath), 
                 };
 
-            Log.Info("Found scenarios ({0} total).", allScenarios.Length);
+            Log.Info("Found scenarios {0} total :\n{1}.", allScenarios.Length, allScenarios.Aggregate(new StringBuilder(),
+                                                                                                       (sb, s) => sb.AppendFormat("{0}, ", s.GetType().Name)));
             var scenarios = allScenarios.Where(x => scenarioName == AllScenariosFlag 
                                                     || x.GetType().Name.Equals(scenarioName, StringComparison.InvariantCultureIgnoreCase))
                                         .ToArray();
