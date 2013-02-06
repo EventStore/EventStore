@@ -18,6 +18,20 @@
 
     var webUrl = "";
     
+    var buildMenuMaxTryCount = 40;
+
+    function buildMenu() {
+        if (partsNumber != 0 && buildMenuMaxTryCount > 0) {
+            buildMenuMaxTryCount -= 1;
+            setTimeout(function () { buildMenu(); }, 25);
+            return;
+        }
+
+        var menu = mainMenu.concat(menuParts);
+        menu = menu.concat(mainMenuLow);
+        es.util.loadMenu(menu);
+    }
+    
     $(function () {
 
         webUrl = location.origin;
@@ -36,20 +50,6 @@
         buildMenu();
     });
     
-    var buildMenuMaxTryCount = 60;
-    
-    function buildMenu() {
-        if (partsNumber != 0 && buildMenuMaxTryCount > 0) {
-            setTimeout(function () { buildMenu(); }, 25);
-            buildMenuMaxTryCount -= 1;
-            return;
-        }
-        
-        var menu = mainMenu.concat(menuParts);
-        menu = menu.concat(mainMenuLow);
-        es.util.loadMenu(menu);
-    }
-
     function subsytemsListReceived(data, status, xhr) {
         if (!data) {
             return;
@@ -81,7 +81,7 @@
 
             webUrl = location.origin;
 
-            $.ajax(webUrl + "/web/es/js/projections-resources/es.menu.part.js", {
+            $.ajax(webUrl + "/web/es/js/projections/resources/es.menu.part.js", {
                 headers: {
                     Accept: "application/json",
                 },
@@ -105,16 +105,14 @@
         var msg = es.util.formatError("Couldn't load projections menu", xhr);
         console.log(msg);
         
-        var menu = mainMenu.concat(mainMenuLow);
-        es.util.loadMenu(menu);
+        buildMenu();
     }
     
     function onErrorListSubsystems(xhr) {
         var msg = es.util.formatError("Couldn't load node subsystems list", xhr);
         console.log(msg);
 
-        var menu = mainMenu.concat(mainMenuLow);
-        es.util.loadMenu(menu);
+        buildMenu();
     }
 
 })();

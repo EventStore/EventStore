@@ -8,11 +8,62 @@
     <script id="r-head">
         es.tmpl.renderHead();
     </script>
+    
+    <script language="javascript">
+        $(function () {
+
+            webUrl = location.origin;
+
+            $.ajax(webUrl + "/sys/subsystems", {
+                headers: {
+                    Accept: "application/json",
+                },
+
+                type: "GET",
+                data: $("#source").val(),
+                success: subsytemsListReceived,
+                error: onErrorListSubsystems
+            });
+        });
+        
+        function subsytemsListReceived(data, status, xhr) {
+            if (!data) {
+                return;
+            }
+
+            var subsystemsList = data;
+            
+            var linkToChat = document.getElementById("link-to-chat");
+            if (linkToChat) {
+                for (var i = 0; i < subsystemsList.length; i++) {
+                    var item = subsystemsList[i];
+                    switch (item) {
+                        case "Projections":
+                            {
+                                linkToChat.style.display = "inline";
+                            }
+                            break;
+                        default:
+                            {
+                                var msg = "Not expected subsystem " + item + " has been found in list.";
+                                console.log(msg);
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+        
+        function onErrorListSubsystems(xhr) {
+            var msg = es.util.formatError("Couldn't load node subsystems list", xhr);
+            console.log(msg);
+        }
+    </script>
 </head>
 <body>
     <div id="content">
         <h1>EventStore</h1>
-        <a href="chat.htm" class="button-link">Chat Room Sample!</a>
+        <a id="link-to-chat" href="chat.htm" class="button-link" style="display:none">Chat Room Sample!</a>
         
         <script id="r-body">
             es.tmpl.renderBody();
