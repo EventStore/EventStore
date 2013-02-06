@@ -28,8 +28,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Transport.Http.Codecs;
 using EventStore.Core.Util;
@@ -40,29 +39,57 @@ namespace EventStore.Core.Services.Transport.Http.Controllers
 {
     public class WebSiteController : CommunicationController
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<WebSiteController>();
+
+        private readonly NodeSubsystems[] _enabledNodeSubsystems;
+
         private readonly MiniWeb _commonWeb;
         private readonly MiniWeb _singleNodeWeb;
         private readonly MiniWeb _singleNodeJs;
 
-        public WebSiteController(IPublisher publisher)
+        public WebSiteController(IPublisher publisher, NodeSubsystems[] enabledNodeSubsystems)
             : base(publisher)
         {
+            _enabledNodeSubsystems = enabledNodeSubsystems;
             string commonFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Web");
             string singleNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.SingleNode.Web");
 
             _singleNodeWeb = new MiniWeb("/web", Path.Combine(singleNodeFSRoot, @"singlenode-web"));
             _commonWeb = new MiniWeb("/web/es", Path.Combine(commonFSRoot, @"es-common-web"));
-            _singleNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(singleNodeFSRoot, Path.Combine("singlenode-web", "js", "projections")));
+
+            if (enabledNodeSubsystems.Length != 0 && Array.IndexOf(enabledNodeSubsystems, NodeSubsystems.Projections) >= 0)
+                _singleNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(singleNodeFSRoot, Path.Combine("singlenode-web", "js", "projections")));
         }
 
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
             _singleNodeWeb.RegisterControllerActions(service);
             _commonWeb.RegisterControllerActions(service);
-            _singleNodeJs.RegisterControllerActions(service);
+
             RegisterRedirectAction(service, "", "/web/home.htm");
             RegisterRedirectAction(service, "/web", "/web/home.htm");
-            RegisterRedirectAction(service, "/web/projections", "/web/projections.htm");
+
+            service.RegisterControllerAction(
+                new ControllerAction("/sys/subsystems", HttpMethod.Get, Codec.NoCodecs, new ICodec[] { Codec.Json }, Codec.Json),
+                OnListNodeSubsystems);
+
+            if (_singleNodeJs != null)
+            {
+                _singleNodeJs.RegisterControllerActions(service);
+                RegisterRedirectAction(service, "/web/projections", "/web/projections.htm");
+            }
+        }
+
+        private void OnListNodeSubsystems(HttpEntity http, UriTemplateMatch match)
+        {
+            http.Manager.ReplyTextContent(
+            Codec.Json.To(_enabledNodeSubsystems),
+            200,
+            "OK",
+            "application/json",
+            null,
+            ex => Log.InfoException(ex, "Failed to prepare main menu")
+            );
         }
 
         private static void RegisterRedirectAction(IHttpService service, string fromUrl, string toUrl)

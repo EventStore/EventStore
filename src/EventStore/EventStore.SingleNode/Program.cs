@@ -76,7 +76,9 @@ namespace EventStore.SingleNode
             var db = new TFChunkDb(CreateDbConfig(dbPath, options.CachedChunks));
             var vnodeSettings = GetVNodeSettings(options);
             var dbVerifyHashes = !options.SkipDbVerify;
-            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes);
+            var runProjections = options.RunProjections;
+
+            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, runProjections);
 
             if (options.RunProjections)
             {
