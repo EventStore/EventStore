@@ -169,9 +169,10 @@ namespace EventStore.Core.Services.Monitoring
 
         private long GetFreeMemOnLinux()
         {
+            string meminfo = null;
             try
             {
-                var meminfo = ShellExecutor.GetOutput("free", "-b");
+                meminfo = ShellExecutor.GetOutput("free", "-b");
                 var meminfolines = meminfo.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
                 var ourline = meminfolines[1];
                 var spaces = new Regex(@"[\s\t]+", RegexOptions.Compiled);
@@ -181,7 +182,7 @@ namespace EventStore.Core.Services.Monitoring
             }
             catch (Exception ex)
             {
-                _log.DebugException(ex, "Couldn't get free mem on linux.");
+                _log.DebugException(ex, "Couldn't get free mem on linux, received memory info raw string: [{0}]", meminfo);
                 return -1;
             }
         }
