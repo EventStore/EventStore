@@ -81,7 +81,7 @@
 
             webUrl = location.origin;
 
-            $.ajax(webUrl + "/web/es/js/projections/resources/es.menu.part.js", {
+            $.ajax(webUrl + "/web/es/js/projections-resources/es.menu.part.js", {
                 headers: {
                     Accept: "application/json",
                 },

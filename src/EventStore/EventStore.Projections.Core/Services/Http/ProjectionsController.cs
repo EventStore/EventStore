@@ -50,6 +50,7 @@ namespace EventStore.Projections.Core.Services.Http
         private static readonly ICodec[] SupportedCodecs = new ICodec[] {Codec.Json};
         private static readonly ICodec DefaultResponseCodec = Codec.Json;
 
+        private readonly MiniWeb _singleNodeJs;
         private readonly MiniWeb _miniWebPrelude;
         private readonly MiniWeb _miniWebResources;
         private readonly IPublisher _networkSendQueue;
@@ -57,20 +58,26 @@ namespace EventStore.Projections.Core.Services.Http
         public ProjectionsController(IPublisher publisher, IPublisher networkSendQueue)
             : base(publisher)
         {
-            _networkSendQueue = networkSendQueue;
+            var singleNodeFSRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.SingleNode.Web");
+            _singleNodeJs = new MiniWeb("/web/es/js/projections", Path.Combine(singleNodeFSRoot, Path.Combine("singlenode-web", "js", "projections")));
+            
             var fileSystemWebRoot = MiniWeb.GetWebRootFileSystemDirectory("EventStore.Projections.Core");
+            _networkSendQueue = networkSendQueue;
             _miniWebPrelude = new MiniWeb(
                 "/web/es/js/projections/v8/Prelude", Path.Combine(fileSystemWebRoot, @"Prelude"));
-            
+
             _miniWebResources = new MiniWeb(
-                "/web/es/js/projections/resources", Path.Combine(fileSystemWebRoot, Path.Combine("web-resources", "js")));
+                "/web/es/js/projections-resources", Path.Combine(fileSystemWebRoot, Path.Combine("web-resources", "js")));
         }
         
-
+        
         protected override void SubscribeCore(IHttpService service, HttpMessagePipe pipe)
         {
             _miniWebPrelude.RegisterControllerActions(service);
             _miniWebResources.RegisterControllerActions(service);
+
+            _singleNodeJs.RegisterControllerActions(service);
+            HttpHelpers.RegisterRedirectAction(service, "/web/projections", "/web/projections.htm");
 
             service.RegisterControllerAction(
                 new ControllerAction(

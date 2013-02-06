@@ -167,6 +167,7 @@
     <Compile Include="Services\Transport\Http\Codecs\NoCodec.cs" />
     <Compile Include="Services\Transport\Http\Codecs\TextCodec.cs" />
     <Compile Include="Services\Transport\Http\Codecs\XmlCodec.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
