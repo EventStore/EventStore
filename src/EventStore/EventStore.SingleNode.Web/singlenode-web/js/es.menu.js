@@ -5,9 +5,7 @@
         { "name": "Streams", "link": "/web/streams.htm", "class": "" }
     ];
     
-    var expectedPartsNumber = 1;
-    
-    var partsNumber = expectedPartsNumber;
+    var pendingRequestsCount = 0;
     var menuParts = [];
 
     var mainMenuLow = [
@@ -18,10 +16,10 @@
 
     var webUrl = "";
     
-    var buildMenuMaxTryCount = 40;
+    var buildMenuMaxTryCount = 60;
 
     function buildMenu() {
-        if (partsNumber != 0 && buildMenuMaxTryCount > 0) {
+        if (pendingRequestsCount != 0 && buildMenuMaxTryCount > 0) {
             buildMenuMaxTryCount -= 1;
             setTimeout(function () { buildMenu(); }, 25);
             return;
@@ -35,6 +33,8 @@
     $(function () {
 
         webUrl = location.origin;
+        
+        pendingRequestsCount += 1;
 
         $.ajax(webUrl + "/sys/subsystems", {
             headers: {
@@ -51,29 +51,37 @@
     });
     
     function subsytemsListReceived(data, status, xhr) {
+        
         if (!data) {
-            return;
+            pendingRequestsCount -= 1;
         }
-        
-        var subsystemsList = data;
+        else {
+            var subsystemsList = data;
 
-        for (var i = 0; i < subsystemsList.length; i++) {
-            var item = subsystemsList[i];
-            switch (item) {
-                case "Projections":
-                    partsNumber += 1;
-                    loadProjectionsMenu();
-                    break;
-                default:
-                    {
-                        var msg = "Not expected subsystem " + item + " has been found in list.";
-                        console.log(msg);
-                    }
-                    break;
+            for (var i = 0; i < subsystemsList.length; i++) {
+                var item = subsystemsList[i];
+                switch (item) {
+                    case "Projections":
+                        pendingRequestsCount += 1;
+                        loadProjectionsMenu();
+                        break;
+                    default:
+                        {
+                            var msg = "Not expected subsystem " + item + " has been found in list.";
+                            console.log(msg);
+                        }
+                        break;
+                }
             }
+            pendingRequestsCount -= 1;
         }
-        
-        partsNumber -= expectedPartsNumber;
+    }
+    
+    function onErrorListSubsystems(xhr) {
+        var msg = es.util.formatError("Couldn't load node subsystems list", xhr);
+        console.log(msg);
+
+        pendingRequestsCount -= 1;
     }
     
     function loadProjectionsMenu() {
@@ -98,21 +106,14 @@
         var additionalMenu = data != null ? JSON.parse(data) : [];
         menuParts = menuParts.concat(additionalMenu);
         
-        partsNumber -= 1;
+        pendingRequestsCount -= 1;
     }
     
     function onErrorProjectionsMenu(xhr) {
         var msg = es.util.formatError("Couldn't load projections menu", xhr);
         console.log(msg);
         
-        buildMenu();
-    }
-    
-    function onErrorListSubsystems(xhr) {
-        var msg = es.util.formatError("Couldn't load node subsystems list", xhr);
-        console.log(msg);
-
-        buildMenu();
+        pendingRequestsCount -= 1;
     }
 
 })();
