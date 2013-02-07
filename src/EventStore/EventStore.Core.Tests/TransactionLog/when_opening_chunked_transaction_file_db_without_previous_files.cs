@@ -47,6 +47,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              0,
                                              new InMemoryCheckpoint(0),
                                              new InMemoryCheckpoint(0),
+                                             new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             db.OpenVerifyAndClean();

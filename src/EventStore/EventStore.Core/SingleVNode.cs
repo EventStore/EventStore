@@ -85,7 +85,7 @@ namespace EventStore.Core
             _httpEndPoint = vNodeSettings.ExternalHttpEndPoint;
 
             _mainBus = new InMemoryBus("MainBus");
-            _controller = new SingleVNodeController(Bus, _httpEndPoint);
+            _controller = new SingleVNodeController(Bus, _httpEndPoint, db);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             _controller.SetMainQueue(MainQueue);
 

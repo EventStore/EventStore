@@ -47,6 +47,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        0,
                                                        writerchk,
                                                        new InMemoryCheckpoint(),
+                                                       new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
             db.OpenVerifyAndClean();
 
@@ -68,6 +69,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        0,
                                                        writerchk,
                                                        new InMemoryCheckpoint(),
+                                                       new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
             db.OpenVerifyAndClean();
 

@@ -32,10 +32,10 @@ namespace EventStore.Core.Cluster
         Initializing,
         Unknown,
         PreReplica,
-        ChaserCatchUp,
         CatchingUp,
         Clone,
         Slave,
+        PreMaster,
         Master,
         Manager,
         ShuttingDown,
@@ -46,7 +46,10 @@ namespace EventStore.Core.Cluster
     {
         public static bool IsReplica(this VNodeState state)
         {
-            return state == VNodeState.CatchingUp || state == VNodeState.Clone || state == VNodeState.Slave;
+            return state == VNodeState.PreReplica 
+                || state == VNodeState.CatchingUp 
+                || state == VNodeState.Clone 
+                || state == VNodeState.Slave;
         }
     }
 }

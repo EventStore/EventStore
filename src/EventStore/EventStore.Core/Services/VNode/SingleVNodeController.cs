@@ -34,6 +34,7 @@ using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.VNode
 {
@@ -49,6 +50,7 @@ namespace EventStore.Core.Services.VNode
 
         private readonly IPublisher _outputBus;
         private readonly IPEndPoint _httpEndPoint;
+        private readonly TFChunkDb _db;
 
         private VNodeState _state = VNodeState.Initializing;
         private QueuedHandler _mainQueue;
@@ -59,13 +61,15 @@ namespace EventStore.Core.Services.VNode
         private int _serviceShutdownsToExpect = 3;
         private bool _exitProcessOnShutdown;
 
-        public SingleVNodeController(IPublisher outputBus, IPEndPoint httpEndPoint)
+        public SingleVNodeController(IPublisher outputBus, IPEndPoint httpEndPoint, TFChunkDb db)
         {
             Ensure.NotNull(outputBus, "outputBus");
             Ensure.NotNull(httpEndPoint, "httpEndPoint");
+            Ensure.NotNull(db, "db");
 
             _outputBus = outputBus;
             _httpEndPoint = httpEndPoint;
+            _db = db;
 
             _fsm = CreateFSM();
         }
@@ -84,8 +88,7 @@ namespace EventStore.Core.Services.VNode
                     .When<SystemMessage.SystemInit>().Do(Handle)
                     .When<SystemMessage.SystemStart>().Do(Handle)
                     .When<SystemMessage.BecomeShuttingDown>().Do(Handle)
-                    .When<SystemMessage.BecomeChaserCatchUp>().Do(Handle)
-                    .When<SystemMessage.BecomeMaster>().Do(Handle)
+                    .When<SystemMessage.BecomePreMaster>().Do(Handle)
                     .When<SystemMessage.BecomeShutdown>().Do(Handle)
                 .InState(VNodeState.Initializing)
                     .When<SystemMessage.StorageReaderInitializationDone>().Do(Handle)
@@ -93,17 +96,18 @@ namespace EventStore.Core.Services.VNode
                     .When<ClientMessage.ReadRequestMessage>().Ignore()
                     .When<ClientMessage.WriteRequestMessage>().Ignore()
                     .WhenOther().ForwardTo(_outputBus)
-                .InState(VNodeState.ChaserCatchUp)
+                .InState(VNodeState.PreMaster)
+                    .When<SystemMessage.BecomeMaster>().Do(Handle)
+                    .When<SystemMessage.WaitForChaserToCatchUp>().ForwardTo(_outputBus)
+                    .When<SystemMessage.ChaserCaughtUp>().Do(Handle)
                     .When<ClientMessage.CreateStream>().Ignore()
                     .When<ClientMessage.WriteEvents>().Ignore()
                     .When<ClientMessage.TransactionStart>().Ignore()
                     .When<ClientMessage.TransactionWrite>().Ignore()
                     .When<ClientMessage.TransactionCommit>().Ignore()
                     .When<ClientMessage.DeleteStream>().Ignore()
-                    .When<SystemMessage.WaitForChaserToCatchUp>().ForwardTo(_outputBus)
-                    .When<SystemMessage.ChaserCaughtUp>().Do(Handle)
                     .WhenOther().ForwardTo(_outputBus)
-                .InAllStatesExcept(VNodeState.ChaserCatchUp)
+                .InAllStatesExcept(VNodeState.PreMaster)
                     .When<SystemMessage.WaitForChaserToCatchUp>().Ignore()
                     .When<SystemMessage.ChaserCaughtUp>().Ignore()
                 .InState(VNodeState.Master)
@@ -114,7 +118,7 @@ namespace EventStore.Core.Services.VNode
                     .When<ClientMessage.TransactionCommit>().Do(Handle)
                     .When<ClientMessage.DeleteStream>().Do(Handle)
                     .WhenOther().ForwardTo(_outputBus)
-                .InStates(VNodeState.Initializing, VNodeState.Master, VNodeState.ChaserCatchUp)
+                .InStates(VNodeState.Initializing, VNodeState.PreMaster, VNodeState.Master)
                     .When<ClientMessage.RequestShutdown>().Do(Handle)
                 .InStates(VNodeState.ShuttingDown, VNodeState.Shutdown)
                     .When<SystemMessage.ServiceShutdown>().Do(Handle)
@@ -143,13 +147,13 @@ namespace EventStore.Core.Services.VNode
         {
             Log.Info("========== [{0}] SYSTEM START....", _httpEndPoint);
             _outputBus.Publish(message);
-            _mainQueue.Publish(new SystemMessage.BecomeChaserCatchUp(Guid.NewGuid(), new SystemMessage.BecomeMaster()));
+            _mainQueue.Publish(new SystemMessage.BecomePreMaster());
         }
 
-        private void Handle(SystemMessage.BecomeChaserCatchUp message)
+        private void Handle(SystemMessage.BecomePreMaster message)
         {
-            Log.Info("========== [{0}] CHASER IS CATCHING UP...", _httpEndPoint);
-            _state = VNodeState.ChaserCatchUp;
+            Log.Info("========== [{0}] PRE-MASTER STATE, WAITING FOR CHASER To CATCH UP...", _httpEndPoint);
+            _state = VNodeState.PreMaster;
             _outputBus.Publish(message);
         }
 
@@ -291,6 +295,8 @@ namespace EventStore.Core.Services.VNode
 
         private void Shutdown()
         {
+            _db.Close();
+
             _mainQueue.Publish(new SystemMessage.BecomeShutdown());
         }
     }

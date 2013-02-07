@@ -39,6 +39,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         public readonly ICheckpoint WriterCheckpoint;
         public readonly ICheckpoint ChaserCheckpoint;
         public readonly ICheckpoint EpochCheckpoint;
+        public readonly ICheckpoint TruncateCheckpoint;
         public readonly IFileNamingStrategy FileNamingStrategy;
 
         public TFChunkDbConfig(string path, 
@@ -47,7 +48,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                                int cachedChunkCount,
                                ICheckpoint writerCheckpoint, 
                                ICheckpoint chaserCheckpoint,
-                               ICheckpoint epochCheckpoint)
+                               ICheckpoint epochCheckpoint,
+                               ICheckpoint truncateCheckpoint)
         {
             Ensure.NotNullOrEmpty(path, "path");
             Ensure.NotNull(fileNamingStrategy, "fileNamingStrategy");
@@ -56,6 +58,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
             Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
             Ensure.NotNull(epochCheckpoint, "epochCheckpoint");
+            Ensure.NotNull(truncateCheckpoint, "truncateCheckpoint");
 
 //            if ((chunkSize & (chunkSize-1)) != 0)
 //                throw new ArgumentException("Segment size should be the power of 2.", "chunkSize");
@@ -66,6 +69,7 @@ namespace EventStore.Core.TransactionLog.Chunks
             WriterCheckpoint = writerCheckpoint;
             ChaserCheckpoint = chaserCheckpoint;
             EpochCheckpoint = epochCheckpoint;
+            TruncateCheckpoint = truncateCheckpoint;
             FileNamingStrategy = fileNamingStrategy;
         }
     }

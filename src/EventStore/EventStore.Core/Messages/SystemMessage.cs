@@ -61,18 +61,10 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class BecomeChaserCatchUp : StateChangeMessage
+        public class BecomePreMaster : StateChangeMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly StateChangeMessage NextState;
-
-            public BecomeChaserCatchUp(Guid correlationId, StateChangeMessage nextState): base(VNodeState.ChaserCatchUp)
+            public BecomePreMaster(): base(VNodeState.PreMaster)
             {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-                Ensure.NotNull(nextState, "nextState");
-
-                CorrelationId = correlationId;
-                NextState = nextState;
             }
         }
 
@@ -139,27 +131,18 @@ namespace EventStore.Core.Messages
 
         public class WaitForChaserToCatchUp : Message
         {
-            public readonly Guid CorrelationId;
             public readonly TimeSpan TotalTimeWasted;
 
-            public WaitForChaserToCatchUp(Guid correlationId, TimeSpan totalTimeWasted)
+            public WaitForChaserToCatchUp(TimeSpan totalTimeWasted)
             {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-
-                CorrelationId = correlationId;
                 TotalTimeWasted = totalTimeWasted;
             }
         }
 
         public class ChaserCaughtUp : Message
         {
-            public readonly Guid CorrelationId;
-
-            public ChaserCaughtUp(Guid correlationId)
+            public ChaserCaughtUp()
             {
-                Ensure.NotEmptyGuid(correlationId, "correlationId");
-
-                CorrelationId = correlationId;
             }
         }
     }

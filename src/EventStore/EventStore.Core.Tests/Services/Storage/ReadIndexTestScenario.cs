@@ -80,6 +80,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                                    0,
                                                    WriterCheckpoint,
                                                    ChaserCheckpoint,
+                                                   new InMemoryCheckpoint(-1),
                                                    new InMemoryCheckpoint(-1)));
 
             Db.OpenVerifyAndClean();

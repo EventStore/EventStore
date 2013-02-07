@@ -55,6 +55,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        0,
                                                        new InMemoryCheckpoint(),
                                                        new InMemoryCheckpoint(),
+                                                       new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
             Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, null, new InMemoryCheckpoint()));
         }
@@ -69,6 +70,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        0,
                                                        new InMemoryCheckpoint(),
                                                        new InMemoryCheckpoint(),
+                                                       new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
             Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, new InMemoryCheckpoint(), null));
         }
