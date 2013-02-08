@@ -1,17 +1,17 @@
 (function () {
 
     var mainMenu = [
-        { "name": "Home", "link": "/web/home.htm", "class": "" },
-        { "name": "Streams", "link": "/web/streams.htm", "class": "" }
+        { "name": "Home", "link": "/web/home.htm", "className": "" },
+        { "name": "Streams", "link": "/web/streams.htm", "className": "" }
     ];
     
     var pendingRequestsCount = 0;
     var menuParts = [];
 
     var mainMenuLow = [
-        { "name": "Charts", "link": "/web/charts.htm", "class": "" },
-        { "name": "Health Charts", "link": "/web/health-charts.htm", "class": "" },
-        { "name": "Queues", "link": "/web/queues.htm", "class": "" }
+        { "name": "Charts", "link": "/web/charts.htm", "className": "" },
+        { "name": "Health Charts", "link": "/web/health-charts.htm", "className": "" },
+        { "name": "Queues", "link": "/web/queues.htm", "className": "" }
     ];
 
     var buildMenuMaxTryCount = 60;
@@ -29,7 +29,6 @@
     }
     
     $(function () {
-
         var webUrl = location.href.replace(location.pathname, "");
         
         pendingRequestsCount += 1;
@@ -49,7 +48,6 @@
     });
     
     function subsytemsListReceived(data, status, xhr) {
-        
         var subsystemsList,
             i,
             item,
@@ -87,10 +85,9 @@
     
     function loadProjectionsMenu() {
         $(function () {
+            var webUrl = location.href.replace(location.pathname, "");
 
-            webUrl = location.href.replace(location.pathname, "");
-
-            $.ajax(webUrl + "/web/es/js/projections/resources/es.menu.part.js", {
+            $.ajax(webUrl + "/web/es/js/projections/resources/es.menu.part.json", {
                 headers: {
                     Accept: "application/json",
                 },
@@ -104,9 +101,9 @@
     }
     
     function successUpdateSource(data, status, xhr) {
-        var additionalMenu = data != null ? JSON.parse(data) : [];
-        menuParts = menuParts.concat(additionalMenu);
-        
+        if (data != null) {
+            menuParts = menuParts.concat(data);
+        }
         pendingRequestsCount -= 1;
     }
     

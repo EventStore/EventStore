@@ -228,7 +228,7 @@
     <Content Include="Prelude\Projections.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="web-resources\js\es.menu.part.js">
+    <Content Include="web-resources\js\es.menu.part.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
