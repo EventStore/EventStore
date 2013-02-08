@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using EventStore.Core.Bus;
@@ -69,10 +70,13 @@ namespace EventStore.Core
         private readonly HttpService _httpService;
         private readonly TimerService _timerService;
         private readonly NetworkSendService _networkSendService;
+
+        private readonly NodeSubsystems[] _enabledNodeSubsystems;
         
         public SingleVNode(TFChunkDb db, 
                            SingleVNodeSettings vNodeSettings, 
                            bool dbVerifyHashes,
+                           bool runProjections,
                            int memTableEntryCount = ESConsts.MemTableEntryCount)
         {
             Ensure.NotNull(db, "db");
@@ -87,6 +91,8 @@ namespace EventStore.Core
             _controller = new SingleVNodeController(Bus, _httpEndPoint);
             _mainQueue = new QueuedHandler(_controller, "MainQueue");
             _controller.SetMainQueue(MainQueue);
+
+            _enabledNodeSubsystems = runProjections ? new [] { NodeSubsystems.Projections } : new NodeSubsystems[0];
 
             //MONITORING
             var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
@@ -161,7 +167,7 @@ namespace EventStore.Core
             HttpService.SetupController(new StatController(monitoringQueue, _networkSendService));
             HttpService.SetupController(new ReadEventDataController(MainQueue, _networkSendService));
             HttpService.SetupController(new AtomController(MainQueue, _networkSendService));
-            HttpService.SetupController(new WebSiteController(MainQueue));
+            HttpService.SetupController(new WebSiteController(MainQueue, _enabledNodeSubsystems));
 
             //REQUEST MANAGEMENT
             var requestManagement = new RequestManagementService(MainQueue, 1, 1);

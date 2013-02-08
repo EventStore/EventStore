@@ -133,6 +133,7 @@
     <Compile Include="Index\SortedListExtensions.cs" />
     <Compile Include="Messages\HttpClientMessageDto.cs" />
     <Compile Include="Messages\TcpClientMessageDtoExtensions.cs" />
+    <Compile Include="NodeSubsystems.cs" />
     <Compile Include="Services\Storage\ReaderIndex\TransactionInfo.cs" />
     <Compile Include="Services\SubscriptionsService.cs" />
     <Compile Include="Services\NetworkSendService.cs" />
@@ -166,6 +167,7 @@
     <Compile Include="Services\Transport\Http\Codecs\NoCodec.cs" />
     <Compile Include="Services\Transport\Http\Codecs\TextCodec.cs" />
     <Compile Include="Services\Transport\Http\Codecs\XmlCodec.cs" />
+    <Compile Include="Services\Transport\Http\Controllers\HttpHelpers.cs" />
     <Compile Include="Services\Transport\Http\Controllers\WebSiteController.cs" />
     <Compile Include="Services\RequestManager\Managers\TwoPhaseRequestManagerBase.cs" />
     <Compile Include="Services\RequestManager\Managers\WriteStreamTwoPhaseRequestManager.cs" />
