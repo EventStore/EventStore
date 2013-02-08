@@ -134,6 +134,22 @@ namespace EventStore.Core.Services.Storage.EpochManager
             }
         }
 
+        public EpochRecord[] GetLastEpochs(int maxCount)
+        {
+            lock (_locker)
+            {
+                var res = new List<EpochRecord>();
+                for (int epochNum = _lastEpochNumber, n = maxCount; epochNum >= 0 && n > 0; --epochNum, --n)
+                {
+                    EpochRecord epoch;
+                    if (!_epochs.TryGetValue(epochNum, out epoch))
+                        break;
+                    res.Add(epoch);
+                }
+                return res.ToArray();
+            }
+        }
+
         public EpochRecord GetEpoch(int epochNumber, bool throwIfNotFound)
         {
             lock (_locker)
@@ -155,9 +171,9 @@ namespace EventStore.Core.Services.Storage.EpochManager
             }
         }
 
-        public bool IsCorrectEpochAt(long logPosition, int epochNumber, Guid epochId)
+        public bool IsCorrectEpochAt(long epochPosition, int epochNumber, Guid epochId)
         {
-            Ensure.Nonnegative(logPosition, "logPosition");
+            Ensure.Nonnegative(epochPosition, "logPosition");
             Ensure.Nonnegative(epochNumber, "epochNumber");
             Ensure.NotEmptyGuid(epochId, "epochId");
 
@@ -168,7 +184,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 if (epochNumber >= _minCachedEpochNumber)
                 {
                     var epoch = _epochs[epochNumber];
-                    return epoch.EpochId == epochId && epoch.EpochPosition == logPosition;
+                    return epoch.EpochId == epochId && epoch.EpochPosition == epochPosition;
                 }
             }
             
@@ -176,7 +192,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
             var reader = _readers.Get();
             try
             {
-                var res = reader.TryReadAt(logPosition);
+                var res = reader.TryReadAt(epochPosition);
                 if (!res.Success || res.LogRecord.RecordType != LogRecordType.System)
                     return false;
                 var sysRec = (SystemLogRecord) res.LogRecord;

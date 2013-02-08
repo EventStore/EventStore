@@ -95,6 +95,7 @@
     <Compile Include="DataStructures\ObjectPool.cs" />
     <Compile Include="DataStructures\PairingHeap.cs" />
     <Compile Include="Data\CommitEventRecord.cs" />
+    <Compile Include="Data\Epoch.cs" />
     <Compile Include="Data\ResolvedEvent.cs" />
     <Compile Include="Data\EventNumber.cs" />
     <Compile Include="Data\EventRecord.cs" />
