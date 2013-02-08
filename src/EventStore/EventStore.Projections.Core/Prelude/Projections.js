@@ -48,10 +48,6 @@ var $projections = {
 
             process_event_raw: function (event, streamId, eventType, category, sequenceNumber, metadata, partition, position) {
                 processEvent(event, streamId, eventType, category, sequenceNumber, metadata, partition, position);
-                return "OK";
-            },
-
-            get_state_raw: function() {
                 return projectionState;
             },
 
@@ -226,21 +222,14 @@ var $projections = {
                 },
 
                 process_event: function (json, streamId, eventType, category, sequenceNumber, metadata, partition, position) {
-                    return commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata, partition, position);
-                },
-
-                get_state: function () {
-                    var stateJson = JSON.stringify(commandHandlers.get_state_raw());
+                    var state = commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata, partition, position);
+                    var stateJson = JSON.stringify(state);
                     return stateJson;
                 },
 
                 set_state: function (json) {
                     var parsedState = JSON.parse(json);
                     return commandHandlers.set_state_raw(parsedState);
-                },
-
-                get_statistics: function () {
-                    return JSON.stringify(commandHandlers.get_statistics_raw());
                 },
 
                 get_sources: function () {

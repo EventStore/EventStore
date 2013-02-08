@@ -176,14 +176,13 @@ namespace EventStore.Projections.Core.Services.v8
                 throw new ArgumentNullException("streamId");
             _eventPosition = eventPosition;
             _emittedEvents = null;
-            _query.Push(
+            newState = _query.Push(
                 data.Trim(), // trimming data passed to a JS 
                 new[]
                     {
                         streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture),
                         metadata ?? "", partition, eventPosition.ToJson()
                     });
-            newState = _query.GetState();
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
         }

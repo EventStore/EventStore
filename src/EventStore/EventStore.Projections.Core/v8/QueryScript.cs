@@ -41,11 +41,9 @@ namespace EventStore.Projections.Core.v8
         private readonly Dictionary<string, IntPtr> _registeredHandlers = new Dictionary<string, IntPtr>();
 
         private Func<string, string[], string> _getStatePartition;
-        private Action<string, string[]> _processEvent;
-        private Func<string> _getState;
+        private Func<string, string[], string> _processEvent;
         private Action<string> _setState;
         private Action _initialize;
-        private Func<string> _getStatistics;
         private Func<string> _getSources;
 
         // the following two delegates must be kept alive while used by unmanaged code
@@ -124,14 +122,8 @@ namespace EventStore.Projections.Core.v8
                     break;
                 case "test_array":
                     break;
-                case "get_state":
-                    _getState = () => ExecuteHandler(handlerHandle, "");
-                    break;
                 case "set_state":
                     _setState = json => ExecuteHandler(handlerHandle, json);
-                    break;
-                case "get_statistics":
-                    _getStatistics = () => ExecuteHandler(handlerHandle, "");
                     break;
                 case "get_sources":
                     _getSources = () => ExecuteHandler(handlerHandle, "");
@@ -235,19 +227,12 @@ namespace EventStore.Projections.Core.v8
             return _getStatePartition(json, other);
         }
 
-        public void Push(string json, string[] other)
+        public string Push(string json, string[] other)
         {
             if (_processEvent == null)
                 throw new InvalidOperationException("'process_event' command handler has not been registered");
 
-            _processEvent(json, other);
-        }
-
-        public string GetState()
-        {
-            if (_getState == null)
-                throw new InvalidOperationException("'get_state' command handler has not been registered");
-            return _getState();
+            return _processEvent(json, other);
         }
 
         public void SetState(string state)
@@ -255,13 +240,6 @@ namespace EventStore.Projections.Core.v8
             if (_setState == null)
                 throw new InvalidOperationException("'set_state' command handler has not been registered");
             _setState(state);
-        }
-
-        public string GetStatistics()
-        {
-            if (_getState == null)
-                throw new InvalidOperationException("'get_statistics' command handler has not been registered");
-            return _getStatistics();
         }
 
         public QuerySourcesDefinition GetSourcesDefintion()
