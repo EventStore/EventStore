@@ -37,29 +37,40 @@ var $projections = {
             set_debugging: function () {
                 debugging = true;
             },
-            initialize_raw: function() {
+
+            initialize: function() {
                 projectionState = initStateHandler();
                 return "OK";
             },
 
-            get_state_partition_raw: function (event, streamId, eventType, category, sequenceNumber, metadata, position) {
+            get_state_partition: function (event, streamId, eventType, category, sequenceNumber, metadata, position) {
                 return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata, position);
             },
 
-            process_event_raw: function (event, streamId, eventType, category, sequenceNumber, metadata, partition, position) {
+            process_event: function (event, streamId, eventType, category, sequenceNumber, metadata, partition, position) {
                 processEvent(event, streamId, eventType, category, sequenceNumber, metadata, partition, position);
-                return projectionState;
+                var stateJson = JSON.stringify(projectionState);
+                return stateJson;
             },
 
-            set_state_raw: function(state) {
-                projectionState = state;
+            set_state: function(jsonState) {
+                var parsedState = JSON.parse(jsonState);
+                projectionState = parsedState;
                 return "OK";
             },
 
-            get_sources_raw: function() {
-                return sources;
+            get_sources: function() {
+                return JSON.stringify(sources);
             }
         };
+
+        function registerCommandHandlers($on) {
+            // this is the only way to pass parameters to the system module
+
+            for (var name in commandHandlers) {
+                $on(name, commandHandlers[name]);
+            }
+        }
 
         function on_event(eventName, eventHandler) {
             eventHandlers[eventName] = eventHandler;
@@ -208,43 +219,6 @@ var $projections = {
                 if (sources.options[name] === undefined)
                     throw "Unrecognized option: " + name;
                 sources.options[name] = opts[name];
-            }
-        }
-
-        function registerCommandHandlers($on) {
-            var publishedHandlers = {
-                initialize: function () {
-                    return commandHandlers.initialize_raw();
-                },
-
-                get_state_partition: function (json, streamId, eventType, category, sequenceNumber, metadata, position) {
-                    return commandHandlers.get_state_partition_raw(json, streamId, eventType, category, sequenceNumber, metadata, position);
-                },
-
-                process_event: function (json, streamId, eventType, category, sequenceNumber, metadata, partition, position) {
-                    var state = commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata, partition, position);
-                    var stateJson = JSON.stringify(state);
-                    return stateJson;
-                },
-
-                set_state: function (json) {
-                    var parsedState = JSON.parse(json);
-                    return commandHandlers.set_state_raw(parsedState);
-                },
-
-                get_sources: function () {
-                    return JSON.stringify(commandHandlers.get_sources_raw());
-                },
-
-                set_debugging: function () {
-                    return commandHandlers.set_debugging();
-                }
-            };
-
-            // this is the only way to pass parameters to the system module
-
-            for (var name in publishedHandlers) {
-                $on(name, publishedHandlers[name]);
             }
         }
 
