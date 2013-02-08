@@ -14,8 +14,6 @@
         { "name": "Queues", "link": "/web/queues.htm", "class": "" }
     ];
 
-    var webUrl = "";
-    
     var buildMenuMaxTryCount = 60;
 
     function buildMenu() {
@@ -32,13 +30,13 @@
     
     $(function () {
 
-        webUrl = location.origin;
+        var webUrl = location.href.replace(location.pathname, "");
         
         pendingRequestsCount += 1;
 
         $.ajax(webUrl + "/sys/subsystems", {
             headers: {
-                Accept: "application/json",
+                Accept: "application/json"
             },
 
             type: "GET",
@@ -52,24 +50,27 @@
     
     function subsytemsListReceived(data, status, xhr) {
         
+        var subsystemsList,
+            i,
+            item,
+            msg;
+
         if (!data) {
             pendingRequestsCount -= 1;
         }
         else {
-            var subsystemsList = data;
+            subsystemsList = data;
 
-            for (var i = 0; i < subsystemsList.length; i++) {
-                var item = subsystemsList[i];
+            for (i = 0; i < subsystemsList.length; i++) {
+                item = subsystemsList[i];
                 switch (item) {
                     case "Projections":
                         pendingRequestsCount += 1;
                         loadProjectionsMenu();
                         break;
                     default:
-                        {
-                            var msg = "Not expected subsystem " + item + " has been found in list.";
-                            console.log(msg);
-                        }
+                        msg = "Not expected subsystem " + item + " has been found in list.";
+                        console.log(msg);
                         break;
                 }
             }
@@ -87,7 +88,7 @@
     function loadProjectionsMenu() {
         $(function () {
 
-            webUrl = location.origin;
+            webUrl = location.href.replace(location.pathname, "");
 
             $.ajax(webUrl + "/web/es/js/projections/resources/es.menu.part.js", {
                 headers: {
