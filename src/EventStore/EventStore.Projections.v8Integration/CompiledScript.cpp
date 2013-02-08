@@ -38,11 +38,11 @@ namespace js1
 			return;
 		}
 
-		v8::HandleScope handle_scope;
-		v8::Context::Scope local(get_context());
-
 		if (!last_exception.IsEmpty()) 
 		{
+			v8::HandleScope handle_scope;
+			v8::Context::Scope local(get_context());
+
 			v8::String::Value error_value(last_exception);
 			//TODO: define error codes
 			report_error_callback(1, *error_value);

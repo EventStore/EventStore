@@ -65,7 +65,7 @@ var $projections = {
             }
         };
 
-        function on_pure(eventName, eventHandler) {
+        function on_event(eventName, eventHandler) {
             eventHandlers[eventName] = eventHandler;
             sources.events.push(eventName);
         }
@@ -215,8 +215,52 @@ var $projections = {
             }
         }
 
+        function registerCommandHandlers($on) {
+            var publishedHandlers = {
+                initialize: function () {
+                    return commandHandlers.initialize_raw();
+                },
+
+                get_state_partition: function (json, streamId, eventType, category, sequenceNumber, metadata, position) {
+                    return commandHandlers.get_state_partition_raw(json, streamId, eventType, category, sequenceNumber, metadata, position);
+                },
+
+                process_event: function (json, streamId, eventType, category, sequenceNumber, metadata, partition, position) {
+                    return commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata, partition, position);
+                },
+
+                get_state: function () {
+                    var stateJson = JSON.stringify(commandHandlers.get_state_raw());
+                    return stateJson;
+                },
+
+                set_state: function (json) {
+                    var parsedState = JSON.parse(json);
+                    return commandHandlers.set_state_raw(parsedState);
+                },
+
+                get_statistics: function () {
+                    return JSON.stringify(commandHandlers.get_statistics_raw());
+                },
+
+                get_sources: function () {
+                    return JSON.stringify(commandHandlers.get_sources_raw());
+                },
+
+                set_debugging: function () {
+                    return commandHandlers.set_debugging();
+                }
+            };
+
+            // this is the only way to pass parameters to the system module
+
+            for (var name in publishedHandlers) {
+                $on(name, publishedHandlers[name]);
+            }
+        }
+
         return {
-            on_pure: on_pure,
+            on_event: on_event,
             on_init_state: on_init_state,
             on_any: on_any,
             on_raw: on_raw,
@@ -232,7 +276,7 @@ var $projections = {
             emit: emit,
             options: options,
 
-            commandHandlers: commandHandlers,
+            register_comand_handlers: registerCommandHandlers,
         };
     }
 };
