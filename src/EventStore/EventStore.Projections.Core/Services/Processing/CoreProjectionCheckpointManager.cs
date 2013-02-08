@@ -234,7 +234,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_emitStateUpdated)
                 EmitStateUpdatedEventsIfAny(partition, oldState, newState);
             if (_emitPartitionCheckpoints && partition != "")
-                CaptureParitionStateUpdated(partition, oldState, newState);
+                CapturePartitionStateUpdated(partition, oldState, newState);
             if (partition == "" && newState != null) // ignore non-root partitions and non-changed states
                 _currentProjectionState = newState.Data;
             EnsureStarted();
@@ -242,7 +242,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Stopping");
         }
 
-        private void CaptureParitionStateUpdated(string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState)
+        private void CapturePartitionStateUpdated(string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState)
         {
             if (_partitionStateUpdateManager == null)
                 _partitionStateUpdateManager = new PartitionStateUpdateManager(_namingBuilder);

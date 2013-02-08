@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     list.Add(new EmittedEvent(streamId, Guid.NewGuid(), "Checkpoint", data, causedBy, expectedTag));
                 }
                 //NOTE: order yb is required to satisfy internal emit events validation
-                // whih ensures that events are ordered by causeby tag.  
+                // which ensures that events are ordered by causedBy tag.  
                 // it is too strong check, but ...
                 eventWriter.ValidateOrderAndEmitEvents(list.OrderBy(v => v.CausedByTag).ToArray());
             }
