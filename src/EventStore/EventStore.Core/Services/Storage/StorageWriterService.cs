@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Storage
         protected readonly TFChunkDb Db;
         protected readonly TFChunkWriter Writer;
         protected readonly IReadIndex ReadIndex;
-        private readonly IEpochManager _epochManager;
+        protected readonly IEpochManager EpochManager;
 
         protected readonly IPublisher Bus;
         private readonly ISubscriber _subscribeToBus;
@@ -94,7 +94,7 @@ namespace EventStore.Core.Services.Storage
             _subscribeToBus = subscribeToBus;
             Db = db;
             ReadIndex = readIndex;
-            _epochManager = epochManager;
+            EpochManager = epochManager;
 
             _flushDelay = 0;
             _lastFlush = _watch.ElapsedTicks;
@@ -174,7 +174,7 @@ namespace EventStore.Core.Services.Storage
                 }
                 case VNodeState.Master:
                 {
-                    _epochManager.WriteNewEpoch(); // forces flush
+                    EpochManager.WriteNewEpoch(); // forces flush
                     break;
                 }
                 case VNodeState.ShuttingDown:
