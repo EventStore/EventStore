@@ -274,27 +274,20 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         }
 
         [Test, Category("LongRunning")]
-        public void not_return_stream_deleted_records()
+        public void return_stream_deleted_records()
         {
-            Assert.Inconclusive();
-
-            const string stream = "read_all_events_forward_should_not_return_stream_deleted_records";
+            const string stream = "read_all_events_forward_should_return_stream_deleted_records";
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create1 = store.CreateStreamAsync(stream + 1, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create1.Wait);
 
-                var create2 = store.CreateStreamAsync(stream + 2, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create2.Wait);
+                store.CreateStream(stream + 1, Guid.NewGuid(), false, new byte[0]);
+                store.CreateStream(stream + 2, Guid.NewGuid(), false, new byte[0]);
+                
+                store.DeleteStream(stream + 1, ExpectedVersion.EmptyStream);
 
-                var delete1 = store.DeleteStreamAsync(stream + 1, ExpectedVersion.EmptyStream);
-                Assert.DoesNotThrow(delete1.Wait);
-
-                var read = store.ReadAllEventsForwardAsync(Position.Start, 3, false);
-                Assert.DoesNotThrow(read.Wait);
-
-                Assert.That(read.Result.Events.Length, Is.EqualTo(1));
+                var res = store.ReadAllEventsForward(Position.Start, 3, false);
+                Assert.That(res.Events.Length, Is.EqualTo(3));
             }
         }
 

@@ -218,28 +218,22 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         }
 
         [Test, Category("LongRunning")]
-        public void not_return_events_from_deleted_streams()
+        public void return_events_from_deleted_streams()
         {
-            const string stream = "read_all_events_backward_should_not_return_events_from_deleted_streams";
+            Assert.Inconclusive();
+
+            const string stream = "read_all_events_backward_should_return_events_from_deleted_streams";
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create1 = store.CreateStreamAsync(stream + 1, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create1.Wait);
-
-                var create2 = store.CreateStreamAsync(stream + 2, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create2.Wait);
+                store.CreateStream(stream + 1, Guid.NewGuid(), false, new byte[0]);
+                store.CreateStream(stream + 2, Guid.NewGuid(), false, new byte[0]);
 
                 var testEvents = Enumerable.Range(0, 10).Select(x => TestEvent.NewTestEvent((x + 1).ToString())).ToArray();
+                store.AppendToStream(stream + 1, ExpectedVersion.EmptyStream, testEvents);
+                store.AppendToStream(stream + 2, ExpectedVersion.EmptyStream, testEvents);
 
-                var write1 = store.AppendToStreamAsync(stream + 1, ExpectedVersion.EmptyStream, testEvents);
-                Assert.DoesNotThrow(write1.Wait);
-
-                var write2 = store.AppendToStreamAsync(stream + 2, ExpectedVersion.EmptyStream, testEvents);
-                Assert.DoesNotThrow(write2.Wait);
-
-                var delete2 = store.DeleteStreamAsync(stream + 2, testEvents.Length);
-                Assert.DoesNotThrow(delete2.Wait);
+                store.DeleteStream(stream + 2, testEvents.Length);
 
                 var all = new List<RecordedEvent>();
                 var position = Position.End;
@@ -251,33 +245,24 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                     position = slice.NextPosition;
                 }
 
-                Assert.Inconclusive();
-                //Assert.That(EventDataComparer.Equal(testEvents.Reverse().ToArray(), all.Take(testEvents.Length).ToArray()));
+                Assert.That(EventDataComparer.Equal(testEvents.Reverse().ToArray(), all.Take(testEvents.Length).ToArray()));
             }
         }
 
         [Test, Category("LongRunning")]
-        public void not_return_stream_deleted_records()
+        public void return_stream_deleted_records()
         {
-            Assert.Inconclusive();
-
-            const string stream = "read_all_events_backward_should_not_return_stream_deleted_records";
+            const string stream = "read_all_events_backward_should_return_stream_deleted_records";
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
-                var create1 = store.CreateStreamAsync(stream + 1, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create1.Wait);
+                store.CreateStream(stream + 1, Guid.NewGuid(), false, new byte[0]);
+                store.CreateStream(stream + 2, Guid.NewGuid(), false, new byte[0]);
 
-                var create2 = store.CreateStreamAsync(stream + 2, Guid.NewGuid(), false, new byte[0]);
-                Assert.DoesNotThrow(create2.Wait);
+                store.DeleteStream(stream + 1, ExpectedVersion.EmptyStream);
 
-                var delete1 = store.DeleteStreamAsync(stream + 1, ExpectedVersion.EmptyStream);
-                Assert.DoesNotThrow(delete1.Wait);
-
-                var read = store.ReadAllEventsBackwardAsync(Position.End, 3, false);
-                Assert.DoesNotThrow(read.Wait);
-
-                Assert.That(read.Result.Events.Length, Is.EqualTo(1));
+                var res = store.ReadAllEventsBackward(Position.End, 3, false);
+                Assert.That(res.Events.Length, Is.EqualTo(3));
             }
         }
 

@@ -124,22 +124,6 @@ namespace EventStore.Core.Tests.Index
             Assert.IsTrue(MemTable.TryGetOneValue(0x11, 0x01, out position));
         }
 
-        [Test, Ignore("Should MemTable check for duplicates?..")]
-        public void duplicate_key_does_not_throw_exception()
-        {
-            MemTable.Add(0x11, 0x01, 0xffff);
-            Assert.DoesNotThrow(() => MemTable.Add(0x11, 0x01, 0xffff));
-        }
-
-        [Test, Ignore("Should MemTable check for duplicates?..")]
-        public void duplicate_key_does_not_make_any_harm()
-        {
-            MemTable.Add(0x11, 0x01, 0xffff);
-            MemTable.Add(0x11, 0x01, 0xffff);
-            long position;
-            Assert.IsTrue(MemTable.TryGetOneValue(0x11, 0x01, out position));
-        }
-
         [Test]
         public void items_come_out_sorted()
         {

@@ -191,6 +191,8 @@ namespace EventStore.Core.Services.Storage
             if (_vnodeState != VNodeState.PreMaster && _vnodeState != VNodeState.PreReplica) 
                 throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
 
+            Db.Config.WriterCheckpoint.Flush();
+
             var sw = Stopwatch.StartNew();
             while (Db.Config.ChaserCheckpoint.Read() < Db.Config.WriterCheckpoint.Read() && sw.Elapsed < WaitForChaserSingleIterationTimeout)
             {
