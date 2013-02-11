@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Diagnostics;
 using System.Net;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
@@ -110,6 +111,13 @@ namespace EventStore.Core.Services.VNode
                 .InAllStatesExcept(VNodeState.PreMaster)
                     .When<SystemMessage.WaitForChaserToCatchUp>().Ignore()
                     .When<SystemMessage.ChaserCaughtUp>().Ignore()
+                .InAllStatesExcept(VNodeState.Master)
+                    .When<StorageMessage.WritePrepares>().Ignore()
+                    .When<StorageMessage.WriteDelete>().Ignore()
+                    .When<StorageMessage.WriteTransactionStart>().Ignore()
+                    .When<StorageMessage.WriteTransactionData>().Ignore()
+                    .When<StorageMessage.WriteTransactionPrepare>().Ignore()
+                    .When<StorageMessage.WriteCommit>().Ignore()
                 .InState(VNodeState.Master)
                     .When<ClientMessage.CreateStream>().Do(Handle)
                     .When<ClientMessage.WriteEvents>().Do(Handle)
@@ -147,7 +155,7 @@ namespace EventStore.Core.Services.VNode
         {
             Log.Info("========== [{0}] SYSTEM START....", _httpEndPoint);
             _outputBus.Publish(message);
-            _mainQueue.Publish(new SystemMessage.BecomePreMaster());
+            _mainQueue.Publish(new SystemMessage.BecomePreMaster(Guid.NewGuid()));
         }
 
         private void Handle(SystemMessage.BecomePreMaster message)
@@ -166,13 +174,13 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(SystemMessage.BecomeShuttingDown message)
         {
+            if (_state == VNodeState.ShuttingDown || _state == VNodeState.Shutdown)
+                return;
+
             Log.Info("========== [{0}] IS SHUTTING DOWN!!! FAREWELL, WORLD...", _httpEndPoint);
-
+            _exitProcessOnShutdown = message.ExitProcess;
             _state = VNodeState.ShuttingDown;
-
-            _mainQueue.Publish(TimerMessage.Schedule.Create(ShutdownTimeout,
-                                                            new PublishEnvelope(_mainQueue),
-                                                            new SystemMessage.ShutdownTimeout()));
+            _mainQueue.Publish(TimerMessage.Schedule.Create(ShutdownTimeout, new PublishEnvelope(_mainQueue), new SystemMessage.ShutdownTimeout()));
             _outputBus.Publish(message);
         }
 
@@ -213,7 +221,7 @@ namespace EventStore.Core.Services.VNode
         private void Handle(SystemMessage.ChaserCaughtUp message)
         {
             _outputBus.Publish(message);
-            _mainQueue.Publish(new SystemMessage.BecomeMaster());   
+            _mainQueue.Publish(new SystemMessage.BecomeMaster(Guid.NewGuid()));   
         }
 
         private void Handle(ClientMessage.CreateStream message)
@@ -268,8 +276,7 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(ClientMessage.RequestShutdown message)
         {
-            _exitProcessOnShutdown = message.ExitProcessOnShutdown;
-            _mainQueue.Publish(new SystemMessage.BecomeShuttingDown());
+            _mainQueue.Publish(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), message.ExitProcess));
         }
 
         private void Handle(SystemMessage.ServiceShutdown message)
@@ -286,8 +293,9 @@ namespace EventStore.Core.Services.VNode
 
         private void Handle(SystemMessage.ShutdownTimeout message)
         {
-            if (_state != VNodeState.ShuttingDown)
+            if (_state == VNodeState.Shutdown)
                 return;
+            Debug.Assert(_state == VNodeState.ShuttingDown);
 
             Log.Info("========== [{0}] Shutdown Timeout.", _httpEndPoint);
             Shutdown();
@@ -295,9 +303,10 @@ namespace EventStore.Core.Services.VNode
 
         private void Shutdown()
         {
-            _db.Close();
+            Debug.Assert(_state == VNodeState.ShuttingDown);
 
-            _mainQueue.Publish(new SystemMessage.BecomeShutdown());
+            _db.Close();
+            _mainQueue.Publish(new SystemMessage.BecomeShutdown(Guid.NewGuid()));
         }
     }
 }

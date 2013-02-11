@@ -75,6 +75,7 @@ namespace EventStore.Core.Services.Storage
 
         protected int FlushMessagesInQueue;
         private VNodeState _vnodeState = VNodeState.Initializing;
+        protected bool BlockWriter = false;
 
         public StorageWriterService(IPublisher bus, 
                                     ISubscriber subscribeToBus,
@@ -130,6 +131,12 @@ namespace EventStore.Core.Services.Storage
 
         private void EnqueueMessage(Message message)
         {
+            if (BlockWriter && !(message is SystemMessage.StateChangeMessage))
+            {
+                Log.Trace("Blocking message {0} in StorageWriterService. Message:\n{1}", message.GetType().Name, message);
+                return;
+            }
+
             if (_vnodeState != VNodeState.Master && message is StorageMessage.IMasterWriteMessage)
             {
                 var msg = string.Format("{0} appeared in StorageWriter during state {1}.", message.GetType().Name, _vnodeState);
@@ -169,7 +176,7 @@ namespace EventStore.Core.Services.Storage
                 case VNodeState.PreReplica:
                 case VNodeState.PreMaster:
                 {
-                    Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(TimeSpan.Zero));
+                    Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(message.CorrelationId, TimeSpan.Zero));
                     break;
                 }
                 case VNodeState.Master:
@@ -201,13 +208,13 @@ namespace EventStore.Core.Services.Storage
 
             if (Db.Config.ChaserCheckpoint.Read() == Db.Config.WriterCheckpoint.Read())
             {
-                Bus.Publish(new SystemMessage.ChaserCaughtUp());
+                Bus.Publish(new SystemMessage.ChaserCaughtUp(message.CorrelationId));
                 return;
             }
 
             var totalTime = message.TotalTimeWasted + sw.Elapsed;
             Log.Debug("Still waiting for chaser to catch up already for {0}...", totalTime);
-            Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(totalTime));
+            Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(message.CorrelationId, totalTime));
         }
 
         void IHandle<StorageMessage.WritePrepares>.Handle(StorageMessage.WritePrepares message)

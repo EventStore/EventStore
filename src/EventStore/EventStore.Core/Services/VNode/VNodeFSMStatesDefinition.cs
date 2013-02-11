@@ -53,6 +53,11 @@ namespace EventStore.Core.Services.VNode
             return new VNodeFSMHandling<Message>(this, defaultHandler: true);
         }
 
+        public VNodeFSMStatesDefinition InAnyState()
+        {
+            return FSM.InAnyState();
+        }
+
         public VNodeFSMStatesDefinition InState(VNodeState state)
         {
             return FSM.InState(state);

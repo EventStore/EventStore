@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -55,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _manager = new ProjectionManager(_bus, _bus, new IPublisher[] { _bus });
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
-            _manager.Handle(new SystemMessage.BecomeMaster());
+            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
         }
 
         [TearDown]

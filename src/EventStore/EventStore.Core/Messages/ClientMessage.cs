@@ -51,11 +51,11 @@ namespace EventStore.Core.Messages
     {
         public class RequestShutdown: Message
         {
-            public readonly bool ExitProcessOnShutdown;
+            public readonly bool ExitProcess;
 
-            public RequestShutdown(bool exitProcessOnShutdown)
+            public RequestShutdown(bool exitProcess)
             {
-                ExitProcessOnShutdown = exitProcessOnShutdown;
+                ExitProcess = exitProcess;
             }
         }
 

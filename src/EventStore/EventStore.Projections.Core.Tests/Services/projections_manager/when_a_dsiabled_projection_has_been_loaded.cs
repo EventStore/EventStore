@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -66,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void When()
         {
             _projectionName = "test-projection";
-            _manager.Handle(new SystemMessage.BecomeMaster());
+            _manager.Handle(new SystemMessage.BecomeMaster(Guid.NewGuid()));
         }
 
         [Test]

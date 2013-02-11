@@ -66,7 +66,7 @@ namespace EventStore.SingleNode
 
         protected override string GetComponentName(SingleNodeOptions options)
         {
-            return string.Format("{0}-{1}", options.Ip, options.HttpPort);
+            return string.Format("{0}-{1}-single-node", options.Ip, options.HttpPort);
         }
 
         protected override void Create(SingleNodeOptions options)

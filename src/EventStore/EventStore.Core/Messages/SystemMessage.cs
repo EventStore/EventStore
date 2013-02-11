@@ -53,38 +53,45 @@ namespace EventStore.Core.Messages
 
         public abstract class StateChangeMessage: Message
         {
+            public readonly Guid CorrelationId;
             public readonly VNodeState State;
 
-            protected StateChangeMessage(VNodeState state)
+            protected StateChangeMessage(Guid correlationId, VNodeState state)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                CorrelationId = correlationId;
                 State = state;
             }
         }
 
         public class BecomePreMaster : StateChangeMessage
         {
-            public BecomePreMaster(): base(VNodeState.PreMaster)
+            public BecomePreMaster(Guid correlationId): base(correlationId, VNodeState.PreMaster)
             {
             }
         }
 
         public class BecomeMaster: StateChangeMessage
         {
-            public BecomeMaster(): base(VNodeState.Master)
+            public BecomeMaster(Guid correlationId): base(correlationId, VNodeState.Master)
             {
             }
         }
 
         public class BecomeShuttingDown : StateChangeMessage
         {
-            public BecomeShuttingDown(): base(VNodeState.ShuttingDown)
+            public readonly bool ExitProcess;
+
+            public BecomeShuttingDown(Guid correlationId, bool exitProcess): base(correlationId, VNodeState.ShuttingDown)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                ExitProcess = exitProcess;
             }
         }
 
         public class BecomeShutdown : StateChangeMessage
         {
-            public BecomeShutdown(): base(VNodeState.Shutdown)
+            public BecomeShutdown(Guid correlationId): base(correlationId, VNodeState.Shutdown)
             {
             }
         }
@@ -131,18 +138,26 @@ namespace EventStore.Core.Messages
 
         public class WaitForChaserToCatchUp : Message
         {
+            public readonly Guid CorrelationId;
             public readonly TimeSpan TotalTimeWasted;
 
-            public WaitForChaserToCatchUp(TimeSpan totalTimeWasted)
+            public WaitForChaserToCatchUp(Guid correlationId, TimeSpan totalTimeWasted)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+
+                CorrelationId = correlationId;
                 TotalTimeWasted = totalTimeWasted;
             }
         }
 
         public class ChaserCaughtUp : Message
         {
-            public ChaserCaughtUp()
+            public readonly Guid CorrelationId;
+
+            public ChaserCaughtUp(Guid correlationId)
             {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                CorrelationId = correlationId;
             }
         }
     }
