@@ -657,24 +657,26 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
             string newState;
+            string projectionResult;
             EmittedEvent[] emittedEvents;
-            var hasBeenProcessed = SafeProcessEventByHandler(partition, message, out newState, out emittedEvents);
+            var hasBeenProcessed = SafeProcessEventByHandler(partition, message, out newState, out projectionResult, out emittedEvents);
             if (hasBeenProcessed)
             {
-                return InternalCommittedEventProcessed(partition, message, emittedEvents, newState);
+                return InternalCommittedEventProcessed(partition, message, emittedEvents, newState, projectionResult);
             }
             return null;
         }
 
         private bool SafeProcessEventByHandler(
-            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, out string newState, out EmittedEvent[] emittedEvents)
+            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, out string newState,
+            out string projectionResult, out EmittedEvent[] emittedEvents)
         {
-
+            projectionResult = null;
             //TODO: not emitting (optimized) projection handlers can skip serializing state on each processed event
             bool hasBeenProcessed;
             try
             {
-                hasBeenProcessed = ProcessEventByHandler(partition, message, out newState, out emittedEvents);
+                hasBeenProcessed = ProcessEventByHandler(partition, message, out newState, out projectionResult, out emittedEvents);
             }
             catch (Exception ex)
             {
@@ -693,7 +695,8 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private EventProcessedResult InternalCommittedEventProcessed(
-            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, EmittedEvent[] emittedEvents, string newState)
+            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, EmittedEvent[] emittedEvents,
+            string newState, string projectionResult)
         {
             if (!ValidateEmittedEvents(emittedEvents))
                 return null;
@@ -701,6 +704,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             bool eventsWereEmitted = emittedEvents != null;
             bool stateWasChanged = oldState.Data != newState;
+            bool projectionResultProduced = !string.IsNullOrEmpty(projectionResult);
 
             PartitionStateCache.State partitionState = null;
             if (stateWasChanged)
@@ -710,9 +714,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 partitionState = new PartitionStateCache.State(newState, message.CheckpointTag);
                 _partitionStateCache.CacheAndLockPartitionState(partition, partitionState, lockPartitionStateAt);
             }
-            if (stateWasChanged || eventsWereEmitted)
+            if (stateWasChanged || eventsWereEmitted || projectionResultProduced)
                 return new EventProcessedResult(
-                    partition, message.CheckpointTag, oldState, partitionState, emittedEvents);
+                    partition, message.CheckpointTag, oldState, partitionState, projectionResult, emittedEvents);
             else return null;
         }
 
@@ -730,15 +734,27 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private bool ProcessEventByHandler(
-            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, out string newState,
+            string partition, ProjectionSubscriptionMessage.CommittedEventReceived message, out string newState, out string projectionResult,
             out EmittedEvent[] emittedEvents)
         {
+            projectionResult = null;
             SetHandlerState(partition);
-            return _projectionStateHandler.ProcessEvent(
-                partition, message.CheckpointTag, message.EventStreamId, message.Data.EventType,
-                message.EventCategory, message.Data.EventId, message.EventSequenceNumber,
-                Encoding.UTF8.GetString(message.Data.Metadata), Encoding.UTF8.GetString(message.Data.Data), out newState,
-                out emittedEvents);
+            var result = _projectionStateHandler.ProcessEvent(
+                partition, message.CheckpointTag, message.EventStreamId, message.Data.EventType, message.EventCategory,
+                message.Data.EventId, message.EventSequenceNumber, Encoding.UTF8.GetString(message.Data.Metadata),
+                Encoding.UTF8.GetString(message.Data.Data), out newState, out emittedEvents);
+            if (result)
+            {
+                var oldState = _partitionStateCache.GetLockedPartitionState(partition);
+                if (oldState.Data != newState)
+                {
+                    if (_checkpointStrategy.DefinesStateTransform)
+                    {
+                        projectionResult = _projectionStateHandler.TransformStateToResult();
+                    }
+                }
+            }
+            return result;
         }
 
         private void ProcessEventFaulted(string faultedReason, Exception ex = null)
@@ -901,6 +917,8 @@ namespace EventStore.Projections.Core.Services.Processing
                     if (result.EmittedEvents != null)
                         _checkpointManager.EventsEmitted(result.EmittedEvents);
                     _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState);
+                    if (result.ProjectionResult != null)
+                        throw new NotImplementedException(); // implement with multiple possible writing strategies and test it
                 }
                 _checkpointManager.EventProcessed(eventCheckpointTag, progress);
             }

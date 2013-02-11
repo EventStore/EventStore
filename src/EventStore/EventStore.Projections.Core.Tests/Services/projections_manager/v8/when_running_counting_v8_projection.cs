@@ -39,12 +39,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         protected override void Given()
         {
             _projection = @"
-                fromAll().whenAny(
+                fromAll().when({$any: 
                     function(state, event) {
                         state.count = state.count + 1;
                         log(state.count);
                         return state;
-                    });
+                    }});
             ";
             _state = @"{""count"": 0}";
         }

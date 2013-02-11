@@ -30,7 +30,7 @@ namespace js1 {
 
 		Status compile_script(const uint16_t *query_source, const uint16_t *file_name);
 		Status try_run();
-		v8::Persistent<v8::String> execute_handler(void* event_handler_handle, const uint16_t *data_json, const uint16_t *data_other[], int32_t other_length);
+		bool execute_handler(void* event_handler_handle, const uint16_t *data_json, const uint16_t *data_other[], int32_t other_length, v8::Persistent<v8::String> &result);
 	protected:
 		virtual v8::Isolate *get_isolate();
 		virtual Status create_global_template(v8::Persistent<v8::ObjectTemplate> &result);

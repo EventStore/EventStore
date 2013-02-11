@@ -190,6 +190,29 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
+        public class with_output_to : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromAll()
+                    .whenAny(
+                        function(state, event) {
+                            return state;
+                        })
+                    .$defines_state_transform();
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.DefinesStateTransform);
+            }
+        }
+
+        [TestFixture]
         public class with_emit_state_updated_1 : TestFixtureWithJsProjection
         {
             protected override void Given()

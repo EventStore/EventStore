@@ -42,7 +42,8 @@ namespace js1
 		return S_OK;
 	}
 
-	v8::Persistent<v8::String> QueryScript::execute_handler(void *event_handler_handle, const uint16_t *data_json, const uint16_t *data_other[], int32_t other_length) 
+	bool QueryScript::execute_handler(void *event_handler_handle, const uint16_t *data_json, 
+		const uint16_t *data_other[], int32_t other_length, v8::Persistent<v8::String> &result) 
 	{
 		EventHandler *event_handler = reinterpret_cast<EventHandler *>(event_handler_handle);
 
@@ -65,28 +66,34 @@ namespace js1
 		if (!prelude->enter_cancellable_region())
 		{
 			printf ("Terminated? (1)");
-			v8::Persistent<v8::String> empty;
-			return empty;
+			return false;
 		}
-		v8::Handle<v8::Value> result = event_handler->get_handler()->Call(global, 1 + other_length, argv);
+		v8::Handle<v8::Value> call_result = event_handler->get_handler()->Call(global, 1 + other_length, argv);
 		if (!prelude->exit_cancellable_region())
 		{
 			printf ("Terminated? (2)");
-			v8::Persistent<v8::String> empty;
-			return empty;
+			return false;
 		}
 
-		set_last_error(result.IsEmpty(), try_catch);
+		set_last_error(call_result.IsEmpty(), try_catch);
 		v8::Handle<v8::String> empty;
-		if (result.IsEmpty())
+		if (!try_catch.Exception().IsEmpty())
 		{
-			return v8::Persistent<v8::String>::New(empty);
+			result = v8::Persistent<v8::String>::New(empty);
+			return false;
 		}
-		if (!result->IsString()) {
-			set_last_error(v8::String::New("Handler must return string data"));
-			return v8::Persistent<v8::String>::New(empty);
+		if (call_result->IsNull()) 
+		{
+			result.Clear();
+			return true;
 		}
-		return v8::Persistent<v8::String>::New(result.As<v8::String>());
+		if (!call_result->IsString()) {
+			set_last_error(v8::String::New("Handler must return string data or null"));
+			result = v8::Persistent<v8::String>::New(empty);
+			return false;
+		}
+		result = v8::Persistent<v8::String>::New(call_result.As<v8::String>());
+		return true;
 	}
 
 	v8::Isolate *QueryScript::get_isolate()

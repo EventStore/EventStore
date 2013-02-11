@@ -38,12 +38,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         protected override void Given()
         {
             _projection = @"
-                fromAll();
-                on_raw(function(state, event) {
-                    log(JSON.stringify(state) + '/' + event.bodyRaw + '/' + event.streamId + '/' + 
-                        event.eventType + '/' + event.sequenceNumber + '/' + event.metadataRaw + '/' + 
-                        JSON.parse(event.position).commitPosition + '/' + JSON.parse(event.position).preparePosition);
-                    return {};
+                fromAll().when({$any: 
+                    function(state, event) {
+                        log(JSON.stringify(state) + '/' + event.bodyRaw + '/' + event.streamId + '/' + 
+                            event.eventType + '/' + event.sequenceNumber + '/' + event.metadataRaw + '/' + 
+                            JSON.parse(event.position).commitPosition + '/' + JSON.parse(event.position).preparePosition);
+                        return {};
+                    }
                 });
             ";
         }

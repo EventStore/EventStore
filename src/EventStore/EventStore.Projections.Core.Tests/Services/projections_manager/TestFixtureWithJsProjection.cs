@@ -118,6 +118,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             get { return _byCustomPartitions; }
         }
 
+        public bool DefinesStateTransform
+        {
+            get { return _definesStateTransform; }
+        }
+
         public QuerySourceOptions Options 
         {
             get { return _options; }

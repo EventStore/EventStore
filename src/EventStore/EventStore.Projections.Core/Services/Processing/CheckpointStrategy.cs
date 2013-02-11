@@ -52,6 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
         private readonly bool _useCheckpoints;
+        private readonly bool _definesStateTransform;
 
         public class Builder : QuerySourceProcessingStrategyBuilder
         {
@@ -61,7 +62,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return new CheckpointStrategy(
                     _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream,
                     _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag,
-                    _options.EmitStateUpdated, config.CheckpointsEnabled);
+                    _options.EmitStateUpdated, config.CheckpointsEnabled, _definesStateTransform);
             }
         }
 
@@ -83,6 +84,16 @@ namespace EventStore.Projections.Core.Services.Processing
         public bool UseCheckpoints
         {
             get { return _useCheckpoints; }
+        }
+
+        public bool DefinesStateTransform
+        {
+            get { return _definesStateTransform; }
+        }
+
+        public bool IsEmiEnabled()
+        {
+            return _streams == null || _streams.Count <= 1;
         }
 
         public EventReader CreatePausedEventReader(
@@ -166,7 +177,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private CheckpointStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, HashSet<string> events,
             bool byStream, bool byCustomPartitions, bool useEventIndexes, bool reorderEvents, int processingLag,
-            bool emitStateUpdated, bool useCheckpoints)
+            bool emitStateUpdated, bool useCheckpoints, bool definesStateTransform)
         {
             _allStreams = allStreams;
             _categories = categories;
@@ -180,6 +191,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingLag = processingLag;
             _emitStateUpdated = emitStateUpdated;
             _useCheckpoints = useCheckpoints;
+            _definesStateTransform = definesStateTransform;
 
             _eventFilter = CreateEventFilter();
             _positionTagger = CreatePositionTagger();

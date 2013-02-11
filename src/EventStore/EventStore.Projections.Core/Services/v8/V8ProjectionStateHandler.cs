@@ -133,6 +133,8 @@ namespace EventStore.Projections.Core.Services.v8
                 builder.SetProcessingLag(sourcesDefintion.Options.ProcessingLag.GetValueOrDefault());
             if (sourcesDefintion.Options.EmitStateUpdated)
                 builder.SetEmitStateUpdated(true);
+            if (sourcesDefintion.DefinesStateTransform)
+                builder.SetDefinesStateTransform(); 
         }
 
         public void Load(string state)
@@ -185,6 +187,13 @@ namespace EventStore.Projections.Core.Services.v8
                     });
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
+        }
+
+        public string TransformStateToResult()
+        {
+            CheckDisposed();
+            var result = _query.TransformStateToResult();
+            return result;
         }
 
         private void CheckDisposed()

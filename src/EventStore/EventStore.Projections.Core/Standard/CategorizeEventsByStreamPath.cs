@@ -98,6 +98,11 @@ namespace EventStore.Projections.Core.Standard
             return true;
         }
 
+        public string TransformStateToResult()
+        {
+            throw new NotImplementedException();
+        }
+
         public void Dispose()
         {
         }

@@ -38,9 +38,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         protected override void Given()
         {
             _projection = @"
-                fromAll().whenAny(function(state, event) {
+                fromAll().when({$any: function(state, event) {
                     state.newValue = 'new';
-                });
+                }});
             ";
         }
 

@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                 "$projections-test-projection", "ProjectionUpdated", null,
                 @"{""Query"":""fromCategory('test').foreachStream().when({'e': function(s,e){}})"", 
                     ""Mode"":""3"", ""Enabled"":false, ""HandlerType"":""JS"",
-                    ""SourceDefintion"":{
+                    ""SourceDefinition"":{
                         ""AllEvents"":true,
                         ""AllStreams"":false,
                         ""Streams"":[""$ce-test""]

@@ -85,5 +85,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             emittedEvents = null;
             return true;
         }
+
+        public string TransformStateToResult()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

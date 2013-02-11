@@ -6,6 +6,7 @@ var $projections = {
         var eventHandlers = { };
         var anyEventHandlers = [];
         var rawEventHandlers = [];
+        var transformers = [];
         var getStatePartitionHandler = function () {
             throw "GetStatePartition is not defined";
         };
@@ -18,7 +19,8 @@ var $projections = {
             by_custom_partitions: false,
             categories: [], 
             streams: [], 
-            events: [], 
+            events: [],
+            defines_state_transform: false,
             options: { 
                 stateStreamName: null, 
                 $forceProjectionName: null, 
@@ -51,6 +53,17 @@ var $projections = {
                 processEvent(event, streamId, eventType, category, sequenceNumber, metadata, partition, position);
                 var stateJson = JSON.stringify(projectionState);
                 return stateJson;
+            },
+
+            transform_state_to_result: function () {
+                var result = projectionState;
+                for (var i = 0; i < transformers.length; i++) {
+                    var by = transformers[i];
+                    result = by(result);
+                    if (result === null)
+                        break;
+                }
+                return result !== null ? JSON.stringify(result) : null;
             },
 
             set_state: function(jsonState) {
@@ -206,6 +219,14 @@ var $projections = {
             sources.options.emitStateUpdated = true;
         }
 
+        function $defines_state_transform() {
+            sources.defines_state_transform = true;
+        }
+
+        function chainTransformBy(by) {
+            transformers.push(by);
+        }
+
         function fromAll() {
             sources.all_streams = true;
         }
@@ -235,6 +256,8 @@ var $projections = {
             byStream: byStream,
             partitionBy: partitionBy,
             emit_state_updated: emit_state_updated,
+            $defines_state_transform: $defines_state_transform,
+            chainTransformBy: chainTransformBy,
 
             emit: emit,
             options: options,

@@ -176,6 +176,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             }
         }
 
+        public string TransformStateToResult()
+        {
+            throw new NotImplementedException();
+        }
+
         public void Dispose()
         {
         }

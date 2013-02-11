@@ -33,30 +33,37 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
 {
     [TestFixture]
-    public class when_v8_projection_loading_state : TestFixtureWithJsProjection
+    public class when_running_a_v8_projection_with_transform_by : TestFixtureWithJsProjection
     {
         protected override void Given()
         {
             _projection = @"
                 fromAll().when({$any: 
                     function(state, event) {
+                        state.a = '1';
                         return state;
                     }
+                })
+                .transformBy(function(state) {
+                    state.b = '2';
+                    return state;
                 });
             ";
-            _state = @"{""A"":""A"",""B"":""B""}";
         }
 
         [Test, Category("v8")]
-        public void the_state_is_loaded()
+        public void transform_state_returns_correct_result()
         {
             string state;
             EmittedEvent[] emittedEvents;
-            _stateHandler.ProcessEvent(
+            var handled = _stateHandler.ProcessEvent(
                 "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
-                @"{""x"":""y""}", out state, out emittedEvents);
+                @"{}", out state, out emittedEvents);
+            var result = _stateHandler.TransformStateToResult();
 
-            Assert.AreEqual(_state, state);
+            Assert.IsNotNull(result);
+            Assert.AreEqual(@"{""a"":""1"",""b"":""2""}", result);
         }
+
     }
 }

@@ -283,17 +283,17 @@ namespace EventStore.Projections.Core.Messages
 
         public class Prepared : CoreProjectionManagementMessage
         {
-            private readonly ProjectionSourceDefintion _sourceDefintion;
+            private readonly ProjectionSourceDefinition _sourceDefinition;
 
-            public Prepared(Guid projectionId, ProjectionSourceDefintion sourceDefintion)
+            public Prepared(Guid projectionId, ProjectionSourceDefinition sourceDefinition)
                 : base(projectionId)
             {
-                _sourceDefintion = sourceDefintion;
+                _sourceDefinition = sourceDefinition;
             }
 
-            public ProjectionSourceDefintion SourceDefintion
+            public ProjectionSourceDefinition SourceDefinition
             {
-                get { return _sourceDefintion; }
+                get { return _sourceDefinition; }
             }
         }
 

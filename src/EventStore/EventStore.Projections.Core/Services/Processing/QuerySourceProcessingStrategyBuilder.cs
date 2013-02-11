@@ -63,6 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected List<string> _events;
         protected bool _byStream;
         protected bool _byCustomPartitions;
+        protected bool _definesStateTransform;
 
         public void FromAll()
         {
@@ -103,6 +104,11 @@ namespace EventStore.Projections.Core.Services.Processing
         public void SetByCustomPartitions()
         {
             _byCustomPartitions = true;
+        }
+
+        public void SetDefinesStateTransform()
+        {
+            _definesStateTransform = true;
         }
 
         public void SetStateStreamNameOption(string stateStreamName)

@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core.v8
 
         private Func<string, string[], string> _getStatePartition;
         private Func<string, string[], string> _processEvent;
+        private Func<string> _transformStateToResult;
         private Action<string> _setState;
         private Action _initialize;
         private Func<string> _getSources;
@@ -120,6 +121,9 @@ namespace EventStore.Projections.Core.v8
                 case "process_event":
                     _processEvent = (json, other) => ExecuteHandler(handlerHandle, json, other);
                     break;
+                case "transform_state_to_result":
+                    _transformStateToResult = () => ExecuteHandler(handlerHandle, "");
+                    break;
                 case "test_array":
                     break;
                 case "set_state":
@@ -178,16 +182,16 @@ namespace EventStore.Projections.Core.v8
             _prelude.ScheduleTerminateExecution();
 
             IntPtr resultJsonPtr;
-            IntPtr resultHandle = Js1.ExecuteCommandHandler(
+            IntPtr memoryHandle;
+            bool success = Js1.ExecuteCommandHandler(
                 _script.GetHandle(), commandHandlerHandle, json, other, other != null ? other.Length : 0,
-                out resultJsonPtr);
+                out resultJsonPtr, out memoryHandle);
 
             var terminated = _prelude.CancelTerminateExecution();
-            if (resultHandle == IntPtr.Zero)
+            if (!success)
                 CompiledScript.CheckResult(_script.GetHandle(), terminated, disposeScriptOnException: false);
-            //TODO: do we need to free resulktJsonPtr in case of exception thrown a line above
             string resultJson = Marshal.PtrToStringUni(resultJsonPtr);
-            Js1.FreeResult(resultHandle);
+            Js1.FreeResult(memoryHandle);
             if (_reverseCommandHandlerException != null)
             {
                 throw new ApplicationException(
@@ -235,6 +239,14 @@ namespace EventStore.Projections.Core.v8
             return _processEvent(json, other);
         }
 
+        public string TransformStateToResult()
+        {
+            if (_transformStateToResult == null)
+                throw new InvalidOperationException("'transform_state_to_result' command handler has not been registered");
+
+            return _transformStateToResult();
+        }
+
         public void SetState(string state)
         {
             if (_setState == null)
@@ -270,6 +282,9 @@ namespace EventStore.Projections.Core.v8
 
             [DataMember(Name = "by_custom_partitions")]
             public bool ByCustomPartitions { get; set; }
+
+            [DataMember(Name = "defines_state_transform")]
+            public bool DefinesStateTransform { get; set; }
 
             [DataMember(Name = "options")]
             public QuerySourcesDefinitionOptions Options { get; set;}

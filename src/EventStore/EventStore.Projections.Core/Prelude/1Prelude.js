@@ -55,10 +55,36 @@ function scope($on, $notify) {
         eventProcessor.emit_state_updated();
     }
 
+    function $defines_state_transform() {
+        eventProcessor.$defines_state_transform();
+    }
+
+    function transformBy(by) {
+        eventProcessor.chainTransformBy(by);
+        return {
+            transformBy: transformBy,
+            filterBy: filterBy,
+        };
+    }
+
+    function filterBy(by) {
+        eventProcessor.chainTransformBy(function (s) {
+            var result = by(s);
+            return result ? s : null;
+        });
+        return {
+            transformBy: transformBy,
+            filterBy: filterBy,
+        };
+    }
+
     function when(handlers) {
         translateOn(handlers);
         return {
             emitStateUpdated: emitStateUpdated,
+            $defines_state_transform: $defines_state_transform,
+            transformBy: transformBy,
+            filterBy: filterBy,
         };
     }
 
@@ -66,6 +92,9 @@ function scope($on, $notify) {
         eventProcessor.on_any(handler);
         return {
             emitStateUpdated: emitStateUpdated,
+            $defines_state_transform: $defines_state_transform,
+            transformBy: transformBy,
+            filterBy: filterBy,
         };
     }
 

@@ -76,10 +76,10 @@ namespace EventStore.Projections.Core.v8
 
         //TODO: add no result execute_handler
         [DllImport("js1", EntryPoint = "execute_command_handler")]
-        public static extern IntPtr ExecuteCommandHandler(
+        public static extern bool ExecuteCommandHandler(
             IntPtr scriptHandle, IntPtr eventHandlerHandle, [MarshalAs(UnmanagedType.LPWStr)] string dataJson,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] dataOther, int otherLength,
-            out IntPtr resultJson);
+            out IntPtr resultJson, out IntPtr memoryHandle);
 
         [DllImport("js1", EntryPoint = "free_result")]
         public static extern void FreeResult(IntPtr resultHandle);
