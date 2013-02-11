@@ -117,8 +117,8 @@ extern "C"
 		js1::PreludeScope prelude_scope(query_script);
 
 		v8::Persistent<v8::String> result;
-		bool success = query_script->execute_handler(event_handler_handle, data_json, data_other, other_length, result);
-		if (!success) {
+		js1::Status success = query_script->execute_handler(event_handler_handle, data_json, data_other, other_length, result);
+		if (success != js1::S_OK) {
 			*result_json = NULL;
 			*memory_handle = NULL;
 			return false;

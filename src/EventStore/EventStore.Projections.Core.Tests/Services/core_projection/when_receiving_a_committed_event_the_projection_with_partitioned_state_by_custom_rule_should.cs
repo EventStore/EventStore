@@ -29,10 +29,8 @@
 using System;
 using System.Linq;
 using System.Text;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
@@ -51,14 +49,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.FromAll();
                     source.AllEvents();
                     source.SetByCustomPartitions();
-                    source.SetEmitStateUpdated();
                 };
             TicksAreHandledImmediately();
-            NoStream("$projections-projection-state");
             NoStream("$projections-projection-order");
             AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
-            NoStream("$projections-projection-region-a-state");
+            NoStream("$projections-projection-region-a-checkpoint");
 
             _stateHandler = new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource, failOnGetPartition: false);
 
@@ -80,12 +76,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void request_partition_state_from_the_correct_stream()
         {
-            // 1 - for load state
-            // 2 - by emitted stream to ensure idempotency
             Assert.AreEqual(
-                2,
+                1,
                 _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>()
-                         .Count(v => v.EventStreamId == "$projections-projection-region-a-state"));
+                         .Count(v => v.EventStreamId == "$projections-projection-region-a-checkpoint"));
         }
 
         [Test]

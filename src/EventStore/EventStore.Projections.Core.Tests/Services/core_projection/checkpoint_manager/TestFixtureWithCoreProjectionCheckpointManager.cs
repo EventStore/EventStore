@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
-                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled, true);
+                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled);
 
         }
 

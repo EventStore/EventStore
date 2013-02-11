@@ -22,6 +22,12 @@ namespace js1
 		isolate_release(isolate);
 	}
 
+	void QueryScript::report_errors(REPORT_ERROR_CALLBACK report_error_callback)
+	{
+		CompiledScript::report_errors(report_error_callback);
+		prelude->report_errors(report_error_callback);
+	}
+
 	Status QueryScript::compile_script(const uint16_t *script_source, const uint16_t *file_name)
 	{
 		this->register_command_handler_callback = register_command_handler_callback;
@@ -42,7 +48,7 @@ namespace js1
 		return S_OK;
 	}
 
-	bool QueryScript::execute_handler(void *event_handler_handle, const uint16_t *data_json, 
+	Status QueryScript::execute_handler(void *event_handler_handle, const uint16_t *data_json, 
 		const uint16_t *data_other[], int32_t other_length, v8::Persistent<v8::String> &result) 
 	{
 		EventHandler *event_handler = reinterpret_cast<EventHandler *>(event_handler_handle);
@@ -66,34 +72,35 @@ namespace js1
 		if (!prelude->enter_cancellable_region())
 		{
 			printf ("Terminated? (1)");
-			return false;
+			return S_TERMINATED;
 		}
 		v8::Handle<v8::Value> call_result = event_handler->get_handler()->Call(global, 1 + other_length, argv);
 		if (!prelude->exit_cancellable_region())
 		{
 			printf ("Terminated? (2)");
-			return false;
+			return S_TERMINATED;
 		}
 
-		set_last_error(call_result.IsEmpty(), try_catch);
+		if (set_last_error(call_result.IsEmpty(), try_catch))
+			return S_ERROR;
 		v8::Handle<v8::String> empty;
 		if (!try_catch.Exception().IsEmpty())
 		{
 			result = v8::Persistent<v8::String>::New(empty);
-			return false;
+			return S_ERROR;
 		}
 		if (call_result->IsNull()) 
 		{
 			result.Clear();
-			return true;
+			return S_OK;
 		}
 		if (!call_result->IsString()) {
 			set_last_error(v8::String::New("Handler must return string data or null"));
 			result = v8::Persistent<v8::String>::New(empty);
-			return false;
+			return S_ERROR;
 		}
 		result = v8::Persistent<v8::String>::New(call_result.As<v8::String>());
-		return true;
+		return S_OK;
 	}
 
 	v8::Isolate *QueryScript::get_isolate()

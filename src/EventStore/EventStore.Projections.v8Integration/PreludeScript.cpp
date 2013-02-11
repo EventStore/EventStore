@@ -33,12 +33,17 @@ namespace js1
 		if (!exit_cancellable_region())
 			return S_TERMINATED;
 
-		if (prelude_result.IsEmpty())
+		if (prelude_result.IsEmpty()) 
+		{
 			set_last_error(v8::String::New("Prelude script did not return any value"));
-		else if (!prelude_result->IsFunction()) 
+			return S_ERROR;
+		}
+		if (!prelude_result->IsFunction()) 
+		{
 			set_last_error(v8::String::New("Prelude script must return a function"));
-		else 
-			global_template_factory = v8::Persistent<v8::Function>::New(prelude_result.As<v8::Function>());
+			return S_ERROR;
+		}
+		global_template_factory = v8::Persistent<v8::Function>::New(prelude_result.As<v8::Function>());
 		return S_OK;
 	}
 
@@ -57,9 +62,11 @@ namespace js1
 		if (!exit_cancellable_region())
 			return S_TERMINATED; // initialized with 0 by default
 
-		set_last_error(prelude_result.IsEmpty(), try_catch);
+		if (set_last_error(prelude_result.IsEmpty(), try_catch))
+			return S_ERROR;
 		if (prelude_result.IsEmpty())
 		{
+
 			set_last_error(v8::String::New("Global template factory did not return any value"));
 			return S_ERROR; // initialized with 0 by default
 		}

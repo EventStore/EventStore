@@ -51,10 +51,6 @@ function scope($on, $notify) {
     }
 
 
-    function emitStateUpdated() {
-        eventProcessor.emit_state_updated();
-    }
-
     function $defines_state_transform() {
         eventProcessor.$defines_state_transform();
     }
@@ -81,7 +77,6 @@ function scope($on, $notify) {
     function when(handlers) {
         translateOn(handlers);
         return {
-            emitStateUpdated: emitStateUpdated,
             $defines_state_transform: $defines_state_transform,
             transformBy: transformBy,
             filterBy: filterBy,
@@ -91,7 +86,6 @@ function scope($on, $notify) {
     function whenAny(handler) {
         eventProcessor.on_any(handler);
         return {
-            emitStateUpdated: emitStateUpdated,
             $defines_state_transform: $defines_state_transform,
             transformBy: transformBy,
             filterBy: filterBy,

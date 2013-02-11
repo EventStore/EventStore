@@ -817,9 +817,6 @@ namespace EventStore.Projections.Core.Services.Management
             if (_sourceDefinition.Options != null)
                 builder.SetProcessingLag(_sourceDefinition.Options.ProcessingLag);
 
-            if (_sourceDefinition.Options != null)
-                builder.SetEmitStateUpdated(_sourceDefinition.Options.EmitStateUpdated);
-
             if (_sourceDefinition.DefinesStateTransform)
                 builder.SetDefinesStateTransform();
         }

@@ -27,7 +27,6 @@ var $projections = {
                 useEventIndexes: false,
                 reorderEvents: false,
                 processingLag: 0,
-                emitStateUpdated: false,
             }, 
         };
 
@@ -215,16 +214,13 @@ var $projections = {
             sources.by_custom_partitions = true;
         }
 
-        function emit_state_updated() {
-            sources.options.emitStateUpdated = true;
-        }
-
         function $defines_state_transform() {
             sources.defines_state_transform = true;
         }
 
         function chainTransformBy(by) {
             transformers.push(by);
+            sources.defines_state_transform = true;
         }
 
         function fromAll() {
@@ -255,7 +251,6 @@ var $projections = {
 
             byStream: byStream,
             partitionBy: partitionBy,
-            emit_state_updated: emit_state_updated,
             $defines_state_transform: $defines_state_transform,
             chainTransformBy: chainTransformBy,
 

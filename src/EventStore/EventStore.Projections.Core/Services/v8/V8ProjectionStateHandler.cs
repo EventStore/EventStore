@@ -131,8 +131,6 @@ namespace EventStore.Projections.Core.Services.v8
                 builder.SetReorderEvents(true);
             if (sourcesDefintion.Options.ProcessingLag != null)
                 builder.SetProcessingLag(sourcesDefintion.Options.ProcessingLag.GetValueOrDefault());
-            if (sourcesDefintion.Options.EmitStateUpdated)
-                builder.SetEmitStateUpdated(true);
             if (sourcesDefintion.DefinesStateTransform)
                 builder.SetDefinesStateTransform(); 
         }

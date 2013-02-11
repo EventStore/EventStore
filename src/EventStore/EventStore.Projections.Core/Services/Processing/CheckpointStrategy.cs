@@ -48,7 +48,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _useEventIndexes;
         private readonly bool _reorderEvents;
         private readonly int _processingLag;
-        private readonly bool _emitStateUpdated;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
         private readonly bool _useCheckpoints;
@@ -61,8 +60,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 base.Validate(config);
                 return new CheckpointStrategy(
                     _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream,
-                    _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag,
-                    _options.EmitStateUpdated, config.CheckpointsEnabled, _definesStateTransform);
+                    _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag, config.CheckpointsEnabled, _definesStateTransform);
             }
         }
 
@@ -74,11 +72,6 @@ namespace EventStore.Projections.Core.Services.Processing
         public PositionTagger PositionTagger
         {
             get { return _positionTagger; }
-        }
-
-        public bool EmitStateUpdated
-        {
-            get { return _emitStateUpdated; }
         }
 
         public bool UseCheckpoints
@@ -176,8 +169,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private CheckpointStrategy(
             bool allStreams, HashSet<string> categories, HashSet<string> streams, bool allEvents, HashSet<string> events,
-            bool byStream, bool byCustomPartitions, bool useEventIndexes, bool reorderEvents, int processingLag,
-            bool emitStateUpdated, bool useCheckpoints, bool definesStateTransform)
+            bool byStream, bool byCustomPartitions, bool useEventIndexes, bool reorderEvents, int processingLag, bool useCheckpoints, bool definesStateTransform)
         {
             _allStreams = allStreams;
             _categories = categories;
@@ -189,7 +181,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _useEventIndexes = useEventIndexes;
             _reorderEvents = reorderEvents;
             _processingLag = processingLag;
-            _emitStateUpdated = emitStateUpdated;
             _useCheckpoints = useCheckpoints;
             _definesStateTransform = definesStateTransform;
 
@@ -260,7 +251,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionConfig projectionConfig, string name, ProjectionNamesBuilder namingBuilder)
         {
             var emitAny = projectionConfig.EmitEventEnabled;
-            var emitPartitionCheckpoints = UseCheckpoints && !EmitStateUpdated && (_byCustomPartitions || _byStream);
+            var emitPartitionCheckpoints = UseCheckpoints && (_byCustomPartitions || _byStream);
 
             //NOTE: not emitting one-time/transient projections are always handled by default checkpoint manager
             // as they don't depend on stable event order
@@ -268,21 +259,21 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 return new MultiStreamMultiOutputCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated,
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
             else if (emitAny && _streams != null && _streams.Count > 1)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated,
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
             else
             {
                 return new DefaultCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints, EmitStateUpdated,
+                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
         }
