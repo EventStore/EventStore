@@ -704,19 +704,19 @@ namespace EventStore.Projections.Core.Services.Processing
 
             bool eventsWereEmitted = emittedEvents != null;
             bool stateWasChanged = oldState.State != newState;
-            bool projectionResultProduced = !string.IsNullOrEmpty(projectionResult);
+            bool projectionResultChanged = oldState.Result != projectionResult;
 
             PartitionState partitionState = null;
-            if (stateWasChanged)
-                // ensure state actually changed
+            // NOTE: projectionResult cannot change independently unless projection definition has changed
+            if (stateWasChanged || projectionResultChanged) 
             {
                 var lockPartitionStateAt = partition != "" ? message.CheckpointTag : null;
                 partitionState = new PartitionState(newState, projectionResult, message.CheckpointTag);
                 _partitionStateCache.CacheAndLockPartitionState(partition, partitionState, lockPartitionStateAt);
             }
-            if (stateWasChanged || eventsWereEmitted || projectionResultProduced)
+            if (stateWasChanged || eventsWereEmitted || projectionResultChanged)
                 return new EventProcessedResult(
-                    partition, message.CheckpointTag, oldState, partitionState, projectionResult, emittedEvents);
+                    partition, message.CheckpointTag, oldState, partitionState, emittedEvents);
             else return null;
         }
 
@@ -916,7 +916,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     if (result.EmittedEvents != null)
                         _checkpointManager.EventsEmitted(result.EmittedEvents);
-                    _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState, result.ProjectionResult);
+                    _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState);
                 }
                 _checkpointManager.EventProcessed(eventCheckpointTag, progress);
             }

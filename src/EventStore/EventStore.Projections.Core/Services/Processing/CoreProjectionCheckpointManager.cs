@@ -225,8 +225,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 new CoreProjectionProcessingMessage.CheckpointCompleted(_lastCompletedCheckpointPosition));
         }
 
-        public void StateUpdated(string partition, PartitionState oldState, PartitionState newState, string projectionResult)
+        public void StateUpdated(string partition, PartitionState oldState, PartitionState newState)
         {
+            if (oldState.Result != newState.Result)
+                EmitResult(partition, oldState, newState);
             if (_emitPartitionCheckpoints && partition != "")
                 CapturePartitionStateUpdated(partition, oldState, newState);
             if (partition == "" && newState != null) // ignore non-root partitions and non-changed states
@@ -426,7 +428,7 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestRestart(message.Reason);
         }
 
-        public void EmitResult(string partition, PartitionState oldState, PartitionState newState, string projectionResult)
+        public void EmitResult(string partition, PartitionState oldState, PartitionState newState)
         {
             throw new NotImplementedException();
         }

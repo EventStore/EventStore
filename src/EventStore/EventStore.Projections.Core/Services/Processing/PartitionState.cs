@@ -101,6 +101,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _causedBy; }
         }
 
+        public string Result
+        {
+            get { return _result; }
+        }
+
         public string Serialize()
         {
             throw new NotImplementedException();

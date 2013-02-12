@@ -33,18 +33,16 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly EmittedEvent[] _emittedEvents;
         private readonly PartitionState _oldState;
         private readonly PartitionState _newState;
-        private readonly string _projectionResult;
         private readonly string _partition;
         private readonly CheckpointTag _checkpointTag;
 
         public EventProcessedResult(
-            string partition, CheckpointTag checkpointTag, PartitionState oldState,
-            PartitionState newState, string projectionResult, EmittedEvent[] emittedEvents)
+            string partition, CheckpointTag checkpointTag, PartitionState oldState, PartitionState newState,
+            EmittedEvent[] emittedEvents)
         {
             _emittedEvents = emittedEvents;
             _oldState = oldState;
             _newState = newState;
-            _projectionResult = projectionResult;
             _partition = partition;
             _checkpointTag = checkpointTag;
         }
@@ -74,9 +72,5 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _checkpointTag; }
         }
 
-        public string ProjectionResult
-        {
-            get { return _projectionResult; }
-        }
     }
 }
