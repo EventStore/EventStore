@@ -43,7 +43,6 @@ namespace EventStore.Projections.Core.Messages
             public CheckpointLoaded(Guid correlationId, CheckpointTag checkpointTag, string checkpointData)
             {
                 if (checkpointTag == null) throw new ArgumentNullException("checkpointTag");
-                if (checkpointData == null) throw new ArgumentNullException("checkpointData");
                 _correlationId = correlationId;
                 _checkpointTag = checkpointTag;
                 _checkpointData = checkpointData;

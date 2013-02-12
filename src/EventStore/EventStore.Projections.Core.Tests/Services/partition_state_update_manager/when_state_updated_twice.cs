@@ -45,20 +45,20 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
         public void setup()
         {
             _updateManager = new PartitionStateUpdateManager(new ProjectionNamesBuilder("projection"));
-            _updateManager.StateUpdated("partition", "state", _zero, _one);
-            _updateManager.StateUpdated("partition", "state2", _one, _two);
+            _updateManager.StateUpdated("partition", new PartitionState("state", null, _one), _zero);
+            _updateManager.StateUpdated("partition", new PartitionState("state2", null, _two), _one);
         }
 
         [Test]
         public void handles_state_updated_for_the_same_partition()
         {
-            _updateManager.StateUpdated("partition", "state", _two, _three);
+            _updateManager.StateUpdated("partition", new PartitionState("state", null, _three), _two);
         }
 
         [Test]
         public void handles_state_updated_for_another_partition()
         {
-            _updateManager.StateUpdated("partition", "state", _two, _three);
+            _updateManager.StateUpdated("partition", new PartitionState("state", null, _three), _two);
         }
 
         [Test]

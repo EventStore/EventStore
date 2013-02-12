@@ -514,7 +514,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingQueue.Initialize();
             _checkpointManager.Initialize();
             _tickPending = false;
-            _partitionStateCache.CacheAndLockPartitionState("", new PartitionStateCache.State("", null), null);
+            _partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, null), null);
             _expectedSubscriptionMessageSequenceNumber = -1; // this is to be overridden when subscribing
             _currentSubscriptionId = Guid.Empty;
             // NOTE: this is to workaround exception in GetState requests submitted by client
@@ -600,8 +600,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             var newState = _partitionStateCache.GetLockedPartitionState(partition);
             _handlerPartition = partition;
-            if (newState != null && !string.IsNullOrEmpty(newState.Data))
-                _projectionStateHandler.Load(newState.Data);
+            if (newState != null && !string.IsNullOrEmpty(newState.State))
+                _projectionStateHandler.Load(newState.State);
             else
                 _projectionStateHandler.Initialize();
         }
@@ -703,15 +703,15 @@ namespace EventStore.Projections.Core.Services.Processing
             var oldState = _partitionStateCache.GetLockedPartitionState(partition);
 
             bool eventsWereEmitted = emittedEvents != null;
-            bool stateWasChanged = oldState.Data != newState;
+            bool stateWasChanged = oldState.State != newState;
             bool projectionResultProduced = !string.IsNullOrEmpty(projectionResult);
 
-            PartitionStateCache.State partitionState = null;
+            PartitionState partitionState = null;
             if (stateWasChanged)
                 // ensure state actually changed
             {
                 var lockPartitionStateAt = partition != "" ? message.CheckpointTag : null;
-                partitionState = new PartitionStateCache.State(newState, message.CheckpointTag);
+                partitionState = new PartitionState(newState, projectionResult, message.CheckpointTag);
                 _partitionStateCache.CacheAndLockPartitionState(partition, partitionState, lockPartitionStateAt);
             }
             if (stateWasChanged || eventsWereEmitted || projectionResultProduced)
@@ -746,7 +746,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (result)
             {
                 var oldState = _partitionStateCache.GetLockedPartitionState(partition);
-                if (oldState.Data != newState)
+                if (oldState.State != newState)
                 {
                     if (_checkpointStrategy.DefinesStateTransform)
                     {
@@ -801,7 +801,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             //TODO: initialize projection state here (test it)
             //TODO: write test to ensure projection state is correctly loaded from a checkpoint and posted back when enough empty records processed
-            _partitionStateCache.CacheAndLockPartitionState("", new PartitionStateCache.State(state, checkpointTag), null);
+            _partitionStateCache.CacheAndLockPartitionState("", PartitionState.Deserialize(state, checkpointTag), null);
             _checkpointManager.Start(checkpointTag);
             _processingQueue.InitializeQueue(checkpointTag);
             GoToState(State.StateLoaded);
@@ -829,30 +829,30 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         internal void BeginGetPartitionStateAt(
-            string statePartition, CheckpointTag at, Action<CheckpointTag, string> loadCompleted,
+            string statePartition, CheckpointTag at, Action<PartitionState> loadCompleted,
             bool lockLoaded)
         {
             if (statePartition == "") // root is always cached
             {
                 // root partition is always locked
                 var state = _partitionStateCache.TryGetAndLockPartitionState(statePartition, null);
-                loadCompleted(state.CausedBy, state.Data);
+                loadCompleted(state);
             }
             else
             {
                 var s = lockLoaded ? _partitionStateCache.TryGetAndLockPartitionState(
                     statePartition, at) : _partitionStateCache.TryGetPartitionState(statePartition);
                 if (s != null)
-                    loadCompleted(s.CausedBy, s.Data);
+                    loadCompleted(s);
                 else
                 {
-                    Action<PartitionStateCache.State> completed = state =>
+                    Action<PartitionState> completed = state =>
                         {
                             if (lockLoaded)
                                 _partitionStateCache.CacheAndLockPartitionState(statePartition, state, at);
                             else
                                 _partitionStateCache.CachePartitionState(statePartition, state);
-                            loadCompleted(state.CausedBy, state.Data);
+                            loadCompleted(state);
                             EnsureTickPending();
                         };
                     _checkpointManager.BeginLoadPartitionStateAt(statePartition, at, completed);
@@ -916,9 +916,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     if (result.EmittedEvents != null)
                         _checkpointManager.EventsEmitted(result.EmittedEvents);
-                    _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState);
-                    if (result.ProjectionResult != null)
-                        throw new NotImplementedException(); // implement with multiple possible writing strategies and test it
+                    _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState, result.ProjectionResult);
                 }
                 _checkpointManager.EventProcessed(eventCheckpointTag, progress);
             }

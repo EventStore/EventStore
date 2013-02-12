@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _partition, _message.CheckpointTag, LoadCompleted, lockLoaded: true);
         }
 
-        private void LoadCompleted(CheckpointTag checkpointTag, string state)
+        private void LoadCompleted(PartitionState state)
         {
             NextStage();
         }

@@ -29,6 +29,7 @@
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 
 namespace EventStore.Core.Util
@@ -56,6 +57,12 @@ namespace EventStore.Core.Util
         public static string ToJson(this object source)
         {
             string instring = JsonConvert.SerializeObject(source, Formatting.Indented, JsonSettings);
+            return instring;
+        }
+
+        public static string ToCanonicalJson(this object source)
+        {
+            string instring = JsonConvert.SerializeObject(source);
             return instring;
         }
 

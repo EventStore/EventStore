@@ -31,15 +31,15 @@ namespace EventStore.Projections.Core.Services.Processing
     public class EventProcessedResult
     {
         private readonly EmittedEvent[] _emittedEvents;
-        private readonly PartitionStateCache.State _oldState;
-        private readonly PartitionStateCache.State _newState;
+        private readonly PartitionState _oldState;
+        private readonly PartitionState _newState;
         private readonly string _projectionResult;
         private readonly string _partition;
         private readonly CheckpointTag _checkpointTag;
 
         public EventProcessedResult(
-            string partition, CheckpointTag checkpointTag, PartitionStateCache.State oldState,
-            PartitionStateCache.State newState, string projectionResult, EmittedEvent[] emittedEvents)
+            string partition, CheckpointTag checkpointTag, PartitionState oldState,
+            PartitionState newState, string projectionResult, EmittedEvent[] emittedEvents)
         {
             _emittedEvents = emittedEvents;
             _oldState = oldState;
@@ -54,12 +54,12 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _emittedEvents; }
         }
 
-        public PartitionStateCache.State OldState
+        public PartitionState OldState
         {
             get { return _oldState; }
         }
 
-        public PartitionStateCache.State NewState
+        public PartitionState NewState
         {
             get { return _newState; }
         }

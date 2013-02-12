@@ -198,6 +198,7 @@
     <Compile Include="Services\Processing\MultiStreamPositionTagger.cs" />
     <Compile Include="Services\Processing\MultiStreamEventReader.cs" />
     <Compile Include="Services\Processing\NoopStatePartitionSelector.cs" />
+    <Compile Include="Services\Processing\PartitionState.cs" />
     <Compile Include="Services\Processing\PartitionStateCache.cs" />
     <Compile Include="Services\Processing\PartitionStateUpdateManager.cs" />
     <Compile Include="Services\Processing\PositionTracker.cs" />

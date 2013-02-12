@@ -61,11 +61,10 @@ namespace EventStore.Projections.Core.Services.Processing
                 _partition, checkpointTag, LoadCompleted, lockLoaded: false);
         }
 
-        private void LoadCompleted(CheckpointTag checkpointTag, string state)
+        private void LoadCompleted(PartitionState state)
         {
             _envelope.ReplyWith(
-                new CoreProjectionManagementMessage.StateReport(
-                    _correlationId, _projectionId, _partition, state));
+                new CoreProjectionManagementMessage.StateReport(_correlationId, _projectionId, _partition, state.State));
             NextStage();
         }
     }
