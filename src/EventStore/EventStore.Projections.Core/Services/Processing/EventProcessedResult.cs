@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class EventProcessedResult
@@ -40,6 +42,8 @@ namespace EventStore.Projections.Core.Services.Processing
             string partition, CheckpointTag checkpointTag, PartitionState oldState, PartitionState newState,
             EmittedEvent[] emittedEvents)
         {
+            if (partition == null) throw new ArgumentNullException("partition");
+            if (checkpointTag == null) throw new ArgumentNullException("checkpointTag");
             _emittedEvents = emittedEvents;
             _oldState = oldState;
             _newState = newState;
@@ -57,6 +61,9 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _oldState; }
         }
 
+        /// <summary>
+        /// null - means no state change
+        /// </summary>
         public PartitionState NewState
         {
             get { return _newState; }

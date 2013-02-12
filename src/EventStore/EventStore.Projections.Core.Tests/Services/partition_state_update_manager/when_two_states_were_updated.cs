@@ -18,20 +18,20 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
         public void setup()
         {
             _updateManager = new PartitionStateUpdateManager(new ProjectionNamesBuilder("projection"));
-            _updateManager.StateUpdated("partition1", new PartitionState("state1", null, _one), _zero);
-            _updateManager.StateUpdated("partition2", new PartitionState("state2", null, _two), _zero);
+            _updateManager.StateUpdated("partition1", new PartitionState("{\"state\":1}", null, _one), _zero);
+            _updateManager.StateUpdated("partition2", new PartitionState("{\"state\":2}", null, _two), _zero);
         }
 
         [Test]
         public void handles_state_updated_for_the_same_partition()
         {
-            _updateManager.StateUpdated("partition1", new PartitionState("state", null, _three), _two);
+            _updateManager.StateUpdated("partition1", new PartitionState("{\"state\":0}", null, _three), _two);
         }
 
         [Test]
         public void handles_state_updated_for_another_partition()
         {
-            _updateManager.StateUpdated("partition3", new PartitionState("state", null, _three), _two);
+            _updateManager.StateUpdated("partition3", new PartitionState("{\"state\":0}", null, _three), _two);
         }
 
         [Test]
@@ -61,8 +61,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
             var event1 = events.Single(v => "$projections-projection-partition1-checkpoint" == v.StreamId);
             var event2 = events.Single(v => "$projections-projection-partition2-checkpoint" == v.StreamId);
 
-            Assert.AreEqual("state1", Encoding.UTF8.GetString(event1.Data));
-            Assert.AreEqual("state2", Encoding.UTF8.GetString(event2.Data));
+            Assert.AreEqual("[{\"state\":1}]", Encoding.UTF8.GetString(event1.Data));
+            Assert.AreEqual("[{\"state\":2}]", Encoding.UTF8.GetString(event2.Data));
         }
 
         [Test]

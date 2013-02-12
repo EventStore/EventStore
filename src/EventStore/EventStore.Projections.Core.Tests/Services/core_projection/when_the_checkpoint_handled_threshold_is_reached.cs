@@ -29,9 +29,7 @@
 using System;
 using System.Linq;
 using System.Text;
-using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
@@ -46,6 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             NoStream("$projections-projection-order");
             AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
+            NoStream("$projections-projection-state");
             NoStream(FakeProjectionStateHandler._emit1StreamId);
             AllWritesSucceed();
         }

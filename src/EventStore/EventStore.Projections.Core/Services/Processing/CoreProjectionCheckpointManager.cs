@@ -118,6 +118,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _resultEmitter = resultEmitter;
             _useCheckpoints = useCheckpoints;
             _emitPartitionCheckpoints = emitPartitionCheckpoints;
+            _requestedCheckpointState = new PartitionState("", null, _positionTagger.MakeZeroCheckpointTag());
+            _currentProjectionState = new PartitionState("", null, _positionTagger.MakeZeroCheckpointTag());
         }
 
         public virtual void Initialize()
@@ -236,7 +238,11 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Stopping");
 
             if (oldState.Result != newState.Result)
-                ResultUpdated(partition, oldState, newState);
+            {
+                var result = ResultUpdated(partition, oldState, newState);
+                if (result != null)
+                    EventsEmitted(result);
+            }
 
             if (_emitPartitionCheckpoints && partition != "")
                 CapturePartitionStateUpdated(partition, oldState, newState);
@@ -440,60 +446,10 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestRestart(message.Reason);
         }
 
-        private void ResultUpdated(string partition, PartitionState oldState, PartitionState newState)
+        private EmittedEvent[] ResultUpdated(string partition, PartitionState oldState, PartitionState newState)
         {
-            _resultEmitter.ResultUpdated(_currentCheckpoint, partition, newState.Result);
+            return _resultEmitter.ResultUpdated(partition, newState.Result, newState.CausedBy);
         }
-
-        private static List<EmittedEvent> CreateResultUpdatedEvents(ProjectionNamesBuilder projectionNamesBuilder, CheckpointTag zeroCheckpointTag, string partition, PartitionState oldState, PartitionState newState, string projectionResult)
-        {
-            var result = new List<EmittedEvent>();
-            if (!String.IsNullOrEmpty(partition)
-                && (oldState.CausedBy == null || oldState.CausedBy == zeroCheckpointTag))
-            {
-                result.Add(
-                    new EmittedEvent(
-                        projectionNamesBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "PartitionCreated", partition, newState.CausedBy,
-                        null));
-            }
-            result.Add(
-                new EmittedEvent(
-                    projectionNamesBuilder.MakePartitionStateStreamName(partition), Guid.NewGuid(), "StateUpdated", newState.State,
-                    newState.CausedBy, oldState.CausedBy));
-            return result;
-        }
-
-        /*
-                private void EmitStateUpdatedEventsIfAny(string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState)
-                {
-                    if (_emitStateUpdated && newState != null)
-                    {
-                        //TODO: move it our to writeoutput stage (currently in CheckpointManager, so it can decide if it needs to generate stateupdated)
-                        var stateUpdatedEvents = CreateStateUpdatedEvents(
-                            _namingBuilder, _positionTagger.MakeZeroCheckpointTag(), partition, oldState, newState);
-                        if (stateUpdatedEvents != null)
-                            EventsEmitted(stateUpdatedEvents.ToArray());
-                    }
-                }
-
-        private static List<EmittedEvent> CreateStateUpdatedEvents(ProjectionNamesBuilder projectionNamesBuilder, CheckpointTag zeroCheckpointTag, string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState)
-        {
-            var result = new List<EmittedEvent>();
-            if (!String.IsNullOrEmpty(partition)
-                && (oldState.CausedBy == null || oldState.CausedBy == zeroCheckpointTag))
-            {
-                result.Add(
-                    new EmittedEvent(
-                        projectionNamesBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "PartitionCreated", partition, newState.CausedBy,
-                        null));
-            }
-            result.Add(
-                new EmittedEvent(
-                    projectionNamesBuilder.MakePartitionStateStreamName(partition), Guid.NewGuid(), "StateUpdated", newState.Data,
-                    newState.CausedBy, oldState.CausedBy));
-            return result;
-        }
-        */
 
         public abstract void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed);
 
@@ -508,10 +464,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 partitionStateStreamName = _namingBuilder.MakePartitionCheckpointStreamName(statePartition);
             }
             else
-            {
-                stateEventType = "StateUpdated";
-                partitionStateStreamName = _namingBuilder.MakePartitionStateStreamName(statePartition);
-            }
+                throw new NotSupportedException("The old-style no-checkpoint multi-partion projections are no longer supported");
             _readRequestsInProgress++;
             var requestId =
                 _readDispatcher.Publish(

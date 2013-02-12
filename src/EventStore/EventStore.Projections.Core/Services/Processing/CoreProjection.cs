@@ -514,7 +514,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _processingQueue.Initialize();
             _checkpointManager.Initialize();
             _tickPending = false;
-            _partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, null), null);
+            _partitionStateCache.CacheAndLockPartitionState("", new PartitionState("", null, _zeroCheckpointTag), null);
             _expectedSubscriptionMessageSequenceNumber = -1; // this is to be overridden when subscribing
             _currentSubscriptionId = Guid.Empty;
             // NOTE: this is to workaround exception in GetState requests submitted by client
@@ -916,7 +916,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     if (result.EmittedEvents != null)
                         _checkpointManager.EventsEmitted(result.EmittedEvents);
-                    _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState);
+                    if (result.NewState != null)
+                        _checkpointManager.StateUpdated(result.Partition, result.OldState, result.NewState);
                 }
                 _checkpointManager.EventProcessed(eventCheckpointTag, progress);
             }

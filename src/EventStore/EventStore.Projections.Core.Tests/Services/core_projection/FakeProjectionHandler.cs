@@ -79,6 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             {
                 builder.FromAll();
                 builder.AllEvents();
+                builder.SetDefinesStateTransform();
             }
         }
 
@@ -125,7 +126,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             switch (eventType)
             {
                 case "skip_this_type":
-                    _loadedState = newState = null;
+                    newState = null;
                     emittedEvents = null;
                     return false;
                 case "handle_this_type":
@@ -177,7 +178,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         public string TransformStateToResult()
         {
-            throw new NotImplementedException();
+            return _loadedState;
         }
 
         public void Dispose()

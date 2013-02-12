@@ -76,6 +76,14 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state
                 AssertCorrect(@"{""a"":""b"",""c"":[{},[],null]}");
             }
 
+            [Test]
+            public void null_deserialization()
+            {
+                var deserialized = PartitionState.Deserialize(null, CheckpointTag.FromPosition(100, 50));
+                Assert.AreEqual("", deserialized.State);
+                Assert.IsNull(deserialized.Result);
+            }
+
             private void AssertCorrect(string state, string result = null)
             {
                 var partitionState = new PartitionState(state, result, CheckpointTag.FromPosition(100, 50));

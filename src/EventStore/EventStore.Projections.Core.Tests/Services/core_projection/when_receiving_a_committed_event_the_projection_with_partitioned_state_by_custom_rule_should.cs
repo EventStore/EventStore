@@ -49,12 +49,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.FromAll();
                     source.AllEvents();
                     source.SetByCustomPartitions();
+                    source.SetDefinesStateTransform();
                 };
             TicksAreHandledImmediately();
             NoStream("$projections-projection-order");
             AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
             NoStream("$projections-projection-region-a-checkpoint");
+            NoStream("$projections-projection-region-a-state");
 
             _stateHandler = new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource, failOnGetPartition: false);
 

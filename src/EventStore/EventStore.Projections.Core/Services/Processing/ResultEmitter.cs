@@ -26,13 +26,37 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
+using System.Collections.Generic;
+
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ResultEmitter : IResultEmitter
     {
-        public void ResultUpdated(ProjectionCheckpoint currentCheckpoint, string partition, string result)
+        private readonly ProjectionNamesBuilder _namesBuilder;
+        private readonly CheckpointTag _zeroTag;
+
+        public ResultEmitter(ProjectionNamesBuilder namesBuilder, CheckpointTag zeroTag)
         {
-            throw new System.NotImplementedException();
+            _namesBuilder = namesBuilder;
+            _zeroTag = zeroTag;
         }
+
+        public EmittedEvent[] ResultUpdated(string partition, string result, CheckpointTag at)
+        {
+            return CreateResultUpdatedEvents(partition, result, at);
+        }
+
+        private EmittedEvent[] CreateResultUpdatedEvents(string partition, string projectionResult, CheckpointTag at)
+        {
+            return new []
+                {
+                    new EmittedEvent(
+                        _namesBuilder.MakePartitionStateStreamName(partition), Guid.NewGuid(), "StateUpdated",
+                        projectionResult, at, null)
+                };
+        }
+
+
     }
 }

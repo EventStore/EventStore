@@ -37,6 +37,9 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         public static PartitionState Deserialize(string serializedState, CheckpointTag causedBy)
         {
+            if (serializedState == null)
+                return new PartitionState("", null, causedBy);
+
             JToken state = null;
             JToken result = null;
 

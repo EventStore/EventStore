@@ -52,6 +52,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.FromAll();
                     source.AllEvents();
                     source.SetByStream();
+                    source.SetDefinesStateTransform();
                 };
             TicksAreHandledImmediately();
             NoStream("$projections-projection-order");
@@ -59,6 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             NoStream("$projections-projection-checkpoint");
             NoStream("$projections-projection-partitions");
             NoStream("$projections-projection-account-01-checkpoint");
+            NoStream("$projections-projection-account-01-state");
         }
 
         protected override void When()

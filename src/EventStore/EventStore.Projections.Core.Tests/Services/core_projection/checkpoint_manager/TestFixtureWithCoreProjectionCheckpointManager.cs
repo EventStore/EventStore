@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _config = new ProjectionConfig(_checkpointHandledThreshold, _checkpointUnhandledBytesThreshold,
                 _pendingEventsThreshold, _maxWriteBatchLength, _emitEventEnabled,
                 _checkpointsEnabled, _createTempStreams, _stopOnEof);
-            _resultEmitter = new ResultEmitter();
+            _resultEmitter = new ResultEmitter(_namingBuilder, CheckpointTag.FromStreamPosition("stream", -1));
             When();
         }
 
