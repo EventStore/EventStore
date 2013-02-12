@@ -252,6 +252,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             var emitAny = projectionConfig.EmitEventEnabled;
             var emitPartitionCheckpoints = UseCheckpoints && (_byCustomPartitions || _byStream);
+            var resultEmitter = new ResultEmitter();
 
             //NOTE: not emitting one-time/transient projections are always handled by default checkpoint manager
             // as they don't depend on stable event order
@@ -259,21 +260,21 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 return new MultiStreamMultiOutputCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints,
+                    projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
             else if (emitAny && _streams != null && _streams.Count > 1)
             {
                 return new MultiStreamMultiOutputCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints,
+                    projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
             else
             {
                 return new DefaultCheckpointManager(
                     coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
-                    projectionConfig, name, PositionTagger, namingBuilder, UseCheckpoints,
+                    projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
         }

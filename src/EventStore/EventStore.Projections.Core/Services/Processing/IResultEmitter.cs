@@ -26,17 +26,10 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using EventStore.Projections.Core.Services.Processing;
-
-namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream
+namespace EventStore.Projections.Core.Services.Processing
 {
-    public class TestFixtureWithMultiStreamCheckpointManager : TestFixtureWithCoreProjectionCheckpointManager
+    public interface IResultEmitter
     {
-        protected override void When()
-        {
-            _manager = new MultiStreamMultiOutputCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
-                new MultiStreamPositionTagger(new[] { "a", "b", "c" }), _namingBuilder, _resultEmitter, _checkpointsEnabled);
-        }
+        void ResultUpdated(ProjectionCheckpoint currentCheckpoint, string partition, string result);
     }
 }

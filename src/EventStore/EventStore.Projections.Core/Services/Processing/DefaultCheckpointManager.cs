@@ -53,11 +53,12 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            ProjectionConfig projectionConfig, string name,
-            PositionTagger positionTagger, ProjectionNamesBuilder namingBuilder, bool useCheckpoints, bool emitPartitionCheckpoints = false)
+            ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
+            ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
+            bool emitPartitionCheckpoints = false)
             : base(
                 coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
-                name, positionTagger, namingBuilder, useCheckpoints, emitPartitionCheckpoints)
+                name, positionTagger, namingBuilder, resultEmitter, useCheckpoints, emitPartitionCheckpoints)
         {
             _projectionCheckpointStreamId = namingBuilder.MakeCheckpointStreamName();
         }

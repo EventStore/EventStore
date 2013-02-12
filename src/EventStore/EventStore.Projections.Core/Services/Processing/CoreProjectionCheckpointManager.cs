@@ -53,6 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly string _name;
         private readonly PositionTagger _positionTagger;
         protected readonly ProjectionNamesBuilder _namingBuilder;
+        private readonly IResultEmitter _resultEmitter;
         private readonly bool _useCheckpoints;
         private readonly bool _emitPartitionCheckpoints;
         protected readonly ILogger _logger;
@@ -85,10 +86,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected CoreProjectionCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
-            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
-            ProjectionNamesBuilder namingBuilder, bool useCheckpoints,
+            ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints)
         {
             if (coreProjection == null) throw new ArgumentNullException("coreProjection");
@@ -99,6 +101,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (name == null) throw new ArgumentNullException("name");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
             if (namingBuilder == null) throw new ArgumentNullException("namingBuilder");
+            if (resultEmitter == null) throw new ArgumentNullException("resultEmitter");
             if (name == "") throw new ArgumentException("name");
 
             _lastProcessedEventPosition = new PositionTracker(positionTagger);
@@ -112,6 +115,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _name = name;
             _positionTagger = positionTagger;
             _namingBuilder = namingBuilder;
+            _resultEmitter = resultEmitter;
             _useCheckpoints = useCheckpoints;
             _emitPartitionCheckpoints = emitPartitionCheckpoints;
         }
@@ -125,7 +129,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _handledEventsAfterCheckpoint = 0;
             _requestedCheckpointPosition = null;
             _inCheckpoint = false;
-            _requestedCheckpointState = null;
+            _requestedCheckpointState = new PartitionState("", null, _positionTagger.MakeZeroCheckpointTag()); 
             _lastCompletedCheckpointPosition = null;
             _lastProcessedEventPosition.Initialize();
             _lastProcessedEventProgress = -1;
@@ -136,7 +140,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _stopping = false;
             _stopped = false;
             _stateRequested = false;
-            _currentProjectionState = null;
+            _currentProjectionState = new PartitionState("", null, _positionTagger.MakeZeroCheckpointTag()); 
 
             foreach (var requestId in _loadStateRequests)
                 _readDispatcher.Cancel(requestId);
@@ -227,15 +231,21 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void StateUpdated(string partition, PartitionState oldState, PartitionState newState)
         {
-            if (oldState.Result != newState.Result)
-                EmitResult(partition, oldState, newState);
-            if (_emitPartitionCheckpoints && partition != "")
-                CapturePartitionStateUpdated(partition, oldState, newState);
-            if (partition == "" && newState != null) // ignore non-root partitions and non-changed states
-                _currentProjectionState = newState;
             EnsureStarted();
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
+
+            if (oldState.Result != newState.Result)
+                ResultUpdated(partition, oldState, newState);
+
+            if (_emitPartitionCheckpoints && partition != "")
+                CapturePartitionStateUpdated(partition, oldState, newState);
+
+            if (partition == "" && newState.State == null) // ignore non-root partitions and non-changed states
+                throw new NotSupportedException("Internal check");
+
+            if (partition == "") 
+                _currentProjectionState = newState;
         }
 
         private void CapturePartitionStateUpdated(string partition, PartitionState oldState, PartitionState newState)
@@ -320,6 +330,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private void StartCheckpoint(PositionTracker lastProcessedEventPosition, PartitionState projectionState)
         {
             Contract.Requires(_closingCheckpoint == null);
+            if (projectionState == null) throw new ArgumentNullException("projectionState");
+
             CheckpointTag requestedCheckpointPosition = lastProcessedEventPosition.LastTag;
             if (requestedCheckpointPosition == _lastCompletedCheckpointPosition)
                 return; // either suggested or requested to stop
@@ -428,9 +440,9 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestRestart(message.Reason);
         }
 
-        public void EmitResult(string partition, PartitionState oldState, PartitionState newState)
+        private void ResultUpdated(string partition, PartitionState oldState, PartitionState newState)
         {
-            throw new NotImplementedException();
+            _resultEmitter.ResultUpdated(_currentCheckpoint, partition, newState.Result);
         }
 
         private static List<EmittedEvent> CreateResultUpdatedEvents(ProjectionNamesBuilder projectionNamesBuilder, CheckpointTag zeroCheckpointTag, string partition, PartitionState oldState, PartitionState newState, string projectionResult)

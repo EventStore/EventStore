@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
-                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled);
+                new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 null, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
-                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled);
+                new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 _projection, null, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
-                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled);
+                new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, null, _writeDispatcher, _config, "projection",
-                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled);
+                new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
@@ -78,7 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, _readDispatcher, null, _config, "projection",
-                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled);
+                new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, null, "projection",
-                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled);
+                new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, null,
-                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled);
+                new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -102,7 +102,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
-                null, _namingBuilder, _checkpointsEnabled);
+                null, _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "",
-                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled);
+                new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
 
         [Test, ExpectedException(typeof (ArgumentException))]
@@ -118,7 +118,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             _manager = new DefaultCheckpointManager(
                 _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "",
-                new StreamPositionTagger("stream"), _namingBuilder, _checkpointsEnabled);
+                new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
     }
 }

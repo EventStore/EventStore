@@ -86,6 +86,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public PartitionState(string state, string result, CheckpointTag causedBy)
         {
+            if (state == null) throw new ArgumentNullException("state");
+            if (causedBy == null) throw new ArgumentNullException("causedBy");
+
             _state = state;
             _result = result;
             _causedBy = causedBy;
@@ -108,7 +111,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public string Serialize()
         {
-            throw new NotImplementedException();
+            return Result != null
+                       ? "[" + _state + "," + _result + "]"
+                       : "[" + _state + "]";
         }
     }
 }
