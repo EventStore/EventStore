@@ -140,13 +140,4 @@ namespace EventStore.Core.Tests.Bus
         {
         }
     }
-
-    [TestFixture, Ignore]
-    public class when_publishing_to_queued_handler_threadpool_before_starting : when_publishing_to_queued_handler_before_starting
-    {
-        public when_publishing_to_queued_handler_threadpool_before_starting()
-            : base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, false, null, timeout))
-        {
-        }
-    }
 }

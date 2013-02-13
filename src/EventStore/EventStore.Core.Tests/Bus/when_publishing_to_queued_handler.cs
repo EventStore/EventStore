@@ -90,38 +90,6 @@ namespace EventStore.Core.Tests.Bus
         }
 
         [Test]
-        public void messages_from_different_threads_they_should_be_all_executed_in_same_one()
-        {
-            Consumer.SetWaitingCount(3);
-
-            int msg1ThreadId = 0, msg2ThreadId = 1, msg3ThreadId = 2;
-
-            var threads = new[] 
-            {
-                new Thread(() => Queue.Publish(new DeferredExecutionTestMessage(() =>{msg1ThreadId = Thread.CurrentThread.ManagedThreadId;}))),
-                new Thread(() => Queue.Publish(new DeferredExecutionTestMessage(() =>{msg2ThreadId = Thread.CurrentThread.ManagedThreadId;}))),
-                new Thread(() => Queue.Publish(new DeferredExecutionTestMessage(() =>{msg3ThreadId = Thread.CurrentThread.ManagedThreadId;})))
-            };
-
-            foreach (var thread in threads)
-            {
-                thread.Start();
-            }
-
-            bool executedOnTime = Consumer.Wait(5000);
-
-            if (!executedOnTime)
-            {
-                foreach (var thread in threads)
-                {
-                    thread.Abort();
-                }
-            }
-
-            Assert.That(msg1ThreadId == msg2ThreadId && msg2ThreadId == msg3ThreadId);
-        }
-
-        [Test]
         public void messages_order_should_remain_the_same()
         {
             Consumer.SetWaitingCount(6);
@@ -143,33 +111,6 @@ namespace EventStore.Core.Tests.Bus
                         typedMessages[3].Id == 16 &&
                         typedMessages[4].Id == 23 &&
                         typedMessages[5].Id == 42);
-        }
-
-        [Test]
-        public void message_while_queue_has_hanged_it_should_not_be_executed()
-        {
-            Consumer.SetWaitingCount(2);
-            var waitHandle = new ManualResetEvent(false);
-            try
-            {
-                var firstEvent = new ManualResetEventSlim(false);
-                Queue.Publish(new DeferredExecutionTestMessage(() =>
-                {
-                    firstEvent.Set();
-                    waitHandle.WaitOne();
-                }));
-
-                firstEvent.Wait();
-                Queue.Publish(new TestMessage());
-
-                Assert.That(Consumer.HandledMessages.ContainsNo<TestMessage>());
-            }
-            finally
-            {
-                waitHandle.Set();
-                Consumer.Wait();
-                waitHandle.Dispose();
-            }
         }
     }
 
@@ -209,7 +150,7 @@ namespace EventStore.Core.Tests.Bus
         }
     }
 
-    [TestFixture, Ignore]
+    [TestFixture]
     public class when_publishing_to_queued_handler_threadpool : when_publishing_to_queued_handler
     {
         public when_publishing_to_queued_handler_threadpool()

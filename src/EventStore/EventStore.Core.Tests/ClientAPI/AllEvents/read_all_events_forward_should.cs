@@ -322,8 +322,6 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
         [Test, Category("LongRunning")]
         public void recover_from_dropped_subscription_state_using_last_known_position()
         {
-            Assert.Inconclusive("This tests has race condition in subscribe/first write sequence. And it is not clear what it tests...");
-
             const string stream = "read_all_events_forward_should_recover_from_dropped_subscription_state_using_last_known_position";
             using (var store = EventStoreConnection.Create())
             {
@@ -353,8 +351,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                                                                   }).Result)
                 {
                     var testEvents = Enumerable.Range(1, 5).Select(x => TestEvent.NewTestEvent(x.ToString())).ToArray();
-                    var write = store.AppendToStreamAsync(stream, ExpectedVersion.EmptyStream, testEvents);
-                    Assert.That(write.Wait(Timeout));
+                    store.AppendToStream(stream, ExpectedVersion.EmptyStream, testEvents);
 
                     Assert.IsTrue(subscribed.Wait(5000), "Subscription haven't happened in time.");
                     Assert.IsTrue(wasSubscribed, "Subscription failed.");
@@ -363,12 +360,8 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                     subscription.Unsubscribe();
                     Assert.That(dropped.WaitOne(Timeout), "Couldn't unsubscribe in time.");
 
-                    var write2 = store.AppendToStreamAsync(stream, testEvents.Length, testEvents);
-                    Assert.That(write2.Wait(Timeout));
-
+                    store.AppendToStream(stream, testEvents.Length, testEvents);
                     var missed = store.ReadAllEventsForwardAsync(lastKnownPosition.Value, int.MaxValue, false);
-                    Assert.That(missed.Wait(Timeout));
-
                     var expected = testEvents.Concat(testEvents).ToArray();
                     var actual = catched.Concat(missed.Result.Events.Skip(1).Select(x => x.Event)).ToArray();//skip 1 because readallforward is inclusive
                     Assert.That(EventDataComparer.Equal(expected, actual));

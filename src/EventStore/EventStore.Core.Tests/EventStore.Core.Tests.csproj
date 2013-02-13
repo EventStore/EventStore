@@ -82,7 +82,6 @@
     <Compile Include="Bus\QueueSpeedTest.cs" />
     <Compile Include="Bus\when_publishing_to_queued_handler.cs" />
     <Compile Include="Bus\when_publishing_to_queued_handler_before_starting.cs" />
-    <Compile Include="Bus\when_starting_queued_handler.cs" />
     <Compile Include="Bus\when_stopping_queued_handler.cs" />
     <Compile Include="Bus\when_publishing_into_memory_bus.cs" />
     <Compile Include="Bus\when_subscribing_to_memory_bus.cs" />

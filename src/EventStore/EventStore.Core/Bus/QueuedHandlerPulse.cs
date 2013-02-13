@@ -55,6 +55,7 @@ namespace EventStore.Core.Bus
 
         private Thread _thread;
         private volatile bool _stop;
+        private volatile bool _starving;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
         private readonly TimeSpan _threadStopWaitTimeout;
 
@@ -118,9 +119,11 @@ namespace EventStore.Core.Bus
                     {
                         while (!_queue.TryDequeue(out msg) && !_stop)
                         {
+                            _starving = true;
                             _queueStats.EnterIdle();
                             Monitor.Wait(_locker, 100);
                         }
+                        _starving = false;
                         if (_stop)
                             break;
                     }
@@ -162,9 +165,12 @@ namespace EventStore.Core.Bus
         {
             Ensure.NotNull(message, "message");
             _queue.Enqueue(message);
-            lock (_locker)
+            if (_starving)
             {
-                Monitor.Pulse(_locker);
+                lock (_locker)
+                {
+                    Monitor.Pulse(_locker);
+                }
             }
         }
 

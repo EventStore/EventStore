@@ -171,7 +171,7 @@ namespace EventStore.Core.Services.Storage
                     }
 
                     var start = _watch.ElapsedTicks;
-                    if (start - _lastFlush >= _flushDelay + MinFlushDelay)
+                    if (!result.Success || start - _lastFlush >= _flushDelay + MinFlushDelay)
                     {
                         _queueStats.ProcessingStarted<ChaserCheckpointFlush>(0);
                         _chaser.Flush();

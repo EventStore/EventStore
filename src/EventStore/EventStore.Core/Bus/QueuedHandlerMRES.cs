@@ -56,6 +56,7 @@ namespace EventStore.Core.Bus
 
         private Thread _thread;
         private volatile bool _stop;
+        private volatile bool _starving;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
         private readonly TimeSpan _threadStopWaitTimeout;
 
@@ -115,12 +116,16 @@ namespace EventStore.Core.Bus
                 {
                     if (!_queue.TryDequeue(out msg))
                     {
+                        _starving = true;
+
                         _queueStats.EnterIdle();
-                        _msgAddEvent.Wait(500);
+                        _msgAddEvent.Wait(100);
+                        _msgAddEvent.Reset();
+
+                        _starving = false;
                     }
                     else
                     {
-                        _msgAddEvent.Reset();
                         _queueStats.EnterBusy();
 
                         var cnt = _queue.Count;
@@ -159,7 +164,8 @@ namespace EventStore.Core.Bus
         {
             Ensure.NotNull(message, "message");
             _queue.Enqueue(message);
-            _msgAddEvent.Set();
+            if (_starving)
+                _msgAddEvent.Set();
         }
 
         public void Handle(Message message)
