@@ -52,12 +52,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _manager.Stopped();
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void request_checkpoint_to_stop_throws_invalid_operation_exception()
-        {
-            _manager.RequestCheckpointToStop();
-        }
-
         [Test, ExpectedException(typeof(InvalidOperationException))]
         public void event_processed_throws_invalid_operation_exception()
         {

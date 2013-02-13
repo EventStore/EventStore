@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints = false)
             : base(
-                coreProjection, publisher, projectionCorrelationId, projectionConfig,
+                coreProjection, projectionCorrelationId, projectionConfig,
                 name, positionTagger, namingBuilder, resultEmitter, useCheckpoints, emitPartitionCheckpoints)
         {
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");

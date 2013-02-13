@@ -542,9 +542,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterStopping()
         {
-            // core projection may be stopped to change its configuration
-            // it is important to checkpoint it so no writes pending remain when stopped
-            _checkpointManager.RequestCheckpointToStop(); // should always report completed even if skipped
         }
 
         private void EnterStopped()
@@ -555,8 +552,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void EnterFaultedStopping()
         {
-            // checkpoint last known correct state on fault
-            _checkpointManager.RequestCheckpointToStop(); // should always report completed even if skipped
         }
 
         private void EnterFaulted()

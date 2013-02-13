@@ -61,7 +61,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 //                _manager.StateUpdated("", @"{""state"":""state2""}");
                 _manager.EventProcessed(CheckpointTag.FromStreamPosition("stream", 12), 77.8f);
                 _manager.Stopping();
-                _manager.RequestCheckpointToStop();
             }
             catch (Exception ex)
             {
