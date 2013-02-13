@@ -72,12 +72,18 @@ namespace EventStore.SingleNode
         protected override void Create(SingleNodeOptions options)
         {
             var dbPath = Path.GetFullPath(ResolveDbPath(options.DbPath, options.HttpPort));
-            Log.Info("\n{0,-25} {1}\n", "DATABASE:", dbPath);
             var db = new TFChunkDb(CreateDbConfig(dbPath, options.CachedChunks));
             var vnodeSettings = GetVNodeSettings(options);
             var dbVerifyHashes = !options.SkipDbVerify;
-            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes);
 
+            Log.Info("\n{0,-25} {1}\n{2,-25} {3}\n{4,-25} {5}\n{6,-25} {7}\n",
+                     "DATABASE:", db.Config.Path,
+                     "WRITER CHECKPOINT:", db.Config.WriterCheckpoint.Read(),
+                     "CHASER CHECKPOINT:", db.Config.ChaserCheckpoint.Read(),
+                     "EPOCH CHECKPOINT:", db.Config.EpochCheckpoint.Read(),
+                     "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
+
+            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes);
             if (options.RunProjections)
             {
                 _projections = new Projections.Core.Projections(db,

@@ -26,10 +26,30 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using EventStore.Core.Data;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.TransactionLog.LogRecords
 {
+    public static class EpochRecordExtensions
+    {
+        public static string AsString(this EpochRecord epoch)
+        {
+            return string.Format("E{0}@{1}:{2:B}",
+                                 epoch == null ? -1 : epoch.EpochNumber,
+                                 epoch == null ? -1 : epoch.EpochPosition,
+                                 epoch == null ? Guid.Empty : epoch.EpochId);
+        }
+
+        public static string AsString(this Epoch epoch)
+        {
+            return string.Format("E{0}@{1}:{2:B}",
+                                 epoch == null ? -1 : epoch.EpochNumber,
+                                 epoch == null ? -1 : epoch.EpochPosition,
+                                 epoch == null ? Guid.Empty : epoch.EpochId);
+        }
+    }
+
     public class EpochRecord
     {
         public readonly long EpochPosition;

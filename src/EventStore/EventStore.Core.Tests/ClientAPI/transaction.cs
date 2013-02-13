@@ -166,7 +166,7 @@ namespace EventStore.Core.Tests.ClientAPI
             const int totalTranWrites = 500;
             const int totalPlainWrites = 500;
 
-            //excplicitly creating stream
+            //explicitly creating stream
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);

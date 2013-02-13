@@ -115,20 +115,30 @@ namespace EventStore.Core.Messages
         public class VNodeConnectionLost : Message
         {
             public readonly IPEndPoint VNodeEndPoint;
+            public readonly Guid ConnectionId;
 
-            public VNodeConnectionLost(IPEndPoint vNodeEndPoint)
+            public VNodeConnectionLost(IPEndPoint vNodeEndPoint, Guid connectionId)
             {
+                Ensure.NotNull(vNodeEndPoint, "vNodeEndPoint");
+                Ensure.NotEmptyGuid(connectionId, "connectionId");
+
                 VNodeEndPoint = vNodeEndPoint;
+                ConnectionId = connectionId;
             }
         }
 
         public class VNodeConnectionEstablished : Message
         {
             public readonly IPEndPoint VNodeEndPoint;
+            public readonly Guid ConnectionId;
 
-            public VNodeConnectionEstablished(IPEndPoint vNodeEndPoint)
+            public VNodeConnectionEstablished(IPEndPoint vNodeEndPoint, Guid connectionId)
             {
+                Ensure.NotNull(vNodeEndPoint, "vNodeEndPoint");
+                Ensure.NotEmptyGuid(connectionId, "connectionId");
+
                 VNodeEndPoint = vNodeEndPoint;
+                ConnectionId = connectionId;
             }
         }
 

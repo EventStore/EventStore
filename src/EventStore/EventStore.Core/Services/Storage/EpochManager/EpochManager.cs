@@ -27,6 +27,7 @@
 // 
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.TransactionLog;
@@ -38,6 +39,8 @@ namespace EventStore.Core.Services.Storage.EpochManager
 {
     public class EpochManager: IEpochManager
     {
+        private static readonly ILogger Log = LogManager.GetLoggerFor<EpochManager>();
+
         public readonly int CachedEpochCount;
         public int LastEpochNumber { get { return _lastEpochNumber; } }
 
@@ -230,6 +233,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
             // If we are writing the very first epoch, last position will be -1.
             var epoch = WriteEpochRecordWithRetry(_lastEpochNumber + 1, Guid.NewGuid(), _lastEpochPosition);
             UpdateLastEpoch(epoch);
+            _writer.Flush();
         }
 
         private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition)
@@ -245,8 +249,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 if (!_writer.Write(rec, out pos))
                     throw new Exception(string.Format("Second write try failed at {0}.", epoch.EpochPosition));
             }
-            _writer.Flush();
-
+            Log.Debug("=== Writing E{0}@{1}:{2:B} (previous epoch at {3}).", epochNumber, pos, epochId, lastEpochPosition);
             return epoch;
         }
 
@@ -296,6 +299,9 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 // Now update epoch checkpoint, so on restart we don't scan sequentially TF.
                 _checkpoint.Write(epoch.EpochPosition);
                 _checkpoint.Flush();
+
+                Log.Debug("=== Update Last Epoch E{0}@{1}:{2:B} (previous epoch at {3}).", 
+                          epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition);
             }
         }
     }

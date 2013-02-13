@@ -42,8 +42,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage
 {
-    public class StorageWriterService : IHandle<Message>,
-                                        IHandle<SystemMessage.SystemInit>,
+    public class StorageWriterService : IHandle<SystemMessage.SystemInit>,
                                         IHandle<SystemMessage.StateChangeMessage>,
                                         IHandle<SystemMessage.WaitForChaserToCatchUp>,
                                         IHandle<StorageMessage.WritePrepares>,
@@ -104,7 +103,10 @@ namespace EventStore.Core.Services.Storage
             Writer.Open();
 
             _writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
-            StorageWriterQueue = new QueuedHandler(_writerBus, "StorageWriterQueue", true, TimeSpan.FromMilliseconds(500));
+            StorageWriterQueue = new QueuedHandler(new AdHocHandler<Message>(CommonHandle),
+                                                   "StorageWriterQueue",
+                                                   true,
+                                                   TimeSpan.FromMilliseconds(500));
             StorageWriterQueue.Start();
 
             SubscribeToMessage<SystemMessage.SystemInit>();
@@ -121,15 +123,25 @@ namespace EventStore.Core.Services.Storage
         protected void SubscribeToMessage<T>() where T: Message
         {
             _writerBus.Subscribe((IHandle<T>)this);
-            _subscribeToBus.Subscribe(this.WidenFrom<T, Message>());
-        }
-
-        void IHandle<Message>.Handle(Message message)
-        {
-            EnqueueMessage(message);
+            _subscribeToBus.Subscribe(new AdHocHandler<Message>(EnqueueMessage).WidenFrom<T, Message>());
         }
 
         private void EnqueueMessage(Message message)
+        {
+            if (message is StorageMessage.IFlushableMessage)
+                Interlocked.Increment(ref FlushMessagesInQueue);
+
+            StorageWriterQueue.Publish(message);
+
+            if (message is SystemMessage.BecomeShuttingDown) // we need to handle this message on main thread to stop StorageWriterQueue
+            {
+                StorageWriterQueue.Stop();
+                BlockWriter = true;
+                Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriterService"));
+            }
+        }
+
+        private void CommonHandle(Message message)
         {
             if (BlockWriter && !(message is SystemMessage.StateChangeMessage))
             {
@@ -145,16 +157,7 @@ namespace EventStore.Core.Services.Storage
                 return;
             }
 
-            if (message is StorageMessage.IFlushableMessage)
-                Interlocked.Increment(ref FlushMessagesInQueue);
-
-            StorageWriterQueue.Publish(message);
-
-            if (message is SystemMessage.BecomeShuttingDown) // we need to handle this message on main thread to stop StorageWriterQueue
-            {
-                StorageWriterQueue.Stop();
-                Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriterService"));
-            }
+            _writerBus.Handle(message);
         }
 
         void IHandle<SystemMessage.SystemInit>.Handle(SystemMessage.SystemInit message)
@@ -163,7 +166,9 @@ namespace EventStore.Core.Services.Storage
             // everything else will be done by chaser as during replication
             // with no concurrency issues with writer, as writer before jumping 
             // into master-mode and accepting writes will wait till chaser caught up.
-            ReadIndex.Init(Db.Config.WriterCheckpoint.Read(), Db.Config.ChaserCheckpoint.Read());
+            var writerCheckpoint = Db.Config.WriterCheckpoint.Read();
+            var chaserCheckpoint = Db.Config.ChaserCheckpoint.Read();
+            ReadIndex.Init(writerCheckpoint, chaserCheckpoint);
             Bus.Publish(new SystemMessage.StorageWriterInitializationDone());
         }
 
@@ -173,12 +178,6 @@ namespace EventStore.Core.Services.Storage
 
             switch (message.State)
             {
-                case VNodeState.PreReplica:
-                case VNodeState.PreMaster:
-                {
-                    Bus.Publish(new SystemMessage.WaitForChaserToCatchUp(message.CorrelationId, TimeSpan.Zero));
-                    break;
-                }
                 case VNodeState.Master:
                 {
                     EpochManager.WriteNewEpoch(); // forces flush

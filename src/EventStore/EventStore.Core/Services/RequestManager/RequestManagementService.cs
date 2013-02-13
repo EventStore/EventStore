@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -59,6 +60,9 @@ namespace EventStore.Core.Services.RequestManager
 
         public RequestManagementService(IPublisher bus, int prepareCount, int commitCount)
         {
+            Ensure.NotNull(bus, "bus");
+            Ensure.Nonnegative(prepareCount, "prepareCount");
+            Ensure.Nonnegative(commitCount, "commitCount");
             _bus = bus;
             _prepareCount = prepareCount;
             _commitCount = commitCount;

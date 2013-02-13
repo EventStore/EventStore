@@ -162,6 +162,7 @@ namespace EventStore.Core.Services.VNode
         {
             Log.Info("========== [{0}] PRE-MASTER STATE, WAITING FOR CHASER To CATCH UP...", _httpEndPoint);
             _state = VNodeState.PreMaster;
+            _mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(Guid.NewGuid(), TimeSpan.Zero));
             _outputBus.Publish(message);
         }
 
