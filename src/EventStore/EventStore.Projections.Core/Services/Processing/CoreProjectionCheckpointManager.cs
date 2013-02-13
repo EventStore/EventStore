@@ -34,7 +34,6 @@ using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
@@ -43,24 +42,18 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public abstract class CoreProjectionCheckpointManager : IProjectionCheckpointManager, ICoreProjectionCheckpointManager
     {
-        private readonly IPublisher _publisher;
-
-        protected readonly
-            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
-
-        protected readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
-
         protected readonly string _name;
-        private readonly PositionTagger _positionTagger;
         protected readonly ProjectionNamesBuilder _namingBuilder;
+        protected readonly ProjectionConfig _projectionConfig;
+        protected readonly ILogger _logger;
+
+        private readonly PositionTagger _positionTagger; 
         private readonly IResultEmitter _resultEmitter;
         private readonly bool _useCheckpoints;
-        private readonly bool _emitPartitionCheckpoints;
-        protected readonly ILogger _logger;
+        private readonly bool _emitPartitionCheckpoints; 
 
         private readonly ICoreProjection _coreProjection;
         private readonly Guid _projectionCorrelationId;
-        private readonly ProjectionConfig _projectionConfig;
 
 
         private ProjectionCheckpoint _currentCheckpoint;
@@ -81,22 +74,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _stateRequested;
         private PartitionState _currentProjectionState;
         private PartitionStateUpdateManager _partitionStateUpdateManager;
-        private int _readRequestsInProgress;
-        private readonly HashSet<Guid> _loadStateRequests = new HashSet<Guid>();
 
         protected CoreProjectionCheckpointManager(
             ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
             ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints)
         {
             if (coreProjection == null) throw new ArgumentNullException("coreProjection");
             if (publisher == null) throw new ArgumentNullException("publisher");
-            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
-            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
             if (projectionConfig == null) throw new ArgumentNullException("projectionConfig");
             if (name == null) throw new ArgumentNullException("name");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
@@ -106,10 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _lastProcessedEventPosition = new PositionTracker(positionTagger);
             _coreProjection = coreProjection;
-            _publisher = publisher;
             _projectionCorrelationId = projectionCorrelationId;
-            _readDispatcher = readDispatcher;
-            _writeDispatcher = writeDispatcher;
             _projectionConfig = projectionConfig;
             _logger = LogManager.GetLoggerFor<CoreProjectionCheckpointManager>();
             _name = name;
@@ -144,11 +127,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _stateRequested = false;
             _currentProjectionState = new PartitionState("", null, _positionTagger.MakeZeroCheckpointTag()); 
 
-            foreach (var requestId in _loadStateRequests)
-                _readDispatcher.Cancel(requestId);
-            _loadStateRequests.Clear();
             _partitionStateUpdateManager = null;
-            _readRequestsInProgress = 0;
         }
 
         public virtual void Start(CheckpointTag checkpointTag)
@@ -163,10 +142,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastProcessedEventProgress = -1;
             _lastCompletedCheckpointPosition = checkpointTag;
             _requestedCheckpointPosition = null;
-            _currentCheckpoint = new ProjectionCheckpoint(_readDispatcher, _writeDispatcher, this, _lastProcessedEventPosition.LastTag,
-                _positionTagger.MakeZeroCheckpointTag(), _projectionConfig.MaxWriteBatchLength, _logger);
+            _currentCheckpoint = CreateProjectionCheckpoint(_lastProcessedEventPosition.LastTag);
             _currentCheckpoint.Start();
         }
+
+        protected abstract ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition);
 
         public void Stopping()
         {
@@ -201,7 +181,7 @@ namespace EventStore.Projections.Core.Services.Processing
             info.WritePendingEventsAfterCheckpoint = (_currentCheckpoint != null
                                                           ? _currentCheckpoint.GetWritePendingEvents()
                                                           : 0);
-            info.ReadsInProgress = /*_readDispatcher.ActiveRequestCount*/ + _readRequestsInProgress
+            info.ReadsInProgress = /*_readDispatcher.ActiveRequestCount*/ 
                                                                           + + (_closingCheckpoint != null
                                                                                    ? _closingCheckpoint
                                                                                          .GetReadsInProgress()
@@ -252,13 +232,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
             if (partition == "") 
                 _currentProjectionState = newState;
-        }
-
-        private void CapturePartitionStateUpdated(string partition, PartitionState oldState, PartitionState newState)
-        {
-            if (_partitionStateUpdateManager == null)
-                _partitionStateUpdateManager = new PartitionStateUpdateManager(_namingBuilder);
-            _partitionStateUpdateManager.StateUpdated(partition, newState, oldState.CausedBy);
         }
 
         public void EventProcessed(CheckpointTag checkpointTag, float progress)
@@ -325,6 +298,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Not started");
         }
 
+        private void CapturePartitionStateUpdated(string partition, PartitionState oldState, PartitionState newState)
+        {
+            if (_partitionStateUpdateManager == null)
+                _partitionStateUpdateManager = new PartitionStateUpdateManager(_namingBuilder);
+            _partitionStateUpdateManager.StateUpdated(partition, newState, oldState.CausedBy);
+        }
+
         private void RequestCheckpoint(PositionTracker lastProcessedEventPosition)
         {
             if (!_useCheckpoints)
@@ -353,8 +333,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _requestedCheckpointState = projectionState;
             _handledEventsAfterCheckpoint = 0;
             _closingCheckpoint = _currentCheckpoint;
-            _currentCheckpoint = new ProjectionCheckpoint(_readDispatcher, _writeDispatcher, this, requestedCheckpointPosition,
-                _positionTagger.MakeZeroCheckpointTag(), _projectionConfig.MaxWriteBatchLength, _logger);
+            _currentCheckpoint = CreateProjectionCheckpoint(requestedCheckpointPosition);
             // checkpoint only after assigning new current checkpoint, as it may call back immediately
             _closingCheckpoint.Prepare(requestedCheckpointPosition);
         }
@@ -453,73 +432,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public abstract void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed);
 
-        public void BeginLoadPartitionStateAt(string statePartition,
-            CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted)
-        {
-            string stateEventType;
-            string partitionStateStreamName;
-            if (_emitPartitionCheckpoints)
-            {
-                stateEventType = "Checkpoint";
-                partitionStateStreamName = _namingBuilder.MakePartitionCheckpointStreamName(statePartition);
-            }
-            else
-                throw new NotSupportedException("The old-style no-checkpoint multi-partion projections are no longer supported");
-            _readRequestsInProgress++;
-            var requestId =
-                _readDispatcher.Publish(
-                    new ClientMessage.ReadStreamEventsBackward(
-                        Guid.NewGuid(), _readDispatcher.Envelope, partitionStateStreamName, -1, 1, resolveLinks: false, validationStreamVersion: null),
-                    m =>
-                    OnLoadPartitionStateReadStreamEventsBackwardCompleted(
-                        m, requestedStateCheckpointTag, loadCompleted,
-                        partitionStateStreamName, stateEventType));
-            if (requestId != Guid.Empty)
-                _loadStateRequests.Add(requestId);
-        }
-
-        private void OnLoadPartitionStateReadStreamEventsBackwardCompleted(
-            ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag requestedStateCheckpointTag,
-            Action<PartitionState> loadCompleted, string partitionStreamName, string stateEventType)
-        {
-            //NOTE: the following remove may do nothing in tests as completed is raised before we return from publish. 
-            _loadStateRequests.Remove(message.CorrelationId);
-
-            _readRequestsInProgress--;
-            if (message.Events.Length == 1)
-            {
-                EventRecord @event = message.Events[0].Event;
-                if (@event.EventType == stateEventType)
-                {
-                    var loadedStateCheckpointTag = @event.Metadata.ParseJson<CheckpointTag>();
-                    // always recovery mode? skip until state before current event
-                    //TODO: skip event processing in case we know i has been already processed
-                    if (loadedStateCheckpointTag < requestedStateCheckpointTag)
-                    {
-                        var state = PartitionState.Deserialize(Encoding.UTF8.GetString(@event.Data), loadedStateCheckpointTag);
-                        loadCompleted(state);
-                        return;
-                    }
-                }
-            }
-            if (message.NextEventNumber == -1)
-            {
-                var state = new PartitionState("", null, _positionTagger.MakeZeroCheckpointTag());
-                loadCompleted(state);
-                return;
-            }
-            _readRequestsInProgress++;
-            var requestId =
-                _readDispatcher.Publish(
-                    new ClientMessage.ReadStreamEventsBackward(
-                        Guid.NewGuid(), _readDispatcher.Envelope, partitionStreamName, message.NextEventNumber, 1,
-                        resolveLinks: false, validationStreamVersion: null),
-                    m =>
-                    OnLoadPartitionStateReadStreamEventsBackwardCompleted(m, requestedStateCheckpointTag, loadCompleted, partitionStreamName, stateEventType));
-            if (requestId != Guid.Empty)
-                _loadStateRequests.Add(requestId);
-        }
-
-
+        public abstract void BeginLoadPartitionStateAt(string statePartition,
+            CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted);
     }
 }

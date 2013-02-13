@@ -31,7 +31,6 @@ using System.Collections.Generic;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Utils;
@@ -123,7 +122,6 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         private readonly string _name;
-        private readonly string _partitionCatalogStreamName;
         private readonly CheckpointTag _zeroCheckpointTag;
 
         private readonly IPublisher _publisher;
@@ -131,7 +129,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Guid _projectionCorrelationId;
         private readonly ProjectionConfig _projectionConfig;
         private readonly CheckpointStrategy _checkpointStrategy;
-        private readonly ProjectionNamesBuilder _namingBuilder;
         private readonly ILogger _logger;
 
         private readonly IProjectionStateHandler _projectionStateHandler;
@@ -139,18 +136,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private string _faultedReason;
 
-        private readonly
-            RequestResponseDispatcher
-                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-            _readDispatcher;
-
-        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
-            _writeDispatcher;
-
         private string _handlerPartition;
         private readonly PartitionStateCache _partitionStateCache;
         private readonly CoreProjectionQueue _processingQueue;
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
+        private readonly StatePartitionSelector _statePartitionSelector;
 
         private bool _tickPending;
         private long _expectedSubscriptionMessageSequenceNumber = -1;
@@ -161,7 +151,6 @@ namespace EventStore.Projections.Core.Services.Processing
         private bool _completed;
 
 
-        private StatePartitionSelector _statePartitionSelector;
 
         private CoreProjection(
             string name, Guid projectionCorrelationId, IPublisher publisher,
@@ -187,10 +176,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionConfig = projectionConfig;
             _logger = logger;
             _publisher = publisher;
-            _readDispatcher = readDispatcher;
-            _writeDispatcher = writeDispatcher;
             _checkpointStrategy = checkpointStrategy;
-            _namingBuilder = namingBuilder;
             _statePartitionSelector = checkpointStrategy.CreateStatePartitionSelector(projectionStateHandler);
             _partitionStateCache = new PartitionStateCache(_zeroCheckpointTag);
             _processingQueue = projectionQueue;
@@ -198,7 +184,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionStateHandler = projectionStateHandler;
             _zeroCheckpointTag = _checkpointStrategy.PositionTagger.MakeZeroCheckpointTag();
 
-            _partitionCatalogStreamName = namingBuilder.GetPartitionCatalogStreamName();
+            namingBuilder.GetPartitionCatalogStreamName();
             GoToState(State.Initial);
         }
 

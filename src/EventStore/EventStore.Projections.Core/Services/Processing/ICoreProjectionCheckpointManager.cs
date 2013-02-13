@@ -27,7 +27,6 @@
 // 
 
 using System;
-using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
