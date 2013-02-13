@@ -46,8 +46,7 @@ namespace EventStore.Core.Cluster
     {
         public static bool IsReplica(this VNodeState state)
         {
-            return state == VNodeState.PreReplica 
-                || state == VNodeState.CatchingUp 
+            return state == VNodeState.CatchingUp 
                 || state == VNodeState.Clone 
                 || state == VNodeState.Slave;
         }
