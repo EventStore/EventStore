@@ -34,9 +34,10 @@ namespace EventStore.Transport.Tcp.Framing
 {
     public class LengthPrefixMessageFramerWithBufferPool
     {
-        private readonly int _maxPackageSize;
-        private const int HeaderLength = sizeof(Int32);
+        private const int PrefixLength = sizeof(int);
 
+        private readonly int _maxPackageSize;
+        private readonly BufferManager _bufferManager;
         private BufferPool _messageBuffer;
         private Action<BufferPool> _receivedHandler;
 
@@ -46,9 +47,11 @@ namespace EventStore.Transport.Tcp.Framing
         /// <summary>
         /// Initializes a new instance of the <see cref="LengthPrefixMessageFramerWithBufferPool"/> class.
         /// </summary>
-        public LengthPrefixMessageFramerWithBufferPool(int maxPackageSize = 64*1024*1024)
+        public LengthPrefixMessageFramerWithBufferPool(BufferManager bufferManager, int maxPackageSize = 16*1024*1024)
         {
+            Ensure.NotNull(bufferManager, "bufferManager");
             Ensure.Positive(maxPackageSize, "maxPackageSize");
+            _bufferManager = bufferManager;
             _maxPackageSize = maxPackageSize;
         }
 
@@ -84,17 +87,17 @@ namespace EventStore.Transport.Tcp.Framing
             byte[] data = bytes.Array;
             for (int i = bytes.Offset; i < bytes.Offset + bytes.Count; )
             {
-                if (_headerBytes < HeaderLength)
+                if (_headerBytes < PrefixLength)
                 {
                     _packageLength |= (data[i] << (_headerBytes * 8)); // little-endian order
                     ++_headerBytes;
                     i += 1;
-                    if (_headerBytes == HeaderLength)
+                    if (_headerBytes == PrefixLength)
                     {
                         if (_packageLength <= 0 || _packageLength > _maxPackageSize)
                             throw new PackageFramingException(string.Format("Package size is out of bounds: {0} (max: {1}).", _packageLength, _maxPackageSize));
 
-                        _messageBuffer = new BufferPool();
+                        _messageBuffer = new BufferPool(_bufferManager);
                     }
                 }
                 else
