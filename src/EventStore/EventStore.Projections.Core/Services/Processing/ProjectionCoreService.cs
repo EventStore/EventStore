@@ -57,7 +57,12 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<CoreProjectionManagementMessage.Stop>,
                                          IHandle<CoreProjectionManagementMessage.Kill>,
                                          IHandle<CoreProjectionManagementMessage.GetState>,
-                                         IHandle<CoreProjectionManagementMessage.GetDebugState>,
+                                        IHandle<CoreProjectionManagementMessage.GetResult>,
+                                        IHandle<CoreProjectionManagementMessage.GetDebugState>,
+                                        IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>, 
+                                        IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>, 
+                                        IHandle<ProjectionSubscriptionMessage.EofReached>, 
+                                        IHandle<ProjectionSubscriptionMessage.ProgressChanged>, 
                                          IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
                                          IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
@@ -66,7 +71,7 @@ namespace EventStore.Projections.Core.Services.Processing
                                         IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>, 
                                         IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>, 
                                         IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>, 
-                                        IHandle<CoreProjectionProcessingMessage.RestartRequested>, IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>, IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>, IHandle<ProjectionSubscriptionMessage.EofReached>, IHandle<ProjectionSubscriptionMessage.ProgressChanged>
+                                        IHandle<CoreProjectionProcessingMessage.RestartRequested>
 
 
     {
@@ -404,6 +409,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 projection.Handle(message);
         }
 
+        public void Handle(CoreProjectionManagementMessage.GetResult message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
         public void Handle(CoreProjectionManagementMessage.GetDebugState message)
         {
             CoreProjection projection;
@@ -512,5 +524,6 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_projections.TryGetValue(message.ProjectionId, out projection))
                 projection.Handle(message);
         }
+
     }
 }

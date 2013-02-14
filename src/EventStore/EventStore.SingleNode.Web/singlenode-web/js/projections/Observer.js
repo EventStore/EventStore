@@ -5,6 +5,7 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
     return {
         create: function (baseUrl) {
             var stateMonitor = null;
+            var resultMonitor = null;
             var statusMonitor = null;
             var sourceMonitor = null;
             var commandErrorHandler = null;
@@ -28,6 +29,7 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
             function internalSubscribe(handlers) {
 
                 stateMonitor = resourceMonitor.create(baseUrl + "/state", "application/json", "text");
+                resultMonitor = resourceMonitor.create(baseUrl + "/result", "application/json", "text");
                 statusMonitor = resourceMonitor.create(baseUrl + "/statistics", "application/json");
                 sourceMonitor = resourceMonitor.create(baseUrl + "/query?config=yes", "application/json");
 
@@ -41,6 +43,10 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
 
                 if (handlers.stateChanged) {
                     stateMonitor.start(handlers.stateChanged);
+                }
+
+                if (handlers.resultChanged) {
+                    resultMonitor.start(handlers.resultChanged);
                 }
 
                 if (handlers.sourceChanged) {
@@ -65,14 +71,17 @@ define(["projections/ResourceMonitor"], function (resourceMonitor) {
                 unsubscribe: function () {
                     pendingSubscribe = null;
                     if (stateMonitor !== null) stateMonitor.stop();
+                    if (resultMonitor !== null) resultMonitor.stop();
                     if (statusMonitor !== null) statusMonitor.stop();
 
                     stateMonitor = null;
+                    resultMonitor = null;
                     statusMonitor = null;
                 },
 
                 poll: function () {
                     if (stateMonitor) stateMonitor.poll();
+                    if (resultMonitor) resultMonitor.poll();
                     if (statusMonitor) statusMonitor.poll();
                     if (sourceMonitor) sourceMonitor.poll();
                 },

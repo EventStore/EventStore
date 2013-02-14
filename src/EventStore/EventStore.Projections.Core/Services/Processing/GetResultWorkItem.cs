@@ -32,9 +32,9 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class GetStateWorkItem : GetDataWorkItemBase
+    class GetResultWorkItem : GetDataWorkItemBase
     {
-        public GetStateWorkItem(
+        public GetResultWorkItem(
             IEnvelope envelope, Guid correlationId, Guid projectionId, CoreProjection projection,
             PartitionStateCache partitionStateCache, string partition)
             : base(envelope, correlationId, projectionId, projection, partitionStateCache, partition)
@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override void Reply(PartitionState state)
         {
             _envelope.ReplyWith(
-                new CoreProjectionManagementMessage.StateReport(_correlationId, _projectionId, _partition, state.State));
+                new CoreProjectionManagementMessage.ResultReport(_correlationId, _projectionId, _partition, state.Result));
         }
     }
 }

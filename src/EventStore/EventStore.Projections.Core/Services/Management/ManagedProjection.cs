@@ -84,6 +84,11 @@ namespace EventStore.Projections.Core.Services.Management
                 <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>
             _getStateDispatcher;
 
+        private readonly
+            RequestResponseDispatcher
+                <CoreProjectionManagementMessage.GetResult, CoreProjectionManagementMessage.ResultReport>
+            _getResultDispatcher;
+
 
         private readonly ILogger _logger;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
@@ -127,6 +132,10 @@ namespace EventStore.Projections.Core.Services.Management
             _getStateDispatcher =
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>(
+                    coreQueue, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+            _getResultDispatcher =
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetResult, CoreProjectionManagementMessage.ResultReport>(
                     coreQueue, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
             _lastAccessed = _timeProvider.Now;
         }
@@ -232,6 +241,24 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
+        public void Handle(ProjectionManagementMessage.GetResult message)
+        {
+            _lastAccessed = _timeProvider.Now;
+            if (_state >= ManagedProjectionState.Stopped)
+            {
+                _getResultDispatcher.Publish(
+                    new CoreProjectionManagementMessage.GetResult(
+                        new PublishEnvelope(_inputQueue), Guid.NewGuid(), _id, message.Partition),
+                    m =>
+                    message.Envelope.ReplyWith(
+                        new ProjectionManagementMessage.ProjectionResult(_name, m.Partition, m.Result)));
+            }
+            else
+            {
+                message.Envelope.ReplyWith(
+                    new ProjectionManagementMessage.ProjectionResult(message.Name, message.Partition, "*** UNKNOWN ***"));
+            }
+        }
         public void Handle(ProjectionManagementMessage.GetDebugState message)
         {
             _lastAccessed = _timeProvider.Now;
@@ -329,6 +356,11 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.StateReport message)
         {
             _getStateDispatcher.Handle(message);
+        }
+
+        public void Handle(CoreProjectionManagementMessage.ResultReport message)
+        {
+            _getResultDispatcher.Handle(message);
         }
 
         public void Handle(CoreProjectionManagementMessage.StatisticsReport message)

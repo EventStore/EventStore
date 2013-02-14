@@ -42,6 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class CoreProjection : IDisposable,
                                   ICoreProjection,
                                   IHandle<CoreProjectionManagementMessage.GetState>,
+                                  IHandle<CoreProjectionManagementMessage.GetResult>,
                                   IHandle<CoreProjectionManagementMessage.GetDebugState>,
                                   IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>,
                                   IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>,
@@ -368,6 +369,30 @@ namespace EventStore.Projections.Core.Services.Processing
             catch (Exception ex)
             {
                 message.Envelope.ReplyWith(new CoreProjectionManagementMessage.StateReport(message.CorrelationId, _projectionCorrelationId, message.Partition, null, ex));
+                SetFaulted(ex);
+            }
+        }
+
+        public void Handle(CoreProjectionManagementMessage.GetResult message)
+        {
+            if (_state == State.LoadStateRequsted || _state == State.StateLoaded)
+            {
+                message.Envelope.ReplyWith(
+                    new CoreProjectionManagementMessage.ResultReport(
+                        message.CorrelationId, _projectionCorrelationId, message.Partition, null, new Exception("Not yet available")));
+                return;
+            }
+            EnsureState(State.Running | State.Stopping | State.Stopped | State.FaultedStopping | State.Faulted);
+            try
+            {
+                var getResultWorkItem = new GetResultWorkItem(
+                    message.Envelope, message.CorrelationId, message.ProjectionId, this, _partitionStateCache, message.Partition);
+                _processingQueue.EnqueueOutOfOrderTask(getResultWorkItem);
+                _processingQueue.ProcessEvent();
+            }
+            catch (Exception ex)
+            {
+                message.Envelope.ReplyWith(new CoreProjectionManagementMessage.ResultReport(message.CorrelationId, _projectionCorrelationId, message.Partition, null, ex));
                 SetFaulted(ex);
             }
         }

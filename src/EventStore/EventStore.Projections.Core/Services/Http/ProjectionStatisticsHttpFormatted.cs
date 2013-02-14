@@ -52,6 +52,7 @@ namespace EventStore.Projections.Core.Services.Http
             var statusLocalUrl = "/projection/" + source.Name;
             this.StatusUrl = makeAbsoluteUrl(statusLocalUrl);
             this.StateUrl = makeAbsoluteUrl(statusLocalUrl + "/state");
+            this.ResultUrl = makeAbsoluteUrl(statusLocalUrl + "/result");
         }
 
         public int WritesInProgress { get; set; }
@@ -79,6 +80,8 @@ namespace EventStore.Projections.Core.Services.Http
         public string StatusUrl { get; set; }
 
         public string StateUrl { get; set; }
+
+        public string ResultUrl { get; set; }
 
         public string CheckpointStatus { get; set; }
 
