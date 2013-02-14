@@ -390,7 +390,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     pair.Event.Data, pair.Event.Metadata, pair.Event.TimeStamp), null, -1);
             _publisher.Publish(
                 ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
-                    committedEvent, positionTag, null, Guid.Empty, prerecordedEventMessageSequenceNumber));
+                    committedEvent, positionTag, null, _projectionCorrelationId, Guid.Empty, prerecordedEventMessageSequenceNumber));
         }
 
         protected abstract void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);

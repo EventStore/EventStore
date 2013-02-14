@@ -60,7 +60,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 base.Validate(config);
                 return new CheckpointStrategy(
                     _allStreams, ToSet(_categories), ToSet(_streams), _allEvents, ToSet(_events), _byStream,
-                    _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag, config.CheckpointsEnabled, _definesStateTransform);
+                    _byCustomPartitions, _options.UseEventIndexes, _options.ReorderEvents, _options.ProcessingLag,
+                    config.CheckpointsEnabled, _definesStateTransform);
             }
         }
 
@@ -279,17 +280,17 @@ namespace EventStore.Projections.Core.Services.Processing
         }
 
         public IProjectionSubscription CreateProjectionSubscription(
-            CheckpointTag fromCheckpointTag, Guid projectionCorrelationId, Guid subscriptionId,
-            ICoreProjection projection, long checkpointUnhandledBytesThreshold, bool stopOnEof)
+            IPublisher publisher, CheckpointTag fromCheckpointTag, Guid projectionCorrelationId, Guid subscriptionId,
+            long checkpointUnhandledBytesThreshold, bool stopOnEof)
         {
             if (_reorderEvents)
                 return new EventReorderingProjectionSubscription(
-                    projectionCorrelationId, subscriptionId, fromCheckpointTag, projection, projection, projection,
-                    projection, this, checkpointUnhandledBytesThreshold, _processingLag, stopOnEof);
+                    publisher, projectionCorrelationId, subscriptionId, fromCheckpointTag, this,
+                    checkpointUnhandledBytesThreshold, _processingLag, stopOnEof);
             else
                 return new ProjectionSubscription(
-                    projectionCorrelationId, subscriptionId, fromCheckpointTag, projection, projection, projection,
-                    projection, this, checkpointUnhandledBytesThreshold, stopOnEof);
+                    publisher, projectionCorrelationId, subscriptionId, fromCheckpointTag, this,
+                    checkpointUnhandledBytesThreshold, stopOnEof);
         }
     }
 }

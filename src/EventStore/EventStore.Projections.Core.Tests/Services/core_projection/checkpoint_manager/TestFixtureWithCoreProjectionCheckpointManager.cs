@@ -80,6 +80,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_projection);
             _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_projection);
             _bus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_projection);
+            _bus.Subscribe<ProjectionSubscriptionMessage.CommittedEventReceived>(_projection);
+            _bus.Subscribe<ProjectionSubscriptionMessage.CheckpointSuggested>(_projection);
+            _bus.Subscribe<ProjectionSubscriptionMessage.EofReached>(_projection);
+            _bus.Subscribe<ProjectionSubscriptionMessage.ProgressChanged>(_projection);
             _checkpointHandledThreshold = 2;
             _checkpointUnhandledBytesThreshold = 5;
             _pendingEventsThreshold = 5;

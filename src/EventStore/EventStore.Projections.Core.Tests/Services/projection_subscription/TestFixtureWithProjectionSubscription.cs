@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected TestHandler<ProjectionSubscriptionMessage.EofReached> _eofHandler;
         protected IProjectionSubscription _subscription;
         protected EventReader ForkedReader;
-        protected FakePublisher _bus;
+        protected InMemoryBus _bus;
         protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
         protected int _checkpointUnhandledBytesThreshold;
         protected CheckpointStrategy _checkpointStrategy;
@@ -56,12 +56,17 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         {
             _checkpointUnhandledBytesThreshold = 1000;
             Given();
-            _bus = new FakePublisher();
+            _bus = new InMemoryBus("bus");
             _projectionCorrelationId = Guid.NewGuid();
             _eventHandler = new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>();
             _checkpointHandler = new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>();
             _progressHandler = new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>();
             _eofHandler = new TestHandler<ProjectionSubscriptionMessage.EofReached>();
+
+            _bus.Subscribe(_eventHandler);
+            _bus.Subscribe(_checkpointHandler);
+            _bus.Subscribe(_progressHandler);
+            _bus.Subscribe(_eofHandler);
             _checkpointStrategy = CreateCheckpointStrategy();
             _subscription = CreateProjectionSubscription();
 
@@ -71,9 +76,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
 
         protected virtual IProjectionSubscription CreateProjectionSubscription()
         {
-            return new ProjectionSubscription(
-                _projectionCorrelationId, Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), _eventHandler, _checkpointHandler,
-                _progressHandler, _eofHandler, _checkpointStrategy, _checkpointUnhandledBytesThreshold);
+            return new ProjectionSubscription(_bus, 
+                _projectionCorrelationId, Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), _checkpointStrategy, _checkpointUnhandledBytesThreshold);
         }
 
         protected virtual void Given()

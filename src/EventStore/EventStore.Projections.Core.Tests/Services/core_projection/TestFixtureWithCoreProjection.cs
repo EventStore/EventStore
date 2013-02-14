@@ -74,6 +74,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_coreProjection);
             _bus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_coreProjection);
+            _bus.Subscribe<ProjectionSubscriptionMessage.CommittedEventReceived>(_coreProjection);
+            _bus.Subscribe<ProjectionSubscriptionMessage.CheckpointSuggested>(_coreProjection);
+            _bus.Subscribe<ProjectionSubscriptionMessage.EofReached>(_coreProjection);
+            _bus.Subscribe<ProjectionSubscriptionMessage.ProgressChanged>(_coreProjection);
             PreWhen();
             When();
         }

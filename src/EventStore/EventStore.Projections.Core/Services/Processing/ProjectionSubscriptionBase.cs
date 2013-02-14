@@ -9,10 +9,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private readonly ILogger _logger = LogManager.GetLoggerFor<EventReorderingProjectionSubscription>();
         private readonly Guid _projectionCorrelationId;
-        private readonly IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> _eventHandler;
-        private readonly IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> _checkpointHandler;
-        private readonly IHandle<ProjectionSubscriptionMessage.ProgressChanged> _progressHandler;
-        private readonly IHandle<ProjectionSubscriptionMessage.EofReached> _eofHandler;
+        private readonly IPublisher _publisher;
         private readonly CheckpointStrategy _checkpointStrategy;
         private readonly long? _checkpointUnhandledBytesThreshold;
         private readonly bool _stopOnEof;
@@ -25,23 +22,13 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Guid _subscriptionId;
         private bool _eofReached;
 
-        protected ProjectionSubscriptionBase(
+        protected ProjectionSubscriptionBase(IPublisher publisher,
             Guid projectionCorrelationId, Guid subscriptionId, CheckpointTag from,
-            IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> eventHandler,
-            IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> checkpointHandler,
-            IHandle<ProjectionSubscriptionMessage.ProgressChanged> progressHandler,
-            IHandle<ProjectionSubscriptionMessage.EofReached> eofHandler,
             CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, bool stopOnEof)
         {
-            if (eventHandler == null) throw new ArgumentNullException("eventHandler");
-            if (checkpointHandler == null) throw new ArgumentNullException("checkpointHandler");
-            if (progressHandler == null) throw new ArgumentNullException("progressHandler");
-            if (eofHandler == null) throw new ArgumentNullException("eofHandler");
+            if (publisher == null) throw new ArgumentNullException("publisher");
             if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
-            _eventHandler = eventHandler;
-            _checkpointHandler = checkpointHandler;
-            _progressHandler = progressHandler;
-            _eofHandler = eofHandler;
+            _publisher = publisher;
             _checkpointStrategy = checkpointStrategy;
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
             _stopOnEof = stopOnEof;
@@ -66,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_eventFilter.PassesSource(message.ResolvedLinkTo, message.PositionStreamId))
             {
                 if (progressChanged)
-                    _progressHandler.Handle(
+                    _publisher.Publish(
                         new ProjectionSubscriptionMessage.ProgressChanged(
                             _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, _progress,
                             _subscriptionMessageSequenceNumber++));
@@ -95,9 +82,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
                 var convertedMessage =
                     ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
-                        message, eventCheckpointTag, _eventFilter.GetCategory(message.PositionStreamId), _subscriptionId,
-                        _subscriptionMessageSequenceNumber++);
-                _eventHandler.Handle(convertedMessage);
+                        message, eventCheckpointTag, _eventFilter.GetCategory(message.PositionStreamId), _projectionCorrelationId, 
+                        _subscriptionId, _subscriptionMessageSequenceNumber++);
+                _publisher.Publish(convertedMessage);
             }
             else
             {
@@ -107,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         > _checkpointUnhandledBytesThreshold))
                 {
                     _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
-                    _checkpointHandler.Handle(
+                    _publisher.Publish(
                         new ProjectionSubscriptionMessage.CheckpointSuggested(
                             _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, message.Progress,
                             _subscriptionMessageSequenceNumber++));
@@ -115,7 +102,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 else
                 {
                     if (progressChanged)
-                        _progressHandler.Handle(
+                        _publisher.Publish(
                             new ProjectionSubscriptionMessage.ProgressChanged(
                                 _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, _progress,
                                 _subscriptionMessageSequenceNumber++));
@@ -141,7 +128,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _eofReached = true;
                 EofReached();
-                _eofHandler.Handle(
+                _publisher.Publish(
                     new ProjectionSubscriptionMessage.EofReached(
                         _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag,
                         _subscriptionMessageSequenceNumber++));

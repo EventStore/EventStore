@@ -90,6 +90,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionCoreServiceMessage.CommittedEventDistributed>(_coreService);
             _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderEof>(_coreService);
             _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderIdle>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionMessage.CommittedEventReceived>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionMessage.CheckpointSuggested>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionMessage.EofReached>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionMessage.ProgressChanged>(_coreService);
             _bus.Subscribe<ProjectionSubscriptionManagement.Pause>(_coreService);
             _bus.Subscribe<ProjectionSubscriptionManagement.Resume>(_coreService);
             _bus.Subscribe<ProjectionSubscriptionManagement.Subscribe>(_coreService);

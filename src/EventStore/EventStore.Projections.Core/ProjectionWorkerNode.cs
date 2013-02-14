@@ -70,6 +70,10 @@ namespace EventStore.Projections.Core
             coreInputBus.Subscribe<ProjectionCoreServiceMessage.CommittedEventDistributed>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionCoreServiceMessage.EventReaderIdle>(_projectionCoreService);
             coreInputBus.Subscribe<ProjectionCoreServiceMessage.EventReaderEof>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionSubscriptionMessage.CommittedEventReceived>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionSubscriptionMessage.CheckpointSuggested>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionSubscriptionMessage.EofReached>(_projectionCoreService);
+            coreInputBus.Subscribe<ProjectionSubscriptionMessage.ProgressChanged>(_projectionCoreService);
             coreInputBus.Subscribe<CoreProjectionManagementMessage.Start>(_projectionCoreService);
             coreInputBus.Subscribe<CoreProjectionManagementMessage.LoadStopped>(_projectionCoreService);
             coreInputBus.Subscribe<CoreProjectionManagementMessage.Stop>(_projectionCoreService);
