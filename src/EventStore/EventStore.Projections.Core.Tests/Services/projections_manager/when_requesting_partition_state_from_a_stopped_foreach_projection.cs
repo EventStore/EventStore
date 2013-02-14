@@ -41,6 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
     {
         protected override void Given()
         {
+            NoStream("$projections-test-projection-order");
             ExistingEvent("$projections-$all", "ProjectionCreated", null, "test-projection");
             ExistingEvent(
                 "$projections-test-projection", "ProjectionUpdated", null,
@@ -52,8 +53,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                         ""Streams"":[""$ce-test""]
                     }
                 }");    
-            ExistingEvent("$projections-test-projection-a-state", "StateUpdated", @"{""Streams"":{""$ce-test"": 9}}", @"{""data"":1}");
-            NoStream("$projections-test-projection-b-state");
+            ExistingEvent("$projections-test-projection-a-checkpoint", "Checkpoint", @"{""Streams"":{""$ce-test"": 9}}", @"{""data"":1}");
+            NoStream("$projections-test-projection-b-checkpoint");
             ExistingEvent("$projections-test-projection-checkpoint", "ProjectionCheckpoint", @"{""Streams"":{""$ce-test"": 10}}", @"{}");
             AllWritesSucceed();
         }
