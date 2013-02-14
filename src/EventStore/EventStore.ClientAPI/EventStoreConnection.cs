@@ -692,10 +692,11 @@ namespace EventStore.ClientAPI
                 {
                     if (_reconnectionStopwatch.IsRunning && _reconnectionStopwatch.Elapsed >= _settings.ReconnectionDelay)
                     {
-                        OnReconnecting();
                         _reconnectionsCount += 1;
                         if (_reconnectionsCount > _settings.MaxReconnections)
                             Close();
+
+                        OnReconnecting();
 
                         _lastReconnectionTimestamp = DateTime.UtcNow;
                         _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
