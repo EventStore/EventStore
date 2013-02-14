@@ -51,14 +51,14 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     source.SetByStream();
                 };
             TicksAreHandledImmediately();
-            NoStream("$projections-projection-state");
+            NoStream("$projections-projection-result");
             NoStream("$projections-projection-order");
             AllWritesToSucceed("$projections-projection-order");
             ExistingEvent(
                 "$projections-projection-partitions", "PartitionCreated",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "account-01");
             ExistingEvent(
-                "$projections-projection-account-01-state", "StateUpdated",
+                "$projections-projection-account-01-result", "Result",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", _testProjectionState);
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",

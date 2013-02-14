@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return new []
                 {
                     new EmittedEvent(
-                        _namesBuilder.MakePartitionStateStreamName(partition), Guid.NewGuid(), "StateUpdated",
+                        _namesBuilder.MakePartitionStateStreamName(partition), Guid.NewGuid(), "Result",
                         projectionResult, at, null)
                 };
         }

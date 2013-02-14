@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void Given()
         {
             TicksAreHandledImmediately();
-            NoStream("$projections-projection-state");
+            NoStream("$projections-projection-result");
             NoStream("$projections-projection-order");
             AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
@@ -66,9 +66,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void update_state_snapshot_at_correct_position()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("StateUpdated").Count);
+            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("Result").Count);
 
-            var metedata = _writeEventHandler.HandledMessages.OfEventType("StateUpdated")[0].Metadata.ParseJson<CheckpointTag>();
+            var metedata = _writeEventHandler.HandledMessages.OfEventType("Result")[0].Metadata.ParseJson<CheckpointTag>();
 
             Assert.AreEqual(120, metedata.CommitPosition);
             Assert.AreEqual(110, metedata.PreparePosition);

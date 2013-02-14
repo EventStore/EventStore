@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
     [TestFixture]
     public class when_starting_a_projection
     {
-        private const string _projectionStateStream = "$projections-projection-state";
+        private const string _projectionStateStream = "$projections-projection-result";
         private const string _projectionCheckpointStream = "$projections-projection-checkpoint";
         private CoreProjection _coreProjection;
         private InMemoryBus _bus;

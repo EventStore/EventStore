@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void Given()
         {
             ExistingEvent(
-                "$projections-projection-state", "StateUpdated",
+                "$projections-projection-result", "Result",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.IsTrue(
                 _writeEventHandler.HandledMessages.Any(
                     v => Encoding.UTF8.GetString(v.Events[0].Data) == FakeProjectionStateHandler._emit2Data));
-            Assert.IsTrue(_writeEventHandler.HandledMessages.Any(v => v.Events[0].EventType == "StateUpdated"));
+            Assert.IsTrue(_writeEventHandler.HandledMessages.Any(v => v.Events[0].EventType == "Result"));
         }
     }
 }

@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");
             NoStream("$projections-projection-region-a-checkpoint");
-            NoStream("$projections-projection-region-a-state");
+            NoStream("$projections-projection-region-a-result");
 
             _stateHandler = new FakeProjectionStateHandler(configureBuilder: _configureBuilderByQuerySource, failOnGetPartition: false);
 
@@ -87,9 +87,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void update_state_snapshot_is_written_to_the_correct_stream()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("StateUpdated").Count);
-            var message = _writeEventHandler.HandledMessages.WithEventType("StateUpdated")[0];
-            Assert.AreEqual("$projections-projection-region-a-state", message.EventStreamId);
+            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("Result").Count);
+            var message = _writeEventHandler.HandledMessages.WithEventType("Result")[0];
+            Assert.AreEqual("$projections-projection-region-a-result", message.EventStreamId);
         }
 
         [Test]

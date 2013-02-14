@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.AreEqual(1, _writeEventHandler.HandledMessages.ToStream("state-stream").Count);
 
             var @event = _writeEventHandler.HandledMessages.ToStream("state-stream")[0].Events[0];
-            Assert.AreEqual("StateUpdated", @event.EventType);
+            Assert.AreEqual("Result", @event.EventType);
         }
     }
 }

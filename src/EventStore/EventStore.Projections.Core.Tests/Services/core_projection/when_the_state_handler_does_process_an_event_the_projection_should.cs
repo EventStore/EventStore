@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void Given()
         {
             ExistingEvent(
-                "$projections-projection-state", "StateUpdated",
+                "$projections-projection-result", "Result",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
@@ -66,19 +66,19 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         [Test]
         public void write_the_new_state_snapshot()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("StateUpdated").Count);
+            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("Result").Count);
 
-            var data = Encoding.UTF8.GetString(_writeEventHandler.HandledMessages.OfEventType("StateUpdated")[0].Data);
+            var data = Encoding.UTF8.GetString(_writeEventHandler.HandledMessages.OfEventType("Result")[0].Data);
             Assert.AreEqual("data", data);
         }
 
         [Test]
         public void emit_a_state_updated_event()
         {
-            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("StateUpdated").Count);
+            Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("Result").Count);
 
-            var @event = _writeEventHandler.HandledMessages.OfEventType("StateUpdated")[0];
-            Assert.AreEqual("StateUpdated", @event.EventType);
+            var @event = _writeEventHandler.HandledMessages.OfEventType("Result")[0];
+            Assert.AreEqual("Result", @event.EventType);
         }
     }
 }

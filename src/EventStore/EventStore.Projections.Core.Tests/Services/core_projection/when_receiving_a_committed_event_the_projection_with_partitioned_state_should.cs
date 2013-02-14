@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             NoStream("$projections-projection-checkpoint");
             NoStream("$projections-projection-partitions");
             NoStream("$projections-projection-account-01-checkpoint");
-            NoStream("$projections-projection-account-01-state");
+            NoStream("$projections-projection-account-01-result");
         }
 
         protected override void When()
@@ -90,18 +90,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void update_state_snapshot_is_written_to_the_correct_stream()
         {
             var writeEvents =
-                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "StateUpdated")).ToList();
+                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "Result")).ToList();
             Assert.AreEqual(1, writeEvents.Count);
 
             var message = writeEvents[0];
-            Assert.AreEqual("$projections-projection-account-01-state", message.EventStreamId);
+            Assert.AreEqual("$projections-projection-account-01-result", message.EventStreamId);
         }
 
         [Test]
         public void update_state_snapshot_at_correct_position()
         {
             var writeEvents =
-                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "StateUpdated")).ToList();
+                _writeEventHandler.HandledMessages.Where(v => v.Events.Any(e => e.EventType == "Result")).ToList();
             Assert.AreEqual(1, writeEvents.Count);
 
             var metedata = writeEvents[0].Events[0].Metadata.ParseJson<CheckpointTag>();
