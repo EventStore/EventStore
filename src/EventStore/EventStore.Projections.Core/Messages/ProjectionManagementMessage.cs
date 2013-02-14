@@ -508,5 +508,34 @@ namespace EventStore.Projections.Core.Messages
                 get { return _action; }
             }
         }
+
+        public static class Internal
+        {
+            public class CleanupExpired: Message
+            {
+            }
+
+            public class Deleted : Message
+            {
+                private readonly string _name;
+                private readonly Guid _id;
+
+                public Deleted(string name, Guid id)
+                {
+                    _name = name;
+                    _id = id;
+                }
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public Guid Id
+                {
+                    get { return _id; }
+                }
+            }
+        }
     }
 }

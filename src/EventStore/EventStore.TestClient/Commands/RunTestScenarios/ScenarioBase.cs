@@ -318,12 +318,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var startInfo = new ProcessStartInfo(fileName, arguments);
 
-            if (OS.IsLinux)
-            {
-                startInfo.UseShellExecute = false;
-                startInfo.RedirectStandardOutput = true;
-            }
-
             var nodeProcess = Process.Start(startInfo);
             if (nodeProcess == null || nodeProcess.HasExited)
                 throw new ApplicationException("Process was not started.");

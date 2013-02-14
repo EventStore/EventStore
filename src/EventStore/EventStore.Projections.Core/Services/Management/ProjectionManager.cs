@@ -36,6 +36,7 @@ using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
@@ -55,6 +56,8 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<ProjectionManagementMessage.GetDebugState>,
                                      IHandle<ProjectionManagementMessage.Disable>,
                                      IHandle<ProjectionManagementMessage.Enable>,
+                                     IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
+                                     IHandle<ProjectionManagementMessage.Internal.Deleted>,
                                      IHandle<CoreProjectionManagementMessage.Started>,
                                      IHandle<CoreProjectionManagementMessage.Stopped>,
                                      IHandle<CoreProjectionManagementMessage.Faulted>,
@@ -68,6 +71,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _inputQueue;
         private readonly IPublisher _publisher;
         private readonly IPublisher[] _queues;
+        private readonly ITimeProvider _timeProvider;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
         private readonly Dictionary<string, ManagedProjection> _projections;
         private readonly Dictionary<Guid, string> _projectionsMap;
@@ -81,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private int _readEventsBatchSize = 100;
 
-        public ProjectionManager(IPublisher inputQueue, IPublisher publisher, IPublisher[] queues)
+        public ProjectionManager(IPublisher inputQueue, IPublisher publisher, IPublisher[] queues, ITimeProvider timeProvider)
         {
             if (inputQueue == null) throw new ArgumentNullException("inputQueue");
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -91,6 +95,7 @@ namespace EventStore.Projections.Core.Services.Management
             _inputQueue = inputQueue;
             _publisher = publisher;
             _queues = queues;
+            _timeProvider = timeProvider;
 
             _writeDispatcher =
                 new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
@@ -104,6 +109,7 @@ namespace EventStore.Projections.Core.Services.Management
             _projectionStateHandlerFactory = new ProjectionStateHandlerFactory();
             _projections = new Dictionary<string, ManagedProjection>();
             _projectionsMap = new Dictionary<Guid, string>();
+            _publishEnvelope = new PublishEnvelope(_inputQueue, crossThread: true);
         }
 
         private void Start()
@@ -112,6 +118,14 @@ namespace EventStore.Projections.Core.Services.Management
             foreach (var queue in _queues)
                 queue.Publish(new ProjectionCoreServiceMessage.Start());
             StartExistingProjections();
+            ScheduleExpire();
+        }
+
+        private void ScheduleExpire()
+        {
+            _publisher.Publish(
+                TimerMessage.Schedule.Create(
+                    TimeSpan.FromSeconds(60), _publishEnvelope, new ProjectionManagementMessage.Internal.CleanupExpired()));
         }
 
         private void Stop()
@@ -251,6 +265,20 @@ namespace EventStore.Projections.Core.Services.Management
                 message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
             else
                 projection.Handle(message);
+        }
+
+        public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
+        {
+            ScheduleExpire();
+            CleanupExpired();
+        }
+
+        private void CleanupExpired()
+        {
+            foreach (var managedProjection in _projections.ToArray())
+            {
+                managedProjection.Value.Handle(new ProjectionManagementMessage.Internal.CleanupExpired());
+            }
         }
 
         public void Handle(CoreProjectionManagementMessage.Started message)
@@ -430,6 +458,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private int _lastUsedQueue = 0;
         private bool _started;
+        private readonly PublishEnvelope _publishEnvelope;
 
         private ManagedProjection CreateManagedProjectionInstance(string name)
         {
@@ -441,7 +470,7 @@ namespace EventStore.Projections.Core.Services.Management
 
             var managedProjectionInstance = new ManagedProjection(queue, 
                 projectionCorrelationId, name, _logger, _writeDispatcher, _readDispatcher, _inputQueue, _publisher,
-                _projectionStateHandlerFactory);
+                _projectionStateHandlerFactory, _timeProvider);
             _projectionsMap.Add(projectionCorrelationId, name);
             _projections.Add(name, managedProjectionInstance);
             return managedProjectionInstance;
@@ -492,6 +521,12 @@ namespace EventStore.Projections.Core.Services.Management
                 if (_started)
                     Stop();
             }
+        }
+
+        public void Handle(ProjectionManagementMessage.Internal.Deleted message)
+        {
+            _projections.Remove(message.Name);
+            _projectionsMap.Remove(message.Id);
         }
     }
 }

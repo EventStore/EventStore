@@ -28,6 +28,8 @@
 
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
@@ -39,17 +41,22 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
     public abstract class TestFixtureWithProjectionCoreAndManagementServices : TestFixtureWithExistingEvents
     {
+        protected FakeTimeProvider _timeProvider;
+
         protected ProjectionManager _manager;
         private ProjectionCoreService _coreService;
 
         [SetUp]
         public void setup()
         {
+            _timeProvider = new FakeTimeProvider();
             //TODO: this became a n integration test - proper ProjectionCoreService and ProjectionManager testing is required instead
             _bus.Subscribe(_consumer);
 
-            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus});
+            _manager = new ProjectionManager(_bus, _bus, new IPublisher[] {_bus}, _timeProvider);
             _coreService = new ProjectionCoreService(_bus, _bus, 10, new InMemoryCheckpoint(1000));
+            _bus.Subscribe<ProjectionManagementMessage.Internal.CleanupExpired>(_manager);
+            _bus.Subscribe<ProjectionManagementMessage.Internal.Deleted>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.Started>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.Stopped>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.Prepared>(_manager);

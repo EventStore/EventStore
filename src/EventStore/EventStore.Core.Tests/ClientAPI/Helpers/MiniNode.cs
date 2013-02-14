@@ -81,7 +81,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                                                               TimeSpan.FromHours(1),
                                                               StatsStorage.None);
 
-            _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, dbVerifyHashes: true, memTableEntryCount: 1000);
+            _node = new SingleVNode(_tfChunkDb, singleVNodeSettings, dbVerifyHashes: true, runProjections: false, memTableEntryCount: 1000);
         }
 
         private int GetAvailablePort(IPAddress ip)
@@ -128,7 +128,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
         public void Start()
         {
             var startedEvent = new ManualResetEventSlim(false);
-            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.SystemStart>(m => startedEvent.Set()));
+            _node.Bus.Subscribe(new AdHocHandler<SystemMessage.BecomeWorking>(m => startedEvent.Set()));
 
             _node.Start();
 
