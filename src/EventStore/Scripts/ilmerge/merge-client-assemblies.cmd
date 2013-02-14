@@ -1,4 +1,4 @@
-@echo on
+@echo off
 pushd %~dp0 || goto :error
 cd ..\..\..\..\bin\eventstore\release\anycpu || goto :error
 
@@ -14,6 +14,7 @@ exit /b 1
 
 :merge-assemblies
 
-..\..\..\..\tools\ilmerge\ILMerge.exe /internalize /targetplatform:v4 /out:EventStore.ClientAPI.Merged.dll eventstore.clientapi.dll protobuf-net.dll	
+mkdir ..\..\..\eventstore.client\
+..\..\..\..\tools\ilmerge\ILMerge.exe /internalize /targetplatform:v4 /out:..\..\..\eventstore.client\EventStore.ClientAPI.dll eventstore.clientapi.dll protobuf-net.dll
 
 exit /b 0
