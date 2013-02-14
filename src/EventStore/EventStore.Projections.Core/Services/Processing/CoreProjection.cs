@@ -718,7 +718,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private bool ValidateEmittedEvents(EmittedEvent[] emittedEvents)
         {
-            if (!_projectionConfig.EmitEventEnabled || !_checkpointStrategy.IsEmiEnabled())
+            if (!_projectionConfig.EmitEventEnabled)
             {
                 if (emittedEvents != null && emittedEvents.Length > 0)
                 {
