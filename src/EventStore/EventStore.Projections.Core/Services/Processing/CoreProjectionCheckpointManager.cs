@@ -192,8 +192,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void NewPartition(string partition, CheckpointTag eventCheckpointTag)
         {
-            _resultEmitter.NewPartition(partition, eventCheckpointTag);
             RegisterNewPartition(partition, eventCheckpointTag);
+            var result = _resultEmitter.NewPartition(partition, eventCheckpointTag);
+            if (result != null)
+                EventsEmitted(result);
         }
 
         public void StateUpdated(string partition, PartitionState oldState, PartitionState newState)

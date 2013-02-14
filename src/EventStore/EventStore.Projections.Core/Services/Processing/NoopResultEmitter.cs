@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
             throw new NotSupportedException("No results are expected from the projection");
         }
 
-        public void NewPartition(string partition, CheckpointTag at)
+        public EmittedEvent[] NewPartition(string partition, CheckpointTag at)
         {
             throw new NotImplementedException();
         }

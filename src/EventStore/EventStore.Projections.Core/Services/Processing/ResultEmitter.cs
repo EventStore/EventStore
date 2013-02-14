@@ -27,19 +27,16 @@
 // 
 
 using System;
-using System.Collections.Generic;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ResultEmitter : IResultEmitter
     {
         private readonly ProjectionNamesBuilder _namesBuilder;
-        private readonly CheckpointTag _zeroTag;
 
-        public ResultEmitter(ProjectionNamesBuilder namesBuilder, CheckpointTag zeroTag)
+        public ResultEmitter(ProjectionNamesBuilder namesBuilder)
         {
             _namesBuilder = namesBuilder;
-            _zeroTag = zeroTag;
         }
 
         public EmittedEvent[] ResultUpdated(string partition, string result, CheckpointTag at)
@@ -47,20 +44,24 @@ namespace EventStore.Projections.Core.Services.Processing
             return CreateResultUpdatedEvents(partition, result, at);
         }
 
-        public void NewPartition(string partition, CheckpointTag at)
+        public EmittedEvent[] NewPartition(string partition, CheckpointTag at)
         {
+            return null;
         }
 
         private EmittedEvent[] CreateResultUpdatedEvents(string partition, string projectionResult, CheckpointTag at)
         {
-            return new []
-                {
-                    new EmittedEvent(
-                        _namesBuilder.MakePartitionStateStreamName(partition), Guid.NewGuid(), "Result",
-                        projectionResult, at, null)
-                };
+            var result = projectionResult == null
+                                      ? new EmittedEvent(
+                                            _namesBuilder.MakePartitionStateStreamName(partition), Guid.NewGuid(), "ResultRemoved",
+                                            null, at, null)
+                                      : new EmittedEvent(
+                                            _namesBuilder.MakePartitionStateStreamName(partition), Guid.NewGuid(), "Result",
+                                            projectionResult, at, null);
+            return new[]
+                    {
+                        result
+                    };
         }
-
-
     }
 }

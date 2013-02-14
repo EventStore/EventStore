@@ -254,7 +254,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var emitAny = projectionConfig.EmitEventEnabled;
             var emitPartitionCheckpoints = UseCheckpoints && (_byCustomPartitions || _byStream);
             var resultEmitter = _definesStateTransform
-                                    ? new ResultEmitter(namingBuilder, _positionTagger.MakeZeroCheckpointTag())
+                                    ? new ResultEmitter(namingBuilder)
                                     : (IResultEmitter) new NoopResultEmitter();
 
             //NOTE: not emitting one-time/transient projections are always handled by default checkpoint manager

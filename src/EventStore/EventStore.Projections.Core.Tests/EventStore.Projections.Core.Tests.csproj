@@ -232,6 +232,7 @@
     <Compile Include="Services\projections_manager\when_updating_a_faulted_projection_query_text_invalid_defintion.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_persistent_projection_emit_enabled_option.cs" />
     <Compile Include="Services\projection_subscription\when_handling_multiple_committed_event_passing_the_filter.cs" />
+    <Compile Include="Services\result_emitter\result_emitter.cs" />
     <Compile Include="Services\staged_processing_queue.cs" />
     <Compile Include="Services\event_reader\stream_reader\when_creating_stream_event_reader.cs" />
     <Compile Include="Services\event_reader\stream_reader\when_handling_no_stream.cs" />
