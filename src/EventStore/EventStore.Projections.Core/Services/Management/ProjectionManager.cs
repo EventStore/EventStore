@@ -223,7 +223,11 @@ namespace EventStore.Projections.Core.Services.Management
                 var statuses = (from projectionNameValue in _projections
                                 let projection = projectionNameValue.Value
                                 where !projection.Deleted
-                                where message.Mode == null || message.Mode == projection.GetMode()
+                                where 
+                                    message.Mode == null || 
+                                    message.Mode == projection.GetMode() || 
+                                    (message.Mode.GetValueOrDefault() == ProjectionMode.AllNonTransient 
+                                        && projection.GetMode() != ProjectionMode.Transient)
                                 let status = projection.GetStatistics()
                                 select status).ToArray();
                 message.Envelope.ReplyWith(

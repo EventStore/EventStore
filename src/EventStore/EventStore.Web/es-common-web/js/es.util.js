@@ -6,7 +6,7 @@ es.util = {};
 
 es.util.loadMenu = function (pages) {
 
-    var tmplStr = '<li class="{{>class}}"> <a href="{{>link}}"> {{>name}} </a> </li>';
+    var tmplStr = '<li class="{{>className}}"> <a href="{{>link}}"> {{>name}} </a> </li>';
     var tmpl = $.templates(tmplStr);
     var htmlString = tmpl.render(pages);
 
