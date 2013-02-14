@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Collections.Generic;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Services.Storage.EpochManager
@@ -44,7 +43,5 @@ namespace EventStore.Core.Services.Storage.EpochManager
 
         void WriteNewEpoch();
         void SetLastEpoch(EpochRecord epoch);
-
-        IEnumerable<EpochRecord> GetCachedEpochs();
     }
 }

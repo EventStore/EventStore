@@ -575,10 +575,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var records = new List<CommitEventRecord>();
             var nextPos = pos;
             // in case we are at position after which there is no commit at all, in that case we have to force 
-            // PreparePosition to int.MaxValue, so if you decide to read backwards from PrevPos, 
+            // PreparePosition to long.MaxValue, so if you decide to read backwards from PrevPos, 
             // you will receive all prepares.
-            var prevPos = new TFPos(pos.CommitPosition, int.MaxValue);
-            var count = 0;
+            var prevPos = new TFPos(pos.CommitPosition, long.MaxValue);
+            long count = 0;
             bool firstCommit = true;
             ITransactionFileReader seqReader = _readers.Get();
             try
@@ -667,7 +667,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             // PreparePosition to 0, so if you decide to read backwards from PrevPos, 
             // you will receive all prepares.
             var prevPos = new TFPos(pos.CommitPosition, 0);
-            var count = 0;
+            long count = 0;
             bool firstCommit = true;            
             ITransactionFileReader seqReader = _readers.Get();
             try

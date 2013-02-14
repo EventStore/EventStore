@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI
 {
-    [TestFixture, Category("LongRunning")]
+    [TestFixture, Category("LongRunning"), Ignore("Unstable tests. Need to investigate later.")]
     public class connect : SpecificationWithDirectoryPerTestFixture
     {
         [Test]

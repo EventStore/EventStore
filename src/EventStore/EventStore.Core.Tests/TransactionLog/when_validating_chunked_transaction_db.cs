@@ -521,7 +521,7 @@ namespace EventStore.Core.Tests.TransactionLog
 
         private void CreateChunk(string filename, int actualSize, int chunkSize)
         {
-            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, chunkSize, 0, 0, false);
+            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, chunkSize, 0, 0, false, Guid.NewGuid());
             var chunkBytes = chunkHeader.AsByteArray();
             var buf = new byte[ChunkHeader.Size + actualSize + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);
@@ -533,7 +533,7 @@ namespace EventStore.Core.Tests.TransactionLog
 
         private void CreateOngoingChunk(string filename, int actualSize, int chunkSize)
         {
-            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, chunkSize, 0, 0, false);
+            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, chunkSize, 0, 0, false, Guid.NewGuid());
             var chunkBytes = chunkHeader.AsByteArray();
             var buf = new byte[ChunkHeader.Size + actualSize + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);

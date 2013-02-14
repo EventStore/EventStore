@@ -33,7 +33,6 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
-using System.Linq;
 
 namespace EventStore.Core.Services.Storage.EpochManager
 {
@@ -232,8 +231,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
             // excessive record, if present.
             // If we are writing the very first epoch, last position will be -1.
             var epoch = WriteEpochRecordWithRetry(_lastEpochNumber + 1, Guid.NewGuid(), _lastEpochPosition);
-            UpdateLastEpoch(epoch);
-            _writer.Flush();
+            UpdateLastEpoch(epoch, flushWriter: true);
         }
 
         private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition)
@@ -261,7 +259,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
             {
                 if (epoch.EpochPosition > _lastEpochPosition)
                 {
-                    UpdateLastEpoch(epoch);
+                    UpdateLastEpoch(epoch, flushWriter: false);
                     return;
                 }
             }
@@ -278,15 +276,7 @@ namespace EventStore.Core.Services.Storage.EpochManager
             }
         }
 
-        public IEnumerable<EpochRecord> GetCachedEpochs()
-        {
-            lock (_locker)
-            {
-                return _epochs.Values.ToArray();
-            }
-        }
-
-        private void UpdateLastEpoch(EpochRecord epoch)
+        private void UpdateLastEpoch(EpochRecord epoch, bool flushWriter)
         {
             lock (_locker)
             {
@@ -296,6 +286,9 @@ namespace EventStore.Core.Services.Storage.EpochManager
                 _minCachedEpochNumber = Math.Max(_minCachedEpochNumber, epoch.EpochNumber - CachedEpochCount + 1);
                 _epochs.Remove(_minCachedEpochNumber - 1);
 
+
+                if (flushWriter)
+                    _writer.Flush();
                 // Now update epoch checkpoint, so on restart we don't scan sequentially TF.
                 _checkpoint.Write(epoch.EpochPosition);
                 _checkpoint.Flush();

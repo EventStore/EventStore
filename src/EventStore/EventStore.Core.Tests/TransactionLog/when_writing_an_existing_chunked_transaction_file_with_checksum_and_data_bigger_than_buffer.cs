@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.TransactionLog
         public void a_record_can_be_written()
         {
             var filename = GetFilePathFor("prefix.tf0");
-            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false);
+            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid());
             var chunkBytes = chunkHeader.AsByteArray();
             var buf = new byte[ChunkHeader.Size + ChunkFooter.Size + chunkHeader.ChunkSize];
             Buffer.BlockCopy(chunkBytes, 0, buf, 0, chunkBytes.Length);

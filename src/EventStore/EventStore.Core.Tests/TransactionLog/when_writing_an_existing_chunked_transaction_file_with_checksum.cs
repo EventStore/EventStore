@@ -48,15 +48,13 @@ namespace EventStore.Core.Tests.TransactionLog
         public void a_record_can_be_written()
         {
             var filename = GetFilePathFor("prefix.tf0");
-            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false);
+            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid());
             var chunkBytes = chunkHeader.AsByteArray();
             var bytes = new byte[ChunkHeader.Size + 10000 + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, bytes, 0, chunkBytes.Length);
             File.WriteAllBytes(filename, bytes);
 
             _checkpoint = new InMemoryCheckpoint(137);
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                        new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                                        10000,

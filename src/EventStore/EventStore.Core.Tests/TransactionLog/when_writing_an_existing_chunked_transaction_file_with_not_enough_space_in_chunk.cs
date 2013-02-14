@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.TransactionLog
         {
             var filename1 = GetFilePathFor("prefix.tf0");
             var filename2 = GetFilePathFor("prefix.tf1");
-            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false);
+            var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid());
             var chunkBytes = chunkHeader.AsByteArray();
             var bytes = new byte[ChunkHeader.Size + 10000 + ChunkFooter.Size];
             Buffer.BlockCopy(chunkBytes, 0, bytes, 0, chunkBytes.Length);

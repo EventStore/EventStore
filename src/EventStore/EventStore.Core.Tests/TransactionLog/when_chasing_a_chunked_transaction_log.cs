@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.TransactionLog
             using (var fs = new FileStream(GetFilePathFor("prefix.tf0"), FileMode.CreateNew, FileAccess.Write))
             {
                 fs.SetLength(ChunkHeader.Size + ChunkFooter.Size + 10000);
-                var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false).AsByteArray();
+                var chunkHeader = new ChunkHeader(TFChunk.CurrentChunkVersion, 10000, 0, 0, false, Guid.NewGuid()).AsByteArray();
                 var writer = new BinaryWriter(fs);
                 writer.Write(chunkHeader);
                 recordToWrite.WriteWithLengthPrefixAndSuffixTo(writer);
