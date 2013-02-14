@@ -57,22 +57,25 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     if (reader.TokenType != JsonToken.StartArray)
                         Error(reader, "StartArray expected");
-                    if (!reader.Read() || reader.TokenType != JsonToken.StartObject)
-                        Error(reader, "StartObject expected");
-                    state = JToken.ReadFrom(reader);
-                    if (!reader.Read())
+                    if (!reader.Read() || (reader.TokenType != JsonToken.StartObject && reader.TokenType != JsonToken.EndArray))
                         Error(reader, "StartObject or EndArray expected");
                     if (reader.TokenType == JsonToken.StartObject)
                     {
-                        result = JToken.ReadFrom(reader);
+                        state = JToken.ReadFrom(reader);
                         if (!reader.Read())
+                            Error(reader, "StartObject or EndArray expected");
+                        if (reader.TokenType == JsonToken.StartObject)
+                        {
+                            result = JToken.ReadFrom(reader);
+                            if (!reader.Read())
+                                Error(reader, "EndArray expected");
+                        }
+                        if (reader.TokenType != JsonToken.EndArray)
                             Error(reader, "EndArray expected");
                     }
-                    if (reader.TokenType != JsonToken.EndArray)
-                        Error(reader, "EndArray expected");
                 }
             }
-            var stateJson = state.ToCanonicalJson();
+            var stateJson = state != null ? state.ToCanonicalJson() :"";
             var resultJson = result != null ? result.ToCanonicalJson() : null;
 
             return new PartitionState(stateJson, resultJson, causedBy);
@@ -114,9 +117,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public string Serialize()
         {
+            var state = _state;
+            if (state == "" && Result != null)
+                throw new Exception("state == \"\" && Result != null");
             return Result != null
-                       ? "[" + _state + "," + _result + "]"
-                       : "[" + _state + "]";
+                       ? "[" + state + "," + _result + "]"
+                       : "[" + state + "]";
         }
     }
 }
