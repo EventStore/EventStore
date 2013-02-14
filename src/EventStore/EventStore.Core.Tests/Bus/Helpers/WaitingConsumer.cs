@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Bus.Helpers
             _countdownEvent.Reset(count);
         }
 
-        public bool Wait(int ms = 100)
+        public bool Wait(int ms = 5000)
         {
             return _countdownEvent.Wait(ms);
         }
