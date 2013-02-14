@@ -70,6 +70,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _coreProjection = CoreProjection.CreateAndPrepapre(
                 "projection", _projectionCorrelationId, _bus, _stateHandler, _projectionConfig, _readDispatcher,
                 _writeDispatcher, null);
+            _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_coreProjection);
+            _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_coreProjection);
+            _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_coreProjection);
+            _bus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_coreProjection);
             PreWhen();
             When();
         }

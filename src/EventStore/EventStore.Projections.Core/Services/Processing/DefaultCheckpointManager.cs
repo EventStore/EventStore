@@ -55,8 +55,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected readonly RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> _readDispatcher;
         protected readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> _writeDispatcher;
 
-        public DefaultCheckpointManager(
-            ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
+        public DefaultCheckpointManager(IPublisher publisher, Guid projectionCorrelationId,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
@@ -64,7 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing
             ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints = false)
             : base(
-                coreProjection, projectionCorrelationId, projectionConfig,
+                publisher, projectionCorrelationId, projectionConfig,
                 name, positionTagger, namingBuilder, resultEmitter, useCheckpoints, emitPartitionCheckpoints)
         {
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");

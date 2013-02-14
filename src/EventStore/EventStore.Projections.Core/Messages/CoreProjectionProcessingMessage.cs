@@ -34,23 +34,32 @@ namespace EventStore.Projections.Core.Messages
 {
     public static class CoreProjectionProcessingMessage
     {
+        public abstract class Message : EventStore.Core.Messaging.Message
+        {
+            private readonly Guid _projectionId;
+
+            protected Message(Guid projectionId)
+            {
+                _projectionId = projectionId;
+            }
+
+            public Guid ProjectionId
+            {
+                get { return _projectionId; }
+            }
+        }
+
         public class CheckpointLoaded : Message
         {
-            private readonly Guid _correlationId;
             private readonly CheckpointTag _checkpointTag;
             private readonly string _checkpointData;
 
-            public CheckpointLoaded(Guid correlationId, CheckpointTag checkpointTag, string checkpointData)
+            public CheckpointLoaded(Guid projectionId, CheckpointTag checkpointTag, string checkpointData)
+                : base(projectionId)
             {
                 if (checkpointTag == null) throw new ArgumentNullException("checkpointTag");
-                _correlationId = correlationId;
                 _checkpointTag = checkpointTag;
                 _checkpointData = checkpointData;
-            }
-
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
             }
 
             public CheckpointTag CheckpointTag
@@ -66,18 +75,12 @@ namespace EventStore.Projections.Core.Messages
 
         public class PrerecordedEventsLoaded : Message
         {
-            private readonly Guid _correlationId;
             private readonly CheckpointTag _checkpointTag;
 
-            public PrerecordedEventsLoaded(Guid correlationId, CheckpointTag checkpointTag)
+            public PrerecordedEventsLoaded(Guid projectionId, CheckpointTag checkpointTag)
+                : base(projectionId)
             {
-                _correlationId = correlationId;
                 _checkpointTag = checkpointTag;
-            }
-
-            public Guid CorrelationId
-            {
-                get { return _correlationId; }
             }
 
             public CheckpointTag CheckpointTag
@@ -86,7 +89,7 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class ReadyForCheckpoint : Message
+        public class ReadyForCheckpoint : EventStore.Core.Messaging.Message
         {
             private readonly object _sender;
 
@@ -105,7 +108,8 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly CheckpointTag _checkpointTag;
 
-            public CheckpointCompleted(CheckpointTag checkpointTag)
+            public CheckpointCompleted(Guid projectionId, CheckpointTag checkpointTag)
+                : base(projectionId)
             {
                 _checkpointTag = checkpointTag;
             }
@@ -120,7 +124,8 @@ namespace EventStore.Projections.Core.Messages
         {
             private readonly string _reason;
 
-            public RestartRequested(string reason)
+            public RestartRequested(Guid projectionId, string reason)
+                : base(projectionId)
             {
                 _reason = reason;
             }

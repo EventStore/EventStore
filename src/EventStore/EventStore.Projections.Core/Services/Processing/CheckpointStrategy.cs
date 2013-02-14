@@ -260,22 +260,19 @@ namespace EventStore.Projections.Core.Services.Processing
             // as they don't depend on stable event order
             if (emitAny && _allStreams && _useEventIndexes && _events != null && _events.Count > 1)
             {
-                return new MultiStreamMultiOutputCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
+                return new MultiStreamMultiOutputCheckpointManager(publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
                     projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
             else if (emitAny && _streams != null && _streams.Count > 1)
             {
-                return new MultiStreamMultiOutputCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
+                return new MultiStreamMultiOutputCheckpointManager(publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
                     projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
                     emitPartitionCheckpoints);
             }
             else
             {
-                return new DefaultCheckpointManager(
-                    coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
+                return new DefaultCheckpointManager(publisher, projectionCorrelationId, readDispatcher, writeDispatcher,
                     projectionConfig, name, PositionTagger, namingBuilder, resultEmitter, UseCheckpoints,
                     emitPartitionCheckpoints);
             }

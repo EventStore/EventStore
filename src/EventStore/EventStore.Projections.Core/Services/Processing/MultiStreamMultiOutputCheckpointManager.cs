@@ -47,16 +47,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Stack<Item> _loadQueue = new Stack<Item>();
         private CheckpointTag _loadingPrerecordedEventsFrom;
 
-        public MultiStreamMultiOutputCheckpointManager(
-            ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
+        public MultiStreamMultiOutputCheckpointManager(IPublisher publisher, Guid projectionCorrelationId,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
             ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints = false)
-            : base(
-                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
+            : base(publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
                 name, positionTagger, namingBuilder, resultEmitter, useCheckpoints, emitPartitionCheckpoints)
         {
             _positionTagger = positionTagger;

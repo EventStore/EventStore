@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -65,8 +66,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 
         protected virtual void When()
         {
-            _manager = new DefaultCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
+            _manager = new DefaultCheckpointManager(_bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
                 new StreamPositionTagger("stream"), _namingBuilder, _resultEmitter, _checkpointsEnabled);
 
         }
@@ -76,6 +76,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             _projectionCheckpointStreamId = "$projections-projection-checkpoint";
             _projectionCorrelationId = Guid.NewGuid();
             _projection = new FakeCoreProjection();
+            _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_projection);
+            _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_projection);
+            _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_projection);
+            _bus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_projection);
             _checkpointHandledThreshold = 2;
             _checkpointUnhandledBytesThreshold = 5;
             _pendingEventsThreshold = 5;

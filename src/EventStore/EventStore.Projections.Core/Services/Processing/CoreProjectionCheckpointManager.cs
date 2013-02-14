@@ -32,6 +32,7 @@ using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Text;
 using EventStore.Common.Log;
+using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
@@ -50,7 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly bool _useCheckpoints;
         private readonly bool _emitPartitionCheckpoints; 
 
-        private readonly ICoreProjection _coreProjection;
+        private readonly IPublisher _publisher;
         private readonly Guid _projectionCorrelationId;
         private readonly CheckpointTag _zeroTag;
 
@@ -77,12 +78,12 @@ namespace EventStore.Projections.Core.Services.Processing
         private PartitionStateUpdateManager _partitionStateUpdateManager;
 
         protected CoreProjectionCheckpointManager(
-            ICoreProjection coreProjection, Guid projectionCorrelationId,
+            IPublisher publisher, Guid projectionCorrelationId,
             ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
             ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints)
         {
-            if (coreProjection == null) throw new ArgumentNullException("coreProjection");
+            if (publisher == null) throw new ArgumentNullException("publisher");
             if (projectionConfig == null) throw new ArgumentNullException("projectionConfig");
             if (name == null) throw new ArgumentNullException("name");
             if (positionTagger == null) throw new ArgumentNullException("positionTagger");
@@ -93,7 +94,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastProcessedEventPosition = new PositionTracker(positionTagger);
             _zeroTag = positionTagger.MakeZeroCheckpointTag();
 
-            _coreProjection = coreProjection;
+            _publisher = publisher;
             _projectionCorrelationId = projectionCorrelationId;
             _projectionConfig = projectionConfig;
             _logger = LogManager.GetLoggerFor<CoreProjectionCheckpointManager>();
@@ -167,7 +168,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected void PrerecordedEventsLoaded(CheckpointTag checkpointTag)
         {
-            _coreProjection.Handle(
+            _publisher.Publish(
                 new CoreProjectionProcessingMessage.PrerecordedEventsLoaded(_projectionCorrelationId, checkpointTag));
         }
 
@@ -209,12 +210,14 @@ namespace EventStore.Projections.Core.Services.Processing
                 RequestCheckpoint(_lastProcessedEventPosition);
                 return;
             }
-            _coreProjection.Handle(
-                new CoreProjectionProcessingMessage.CheckpointCompleted(_lastCompletedCheckpointPosition));
+            _publisher.Publish(
+                new CoreProjectionProcessingMessage.CheckpointCompleted(_projectionCorrelationId, _lastCompletedCheckpointPosition));
         }
 
         public void StateUpdated(string partition, PartitionState oldState, PartitionState newState)
         {
+            if (_stopped)
+                return;
             EnsureStarted();
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
@@ -238,6 +241,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void EventProcessed(CheckpointTag checkpointTag, float progress)
         {
+            if (_stopped)
+                return;
             EnsureStarted();
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
@@ -251,6 +256,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void EventsEmitted(EmittedEvent[] scheduledWrites)
         {
+            if (_stopped)
+                return;
             EnsureStarted();
             if (_stopping)
                 throw new InvalidOperationException("Stopping");
@@ -365,7 +372,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 checkpointData = null;
             }
             _stateLoaded = true;
-            _coreProjection.Handle(
+            _publisher.Publish(
                 new CoreProjectionProcessingMessage.CheckpointLoaded(
                     _projectionCorrelationId, checkpointTag, checkpointData));
             BeginLoadPrerecordedEvents(checkpointTag);
@@ -381,7 +388,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 ResolvedEvent.Create(
                     pair.Event.EventId, pair.Event.EventType, (pair.Event.Flags & PrepareFlags.IsJson) != 0,
                     pair.Event.Data, pair.Event.Metadata, pair.Event.TimeStamp), null, -1);
-            _coreProjection.Handle(
+            _publisher.Publish(
                 ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
                     committedEvent, positionTag, null, Guid.Empty, prerecordedEventMessageSequenceNumber));
         }
@@ -390,7 +397,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected void RequestRestart(string reason)
         {
-            _coreProjection.Handle(new CoreProjectionProcessingMessage.RestartRequested(reason));
+            _stopped = true; // ignore messages
+            _publisher.Publish(new CoreProjectionProcessingMessage.RestartRequested(_projectionCorrelationId, reason));
         }
 
         protected abstract void BeforeBeginLoadState();
@@ -424,8 +432,8 @@ namespace EventStore.Projections.Core.Services.Processing
             _inCheckpoint = false;
 
             ProcessCheckpoints();
-            _coreProjection.Handle(
-                new CoreProjectionProcessingMessage.CheckpointCompleted(_lastCompletedCheckpointPosition));
+            _publisher.Publish(
+                new CoreProjectionProcessingMessage.CheckpointCompleted(_projectionCorrelationId, _lastCompletedCheckpointPosition));
         }
 
         public void Handle(CoreProjectionProcessingMessage.RestartRequested message)

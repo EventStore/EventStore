@@ -174,7 +174,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void RequestRestart(string reason)
         {
-            _readyHandler.Handle(new CoreProjectionProcessingMessage.RestartRequested(reason));
+            _readyHandler.Handle(new CoreProjectionProcessingMessage.RestartRequested(Guid.Empty, reason));
         }
 
         private void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)

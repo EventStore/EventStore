@@ -62,7 +62,11 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
-                                         IHandle<ClientMessage.WriteEventsCompleted>
+                                         IHandle<ClientMessage.WriteEventsCompleted>, 
+                                        IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>, 
+                                        IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>, 
+                                        IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>, 
+                                        IHandle<CoreProjectionProcessingMessage.RestartRequested>
 
 
     {
@@ -451,6 +455,34 @@ namespace EventStore.Projections.Core.Services.Processing
             _projectionEventReaders[projectionId] = Guid.Empty;
             _publisher.Publish(new ProjectionSubscriptionManagement.ReaderAssigned(message.CorrelationId, Guid.Empty));
             return true;
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
         }
     }
 }
