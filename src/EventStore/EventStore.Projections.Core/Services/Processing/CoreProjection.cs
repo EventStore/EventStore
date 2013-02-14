@@ -895,6 +895,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 //TODO: move to separate projection method and cache result in work item
                 if (result != null)
                 {
+                    if (result.Partition != "" && result.OldState.CausedBy == _zeroCheckpointTag)
+                        _checkpointManager.NewPartition(result.Partition, eventCheckpointTag);
                     if (result.EmittedEvents != null)
                         _checkpointManager.EventsEmitted(result.EmittedEvents);
                     if (result.NewState != null)

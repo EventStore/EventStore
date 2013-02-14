@@ -148,8 +148,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _currentCheckpoint.Start();
         }
 
-        protected abstract ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition);
-
         public void Stopping()
         {
             EnsureStarted();
@@ -164,12 +162,6 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureStarted();
             _started = false;
             _stopped = true;
-        }
-
-        protected void PrerecordedEventsLoaded(CheckpointTag checkpointTag)
-        {
-            _publisher.Publish(
-                new CoreProjectionProcessingMessage.PrerecordedEventsLoaded(_projectionCorrelationId, checkpointTag));
         }
 
         public virtual void GetStatistics(ProjectionStatistics info)
@@ -198,20 +190,10 @@ namespace EventStore.Projections.Core.Services.Processing
             info.CheckpointStatus = _inCheckpoint ? "Requested" : "";
         }
 
-        private void RequestCheckpointToStop()
+        public void NewPartition(string partition, CheckpointTag eventCheckpointTag)
         {
-            EnsureStarted();
-            if (!_stopping)
-                throw new InvalidOperationException("Not stopping");
-            // do not request checkpoint if no events were processed since last checkpoint
-            if (_useCheckpoints
-                && _lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
-            {
-                RequestCheckpoint(_lastProcessedEventPosition);
-                return;
-            }
-            _publisher.Publish(
-                new CoreProjectionProcessingMessage.CheckpointCompleted(_projectionCorrelationId, _lastCompletedCheckpointPosition));
+            _resultEmitter.NewPartition(partition, eventCheckpointTag);
+            RegisterNewPartition(partition, eventCheckpointTag);
         }
 
         public void StateUpdated(string partition, PartitionState oldState, PartitionState newState)
@@ -299,6 +281,44 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 CheckpointLoaded(null, null);
             }
+        }
+
+        public abstract void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed);
+
+        public abstract void BeginLoadPartitionStateAt(string statePartition,
+            CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted);
+
+        protected abstract ProjectionCheckpoint CreateProjectionCheckpoint(CheckpointTag checkpointPosition);
+        protected abstract void RegisterNewPartition(string partition, CheckpointTag at);
+        protected abstract void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
+        protected abstract void BeforeBeginLoadState();
+        protected abstract void RequestLoadState();
+
+        protected abstract void BeginWriteCheckpoint(
+            CheckpointTag requestedCheckpointPosition, string requestedCheckpointState);
+
+
+
+        protected void PrerecordedEventsLoaded(CheckpointTag checkpointTag)
+        {
+            _publisher.Publish(
+                new CoreProjectionProcessingMessage.PrerecordedEventsLoaded(_projectionCorrelationId, checkpointTag));
+        }
+
+        private void RequestCheckpointToStop()
+        {
+            EnsureStarted();
+            if (!_stopping)
+                throw new InvalidOperationException("Not stopping");
+            // do not request checkpoint if no events were processed since last checkpoint
+            if (_useCheckpoints
+                && _lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
+            {
+                RequestCheckpoint(_lastProcessedEventPosition);
+                return;
+            }
+            _publisher.Publish(
+                new CoreProjectionProcessingMessage.CheckpointCompleted(_projectionCorrelationId, _lastCompletedCheckpointPosition));
         }
 
         protected void EnsureStarted()
@@ -393,19 +413,12 @@ namespace EventStore.Projections.Core.Services.Processing
                     committedEvent, positionTag, null, _projectionCorrelationId, Guid.Empty, prerecordedEventMessageSequenceNumber));
         }
 
-        protected abstract void BeginLoadPrerecordedEvents(CheckpointTag checkpointTag);
 
         protected void RequestRestart(string reason)
         {
             _stopped = true; // ignore messages
             _publisher.Publish(new CoreProjectionProcessingMessage.RestartRequested(_projectionCorrelationId, reason));
         }
-
-        protected abstract void BeforeBeginLoadState();
-        protected abstract void RequestLoadState();
-
-        protected abstract void BeginWriteCheckpoint(
-            CheckpointTag requestedCheckpointPosition, string requestedCheckpointState);
 
         public void Handle(CoreProjectionProcessingMessage.ReadyForCheckpoint message)
         {
@@ -446,9 +459,5 @@ namespace EventStore.Projections.Core.Services.Processing
             return _resultEmitter.ResultUpdated(partition, newState.Result, newState.CausedBy);
         }
 
-        public abstract void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed);
-
-        public abstract void BeginLoadPartitionStateAt(string statePartition,
-            CheckpointTag requestedStateCheckpointTag, Action<PartitionState> loadCompleted);
     }
 }

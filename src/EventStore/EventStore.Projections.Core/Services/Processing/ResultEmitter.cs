@@ -47,6 +47,10 @@ namespace EventStore.Projections.Core.Services.Processing
             return CreateResultUpdatedEvents(partition, result, at);
         }
 
+        public void NewPartition(string partition, CheckpointTag at)
+        {
+        }
+
         private EmittedEvent[] CreateResultUpdatedEvents(string partition, string projectionResult, CheckpointTag at)
         {
             return new []

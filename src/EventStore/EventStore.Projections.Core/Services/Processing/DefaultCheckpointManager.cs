@@ -177,6 +177,17 @@ namespace EventStore.Projections.Core.Services.Processing
                                         : info.CheckpointStatus;
         }
 
+        protected override void RegisterNewPartition(string partition, CheckpointTag at)
+        {
+            EventsEmitted(
+                new[]
+                    {
+                        new EmittedEvent(
+                    _namingBuilder.GetPartitionCatalogStreamName(), Guid.NewGuid(), "$partition", partition,
+                    at, null)
+                    });
+        }
+
         protected override void BeforeBeginLoadState()
         {
             _lastWrittenCheckpointEventNumber = ExpectedVersion.NoStream;
