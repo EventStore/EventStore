@@ -50,15 +50,16 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
         public override void TestFixtureSetUp()
         {
             base.TestFixtureSetUp();
+            _chunk = TFChunk.CreateNew(Filename, 4096, 0, false);
+            
             _prepare1 = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
                                              PrepareFlags.None, "Foo", new byte[12], new byte[15]);
-            _prepare2 = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test2", 2, new DateTime(2000, 1, 1, 12, 0, 0),
-                                             PrepareFlags.None, "Foo2", new byte[12], new byte[15]);
-
-            _chunk = TFChunk.CreateNew(Filename, 4096, 0, false);
             var r1 = _chunk.TryAppend(_prepare1);
             _written1 = r1.Success;
             _position1 = r1.OldPosition;
+
+            _prepare2 = new PrepareLogRecord(r1.NewPosition, _corrId, _eventId, 0, 0, "test2", 2, new DateTime(2000, 1, 1, 12, 0, 0),
+                                             PrepareFlags.None, "Foo2", new byte[12], new byte[15]);
             var r2 = _chunk.TryAppend(_prepare2);
             _written2 = r2.Success;
             _position2 = r2.OldPosition;

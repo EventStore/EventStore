@@ -54,7 +54,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public bool IsReadOnly { get { return _isReadOnly; } }
         public bool IsCached { get { return _isCached != 0; } }
-        public int ActualDataSize { get { return _actualDataSize; } }
+        public int LogicalDataSize { get { return _logicalDataSize; } }  // the logical size of data (could be > PhysicalChunkSize if scavenged chunk)
+        public int PhysicalDataSize { get { return _physicalDataSize; } }  // the physical size of data size of data
         public string FileName { get { return _filename; } }
         public int FileSize { get { return (int) new FileInfo(_filename).Length; } }
 
@@ -86,7 +87,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
         private int _memStreamCount;
 
         private WriterWorkItem _writerWorkItem;
-        private volatile int _actualDataSize;
+        private volatile int _logicalDataSize;
+        private volatile int _physicalDataSize;
 
         private volatile IntPtr _cachedData;
         private int _cachedLength;
@@ -190,9 +192,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                     throw new CorruptDatabaseException(new WrongFileVersionException(_filename, _chunkHeader.Version, CurrentChunkVersion));
 
                 _chunkFooter = ReadFooter(reader.Stream);
-                _actualDataSize = _chunkFooter.ActualDataSize;
+                _logicalDataSize = _chunkFooter.LogicalDataSize;
+                _physicalDataSize = _chunkFooter.PhysicalChunkSize;
 
-                var expectedFileSize = _chunkFooter.ActualChunkSize + _chunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
+                var expectedFileSize = _chunkFooter.PhysicalChunkSize + _chunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
                 if (reader.Stream.Length != expectedFileSize)
                 {
                     throw new CorruptDatabaseException(new BadChunkInDatabaseException(
@@ -222,7 +225,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
             _isReadOnly = false;
             _chunkHeader = chunkHeader;
-            _actualDataSize = 0;
+            _physicalDataSize = _logicalDataSize = 0;
 
             CreateWriterWorkItemForNewChunk(chunkHeader, fileSize);
             CreateReaderStreams();
@@ -239,7 +242,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 throw new CorruptDatabaseException(new ChunkNotFoundException(_filename));
 
             _isReadOnly = false;
-            _actualDataSize = writePosition;
+            _physicalDataSize = _logicalDataSize = writePosition;
 
             CreateWriterWorkItemForExistingChunk(writePosition, out _chunkHeader);
             if (_chunkHeader.Version != CurrentChunkVersion)
@@ -348,11 +351,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 {
                     workItem.Stream.Seek(0, SeekOrigin.Begin);
                     // hash header and data
-                    MD5Hash.ContinuousHashFor(md5, workItem.Stream, 0, ChunkHeader.Size + footer.ActualDataSize);
+                    MD5Hash.ContinuousHashFor(md5, workItem.Stream, 0, ChunkHeader.Size + footer.PhysicalChunkSize);
                     // hash mapping and footer except MD5 hash sum which should always be last
                     MD5Hash.ContinuousHashFor(md5, 
                                               workItem.Stream,
-                                              ChunkHeader.Size + footer.ActualChunkSize,
+                                              ChunkHeader.Size + footer.PhysicalChunkSize,
                                               footer.MapSize + ChunkFooter.Size - ChunkFooter.ChecksumSize);
                     md5.TransformFinalBlock(new byte[0], 0, 0);
                     hash = md5.Hash;
@@ -480,7 +483,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                         workItem.Stream.Seek(0, SeekOrigin.Begin);
                         var buffer = new byte[4096];
                         // in ongoing chunk there is no need to read everything, it's enough to read just actual data written
-                        int toRead = _isReadOnly ? _cachedLength : ChunkHeader.Size + _actualDataSize; 
+                        int toRead = _isReadOnly ? _cachedLength : ChunkHeader.Size + _logicalDataSize; 
                         while (toRead > 0)
                         {
                             int read = workItem.Stream.Read(buffer, 0, Math.Min(toRead, buffer.Length));
@@ -587,8 +590,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 return RecordWriteResult.Failed(GetLogicalPosition(workItem));
 
             var oldPosition = WriteRawData(workItem, buffer);
-            _actualDataSize = GetLogicalPosition(workItem);
-            return RecordWriteResult.Successful(oldPosition, _actualDataSize);
+            _physicalDataSize = GetLogicalPosition(workItem);
+            _logicalDataSize = (int)((record.Position + length + 2*sizeof(int)) % ChunkHeader.ChunkSize);
+            
+            // for non-scavenged chunk _physicalDataSize should be the same as _logicalDataSize
+            // for scavenged chunk _logicalDataSize should be at least the same as _physicalDataSize
+            Debug.Assert((!ChunkHeader.IsScavenged && _logicalDataSize == _physicalDataSize) 
+                         || (ChunkHeader.IsScavenged && _logicalDataSize >= _physicalDataSize));
+            
+            return RecordWriteResult.Successful(oldPosition, _physicalDataSize);
         }
 
         public bool TryAppendRawData(byte[] buffer)
@@ -639,10 +649,20 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
 
         public void Complete()
         {
-            CompleteScavenge(null);
+            if (ChunkHeader.IsScavenged)
+                throw new InvalidOperationException("CompleteScavenged should be used for scavenged chunks!");
+            CompleteNonRaw(null);
         }
 
         public void CompleteScavenge(ICollection<PosMap> mapping)
+        {
+            if (!ChunkHeader.IsScavenged)
+                throw new InvalidOperationException("CompleteScavenged should not be used for non-scavenged chunks!");
+
+            CompleteNonRaw(mapping);
+        }
+
+        private void CompleteNonRaw(ICollection<PosMap> mapping)
         {
             if (_isReadOnly)
                 throw new InvalidOperationException("Cannot complete a read-only TFChunk.");
@@ -692,14 +712,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 WriteRawData(workItem, workItem.Buffer);
             }
 
-            var footerNoHash = new ChunkFooter(true, _actualDataSize, _actualDataSize, mapSize, new byte[ChunkFooter.ChecksumSize]);
+            var footerNoHash = new ChunkFooter(true, _physicalDataSize, _logicalDataSize, mapSize, new byte[ChunkFooter.ChecksumSize]);
             //MD5
             workItem.MD5.TransformFinalBlock(footerNoHash.AsByteArray(), 0, ChunkFooter.Size - ChunkFooter.ChecksumSize);
             //FILE
-            var footerWithHash = new ChunkFooter(true, _actualDataSize, _actualDataSize, mapSize, workItem.MD5.Hash);
+            var footerWithHash = new ChunkFooter(true, _physicalDataSize, _logicalDataSize, mapSize, workItem.MD5.Hash);
             workItem.Stream.Write(footerWithHash.AsByteArray(), 0, ChunkFooter.Size);
 
-            var fileSize = ChunkHeader.Size + _actualDataSize + mapSize + ChunkFooter.Size;
+            var fileSize = ChunkHeader.Size + _physicalDataSize + mapSize + ChunkFooter.Size;
             if (workItem.Stream.Length != fileSize)
                 workItem.Stream.SetLength(fileSize);
 

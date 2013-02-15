@@ -50,8 +50,6 @@ namespace EventStore.Core.Tests.TransactionLog
         public void SetUp()
         {
             _writerCheckpoint = new InMemoryCheckpoint();
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             _db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                     new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                     1024,
@@ -60,10 +58,10 @@ namespace EventStore.Core.Tests.TransactionLog
                                                     new InMemoryCheckpoint(),
                                                     new InMemoryCheckpoint(-1),
                                                     new InMemoryCheckpoint(-1)));
-            _db.OpenVerifyAndClean();
+            _db.Open();
             _writer = new TFChunkWriter(_db);
             _writer.Open();
-            _record = new PrepareLogRecord(logPosition: 0xDEAD,
+            _record = new PrepareLogRecord(logPosition: 0,
                                            eventId: _eventId,
                                            correlationId: _correlationId,
                                            transactionPosition: 0xDEAD,
@@ -100,7 +98,7 @@ namespace EventStore.Core.Tests.TransactionLog
                 Assert.True(r is PrepareLogRecord);
                 var p = (PrepareLogRecord) r;
                 Assert.AreEqual(p.RecordType, LogRecordType.Prepare);
-                Assert.AreEqual(p.LogPosition, 0xDEAD);
+                Assert.AreEqual(p.LogPosition, 0);
                 Assert.AreEqual(p.TransactionPosition, 0xDEAD);
                 Assert.AreEqual(p.TransactionOffset, 0xBEEF);
                 Assert.AreEqual(p.CorrelationId, _correlationId);

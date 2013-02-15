@@ -102,13 +102,13 @@ namespace EventStore.Core.TransactionLog.Chunks
                 count = buffer.Length;
 
             var oldPos = (int)_stream.Position - ChunkHeader.Size;
-            var toRead = Math.Min(_chunk.ActualDataSize - oldPos, count);
+            var toRead = Math.Min(chunk.LogicalDataSize - oldPos, count);
             Debug.Assert(toRead >= 0);
             _stream.Position = _stream.Position; // flush read buffer
             int bytesRead = _stream.Read(buffer, 0, toRead);
             return new BulkReadResult(oldPos,
                                       bytesRead,
-                                      isEof: _chunk.IsReadOnly && oldPos + bytesRead == _chunk.ActualDataSize);
+                                      isEof: _chunk.IsReadOnly && oldPos + bytesRead == _chunk.LogicalDataSize);
         }
 
         public void Dispose()

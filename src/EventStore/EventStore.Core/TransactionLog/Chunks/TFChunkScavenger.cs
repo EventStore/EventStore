@@ -146,8 +146,8 @@ namespace EventStore.Core.TransactionLog.Chunks
                                 positionMapping.Add(posMap);
                           });
 
-            var oldSize = oldChunk.ChunkFooter.ActualChunkSize + oldChunk.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
-            var newSize = newChunk.ActualDataSize 
+            var oldSize = oldChunk.PhysicalDataSize + oldChunk.ChunkFooter.MapSize + ChunkHeader.Size + ChunkFooter.Size;
+            var newSize = newChunk.PhysicalDataSize 
                           + sizeof(ulong) * positionMapping.Count 
                           + ChunkHeader.Size 
                           + ChunkFooter.Size;

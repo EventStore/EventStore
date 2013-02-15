@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             File.WriteAllText(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), "this is just some test blahbydy blah");
-            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.Open(verifyHash: false));
             Assert.IsInstanceOf<BadChunkInDatabaseException>(ex.InnerException);
             db.Dispose();
         }
@@ -60,7 +60,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test, Ignore("Not valid test now after disabling size validation on ongoing TFChunk ")]
         public void with_wrong_actual_chunk_size_in_chunk_footer()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              12000,
@@ -71,7 +70,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), 10000, 12000);
-            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.Open(verifyHash: false));
             Assert.IsInstanceOf<BadChunkInDatabaseException>(ex.InnerException);
             db.Dispose();
         }
@@ -79,7 +78,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void with_not_enough_files_to_reach_checksum_throws()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
@@ -90,7 +88,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
-            var exc = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
+            var exc = Assert.Throws<CorruptDatabaseException>(() => db.Open(verifyHash: false));
             Assert.IsInstanceOf<ChunkNotFoundException>(exc.InnerException);
             db.Dispose();
         }
@@ -98,7 +96,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void allows_with_exactly_enough_file_to_reach_checksum()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
@@ -109,14 +106,13 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
-            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
             db.Dispose();
         }
 
         [Test]
         public void allows_next_new_chunk_when_checksum_is_exactly_in_between_two_chunks()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
@@ -128,14 +124,13 @@ namespace EventStore.Core.Tests.TransactionLog
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1, 0)), config.ChunkSize, config.ChunkSize);
-            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
             db.Dispose();
         }
 
         [Test, Ignore("Not valid test now after disabling size validation on ongoing TFChunk ")]
         public void with_wrong_size_file_less_than_checksum_throws()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
@@ -147,7 +142,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1, 0)), config.ChunkSize-1000, config.ChunkSize);
-            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.Open(verifyHash: false));
             Assert.IsInstanceOf<BadChunkInDatabaseException>(ex.InnerException);
             db.Dispose();
         }
@@ -155,7 +150,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_in_first_extraneous_files_throws_corrupt_database_exception()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
@@ -167,7 +161,7 @@ namespace EventStore.Core.Tests.TransactionLog
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1, 0)), config.ChunkSize, config.ChunkSize);
-            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.Open(verifyHash: false));
             Assert.IsInstanceOf<ExtraneousFileFoundException>(ex.InnerException);
             db.Dispose();
         }
@@ -175,7 +169,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_in_multiple_extraneous_files_throws_corrupt_database_exception()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
@@ -189,7 +182,7 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(1, 0)), config.ChunkSize, config.ChunkSize);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(2, 0)), config.ChunkSize, config.ChunkSize);
-            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.Open(verifyHash: false));
             Assert.IsInstanceOf<ExtraneousFileFoundException>(ex.InnerException);
             db.Dispose();
         }
@@ -197,7 +190,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_in_brand_new_extraneous_files_throws_corrupt_database_exception()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
@@ -208,7 +200,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(4, 0)), config.ChunkSize, config.ChunkSize);
-            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.Open(verifyHash: false));
             Assert.IsInstanceOf<ExtraneousFileFoundException>(ex.InnerException);
             db.Dispose();
         }
@@ -216,7 +208,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_a_chaser_checksum_is_ahead_of_writer_checksum_throws_corrupt_database_exception()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
@@ -226,7 +217,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
-            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.Open(verifyHash: false));
             Assert.IsInstanceOf<ReaderCheckpointHigherThanWriterException>(ex.InnerException);
             db.Dispose();
         }
@@ -234,7 +225,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_an_epoch_checksum_is_ahead_of_writer_checksum_throws_corrupt_database_exception()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
@@ -244,7 +234,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(11),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
-            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.Open(verifyHash: false));
             Assert.IsInstanceOf<ReaderCheckpointHigherThanWriterException>(ex.InnerException);
             db.Dispose();
         }
@@ -252,7 +242,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void allows_no_files_when_checkpoint_is_zero()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
@@ -262,14 +251,13 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
-            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
             db.Dispose();
         }
 
         [Test]
         public void allows_first_correct_file_when_checkpoint_is_zero()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                              10000,
@@ -280,7 +268,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
             CreateChunk(GetFilePathFor(config.FileNamingStrategy.GetFilenameFor(0, 0)), config.ChunkSize, config.ChunkSize);
-            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
             db.Dispose();
         }
 
@@ -290,7 +278,6 @@ namespace EventStore.Core.Tests.TransactionLog
             File.Create(GetFilePathFor("foo")).Close();
             File.Create(GetFilePathFor("bla")).Close();
 
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
@@ -310,7 +297,7 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(GetFilePathFor("chunk-000003.000007"), config.ChunkSize, config.ChunkSize);
             CreateChunk(GetFilePathFor("chunk-000003.000008"), config.ChunkSize, config.ChunkSize);
 
-            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
 
             Assert.IsTrue(File.Exists(GetFilePathFor("foo")));
             Assert.IsTrue(File.Exists(GetFilePathFor("bla")));
@@ -324,9 +311,8 @@ namespace EventStore.Core.Tests.TransactionLog
         }
 
         [Test]
-        public void when_checkpoint_is_on_boundary_of_chunk_last_chunk_is_removed_if_present_and_new_empty_one_is_created()
+        public void when_checkpoint_is_on_boundary_of_chunk_last_chunk_is_preserved()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
@@ -341,20 +327,19 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(GetFilePathFor("chunk-000001.000001"), config.ChunkSize, config.ChunkSize);
             CreateChunk(GetFilePathFor("chunk-000002.000005"), config.ChunkSize, config.ChunkSize);
 
-            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
 
             Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
             Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000001.000001")));
-            Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000002.000000")));
+            Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000002.000005")));
             Assert.AreEqual(3, Directory.GetFiles(PathName, "*").Length);
 
             db.Dispose();
         }
 
         [Test]
-        public void when_checkpoint_is_on_boundary_of_new_chunk_excessive_last_chunks_are_removed_if_present_and_new_empty_one_is_created()
+        public void when_checkpoint_is_on_boundary_of_new_chunk_last_chunk_is_preserved_and_excessive_versions_are_removed_if_present()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
@@ -370,11 +355,11 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(GetFilePathFor("chunk-000002.000000"), config.ChunkSize, config.ChunkSize);
             CreateChunk(GetFilePathFor("chunk-000002.000001"), config.ChunkSize, config.ChunkSize);
 
-            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
 
             Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
             Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000001.000001")));
-            Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000002.000000")));
+            Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000002.000001")));
             Assert.AreEqual(3, Directory.GetFiles(PathName, "*").Length);
 
             db.Dispose();
@@ -383,7 +368,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_checkpoint_is_exactly_on_the_boundary_of_chunk_the_last_chunk_could_be_not_present_but_should_be_created()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
@@ -397,7 +381,7 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(GetFilePathFor("chunk-000000.000000"), config.ChunkSize, config.ChunkSize);
             CreateChunk(GetFilePathFor("chunk-000001.000001"), config.ChunkSize, config.ChunkSize);
 
-            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
             Assert.IsNotNull(db.Manager.GetChunk(2));
 
             Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
@@ -411,7 +395,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_checkpoint_is_exactly_on_the_boundary_of_chunk_the_last_chunk_could_be_present()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
@@ -426,7 +409,7 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(GetFilePathFor("chunk-000001.000001"), config.ChunkSize, config.ChunkSize);
             CreateOngoingChunk(GetFilePathFor("chunk-000002.000000"), config.ChunkSize, config.ChunkSize);
 
-            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
             Assert.IsNotNull(db.Manager.GetChunk(2));
 
             Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
@@ -440,7 +423,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void when_checkpoint_is_on_boundary_of_new_chunk_and_last_chunk_is_truncated_no_exception_is_thrown()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
@@ -454,7 +436,7 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(GetFilePathFor("chunk-000000.000000"), config.ChunkSize, config.ChunkSize);
             CreateChunk(GetFilePathFor("chunk-000001.000001"), config.ChunkSize - 10, config.ChunkSize);
 
-            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
             Assert.IsNotNull(db.Manager.GetChunk(2));
 
             Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
@@ -468,7 +450,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test, Ignore("Not valid test now after disabling size validation on ongoing TFChunk ")]
         public void when_checkpoint_is_on_boundary_of_new_chunk_and_last_chunk_is_truncated_but_not_completed_exception_is_thrown()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
@@ -482,7 +463,7 @@ namespace EventStore.Core.Tests.TransactionLog
             CreateChunk(GetFilePathFor("chunk-000000.000000"), config.ChunkSize, config.ChunkSize);
             CreateOngoingChunk(GetFilePathFor("chunk-000001.000001"), config.ChunkSize - 10, config.ChunkSize);
 
-            var ex = Assert.Throws<CorruptDatabaseException>(() => db.OpenVerifyAndClean(verifyHash: false));
+            var ex = Assert.Throws<CorruptDatabaseException>(() => db.Open(verifyHash: false));
             Assert.IsInstanceOf<BadChunkInDatabaseException>(ex.InnerException);
 
             db.Dispose();
@@ -491,7 +472,6 @@ namespace EventStore.Core.Tests.TransactionLog
         [Test]
         public void temporary_files_are_removed()
         {
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var config = new TFChunkDbConfig(PathName,
                                              new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                              100,
@@ -509,7 +489,7 @@ namespace EventStore.Core.Tests.TransactionLog
             File.Create(GetFilePathFor("bla.scavenge.tmp")).Close();
             File.Create(GetFilePathFor("bla.tmp")).Close();
 
-            Assert.DoesNotThrow(() => db.OpenVerifyAndClean(verifyHash: false));
+            Assert.DoesNotThrow(() => db.Open(verifyHash: false));
 
             Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
             Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000001.000001")));

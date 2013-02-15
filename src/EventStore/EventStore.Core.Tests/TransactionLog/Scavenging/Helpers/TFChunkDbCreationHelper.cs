@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             _dbConfig = dbConfig;
 
             _db = new TFChunkDb(_dbConfig);
-            _db.OpenVerifyAndClean();
+            _db.Open();
 
             if (_db.Config.WriterCheckpoint.ReadNonFlushed() > 0)
                 throw new Exception("The DB already contains some data.");

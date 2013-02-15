@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        new InMemoryCheckpoint(),
                                                        new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
-            db.OpenVerifyAndClean();
+            db.Open();
 
             var chaser = new TFChunkChaser(db, writerchk, new InMemoryCheckpoint());
             chaser.Open();
@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        chaserchk,
                                                        new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
-            db.OpenVerifyAndClean();
+            db.Open();
             writerchk.Write(12);
             writerchk.Flush();
             chaserchk.Write(12);
@@ -138,7 +138,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        chaserchk,
                                                        new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
-            db.OpenVerifyAndClean();
+            db.Open();
 
             var chaser = new TFChunkChaser(db, writerchk, chaserchk);
             chaser.Open();
@@ -170,7 +170,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        chaserchk,
                                                        new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
-            db.OpenVerifyAndClean();
+            db.Open();
 
             var recordToWrite = new PrepareLogRecord(logPosition: 0,
                                                      correlationId: _correlationId,
@@ -221,7 +221,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        chaserchk,
                                                        new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
-            db.OpenVerifyAndClean();
+            db.Open();
 
             var recordToWrite = new PrepareLogRecord(logPosition: 0,
                                                      correlationId: _correlationId,

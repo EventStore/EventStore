@@ -26,7 +26,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
-using System.IO;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -49,7 +48,6 @@ namespace EventStore.Core.Tests.TransactionLog
         public void SetUp()
         {
             _writerCheckpoint = new InMemoryCheckpoint();
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
             _db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                     new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
                                                     1024,
@@ -58,10 +56,10 @@ namespace EventStore.Core.Tests.TransactionLog
                                                     new InMemoryCheckpoint(),
                                                     new InMemoryCheckpoint(-1),
                                                     new InMemoryCheckpoint(-1)));
-            _db.OpenVerifyAndClean();
+            _db.Open();
             _writer = new TFChunkWriter(_db);
             _writer.Open();
-            _record = new CommitLogRecord(logPosition: 0xFEED,
+            _record = new CommitLogRecord(logPosition: 0,
                                           correlationId: _eventId,
                                           transactionPosition: 4321,
                                           timeStamp: new DateTime(2012, 12, 21),
@@ -90,7 +88,7 @@ namespace EventStore.Core.Tests.TransactionLog
                 Assert.True(r is CommitLogRecord);
                 var c = (CommitLogRecord) r;
                 Assert.AreEqual(c.RecordType, LogRecordType.Commit);
-                Assert.AreEqual(c.LogPosition, 0xFEED);
+                Assert.AreEqual(c.LogPosition, 0);
                 Assert.AreEqual(c.CorrelationId, _eventId);
                 Assert.AreEqual(c.TransactionPosition, 4321);
                 Assert.AreEqual(c.TimeStamp, new DateTime(2012, 12, 21));

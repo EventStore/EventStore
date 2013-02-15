@@ -27,7 +27,6 @@
 // 
 using System;
 using System.IO;
-using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -55,8 +54,6 @@ namespace EventStore.Core.Tests.TransactionLog
             File.WriteAllBytes(filename, buf);
 
             _checkpoint = new InMemoryCheckpoint(137);
-            ICheckpoint[] namedCheckpoints = new ICheckpoint[0];
-            ICheckpoint truncateCheckpoint = new InMemoryCheckpoint(-1);
             var db = new TFChunkDb(new TFChunkDbConfig(PathName,
                                                        new PrefixFileNamingStrategy(PathName, "prefix.tf"),
                                                        chunkHeader.ChunkSize,
@@ -65,12 +62,12 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        new InMemoryCheckpoint(),
                                                        new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
-            db.OpenVerifyAndClean();
+            db.Open();
 
             var bytes = new byte[3994]; // this gives exactly 4097 size of record, with 3993 (rec size 4096) everything works fine!
             new Random().NextBytes(bytes);
             var writer = new TFChunkWriter(db);
-            var record = new PrepareLogRecord(logPosition: 123,
+            var record = new PrepareLogRecord(logPosition: 137,
                                               correlationId: _correlationId,
                                               eventId: _eventId,
                                               transactionPosition: 789,

@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                              new InMemoryCheckpoint(-1),
                                              new InMemoryCheckpoint(-1));
             var db = new TFChunkDb(config);
-            db.OpenVerifyAndClean();
+            db.Open();
             db.Dispose();
 
             Assert.AreEqual(1, Directory.GetFiles(PathName).Length);

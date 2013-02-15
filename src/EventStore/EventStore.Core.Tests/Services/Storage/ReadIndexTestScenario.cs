@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.Services.Storage
                                                    new InMemoryCheckpoint(-1),
                                                    new InMemoryCheckpoint(-1)));
 
-            Db.OpenVerifyAndClean();
+            Db.Open();
             // create db
             Writer = new TFChunkWriter(Db);
             Writer.Open();

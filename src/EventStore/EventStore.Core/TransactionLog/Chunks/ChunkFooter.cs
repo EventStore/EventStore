@@ -37,28 +37,28 @@ namespace EventStore.Core.TransactionLog.Chunks
         public const int Size = 128;
         public const int ChecksumSize = 16;
 
-        public readonly bool Completed;
-        public readonly int ActualChunkSize;
-        public readonly int ActualDataSize;
+        public readonly bool IsCompleted;
+        public readonly int PhysicalChunkSize; // the size of a section of data in chunk
+        public readonly int LogicalDataSize;  // the size of a logical data size (after scavenge LogicalDataSize can be > physicalChunkSize)
         public readonly int MapSize;
         public readonly byte[] MD5Hash;
 
         public readonly int MapCount; // calculated, not stored
 
-        public ChunkFooter(bool completed, int actualChunkSize, int actualDataSize, int mapSize, byte[] md5Hash)
+        public ChunkFooter(bool isCompleted, int physicalChunkSize, int logicalDataSize, int mapSize, byte[] md5Hash)
         {
-            Ensure.Nonnegative(actualChunkSize, "actualChunkSize");
-            Ensure.Nonnegative(actualDataSize, "actualDataSize");
-            if (actualDataSize > actualChunkSize)
-                throw new ArgumentOutOfRangeException("actualDataSize", "ActualDataSize is greater than ActualChunkSize");
+            Ensure.Nonnegative(physicalChunkSize, "physicalChunkSize");
+            Ensure.Nonnegative(logicalDataSize, "logicalDataSize");
+            if (logicalDataSize < physicalChunkSize)
+                throw new ArgumentOutOfRangeException("logicalDataSize", "LogicalDataSize is less than PhysicalChunkSize");
             Ensure.Nonnegative(mapSize, "mapSize");
             Ensure.NotNull(md5Hash, "md5Hash");
             if (md5Hash.Length != ChecksumSize)
                 throw new ArgumentException("MD5Hash is of wrong length.", "md5Hash");
 
-            Completed = completed;
-            ActualChunkSize = actualChunkSize;
-            ActualDataSize = actualDataSize;
+            IsCompleted = isCompleted;
+            PhysicalChunkSize = physicalChunkSize;
+            LogicalDataSize = logicalDataSize;
             MapSize = mapSize;
             MD5Hash = md5Hash;
 
@@ -73,9 +73,9 @@ namespace EventStore.Core.TransactionLog.Chunks
             using (var memStream = new MemoryStream(array))
             using (var writer = new BinaryWriter(memStream))
             {
-                writer.Write(Completed);
-                writer.Write(ActualChunkSize);
-                writer.Write(ActualDataSize);
+                writer.Write(IsCompleted);
+                writer.Write(PhysicalChunkSize);
+                writer.Write(LogicalDataSize);
                 writer.Write(MapSize);
                 
                 memStream.Position = Size - ChecksumSize;
@@ -88,14 +88,14 @@ namespace EventStore.Core.TransactionLog.Chunks
         {
             var reader = new BinaryReader(stream);
             var completed = reader.ReadBoolean();
-            var actualChunkSize = reader.ReadInt32();
-            var actualDataSize = reader.ReadInt32();
+            var physicalDataSize = reader.ReadInt32();
+            var logicalDataSize = reader.ReadInt32();
             var mapSize = reader.ReadInt32();
             
             stream.Position = stream.Length - ChecksumSize;
             var hash = reader.ReadBytes(ChecksumSize);
 
-            return new ChunkFooter(completed, actualChunkSize, actualDataSize, mapSize, hash);
+            return new ChunkFooter(completed, physicalDataSize, logicalDataSize, mapSize, hash);
         }
     }
 }

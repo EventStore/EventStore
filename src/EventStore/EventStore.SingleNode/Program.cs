@@ -76,7 +76,7 @@ namespace EventStore.SingleNode
             var vnodeSettings = GetVNodeSettings(options);
             var dbVerifyHashes = !options.SkipDbVerify;
 
-            Log.Info("\n{0,-25} {1}\n{2,-25} {3}\n{4,-25} {5}\n{6,-25} {7}\n",
+            Log.Info("\n{0,-25} {1}\n{2,-25} {3} (0x{3:X})\n{4,-25} {5} (0x{5:X})\n{6,-25} {7} (0x{7:X})\n{8,-25} {9} (0x{9:X})\n",
                      "DATABASE:", db.Config.Path,
                      "WRITER CHECKPOINT:", db.Config.WriterCheckpoint.Read(),
                      "CHASER CHECKPOINT:", db.Config.ChaserCheckpoint.Read(),

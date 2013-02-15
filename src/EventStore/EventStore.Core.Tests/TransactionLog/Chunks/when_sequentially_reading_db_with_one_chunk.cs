@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.TransactionLog.Chunks
                                                     new InMemoryCheckpoint(),
                                                     new InMemoryCheckpoint(-1),
                                                     new InMemoryCheckpoint(-1)));
-            _db.OpenVerifyAndClean();
+            _db.Open();
             
             var chunk = _db.Manager.GetChunk(0);
 

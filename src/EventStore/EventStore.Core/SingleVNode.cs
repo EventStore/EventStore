@@ -79,7 +79,7 @@ namespace EventStore.Core
             Ensure.NotNull(db, "db");
             Ensure.NotNull(vNodeSettings, "vNodeSettings");
 
-            db.OpenVerifyAndClean(dbVerifyHashes);
+            db.Open(dbVerifyHashes);
 
             _tcpEndPoint = vNodeSettings.ExternalTcpEndPoint;
             _httpEndPoint = vNodeSettings.ExternalHttpEndPoint;

@@ -270,7 +270,8 @@ namespace EventStore.Core.Index
                     {
                         if (File.Exists(backupFile))
                             File.Delete(backupFile);
-                        File.Copy(indexmapFile, backupFile);
+                        if (File.Exists(indexmapFile))
+                            File.Copy(indexmapFile, backupFile);
                     });
 
                     _indexMap.EnterUnsafeState(_directory);

@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        new InMemoryCheckpoint(),
                                                        new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
-            db.OpenVerifyAndClean();
+            db.Open();
 
             var reader = new TFChunkReader(db, writerchk, 0);
             LogRecord record;
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.TransactionLog
                                                        new InMemoryCheckpoint(),
                                                        new InMemoryCheckpoint(-1),
                                                        new InMemoryCheckpoint(-1)));
-            db.OpenVerifyAndClean();
+            db.Open();
 
             var writer = new TFChunkWriter(db);
             writer.Open();
