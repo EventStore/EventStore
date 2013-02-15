@@ -147,7 +147,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (!_emittedStreams.TryGetValue(streamId, out stream))
             {
                 stream = new EmittedStream(
-                    streamId, _zero, _readDispatcher, _writeDispatcher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength,
+                    streamId, _zero, _from, _readDispatcher, _writeDispatcher, this /*_recoveryMode*/, maxWriteBatchLength: _maxWriteBatchLength,
                     logger: _logger);
                 if (_started)
                     stream.Start();

@@ -29,8 +29,6 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -51,11 +49,18 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void setup()
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
-            ;
             _stream = new EmittedStream(
-                "test_stream", CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler,
+                "test_stream", CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(40, 30), _readDispatcher, _writeDispatcher, _readyHandler,
                 maxWriteBatchLength: 50);
             _stream.Start();
+        }
+
+        [Test, ExpectedException(typeof(InvalidOperationException))]
+        public void throws_if_position_is_prior_to_from_position()
+        {
+            _stream.EmitEvents(
+                new[] {new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data",
+                CheckpointTag.FromPosition(20, 10), null)});
         }
 
         [Test]

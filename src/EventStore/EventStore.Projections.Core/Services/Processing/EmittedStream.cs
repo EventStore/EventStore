@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -50,6 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ILogger _logger;
         private readonly string _streamId;
         private readonly CheckpointTag _zeroPosition;
+        private readonly CheckpointTag _from;
         private readonly IProjectionCheckpointManager _readyHandler;
 
         private readonly Queue<EmittedEvent[]> _pendingWrites =
@@ -67,10 +69,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private int _lastKnownEventNumber = ExpectedVersion.Invalid;
         private readonly bool _noCheckpoints;
         private bool _disposed;
+        private CheckpointTag _last;
 
 
         public EmittedStream(
-            string streamId, CheckpointTag zeroPosition,
+            string streamId, CheckpointTag zeroPosition, CheckpointTag from,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
@@ -78,12 +81,16 @@ namespace EventStore.Projections.Core.Services.Processing
             bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
+            if (zeroPosition == null) throw new ArgumentNullException("zeroPosition");
+            if (@from == null) throw new ArgumentNullException("from");
             if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
             if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
             _zeroPosition = zeroPosition;
+            _from = @from;
+            _last = @from;
             _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
             _readyHandler = readyHandler;
@@ -96,8 +103,13 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (events == null) throw new ArgumentNullException("events");
             foreach (var @event in events)
+            {
                 if (@event.StreamId != _streamId)
                     throw new ArgumentException("Invalid streamId", "events");
+                if (@event.CausedByTag < _last)
+                    throw new InvalidOperationException(string.Format("Invalid event order.  '{0}' goes after '{1}'", @event.CausedByTag, _last));
+                _last = @event.CausedByTag;
+            }
             EnsureCheckpointNotRequested();
             _pendingWrites.Enqueue(events);
             ProcessWrites();

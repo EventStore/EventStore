@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             base.Start(checkpointTag);
             _lastOrderCheckpointTag = checkpointTag;
-            _orderStream = CreateOrderStream();
+            _orderStream = CreateOrderStream(_lastOrderCheckpointTag);
             _orderStream.Start();
         }
 
@@ -94,10 +94,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastOrderCheckpointTag = message.CheckpointTag;
         }
 
-        private EmittedStream CreateOrderStream()
+        private EmittedStream CreateOrderStream(CheckpointTag from)
         {
             return new EmittedStream(
-                _namingBuilder.GetOrderStreamName(), _positionTagger.MakeZeroCheckpointTag(),
+                _namingBuilder.GetOrderStreamName(), _positionTagger.MakeZeroCheckpointTag(), from,
                 _readDispatcher, _writeDispatcher, /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger,
                 noCheckpoints: true);
         }
