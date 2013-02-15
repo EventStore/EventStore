@@ -102,7 +102,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 count = buffer.Length;
 
             var oldPos = (int)_stream.Position - ChunkHeader.Size;
-            var toRead = Math.Min(chunk.LogicalDataSize - oldPos, count);
+            var toRead = Math.Min(_chunk.LogicalDataSize - oldPos, count);
             Debug.Assert(toRead >= 0);
             _stream.Position = _stream.Position; // flush read buffer
             int bytesRead = _stream.Read(buffer, 0, toRead);
