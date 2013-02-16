@@ -27,9 +27,7 @@
 // 
 using System;
 using System.Diagnostics;
-using System.Net.Sockets;
 using System.Text;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 
@@ -55,56 +53,49 @@ namespace EventStore.TestClient.Commands
             }
 
             context.IsAsync();
-            var createStreamDto = new TcpClientMessageDto.CreateStream(
-                    eventStreamId,
-                    Guid.NewGuid().ToByteArray(), 
-                    Encoding.UTF8.GetBytes(metadata ?? string.Format("{{\"StreamName\": \"{0}\"}}", eventStreamId)),
-                    true,
-                    metadata == null);
-            var package = new TcpPackage(TcpCommand.CreateStream, Guid.NewGuid(), createStreamDto.Serialize());
-
             var sw = new Stopwatch();
-
             context.Client.CreateTcpConnection(
-                    context,
-                    connectionEstablished: conn =>
+                context,
+                connectionEstablished: conn =>
+                {
+                    context.Log.Info("[{0}]: Trying to create stream '{1}'...", conn.EffectiveEndPoint, eventStreamId);
+                    var createStreamDto = new TcpClientMessageDto.CreateStream(
+                            eventStreamId,
+                            Guid.NewGuid().ToByteArray(),
+                            Encoding.UTF8.GetBytes(metadata ?? string.Format("{{\"StreamName\": \"{0}\"}}", eventStreamId)),
+                            true,
+                            metadata == null);
+                    var package = new TcpPackage(TcpCommand.CreateStream, Guid.NewGuid(), createStreamDto.Serialize()).AsByteArray();
+                    sw.Start();
+                    conn.EnqueueSend(package);
+                },
+                handlePackage: (conn, pkg) =>
+                {
+                    sw.Stop();
+                    context.Log.Info("Create stream request took: {0}.", sw.Elapsed);
+
+                    if (pkg.Command != TcpCommand.CreateStreamCompleted)
                     {
-                        context.Log.Info("[{0}]: Trying to create stream '{1}'...", conn.EffectiveEndPoint, eventStreamId);
-                        sw.Start();
-                        conn.EnqueueSend(package.AsByteArray());
-                    },
-                    handlePackage: (conn, pkg) =>
+                        context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
+                        return;
+                    }
+
+                    var dto = pkg.Data.Deserialize<TcpClientMessageDto.CreateStreamCompleted>();
+                    if (dto.Result == TcpClientMessageDto.OperationResult.Success)
                     {
-                        if (pkg.Command != TcpCommand.CreateStreamCompleted)
-                        {
-                            context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
-                            return;
-                        }
-
-                        sw.Stop();
-
-                        var dto = pkg.Data.Deserialize<TcpClientMessageDto.CreateStreamCompleted>();
-                        if (dto.Result == TcpClientMessageDto.OperationResult.Success)
-                        {
-                            context.Log.Info("Successfully created stream '{0}'.", eventStreamId);
-                            PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
-                        }
-                        else
-                        {
-                            context.Log.Info("Error while creating stream {0}: {1} ({2}).", eventStreamId, dto.Message, dto.Result);
-                        }
-
-                        context.Log.Info("Create stream request took: {0}.", sw.Elapsed);
-                        conn.Close();
+                        context.Log.Info("Successfully created stream '{0}'.", eventStreamId);
+                        PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword), (int)sw.ElapsedMilliseconds);
                         context.Success();
-                    },
-                    connectionClosed: (connection, error) =>
+                    }
+                    else
                     {
-                        if (error == SocketError.Success)
-                            context.Success();
-                        else
-                            context.Fail();
-                    });
+                        context.Log.Info("Error while creating stream {0}: {1} ({2}).", eventStreamId, dto.Message, dto.Result);
+                        context.Fail();
+                    }
+
+                    conn.Close();
+                },
+                connectionClosed: (connection, error) => context.Fail(reason: "Connection was closed prematurely."));
 
             context.WaitForCompletion();
             return true;

@@ -88,6 +88,7 @@ namespace EventStore.Core.Util
                     { ".htm",  "text/html"} ,
                     { ".html", "text/html"} ,
                     { ".js",   "application/javascript"} ,
+                    { ".json",   "application/json"} ,
                     { ".ico",  "image/vnd.microsoft.icon"}
                 };
 

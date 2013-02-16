@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using EventStore.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -23,7 +21,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test_stream", CheckpointTag.FromPosition(0, -1), _bus, _readyHandler, maxWriteBatchLength: 50);
+                "test_stream", CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler,
+                maxWriteBatchLength: 50);
             _stream.Start();
         }
 

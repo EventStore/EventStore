@@ -35,30 +35,16 @@ namespace EventStore.Transport.Tcp
 {
     public class TcpConnectionBase : IMonitoredTcpConnection
     {
-        private Socket _socket;
-        private IPEndPoint _endPoint;
-
-        //TODO GFY THERE ARE SOME DATETIMES IN HERE THAT ARE NOT LOCKED. MIGHT WANT TO STORE AS LONGS THOUGH
-        //I DONT THINK THEY ARE EVER CHECKED FROM ANOTHER THREAD!
-        private long _lastSendStarted = -1;
-        private long _lastReceiveStarted = -1;
-        private bool _isClosed;
-
-        private int _pendingSendBytes;
-        private int _inSendBytes;
-        private int _pendingReceivedBytes;
-        private long _totaBytesSent;
-        private long _totaBytesReceived;
-
-        public TcpConnectionBase()
-        {
-            TcpConnectionMonitor.Default.Register(this);
-        }
-
-        public IPEndPoint EndPoint
-        {
-            get { return _endPoint; }
-        }
+        public IPEndPoint EndPoint { get { return _endPoint; } }
+        public bool IsInitialized { get { return _socket != null; } }
+        public bool IsClosed { get { return _isClosed; } }
+        public bool InSend { get { return Interlocked.Read(ref _lastSendStarted) >= 0; } }
+        public bool InReceive { get { return Interlocked.Read(ref _lastReceiveStarted) >= 0; } }
+        public int PendingSendBytes { get { return _pendingSendBytes; } }
+        public int InSendBytes { get { return _inSendBytes; } }
+        public int PendingReceivedBytes { get { return _pendingReceivedBytes; } }
+        public long TotalBytesSent { get { return Interlocked.Read(ref _totaBytesReceived); } }
+        public long TotalBytesReceived { get { return Interlocked.Read(ref _totaBytesReceived); } }
 
         public bool IsReadyForSend
         {
@@ -92,11 +78,6 @@ namespace EventStore.Transport.Tcp
             }
         }
 
-        public bool IsInitialized
-        {
-            get { return _socket != null; }
-        }
-
         public bool IsFaulted
         {
             get
@@ -113,27 +94,12 @@ namespace EventStore.Transport.Tcp
             }
         }
 
-        public bool IsClosed
-        {
-            get { return _isClosed; }
-        }
-
-        public bool InSend
-        {
-            get { return Interlocked.Read(ref _lastSendStarted) >= 0; }
-        }
-
-        public bool InReceive
-        {
-            get { return Interlocked.Read(ref _lastReceiveStarted) >= 0; }
-        }
-
         public DateTime? LastSendStarted
         {
             get
             {
                 var ticks = Interlocked.Read(ref _lastSendStarted);
-                return ticks >= 0 ? new DateTime(ticks) : (DateTime?) null;
+                return ticks >= 0 ? new DateTime(ticks) : (DateTime?)null;
             }
         }
 
@@ -146,35 +112,22 @@ namespace EventStore.Transport.Tcp
             }
         }
 
-        public int PendingSendBytes
-        {
-            get { return _pendingSendBytes; }
-        }
+        private Socket _socket;
+        private IPEndPoint _endPoint;
 
-        public int InSendBytes
-        {
-            get { return _inSendBytes; }
-        }
+        private long _lastSendStarted = -1;
+        private long _lastReceiveStarted = -1;
+        private bool _isClosed;
 
-        public int PendingReceivedBytes
-        {
-            get { return _pendingReceivedBytes; }
-        }
+        private int _pendingSendBytes;
+        private int _inSendBytes;
+        private int _pendingReceivedBytes;
+        private long _totaBytesSent;
+        private long _totaBytesReceived;
 
-        public long TotalBytesSent
+        public TcpConnectionBase()
         {
-            get
-            {
-                return Interlocked.Read(ref _totaBytesReceived);
-            }
-        }
-
-        public long TotalBytesReceived
-        {
-            get
-            {
-                return Interlocked.Read(ref _totaBytesReceived);
-            }
+            TcpConnectionMonitor.Default.Register(this);
         }
 
         protected void InitSocket(Socket socket, IPEndPoint endPoint)

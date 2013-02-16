@@ -271,7 +271,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             bool inSend = connection.InSend;
             bool isReadyForSend = connection.IsReadyForSend;
             DateTime? lastSendStarted = connection.LastSendStarted;
-            uint inSendBytes = connection.InSendBytes;
+            int inSendBytes = connection.InSendBytes;
 
             int sinceLastSend = (int)(DateTime.UtcNow - lastSendStarted.GetValueOrDefault()).TotalMilliseconds;
             bool missingSendCallback = inSend && isReadyForSend && sinceLastSend > 500;
@@ -289,8 +289,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void CheckPendingSend(IMonitoredTcpConnection connection)
         {
-            uint pendingSendBytes = connection.PendingSendBytes;
-
+            int pendingSendBytes = connection.PendingSendBytes;
             if (pendingSendBytes > 128 * 1024)
             {
                 _log.Debug("# {0} {1}kb pending send", connection, pendingSendBytes / 1024);
@@ -299,8 +298,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         private void CheckPendingReceived(IMonitoredTcpConnection connection)
         {
-            uint pendingReceivedBytes = connection.PendingReceivedBytes;
-
+            int pendingReceivedBytes = connection.PendingReceivedBytes;
             if (pendingReceivedBytes > 128 * 1024)
             {
                 _log.Debug("# {0} {1}kb are not dispatched", connection, pendingReceivedBytes / 1024);

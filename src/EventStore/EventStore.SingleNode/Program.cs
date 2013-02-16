@@ -75,6 +75,7 @@ namespace EventStore.SingleNode
             var db = new TFChunkDb(CreateDbConfig(dbPath, options.CachedChunks));
             var vnodeSettings = GetVNodeSettings(options);
             var dbVerifyHashes = !options.SkipDbVerify;
+            var runProjections = options.RunProjections;
 
             Log.Info("\n{0,-25} {1}\n{2,-25} {3} (0x{3:X})\n{4,-25} {5} (0x{5:X})\n{6,-25} {7} (0x{7:X})\n{8,-25} {9} (0x{9:X})\n",
                      "DATABASE:", db.Config.Path,
@@ -83,7 +84,8 @@ namespace EventStore.SingleNode
                      "EPOCH CHECKPOINT:", db.Config.EpochCheckpoint.Read(),
                      "TRUNCATE CHECKPOINT:", db.Config.TruncateCheckpoint.Read());
 
-            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes);
+            _node = new SingleVNode(db, vnodeSettings, dbVerifyHashes, runProjections);
+
             if (options.RunProjections)
             {
                 _projections = new Projections.Core.Projections(db,

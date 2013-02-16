@@ -99,8 +99,9 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var data = new byte[package.Data.Count];
             Buffer.BlockCopy(package.Data.Array, package.Data.Offset, data, 0, package.Data.Count);
-            envelope.ReplyWith(new TcpMessage.PongMessage(package.CorrelationId, data));
-            return null;
+            var pongMessage = new TcpMessage.PongMessage(package.CorrelationId, data);
+            envelope.ReplyWith(pongMessage);
+            return pongMessage;
         }
 
         private static TcpPackage WrapPong(TcpMessage.PongMessage message)

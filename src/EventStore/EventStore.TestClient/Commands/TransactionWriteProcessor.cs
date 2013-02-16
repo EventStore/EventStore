@@ -183,14 +183,7 @@ namespace EventStore.TestClient.Commands
                         }
 
                     },
-                    connectionClosed: (connection, error) =>
-                    {
-                        if (error == SocketError.Success && stage == Stage.Done)
-                            context.Success();
-                        else
-                            context.Fail();
-                    });
-
+                    connectionClosed: (connection, error) => context.Fail(reason: "Connection was closed prematurely."));
             context.WaitForCompletion();
             return true;
         }
@@ -199,8 +192,7 @@ namespace EventStore.TestClient.Commands
         {
             AcquiringTransactionId,
             Writing,
-            Committing,
-            Done
+            Committing
         }
     }
 }

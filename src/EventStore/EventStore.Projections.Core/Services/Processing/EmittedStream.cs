@@ -29,7 +29,6 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Common.Log;
-using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -38,13 +37,19 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EmittedStream : IHandle<ClientMessage.WriteEventsCompleted>,
-                                 IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>
+    public class EmittedStream : IDisposable
     {
+        private readonly
+            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
+            _readDispatcher;
+
+        private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
+            _writeDispatcher;
+
+
         private readonly ILogger _logger;
         private readonly string _streamId;
         private readonly CheckpointTag _zeroPosition;
-        private readonly IPublisher _publisher;
         private readonly IProjectionCheckpointManager _readyHandler;
 
         private readonly Queue<EmittedEvent[]> _pendingWrites =
@@ -61,20 +66,26 @@ namespace EventStore.Projections.Core.Services.Processing
         private EmittedEvent[] _submittedToWriteEmittedEvents;
         private int _lastKnownEventNumber = ExpectedVersion.Invalid;
         private readonly bool _noCheckpoints;
+        private bool _disposed;
 
 
         public EmittedStream(
-            string streamId, CheckpointTag zeroPosition, IPublisher publisher,
-            IProjectionCheckpointManager readyHandler,
-            int maxWriteBatchLength, ILogger logger = null, bool noCheckpoints = false)
+            string streamId, CheckpointTag zeroPosition,
+            RequestResponseDispatcher
+                <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
+            RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
+            IProjectionCheckpointManager readyHandler, int maxWriteBatchLength, ILogger logger = null,
+            bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
-            if (publisher == null) throw new ArgumentNullException("publisher");
+            if (readDispatcher == null) throw new ArgumentNullException("readDispatcher");
+            if (writeDispatcher == null) throw new ArgumentNullException("writeDispatcher");
             if (readyHandler == null) throw new ArgumentNullException("readyHandler");
             if (streamId == "") throw new ArgumentException("streamId");
             _streamId = streamId;
             _zeroPosition = zeroPosition;
-            _publisher = publisher;
+            _readDispatcher = readDispatcher;
+            _writeDispatcher = writeDispatcher;
             _readyHandler = readyHandler;
             _maxWriteBatchLength = maxWriteBatchLength;
             _logger = logger;
@@ -125,10 +136,12 @@ namespace EventStore.Projections.Core.Services.Processing
             return _awaitingListEventsCompleted ? 1 : 0;
         }
 
-        public void Handle(ClientMessage.WriteEventsCompleted message)
+        private void Handle(ClientMessage.WriteEventsCompleted message)
         {
             if (!_awaitingWriteCompleted)
                 throw new InvalidOperationException("WriteEvents has not been submitted");
+            if (_disposed)
+                return;
             if (message.Result == OperationResult.Success)
             {
                 _lastKnownEventNumber = message.FirstEventNumber + _submittedToWriteEvents.Length - 1
@@ -164,10 +177,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _readyHandler.Handle(new CoreProjectionProcessingMessage.RestartRequested(reason));
         }
 
-        public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
+        private void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
         {
             if (!_awaitingListEventsCompleted)
                 throw new InvalidOperationException("ReadStreamEventsBackward has not been requested");
+            if (_disposed)
+                return;
             _awaitingListEventsCompleted = false;
             if (message.Events.Length == 0)
             {
@@ -200,9 +215,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private void SubmitListEvents()
         {
             _awaitingListEventsCompleted = true;
-            _publisher.Publish(
+            _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), new SendToThisEnvelope(this), _streamId, -1, 1, resolveLinks: false, validationStreamVersion: null));
+                    Guid.NewGuid(), _readDispatcher.Envelope, _streamId, -1, 1, resolveLinks: false, validationStreamVersion: null), Handle);
         }
 
         private void SubmitWriteEvents()
@@ -249,10 +264,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void PublishWriteEvents()
         {
-            _publisher.Publish(
+            _writeDispatcher.Publish(
                 new ClientMessage.WriteEvents(
-                    Guid.NewGuid(), new SendToThisEnvelope(this), true, _streamId,
-                    _lastKnownEventNumber, _submittedToWriteEvents));
+                    Guid.NewGuid(), _writeDispatcher.Envelope, true, _streamId,
+                    _lastKnownEventNumber, _submittedToWriteEvents), Handle);
         }
 
         private void EnsureCheckpointNotRequested()
@@ -311,6 +326,11 @@ namespace EventStore.Projections.Core.Services.Processing
             foreach (var @event in eventsToWrite)
                 if (@event.OnCommitted != null)
                     @event.OnCommitted();
+        }
+
+        public void Dispose()
+        {
+            _disposed = true;
         }
     }
 }

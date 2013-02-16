@@ -318,12 +318,6 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             var startInfo = new ProcessStartInfo(fileName, arguments);
 
-            if (OS.IsLinux)
-            {
-                startInfo.UseShellExecute = false;
-                startInfo.RedirectStandardOutput = true;
-            }
-
             var nodeProcess = Process.Start(startInfo);
             if (nodeProcess == null || nodeProcess.HasExited)
                 throw new ApplicationException("Process was not started.");
@@ -343,25 +337,9 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
             return nodeProcess.Id;
         }
 
-        private IPAddress GetInterIpAddress()
-        {
-            var interIp = IPAddress.None;
-
-            var host = Dns.GetHostEntry(Dns.GetHostName());
-            foreach (IPAddress ip in host.AddressList.Reverse())
-            {
-                if (ip.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    interIp = ip;
-                    break;
-                }
-            }
-            return interIp;
-        }
-
         private IPEndPoint GetTcpEndPoint()
         {
-            return new IPEndPoint(GetInterIpAddress(), 31113);
+            return new IPEndPoint(IPAddress.Loopback, 31113);
         }
 
         private bool TryGetProcessById(int processId, out Process process)

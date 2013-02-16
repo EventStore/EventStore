@@ -167,7 +167,7 @@ namespace EventStore.TestClient
         {
             Log.Info("Processing command: {0}.", string.Join(" ", args));
 
-            var context = new CommandProcessorContext(this, Log, new ManualResetEvent(true));
+            var context = new CommandProcessorContext(this, Log, new ManualResetEventSlim(true));
 
             int exitCode;
             if (_commands.TryProcess(context, args, out exitCode))
@@ -193,7 +193,8 @@ namespace EventStore.TestClient
                 tcpEndPoint ?? TcpEndpoint,
                 conn =>
                 {
-                    Log.Info("Connected to [{0}].", conn.EffectiveEndPoint);
+                    if (!InteractiveMode)
+                        Log.Info("Connected to [{0}].", conn.EffectiveEndPoint);
                     if (connectionEstablished != null)
                     {
                         connectionCreatedEvent.WaitOne(500);
@@ -212,15 +213,19 @@ namespace EventStore.TestClient
 
                     if (failContextOnError)
                         context.Fail(reason: string.Format("Socket connection failed with error {0}.", error));
-                });
+                },
+                verbose: !InteractiveMode);
 
             typedConnection = new Connection(connection, new RawMessageFormatter(_bufferManager), new LengthPrefixMessageFramer());
             typedConnection.ConnectionClosed +=
                 (conn, error) =>
                 {
-                    Log.Info("Connection [{0}] was closed {1}",
-                                conn.EffectiveEndPoint,
-                                error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
+                    if (!InteractiveMode || error != SocketError.Success)
+                    {
+                        Log.Info("Connection [{0}] was closed {1}",
+                                 conn.EffectiveEndPoint,
+                                 error == SocketError.Success ? "cleanly." : "with error: " + error + ".");
+                    }
 
                     if (connectionClosed != null)
                         connectionClosed(conn, error);

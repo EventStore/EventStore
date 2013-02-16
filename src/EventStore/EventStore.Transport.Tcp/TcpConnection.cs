@@ -35,6 +35,7 @@ using System.Threading;
 using EventStore.BufferManagement;
 using EventStore.Common.Locks;
 using EventStore.Common.Log;
+using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Tcp
 {
@@ -43,21 +44,22 @@ namespace EventStore.Transport.Tcp
         private const int MaxSendPacketSize = 64 * 1024;
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<TcpConnection>();
-        private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool",
-                                                                                   TcpConfiguration.SendReceivePoolSize,
+        private static readonly SocketArgsPool SocketArgsPool = new SocketArgsPool("TcpConnection.SocketArgsPool", 
+                                                                                   TcpConfiguration.SendReceivePoolSize, 
                                                                                    () => new SocketAsyncEventArgs());
         private static readonly BufferManager BufferManager = new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
 
         internal static TcpConnection CreateConnectingTcpConnection(IPEndPoint remoteEndPoint, 
                                                                     TcpClientConnector connector, 
                                                                     Action<TcpConnection> onConnectionEstablished, 
-                                                                    Action<TcpConnection, SocketError> onConnectionFailed)
+                                                                    Action<TcpConnection, SocketError> onConnectionFailed,
+                                                                    bool verbose)
         {
-            var connection = new TcpConnection(remoteEndPoint);
+            var connection = new TcpConnection(remoteEndPoint, verbose);
             connector.InitConnect(remoteEndPoint,
                                   (_, socket) =>
                                   {
-                                      connection.InitSocket(socket);
+                                      connection.InitSocket(socket, verbose);
                                       if (onConnectionEstablished != null)
                                           onConnectionEstablished(connection);
                                       connection.TrySend();
@@ -70,10 +72,10 @@ namespace EventStore.Transport.Tcp
             return connection;
         }
 
-        internal static TcpConnection CreateAcceptedTcpConnection(IPEndPoint effectiveEndPoint, Socket socket)
+        internal static TcpConnection CreateAcceptedTcpConnection(IPEndPoint effectiveEndPoint, Socket socket, bool verbose)
         {
-            var connection = new TcpConnection(effectiveEndPoint);
-            connection.InitSocket(socket);
+            var connection = new TcpConnection(effectiveEndPoint, verbose);
+            connection.InitSocket(socket, verbose);
             return connection;
         }
 
@@ -106,17 +108,20 @@ namespace EventStore.Transport.Tcp
         private int _recvAsyncs;
         private int _recvAsyncCallbacks;
 
-        private TcpConnection(IPEndPoint effectiveEndPoint)
+        private readonly bool _verbose;
+
+        private TcpConnection(IPEndPoint effectiveEndPoint, bool verbose)
         {
-            if (effectiveEndPoint == null)
-                throw new ArgumentNullException("effectiveEndPoint");
+            Ensure.NotNull(effectiveEndPoint, "effectiveEndPoint");
 
             EffectiveEndPoint = effectiveEndPoint;
+            _verbose = verbose;
         }
 
-        private void InitSocket(Socket socket)
+        private void InitSocket(Socket socket, bool verbose)
         {
-            Console.WriteLine("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
+            if (verbose)
+                Console.WriteLine("TcpConnection::InitSocket({0})", socket.RemoteEndPoint);
 
             base.InitSocket(socket, EffectiveEndPoint);
             using (_sendingLock.Acquire()) 
@@ -179,7 +184,6 @@ namespace EventStore.Transport.Tcp
             while (_sendQueue.TryDequeue(out sendPiece))
             {
                 _memoryStream.Write(sendPiece.Array, sendPiece.Offset, sendPiece.Count);
-
                 if (_memoryStream.Length >= MaxSendPacketSize)
                     break;
             }
@@ -209,12 +213,11 @@ namespace EventStore.Transport.Tcp
             {
                 ReturnSendingSocketArgs();
             }
-
         }
 
         private void OnSendAsyncCompleted(object sender, SocketAsyncEventArgs e)
         {
-            // no other code should go here. All handling is the same for sync/async completion
+            // No other code should go here. All handling is the same for sync/async completion.
             ProcessSend(e);
         }
 
@@ -259,6 +262,7 @@ namespace EventStore.Transport.Tcp
             if (buffer.Array == null || buffer.Count == 0 || buffer.Array.Length < buffer.Offset + buffer.Count)
                 throw new Exception("Invalid buffer allocated");
 
+            //TODO AN: do we need to lock on _receiveSocketArgs?..
             lock (_receiveSocketArgs) 
             {
                 _receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
@@ -290,7 +294,7 @@ namespace EventStore.Transport.Tcp
 
         private void OnReceiveAsyncCompleted(object sender, SocketAsyncEventArgs e)
         {
-            // no other code should go here.  All handling is the same on async and sync completion
+            // No other code should go here.  All handling is the same on async and sync completion.
             ProcessReceive(e);
         }
 
@@ -300,7 +304,7 @@ namespace EventStore.Transport.Tcp
                 throw new Exception("Invalid socket args received");
             Interlocked.Increment(ref _recvAsyncCallbacks);
 
-            // socket closed normally or some error occured
+            // socket closed normally or some error occurred
             if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success)
             {
                 NotifyReceiveCompleted(0);
@@ -313,18 +317,7 @@ namespace EventStore.Transport.Tcp
             Interlocked.Increment(ref _packagesReceived);
             Interlocked.Add(ref _bytesReceived, socketArgs.BytesTransferred);
             
-            //Console.WriteLine(string.Format("{0:mmss.fff}", DateTime.UtcNow) + " received " + socketArgs.BytesTransferred + " bytes.");
-            // OK, so what does this line of code do? It makes an ArraySegment<byte> representing the data 
-            // that we actually read.
-            // Then it constructs a little array to meet the IEnumerable interface.
-            // Then it makes original buffer (ArraySegment<byte>) we used for receive operation.
-            // Then it builds an IEnumerable that will dispose of our buffer (returning it to the buffer pool) 
-            // later (as in later when some other thread (but it may be on this thread, we aren't sure) processes 
-            // this buffer).
-            // This should be benchmarked vs copying the byte array every time into a new byte array
-            var receiveBufferSegment =
-                new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
-
+            var receiveBufferSegment = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.BytesTransferred);
             lock (_receivingLock)
             {
                 var fullBuffer = new ArraySegment<byte>(socketArgs.Buffer, socketArgs.Offset, socketArgs.Count);
@@ -387,17 +380,20 @@ namespace EventStore.Transport.Tcp
 
             NotifyClosed();
 
-            Console.WriteLine(
-                "[{0}]:\nReceived packages: {1}, bytes: {2}\nSend packages: {3}, bytes: {4}\nSendAsync calls: {5}, callbacks: {6}\nReceiveAsync calls: {7}, callbacks: {8}\n",
-                EffectiveEndPoint,
-                _packagesReceived,
-                _bytesReceived,
-                _packagesSent,
-                _bytesSent,
-                _sentAsyncs,
-                _sentAsyncCallbacks,
-                _recvAsyncs,
-                _recvAsyncCallbacks);
+            if (_verbose)
+            {
+                Console.WriteLine("[{0}]:\nReceived packages: {1}, bytes: {2}\nSend packages: {3}, bytes: {4}\n"
+                                  + "SendAsync calls: {5}, callbacks: {6}\nReceiveAsync calls: {7}, callbacks: {8}\n",
+                                  EffectiveEndPoint,
+                                  _packagesReceived,
+                                  _bytesReceived,
+                                  _packagesSent,
+                                  _bytesSent,
+                                  _sentAsyncs,
+                                  _sentAsyncCallbacks,
+                                  _recvAsyncs,
+                                  _recvAsyncCallbacks);
+            }
 
             if (_socket != null)
             {
@@ -445,12 +441,10 @@ namespace EventStore.Transport.Tcp
                 SocketArgsPool.Return(socketArgs);
             }
         }
-
         
-        public override string ToString ()
+        public override string ToString()
         {
             return EffectiveEndPoint.ToString();
         }
-        
     }
 }

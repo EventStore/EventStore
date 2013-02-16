@@ -27,8 +27,6 @@
 // 
 
 using System;
-using System.Net.Sockets;
-using EventStore.Core.Services.Transport;
 using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.TestClient.Commands
@@ -42,12 +40,15 @@ namespace EventStore.TestClient.Commands
         {
             context.IsAsync();
 
-            var package = new TcpPackage(TcpCommand.Ping, Guid.NewGuid(), null);
-            context.Log.Info("[{0}:{1}]: PING...", context.Client.Options.Ip, context.Client.Options.TcpPort);
-
-            var connection = context.Client.CreateTcpConnection(
+            context.Client.CreateTcpConnection(
                 context,
-                (conn, pkg) =>
+                connectionEstablished: conn =>
+                {
+                    var package = new TcpPackage(TcpCommand.Ping, Guid.NewGuid(), null);
+                    context.Log.Info("[{0}:{1}]: PING...", context.Client.Options.Ip, context.Client.Options.TcpPort);
+                    conn.EnqueueSend(package.AsByteArray());
+                },
+                handlePackage: (conn, pkg) =>
                 {
                     if (pkg.Command != TcpCommand.Pong)
                     {
@@ -55,18 +56,10 @@ namespace EventStore.TestClient.Commands
                         return;
                     }
                     context.Log.Info("[{0}:{1}]: PONG!", context.Client.Options.Ip, context.Client.Options.TcpPort);
-                    conn.Close();
                     context.Success();
+                    conn.Close();
                 },
-                null,
-                (typedConnection, error) =>
-                    {
-                        if (error == SocketError.Success)
-                            context.Success();
-                        else
-                            context.Fail();
-                    });
-            connection.EnqueueSend(package.AsByteArray());
+                connectionClosed: (typedConnection, error) => context.Fail(reason: "Connection was closed prematurely."));
             context.WaitForCompletion();
             return true;
         }

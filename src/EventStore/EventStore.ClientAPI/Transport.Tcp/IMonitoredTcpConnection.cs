@@ -47,9 +47,9 @@ namespace EventStore.ClientAPI.Transport.Tcp
         DateTime? LastSendStarted { get; }
         DateTime? LastReceiveStarted { get; }
 
-        uint PendingSendBytes { get; }
-        uint InSendBytes { get; }
-        uint PendingReceivedBytes { get; }
+        int PendingSendBytes { get; }
+        int InSendBytes { get; }
+        int PendingReceivedBytes { get; }
 
         long TotalBytesSent { get; }
         long TotalBytesReceived { get; }

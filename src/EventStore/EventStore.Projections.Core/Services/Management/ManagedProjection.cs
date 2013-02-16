@@ -33,6 +33,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.TimerService;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -44,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Management
     /// <summary>
     /// managed projection controls start/stop/create/update/delete lifecycle of the projection. 
     /// </summary>
-    public class ManagedProjection : IDisposable
+    public class ManagedProjection : IDisposable, IHandle<ProjectionManagementMessage.CancelExecutionMessage>
     {
         public class PersistedState
         {
@@ -60,6 +61,7 @@ namespace EventStore.Projections.Core.Services.Management
         }
 
         private readonly IPublisher _inputQueue;
+        private readonly IPublisher _output;
 
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
@@ -77,6 +79,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         private readonly ILogger _logger;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
+        private readonly ITimeProvider _timeProvider;
         private readonly IPublisher _coreQueue;
         private readonly Guid _id;
         private readonly string _name;
@@ -89,16 +92,19 @@ namespace EventStore.Projections.Core.Services.Management
         private ProjectionStatistics _lastReceivedStatistics;
         private Action _onPrepared;
         private Action _onStarted;
+        private DateTime _lastAccessed;
 
         public ManagedProjection(
             IPublisher coreQueue, Guid id, string name, ILogger logger,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
-            IPublisher inputQueue, ProjectionStateHandlerFactory projectionStateHandlerFactory)
+            IPublisher inputQueue, IPublisher output, ProjectionStateHandlerFactory projectionStateHandlerFactory,
+            ITimeProvider timeProvider)
         {
             if (id == Guid.Empty) throw new ArgumentException("id");
             if (name == null) throw new ArgumentNullException("name");
+            if (output == null) throw new ArgumentNullException("output");
             if (name == "") throw new ArgumentException("name");
             _coreQueue = coreQueue;
             _id = id;
@@ -107,11 +113,14 @@ namespace EventStore.Projections.Core.Services.Management
             _writeDispatcher = writeDispatcher;
             _readDispatcher = readDispatcher;
             _inputQueue = inputQueue;
+            _output = output;
             _projectionStateHandlerFactory = projectionStateHandlerFactory;
+            _timeProvider = timeProvider;
             _getStateDispatcher =
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>(
                     coreQueue, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+            _lastAccessed = _timeProvider.Now;
         }
 
         private string HandlerType
@@ -185,17 +194,20 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.GetQuery message)
         {
+            _lastAccessed = _timeProvider.Now;
             var emitEnabled = _persistedState.EmitEnabled ?? false;
             message.Envelope.ReplyWith(new ProjectionManagementMessage.ProjectionQuery(_name, Query, emitEnabled));
         }
 
         public void Handle(ProjectionManagementMessage.UpdateQuery message)
         {
+            _lastAccessed = _timeProvider.Now;
             Stop(() => DoUpdateQuery(message));
         }
 
         public void Handle(ProjectionManagementMessage.GetState message)
         {
+            _lastAccessed = _timeProvider.Now;
             if (_state >= ManagedProjectionState.Stopped)
             {
                 _getStateDispatcher.Publish(
@@ -214,6 +226,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.GetDebugState message)
         {
+            _lastAccessed = _timeProvider.Now;
             if (_state >= ManagedProjectionState.Stopped)
             {
                 var needRequest = false;
@@ -236,11 +249,13 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Disable message)
         {
+            _lastAccessed = _timeProvider.Now;
             Stop(() => DoDisable(message));
         }
 
         public void Handle(ProjectionManagementMessage.Enable message)
         {
+            _lastAccessed = _timeProvider.Now;
             if (Enabled && _state == ManagedProjectionState.Running)
             {
                 message.Envelope.ReplyWith(
@@ -256,6 +271,7 @@ namespace EventStore.Projections.Core.Services.Management
 
         public void Handle(ProjectionManagementMessage.Delete message)
         {
+            _lastAccessed = _timeProvider.Now;
             Stop(() => DoDelete(message));
         }
 
@@ -318,6 +334,23 @@ namespace EventStore.Projections.Core.Services.Management
             _debugStateRequests = null;
             foreach (var request in debugStateRequests)
                 request.ReplyWith(new ProjectionManagementMessage.ProjectionDebugState(_name, message.Events));
+        }
+
+        public void Handle(ProjectionManagementMessage.Internal.CleanupExpired message)
+        {
+            //TODO: configurable expiration
+            if (Mode == ProjectionMode.Transient)
+            {
+                if (_lastAccessed.AddMinutes(5) < _timeProvider.Now)
+                {
+                    if (_state == ManagedProjectionState.Creating)
+                    {
+                        // NOTE: workaround for stop not working on creating state (just ignore them)
+                        return;
+                    }
+                    Stop(() => Handle(new ProjectionManagementMessage.Delete(new NoopEnvelope(), _name, false, false)));
+                }
+            }
         }
 
         public void InitializeNew(ProjectionManagementMessage.Post message, Action completed)
@@ -554,7 +587,13 @@ namespace EventStore.Projections.Core.Services.Management
                             IProjectionStateHandler stateHandler = null;
                             try
                             {
-                                stateHandler = handlerFactory.Create(HandlerType, Query, Console.WriteLine);
+                                stateHandler = handlerFactory.Create(HandlerType, Query, 
+                                    logger: Console.WriteLine, 
+                                    cancelCallbackFactory: (ms, action) => 
+                                        _output.Publish(
+                                            TimerMessage.Schedule.Create(
+                                                TimeSpan.FromMilliseconds(ms), new SendToThisEnvelope(this), 
+                                                new ProjectionManagementMessage.CancelExecutionMessage(action))));
                                 var checkpointStrategyBuilder = new CheckpointStrategy.Builder();
                                 stateHandler.ConfigureSourceProcessingStrategy(checkpointStrategyBuilder);
                                 checkpointStrategyBuilder.Validate(config); // avoid future exceptions in coreprojection
@@ -598,9 +637,9 @@ namespace EventStore.Projections.Core.Services.Management
             var createProjectionMessage =
                 new CoreProjectionManagementMessage.CreatePrepared(
                     new PublishEnvelope(_inputQueue), _id, _name, config,
-                    new SourceDefintion(_persistedState.SourceDefintion));
+                    new SourceDefinition(_persistedState.SourceDefintion));
 
-            //note: set runnign before start as coreProjection.start() can respond with faulted
+            //note: set running before start as coreProjection.start() can respond with faulted
             _state = ManagedProjectionState.Preparing;
             _coreQueue.Publish(createProjectionMessage);
         }
@@ -706,66 +745,72 @@ namespace EventStore.Projections.Core.Services.Management
             Delete();
             Action completed = () =>
                 {
-                    message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(message.Name));
+                    message.Envelope.ReplyWith(new ProjectionManagementMessage.Updated(_name));
                     DisposeCoreProjection();
+                    _output.Publish(new ProjectionManagementMessage.Internal.Deleted(_name, _id));
                 };
             if (Enabled)
                 Prepare(() => BeginWrite(completed));
             else
                 BeginWrite(completed);
         }
+
+        public void Handle(ProjectionManagementMessage.CancelExecutionMessage message)
+        {
+            message.Action();
+        }
     }
 
-    class SourceDefintion : ISourceDefinitionConfigurator
+    class SourceDefinition : ISourceDefinitionConfigurator
     {
-        private readonly ProjectionSourceDefintion _sourceDefintion;
+        private readonly ProjectionSourceDefintion _sourceDefinition;
 
-        public SourceDefintion(ProjectionSourceDefintion sourceDefintion)
+        public SourceDefinition(ProjectionSourceDefintion sourceDefinition)
         {
-            if (sourceDefintion == null) throw new ArgumentNullException("sourceDefintion");
+            if (sourceDefinition == null) throw new ArgumentNullException("sourceDefinition");
 
-            _sourceDefintion = sourceDefintion;
+            _sourceDefinition = sourceDefinition;
         }
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
         {
-            if (_sourceDefintion.AllEvents) builder.AllEvents();
+            if (_sourceDefinition.AllEvents) builder.AllEvents();
 
-            if (_sourceDefintion.AllStreams) builder.FromAll();
+            if (_sourceDefinition.AllStreams) builder.FromAll();
 
-            if (_sourceDefintion.Categories != null)
-                foreach (var category in _sourceDefintion.Categories)
+            if (_sourceDefinition.Categories != null)
+                foreach (var category in _sourceDefinition.Categories)
                     builder.FromCategory(category);
-            if (_sourceDefintion.Streams != null)
-                foreach (var stream in _sourceDefintion.Streams)
+            if (_sourceDefinition.Streams != null)
+                foreach (var stream in _sourceDefinition.Streams)
                     builder.FromStream(stream);
 
-            if (_sourceDefintion.Events != null)
-                foreach (var @event in _sourceDefintion.Events)
+            if (_sourceDefinition.Events != null)
+                foreach (var @event in _sourceDefinition.Events)
                     builder.IncludeEvent(@event);
 
-            if (_sourceDefintion.ByStream)
+            if (_sourceDefinition.ByStream)
                 builder.SetByStream();
 
             //TODO: set false if options == null?
 
-            if (_sourceDefintion.Options != null && !string.IsNullOrEmpty(_sourceDefintion.Options.StateStreamName))
-                builder.SetStateStreamNameOption(_sourceDefintion.Options.StateStreamName);
+            if (_sourceDefinition.Options != null && !string.IsNullOrEmpty(_sourceDefinition.Options.StateStreamName))
+                builder.SetStateStreamNameOption(_sourceDefinition.Options.StateStreamName);
 
-            if (_sourceDefintion.Options != null && !string.IsNullOrEmpty(_sourceDefintion.Options.ForceProjectionName))
-                builder.SetForceProjectionName(_sourceDefintion.Options.ForceProjectionName);
+            if (_sourceDefinition.Options != null && !string.IsNullOrEmpty(_sourceDefinition.Options.ForceProjectionName))
+                builder.SetForceProjectionName(_sourceDefinition.Options.ForceProjectionName);
 
-            if (_sourceDefintion.Options != null)
-                builder.SetUseEventIndexes(_sourceDefintion.Options.UseEventIndexes);
+            if (_sourceDefinition.Options != null)
+                builder.SetUseEventIndexes(_sourceDefinition.Options.UseEventIndexes);
 
-            if (_sourceDefintion.Options != null)
-                builder.SetReorderEvents(_sourceDefintion.Options.ReorderEvents);
+            if (_sourceDefinition.Options != null)
+                builder.SetReorderEvents(_sourceDefinition.Options.ReorderEvents);
 
-            if (_sourceDefintion.Options != null)
-                builder.SetProcessingLag(_sourceDefintion.Options.ProcessingLag);
+            if (_sourceDefinition.Options != null)
+                builder.SetProcessingLag(_sourceDefinition.Options.ProcessingLag);
 
-            if (_sourceDefintion.Options != null)
-                builder.SetEmitStateUpdated(_sourceDefintion.Options.EmitStateUpdated);
+            if (_sourceDefinition.Options != null)
+                builder.SetEmitStateUpdated(_sourceDefinition.Options.EmitStateUpdated);
         }
     }
 }

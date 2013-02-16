@@ -45,9 +45,7 @@ namespace EventStore.TestClient.Commands
             {
                 if (args.Length > 2)
                     return false;
-
                 eventStreamId = args[0];
-
                 if (args.Length == 2)
                     version = int.Parse(args[1]);
             }

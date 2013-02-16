@@ -27,18 +27,18 @@
 // 
 
 using System;
-using EventStore.Common.Log;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
-namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
+namespace EventStore.Projections.Core.Tests.Services.projections_manager
 {
-    public class FakeProjection : IProjectionStateHandler
+    public class FakeForeachStreamProjection : IProjectionStateHandler
     {
         private readonly string _query;
         private readonly Action<string> _logger;
+        private string _state;
 
-        public FakeProjection(string query, Action<string> logger)
+        public FakeForeachStreamProjection(string query, Action<string> logger)
         {
             _query = query;
             _logger = logger;
@@ -53,17 +53,19 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             _logger("ConfigureSourceProcessingStrategy(" + builder + ")");
             builder.FromAll();
             builder.AllEvents();
+            builder.SetByStream();
         }
 
         public void Load(string state)
         {
             _logger("Load(" + state + ")");
-            throw new NotImplementedException();
+            _state = state;
         }
 
         public void Initialize()
         {
             _logger("Initialize");
+            _state = "";
         }
 
         public string GetStatePartition(
@@ -71,18 +73,18 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             int sequenceNumber, string metadata, string data)
         {
             _logger("GetStatePartition(" + "..." + ")");
-            throw new NotImplementedException();
+            return streamId;
         }
 
         public bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string streamId, string eventType, string category,
-            Guid eventid, int sequenceNumber, string metadata, string data, out string newState,
+            Guid eventId, int sequenceNumber, string metadata, string data, out string newState,
             out EmittedEvent[] emittedEvents)
         {
             if (eventType == "fail" || _query == "fail")
                 throw new Exception("failed");
             _logger("ProcessEvent(" + "..." + ")");
-            newState = "{\"data\": 1}";
+            newState = "{\"data\": " + _state + data + "}";
             emittedEvents = null;
             return true;
         }

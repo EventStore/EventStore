@@ -8,7 +8,7 @@
                     formatDate: function(s) {
                         var d = new Date(s);
 
-                        return (1900 + d.getYear()) + "-" + (1 + d.getMonth()) + "-" + (1 + d.getDate()) + " " +
+                        return (1900 + d.getYear()) + "-" + (1 + d.getMonth()) + "-" + d.getDate() + " " +
                             d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
                     }
                 }

@@ -85,11 +85,6 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _useCheckpoints; }
         }
 
-        public bool IsEmiEnabled()
-        {
-            return _streams == null || _streams.Count <= 1;
-        }
-
         public EventReader CreatePausedEventReader(
             Guid eventReaderId, IPublisher publisher, CheckpointTag checkpointTag, bool stopOnEof)
         {

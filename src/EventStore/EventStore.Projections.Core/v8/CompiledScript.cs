@@ -50,8 +50,12 @@ namespace EventStore.Projections.Core.v8
         }
 
 
-        public static void CheckResult(IntPtr scriptHandle, bool disposeScriptOnException)
+        public static void CheckResult(IntPtr scriptHandle, bool terminated, bool disposeScriptOnException)
         {
+            if (terminated)
+                throw new Js1Exception(-2, "Terminated");
+            if (scriptHandle == IntPtr.Zero)
+                throw new Js1Exception(-1, "Failed to compile script. Terminated?");
             int? errorCode = null;
             string errorMessage = null;
             _reportErrorCallback =
@@ -70,6 +74,8 @@ namespace EventStore.Projections.Core.v8
                 {
                     Js1.DisposeScript(scriptHandle);
                 }
+                if (errorCode == 2)
+                    throw new Js1Exception(errorCode.Value, "TERMINATED");
                 throw new Js1Exception(errorCode.Value, errorMessage);
             }
         }

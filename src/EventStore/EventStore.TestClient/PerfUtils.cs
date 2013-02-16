@@ -47,11 +47,6 @@ namespace EventStore.TestClient
             return nameValuesList;
         }
 
-        private static string Format(string name, object value)
-        {
-            return string.Format("{0}{1}{2}{3}", name, PairSplitter, value, ColumnSplitter);
-        }
-
         public static void LogData(string dataName, params NameValue[][] rows)
         {
             var sb = new StringBuilder();
@@ -71,11 +66,15 @@ namespace EventStore.TestClient
             Log.Debug(sb.ToString());
         }
 
+        private static string Format(string name, object value)
+        {
+            return string.Format("{0}{1}{2}{3}", name, PairSplitter, value, ColumnSplitter);
+        }
+
         /// <summary>
         /// Prints key-value point to the log in a way that TeamCity build server
         /// would be able to capture and then plot on build statistics page,
-        /// tracking performance across multiple builds (need server-side config
-        /// per project).
+        /// tracking performance across multiple builds (need server-side config per project).
         /// </summary>
         public static void LogTeamCityGraphData(string key, long value)
         {
