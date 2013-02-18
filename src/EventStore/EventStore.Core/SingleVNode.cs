@@ -195,7 +195,7 @@ namespace EventStore.Core
             Bus.Subscribe<StorageMessage.PreparePhaseTimeout>(requestManagement);
             Bus.Subscribe<StorageMessage.CommitPhaseTimeout>(requestManagement);
 
-            new SubscriptionsService(_mainBus, readIndex); // subcribes internally
+            new SubscriptionsService(_mainBus, readIndex); // subscribes internally
 
             // TIMER
             _timerService = new TimerService(new ThreadBasedScheduler(new RealTimeProvider()));
@@ -210,9 +210,9 @@ namespace EventStore.Core
             MainQueue.Publish(new SystemMessage.SystemInit());
         }
 
-        public void Stop()
+        public void Stop(bool exitProcess)
         {
-            MainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess: false));
+            MainQueue.Publish(new ClientMessage.RequestShutdown(exitProcess));
         }
 
         public override string ToString()

@@ -124,7 +124,7 @@ namespace EventStore.SingleNode
 
         public override void Stop()
         {
-            _node.Stop();
+            _node.Stop(exitProcess: true);
         }
     }
 }

@@ -27,6 +27,7 @@
 // 
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using EventStore.Common.Concurrent;
@@ -41,39 +42,26 @@ namespace EventStore.Transport.Http
     {
         private class Item
         {
-            private readonly byte[] _buffer;
-            private readonly Action<Exception> _onCompletion;
+            public readonly byte[] Buffer;
+            public readonly Action<Exception> OnCompletion;
 
             public Item(byte[] buffer, Action<Exception> onCompletion)
             {
-                _buffer = buffer;
-                _onCompletion = onCompletion;
-            }
-
-            public byte[] Buffer
-            {
-                get { return _buffer; }
-            }
-
-            public Action<Exception> OnCompletion
-            {
-                get { return _onCompletion; }
+                Buffer = buffer;
+                OnCompletion = onCompletion;
             }
         }
 
         private readonly Stream _outputStream;
         private readonly Action _onDispose;
         private readonly ConcurrentQueue<Item> _queue = new ConcurrentQueue<Item>();
-        private int _processing = 0;
-        private Exception _error;
-        private Item _item;
-        private bool _disposed;
 
-        /// <summary>
-        ///  
-        /// </summary>
-        /// <param name="outputStream">NOTE: outputStreamis is NOT auto-disposed</param>
-        /// <param name="onDispose">Use to dispose response streams and close connections</param>
+        private int _processing;
+        private Exception _error;
+        private int _disposed;
+
+        /// <param name="outputStream">NOTE: outputStream is NOT auto-disposed.</param>
+        /// <param name="onDispose">Use to dispose response streams and close connections.</param>
         public AsyncQueuedBufferWriter(Stream outputStream, Action onDispose)
         {
             _outputStream = outputStream;
@@ -86,24 +74,20 @@ namespace EventStore.Transport.Http
             _queue.Enqueue(item);
 
             if (Interlocked.CompareExchange(ref _processing, 1, 0) == 0)
-            {
                 BeginProcessing();
-            }
         }
 
         /// <summary>
         /// Schedules auto-dispose when all previous writes are completed
         /// </summary>
         /// <param name="onCompletion">onCompletion handler is called after the object has been disposed</param>
-        public void AppnedDispose(Action<Exception> onCompletion)
+        public void AppendDispose(Action<Exception> onCompletion)
         {
             var item = new Item(null, onCompletion);
             _queue.Enqueue(item);
 
             if (Interlocked.CompareExchange(ref _processing, 1, 0) == 0)
-            {
                 BeginProcessing();
-            }
         }
 
         private void BeginProcessing()
@@ -115,55 +99,42 @@ namespace EventStore.Transport.Http
 
         private void ContinueWriteOrStop()
         {
-            Item item;
-            if (!_queue.TryDequeue(out item))
+            bool proceed = true;
+            while (proceed)
             {
-                _item = null;
-                Interlocked.Exchange(ref _processing, 0);
-                return;
-            }
-            _item = item;
-            try
-            {
-                if (item.Buffer != null)
-                    _outputStream.BeginWrite(item.Buffer, 0, item.Buffer.Length, WriteCompleted, null);
-                else
+                Item item;
+                if (_queue.TryDequeue(out item))
                 {
-                    Dispose();
-                    item.OnCompletion(null);
+                    try
+                    {
+                        if (item.Buffer != null)
+                            _outputStream.BeginWrite(item.Buffer, 0, item.Buffer.Length, WriteCompleted, item);
+                        else
+                        {
+                            Dispose();
+                            if (item.OnCompletion != null) 
+                                item.OnCompletion(null);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _error = ex;
+                        Dispose();
+                    }
+                    return;
                 }
-            }
-            catch (Exception ex)
-            {
-                _error = ex;
-                Dispose();
+
+                Interlocked.Exchange(ref _processing, 0);
+                proceed = _queue.Count > 0 && Interlocked.CompareExchange(ref _processing, 1, 0) == 0;
             }
         }
 
         private void WriteCompleted(IAsyncResult ar)
         {
+            var item = (Item) ar.AsyncState;
             EndWrite(ar);
-            RaiseCompletion();
-            CleanupCurrentItem();
+            RaiseCompletion(item);
             ContinueWriteOrStop();
-        }
-
-        private void CleanupCurrentItem()
-        {
-            _item = null;
-        }
-
-        private void RaiseCompletion()
-        {
-            try
-            {
-                if (_item.OnCompletion != null)
-                    _item.OnCompletion(_error);
-            }
-            catch (Exception ex)
-            {
-                _error = ex;
-            }
         }
 
         private void EndWrite(IAsyncResult ar)
@@ -179,14 +150,25 @@ namespace EventStore.Transport.Http
             }
         }
 
+        private void RaiseCompletion(Item item)
+        {
+            try
+            {
+                if (item.OnCompletion != null)
+                    item.OnCompletion(_error);
+            }
+            catch (Exception ex)
+            {
+                _error = ex;
+            }
+        }
+
         public void Dispose()
         {
-            if (_disposed)
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0)
                 return;
-            _disposed = true;
             if (_onDispose != null)
                 _onDispose();
         }
-
     }
 }

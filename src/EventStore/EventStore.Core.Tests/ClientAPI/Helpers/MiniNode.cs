@@ -135,8 +135,6 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
 
             if (!startedEvent.Wait(60000))
                 throw new TimeoutException("MiniNode haven't started in 60 seconds.");
-
-            Thread.Sleep(100);
         }
 
         public void Shutdown()
@@ -144,19 +142,13 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
             var shutdownEvent = new ManualResetEventSlim(false);
             _node.Bus.Subscribe(new AdHocHandler<SystemMessage.BecomeShutdown>(m => shutdownEvent.Set()));
 
-            _node.Stop();
+            _node.Stop(exitProcess: true);
 
             if (!shutdownEvent.Wait(20000))
                 throw new TimeoutException("MiniNode haven't shut down in 20 seconds.");
 
-            Thread.Sleep(100);
-
             AvailablePorts.Enqueue(TcpEndPoint.Port);
             AvailablePorts.Enqueue(HttpEndPoint.Port);
-
-            _chaserChk.Dispose();
-            _writerChk.Dispose();
-            _tfChunkDb.Dispose();
 
             TryDeleteDirectory(_dbPath);
         }

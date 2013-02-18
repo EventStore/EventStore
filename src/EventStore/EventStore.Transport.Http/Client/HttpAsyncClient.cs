@@ -130,8 +130,7 @@ namespace EventStore.Transport.Http.Client
                 state.InputStream = networkStream;
                 state.OutputStream = new MemoryStream();
 
-                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, state.OutputStream, state);
-                copier.Completed += ResponseRead;
+                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, state.OutputStream, state, ResponseRead);
                 copier.Start();
             }
             catch (Exception e)
@@ -141,9 +140,8 @@ namespace EventStore.Transport.Http.Client
             }
         }
 
-        private void ResponseRead(object sender, EventArgs eventArgs)
+        private void ResponseRead(AsyncStreamCopier<ClientOperationState> copier)
         {
-            var copier = (AsyncStreamCopier<ClientOperationState>)sender;
             var state = copier.AsyncState;
 
             if (copier.Error != null)
@@ -168,8 +166,7 @@ namespace EventStore.Transport.Http.Client
             {
                 var networkStream = state.Request.EndGetRequestStream(ar);
                 state.OutputStream = networkStream;
-                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, networkStream, state);
-                copier.Completed += RequestWrote;
+                var copier = new AsyncStreamCopier<ClientOperationState>(state.InputStream, networkStream, state, RequestWrote);
                 copier.Start();
             }
             catch (Exception e)
@@ -179,9 +176,8 @@ namespace EventStore.Transport.Http.Client
             }
         }
 
-        private void RequestWrote(object sender, EventArgs eventArgs)
+        private void RequestWrote(AsyncStreamCopier<ClientOperationState> copier)
         {
-            var copier = (AsyncStreamCopier<ClientOperationState>)sender;
             var state = copier.AsyncState;
             var httpRequest = state.Request;
 

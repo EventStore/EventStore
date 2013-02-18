@@ -99,16 +99,13 @@ namespace EventStore.Core.Services.Monitoring.Utils
                     return;
                 }
 
-                var copier = new AsyncStreamCopier<object>(inputStream, _outputStream, null);
-                copier.Completed += OnStreamCopied;
+                var copier = new AsyncStreamCopier<object>(inputStream, _outputStream, null, OnStreamCopied);
                 copier.Start();
             });
         }
 
-        private void OnStreamCopied(object sender, EventArgs e)
+        private void OnStreamCopied(AsyncStreamCopier<object> copier)
         {
-            var copier = (AsyncStreamCopier<object>)sender;
-
             if (copier.Error != null)
             {
                 OnCompleted(copier.Error, null);

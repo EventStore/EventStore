@@ -28,7 +28,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -169,14 +168,8 @@ namespace EventStore.Transport.Http.EntityManagement
             Ensure.NotNull(onReadSuccess, "OnReadSuccess");
             Ensure.NotNull(onError, "onError");
 
-            var state = new ManagerOperationState(onReadSuccess, onError)
-            {
-                InputStream = HttpEntity.Request.InputStream,
-                OutputStream = new MemoryStream()
-            };
-
-            var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state);
-            copier.Completed += RequestRead;
+            var state = new ManagerOperationState(HttpEntity.Request.InputStream, new MemoryStream(), onReadSuccess, onError);
+            var copier = new AsyncStreamCopier<ManagerOperationState>(state.InputStream, state.OutputStream, state, RequestRead);
             copier.Start();
         }
 
@@ -244,7 +237,7 @@ namespace EventStore.Transport.Http.EntityManagement
 
         private void EndWriteResponse()
         {
-            _asyncWriter.AppnedDispose(exception => { });
+            _asyncWriter.AppendDispose(exception => { });
         }
 
         private void BeginWriteResponse()
@@ -268,14 +261,13 @@ namespace EventStore.Transport.Http.EntityManagement
                 });
         }
 
-        private void RequestRead(object sender, EventArgs e)
+        private void RequestRead(AsyncStreamCopier<ManagerOperationState> copier)
         {
-            var copier = (AsyncStreamCopier<ManagerOperationState>) sender;
             var state = copier.AsyncState;
 
             if (copier.Error != null)
             {
-                state.DisposeIOStreams();
+                state.Dispose();
                 CloseConnection(exc => Log.ErrorException(exc, "Close connection error (after crash in read request)"));
 
                 state.OnError(copier.Error);

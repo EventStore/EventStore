@@ -33,22 +33,23 @@ namespace EventStore.Transport.Http
 {
     public class AsyncStreamCopier<T>
     {
-        public event EventHandler Completed;
-
-        public T AsyncState { get; private set; }
         public Exception Error { get; private set; }
+        public readonly T AsyncState;
 
         private readonly byte[] _buffer = new byte[4096];
         private readonly Stream _input;
         private readonly Stream _output;
+        private readonly Action<AsyncStreamCopier<T>>  _onCompleted;
 
-        public AsyncStreamCopier(Stream input, Stream output, T state)
+        public AsyncStreamCopier(Stream input, Stream output, T state, Action<AsyncStreamCopier<T>> onCompleted)
         {
             Ensure.NotNull(input, "input");
             Ensure.NotNull(output, "output");
+            Ensure.NotNull(onCompleted, "onCompleted");
 
             _input = input;
             _output = output;
+            _onCompleted = onCompleted;
 
             AsyncState = state;
             Error = null;
@@ -77,7 +78,7 @@ namespace EventStore.Transport.Http
             try
             {
                 int bytesRead = _input.EndRead(ar);
-                if (bytesRead == 0 || bytesRead == -1) //TODO TR: only mono returns -1
+                if (bytesRead <= 0) // mono can return -1
                 {
                     OnCompleted();
                     return;
@@ -108,8 +109,8 @@ namespace EventStore.Transport.Http
 
         private void OnCompleted()
         {
-            if (Completed != null)
-                Completed(this, EventArgs.Empty);
+            if (_onCompleted != null)
+                _onCompleted(this);
         }
     }
 }

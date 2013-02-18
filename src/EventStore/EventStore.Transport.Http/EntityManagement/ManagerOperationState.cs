@@ -31,24 +31,31 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Transport.Http.EntityManagement
 {
-    internal class ManagerOperationState
+    internal class ManagerOperationState: IDisposable
     {
         public readonly Action<HttpEntityManager, byte[]> OnReadSuccess;
         public readonly Action<Exception> OnError;
 
-        public Stream InputStream { get; set; }
-        public Stream OutputStream { get; set; }
+        public readonly Stream InputStream;
+        public readonly Stream OutputStream;
 
-        public ManagerOperationState(Action<HttpEntityManager, byte[]> onReadSuccess, Action<Exception> onError)
+        public ManagerOperationState(Stream inputStream,
+                                     Stream outputStream,
+                                     Action<HttpEntityManager, byte[]> onReadSuccess, 
+                                     Action<Exception> onError)
         {
-            Ensure.NotNull(onReadSuccess, "OnReadSuccess");
+            Ensure.NotNull(inputStream, "inputStream");
+            Ensure.NotNull(outputStream, "outputStream");
+            Ensure.NotNull(onReadSuccess, "onReadSuccess");
             Ensure.NotNull(onError, "onError");
 
+            InputStream = inputStream;
+            OutputStream = outputStream;
             OnReadSuccess = onReadSuccess;
             OnError = onError;
         }
 
-        public void DisposeIOStreams()
+        public void Dispose()
         {
             IOStreams.SafelyDispose(InputStream, OutputStream);
         }
