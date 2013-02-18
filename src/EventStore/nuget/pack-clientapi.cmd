@@ -1,0 +1,1 @@
+..\..\..\tools\nuget\nuget.exe pack -symbols -version %1 EventStore.Client.nuspec
