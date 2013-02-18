@@ -85,18 +85,18 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         public void Handle(SystemMessage.SystemInit message)
         {
-        }
-
-        public void Handle(SystemMessage.SystemStart message)
-        {
             try
             {
                 _serverListener.StartListening(OnConnectionAccepted);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Application.Exit(ExitCode.Error, e.Message);
             }
+        }
+
+        public void Handle(SystemMessage.SystemStart message)
+        {
         }
 
         public void Handle(SystemMessage.BecomeShuttingDown message)

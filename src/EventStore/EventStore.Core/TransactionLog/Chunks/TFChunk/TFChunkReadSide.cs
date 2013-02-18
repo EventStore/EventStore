@@ -490,30 +490,27 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 if (length <= 0)
                 {
                     throw new ArgumentException(
-                            string.Format("Log record at actual pos {0} has non-positive length: {1}. "
-                                          + "Something is seriously wrong in chunk {2}-{3} ({4}).",
-                                          actualPosition,
-                                          length,
-                                          Chunk.ChunkHeader.ChunkStartNumber,
-                                          Chunk.ChunkHeader.ChunkEndNumber,
-                                          Chunk.FileName));
+                        string.Format("Log record at actual pos {0} has non-positive length: {1}. "
+                                      + "Something is seriously wrong in chunk {2}-{3} ({4}).",
+                                      actualPosition, length,
+                                      Chunk.ChunkHeader.ChunkStartNumber, Chunk.ChunkHeader.ChunkEndNumber, Chunk.FileName));
                 }
                 if (length > TFConsts.MaxLogRecordSize)
                 {
                     throw new ArgumentException(
-                            string.Format("Log record at actual pos {0} has too large length: {1} bytes, "
-                                          + "while limit is {2} bytes. Something is seriously wrong in chunk {3}-{4} ({5}).",
-                                          actualPosition,
-                                          length,
-                                          TFConsts.MaxLogRecordSize,
-                                          Chunk.ChunkHeader.ChunkStartNumber,
-                                          Chunk.ChunkHeader.ChunkEndNumber,
-                                          Chunk.FileName));
+                        string.Format("Log record at actual pos {0} has too large length: {1} bytes, "
+                                      + "while limit is {2} bytes. Something is seriously wrong in chunk {3}-{4} ({5}).",
+                                      actualPosition, length, TFConsts.MaxLogRecordSize, 
+                                      Chunk.ChunkHeader.ChunkStartNumber, Chunk.ChunkHeader.ChunkEndNumber, Chunk.FileName));
                 }
-
-                if (actualPosition + length + 2*sizeof(int) > Chunk.PhysicalDataSize)
+                if (actualPosition + length + 2 * sizeof(int) > Chunk.PhysicalDataSize)
+                {
                     throw new UnableToReadPastEndOfStreamException(
-                        string.Format("There is not enough space to read full record (record length according to length prefix: {0}).", length));
+                        string.Format("There is not enough space to read full record (length prefix: {0}). "
+                                      + "Actual pre-position: {1}. Something is seriously wrong in chunk {2}-{3} ({4}).",
+                                      length, actualPosition, 
+                                      Chunk.ChunkHeader.ChunkStartNumber, Chunk.ChunkHeader.ChunkEndNumber, Chunk.FileName));
+                }
 
                 record = LogRecord.ReadFrom(workItem.Reader);
 #if DEBUG
@@ -528,7 +525,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 return true;
             }
 
-            protected static bool TryReadBackwardInternal(ReaderWorkItem workItem, int actualPosition, out int length, out LogRecord record)
+            protected bool TryReadBackwardInternal(ReaderWorkItem workItem, int actualPosition, out int length, out LogRecord record)
             {
                 length = -1;
                 record = null;
@@ -542,23 +539,30 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk
                 length = workItem.Reader.ReadInt32();
                 if (length <= 0)
                 {
-                    throw new ArgumentException(string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
-                                                + "Something is seriously wrong.",
-                                                actualPosition, length));
+                    throw new ArgumentException(
+                        string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
+                                      + "Something is seriously wrong in chunk {2}-{3} ({4}).",
+                                      actualPosition, length,
+                                      Chunk.ChunkHeader.ChunkStartNumber, Chunk.ChunkHeader.ChunkEndNumber, Chunk.FileName));
                 }
                 if (length > TFConsts.MaxLogRecordSize)
                 {
-                    throw new ArgumentException(string.Format("Log record that ends at actual pos {0} has too large length: {1} bytes, " 
-                                                + "while limit is {2} bytes.",
-                                                actualPosition, length, TFConsts.MaxLogRecordSize));
+                    throw new ArgumentException(
+                        string.Format("Log record that ends at actual pos {0} has too large length: {1} bytes, "
+                                      + "while limit is {2} bytes. Something is seriously wrong in chunk {3}-{4} ({5}).",
+                                      actualPosition, length, TFConsts.MaxLogRecordSize,
+                                      Chunk.ChunkHeader.ChunkStartNumber, Chunk.ChunkHeader.ChunkEndNumber, Chunk.FileName));
                 }
                 if (actualPosition < length + 2 * sizeof(int)) // no space for record + length prefix and suffix 
                 {
                     throw new UnableToReadPastEndOfStreamException(
-                        string.Format("There is not enough space to read full record (record length according to length suffix: {0}).", length));
+                        string.Format("There is not enough space to read full record (length suffix: {0}). "
+                                      + "Actual post-position: {1}. Something is seriously wrong in chunk {2}-{3} ({4}).",
+                                      length, actualPosition,
+                                      Chunk.ChunkHeader.ChunkStartNumber, Chunk.ChunkHeader.ChunkEndNumber, Chunk.FileName));
                 }
 
-                workItem.Stream.Position = realPos - length - sizeof(int);
+                workItem.Stream.Position = realPos - length - sizeof(int); 
                 record = LogRecord.ReadFrom(workItem.Reader);
 #if DEBUG
                 workItem.Stream.Position = realPos - length - 2 * sizeof(int);
