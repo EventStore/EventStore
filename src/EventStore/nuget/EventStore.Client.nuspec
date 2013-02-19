@@ -18,6 +18,7 @@
   <files>
     <file src="..\..\..\bin\eventstore.client\EventStore.ClientAPI.dll" target="lib\net40" />
     <file src="..\..\..\bin\eventstore.client\EventStore.ClientAPI.pdb" target="lib\net40" />
-    <file src="..\EventStore.ClientAPI\**\*.cs" target="src" />
+    <file src="..\EventStore.ClientAPI\**\*.cs" target="src\EventStore.ClientAPI\" />
+    <file src="..\..\..\..\protobuf-net-read-only\protobuf-net\**\*.cs" target="src\protobuf-net\" />
   </files>
 </package>
