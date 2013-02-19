@@ -27,7 +27,6 @@
 //  
 
 using System;
-using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
 {
@@ -38,13 +37,7 @@ namespace EventStore.ClientAPI
         /// <summary>
         /// The default <see cref="ConnectionSettings"></see>
         /// </summary>
-        public static ConnectionSettings Default
-        {
-            get
-            {
-                return DefaultSettings.Value;
-            }
-        }
+        public static ConnectionSettings Default { get { return DefaultSettings.Value; } }
 
         /// <summary>
         /// Creates a new set of <see cref="ConnectionSettings"/>
@@ -63,9 +56,8 @@ namespace EventStore.ClientAPI
         /// The maximum number of outstanding items allowed in the queue
         /// </summary>
         public readonly int MaxQueueSize;
-
         /// <summary>
-        /// The maximum number of allowed asyncrhonous operations to be in process
+        /// The maximum number of allowed asynchronous operations to be in process
         /// </summary>
         public readonly int MaxConcurrentItems;
         /// <summary>
@@ -112,171 +104,6 @@ namespace EventStore.ClientAPI
             ReconnectionDelay = reconnectionDelay;
             OperationTimeout = operationTimeout;
             OperationTimeoutCheckPeriod = operationTimeoutCheckPeriod;
-        }
-    }
-
-    /// <summary>
-    /// Used to build a connection settings (fluent API)
-    /// </summary>
-    public class ConnectionSettingsBuilder
-    {
-        private ILogger _log;
-
-        private int _maxQueueSize;
-        private int _maxConcurrentItems;
-        private int _maxAttempts;
-        private int _maxReconnections;
-
-        private bool _allowForwarding;
-
-        private TimeSpan _reconnectionDelay;
-        private TimeSpan _operationTimeout;
-        private TimeSpan _operationTimeoutCheckPeriod;
-
-        internal ConnectionSettingsBuilder()
-        {
-            _log = null;
-
-            _maxQueueSize = 5000;
-            _maxConcurrentItems = 5000;
-            _maxAttempts = 10;
-            _maxReconnections = 10;
-
-            _allowForwarding = true;
-
-            _reconnectionDelay = TimeSpan.FromSeconds(3);
-            _operationTimeout = TimeSpan.FromSeconds(7);
-            _operationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
-        }
-
-
-        /// <summary>
-        /// Configures the connection to utilize a given logger.
-        /// </summary>
-        /// <param name="logger">The <see cref="ILogger"/> to use.</param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder UseLogger(ILogger logger)
-        {
-            _log = logger;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the limit for number of outstanding operations
-        /// </summary>
-        /// <param name="limit">The new limit of outstanding operations</param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder LimitOperationsQueueTo(int limit)
-        {
-            Ensure.Positive(limit, "limit");
-
-            _maxQueueSize = limit;
-            return this;
-        }
-
-        /// <summary>
-        /// Limits the number of concurrent operations that this connection can have
-        /// </summary>
-        /// <param name="limit"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder LimitConcurrentOperationsTo(int limit)
-        {
-            Ensure.Positive(limit, "limit");
-
-            _maxConcurrentItems = limit;
-            return this;
-        }
-
-        /// <summary>
-        /// Limits the number of retry attempts for a given operation
-        /// </summary>
-        /// <param name="limit"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder LimitAttemptsForOperationTo(int limit)
-        {
-            Ensure.Positive(limit, "limit");
-
-            _maxAttempts = limit;
-            return this;
-        }
-
-        /// <summary>
-        /// Limits the number of reconnections this connection can try to make
-        /// </summary>
-        /// <param name="limit"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder LimitReconnectionsTo(int limit)
-        {
-            Ensure.Nonnegative(limit, "limit");
-
-            _maxReconnections = limit;
-            return this;
-        }
-
-        /// <summary>
-        /// Enables the forwarding of operations in the Event Store (cluster version only) 
-        /// </summary>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder EnableOperationsForwarding()
-        {
-            _allowForwarding = true;
-            return this;
-        }
-
-        /// <summary>
-        /// Disables the forwarding operations in the Event Store (cluster version only)
-        /// </summary>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder DisableOperationsForwarding()
-        {
-            _allowForwarding = false;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the delay between reconnection attempts
-        /// </summary>
-        /// <param name="reconnectionDelay"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder SetReconnectionDelayTo(TimeSpan reconnectionDelay)
-        {
-            _reconnectionDelay = reconnectionDelay;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the operation timeout duration
-        /// </summary>
-        /// <param name="operationTimeout"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder SetOperationTimeoutTo(TimeSpan operationTimeout)
-        {
-            _operationTimeout = operationTimeout;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets how often timeouts should be checked for.
-        /// </summary>
-        /// <param name="timeoutCheckPeriod"></param>
-        /// <returns></returns>
-        public ConnectionSettingsBuilder SetTimeoutCheckPeriodTo(TimeSpan timeoutCheckPeriod)
-        {
-            _operationTimeoutCheckPeriod = timeoutCheckPeriod;
-            return this;
-        }
-
-        public static implicit operator ConnectionSettings(ConnectionSettingsBuilder builder)
-        {
-            return new ConnectionSettings(builder._log,
-                                          builder._maxQueueSize,
-                                          builder._maxConcurrentItems,
-                                          builder._maxAttempts,
-                                          builder._maxReconnections,
-                                          builder._allowForwarding,
-                                          builder._reconnectionDelay,
-                                          builder._operationTimeout,
-                                          builder._operationTimeoutCheckPeriod);
         }
     }
 }

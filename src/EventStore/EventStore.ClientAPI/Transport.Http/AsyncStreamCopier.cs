@@ -78,7 +78,7 @@ namespace EventStore.ClientAPI.Transport.Http
             try
             {
                 int bytesRead = _input.EndRead(ar);
-                if (bytesRead == 0 || bytesRead == -1) //TODO TR: only mono returns -1
+                if (bytesRead <= 0) //mono can return -1
                 {
                     OnCompleted();
                     return;

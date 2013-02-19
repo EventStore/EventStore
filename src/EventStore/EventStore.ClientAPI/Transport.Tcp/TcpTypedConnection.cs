@@ -40,22 +40,16 @@ namespace EventStore.ClientAPI.Transport.Tcp
 
         public event Action<TcpTypedConnection, SocketError> ConnectionClosed;
 
+        public int SendQueueSize { get { return _connection.SendQueueSize; } }
+        public readonly IPEndPoint EffectiveEndPoint;
+
+        private readonly LengthPrefixMessageFramer _framer = new LengthPrefixMessageFramer();
         private readonly TcpConnection _connection;
-        private readonly LengthPrefixMessageFramer _framer;
-
         private Action<TcpTypedConnection, byte[]> _receiveCallback;
-
-        public IPEndPoint EffectiveEndPoint { get; private set; }
-
-        public int SendQueueSize
-        {
-            get { return _connection.SendQueueSize; }
-        }
 
         public TcpTypedConnection(TcpConnection connection)
         {
             _connection = connection;
-            _framer = new LengthPrefixMessageFramer();
             EffectiveEndPoint = connection.EffectiveEndPoint;
 
             connection.ConnectionClosed += OnConnectionClosed;
@@ -100,7 +94,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             }
             catch (PackageFramingException exc)
             {
-                Log.Debug(exc, "Invalid TCP frame received.");
+                Log.Error(exc, "Invalid TCP frame received.");
                 Close();
                 return;
             }

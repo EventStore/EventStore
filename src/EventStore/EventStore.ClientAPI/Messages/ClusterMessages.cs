@@ -53,7 +53,7 @@ namespace EventStore.ClientAPI.Messages
 
             public string InternalTcpIp { get; set; }
             public int InternalTcpPort { get; set; }
-
+        
             public string ExternalTcpIp { get; set; }
             public int ExternalTcpPort { get; set; }
 
@@ -62,18 +62,24 @@ namespace EventStore.ClientAPI.Messages
 
             public string ExternalHttpIp { get; set; }
             public int ExternalHttpPort { get; set; }
-
+        
             public long WriterCheckpoint { get; set; }
             public long ChaserCheckpoint { get; set; }
+        
+            public long EpochPosition { get; set; }
+            public int EpochNumber { get; set; }
+            public Guid EpochId { get; set; }
         }
 
         public enum VNodeState
         {
             Initializing,
             Unknown,
+            PreReplica,
             CatchingUp,
             Clone,
             Slave,
+            PreMaster,
             Master,
             Manager,
             ShuttingDown,

@@ -33,21 +33,8 @@ namespace EventStore.ClientAPI.Messages
     {
         public partial class DeniedToRoute
         {
-            public IPEndPoint ExternalTcpEndPoint
-            {
-                get
-                {
-                    return new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort);
-                }
-            }
-
-            public IPEndPoint ExternalHttpEndPoint
-            {
-                get
-                {
-                    return new IPEndPoint(IPAddress.Parse(ExternalHttpAddress), ExternalHttpPort);
-                }
-            }
+            public IPEndPoint ExternalTcpEndPoint{ get { return new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort); } }
+            public IPEndPoint ExternalHttpEndPoint { get { return new IPEndPoint(IPAddress.Parse(ExternalHttpAddress), ExternalHttpPort); } }
         }
     }
 }

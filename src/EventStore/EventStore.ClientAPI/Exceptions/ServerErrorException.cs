@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -25,17 +25,30 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
+using System.Runtime.Serialization;
 
-namespace EventStore.ClientAPI
+namespace EventStore.ClientAPI.Exceptions
 {
-    //public interface IEvent
-    //{
-    //    Guid EventId { get; }
-    //    string Type { get; }
-    //    bool IsJson { get; }
+    public class ServerErrorException : Exception
+    {
+        public ServerErrorException()
+        {
+        }
 
-    //    byte[] Data { get; }
-    //    byte[] Metadata { get; }
-    //}
+        public ServerErrorException(string message)
+                : base(string.Format("Unexpected error on server: {0}", message))
+        {
+        }
+
+        public ServerErrorException(string message, Exception innerException)
+                : base(string.Format("Unexpected error on server: {0}", message), innerException)
+        {
+        }
+
+        protected ServerErrorException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+    }
 }

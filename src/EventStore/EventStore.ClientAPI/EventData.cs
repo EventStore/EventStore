@@ -15,8 +15,8 @@ namespace EventStore.ClientAPI
             EventId = eventId;
             Type = type;
             IsJson = isJson;
-            Data = data;
-            Metadata = metadata;
+            Data = data ?? Empty.ByteArray;
+            Metadata = metadata ?? Empty.ByteArray;
         }
     }
 }

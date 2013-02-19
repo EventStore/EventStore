@@ -77,10 +77,10 @@ namespace EventStore.ClientAPI
 
         private readonly ILogger _log;
 
-        private IPEndPoint _tcpEndPoint;
-        private readonly TcpConnector _connector;
-        private TcpTypedConnection _connection;
+        private readonly TcpConnector _connector = new TcpConnector();
         private readonly object _connectionLock = new object();
+        private IPEndPoint _tcpEndPoint;
+        private TcpTypedConnection _connection;
         private volatile bool _active;
 
         private readonly SubscriptionsChannel _subscriptionsChannel;
@@ -110,7 +110,6 @@ namespace EventStore.ClientAPI
             LogManager.RegisterLogger(settings.Log);
             _log = LogManager.GetLogger();
 
-            _connector = new TcpConnector();
             _subscriptionsChannel = new SubscriptionsChannel(_connector);
         }
 
@@ -205,7 +204,7 @@ namespace EventStore.ClientAPI
                 _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
                 _timeoutCheckStopwatch.Start();
 
-                _worker = new Thread(MainLoop) {IsBackground = true, Name = "Worker thread"};
+                _worker = new Thread(MainLoop) {IsBackground = true, Name = "EventStoreConnection worker"};
                 _worker.Start();
 
                 return Tasks.CreateCompleted();
@@ -245,8 +244,7 @@ namespace EventStore.ClientAPI
 
             foreach (var workItem in _inProgress.Values)
             {
-                workItem.Operation.Fail(
-                    new ConnectionClosingException("Work item was still in progress at the moment of manual connection closing."));
+                workItem.Operation.Fail(new ConnectionClosingException("Work item was still in progress at the moment of manual connection closing."));
             }
             _inProgress.Clear();
 
@@ -854,11 +852,11 @@ namespace EventStore.ClientAPI
 
         private void OnConnectionEstablished(TcpTypedConnection tcpTypedConnection)
         {
-            OnConnected();
             lock (_connectionLock)
             {
                 _reconnectionsCount = 0;
             }
+            OnConnected();
         }
 
         private void OnConnectionClosed(TcpTypedConnection connection, IPEndPoint endPoint, SocketError error)

@@ -42,8 +42,7 @@ namespace EventStore.ClientAPI.Transport.Http
             catch (WebException e)
             {
                 if (e.Response != null)
-                    return e.Response;//for 404 and 500
-
+                    return e.Response; //for 404 and 500
                 throw;
             }
         }

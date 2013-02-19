@@ -74,8 +74,8 @@ namespace EventStore.ClientAPI
 
             EventType = systemRecord.EventType;
 
-            Data = systemRecord.Data;
-            Metadata = systemRecord.Metadata;
+            Data = systemRecord.Data ?? Empty.ByteArray;
+            Metadata = systemRecord.Metadata ?? Empty.ByteArray;
         }
     }
 }

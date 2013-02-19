@@ -36,124 +36,60 @@ using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class StartTransactionOperation : IClientOperation
+    internal class StartTransactionOperation : OperationBase<EventStoreTransaction, ClientMessage.TransactionStartCompleted>
     {
-        private readonly TaskCompletionSource<EventStoreTransaction> _source;
-        private ClientMessage.TransactionStartCompleted _result;
-        private int _completed;
-
-        private Guid _corrId;
-        private readonly object _corrIdLock = new object();
-
         private readonly bool _forward;
         private readonly string _stream;
         private readonly int _expectedVersion;
         private readonly EventStoreConnection _parentConnection;
 
-        public Guid CorrelationId
-        {
-            get
-            {
-                lock (_corrIdLock)
-                    return _corrId;
-            }
-        }
-
         public StartTransactionOperation(TaskCompletionSource<EventStoreTransaction> source,
-                                         Guid corrId,
+                                         Guid correlationId,
                                          bool forward,
                                          string stream,
                                          int expectedVersion,
                                          EventStoreConnection parentConnection)
+            : base(source, correlationId, TcpCommand.TransactionStart, TcpCommand.TransactionStartCompleted)
         {
-            _source = source;
-            _corrId = corrId;
             _forward = forward;
             _stream = stream;
             _expectedVersion = expectedVersion;
             _parentConnection = parentConnection;
         }
 
-        public void SetRetryId(Guid correlationId)
+        protected override object CreateRequestDto()
         {
-            lock (_corrIdLock)
-                _corrId = correlationId;
+            return new ClientMessage.TransactionStart(_stream, _expectedVersion, _forward);
         }
 
-        public TcpPackage CreateNetworkPackage()
+        protected override InspectionResult InspectResponse(ClientMessage.TransactionStartCompleted response)
         {
-            lock (_corrIdLock)
+            switch (response.Result)
             {
-                var startTransaction = new ClientMessage.TransactionStart(_stream, _expectedVersion, _forward);
-                return new TcpPackage(TcpCommand.TransactionStart, _corrId,  startTransaction.Serialize());
-            }
-        }
-
-        public InspectionResult InspectPackage(TcpPackage package)
-        {
-            try
-            {
-                if (package.Command == TcpCommand.DeniedToRoute)
-                {
-                    var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
-                    return new InspectionResult(InspectionDecision.Reconnect, data: route.ExternalTcpEndPoint);
-                }
-                if (package.Command != TcpCommand.TransactionStartCompleted)
-                {
-                    return new InspectionResult(InspectionDecision.NotifyError,
-                                                new CommandNotExpectedException(TcpCommand.TransactionStartCompleted.ToString(),
-                                                                                package.Command.ToString()));
-                }
-
-                var data = package.Data;
-                var dto = data.Deserialize<ClientMessage.TransactionStartCompleted>();
-                _result = dto;
-
-                switch (dto.Result)
-                {
-                    case ClientMessage.OperationResult.Success:
-                        return new InspectionResult(InspectionDecision.Succeed);
-                    case ClientMessage.OperationResult.PrepareTimeout:
-                    case ClientMessage.OperationResult.CommitTimeout:
-                    case ClientMessage.OperationResult.ForwardTimeout:
-                        return new InspectionResult(InspectionDecision.Retry);
-                    case ClientMessage.OperationResult.WrongExpectedVersion:
-                        var err = string.Format("Start transaction failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}, CorrID: {2}.",
-                                                _stream,
-                                                _expectedVersion,
-                                                CorrelationId);
-                        return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
-                    case ClientMessage.OperationResult.StreamDeleted:
-                        return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
-                    case ClientMessage.OperationResult.InvalidTransaction:
-                        return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
-            catch (Exception e)
-            {
-                return new InspectionResult(InspectionDecision.NotifyError, e);
+                case ClientMessage.OperationResult.Success:
+                    return new InspectionResult(InspectionDecision.Succeed);
+                case ClientMessage.OperationResult.PrepareTimeout:
+                case ClientMessage.OperationResult.CommitTimeout:
+                case ClientMessage.OperationResult.ForwardTimeout:
+                    return new InspectionResult(InspectionDecision.Retry);
+                case ClientMessage.OperationResult.WrongExpectedVersion:
+                    var err = string.Format("Start transaction failed due to WrongExpectedVersion. Stream: {0}, Expected version: {1}, CorrID: {2}.",
+                                            _stream,
+                                            _expectedVersion,
+                                            CorrelationId);
+                    return new InspectionResult(InspectionDecision.NotifyError, new WrongExpectedVersionException(err));
+                case ClientMessage.OperationResult.StreamDeleted:
+                    return new InspectionResult(InspectionDecision.NotifyError, new StreamDeletedException(_stream));
+                case ClientMessage.OperationResult.InvalidTransaction:
+                    return new InspectionResult(InspectionDecision.NotifyError, new InvalidTransactionException());
+                default:
+                    throw new ArgumentOutOfRangeException(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }
         }
 
-        public void Complete()
+        protected override EventStoreTransaction TransformResponse(ClientMessage.TransactionStartCompleted response)
         {
-            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
-            {
-                if (_result != null)
-                    _source.SetResult(new EventStoreTransaction(_result.TransactionId, _parentConnection));
-                else
-                    _source.SetException(new NoResultException());
-            }
-        }
-
-        public void Fail(Exception exception)
-        {
-            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
-            {
-                _source.SetException(exception);
-            }
+            return new EventStoreTransaction(response.TransactionId, _parentConnection);
         }
 
         public override string ToString()

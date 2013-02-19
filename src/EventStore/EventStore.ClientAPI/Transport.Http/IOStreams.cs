@@ -48,7 +48,7 @@ namespace EventStore.ClientAPI.Transport.Http
                 }
                 catch (Exception e)
                 {
-                    //Exceptions may be thrown when client shutdowned and we were unable to write all the data,
+                    //Exceptions may be thrown when client shutdown and we were unable to write all the data,
                     //Nothing we can do, ignore (another option - globally ignore write errors)
                     LogManager.GetLogger().Debug("Error while closing stream : {0}", e.Message);
                 }

@@ -111,7 +111,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
             var callbacks = (CallbacksToken)socketArgs.UserToken;
             var onConnectionFailed = callbacks.OnConnectionFailed;
 
-            try {
+            try 
+            {
                socketArgs.AcceptSocket.Close(TcpConfiguration.SocketCloseTimeoutMs);
             }
             catch(Exception)

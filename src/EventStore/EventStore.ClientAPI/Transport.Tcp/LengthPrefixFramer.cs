@@ -38,11 +38,11 @@ namespace EventStore.ClientAPI.Transport.Tcp
         public const int HeaderLength = sizeof(Int32);
 
         private byte[] _messageBuffer;
-        private int _bufferIndex = 0;
+        private int _bufferIndex;
         private Action<ArraySegment<byte>> _receivedHandler;
 
-        private int _headerBytes = 0;
-        private int _packageLength = 0;
+        private int _headerBytes;
+        private int _packageLength;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LengthPrefixMessageFramer"/> class.

@@ -34,8 +34,6 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class AllEventsSlice
     {
-        private static readonly ResolvedEvent[] EmptyEvents = new ResolvedEvent[0];
-
         /// <summary>
         /// The direction of read request.
         /// </summary>
@@ -56,13 +54,18 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly ResolvedEvent[] Events;
 
+        /// <summary>
+        /// A boolean representing whether or not this is the end of the $all stream.
+        /// </summary>
+        public bool IsEndOfStream { get { return Events.Length == 0; } }
+
         internal AllEventsSlice(ReadDirection readDirection, Position fromPosition, Position nextPosition, ClientMessage.ResolvedEvent[] events)
         {
             ReadDirection = readDirection;
             FromPosition = fromPosition;
             NextPosition = nextPosition;
             if (events == null)
-                Events = EmptyEvents;
+                Events = Empty.ResolvedEvents;
             else
             {
                 Events = new ResolvedEvent[events.Length];

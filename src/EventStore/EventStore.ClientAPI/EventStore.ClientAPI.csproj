@@ -83,6 +83,8 @@
     </Compile>
     <Compile Include="AllEventsSlice.cs" />
     <Compile Include="ClientOperations\CommitTransactionOperation.cs" />
+    <Compile Include="ClientOperations\OperationBase.cs" />
+    <Compile Include="ClientOperations\OperationHelpers.cs" />
     <Compile Include="ClientOperations\ReadAllEventsBackwardOperation.cs" />
     <Compile Include="ClientOperations\ReadAllEventsForwardOperation.cs" />
     <Compile Include="ClientOperations\ReadStreamEventsBackwardOperation.cs" />
@@ -93,11 +95,15 @@
     <Compile Include="Common\Log\DefaultLogger.cs" />
     <Compile Include="Common\Utils\Tasks.cs" />
     <Compile Include="ConnectionSettings.cs" />
+    <Compile Include="ConnectionSettingsBuilder.cs" />
     <Compile Include="Connection\ClusterExplorer.cs" />
     <Compile Include="Connection\SubscriptionsChannel.cs" />
     <Compile Include="Connection\WorkItem.cs" />
+    <Compile Include="Empty.cs" />
     <Compile Include="EventData.cs" />
     <Compile Include="EventStoreSubscription.cs" />
+    <Compile Include="Exceptions\ServerErrorException.cs" />
+    <Compile Include="ProjectionsClient.cs" />
     <Compile Include="ReadDirection.cs" />
     <Compile Include="ResolvedEvent.cs" />
     <Compile Include="Exceptions\CannotEstablishConnectionException.cs" />
@@ -105,7 +111,6 @@
     <Compile Include="Exceptions\InvalidTransactionException.cs" />
     <Compile Include="Exceptions\StreamDeletedException.cs" />
     <Compile Include="Exceptions\WrongExpectedVersionException.cs" />
-    <Compile Include="IEvent.cs" />
     <Compile Include="EventStoreTransaction.cs" />
     <Compile Include="StreamEventsSlice.cs" />
     <Compile Include="Exceptions\CommandNotExpectedException.cs" />
@@ -129,13 +134,12 @@
     <Compile Include="RecordedEvent.cs" />
     <Compile Include="SliceReadStatus.cs" />
     <Compile Include="StreamPosition.cs" />
+    <Compile Include="SystemData\TcpPackage.cs" />
+    <Compile Include="SystemData\TcpCommand.cs" />
     <Compile Include="SystemData\StatusCode.cs" />
     <Compile Include="ExpectedVersion.cs" />
     <Compile Include="SystemData\InspectionResult.cs" />
-    <Compile Include="SystemData\PrepareFlags.cs" />
     <Compile Include="SystemData\InspectionDecision.cs" />
-    <Compile Include="SystemData\TcpCommand.cs" />
-    <Compile Include="SystemData\TcpPackage.cs" />
     <Compile Include="Transport.Http\AsyncStreamCopier.cs" />
     <Compile Include="Transport.Http\ClientOperationState.cs" />
     <Compile Include="Transport.Http\ContentType.cs" />
@@ -167,7 +171,7 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
-    <PreBuildEvent >
+    <PreBuildEvent>
 $(MSBuildProjectDirectory)\..\Scripts\version\update-version.cmd $(MSBuildProjectDirectory)
     </PreBuildEvent>
   </PropertyGroup>

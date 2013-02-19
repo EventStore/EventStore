@@ -96,7 +96,7 @@ namespace EventStore.ClientAPI.Connection
                     _log.Info("Unable to locate master, slave or clone node");
                     return null;
                 }
-                _log.Info("Best choise found, it's {0} on [{1}:{2}]", 
+                _log.Info("Best choice found, it's {0} on [{1}:{2}]", 
                           node.State, 
                           node.ExternalTcpIp,
                           node.ExternalTcpPort);

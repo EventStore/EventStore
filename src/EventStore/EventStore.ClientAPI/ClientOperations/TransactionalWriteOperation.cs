@@ -38,109 +38,48 @@ using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class TransactionalWriteOperation : IClientOperation
+    internal class TransactionalWriteOperation : OperationBase<object, ClientMessage.TransactionWriteCompleted>
     {
-        private readonly TaskCompletionSource<object> _source;
-        private ClientMessage.TransactionWriteCompleted _result;
-        private int _completed;
-
-        private Guid _corrId;
-        private readonly object _corrIdLock = new object();
-
         private readonly bool _forward;
         private readonly long _transactionId;
         private readonly IEnumerable<EventData> _events;
 
-        public Guid CorrelationId
+        public TransactionalWriteOperation(TaskCompletionSource<object> source,
+                                           Guid correlationId,
+                                           bool forward,
+                                           long transactionId,
+                                           IEnumerable<EventData> events)
+                : base(source, correlationId, TcpCommand.TransactionWrite, TcpCommand.TransactionWriteCompleted)
         {
-            get
-            {
-                lock (_corrIdLock)
-                    return _corrId;
-            }
-        }
-
-        public TransactionalWriteOperation(TaskCompletionSource<object> source, Guid corrId, bool forward, long transactionId, IEnumerable<EventData> events)
-        {
-            _source = source;
-
-            _corrId = corrId;
             _forward = forward;
             _transactionId = transactionId;
             _events = events;
         }
 
-        public void SetRetryId(Guid correlationId)
+        protected override object CreateRequestDto()
         {
-            lock (_corrIdLock)
-                _corrId = correlationId;
+            var dtos = _events.Select(x => new ClientMessage.NewEvent(x.EventId.ToByteArray(), x.Type, x.IsJson, x.Data, x.Metadata)).ToArray();
+            return new ClientMessage.TransactionWrite(_transactionId, dtos, _forward);
         }
 
-        public TcpPackage CreateNetworkPackage()
+        protected override InspectionResult InspectResponse(ClientMessage.TransactionWriteCompleted response)
         {
-            lock (_corrIdLock)
+            switch (response.Result)
             {
-                var dtos = _events.Select(x => new ClientMessage.NewEvent(x.EventId.ToByteArray(), x.Type, x.IsJson, x.Data, x.Metadata)).ToArray();
-                var write = new ClientMessage.TransactionWrite(_transactionId, dtos, _forward);
-                return new TcpPackage(TcpCommand.TransactionWrite, _corrId, write.Serialize());
-            }
-        }
-
-        public InspectionResult InspectPackage(TcpPackage package)
-        {
-            try
-            {
-                if (package.Command == TcpCommand.DeniedToRoute)
-                {
-                    var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
-                    return new InspectionResult(InspectionDecision.Reconnect, data: route.ExternalTcpEndPoint);
-                }
-                if (package.Command != TcpCommand.TransactionWriteCompleted)
-                {
-                    return new InspectionResult(InspectionDecision.NotifyError,
-                                             new CommandNotExpectedException(TcpCommand.TransactionWriteCompleted.ToString(),
-                                                                             package.Command.ToString()));
-                }
-
-                var data = package.Data;
-                var dto = data.Deserialize<ClientMessage.TransactionWriteCompleted>();
-                _result = dto;
-
-                switch (dto.Result)
-                {
-                    case ClientMessage.OperationResult.Success:
-                        return new InspectionResult(InspectionDecision.Succeed);
-                    case ClientMessage.OperationResult.PrepareTimeout:
-                    case ClientMessage.OperationResult.CommitTimeout:
-                    case ClientMessage.OperationResult.ForwardTimeout:
-                        return new InspectionResult(InspectionDecision.Retry);
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
-            catch (Exception e)
-            {
-                return new InspectionResult(InspectionDecision.NotifyError, e);
+                case ClientMessage.OperationResult.Success:
+                    return new InspectionResult(InspectionDecision.Succeed);
+                case ClientMessage.OperationResult.PrepareTimeout:
+                case ClientMessage.OperationResult.CommitTimeout:
+                case ClientMessage.OperationResult.ForwardTimeout:
+                    return new InspectionResult(InspectionDecision.Retry);
+                default:
+                    throw new ArgumentOutOfRangeException(string.Format("Unexpected OperationResult: {0}.", response.Result));
             }
         }
 
-        public void Complete()
+        protected override object TransformResponse(ClientMessage.TransactionWriteCompleted response)
         {
-            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
-            {
-                if (_result != null)
-                    _source.SetResult(null);
-                else
-                    _source.SetException(new NoResultException());
-            }
-        }
-
-        public void Fail(Exception exception)
-        {
-            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
-            {
-                _source.SetException(exception);
-            }
+            return null;
         }
 
         public override string ToString()

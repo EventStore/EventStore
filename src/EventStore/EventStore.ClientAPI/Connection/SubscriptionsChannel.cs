@@ -221,7 +221,7 @@ namespace EventStore.ClientAPI.Connection
 
         private class SubscriptionTaskPair
         {
-            public TaskCompletionSource<EventStoreSubscription> TaskCompletionSource;
+            public readonly TaskCompletionSource<EventStoreSubscription> TaskCompletionSource;
             public readonly EventStoreSubscription Subscription;
 
             public SubscriptionTaskPair(EventStoreSubscription subscription)

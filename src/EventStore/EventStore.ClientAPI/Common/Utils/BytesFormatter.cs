@@ -34,9 +34,9 @@ namespace EventStore.ClientAPI.Common.Utils
 {
     static class BytesFormatter
     {
-        private static readonly string[] sizeOrders = new[] { "B", "KiB", "MiB", "GiB", "TiB" };
-        private static readonly string[] speedOrders = new[] { "B/s", "KiB/s", "MiB/s", "GiB/s", "TiB/s" };
-        private static readonly string[] numberOrders = new[] { "", "K", "M", "G", "T" };
+        private static readonly string[] SizeOrders = new[] { "B", "KiB", "MiB", "GiB", "TiB" };
+        private static readonly string[] SpeedOrders = new[] { "B/s", "KiB/s", "MiB/s", "GiB/s", "TiB/s" };
+        private static readonly string[] NumberOrders = new[] { "", "K", "M", "G", "T" };
 
         public static string ToFriendlySpeedString(this double bytes)
         {
@@ -49,7 +49,7 @@ namespace EventStore.ClientAPI.Common.Utils
         }
         public static string ToFriendlySizeString(this long bytes)
         {
-            return FormatLong(bytes, sizeOrders);
+            return FormatLong(bytes, SizeOrders);
         }
 
         public static string ToFriendlyNumberString(this ulong number)
@@ -58,7 +58,7 @@ namespace EventStore.ClientAPI.Common.Utils
         }
         public static string ToFriendlyNumberString(this long number)
         {
-            return FormatLong(number, numberOrders);
+            return FormatLong(number, NumberOrders);
         }
 
         private static string FormatLong(long bytes, IEnumerable<string> orders)
@@ -97,7 +97,7 @@ namespace EventStore.ClientAPI.Common.Utils
             long max = 1;
             string finalOrder = string.Empty;
 
-            foreach (var speedOrder in speedOrders)
+            foreach (var speedOrder in SpeedOrders)
             {
                 max *= scale;
                 finalOrder = speedOrder;

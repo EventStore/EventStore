@@ -26,108 +26,46 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
-using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
-using EventStore.ClientAPI.Transport.Tcp;
 
 namespace EventStore.ClientAPI.ClientOperations
 {
-    internal class ReadAllEventsForwardOperation : IClientOperation
+    internal class ReadAllEventsForwardOperation : OperationBase<AllEventsSlice, ClientMessage.ReadAllEventsCompleted>
     {
-        private readonly TaskCompletionSource<AllEventsSlice> _source;
-        private ClientMessage.ReadAllEventsCompleted _result;
-        private int _completed;
-
-        private Guid _corrId;
-        private readonly object _corrIdLock = new object();
-
         private readonly Position _position;
         private readonly int _maxCount;
         private readonly bool _resolveLinkTos;
 
-        public Guid CorrelationId
-        {
-            get
-            {
-                lock (_corrIdLock)
-                    return _corrId;
-            }
-        }
-
         public ReadAllEventsForwardOperation(TaskCompletionSource<AllEventsSlice> source,
-                                             Guid corrId,
+                                             Guid correlationId,
                                              Position position,
                                              int maxCount,
                                              bool resolveLinkTos)
+            : base(source, correlationId, TcpCommand.ReadAllEventsForward, TcpCommand.ReadAllEventsForwardCompleted)
         {
-            _source = source;
-
-            _corrId = corrId;
             _position = position;
             _maxCount = maxCount;
             _resolveLinkTos = resolveLinkTos;
         }
 
-        public void SetRetryId(Guid correlationId)
+        protected override object CreateRequestDto()
         {
-            lock (_corrIdLock)
-                _corrId = correlationId;
+            return new ClientMessage.ReadAllEvents(_position.CommitPosition, _position.PreparePosition, _maxCount, _resolveLinkTos);
         }
 
-        public TcpPackage CreateNetworkPackage()
+        protected override InspectionResult InspectResponse(ClientMessage.ReadAllEventsCompleted response)
         {
-            lock (_corrIdLock)
-            {
-                var dto = new ClientMessage.ReadAllEvents(_position.CommitPosition, _position.PreparePosition, _maxCount, _resolveLinkTos);
-                return new TcpPackage(TcpCommand.ReadAllEventsForward, _corrId, dto.Serialize());
-            }
+            return new InspectionResult(InspectionDecision.Succeed);
         }
 
-        public InspectionResult InspectPackage(TcpPackage package)
+        protected override AllEventsSlice TransformResponse(ClientMessage.ReadAllEventsCompleted response)
         {
-            try
-            {
-                if (package.Command != TcpCommand.ReadAllEventsForwardCompleted)
-                {
-                    return new InspectionResult(InspectionDecision.NotifyError,
-                                                new CommandNotExpectedException(TcpCommand.ReadAllEventsForwardCompleted.ToString(),
-                                                                                package.Command.ToString()));
-                }
-
-                _result = package.Data.Deserialize<ClientMessage.ReadAllEventsCompleted>();
-                return new InspectionResult(InspectionDecision.Succeed);
-            }
-            catch (Exception e)
-            {
-                return new InspectionResult(InspectionDecision.NotifyError, e);
-            }
-        }
-
-        public void Complete()
-        {
-            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
-            {
-                if (_result != null)
-                {
-                    _source.SetResult(new AllEventsSlice(ReadDirection.Forward, 
-                                                         new Position(_result.CommitPosition, _result.PreparePosition), 
-                                                         new Position(_result.NextCommitPosition, _result.NextPreparePosition), 
-                                                         _result.Events));
-                }
-                else
-                    _source.SetException(new NoResultException());
-            }
-        }
-
-        public void Fail(Exception exception)
-        {
-            if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0)
-            {
-                _source.SetException(exception);
-            }
+            return new AllEventsSlice(ReadDirection.Forward,
+                                      new Position(response.CommitPosition, response.PreparePosition),
+                                      new Position(response.NextCommitPosition, response.NextPreparePosition),
+                                      response.Events);
         }
 
         public override string ToString()

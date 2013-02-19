@@ -50,6 +50,7 @@ namespace EventStore.ClientAPI
                 return _commitPosition;
             }
         }
+
         public int? LastEventNumber
         {
             get
@@ -85,7 +86,7 @@ namespace EventStore.ClientAPI
             _streamId = streamId;
             _subscriptionsChannel = subscriptionsChannel;
             _eventAppeared = eventAppeared;
-            _subscriptionDropped = subscriptionDropped ?? (() => { });
+            _subscriptionDropped = subscriptionDropped ?? Empty.Action;
         }
 
         public void Dispose()

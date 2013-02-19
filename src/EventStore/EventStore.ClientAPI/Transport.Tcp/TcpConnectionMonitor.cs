@@ -118,8 +118,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
         private readonly Dictionary<IMonitoredTcpConnection, ConnectionData> _connections =
                      new Dictionary<IMonitoredTcpConnection, ConnectionData>();
 
-        private long _sentTotal = 0;
-        private long _receivedTotal = 0;
+        private long _sentTotal;
+        private long _receivedTotal;
         private long _sentSinceLastRun;
         private long _receivedSinceLastRun;
         private long _pendingSendOnLastRun;
