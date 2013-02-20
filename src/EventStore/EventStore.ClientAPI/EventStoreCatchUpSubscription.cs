@@ -291,12 +291,14 @@ namespace EventStore.ClientAPI
             do
             {
                 slice = connection.ReadStreamEventsForward(StreamId, _nextReadEventNumber, ReadBatchSize, resolveLinkTos);
+                if (slice.Status != SliceReadStatus.Success)
+                    return;
                 foreach (var e in slice.Events)
                 {
                     TryProcess(e);
                 }
                 _nextReadEventNumber = slice.NextEventNumber;
-            } while (slice.Status == SliceReadStatus.Success && !slice.IsEndOfStream);
+            } while (!slice.IsEndOfStream);
         }
 
         protected override void TryProcess(ResolvedEvent e)
