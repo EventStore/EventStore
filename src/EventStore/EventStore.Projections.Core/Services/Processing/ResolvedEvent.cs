@@ -42,8 +42,6 @@ namespace EventStore.Projections.Core.Services.Processing
             return new ResolvedEvent(eventId, eventType, isJson, data, metadata, timestamp ?? DateTime.UtcNow);
         }
 
-        public static readonly byte[] Empty = new byte[0];
-
         public readonly Guid EventId;
         public readonly string EventType;
         public readonly bool IsJson;
@@ -64,8 +62,8 @@ namespace EventStore.Projections.Core.Services.Processing
             IsJson = isJson;
             Timestamp = timestamp;
 
-            Data = data ?? Empty;
-            Metadata = metadata ?? Empty;
+            Data = data ?? Common.Utils.Empty.ByteArray;
+            Metadata = metadata ?? Common.Utils.Empty.ByteArray;
         }
     }
 }

@@ -64,8 +64,8 @@ namespace EventStore.ClientAPI
         private readonly Guid _correlationId;
         private readonly string _streamId;
         private readonly SubscriptionsChannel _subscriptionsChannel;
-        private readonly Action<ResolvedEvent> _eventAppeared;
-        private readonly Action _subscriptionDropped;
+        private readonly Action<EventStoreSubscription, ResolvedEvent> _eventAppeared;
+        private readonly Action<EventStoreSubscription> _subscriptionDropped;
         
         private long _commitPosition = long.MinValue;
         private int? _eventNumber;
@@ -74,8 +74,8 @@ namespace EventStore.ClientAPI
         internal EventStoreSubscription(Guid correlationId, 
                                         string streamId, 
                                         SubscriptionsChannel subscriptionsChannel,
-                                        Action<ResolvedEvent> eventAppeared, 
-                                        Action subscriptionDropped)
+                                        Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
+                                        Action<EventStoreSubscription> subscriptionDropped)
         {
             Ensure.NotEmptyGuid(correlationId, "correlationId");
             Ensure.NotNull(streamId, "stream");
@@ -86,7 +86,7 @@ namespace EventStore.ClientAPI
             _streamId = streamId;
             _subscriptionsChannel = subscriptionsChannel;
             _eventAppeared = eventAppeared;
-            _subscriptionDropped = subscriptionDropped ?? Empty.Action;
+            _subscriptionDropped = subscriptionDropped ?? (x => {});
         }
 
         public void Dispose()
@@ -105,7 +105,7 @@ namespace EventStore.ClientAPI
             if (Interlocked.CompareExchange(ref _unsubscribed, 1, 0) == 0)
             {
                 _subscriptionsChannel.Unsubscribe(_correlationId);
-                _subscriptionDropped();
+                _subscriptionDropped(this);
             }
 #pragma warning restore 420
         }
@@ -123,7 +123,7 @@ namespace EventStore.ClientAPI
         {
             if (_unsubscribed != 0)
                 return;
-            _eventAppeared(@event);
+            _eventAppeared(this, @event);
         }
 
         internal void SubscriptionDropped()

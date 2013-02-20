@@ -34,8 +34,6 @@ namespace EventStore.Transport.Http
 {
     public class AcceptComponent
     {
-        private static readonly string[] Empty = new string[0];
-
         public readonly string MediaRange;
         public readonly string MediaType;
         public readonly string MediaSubtype;
@@ -50,7 +48,7 @@ namespace EventStore.Transport.Http
             MediaSubtype = mediaSubtype;
             Priority = priority;
 
-            Parameters = parameters ?? Empty;
+            Parameters = parameters ?? Common.Utils.Empty.StringArray;
         }
 
         public static bool TryParse(string componentText, out AcceptComponent result)

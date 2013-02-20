@@ -92,7 +92,7 @@ namespace EventStore.ClientAPI
             FromEventNumber = fromEventNumber;
             ReadDirection = readDirection;
             if (events == null || events.Length == 0)
-                Events = ResolvedEvent.EmptyArray;
+                Events = Empty.ResolvedEvents;
             else
             {
                 Events = new ResolvedEvent[events.Length];

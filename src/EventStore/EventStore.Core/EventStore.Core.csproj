@@ -137,7 +137,8 @@
     <Compile Include="Services\Storage\EpochManager\EpochManager.cs" />
     <Compile Include="Services\Storage\EpochManager\IEpochManager.cs" />
     <Compile Include="NodeSubsystems.cs" />
-    <Compile Include="Services\Storage\ReaderIndex\TransactionInfo.cs" />    <Compile Include="Services\SubscriptionsService.cs" />
+    <Compile Include="Services\Storage\ReaderIndex\TransactionInfo.cs" />
+    <Compile Include="Services\SubscriptionsService.cs" />
     <Compile Include="Services\NetworkSendService.cs" />
     <Compile Include="Services\RequestManager\Managers\CreateStreamTwoPhaseRequestManager.cs" />
     <Compile Include="Services\RequestManager\Managers\DeleteStreamTwoPhaseRequestManager.cs" />

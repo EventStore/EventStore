@@ -113,28 +113,6 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning")]
-        public void not_call_dropped_if_stream_was_deleted()
-        {
-            const string stream = "subscribe_should_not_call_dropped_if_stream_was_deleted";
-            using (var store = EventStoreConnection.Create())
-            {
-                store.Connect(_node.TcpEndPoint);
-                
-                var appeared = new CountdownEvent(1);
-                var dropped = new CountdownEvent(1);
-
-                store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
-
-                using (store.SubscribeToStream(stream, false, x => appeared.Signal(), () => dropped.Signal()).Result)
-                {
-                    store.DeleteStream(stream, ExpectedVersion.EmptyStream);
-                    Assert.IsTrue(appeared.Wait(Timeout), "Nothing appeared on subscription.");
-                    Assert.IsFalse(dropped.Wait(100), "Subscription drop notification came.");
-                }
-            }
-        }
-
-        [Test, Category("LongRunning")]
         public void catch_created_and_deleted_events_as_well()
         {
             const string stream = "subscribe_should_catch_created_and_deleted_events_as_well";

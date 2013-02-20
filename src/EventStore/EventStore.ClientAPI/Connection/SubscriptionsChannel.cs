@@ -70,7 +70,10 @@ namespace EventStore.ClientAPI.Connection
             }
         }
 
-        public Task<EventStoreSubscription> Subscribe(string streamId, bool resolveLinkTos, Action<ResolvedEvent> eventAppeared, Action subscriptionDropped)
+        public Task<EventStoreSubscription> Subscribe(string streamId,
+                                                      bool resolveLinkTos,
+                                                      Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
+                                                      Action<EventStoreSubscription> subscriptionDropped)
         {
             var id = Guid.NewGuid();
 

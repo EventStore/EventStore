@@ -400,6 +400,7 @@ namespace EventStore.ClientAPI
         /// <returns>a <see cref="Task"/> that the caller can await on.</returns>
         public Task AppendToStreamAsync(string stream, int expectedVersion, IEnumerable<EventData> events)
         {
+// ReSharper disable PossibleMultipleEnumeration
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(events, "events");
             EnsureActive();
@@ -409,6 +410,7 @@ namespace EventStore.ClientAPI
 
             EnqueueOperation(operation);
             return source.Task;
+// ReSharper restore PossibleMultipleEnumeration
         }
 
 
@@ -480,6 +482,7 @@ namespace EventStore.ClientAPI
         /// <returns>A <see cref="Task"/> allowing the caller to control the async operation</returns>
         internal Task TransactionalWriteAsync(EventStoreTransaction transaction, IEnumerable<EventData> events)
         {
+// ReSharper disable PossibleMultipleEnumeration
             Ensure.NotNull(transaction, "transaction");
             Ensure.NotNull(events, "events");
             EnsureActive();
@@ -489,6 +492,7 @@ namespace EventStore.ClientAPI
 
             EnqueueOperation(operation);
             return source.Task;
+// ReSharper restore PossibleMultipleEnumeration
         }
 
         /// <summary>
@@ -654,6 +658,18 @@ namespace EventStore.ClientAPI
                                                               Action<ResolvedEvent> eventAppeared, 
                                                               Action subscriptionDropped = null)
         {
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+            return SubscribeToStream(stream,
+                                     resolveLinkTos,
+                                     (subscr, e) => eventAppeared(e),
+                                     subscriptionDropped == null ? (Action<EventStoreSubscription>)null : subscr => subscriptionDropped());
+        }
+
+        public Task<EventStoreSubscription> SubscribeToStream(string stream,
+                                                              bool resolveLinkTos,
+                                                              Action<EventStoreSubscription, ResolvedEvent> eventAppeared,
+                                                              Action<EventStoreSubscription> subscriptionDropped = null)
+        {
             Ensure.NotNullOrEmpty(stream, "stream");
             Ensure.NotNull(eventAppeared, "eventAppeared");
             EnsureActive();
@@ -661,14 +677,57 @@ namespace EventStore.ClientAPI
             return _subscriptionsChannel.Subscribe(stream, resolveLinkTos, eventAppeared, subscriptionDropped);
         }
 
+        public EventStoreStreamCatchUpSubscription SubscribeToStreamFrom(string stream,
+                                                                         int? fromEventNumberExclusive,
+                                                                         bool resolveLinkTos,
+                                                                         Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                                                                         Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped = null)
+        {
+            Ensure.NotNullOrEmpty(stream, "stream");
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+            var catchUpSubscription = new EventStoreStreamCatchUpSubscription(this,
+                                                                              stream,
+                                                                              fromEventNumberExclusive,
+                                                                              resolveLinkTos,
+                                                                              eventAppeared,
+                                                                              subscriptionDropped);
+            catchUpSubscription.Start();
+            return catchUpSubscription;
+        }
+
+        public Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos,
+                                                           Action<ResolvedEvent> eventAppeared,
+                                                           Action subscriptionDropped = null)
+        {
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+            return SubscribeToAll(resolveLinkTos,
+                                  (subscr, e) => eventAppeared(e),
+                                  subscriptionDropped == null ? (Action<EventStoreSubscription>)null : subscr => subscriptionDropped());
+        }
+
         public Task<EventStoreSubscription> SubscribeToAll(bool resolveLinkTos, 
-                                                           Action<ResolvedEvent> eventAppeared, Action
-                                                           subscriptionDropped = null)
+                                                           Action<EventStoreSubscription, ResolvedEvent> eventAppeared, 
+                                                           Action<EventStoreSubscription> subscriptionDropped = null)
         {
             Ensure.NotNull(eventAppeared, "eventAppeared");
             EnsureActive();
             _subscriptionsChannel.EnsureConnected(_tcpEndPoint);
             return _subscriptionsChannel.Subscribe(string.Empty, resolveLinkTos, eventAppeared, subscriptionDropped);
+        }
+
+        public EventStoreAllCatchUpSubscription SubscribeToAllFrom(Position? fromPositionExclusive,
+                                                                   bool resolveLinkTos,
+                                                                   Action<EventStoreCatchUpSubscription, ResolvedEvent> eventAppeared,
+                                                                   Action<EventStoreCatchUpSubscription, string, Exception> subscriptionDropped = null)
+        {
+            Ensure.NotNull(eventAppeared, "eventAppeared");
+            var catchUpSubscription = new EventStoreAllCatchUpSubscription(this,
+                                                                             fromPositionExclusive,
+                                                                             resolveLinkTos,
+                                                                             eventAppeared,
+                                                                             subscriptionDropped);
+            catchUpSubscription.Start();
+            return catchUpSubscription;
         }
 
         private void MainLoop()

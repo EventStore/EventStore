@@ -31,8 +31,6 @@ namespace EventStore.ClientAPI
 {
     public struct ResolvedEvent
     {
-        internal static readonly ResolvedEvent[] EmptyArray = new ResolvedEvent[0];
-
         public readonly RecordedEvent Event;
         public readonly RecordedEvent Link;
         public RecordedEvent OriginalEvent { get { return Link ?? Event; } }

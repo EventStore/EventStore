@@ -275,14 +275,13 @@ namespace EventStore.Core.Messages
                 Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
                 Ensure.NotEmptyGuid(createStreamId, "createStreamId");
-                Ensure.NotNull(metadata, "metadata");
 
                 CorrelationId = correlationId;
                 Envelope = envelope;
                 EventStreamId = eventStreamId;
                 CreateStreamId = createStreamId;
                 IsJson = isJson;
-                Metadata = metadata;
+                Metadata = metadata ?? Empty.ByteArray;
             }
         }
 

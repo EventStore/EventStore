@@ -34,8 +34,6 @@ namespace EventStore.Core.Data
 {
     public class EventRecord : IEquatable<EventRecord>
     {
-        public static readonly byte[] Empty = new byte[0];
-
         public readonly int EventNumber;
 
         public readonly long LogPosition;
@@ -102,8 +100,8 @@ namespace EventStore.Core.Data
             TimeStamp = timeStamp;
             Flags = flags;
             EventType = eventType ?? string.Empty;
-            Data = data ?? Empty;
-            Metadata = metadata ?? Empty;
+            Data = data ?? Common.Utils.Empty.ByteArray;
+            Metadata = metadata ?? Common.Utils.Empty.ByteArray;
         }
 
         public bool Equals(EventRecord other)

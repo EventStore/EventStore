@@ -25,32 +25,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+
 using System;
 
-namespace EventStore.Core.Data
+namespace EventStore.Common.Utils
 {
-    public class Event
+    public static class Empty
     {
-        public readonly Guid EventId;
-        public readonly string EventType;
-        public readonly bool IsJson;
+        public static readonly byte[] ByteArray = new byte[0];
+        public static readonly string[] StringArray = new string[0];
 
-        public readonly byte[] Data;
-        public readonly byte[] Metadata;
-
-        public Event(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata)
-        {
-            if (Guid.Empty == eventId)
-                throw new ArgumentException("Empty eventId provided.");
-            if (string.IsNullOrEmpty(eventType))
-                throw new ArgumentException("Empty eventType provided.");
-
-            EventId = eventId;
-            EventType = eventType;
-            IsJson = isJson;
-
-            Data = data ?? Common.Utils.Empty.ByteArray;
-            Metadata = metadata ?? Common.Utils.Empty.ByteArray;
-        }
+        public static readonly Action Action = () => { };
     }
 }

@@ -99,6 +99,7 @@
     <Compile Include="Connection\ClusterExplorer.cs" />
     <Compile Include="Connection\SubscriptionsChannel.cs" />
     <Compile Include="Connection\WorkItem.cs" />
+    <Compile Include="EventStoreCatchUpSubscription.cs" />
     <Compile Include="Empty.cs" />
     <Compile Include="EventData.cs" />
     <Compile Include="EventStoreSubscription.cs" />

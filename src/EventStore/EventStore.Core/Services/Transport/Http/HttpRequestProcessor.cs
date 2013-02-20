@@ -59,8 +59,6 @@ namespace EventStore.Core.Services.Transport.Http
                                           IHandle<HttpMessage.PurgeTimedOutRequests>
     {
         private static readonly TimeSpan MaxRequestDuration = TimeSpan.FromSeconds(10);
-        private static readonly string[] Empty = new string[0];
-
         private static readonly ILogger Log = LogManager.GetLoggerFor<HttpRequestProcessor>();
         
         private readonly HttpService _httpService;
@@ -197,7 +195,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void NotFound(HttpListenerContext context)
         {
-            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, Empty, _ => { });
+            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, Common.Utils.Empty.StringArray, _ => { });
             entity.Manager.ReplyStatus(HttpStatusCode.NotFound,
                                        "Not Found",
                                        e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
@@ -205,7 +203,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void InternalServerError(HttpListenerContext context)
         {
-            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, Empty, _ => { });
+            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, Common.Utils.Empty.StringArray, _ => { });
             entity.Manager.ReplyStatus(HttpStatusCode.InternalServerError,
                                        "Internal Server Error",
                                        e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
@@ -213,7 +211,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         private void BadCodec(HttpListenerContext context, string reason)
         {
-            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, Empty, _ => { });
+            var entity = CreateEntity(DateTime.UtcNow, context, Codec.NoCodec, Codec.NoCodec, Common.Utils.Empty.StringArray, _ => { });
             entity.Manager.ReplyStatus(HttpStatusCode.UnsupportedMediaType,
                                        reason,
                                        e => Log.ErrorException(e, "Error while closing http connection (http service core)."));
