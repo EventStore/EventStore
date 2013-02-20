@@ -87,12 +87,10 @@ namespace EventStore.Core.TransactionLog.LogRecords
                                         DateTime.UtcNow, PrepareFlags.TransactionBegin, null, NoData, NoData);
         }
 
-        public static PrepareLogRecord TransactionWrite(long logPosition, Guid correlationId, Guid eventId, long transactionPos, 
-                                                        int transactionOffset, string eventStreamId, string eventType, 
-                                                        byte[] data, byte[] metadata)
+        public static PrepareLogRecord TransactionWrite(long logPosition, Guid correlationId, Guid eventId, long transactionPos, int transactionOffset, string eventStreamId, string eventType, byte[] data, byte[] metadata, bool isJson)
         {
             return new PrepareLogRecord(logPosition, correlationId, eventId, transactionPos, transactionOffset,
-                                        eventStreamId, ExpectedVersion.Any, DateTime.UtcNow, PrepareFlags.Data, 
+                                        eventStreamId, ExpectedVersion.Any, DateTime.UtcNow, PrepareFlags.Data | (isJson ? PrepareFlags.IsJson : PrepareFlags.None), 
                                         eventType, data, metadata);
         }
 
