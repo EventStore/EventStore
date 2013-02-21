@@ -31,10 +31,13 @@ namespace EventStore.ClientAPI.Messages
 {
     public static partial class ClientMessage
     {
-        public partial class DeniedToRoute
+        public partial class NotHandled
         {
-            public IPEndPoint ExternalTcpEndPoint{ get { return new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort); } }
-            public IPEndPoint ExternalHttpEndPoint { get { return new IPEndPoint(IPAddress.Parse(ExternalHttpAddress), ExternalHttpPort); } }
+            public partial class MasterInfo
+            {
+                public IPEndPoint ExternalTcpEndPoint { get { return new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort); } }
+                public IPEndPoint ExternalHttpEndPoint { get { return new IPEndPoint(IPAddress.Parse(ExternalHttpAddress), ExternalHttpPort); } }
+            }
         }
     }
 }

@@ -31,17 +31,6 @@ namespace EventStore.Core.Messages
 {
     public partial class TcpClientMessageDto
     {
-        public partial class DeniedToRoute
-        {
-            public DeniedToRoute(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint)
-            {
-                ExternalTcpAddress = externalTcpEndPoint.Address.ToString();
-                ExternalTcpPort = externalTcpEndPoint.Port;
-                ExternalHttpAddress = externalHttpEndPoint.Address.ToString();
-                ExternalHttpPort = externalHttpEndPoint.Port;
-            }
-        }
-
         public partial class ResolvedIndexedEvent
         {
             public ResolvedIndexedEvent(Data.EventRecord eventRecord, Data.EventRecord linkRecord)
@@ -72,6 +61,20 @@ namespace EventStore.Core.Messages
                 EventType = eventRecord.EventType;
                 Data = eventRecord.Data;
                 Metadata = eventRecord.Metadata;
+            }
+        }
+
+        public partial class NotHandled
+        {
+            public partial class MasterInfo
+            {
+                public MasterInfo(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint)
+                {
+                    ExternalTcpAddress = externalTcpEndPoint.Address.ToString();
+                    ExternalTcpPort = externalTcpEndPoint.Port;
+                    ExternalHttpAddress = externalHttpEndPoint.Address.ToString();
+                    ExternalHttpPort = externalHttpEndPoint.Port;
+                }
             }
         }
     }

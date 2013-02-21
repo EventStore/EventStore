@@ -368,7 +368,7 @@ namespace EventStore.ClientAPI.Transport.Tcp
             NotifyClosed();
 
             //Console.WriteLine(
-            //    "[{0}]:\nReceived packages: {1}, bytes: {2}\nSend packages: {3}, bytes: {4}\nSendAsync calls: {5}, callbacks: {6}\nReceiveAsync calls: {7}, callbacks: {8}\n",
+            //    "[{0}]:\nReceived packages: {1}, bytes: {2}\nSent packages: {3}, bytes: {4}\nSendAsync calls: {5}, callbacks: {6}\nReceiveAsync calls: {7}, callbacks: {8}\n",
             //    EffectiveEndPoint,
             //    _packagesReceived,
             //    _bytesReceived,

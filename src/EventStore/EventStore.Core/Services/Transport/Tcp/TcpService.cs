@@ -110,12 +110,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             Log.Info("{0} TCP connection accepted: [{1}], connection ID: {2}.", _serviceType, connection.EffectiveEndPoint, connectionId);
             
             var dispatcher = _dispatcherFactory(connectionId, _serverEndPoint);
-            var manager = new TcpConnectionManager(string.Format("REPLICA [{0}, {1}]", connection.EffectiveEndPoint, connectionId),
-                                                   connectionId,
-                                                   dispatcher,
-                                                   _publisher,
-                                                   connection,
-                                                   _networkSendQueue);
+            var manager = new TcpConnectionManager(_serviceType.ToString().ToLower(), connectionId, dispatcher, _publisher, connection, _networkSendQueue);
             manager.ConnectionClosed += OnConnectionClosed;
 
             _publisher.Publish(new TcpMessage.ConnectionEstablished(manager));

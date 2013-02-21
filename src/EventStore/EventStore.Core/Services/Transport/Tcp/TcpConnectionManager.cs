@@ -48,6 +48,8 @@ namespace EventStore.Core.Services.Transport.Tcp
     /// </summary>
     public class TcpConnectionManager: IHandle<TcpMessage.Heartbeat>, IHandle<TcpMessage.HeartbeatTimeout>
     {
+        public const int ConnectionQueueSizeThreshold = 50000;
+
         private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromMilliseconds(15000);
         private static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromMilliseconds(60000);
 
@@ -134,7 +136,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnConnectionEstablished(TcpConnection connection)
         {
-            Log.Info("Connection to [{0}] established.", connection.EffectiveEndPoint);
+            Log.Info("Connection '{0}' ({1:B}) to [{2}] established.", _connectionName, _connectionId, connection.EffectiveEndPoint);
 
             ScheduleHeartbeat(0);
 
@@ -145,7 +147,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnConnectionFailed(TcpConnection connection, SocketError socketError)
         {
-            Log.Info("Connection to [{0}] failed: {1}.", connection.EffectiveEndPoint, socketError);
+            Log.Info("Connection '{0}' ({1:B}) to [{2}] failed: {3}.", _connectionName, _connectionId, connection.EffectiveEndPoint, socketError);
 
             _isClosed = true;
             connection.ConnectionClosed -= OnConnectionClosed;
@@ -170,8 +172,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             }
             catch (PackageFramingException exc)
             {
-                Log.InfoException(exc, "Invalid TCP frame received.");
-                SendBadRequestAndClose(string.Format("Invalid TCP frame received. Error: {0}.", exc.Message));
+                SendBadRequestAndClose(Guid.Empty, string.Format("Invalid TCP frame received. Error: {0}.", exc.Message));
                 return;
             }
             _connection.ReceiveAsync(OnRawDataReceived);
@@ -186,8 +187,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             }
             catch (Exception e)
             {
-                Log.InfoException(e, "Received bad network package");
-                SendBadRequestAndClose(string.Format("Received bad network package. Error: {0}", e.Message));
+                SendBadRequestAndClose(Guid.Empty, string.Format("Received bad network package. Error: {0}", e));
                 return;
             }
 
@@ -196,50 +196,57 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnPackageReceived(TcpPackage package)
         {
-            switch (package.Command)
+            try
             {
-                case TcpCommand.HeartbeatResponseCommand:
-                    break;
-                case TcpCommand.HeartbeatRequestCommand:
-                    SendPackage(new TcpPackage(TcpCommand.HeartbeatResponseCommand, package.CorrelationId, null));
-                    break;
-                case TcpCommand.BadRequest:
+                switch (package.Command)
                 {
-                    string reason = string.Empty;
-                    Helper.EatException(() => reason = Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
-                    var exitMessage = string.Format("Bad request received, will stop server. CorrelationId: {0:B}. Error: {1}",
-                                                    package.CorrelationId,
-                                                    reason.IsEmptyString() ? "<reason missing>" : reason);
-                    Log.Error(exitMessage);
-                    Application.Exit(1, exitMessage);
-                    break;
+                    case TcpCommand.HeartbeatResponseCommand:
+                        break;
+                    case TcpCommand.HeartbeatRequestCommand:
+                        SendPackage(new TcpPackage(TcpCommand.HeartbeatResponseCommand, package.CorrelationId, null));
+                        break;
+                    case TcpCommand.BadRequest:
+                    {
+                        string reason = string.Empty;
+                        Helper.EatException(() => reason = Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
+                        var exitMessage = string.Format("Bad request received from '{0}' [{1}, {2:B}], will stop server. CorrelationId: {3:B}, Error: {4}.",
+                                                        _connectionName, EndPoint, _connectionId, package.CorrelationId,
+                                                        reason.IsEmptyString() ? "<reason missing>" : reason);
+                        Log.Error(exitMessage);
+                        Application.Exit(1, exitMessage);
+                        break;
+                    }
+                    default:
+                    {
+                        var message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, this);
+                        if (message != null)
+                            _publisher.Publish(message);
+                        else
+                            SendBadRequestAndClose(package.CorrelationId, 
+                                                   string.Format("Couldn't unwrap network package for command {0}.", package.Command));
+                        break;
+                    }
                 }
-                default:
-                {
-                    var message = _dispatcher.UnwrapPackage(package, _tcpEnvelope, this);
-                    if (message != null)
-                        _publisher.Publish(message);
-                    else
-                        SendBadRequestAndClose(string.Format("Couldn't unwrap network package for command {0}.", package.Command), package.CorrelationId);
-                    break;
-                }
+            }
+            catch (Exception e)
+            {
+                SendBadRequestAndClose(package.CorrelationId, string.Format("Error during processing package. Error: {0}", e));
             }
         }
 
-        public void SendBadRequestAndClose(string message, Guid? correlationId = null)
+        public void SendBadRequestAndClose(Guid correlationId, string message)
         {
             Ensure.NotNull(message, "message");
 
-            SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId ?? Guid.NewGuid(), Encoding.UTF8.GetBytes(message)));
-            Log.Error("Closing connection [{0}, {1:B}] due to error. Reason: {2}", EndPoint, _connectionId, message);
+            SendPackage(new TcpPackage(TcpCommand.BadRequest, correlationId, Encoding.UTF8.GetBytes(message)));
+            Log.Error("Closing connection '{0}' [{1}, {2:B}] due to error. Reason: {3}", _connectionName, EndPoint, _connectionId, message);
             _connection.Close();
         }
 
         public void Stop(string reason = null)
         {
-            Log.Trace("Closing connection [{0}, {1:B}] cleanly.{2}",
-                      EndPoint,
-                      _connectionId,
+            Log.Trace("Closing connection '{0}' [{1}, {2:B}] cleanly.{3}",
+                      _connectionName, EndPoint, _connectionId,
                       reason.IsEmpty() ? string.Empty : " Reason: " + reason);
             _connection.Close();
         }
@@ -256,6 +263,10 @@ namespace EventStore.Core.Services.Transport.Tcp
             var data = package.AsArraySegment();  
             var framed = _framer.FrameData(data);
             _connection.EnqueueSend(framed);
+
+            int queueSize;
+            if ((queueSize = _connection.SendQueueSize) > ConnectionQueueSizeThreshold)
+                SendBadRequestAndClose(Guid.Empty, string.Format("Connection queue size is too large: {0}.", queueSize));
         }
 
         public void Handle(TcpMessage.Heartbeat message)
@@ -287,14 +298,15 @@ namespace EventStore.Core.Services.Transport.Tcp
                 ScheduleHeartbeat(msgNum);
             else 
             {
-                Log.Info("[{0}] Closing due to HEARTBEAT TIMEOUT at msgNum {1}.", message.EndPoint, msgNum);
+                Log.Info("Closing connection '{0}' [{1}, {2:B}] due to HEARTBEAT TIMEOUT at msgNum {3}.", 
+                         _connectionName, EndPoint, _connectionId, msgNum);
                 _connection.Close();
             }
         }
 
         private void OnConnectionClosed(ITcpConnection connection, SocketError socketError)
         {
-            Log.Info("Connection [{0}] closed: {1}.", connection.EffectiveEndPoint, socketError);
+            Log.Info("Connection '{0} [{1}, {2:B}] closed: {3}.", _connectionName, connection.EffectiveEndPoint, _connectionId, socketError);
 
             _isClosed = true;
             connection.ConnectionClosed -= OnConnectionClosed;
@@ -306,10 +318,9 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void ScheduleHeartbeat(int msgNum)
         {
-            _publisher.Publish(TimerMessage.Schedule.Create(
-                KeepAliveInterval,
-                new SendToWeakThisEnvelope(this), 
-                new TcpMessage.Heartbeat(EndPoint, msgNum)));
+            _publisher.Publish(TimerMessage.Schedule.Create(KeepAliveInterval,
+                                                            new SendToWeakThisEnvelope(this),
+                                                            new TcpMessage.Heartbeat(EndPoint, msgNum)));
         }
 
         private class SendToWeakThisEnvelope : IEnvelope

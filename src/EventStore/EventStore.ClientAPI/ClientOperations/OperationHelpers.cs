@@ -27,6 +27,7 @@
 //  
 using System;
 using System.Text;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
@@ -53,12 +54,26 @@ namespace EventStore.ClientAPI.ClientOperations
                                         new ServerErrorException(string.IsNullOrEmpty(message) ? "<no message>" : message));
         }
 
-        public static InspectionResult InspectDeniedToRoute(this TcpPackage package)
+        public static InspectionResult InspectNotHandled(this TcpPackage package)
         {
-            if (package.Command != TcpCommand.DeniedToRoute)
-                throw new ArgumentException(string.Format("Wrong command: {0}, expected: {1}.", package.Command, TcpCommand.DeniedToRoute));
-            var route = package.Data.Deserialize<ClientMessage.DeniedToRoute>();
-            return new InspectionResult(InspectionDecision.Reconnect, data: route.ExternalTcpEndPoint);
+            if (package.Command != TcpCommand.NotHandled)
+                throw new ArgumentException(string.Format("Wrong command: {0}, expected: {1}.", package.Command, TcpCommand.NotHandled));
+            var message = package.Data.Deserialize<ClientMessage.NotHandled>();
+
+            switch (message.Reason)
+            {
+                case ClientMessage.NotHandled.NotHandledReason.NotReady:
+                case ClientMessage.NotHandled.NotHandledReason.TooBusy:
+                    return new InspectionResult(InspectionDecision.Retry);
+
+                case ClientMessage.NotHandled.NotHandledReason.NotMaster:
+                    var masterInfo = message.AdditionalInfo.Deserialize<ClientMessage.NotHandled.MasterInfo>();
+                    return new InspectionResult(InspectionDecision.Reconnect, data: masterInfo.ExternalTcpEndPoint);
+                
+                default:
+                    LogManager.GetLogger().Info("Unknown NotHandledReason: {0}.", message.Reason);
+                    return new InspectionResult(InspectionDecision.Retry);
+            }
         }
 
         public static InspectionResult InspectUnexpectedCommand(this TcpPackage package, TcpCommand expectedCommand)

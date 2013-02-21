@@ -105,7 +105,7 @@ namespace EventStore.ClientAPI.ClientOperations
                 switch (package.Command)
                 {
                     case TcpCommand.BadRequest: return package.InspectBadRequest();
-                    case TcpCommand.DeniedToRoute: return package.InspectDeniedToRoute();
+                    case TcpCommand.NotHandled: return package.InspectNotHandled();
                     default: return package.InspectUnexpectedCommand(TcpCommand.TransactionCommitCompleted);
                 }
             }

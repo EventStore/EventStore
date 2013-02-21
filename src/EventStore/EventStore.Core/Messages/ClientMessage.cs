@@ -31,7 +31,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Services.Transport.Tcp;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Messages
@@ -61,6 +60,19 @@ namespace EventStore.Core.Messages
 
         public abstract class WriteRequestMessage : Message
         {
+            public readonly Guid CorrelationId;
+            public readonly IEnvelope Envelope;
+            public readonly bool AllowForwarding;
+
+            protected WriteRequestMessage(Guid correlationId, IEnvelope envelope, bool allowForwarding)
+            {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.NotNull(envelope, "envelope");
+
+                CorrelationId = correlationId;
+                Envelope = envelope;
+                AllowForwarding = allowForwarding;
+            }
         }
 
         public abstract class WriteResponseMessage : Message
@@ -69,6 +81,17 @@ namespace EventStore.Core.Messages
 
         public abstract class ReadRequestMessage: Message
         {
+            public readonly Guid CorrelationId;
+            public readonly IEnvelope Envelope;
+
+            protected ReadRequestMessage(Guid correlationId, IEnvelope envelope)
+            {
+                Ensure.NotEmptyGuid(correlationId, "correlationId");
+                Ensure.NotNull(envelope, "envelope");
+
+                CorrelationId = correlationId;
+                Envelope = envelope;
+            }
         }
 
         public abstract class ReadResponseMessage : Message
@@ -86,41 +109,50 @@ namespace EventStore.Core.Messages
             }
         }
 
-        public class DeniedToRoute : Message
+        public class NotHandled : Message
         {
             public readonly Guid CorrelationId;
+            public readonly TcpClientMessageDto.NotHandled.NotHandledReason Reason;
+            public readonly object AdditionalInfo;
 
-            public readonly IPEndPoint ExternalTcpEndPoint;
-            public readonly IPEndPoint ExternalHttpEndPoint;
-
-            public DeniedToRoute(Guid correlationId, IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint)
+            public NotHandled(Guid correlationId,
+                              TcpClientMessageDto.NotHandled.NotHandledReason reason,
+                              object additionalInfo)
             {
                 CorrelationId = correlationId;
-                ExternalTcpEndPoint = externalTcpEndPoint;
-                ExternalHttpEndPoint = externalHttpEndPoint;
+                Reason = reason;
+                AdditionalInfo = additionalInfo;
+            }
+
+            public class MasterInfo
+            {
+                public readonly IPEndPoint ExternalTcpEndPoint;
+                public readonly IPEndPoint ExternalHttpEndPoint;
+
+                public MasterInfo(IPEndPoint externalTcpEndPoint, IPEndPoint externalHttpEndPoint)
+                {
+                    Ensure.NotNull(externalTcpEndPoint, "externalTcpEndPoint");
+                    Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
+                    ExternalTcpEndPoint = externalTcpEndPoint;
+                    ExternalHttpEndPoint = externalHttpEndPoint;
+                }
             }
         }
 
         public class CreateStream: WriteRequestMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly bool AllowForwarding;
-
             public readonly string EventStreamId;
             public readonly Guid RequestId;
             public readonly bool IsJson;
             public readonly byte[] Metadata;
 
-            public CreateStream(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, Guid requestId, bool isJson, byte[] metadata)
+            public CreateStream(Guid correlationId, IEnvelope envelope, bool allowForwarding, 
+                                string eventStreamId, Guid requestId, bool isJson, byte[] metadata)
+                : base(correlationId, envelope, allowForwarding)
             {
-                Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNull(eventStreamId, "eventStreamId");
                 Ensure.NotEmptyGuid(requestId, "requestId");
                 
-                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
-                Envelope = envelope;
-                AllowForwarding = allowForwarding;
                 EventStreamId = eventStreamId;
                 RequestId = requestId;
                 IsJson = isJson;
@@ -144,31 +176,25 @@ namespace EventStore.Core.Messages
 
         public class WriteEvents : WriteRequestMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly bool AllowForwarding;
-
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
             public readonly Event[] Events;
 
-            public WriteEvents(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, int expectedVersion, Event[] events)
+            public WriteEvents(Guid correlationId, IEnvelope envelope, bool allowForwarding, 
+                               string eventStreamId, int expectedVersion, Event[] events)
+                : base(correlationId, envelope, allowForwarding)
             {
-                Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNull(eventStreamId, "eventStreamId");
                 Ensure.NotNull(events, "events");
                 Ensure.Positive(events.Length, "events.Length");
-
-                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
-                Envelope = envelope;
-                AllowForwarding = allowForwarding;
 
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
                 Events = events;
             }
 
-            public WriteEvents(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, int expectedVersion, Event @event)
+            public WriteEvents(Guid correlationId, IEnvelope envelope, bool allowForwarding, 
+                               string eventStreamId, int expectedVersion, Event @event)
                 : this(correlationId, envelope, allowForwarding, eventStreamId, expectedVersion, new[]{@event})
             {
             }
@@ -210,18 +236,12 @@ namespace EventStore.Core.Messages
 
         public class TransactionStart : WriteRequestMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly bool AllowForwarding;
-
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
 
             public TransactionStart(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, int expectedVersion)
+                : base(correlationId, envelope, allowForwarding)
             {
-                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
-                Envelope = envelope;
-                AllowForwarding = allowForwarding;
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
             }
@@ -245,18 +265,12 @@ namespace EventStore.Core.Messages
 
         public class TransactionWrite : WriteRequestMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly bool AllowForwarding;
-
             public readonly long TransactionId;
             public readonly Event[] Events;
 
             public TransactionWrite(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId, Event[] events)
+                : base(correlationId, envelope, allowForwarding)
             {
-                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
-                Envelope = envelope;
-                AllowForwarding = allowForwarding;
                 TransactionId = transactionId;
                 Events = events;
             }
@@ -280,17 +294,11 @@ namespace EventStore.Core.Messages
 
         public class TransactionCommit : WriteRequestMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly bool AllowForwarding;
-
             public readonly long TransactionId;
 
             public TransactionCommit(Guid correlationId, IEnvelope envelope, bool allowForwarding, long transactionId)
+                : base(correlationId, envelope, allowForwarding)
             {
-                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
-                Envelope = envelope;
-                AllowForwarding = allowForwarding;
                 TransactionId = transactionId;
             }
         }
@@ -313,21 +321,14 @@ namespace EventStore.Core.Messages
 
         public class DeleteStream : WriteRequestMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-            public readonly bool AllowForwarding;
-
             public readonly string EventStreamId;
             public readonly int ExpectedVersion;
 
             public DeleteStream(Guid correlationId, IEnvelope envelope, bool allowForwarding, string eventStreamId, int expectedVersion)
+                : base(correlationId, envelope, allowForwarding)
             {
-                Ensure.NotNull(envelope, "envelope");
                 Ensure.NotNull(eventStreamId, "eventStreamId");
 
-                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
-                Envelope = envelope;
-                AllowForwarding = allowForwarding;
                 EventStreamId = eventStreamId;
                 ExpectedVersion = expectedVersion;
             }
@@ -349,17 +350,13 @@ namespace EventStore.Core.Messages
 
         public class ReadEvent : ReadRequestMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
-
             public readonly string EventStreamId;
             public readonly int EventNumber;
             public readonly bool ResolveLinkTos;
 
             public ReadEvent(Guid correlationId, IEnvelope envelope, string eventStreamId, int eventNumber, bool resolveLinkTos)
+                : base(correlationId, envelope)
             {
-                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
-                Envelope = envelope;
                 EventStreamId = eventStreamId;
                 EventNumber = eventNumber;
                 ResolveLinkTos = resolveLinkTos;
@@ -388,8 +385,6 @@ namespace EventStore.Core.Messages
 
         public class ReadStreamEventsForward : ReadRequestMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
             public readonly string EventStreamId;
             public readonly int FromEventNumber;
             public readonly int MaxCount;
@@ -415,9 +410,8 @@ namespace EventStore.Core.Messages
                                            int maxCount,
                                            bool resolveLinks,
                                            int? validationStreamVersion)
+                : base(correlationId, envelope)
             {
-                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
-                Envelope = envelope;
                 EventStreamId = eventStreamId;
                 FromEventNumber = fromEventNumber;
                 MaxCount = maxCount;
@@ -505,8 +499,6 @@ namespace EventStore.Core.Messages
 
         public class ReadStreamEventsBackward : ReadRequestMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
             public readonly string EventStreamId;
             public readonly int FromEventNumber;
             public readonly int MaxCount;
@@ -521,9 +513,8 @@ namespace EventStore.Core.Messages
                                             int maxCount,
                                             bool resolveLinks,
                                             int? validationStreamVersion)
+                : base(correlationId, envelope)
             {
-                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
-                Envelope = envelope;
                 EventStreamId = eventStreamId;
                 FromEventNumber = fromEventNumber;
                 MaxCount = maxCount;
@@ -605,8 +596,6 @@ namespace EventStore.Core.Messages
 
         public class ReadAllEventsForward : ReadRequestMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
             public readonly long CommitPosition;
             public readonly long PreparePosition;
             public readonly int MaxCount;
@@ -621,9 +610,8 @@ namespace EventStore.Core.Messages
                                         int maxCount,
                                         bool resolveLinks,
                                         long? validationTfEofPosition)
+                : base(correlationId, envelope)
             {
-                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
-                Envelope = envelope;
                 CommitPosition = commitPosition;
                 PreparePosition = preparePosition;
                 MaxCount = maxCount;
@@ -649,8 +637,6 @@ namespace EventStore.Core.Messages
 
         public class ReadAllEventsBackward : ReadRequestMessage
         {
-            public readonly Guid CorrelationId;
-            public readonly IEnvelope Envelope;
             public readonly long CommitPosition;
             public readonly long PreparePosition;
             public readonly int MaxCount;
@@ -665,9 +651,8 @@ namespace EventStore.Core.Messages
                                          int maxCount,
                                          bool resolveLinks,
                                          long? validationTfEofPosition)
+                : base(correlationId, envelope)
             {
-                CorrelationId = correlationId == Guid.Empty ? Guid.NewGuid() : correlationId;
-                Envelope = envelope;
                 CommitPosition = commitPosition;
                 PreparePosition = preparePosition;
                 MaxCount = maxCount;
@@ -693,15 +678,15 @@ namespace EventStore.Core.Messages
 
         public class SubscribeToStream : ReadRequestMessage
         {
-            public readonly TcpConnectionManager Connection;
-            public readonly Guid CorrelationId;
+            public readonly Guid ConnectionId;
             public readonly string EventStreamId; // should be empty to subscribe to all
             public readonly bool ResolveLinkTos;
 
-            public SubscribeToStream(TcpConnectionManager connection, Guid correlationId, string eventStreamId, bool resolveLinkTos)
+            public SubscribeToStream(Guid correlationId, IEnvelope envelope, Guid connectionId, string eventStreamId, bool resolveLinkTos)
+                : base(correlationId, envelope)
             {
-                Connection = connection;
-                CorrelationId = correlationId;
+                Ensure.NotEmptyGuid(connectionId, "connectionId");
+                ConnectionId = connectionId;
                 EventStreamId = eventStreamId;
                 ResolveLinkTos = resolveLinkTos;
             }
@@ -709,11 +694,9 @@ namespace EventStore.Core.Messages
 
         public class UnsubscribeFromStream : ReadRequestMessage
         {
-            public readonly Guid CorrelationId;
-
-            public UnsubscribeFromStream(Guid correlationId)
+            public UnsubscribeFromStream(Guid correlationId, IEnvelope envelope)
+                : base(correlationId, envelope)
             {
-                CorrelationId = correlationId;
             }
         }
 
