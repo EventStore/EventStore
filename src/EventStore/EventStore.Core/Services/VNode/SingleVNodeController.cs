@@ -95,9 +95,12 @@ namespace EventStore.Core.Services.VNode
                     .When<SystemMessage.BecomePreMaster>().Do(Handle)
                     .When<SystemMessage.StorageReaderInitializationDone>().Do(Handle)
                     .When<SystemMessage.StorageWriterInitializationDone>().Do(Handle)
-                    //TODO AN: change this
-                    .When<ClientMessage.ReadRequestMessage>().Ignore()
                     .WhenOther().ForwardTo(_outputBus)
+
+                .InStates(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)
+                    .When<ClientMessage.ReadRequestMessage>().Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
+                .InAllStatesExcept(VNodeState.Initializing, VNodeState.ShuttingDown, VNodeState.Shutdown)
+                    .When<ClientMessage.ReadRequestMessage>().ForwardTo(_outputBus)
 
                 .InAnyState()
                     .When<ClientMessage.CreateStream>().Do(Handle)
@@ -117,14 +120,8 @@ namespace EventStore.Core.Services.VNode
                     .When<SystemMessage.ChaserCaughtUp>().Do(Handle)
                     .WhenOther().ForwardTo(_outputBus)
 
-                .InAllStatesExcept(VNodeState.Master)
-                    .When<StorageMessage.WritePrepares>().Ignore()
-                    .When<StorageMessage.WriteDelete>().Ignore()
-                    .When<StorageMessage.WriteTransactionStart>().Ignore()
-                    .When<StorageMessage.WriteTransactionData>().Ignore()
-                    .When<StorageMessage.WriteTransactionPrepare>().Ignore()
-                    .When<StorageMessage.WriteCommit>().Ignore()
                 .InState(VNodeState.Master)
+                    .When<ClientMessage.WriteRequestMessage>().ForwardTo(_outputBus)
                     .When<StorageMessage.WritePrepares>().ForwardTo(_outputBus)
                     .When<StorageMessage.WriteDelete>().ForwardTo(_outputBus)
                     .When<StorageMessage.WriteTransactionStart>().ForwardTo(_outputBus)
@@ -132,6 +129,15 @@ namespace EventStore.Core.Services.VNode
                     .When<StorageMessage.WriteTransactionPrepare>().ForwardTo(_outputBus)
                     .When<StorageMessage.WriteCommit>().ForwardTo(_outputBus)
                     .WhenOther().ForwardTo(_outputBus)
+
+                .InAllStatesExcept(VNodeState.Master)
+                    .When<ClientMessage.WriteRequestMessage>().Do(msg => DenyRequestBecauseNotReady(msg.Envelope, msg.CorrelationId))
+                    .When<StorageMessage.WritePrepares>().Ignore()
+                    .When<StorageMessage.WriteDelete>().Ignore()
+                    .When<StorageMessage.WriteTransactionStart>().Ignore()
+                    .When<StorageMessage.WriteTransactionData>().Ignore()
+                    .When<StorageMessage.WriteTransactionPrepare>().Ignore()
+                    .When<StorageMessage.WriteCommit>().Ignore()
 
                 .InAllStatesExcept(VNodeState.ShuttingDown, VNodeState.Shutdown)
                     .When<ClientMessage.RequestShutdown>().Do(Handle)
@@ -143,8 +149,6 @@ namespace EventStore.Core.Services.VNode
 
                 .InStates(VNodeState.ShuttingDown, VNodeState.Shutdown)
                     .When<SystemMessage.ServiceShutdown>().Do(Handle)
-                    // TODO AN reply with correct status code, that system is shutting down (or already shut down)
-                    .When<ClientMessage.ReadRequestMessage>().Ignore()
                     .WhenOther().ForwardTo(_outputBus)
 
                 .Build();
@@ -281,6 +285,11 @@ namespace EventStore.Core.Services.VNode
                                                                              message.Envelope,
                                                                              message.EventStreamId,
                                                                              message.ExpectedVersion));
+        }
+
+        private void DenyRequestBecauseNotReady(IEnvelope envelope, Guid correlationId)
+        {
+            envelope.ReplyWith(new ClientMessage.NotHandled(correlationId, TcpClientMessageDto.NotHandled.NotHandledReason.NotReady, null));
         }
 
         private void Handle(ClientMessage.RequestShutdown message)

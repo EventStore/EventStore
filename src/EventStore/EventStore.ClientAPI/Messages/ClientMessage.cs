@@ -125,32 +125,6 @@ namespace EventStore.ClientAPI.Messages
     }
   }
   
-  [Serializable, ProtoContract(Name=@"DeniedToRoute")]
-  public partial class DeniedToRoute
-  {
-    [ProtoMember(1, IsRequired = true, Name=@"external_tcp_address", DataFormat = DataFormat.Default)]
-    public readonly string ExternalTcpAddress;
-  
-    [ProtoMember(2, IsRequired = true, Name=@"external_tcp_port", DataFormat = DataFormat.TwosComplement)]
-    public readonly int ExternalTcpPort;
-  
-    [ProtoMember(3, IsRequired = true, Name=@"external_http_address", DataFormat = DataFormat.Default)]
-    public readonly string ExternalHttpAddress;
-  
-    [ProtoMember(4, IsRequired = true, Name=@"external_http_port", DataFormat = DataFormat.TwosComplement)]
-    public readonly int ExternalHttpPort;
-  
-    private DeniedToRoute() {}
-  
-    public DeniedToRoute(string externalTcpAddress, int externalTcpPort, string externalHttpAddress, int externalHttpPort)
-    {
-        ExternalTcpAddress = externalTcpAddress;
-        ExternalTcpPort = externalTcpPort;
-        ExternalHttpAddress = externalHttpAddress;
-        ExternalHttpPort = externalHttpPort;
-    }
-  }
-  
   [Serializable, ProtoContract(Name=@"CreateStream")]
   public partial class CreateStream
   {
@@ -671,6 +645,64 @@ namespace EventStore.ClientAPI.Messages
   {
     public SubscriptionDropped()
     {
+    }
+  }
+  
+  [Serializable, ProtoContract(Name=@"NotHandled")]
+  public partial class NotHandled
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"reason", DataFormat = DataFormat.TwosComplement)]
+    public readonly NotHandled.NotHandledReason Reason;
+  
+    [ProtoMember(2, IsRequired = false, Name=@"additional_info", DataFormat = DataFormat.Default)]
+    public readonly byte[] AdditionalInfo;
+  
+  [Serializable, ProtoContract(Name=@"MasterInfo")]
+  public partial class MasterInfo
+  {
+    [ProtoMember(1, IsRequired = true, Name=@"external_tcp_address", DataFormat = DataFormat.Default)]
+    public readonly string ExternalTcpAddress;
+  
+    [ProtoMember(2, IsRequired = true, Name=@"external_tcp_port", DataFormat = DataFormat.TwosComplement)]
+    public readonly int ExternalTcpPort;
+  
+    [ProtoMember(3, IsRequired = true, Name=@"external_http_address", DataFormat = DataFormat.Default)]
+    public readonly string ExternalHttpAddress;
+  
+    [ProtoMember(4, IsRequired = true, Name=@"external_http_port", DataFormat = DataFormat.TwosComplement)]
+    public readonly int ExternalHttpPort;
+  
+    private MasterInfo() {}
+  
+    public MasterInfo(string externalTcpAddress, int externalTcpPort, string externalHttpAddress, int externalHttpPort)
+    {
+        ExternalTcpAddress = externalTcpAddress;
+        ExternalTcpPort = externalTcpPort;
+        ExternalHttpAddress = externalHttpAddress;
+        ExternalHttpPort = externalHttpPort;
+    }
+  }
+  
+    [ProtoContract(Name=@"NotHandledReason")]
+    public enum NotHandledReason
+    {
+            
+      [ProtoEnum(Name=@"NotReady", Value=0)]
+      NotReady = 0,
+            
+      [ProtoEnum(Name=@"TooBusy", Value=1)]
+      TooBusy = 1,
+            
+      [ProtoEnum(Name=@"NotMaster", Value=2)]
+      NotMaster = 2
+    }
+  
+    private NotHandled() {}
+  
+    public NotHandled(NotHandled.NotHandledReason reason, byte[] additionalInfo)
+    {
+        Reason = reason;
+        AdditionalInfo = additionalInfo;
     }
   }
   

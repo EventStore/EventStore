@@ -29,6 +29,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Log;
@@ -146,10 +147,18 @@ namespace EventStore.ClientAPI.Connection
 
         private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
         {
+            if (package.Command == TcpCommand.BadRequest && package.CorrelationId == Guid.Empty)
+            {
+                // TODO AN reports somehow to client code, that something bad happened
+                var message = Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count);
+                throw new Exception(string.Format("BadRequest received from server. Error: {0}",
+                                                  string.IsNullOrEmpty(message) ? "<no message>" : message));
+            }
+
             SubscriptionTaskPair subscription;
             if (!_subscriptions.TryGetValue(package.CorrelationId, out subscription))
             {
-                _log.Error("Unexpected package received : {0} ({1})", package.CorrelationId, package.Command);
+                _log.Error("Unexpected package received: {0} ({1})", package.CorrelationId, package.Command);
                 return;
             }
 

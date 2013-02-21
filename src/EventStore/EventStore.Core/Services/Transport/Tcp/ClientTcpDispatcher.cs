@@ -30,6 +30,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Tcp
 {
@@ -90,7 +91,7 @@ namespace EventStore.Core.Services.Transport.Tcp
             AddWrapper<ClientMessage.StreamEventAppeared>(WrapStreamEventAppeared);
             AddWrapper<ClientMessage.SubscriptionDropped>(WrapSubscriptionDropped);
             
-            AddWrapper<ClientMessage.DeniedToRoute>(WrapDeniedToRoute);
+            AddWrapper<ClientMessage.NotHandled>(WrapNotHandled);
 
             AddUnwrapper(TcpCommand.ScavengeDatabase, UnwrapScavengeDatabase);
         }
@@ -424,14 +425,14 @@ namespace EventStore.Core.Services.Transport.Tcp
         {
             var dto = package.Data.Deserialize<TcpClientMessageDto.SubscribeToStream>();
             if (dto == null) return null;
-            return new ClientMessage.SubscribeToStream(connection, package.CorrelationId, dto.EventStreamId, dto.ResolveLinkTos);
+            return new ClientMessage.SubscribeToStream(package.CorrelationId, envelope, connection.ConnectionId, dto.EventStreamId, dto.ResolveLinkTos);
         }
 
         private ClientMessage.UnsubscribeFromStream UnwrapUnsubscribeFromStream(TcpPackage package, IEnvelope envelope, TcpConnectionManager connection)
         {
             var dto = package.Data.Deserialize<TcpClientMessageDto.UnsubscribeFromStream>();
             if (dto == null) return null;
-            return new ClientMessage.UnsubscribeFromStream(package.CorrelationId);
+            return new ClientMessage.UnsubscribeFromStream(package.CorrelationId, envelope);
         }
 
         private TcpPackage WrapSubscribedToStream(ClientMessage.SubscriptionConfirmation msg)
@@ -452,11 +453,10 @@ namespace EventStore.Core.Services.Transport.Tcp
             return new TcpPackage(TcpCommand.SubscriptionDropped, msg.CorrelationId, dto.Serialize());
         }
 
-        private TcpPackage WrapDeniedToRoute(ClientMessage.DeniedToRoute msg)
+        private TcpPackage WrapNotHandled(ClientMessage.NotHandled msg)
         {
-            var dto = new TcpClientMessageDto.DeniedToRoute(msg.ExternalTcpEndPoint,
-                                                         msg.ExternalHttpEndPoint);
-            return new TcpPackage(TcpCommand.DeniedToRoute, msg.CorrelationId, dto.Serialize());
+            var dto = new TcpClientMessageDto.NotHandled(msg.Reason, msg.AdditionalInfo == null ? null : msg.AdditionalInfo.ToJsonBytes());
+            return new TcpPackage(TcpCommand.NotHandled, msg.CorrelationId, dto.Serialize());
         }
 
         private SystemMessage.ScavengeDatabase UnwrapScavengeDatabase(TcpPackage package, IEnvelope envelope)

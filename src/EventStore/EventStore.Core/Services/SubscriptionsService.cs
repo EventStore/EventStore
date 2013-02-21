@@ -35,7 +35,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.Core.Services
 {
@@ -44,14 +43,12 @@ namespace EventStore.Core.Services
                                         IHandle<ClientMessage.UnsubscribeFromStream>,
                                         IHandle<StorageMessage.EventCommited>
     {
-        public const int ConnectionQueueSizeThreshold = 10000;
         public const string AllStreamsSubscriptionId = ""; // empty stream id means subscription to all streams
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<SubscriptionsService>();
 
         private readonly Dictionary<string, List<Subscription>> _subscriptionGroupsByStream = new Dictionary<string, List<Subscription>>();
         private readonly Dictionary<Guid, Subscription> _subscriptionsByCorrelationId = new Dictionary<Guid, Subscription>();
-        private readonly List<Subscription> _pendingUnsubscribe = new List<Subscription>();
         private readonly IReadIndex _readIndex;
 
         private ResolvedEvent? _lastResolvedPair;
@@ -89,10 +86,10 @@ namespace EventStore.Core.Services
                 var subscriptions = subscriptionGroup.Value;
                 for (int i = 0, n = subscriptions.Count; i < n; ++i)
                 {
-                    if (subscriptions[i].Connection == message.Connection)
+                    if (subscriptions[i].ConnectionId == message.Connection.ConnectionId)
                         _subscriptionsByCorrelationId.Remove(subscriptions[i].CorrelationId);
                 }
-                subscriptions.RemoveAll(x => x.Connection == message.Connection);
+                subscriptions.RemoveAll(x => x.ConnectionId == message.Connection.ConnectionId);
                 if (subscriptions.Count == 0) // schedule removal of list instance
                 {
                     if (subscriptionGroupsToRemove == null)
@@ -115,8 +112,9 @@ namespace EventStore.Core.Services
             var lastEventNumber = message.EventStreamId.IsEmptyString() ? (int?) null : _readIndex.GetLastStreamEventNumber(message.EventStreamId);
             var lastCommitPos = _readIndex.LastCommitPosition;
             var subscribedMessage = new ClientMessage.SubscriptionConfirmation(message.CorrelationId, lastCommitPos, lastEventNumber);
-            SubscribeToStream(message.EventStreamId, message.CorrelationId, message.Connection, message.ResolveLinkTos, lastCommitPos, lastEventNumber);
-            message.Connection.SendMessage(subscribedMessage);
+            SubscribeToStream(message.CorrelationId, message.Envelope, message.ConnectionId,
+                              message.EventStreamId, message.ResolveLinkTos, lastCommitPos, lastEventNumber);
+            message.Envelope.ReplyWith(subscribedMessage);
         }
 
         public void Handle(ClientMessage.UnsubscribeFromStream message)
@@ -124,8 +122,8 @@ namespace EventStore.Core.Services
             UnsubscribeFromStream(message.CorrelationId);
         }
 
-        private void SubscribeToStream(string eventStreamId, Guid correlationId, TcpConnectionManager connection, 
-                                       bool resolveLinkTos, long lastCommitPosition, int? lastEventNumber)
+        private void SubscribeToStream(Guid correlationId, IEnvelope envelope, Guid connectionId,
+                                       string eventStreamId, bool resolveLinkTos, long lastCommitPosition, int? lastEventNumber)
         {
             List<Subscription> subscribers;
             if (!_subscriptionGroupsByStream.TryGetValue(eventStreamId, out subscribers))
@@ -135,9 +133,10 @@ namespace EventStore.Core.Services
             }
 
             // if eventStreamId is null or empty -- subscription is to all streams
-            var subscription = new Subscription(eventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : eventStreamId,
-                                                correlationId,
-                                                connection,
+            var subscription = new Subscription(correlationId,
+                                                envelope,
+                                                connectionId,
+                                                eventStreamId.IsEmptyString() ? AllStreamsSubscriptionId : eventStreamId,
                                                 resolveLinkTos,
                                                 lastCommitPosition,
                                                 lastEventNumber ?? -1);
@@ -150,6 +149,21 @@ namespace EventStore.Core.Services
             Subscription subscription;
             if (_subscriptionsByCorrelationId.TryGetValue(correlationId, out subscription))
                 DropSubscription(subscription, sendDropNotification: true);
+        }
+
+        private void DropSubscription(Subscription subscription, bool sendDropNotification)
+        {
+            if (sendDropNotification)
+                subscription.Envelope.ReplyWith(new ClientMessage.SubscriptionDropped(subscription.CorrelationId));
+
+            List<Subscription> subscriptions;
+            if (_subscriptionGroupsByStream.TryGetValue(subscription.EventStreamId, out subscriptions))
+            {
+                subscriptions.Remove(subscription);
+                if (subscriptions.Count == 0)
+                    _subscriptionGroupsByStream.Remove(subscription.EventStreamId);
+            }
+            _subscriptionsByCorrelationId.Remove(subscription.CorrelationId);
         }
 
         public void Handle(StorageMessage.EventCommited message)
@@ -169,24 +183,13 @@ namespace EventStore.Core.Services
                 var subscr = subscriptions[i];
                 if (msg.CommitPosition <= subscr.LastCommitPosition || msg.Event.EventNumber <= subscr.LastEventNumber)
                     continue;
-                if (subscr.Connection.SendQueueSize <= ConnectionQueueSizeThreshold)
-                {
-                    var pair = new ResolvedEvent(msg.Event, null, msg.CommitPosition);
-                    if (subscr.ResolveLinkTos)
-                        _lastResolvedPair = pair = _lastResolvedPair ?? ResolveLinkToEvent(msg.Event, msg.CommitPosition);
 
-                    subscr.Connection.SendMessage(new ClientMessage.StreamEventAppeared(subscr.CorrelationId, pair));
-                }
-                else
-                {
-                    _pendingUnsubscribe.Add(subscr);
-                }
+                var pair = new ResolvedEvent(msg.Event, null, msg.CommitPosition);
+                if (subscr.ResolveLinkTos)
+                    _lastResolvedPair = pair = _lastResolvedPair ?? ResolveLinkToEvent(msg.Event, msg.CommitPosition);
+
+                subscr.Envelope.ReplyWith(new ClientMessage.StreamEventAppeared(subscr.CorrelationId, pair));
             }
-            for (int i = 0, n = _pendingUnsubscribe.Count; i < n; i++)
-            {
-                DropSubscription(_pendingUnsubscribe[i], sendDropNotification: true);
-            }
-            _pendingUnsubscribe.Clear();
         }
 
         private ResolvedEvent ResolveLinkToEvent(EventRecord eventRecord, long commitPosition)
@@ -211,40 +214,30 @@ namespace EventStore.Core.Services
             return new ResolvedEvent(eventRecord, null, commitPosition);
         }
 
-        private void DropSubscription(Subscription subscription, bool sendDropNotification)
-        {
-            if (sendDropNotification)
-                subscription.Connection.SendMessage(new ClientMessage.SubscriptionDropped(subscription.CorrelationId));
-
-            List<Subscription> subscriptions;
-            if (_subscriptionGroupsByStream.TryGetValue(subscription.EventStreamId, out subscriptions))
-            {
-                subscriptions.Remove(subscription);
-                if (subscriptions.Count == 0)
-                    _subscriptionGroupsByStream.Remove(subscription.EventStreamId);
-            }
-            _subscriptionsByCorrelationId.Remove(subscription.CorrelationId);
-        }
-
         private class Subscription
         {
-            public readonly string EventStreamId;
             public readonly Guid CorrelationId;
-            public readonly TcpConnectionManager Connection;
+            public readonly IEnvelope Envelope;
+            public readonly Guid ConnectionId;
+
+            public readonly string EventStreamId;
             public readonly bool ResolveLinkTos;
             public readonly long LastCommitPosition;
             public readonly int LastEventNumber;
 
-            public Subscription(string eventStreamId, 
-                                Guid correlationId, 
-                                TcpConnectionManager connection, 
+            public Subscription(Guid correlationId, 
+                                IEnvelope envelope,
+                                Guid connectionId,
+                                string eventStreamId, 
                                 bool resolveLinkTos, 
                                 long lastCommitPosition, 
                                 int lastEventNumber)
             {
-                EventStreamId = eventStreamId;
                 CorrelationId = correlationId;
-                Connection = connection;
+                Envelope = envelope;
+                ConnectionId = connectionId;
+
+                EventStreamId = eventStreamId;
                 ResolveLinkTos = resolveLinkTos;
                 LastCommitPosition = lastCommitPosition;
                 LastEventNumber = lastEventNumber;

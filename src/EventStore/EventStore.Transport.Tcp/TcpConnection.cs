@@ -382,7 +382,7 @@ namespace EventStore.Transport.Tcp
 
             if (_verbose)
             {
-                Console.WriteLine("[{0}]:\nReceived packages: {1}, bytes: {2}\nSend packages: {3}, bytes: {4}\n"
+                Console.WriteLine("[{0}]:\nReceived packages: {1}, bytes: {2}\nSent packages: {3}, bytes: {4}\n"
                                   + "SendAsync calls: {5}, callbacks: {6}\nReceiveAsync calls: {7}, callbacks: {8}\n",
                                   EffectiveEndPoint,
                                   _packagesReceived,

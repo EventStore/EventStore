@@ -87,6 +87,6 @@ namespace EventStore.ClientAPI.SystemData
         ScavengeDatabase = 0xD0,
 
         BadRequest = 0xF0,
-        DeniedToRoute = 0xF1
+        NotHandled = 0xF1
     }
 }

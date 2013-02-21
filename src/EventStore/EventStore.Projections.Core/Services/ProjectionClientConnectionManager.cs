@@ -69,14 +69,13 @@ namespace EventStore.Projections.Core.Services
             var endPoint = new IPEndPoint(IPAddress.Parse(_ip), _port);
 
             var clientConnector = new TcpClientConnector();
-            _connectionManager = new TcpConnectionManager(
-                "projection",
-                Guid.NewGuid(),
-                new ClientTcpDispatcher(),
-                _bus,
-                endPoint,
-                clientConnector,
-                _networkSendQueue);
+            _connectionManager = new TcpConnectionManager("projection", 
+                                                          Guid.NewGuid(),
+                                                          new ClientTcpDispatcher(),
+                                                          _bus,
+                                                          endPoint,
+                                                          clientConnector,
+                                                          _networkSendQueue);
 
             _connectionManager.ConnectionEstablished += manager =>
                 {

@@ -32,6 +32,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.ClientOperations;
@@ -870,12 +871,18 @@ namespace EventStore.ClientAPI
 
         private void OnPackageReceived(TcpTypedConnection connection, TcpPackage package)
         {
-            var corrId = package.CorrelationId;
-            WorkItem workItem;
-
-            if (!_inProgress.TryGetValue(corrId, out workItem))
+            if (package.Command == TcpCommand.BadRequest && package.CorrelationId == Guid.Empty)
             {
-                _log.Error("Unexpected CorrelationId received {{{0}}}", corrId);
+                // TODO AN reports somehow to client code, that something bad happened
+                var message = Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count);
+                throw new Exception(string.Format("BadRequest received from server. Error: {0}",
+                                                  string.IsNullOrEmpty(message) ? "<no message>" : message));
+            }
+
+            WorkItem workItem;
+            if (!_inProgress.TryGetValue(package.CorrelationId, out workItem))
+            {
+                _log.Error("Unexpected CorrelationId received {{{0}}}", package.CorrelationId);
                 return;
             }
 

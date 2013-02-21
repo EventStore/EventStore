@@ -40,13 +40,6 @@ message ResolvedEvent {
 	required int64 prepare_position = 4;
 }
 
-message DeniedToRoute {
-	required string external_tcp_address = 1;
-	required int32 external_tcp_port = 2;
-	required string external_http_address = 3;
-	required int32 external_http_port = 4;
-}
-
 message CreateStream {
 	required string event_stream_id = 1;
 	required bytes request_id = 2;
@@ -196,4 +189,24 @@ message UnsubscribeFromStream {
 }
 
 message SubscriptionDropped {
+}
+
+
+message NotHandled {
+	
+	enum NotHandledReason {
+		NotReady = 0;
+		TooBusy = 1;
+		NotMaster = 2;
+	}
+	
+	required NotHandledReason reason = 1;
+	optional bytes additional_info = 2;
+
+	message MasterInfo {
+		required string external_tcp_address = 1;
+		required int32 external_tcp_port = 2;
+		required string external_http_address = 3;
+		required int32 external_http_port = 4;
+	}
 }
