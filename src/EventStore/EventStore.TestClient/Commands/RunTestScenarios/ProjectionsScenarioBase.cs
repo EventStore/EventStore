@@ -77,7 +77,19 @@ namespace EventStore.TestClient.Commands.RunTestScenarios
 
             string value;
             if (dic != null && dic.TryGetValue("position", out value))
-                result = long.Parse(value.Split(':')[1]);
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    var subpositions = value.Split(':');
+                    var positionString = subpositions.Length == 2 ? subpositions[1] : value;
+                    result = long.Parse(positionString);
+                }
+                else
+                {
+                    result = -1;
+                }
+                return result;
+            }
 
             return result;
         }
