@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI
 {
     public abstract class EventStoreCatchUpSubscription
     {
-        private static readonly ILogger Log = LogManager.GetLogger();
+        protected static readonly ILogger Log = LogManager.GetLogger();
 
         private const int DefaultReadBatchSize = 500;
         private const int DefaultMaxPushQueueSize = 10000;
@@ -144,8 +144,9 @@ namespace EventStore.ClientAPI
 
         private void EnqueuePushedEvent(EventStoreSubscription subscription, ResolvedEvent e)
         {
-            Log.Debug("Catch-up Subscription to {0}: event appeared ({1}, {2}).", 
-                      IsSubscribedToAll ? "<all>" : StreamId, e.OriginalStreamId, e.OriginalEventNumber);
+            Log.Debug("Catch-up Subscription to {0}: event appeared ({1}, {2}, {3} @ {4}).", 
+                      IsSubscribedToAll ? "<all>" : StreamId,
+                      e.OriginalStreamId, e.OriginalEventNumber, e.OriginalEvent.EventType, e.OriginalPosition);
 
             if (_liveQueue.Count >= MaxPushQueueSize)
             {
@@ -271,15 +272,23 @@ namespace EventStore.ClientAPI
                 }
                 _nextReadPosition = slice.NextPosition;
             } while (!slice.IsEndOfStream);
+
+            Log.Debug("Catch-up Subscription to {0}: finished reading events, nextPosition = {1}.",
+                      IsSubscribedToAll ? "<all>" : StreamId, _nextReadPosition);
         }
 
         protected override void TryProcess(ResolvedEvent e)
         {
+            bool processed = false;
             if (e.OriginalPosition > _lastProcessedPosition)
             {
                 EventAppeared(this, e);
                 _lastProcessedPosition = e.OriginalPosition.Value;
+                processed = true;
             }
+            Log.Debug("Catch-up Subscription to {0}: {1} event ({2}, {3}, {4} @ {5}).", 
+                      IsSubscribedToAll ? "<all>" : StreamId, processed ? "processed" : "skipping",
+                      e.OriginalEvent.EventStreamId, e.OriginalEvent.EventNumber, e.OriginalEvent.EventType, e.OriginalEventNumber);
         }
     }
 
@@ -322,11 +331,16 @@ namespace EventStore.ClientAPI
 
         protected override void TryProcess(ResolvedEvent e)
         {
+            bool processed = false;
             if (e.OriginalEventNumber > _lastProcessedEventNumber)
             {
                 EventAppeared(this, e);
                 _lastProcessedEventNumber = e.OriginalEventNumber;
+                processed = true;
             }
+            Log.Debug("Catch-up Subscription to {0}: {1} event ({2}, {3}, {4} @ {5}).",
+                      IsSubscribedToAll ? "<all>" : StreamId, processed ? "processed" : "skipping",
+                      e.OriginalEvent.EventStreamId, e.OriginalEvent.EventNumber, e.OriginalEvent.EventType, e.OriginalEventNumber);
         }
     }
 }

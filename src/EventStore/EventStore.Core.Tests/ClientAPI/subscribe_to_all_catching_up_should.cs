@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 0; i < 10; ++i)
                 {
-                    store.AppendToStream(Guid.NewGuid().ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 var subscription = store.SubscribeToAllFrom(null,
@@ -102,7 +102,7 @@ namespace EventStore.Core.Tests.ClientAPI
                                                             (x, y, z) => dropped.Signal());
                 for (int i = 10; i < 20; ++i)
                 {
-                    store.AppendToStream(Guid.NewGuid().ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 if (!appeared.Wait(Timeout))
@@ -139,28 +139,29 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 for (int i = 0; i < 10; ++i)
                 {
-                    store.AppendToStream(Guid.NewGuid().ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
                 var allSlice = store.ReadAllEventsForward(Position.Start, 100, false);
                 var lastEvent = allSlice.Events.Last();
 
-                var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,
-                                                            false,
-                                                            (x, y) =>
-                                                            {
-                                                                Log.Info("Event appeared: {0}.", y);
-                                                                events.Add(y);
-                                                                appeared.Signal();
-                                                            },
-                                                            (x, y, z) =>
-                                                            {
-                                                                Log.Info("Subscription dropped: {0}, {1}.", y, z);
-                                                                dropped.Signal();
-                                                            });
+                var subscription = store.SubscribeToAllFrom(
+                    lastEvent.OriginalPosition,
+                    false,
+                    (x, y) =>
+                    {
+                        events.Add(y);
+                        appeared.Signal();
+                    },
+                    (x, y, z) =>
+                    {
+                        Log.Info("Subscription dropped: {0}, {1}.", y, z);
+                        dropped.Signal();
+                    });
+
                 for (int i = 10; i < 20; ++i)
                 {
-                    store.AppendToStream(Guid.NewGuid().ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                    store.AppendToStream("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
                 Log.Info("Waiting for events...");
                 if (!appeared.Wait(Timeout))

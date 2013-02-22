@@ -131,8 +131,9 @@ namespace EventStore.ClientAPI
         {
             if (_unsubscribed != 0)
                 return;
-            Log.Debug("Subscription {0:B} to {1}: event appeared ({2}, {3}).",
-                      _correlationId, IsSubscribedToAll ? "<all>" : StreamId, @event.OriginalStreamId, @event.OriginalEventNumber);
+            Log.Debug("Subscription {0:B} to {1}: event appeared ({2}, {3}, {4} @ {5}).",
+                      _correlationId, IsSubscribedToAll ? "<all>" : StreamId, 
+                      @event.OriginalStreamId, @event.OriginalEventNumber, @event.OriginalEvent.EventType, @event.OriginalPosition);
             _eventAppeared(this, @event);
         }
 
