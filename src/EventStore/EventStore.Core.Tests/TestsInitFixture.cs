@@ -26,28 +26,26 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-namespace EventStore.ClientAPI.Common.Log
+using EventStore.ClientAPI.Common.Log;
+using EventStore.Common.Log;
+using NUnit.Framework;
+
+namespace EventStore.Core.Tests
 {
-    public static class LogManager
+    [SetUpFixture]
+    public class TestsInitFixture
     {
-        private static readonly ILogger Default = new DebugLogger();
-
-        private static ILogger _defaultLogger;
-        private static ILogger _userLogger;
-
-        public static ILogger GetLogger()
+        [SetUp]
+        public void SetUp()
         {
-            return _userLogger ?? _defaultLogger ?? Default;
+            EventStore.ClientAPI.Common.Log.LogManager.SetDefaultLogger(new ConsoleLogger());
+            NLogger.InitTestLayout();
         }
 
-        public static void SetDefaultLogger(ILogger logger)
+        [TearDown]
+        public void TearDown()
         {
-            _defaultLogger = logger;
-        }
-
-        public static void RegisterLogger(ILogger logger)
-        {
-            _userLogger = logger;
+            NLogger.FlushLog();
         }
     }
 }

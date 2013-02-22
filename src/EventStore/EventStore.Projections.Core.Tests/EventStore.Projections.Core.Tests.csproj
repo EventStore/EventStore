@@ -330,6 +330,7 @@
     <Compile Include="Services\core_projection\when_the_state_handler_does_process_an_event_the_projection_should.cs" />
     <Compile Include="Services\TestFixtureWithProjectionCoreService.cs" />
     <Compile Include="Services\position_tagging\transaction_file_position_tagger\when_reinitializing_transaction_file_postion_tracker.cs" />
+    <Compile Include="TestsInitFixture.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj">
@@ -353,12 +354,6 @@
     <Content Include="Queries\1Query.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\EventStore.Core.Tests\NLog.config">
-      <Link>NLog.config</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -292,6 +292,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\TimeService\time_service_should.cs" />
     <Compile Include="SpecificationWithFile.cs" />
+    <Compile Include="TestsInitFixture.cs" />
     <Compile Include="TransactionLog\Chunks\FlushTimeMeter.cs" />
     <Compile Include="TransactionLog\Chunks\when_reading_logical_bytes_bulk_from_a_chunk.cs" />
     <Compile Include="TransactionLog\Chunks\when_reading_physical_bytes_bulk_from_a_chunk.cs" />
@@ -368,12 +369,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />
-  <ItemGroup>
-    <None Include="NLog.config">
-      <SubType>Designer</SubType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -151,6 +151,9 @@ namespace EventStore.ClientAPI
         public Task ConnectAsync(IPEndPoint tcpEndPoint)
         {
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+
+            _log.Info("EventStoreConnection: connecting to [{0}]", tcpEndPoint);
+
             return EstablishConnectionAsync(tcpEndPoint);
         }
 
@@ -201,7 +204,7 @@ namespace EventStore.ClientAPI
 
                 _tcpEndPoint = tcpEndPoint;
 
-                _lastReconnectionTimestamp = DateTime.UtcNow;
+                _lastReconnectionTimestamp = GetNow();
                 _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
                 _timeoutCheckStopwatch.Start();
 
@@ -756,7 +759,7 @@ namespace EventStore.ClientAPI
 
                         OnReconnecting();
 
-                        _lastReconnectionTimestamp = DateTime.UtcNow;
+                        _lastReconnectionTimestamp = GetNow();
                         _connection = _connector.CreateTcpConnection(_tcpEndPoint, OnPackageReceived, OnConnectionEstablished, OnConnectionClosed);
                         _reconnectionStopwatch.Stop();
                     }
@@ -764,7 +767,7 @@ namespace EventStore.ClientAPI
 
                 if (_timeoutCheckStopwatch.Elapsed > _settings.OperationTimeoutCheckPeriod)
                 {
-                    var now = DateTime.UtcNow;
+                    var now = GetNow();
                     var retriable = new List<WorkItem>();
                     foreach (var workerItem in _inProgress.Values)
                     {
@@ -774,17 +777,11 @@ namespace EventStore.ClientAPI
                             if (lastUpdated >= _lastReconnectionTimestamp)
                             {
                                 var err = string.Format("{0} never got response from server" +
-                                                        "Last state update : {1}, last reconnect : {2}, now(utc) : {3}.",
-                                                        workerItem,
-                                                        lastUpdated,
-                                                        _lastReconnectionTimestamp,
-                                                        now);
-                                if (TryRemoveWorkItem(workerItem))
-                                {
-                                    _log.Error(err);
-                                    workerItem.Operation.Fail(new OperationTimedOutException(err));
-                                }
+                                                        "Last state update: {1:HH:mm:ss.fff}, last reconnect: {2:HH:mm:ss.fff}, UTC now: {3:HH:mm:ss.fff}.",
+                                                        workerItem, lastUpdated, _lastReconnectionTimestamp, now);
                                 _log.Error(err);
+                                if (TryRemoveWorkItem(workerItem))
+                                    workerItem.Operation.Fail(new OperationTimedOutException(err));
                             }
                             else
                             {
@@ -839,7 +836,7 @@ namespace EventStore.ClientAPI
                     else
                     {
                         inProgressItem.Operation.SetRetryId(Guid.NewGuid());
-                        Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, DateTime.UtcNow.Ticks);
+                        Interlocked.Exchange(ref inProgressItem.LastUpdatedTicks, GetNow().Ticks);
                         Send(inProgressItem);
                     }
                 }
@@ -953,6 +950,18 @@ namespace EventStore.ClientAPI
             var handler = Disconnected;
             if (handler != null)
                 handler(this, EventArgs.Empty);
+        }
+
+        private readonly object _timeLock = new object();
+        private readonly DateTime _startTime = DateTime.UtcNow;
+        private readonly Stopwatch _watch = Stopwatch.StartNew();
+             
+        private DateTime GetNow()
+        {
+            lock (_timeLock)
+            {
+                return _startTime + _watch.Elapsed;
+            }
         }
     }
 }

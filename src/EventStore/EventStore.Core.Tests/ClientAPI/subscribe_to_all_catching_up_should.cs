@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class subscribe_to_all_catching_up_should : SpecificationWithDirectory
     {
-        private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
 
         private MiniNode _node;
 
@@ -145,13 +145,18 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                 events.Add(y);
                                                                 appeared.Signal();
                                                             },
-                                                            (x, y, z) => dropped.Signal());
+                                                            (x, y, z) =>
+                                                            {
+                                                                Console.WriteLine("Subscription dropped: {0}, {1}.", y, z);
+                                                                dropped.Signal();
+                                                            });
                 for (int i = 10; i < 20; ++i)
                 {
                     store.AppendToStream(Guid.NewGuid().ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
-
+                Console.WriteLine("Waiting for events...");
                 Assert.IsTrue(appeared.Wait(Timeout), "Couldn't wait for all events.");
+                Console.WriteLine("Events appeared...");
                 Assert.AreEqual(20, events.Count);
                 for (int i = 0; i < 20; ++i)
                 {

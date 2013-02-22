@@ -1,10 +1,10 @@
-// Copyright (c) 2012, Event Store LLP
+﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-//  
+// 
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-//  
+// 
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,41 +24,26 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//  
-using System;
+// 
 
-namespace EventStore.ClientAPI.Common.Log
+using EventStore.Common.Log;
+using NUnit.Framework;
+
+namespace EventStore.Projections.Core.Tests
 {
-    internal class DefaultLogger : ILogger
+    [SetUpFixture]
+    public class TestsInitFixture
     {
-        public void Error(string format, params object[] args)
+        [SetUp]
+        public void SetUp()
         {
-            System.Diagnostics.Debug.WriteLine(format, args);
+            NLogger.InitTestLayout();
         }
 
-        public void Error(Exception ex, string format, params object[] args)
+        [TearDown]
+        public void TearDown()
         {
-            System.Diagnostics.Debug.WriteLine("ERROR : {0}\n{1}", ex, string.Format(format, args));
-        }
-
-        public void Debug(string format, params object[] args)
-        {
-            System.Diagnostics.Debug.WriteLine(format, args);
-        }
-
-        public void Debug(Exception ex, string format, params object[] args)
-        {
-            System.Diagnostics.Debug.WriteLine("DEBUG : {0}\n{1}", ex, string.Format(format, args));
-        }
-
-        public void Info(Exception ex, string format, params object[] args)
-        {
-            System.Diagnostics.Debug.WriteLine("INFO : {0}\n{1}", ex, string.Format(format, args));
-        }
-
-        public void Info(string format, params object[] args)
-        {
-            System.Diagnostics.Debug.WriteLine(format, args);
+            NLogger.FlushLog();
         }
     }
 }
