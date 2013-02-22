@@ -76,6 +76,29 @@ namespace EventStore.Core.Tests.ClientAPI
             }
         }
 
+
+        [Test, Category("LongRunning")]
+        public void be_able_to_subscribe_to_empty_db()
+        {
+            using (var store = EventStoreConnection.Create())
+            {
+                store.Connect(_node.TcpEndPoint);
+                var appeared = new ManualResetEventSlim(false);
+                var dropped = new CountdownEvent(1);
+
+                var subscription = store.SubscribeToAllFrom(null, false, (_, x) => appeared.Set(), (_, __, ___) => dropped.Signal());
+
+                Thread.Sleep(100); // give time for first pull phase
+                var dummySubscr = store.SubscribeToAll(false, x => { }, () => { }).Result; // wait for dummy subscription to complete
+                Thread.Sleep(100);
+
+                Assert.IsFalse(appeared.Wait(0), "Some event appeared!");
+                Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
+                subscription.Stop(Timeout);
+                Assert.IsTrue(dropped.Wait(Timeout));
+            }
+        }
+
         [Test, Category("LongRunning")]
         public void read_all_existing_events_and_keep_listening_to_new_ones()
         {
