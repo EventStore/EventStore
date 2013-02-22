@@ -273,7 +273,7 @@ namespace EventStore.ClientAPI
                 _nextReadPosition = slice.NextPosition;
             } while (!slice.IsEndOfStream);
 
-            Log.Debug("Catch-up Subscription to {0}: finished reading events, nextPosition = {1}.",
+            Log.Debug("Catch-up Subscription to {0}: finished reading events, nextReadPosition = {1}.",
                       IsSubscribedToAll ? "<all>" : StreamId, _nextReadPosition);
         }
 
@@ -288,7 +288,7 @@ namespace EventStore.ClientAPI
             }
             Log.Debug("Catch-up Subscription to {0}: {1} event ({2}, {3}, {4} @ {5}).", 
                       IsSubscribedToAll ? "<all>" : StreamId, processed ? "processed" : "skipping",
-                      e.OriginalEvent.EventStreamId, e.OriginalEvent.EventNumber, e.OriginalEvent.EventType, e.OriginalEventNumber);
+                      e.OriginalEvent.EventStreamId, e.OriginalEvent.EventNumber, e.OriginalEvent.EventType, e.OriginalPosition);
         }
     }
 
@@ -327,6 +327,9 @@ namespace EventStore.ClientAPI
                 }
                 _nextReadEventNumber = slice.NextEventNumber;
             } while (!slice.IsEndOfStream);
+
+            Log.Debug("Catch-up Subscription to {0}: finished reading events, nextReadEventNumber = {1}.",
+                      IsSubscribedToAll ? "<all>" : StreamId, _nextReadEventNumber);
         }
 
         protected override void TryProcess(ResolvedEvent e)

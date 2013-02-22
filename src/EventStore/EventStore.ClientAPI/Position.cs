@@ -89,5 +89,10 @@ namespace EventStore.ClientAPI
                 return (CommitPosition.GetHashCode()*397) ^ PreparePosition.GetHashCode();
             }
         }
+
+        public override string ToString()
+        {
+            return string.Format("{0}/{1}", CommitPosition, PreparePosition);
+        }
     }
 }
