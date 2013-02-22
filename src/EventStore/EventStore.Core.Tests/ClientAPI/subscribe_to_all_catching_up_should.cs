@@ -186,5 +186,56 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.AreEqual(events.Last().OriginalPosition, subscription.LastProcessedPosition);
             }
         }
+
+        [Test, Category("LongRunning")]
+        public void filter_events_and_work_if_nothing_was_written_after_subscription()
+        {
+            using (var store = EventStoreConnection.Create())
+            {
+                store.Connect(_node.TcpEndPoint);
+
+                var events = new List<ResolvedEvent>();
+                var appeared = new CountdownEvent(1);
+                var dropped = new CountdownEvent(1);
+
+                for (int i = 0; i < 10; ++i)
+                {
+                    store.AppendToStream("stream-" + i.ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                }
+
+                var allSlice = store.ReadAllEventsForward(Position.Start, 100, false);
+                var lastEvent = allSlice.Events[allSlice.Events.Length - 2];
+
+                var subscription = store.SubscribeToAllFrom(
+                    lastEvent.OriginalPosition,
+                    false,
+                    (x, y) =>
+                    {
+                        events.Add(y);
+                        appeared.Signal();
+                    },
+                    (x, y, z) =>
+                    {
+                        Log.Info("Subscription dropped: {0}, {1}.", y, z);
+                        dropped.Signal();
+                    });
+
+                Log.Info("Waiting for events...");
+                if (!appeared.Wait(Timeout))
+                {
+                    Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
+                    Assert.Fail("Couldn't wait for all events.");
+                }
+                Log.Info("Events appeared...");
+                Assert.AreEqual(1, events.Count);
+                Assert.AreEqual("et-9", events[0].OriginalEvent.EventType);
+
+                Assert.IsFalse(dropped.Wait(0));
+                subscription.Stop(Timeout);
+                Assert.IsTrue(dropped.Wait(Timeout));
+
+                Assert.AreEqual(events.Last().OriginalPosition, subscription.LastProcessedPosition);
+            }
+        }
     }
 }

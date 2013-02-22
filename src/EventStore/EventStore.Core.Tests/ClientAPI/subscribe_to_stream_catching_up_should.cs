@@ -241,5 +241,52 @@ namespace EventStore.Core.Tests.ClientAPI
                 Assert.AreEqual(events.Last().OriginalEventNumber, subscription.LastProcessedEventNumber);
             }
         }
+
+        [Test, Category("LongRunning")]
+        public void filter_events_and_work_if_nothing_was_written_after_subscription()
+        {
+            const string stream = "filter_events_and_work_if_nothing_was_written_after_subscription";
+            using (var store = EventStoreConnection.Create())
+            {
+                store.Connect(_node.TcpEndPoint);
+
+                var events = new List<ResolvedEvent>();
+                var appeared = new CountdownEvent(10);
+                var dropped = new CountdownEvent(1);
+
+                store.CreateStream(stream, Guid.NewGuid(), false, null);
+                for (int i = 0; i < 20; ++i)
+                {
+                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                }
+
+                var subscription = store.SubscribeToStreamFrom(stream,
+                                                               10,
+                                                               false,
+                                                               (x, y) =>
+                                                               {
+                                                                   events.Add(y);
+                                                                   appeared.Signal();
+                                                               },
+                                                               (x, y, z) => dropped.Signal());
+                if (!appeared.Wait(Timeout))
+                {
+                    Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
+                    Assert.Fail("Couldn't wait for all events.");
+                }
+
+                Assert.AreEqual(10, events.Count);
+                for (int i = 0; i < 10; ++i)
+                {
+                    Assert.AreEqual("et-" + (i + 10).ToString(), events[i].OriginalEvent.EventType);
+                }
+
+                Assert.IsFalse(dropped.Wait(0));
+                subscription.Stop(Timeout);
+                Assert.IsTrue(dropped.Wait(Timeout));
+
+                Assert.AreEqual(events.Last().OriginalEventNumber, subscription.LastProcessedEventNumber);
+            }
+        }
     }
 }
