@@ -346,7 +346,7 @@ namespace EventStore.ClientAPI
                     }
                     case SliceReadStatus.StreamNotFound:
                     {
-                        if (lastEventNumber.HasValue)
+                        if (lastEventNumber.HasValue && lastEventNumber != -1)
                             throw new Exception(string.Format("Impossible: stream {0} disappeared in the middle of catching up subscription.", StreamId));
                         done = true;
                         break;
