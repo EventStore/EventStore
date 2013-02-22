@@ -103,7 +103,12 @@ namespace EventStore.Core.Tests.ClientAPI
                     store.AppendToStream(Guid.NewGuid().ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
-                Assert.IsTrue(appeared.Wait(Timeout), "Couldn't wait for all events.");
+                if (!appeared.Wait(Timeout))
+                {
+                    Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
+                    Assert.Fail("Couldn't wait for all events.");
+                }
+
                 Assert.AreEqual(40, events.Count); 
                 for (int i = 0; i < 40; ++i)
                 {

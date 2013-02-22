@@ -75,7 +75,12 @@ namespace EventStore.Core.Tests.ClientAPI
                                                                (_, __, ___) => dropped.Signal());
 
                 store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.IsTrue(appeared.Wait(Timeout), "Event appeared countdown event timed out.");
+
+                if (!appeared.Wait(Timeout))
+                {
+                    Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
+                    Assert.Fail("Event appeared countdown event timed out.");
+                }
 
                 Assert.IsFalse(dropped.Wait(0));
                 subscription.Stop(Timeout);
@@ -98,7 +103,13 @@ namespace EventStore.Core.Tests.ClientAPI
                 var sub2 = store.SubscribeToStreamFrom(stream, null, false, (_, e) => appeared.Signal(), (x, y, z) => dropped2.Set());
 
                 store.CreateStream(stream, Guid.NewGuid(), false, new byte[0]);
-                Assert.IsTrue(appeared.Wait(Timeout), "Appeared countdown event timed out.");
+
+                if (!appeared.Wait(Timeout))
+                {
+                    Assert.IsFalse(dropped1.Wait(0), "Subscription1 was dropped prematurely.");
+                    Assert.IsFalse(dropped2.Wait(0), "Subscription2 was dropped prematurely.");
+                    Assert.Fail("Couldn't wait for all events.");
+                }
 
                 Assert.IsFalse(dropped1.Wait(0));
                 sub1.Stop(Timeout);
@@ -158,7 +169,12 @@ namespace EventStore.Core.Tests.ClientAPI
                     store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
-                Assert.IsTrue(appeared.Wait(Timeout), "Couldn't wait for all events.");
+                if (!appeared.Wait(Timeout))
+                {
+                    Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
+                    Assert.Fail("Couldn't wait for all events.");
+                }
+
                 Assert.AreEqual(21, events.Count);
                 for (int i = 0; i < 21; ++i)
                 {
@@ -206,7 +222,12 @@ namespace EventStore.Core.Tests.ClientAPI
                     store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
 
-                Assert.IsTrue(appeared.Wait(Timeout), "Couldn't wait for all events.");
+                if (!appeared.Wait(Timeout))
+                {
+                    Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
+                    Assert.Fail("Couldn't wait for all events.");
+                }
+
                 Assert.AreEqual(20, events.Count);
                 for (int i = 0; i < 20; ++i)
                 {
