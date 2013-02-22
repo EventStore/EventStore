@@ -26,6 +26,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using System.Text;
+using System.Threading;
 
 namespace EventStore.ClientAPI.Common.Log
 {
@@ -64,12 +66,29 @@ namespace EventStore.ClientAPI.Common.Log
 
         private string Log(string level, string format, params object[] args)
         {
-            return string.Format("{0}: {1}", level, args.Length == 0 ? format : string.Format(format, args));
+            return string.Format("[{0:00},{1:HH:mm:ss.fff},{2}] {3}",
+                                 Thread.CurrentThread.ManagedThreadId,
+                                 DateTime.UtcNow,
+                                 level,
+                                 args.Length == 0 ? format : string.Format(format, args));
         }
 
         private string Log(string level, Exception exc, string format, params object[] args)
         {
-            return string.Format("{0} EXCEPTION: {1}\nException: {2}", level, args.Length == 0 ? format : string.Format(format, args), exc);
+            var sb = new StringBuilder();
+            while (exc != null)
+            {
+                sb.AppendLine();
+                sb.AppendLine(exc.ToString());
+                exc = exc.InnerException;
+            }
+
+            return string.Format("[{0:00},{1:HH:mm:ss.fff},{2}] {3}\nEXCEPTION(S) OCCURRED:{4}",
+                                 Thread.CurrentThread.ManagedThreadId,
+                                 DateTime.UtcNow,
+                                 level,
+                                 args.Length == 0 ? format : string.Format(format, args),
+                                 sb);
         }
     }
 }

@@ -26,33 +26,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Text;
 using EventStore.Common.Utils;
-using NLog;
-using NLog.LayoutRenderers;
 
 namespace EventStore.Common.Log
 {
-    [LayoutRenderer("logsdir")]
-    public class NLogDirectoryLayoutRendered : LayoutRenderer
-    {
-        protected override void Append(StringBuilder builder, LogEventInfo logEvent)
-        {
-            builder.Append(LogManager._logsDirectory);
-        }
-    }
-
     public static class LogManager
     {
-        static LogManager()
-        {
-            NLog.Config.ConfigurationItemFactory.Default.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
-        }
-
-        private static readonly ILogger GlobalLogger = GetLogger("GLOBAL-LOGGER");
-        private static bool _initialized;
-        internal static string _logsDirectory;
-
         public static string LogsDirectory
         {
             get
@@ -61,6 +40,16 @@ namespace EventStore.Common.Log
                     throw new InvalidOperationException("Init method must be called");
                 return _logsDirectory;
             }
+        }
+
+        private static readonly ILogger GlobalLogger = GetLogger("GLOBAL-LOGGER");
+        private static bool _initialized;
+        private static Func<string, ILogger> _logFactory = x => new NLogger(x);
+        internal static string _logsDirectory;
+
+        static LogManager()
+        {
+            NLog.Config.ConfigurationItemFactory.Default.LayoutRenderers.RegisterDefinition("logsdir", typeof(NLogDirectoryLayoutRendered));
         }
 
         public static ILogger GetLoggerFor(Type type)
@@ -75,7 +64,7 @@ namespace EventStore.Common.Log
 
         public static ILogger GetLogger(string logName)
         {
-            return new LazyLogger(() => new NLogger(logName));
+            return new LazyLogger(() => _logFactory(logName));
         }
 
         public static void Init(string componentName, string logsDirectory)
@@ -86,23 +75,8 @@ namespace EventStore.Common.Log
 
             _initialized = true;
 
-            SetLogsDirectoryInternal(logsDirectory);
-            SetComponentName(componentName);
-            RegisterGlobalExceptionHandler();
-        }
-
-        private static void SetLogsDirectoryInternal(string logsDirectory)
-        {
             _logsDirectory = logsDirectory;
-        }
-
-        private static void SetComponentName(string componentName)
-        {
             Environment.SetEnvironmentVariable("EVENTSTORE_INT-COMPONENT-NAME", componentName, EnvironmentVariableTarget.Process);
-        }
-
-        private static void RegisterGlobalExceptionHandler()
-        {
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
                 var exc = e.ExceptionObject as Exception;
@@ -116,8 +90,14 @@ namespace EventStore.Common.Log
 
         public static void Finish()
         {
-            NLogger.FlushLog();
+            GlobalLogger.Flush();
             NLog.LogManager.Configuration = null;
+        }
+
+        public static void SetLogFactory(Func<string, ILogger> factory)
+        {
+            Ensure.NotNull(factory, "factory");
+            _logFactory = factory;
         }
     }
 }

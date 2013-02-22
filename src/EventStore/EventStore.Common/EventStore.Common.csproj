@@ -62,9 +62,11 @@
     <Compile Include="Concurrent\ConcurrentStack.cs" />
     <Compile Include="Locks\SpinLock2.cs" />
     <Compile Include="Exceptions\ApplicationInitializationException.cs" />
+    <Compile Include="Log\ConsoleLogger.cs" />
     <Compile Include="Log\LazyLogger.cs" />
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\LogManager.cs" />
+    <Compile Include="Log\NLogDirectoryLayoutRendered.cs" />
     <Compile Include="Log\NLogger.cs" />
     <Compile Include="Options\IOptionContainer.cs" />
     <Compile Include="Options\IOptions.cs" />

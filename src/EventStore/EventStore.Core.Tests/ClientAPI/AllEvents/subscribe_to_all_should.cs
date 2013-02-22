@@ -68,8 +68,8 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped))
-                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped))
+                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped).Result)
+                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped).Result)
                 {
                     Thread.Sleep(100);
 
@@ -94,7 +94,7 @@ namespace EventStore.Core.Tests.ClientAPI.AllEvents
                 Action<ResolvedEvent> eventAppeared = x => appeared.Signal();
                 Action subscriptionDropped = () => dropped.Signal();
 
-                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped))
+                using (store.SubscribeToAll(false, eventAppeared, subscriptionDropped).Result)
                 {
                     var create = store.CreateStreamAsync(stream, Guid.NewGuid(), false, new byte[0]);
                     Assert.IsTrue(create.Wait(Timeout), "CreateStreamAsync timed out.");

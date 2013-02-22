@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012, Event Store LLP
+// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -25,27 +25,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
+using System.Text;
+using NLog;
+using NLog.LayoutRenderers;
 
-using System;
-using NUnit.Framework;
-
-namespace EventStore.Core.Tests
+namespace EventStore.Common.Log
 {
-    [SetUpFixture]
-    public class TestsInitFixture
+    [LayoutRenderer("logsdir")]
+    public class NLogDirectoryLayoutRendered : LayoutRenderer
     {
-        [SetUp]
-        public void SetUp()
+        protected override void Append(StringBuilder builder, LogEventInfo logEvent)
         {
-            Console.WriteLine("Initializing tests (setting console loggers)...");
-            EventStore.ClientAPI.Common.Log.LogManager.SetDefaultLogger(new EventStore.ClientAPI.Common.Log.ConsoleLogger());
-            EventStore.Common.Log.LogManager.SetLogFactory(x => new EventStore.Common.Log.ConsoleLogger(x));
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            EventStore.Common.Log.LogManager.Finish();
+            builder.Append(LogManager._logsDirectory);
         }
     }
 }

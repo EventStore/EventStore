@@ -39,13 +39,13 @@ namespace EventStore.Projections.Core.Tests
         public void SetUp()
         {
             Console.WriteLine("Initializing tests (setting console loggers)...");
-            NLogger.InitTestLayout();
+            LogManager.SetLogFactory(x => new ConsoleLogger(x));
         }
 
         [TearDown]
         public void TearDown()
         {
-            NLogger.FlushLog();
+            LogManager.Finish();
         }
     }
 }

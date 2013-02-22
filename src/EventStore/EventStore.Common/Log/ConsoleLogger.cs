@@ -26,164 +26,154 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Linq;
+using System.Diagnostics;
+using System.Text;
 using System.Threading;
-using NLog;
 
 namespace EventStore.Common.Log
 {
-    public class NLogger : ILogger
+    public class ConsoleLogger : ILogger
     {
-        private readonly Logger _logger;
-
-        public NLogger(string name)
+        public ConsoleLogger(string name)
         {
-            _logger = NLog.LogManager.GetLogger(name);
         }
 
         public void Flush(TimeSpan? maxTimeToWait = null)
         {
-            FlushLog(maxTimeToWait);
         }
 
         public void Fatal(string text)
         {
-            _logger.Fatal(text);
+            Console.WriteLine(Log("FATAL", text, Utils.Empty.ObjectArray));
         }
 
         public void Error(string text)
         {
-            _logger.Error(text);
+            Console.WriteLine(Log("ERROR", text, Utils.Empty.ObjectArray));
         }
 
         public void Info(string text)
         {
-            _logger.Info(text);
+            Console.WriteLine(Log("INFO ", text, Utils.Empty.ObjectArray));
         }
 
         public void Debug(string text)
         {
-            _logger.Debug(text);
+            Console.WriteLine(Log("DEBUG", text, Utils.Empty.ObjectArray));
         }
 
         public void Trace(string text)
         {
-            _logger.Trace(text);
+            Console.WriteLine(Log("TRACE", text, Utils.Empty.ObjectArray));
         }
 
 
         public void Fatal(string format, params object[] args)
         {
-            _logger.Fatal(format, args);
+            Console.WriteLine(Log("FATAL", format, args));
         }
 
         public void Error(string format, params object[] args)
         {
-            _logger.Error(format, args);
+            Console.WriteLine(Log("ERROR", format, args));
         }
 
         public void Info(string format, params object[] args)
         {
-            _logger.Info(format, args);
+            Console.WriteLine(Log("INFO ", format, args));
         }
 
         public void Debug(string format, params object[] args)
         {
-            _logger.Debug(format, args);
+            Console.WriteLine(Log("DEBUG", format, args));
         }
 
         public void Trace(string format, params object[] args)
         {
-            _logger.Trace(format, args);
+            Console.WriteLine(Log("TRACE", format, args));
         }
 
 
         public void FatalException(Exception exc, string format)
         {
-            _logger.FatalException(format, exc);
+            Console.WriteLine(Log("FATAL", exc, format, Utils.Empty.ObjectArray));
         }
 
         public void ErrorException(Exception exc, string format)
         {
-            _logger.ErrorException(format, exc);
+            Console.WriteLine(Log("ERROR", exc, format, Utils.Empty.ObjectArray));
         }
 
         public void InfoException(Exception exc, string format)
         {
-            _logger.InfoException(format, exc);
+            Console.WriteLine(Log("INFO ", exc, format, Utils.Empty.ObjectArray));
         }
 
         public void DebugException(Exception exc, string format)
         {
-            _logger.DebugException(format, exc);
+            Console.WriteLine(Log("DEBUG", exc, format, Utils.Empty.ObjectArray));
         }
 
         public void TraceException(Exception exc, string format)
         {
-            _logger.TraceException(format, exc);
+            Console.WriteLine(Log("TRACE", exc, format, Utils.Empty.ObjectArray));
         }
 
 
         public void FatalException(Exception exc, string format, params object[] args)
         {
-            _logger.FatalException(string.Format(format, args), exc);
+            Console.WriteLine(Log("FATAL", exc, format, args));
         }
 
         public void ErrorException(Exception exc, string format, params object[] args)
         {
-            _logger.ErrorException(string.Format(format, args), exc);
+            Console.WriteLine(Log("ERROR", exc, format, args));
         }
 
         public void InfoException(Exception exc, string format, params object[] args)
         {
-            _logger.InfoException(string.Format(format, args), exc);
+            Console.WriteLine(Log("INFO ", exc, format, args));
         }
 
         public void DebugException(Exception exc, string format, params object[] args)
         {
-            _logger.DebugException(string.Format(format, args), exc);
+            Console.WriteLine(Log("DEBUG", exc, format, args));
         }
 
         public void TraceException(Exception exc, string format, params object[] args)
         {
-            _logger.TraceException(string.Format(format, args), exc);
+            Console.WriteLine(Log("TRACE", exc, format, args));
         }
 
-        public static void FlushLog(TimeSpan? maxTimeToWait = null)
+        private static readonly int ProcessId = Process.GetCurrentProcess().Id;
+
+        private string Log(string level, string format, params object[] args)
         {
-            var config = NLog.LogManager.Configuration;
-            if (config == null)
-                return;
-            var asyncs = config.AllTargets.OfType<NLog.Targets.Wrappers.AsyncTargetWrapper>().ToArray();
-            var countdown = new CountdownEvent(asyncs.Length);
-            foreach (var wrapper in asyncs)
+            return string.Format("[{0:00000},{1:00},{2:HH:mm:ss.fff},{3}] {4}",
+                                 ProcessId,
+                                 Thread.CurrentThread.ManagedThreadId,
+                                 DateTime.UtcNow,
+                                 level,
+                                 args.Length == 0 ? format : string.Format(format, args));
+        }
+
+        private string Log(string level, Exception exc, string format, params object[] args)
+        {
+            var sb = new StringBuilder();
+            while (exc != null)
             {
-                wrapper.Flush(x => countdown.Signal());
+                sb.AppendLine();
+                sb.AppendLine(exc.ToString());
+                exc = exc.InnerException;
             }
-            countdown.Wait(maxTimeToWait ?? TimeSpan.FromMilliseconds(500));
+
+            return string.Format("[{0:00000},{1:00},{2:HH:mm:ss.fff},{3}] {4}\nEXCEPTION(S) OCCURRED:{5}",
+                                 ProcessId,
+                                 Thread.CurrentThread.ManagedThreadId,
+                                 DateTime.UtcNow,
+                                 level,
+                                 args.Length == 0 ? format : string.Format(format, args),
+                                 sb);
         }
-
-/*
-        public static void InitTestLayout()
-        {
-            var config = new LoggingConfiguration();
-
-            var consoleTarget = new ConsoleTarget();
-            consoleTarget.Layout = @"[${pad:padCharacter=0:padding=5:inner=${processid}},"
-                                 + @"${pad:padCharacter=0:padding=2:inner=${threadid}}," 
-                                 + @"${date:universalTime=true:format=HH\:mm\:ss\.fff}] "
-                                 + @"${message}${onexception:${newline}EXCEPTION OCCURED:${newline}${exception:format=message}}";
-
-            //var consoleAsyncTarget = new NLog.Targets.Wrappers.AsyncTargetWrapper(consoleTarget);
-
-            config.AddTarget("consoleAsync", consoleTarget);
-            config.LoggingRules.Add(new LoggingRule("*", LogLevel.Trace, consoleTarget));
-
-            NLog.LogManager.Configuration = config;
-
-            var logger = NLog.LogManager.GetLogger("TestsLayoutLogger");
-            logger.Info("Tests layout is set.");
-        }
-*/
     }
 }
