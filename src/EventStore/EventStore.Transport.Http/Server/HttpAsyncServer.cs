@@ -28,6 +28,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 
@@ -38,7 +39,7 @@ namespace EventStore.Transport.Http.Server
         private static readonly ILogger Logger = LogManager.GetLoggerFor<HttpAsyncServer>();
 
         public event Action<HttpAsyncServer, HttpListenerContext> RequestReceived;
-        
+
         public bool IsListening { get { return _listener.IsListening; } }
         public IEnumerable<string> ListenPrefixes { get { return _listener.Prefixes; } }
 
@@ -57,6 +58,7 @@ namespace EventStore.Transport.Http.Server
 
         public bool TryStart()
         {
+            var uriPrefixes = _listener.Prefixes;
             try
             {
                 Logger.Info("Starting HTTP server on [{0}]...", string.Join(",", _listener.Prefixes));
@@ -68,11 +70,40 @@ namespace EventStore.Transport.Http.Server
 
                 return true;
             }
-            catch (Exception e)
+            catch (HttpListenerException e)
             {
-                Logger.FatalException(e, "Failed to start http server");
+                var helpMessage = CreateHttpServerStartupErrorHelpMessage(uriPrefixes, e);
+                var errorMessageWithHelp = String.Format("{1}{0}HttpListenerException: {2}{0}{3}", Environment.NewLine, HttpServerStartupErrorMessage, e.Message, helpMessage);
+                Logger.FatalException(e, errorMessageWithHelp);
                 return false;
             }
+            catch (Exception e)
+            {
+                Logger.FatalException(e, HttpServerStartupErrorMessage);
+                return false;
+            }
+        }
+
+        private const string HttpServerStartupErrorMessage = "Failed to start HTTP server";
+        private const int ErrorAccessDenied = 5; // Standard Windows API ERROR_ACCESS_DENIED code
+
+        private static string CreateHttpServerStartupErrorHelpMessage(IEnumerable<string> uriPrefixes, HttpListenerException exception)
+        {
+            var helpMessage = new StringBuilder();
+            if (exception.ErrorCode == ErrorAccessDenied)
+            {
+                var domain = Environment.UserDomainName;
+                var user = Environment.UserName;
+                helpMessage.AppendLine("You may need to grant the URLACL permissions to run the HTTP server.");
+                helpMessage.AppendLine("From a Windows shell, use the \"netsh\" comand to grant these, e.g.:");
+                foreach (var uriPrefix in uriPrefixes)
+                {
+                    var addUrlAclCommand = String.Format("  netsh http add urlacl {0} user={1}\\{2}",
+                        uriPrefix, domain, user);
+                    helpMessage.AppendLine(addUrlAclCommand);
+                }
+            }
+            return helpMessage.ToString();
         }
 
         public void Shutdown()
@@ -83,7 +114,7 @@ namespace EventStore.Transport.Http.Server
             }
             catch (Exception e)
             {
-                Logger.ErrorException(e, "Error while shutting down http server");
+                Logger.ErrorException(e, "Error while shutting down HTTP server");
             }
         }
 
