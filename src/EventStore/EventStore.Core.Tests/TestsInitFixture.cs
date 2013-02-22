@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.Common.Log;
 using NUnit.Framework;
@@ -38,6 +39,7 @@ namespace EventStore.Core.Tests
         [SetUp]
         public void SetUp()
         {
+            Console.WriteLine("Initializing tests (setting console loggers)...");
             EventStore.ClientAPI.Common.Log.LogManager.SetDefaultLogger(new ConsoleLogger());
             NLogger.InitTestLayout();
         }
