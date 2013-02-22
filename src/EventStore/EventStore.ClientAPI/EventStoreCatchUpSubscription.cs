@@ -30,12 +30,15 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using EventStore.ClientAPI.Common.Concurrent;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
 {
     public abstract class EventStoreCatchUpSubscription
     {
+        private static readonly ILogger Log = LogManager.GetLogger();
+
         private const int DefaultReadBatchSize = 500;
         private const int DefaultMaxPushQueueSize = 10000;
         private static readonly ResolvedEvent DropSubscriptionEvent = new ResolvedEvent();
@@ -92,16 +95,22 @@ namespace EventStore.ClientAPI
         {
             ThreadPool.QueueUserWorkItem(_ =>
             {
+                Log.Debug("Catch-up Subscription to {0}: starting...", IsSubscribedToAll ? "<all>" : StreamId);
+
                 _stopped.Reset();
                 try
                 {
+                    Log.Debug("Catch-up Subscription to {0}: pulling events...", IsSubscribedToAll ? "<all>" : StreamId);
                     ReadEvents(_connection, _resolveLinkTos);
                     if (!_stop)
                     {
+                        Log.Debug("Catch-up Subscription to {0}: subscribing...", IsSubscribedToAll ? "<all>" : StreamId);
                         var subscribeTask = _streamId == string.Empty
                             ? _connection.SubscribeToAll(_resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped)
                             : _connection.SubscribeToStream(_streamId, _resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped);
                         _subscription = subscribeTask.Result;
+
+                        Log.Debug("Catch-up Subscription to {0}: pulling events (if left)...", IsSubscribedToAll ? "<all>" : StreamId);
                         ReadEvents(_connection, _resolveLinkTos);
                     }
                 }
@@ -117,6 +126,7 @@ namespace EventStore.ClientAPI
                     return;
                 }
 
+                Log.Debug("Catch-up Subscription to {0}: processing live events...", IsSubscribedToAll ? "<all>" : StreamId);
                 _allowProcessing = true;
                 EnsureProcessingPushQueue();
             });
@@ -124,6 +134,8 @@ namespace EventStore.ClientAPI
 
         public void Stop(TimeSpan timeout)
         {
+            Log.Debug("Catch-up Subscription to {0}: requesting stop...", IsSubscribedToAll ? "<all>" : StreamId);
+
             _stop = true;
             EnqueueSubscriptionDropNotification("Subscription stop was requested.", null);
             if (!_stopped.Wait(timeout))
@@ -132,6 +144,9 @@ namespace EventStore.ClientAPI
 
         private void EnqueuePushedEvent(EventStoreSubscription subscription, ResolvedEvent e)
         {
+            Log.Debug("Catch-up Subscription to {0}: event appeared ({1}, {2}).", 
+                      IsSubscribedToAll ? "<all>" : StreamId, e.OriginalStreamId, e.OriginalEventNumber);
+
             if (_liveQueue.Count >= MaxPushQueueSize)
             {
                 subscription.Unsubscribe();
@@ -201,6 +216,10 @@ namespace EventStore.ClientAPI
         private void DropSubscription(string reason, Exception error)
         {
             Ensure.NotNull(reason, "reason");
+            
+            Log.Debug("Catch-up Subscription to {0}: dropping subscription, reason: {1} {2}.",
+                      IsSubscribedToAll ? "<all>" : StreamId, reason, error == null ? string.Empty : error.ToString());
+
             if (_subscription != null)
                 _subscription.Unsubscribe();
             if (_subscriptionDropped != null)

@@ -306,7 +306,7 @@ namespace EventStore.Core.Services.Transport.Tcp
 
         private void OnConnectionClosed(ITcpConnection connection, SocketError socketError)
         {
-            Log.Info("Connection '{0} [{1}, {2:B}] closed: {3}.", _connectionName, connection.EffectiveEndPoint, _connectionId, socketError);
+            Log.Info("Connection '{0}' [{1}, {2:B}] closed: {3}.", _connectionName, connection.EffectiveEndPoint, _connectionId, socketError);
 
             _isClosed = true;
             connection.ConnectionClosed -= OnConnectionClosed;

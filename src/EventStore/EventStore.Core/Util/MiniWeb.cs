@@ -55,7 +55,7 @@ namespace EventStore.Core.Util
         public void RegisterControllerActions(IHttpService service)
         {
             var pattern = _localWebRootPath + "/{*remaining_path}";
-            _logger.Trace("Binding Mini Web to {0}", pattern);
+            _logger.Trace("Binding MiniWeb to {0}", pattern);
             service.RegisterControllerAction(new ControllerAction(pattern,
                                                                   HttpMethod.Get,
                                                                   Codec.NoCodecs,
@@ -76,7 +76,7 @@ namespace EventStore.Core.Util
             if (("/" + contentLocalPath).StartsWith(_localWebRootPath))
                 contentLocalPath = contentLocalPath.Substring(_localWebRootPath.Length);
 
-            //_logger.Trace("{0} requested from mini web", contentLocalPath);
+            //_logger.Trace("{0} requested from MiniWeb", contentLocalPath);
             try
             {
                 var extensionToContentType = new Dictionary<string, string>

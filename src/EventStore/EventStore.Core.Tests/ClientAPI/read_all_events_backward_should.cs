@@ -34,7 +34,7 @@ using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.ClientAPI.AllEvents
+namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
     public class read_all_events_backward_should: SpecificationWithDirectory

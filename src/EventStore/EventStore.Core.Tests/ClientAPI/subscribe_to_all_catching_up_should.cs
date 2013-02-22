@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
@@ -39,6 +40,7 @@ namespace EventStore.Core.Tests.ClientAPI
     [TestFixture, Category("LongRunning")]
     public class subscribe_to_all_catching_up_should : SpecificationWithDirectory
     {
+        private static readonly ILogger Log = LogManager.GetLogger();
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
 
         private MiniNode _node;
@@ -147,25 +149,26 @@ namespace EventStore.Core.Tests.ClientAPI
                                                             false,
                                                             (x, y) =>
                                                             {
+                                                                Log.Info("Event appeared: {0}.", y);
                                                                 events.Add(y);
                                                                 appeared.Signal();
                                                             },
                                                             (x, y, z) =>
                                                             {
-                                                                Console.WriteLine("Subscription dropped: {0}, {1}.", y, z);
+                                                                Log.Info("Subscription dropped: {0}, {1}.", y, z);
                                                                 dropped.Signal();
                                                             });
                 for (int i = 10; i < 20; ++i)
                 {
                     store.AppendToStream(Guid.NewGuid().ToString(), -1, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
                 }
-                Console.WriteLine("Waiting for events...");
+                Log.Info("Waiting for events...");
                 if (!appeared.Wait(Timeout))
                 {
                     Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
                     Assert.Fail("Couldn't wait for all events.");
                 }
-                Console.WriteLine("Events appeared...");
+                Log.Info("Events appeared...");
                 Assert.AreEqual(20, events.Count);
                 for (int i = 0; i < 20; ++i)
                 {
