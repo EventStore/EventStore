@@ -249,7 +249,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 lastReadTag = projectionStateMetadata;
             }
 
-            if (lastReadTag <= upTo)
+            if (lastReadTag < upTo)
                 SubmitWriteEventsInRecovery();
             else
                 SubmitListEvents(upTo, message.NextEventNumber);

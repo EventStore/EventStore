@@ -247,7 +247,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionProcessingMessage.EmittedStreamWriteCompleted message)
         {
-            throw new NotImplementedException();
         }
     }
 }
