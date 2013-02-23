@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Standard
             if (sequenceNumber != 0)
                 return false; // not our event
 
-            emittedEvents = new[] { new EmittedEvent(SystemStreams.StreamsStream, Guid.NewGuid(), SystemEventTypes.LinkTo, sequenceNumber + "@" + streamId, eventPosition, expectedTag: null) };
+            emittedEvents = new[] { new EmittedDataEvent(SystemStreams.StreamsStream, Guid.NewGuid(), SystemEventTypes.LinkTo, sequenceNumber + "@" + streamId, eventPosition, expectedTag: null) };
 
             return true;
         }

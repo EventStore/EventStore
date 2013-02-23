@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Services.v8
             }
             if (_emittedEvents == null)
                 _emittedEvents = new List<EmittedEvent>();
-            _emittedEvents.Add(new EmittedEvent(emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body, _eventPosition, expectedTag: null));
+            _emittedEvents.Add(new EmittedDataEvent(emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body, _eventPosition, expectedTag: null));
         }
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)

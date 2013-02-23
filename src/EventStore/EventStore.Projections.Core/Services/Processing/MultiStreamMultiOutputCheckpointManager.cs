@@ -37,7 +37,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class MultiStreamMultiOutputCheckpointManager : DefaultCheckpointManager
+    public class MultiStreamMultiOutputCheckpointManager : DefaultCheckpointManager, IEmittedStreamContainer
     {
         private readonly PositionTagger _positionTagger;
         private CheckpointTag _lastOrderCheckpointTag; //TODO: use position tracker to ensure order?
@@ -86,10 +86,10 @@ namespace EventStore.Projections.Core.Services.Processing
             _orderStream.EmitEvents(
                 new[]
                     {
-                        new EmittedEvent(
+                        new EmittedDataEvent(
                     orderStreamName, Guid.NewGuid(), "$>",
                     message.PositionSequenceNumber + "@" + message.PositionStreamId, message.CheckpointTag,
-                    _lastOrderCheckpointTag, committed)
+                    _lastOrderCheckpointTag, v => committed())
                     });
             _lastOrderCheckpointTag = message.CheckpointTag;
         }
@@ -238,6 +238,16 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _result = eventLinkPair;
             }
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.EmittedStreamAwaiting message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.EmittedStreamWriteCompleted message)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -27,42 +27,59 @@
 // 
 
 using System;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
 {
     [TestFixture]
-    public class when_checkpoint_requested: TestFixtureWithReadWriteDisaptchers
+    public class when_handling_an_emit_with_committed_callback : TestFixtureWithExistingEvents
     {
         private EmittedStream _stream;
         private TestCheckpointManagerMessageHandler _readyHandler;
 
+        protected override void Given()
+        {
+            ExistingEvent("test_stream", "type", @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "data");
+            AllWritesSucceed();
+        }
+
         [SetUp]
         public void setup()
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
+            _readyHandler = new TestCheckpointManagerMessageHandler();
             _stream = new EmittedStream(
-                "test", CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler, 50);
+                "test_stream", CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher,
+                _writeDispatcher, _readyHandler, maxWriteBatchLength: 50);
             _stream.Start();
-            _stream.Checkpoint();
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void emit_events_throws_invalid_operation_exception()
+        [Test]
+        public void completes_already_published_events()
         {
+            var invoked = false;
             _stream.EmitEvents(
-                new[] { new EmittedDataEvent("test", Guid.NewGuid(), "type2", "data2", CheckpointTag.FromPosition(-1, -1), null) });
+                new[]
+                    {
+                        new EmittedDataEvent(
+                    "test_stream", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(100, 50), null,
+                    v => invoked = true)
+                    });
+            Assert.IsTrue(invoked);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void checkpoint_throws_invalid_operation_exception()
+        [Test]
+        public void completes_not_yet_published_events()
         {
-            _stream.Checkpoint();
+            var invoked = false;
+            _stream.EmitEvents(
+                new[]
+                    {
+                        new EmittedDataEvent(
+                    "test_stream", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(200, 150), null,
+                    v => invoked = true)
+                    });
+            Assert.IsTrue(invoked);
         }
     }
 }

@@ -34,4 +34,11 @@ namespace EventStore.Projections.Core.Messages
                                                     IHandle<CoreProjectionProcessingMessage.RestartRequested>
     {
     }
+
+    public interface IEmittedStreamContainer : IProjectionCheckpointManager,
+                                             IHandle<CoreProjectionProcessingMessage.EmittedStreamAwaiting>,
+                                             IHandle<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted>
+    {
+    }
+
 }

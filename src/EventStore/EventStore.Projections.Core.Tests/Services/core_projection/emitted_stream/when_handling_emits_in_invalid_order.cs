@@ -26,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 maxWriteBatchLength: 50);
             _stream.Start();
             _stream.EmitEvents(
-                new[] {new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data",
+                new[] {new EmittedDataEvent("test_stream", Guid.NewGuid(), "type", "data",
                                         CheckpointTag.FromPosition(100, 90), null)});
         }
 
@@ -34,7 +34,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void throws_if_position_is_prior_to_the_last_event_position()
         {
             _stream.EmitEvents(
-                new[] {new EmittedEvent("test_stream", Guid.NewGuid(), "type", "data",
+                new[] {new EmittedDataEvent("test_stream", Guid.NewGuid(), "type", "data",
                                         CheckpointTag.FromPosition(80, 70), null)});
         }
 

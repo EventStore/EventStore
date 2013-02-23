@@ -51,13 +51,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[]
                     {
-                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2", CheckpointTag.FromPosition(120, 110), null),
-                        new EmittedEvent("stream3", Guid.NewGuid(), "type", "data3", CheckpointTag.FromPosition(120, 110), null),
-                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data4", CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedDataEvent("stream2", Guid.NewGuid(), "type", "data2", CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedDataEvent("stream3", Guid.NewGuid(), "type", "data3", CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedDataEvent("stream2", Guid.NewGuid(), "type", "data4", CheckpointTag.FromPosition(120, 110), null),
                     }
                 );
             _checkpoint.ValidateOrderAndEmitEvents(
-                new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
+                new[] {new EmittedDataEvent("stream1", Guid.NewGuid(), "type", "data",
                 CheckpointTag.FromPosition(140, 130), null)});
         }
 

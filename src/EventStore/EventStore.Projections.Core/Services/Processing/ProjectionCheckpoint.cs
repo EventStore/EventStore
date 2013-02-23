@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using EventStore.Common.Log;
 using System.Linq;
@@ -34,7 +35,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class ProjectionCheckpoint : IDisposable, IProjectionCheckpointManager, IEventWriter
+    public class ProjectionCheckpoint : IDisposable, IEmittedStreamContainer, IEventWriter
     {
         private readonly int _maxWriteBatchLength;
         private readonly ILogger _logger;
@@ -55,6 +56,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
+
+        private List<EmittedStream> _awaitingStreams;
 
         public ProjectionCheckpoint(RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
@@ -90,7 +93,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void ValidateOrderAndEmitEvents(EmittedEvent[] events)
         {
-            ValidatePosition(events);
+            UpdateLastPosition(events);
             EnsureCheckpointNotRequested();
             
             var groupedEvents = events.GroupBy(v => v.StreamId);
@@ -100,29 +103,34 @@ namespace EventStore.Projections.Core.Services.Processing
             }
         }
 
-        private void ValidatePosition(EmittedEvent[] events)
+        private void UpdateLastPosition(EmittedEvent[] events)
         {
             foreach (var emittedEvent in events)
             {
-                ValidatePosition(emittedEvent.CausedByTag);
-                _last = emittedEvent.CausedByTag;
+                if (emittedEvent.CausedByTag > _last) 
+                    _last = emittedEvent.CausedByTag;
             }
         }
 
-        private void ValidatePosition(CheckpointTag position)
+        private void ValidateCheckpointPosition(CheckpointTag position)
         {
             if (position <= _from)
                 throw new InvalidOperationException(
-                    "Emitted event caused position before or equal to the last checkpoint handled position");
+                    string.Format(
+                        "Checkpoint position before or equal to the checkpoint start position. Requested: '{0}' Started: '{1}'",
+                        position, _from));
             if (position < _last)
-                throw new InvalidOperationException("Emitted event caused position before last handled position");
+                throw new InvalidOperationException(
+                    string.Format(
+                        "Checkpoint position before last handled position. Requested: '{0}' Last: '{1}'", position,
+                        _last));
         }
 
         public void Prepare(CheckpointTag position)
         {
             if (!_started)
                 throw new InvalidOperationException("Projection has not been started");
-            ValidatePosition(position);
+            ValidateCheckpointPosition(position);
             _checkpointRequested = true;
             _requestedCheckpoints = 1; // avoid multiple checkpoint ready messages if already ready
             foreach (var emittedStream in _emittedStreams.Values)
@@ -196,6 +204,20 @@ namespace EventStore.Projections.Core.Services.Processing
                 foreach (var stream in _emittedStreams.Values)
                     stream.Dispose();
 
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.EmittedStreamAwaiting message)
+        {
+            _awaitingStreams.Add(_emittedStreams[message.StreamId]);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.EmittedStreamWriteCompleted message)
+        {
+            var awaitingStreams = _awaitingStreams;
+            _awaitingStreams = null; // still awaiting will re-register
+            if (awaitingStreams != null)
+                foreach (var stream in awaitingStreams)
+                    stream.RetryAwaitingWrites();
         }
     }
 }

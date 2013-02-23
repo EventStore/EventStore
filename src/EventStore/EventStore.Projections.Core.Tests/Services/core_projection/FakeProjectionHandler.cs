@@ -139,36 +139,35 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     return true;
                 case "no_state_emit1_type":
                     _loadedState = newState = "";
-                    emittedEvents = new[]
-                        {new EmittedEvent(_emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, eventPosition, null),};
+                    emittedEvents = new[] { new EmittedDataEvent(_emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, eventPosition, null), };
                     return true;
                 case "emit1_type":
                     _loadedState = newState = data;
-                    emittedEvents = new[] { new EmittedEvent(_emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, eventPosition, null), };
+                    emittedEvents = new[] { new EmittedDataEvent(_emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, eventPosition, null), };
                     return true;
                 case "emit22_type":
                     _loadedState = newState = data;
                     emittedEvents = new[]
                         {
-                            new EmittedEvent(_emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit1Data, eventPosition, null),
-                            new EmittedEvent(_emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit2Data, eventPosition, null),
+                            new EmittedDataEvent(_emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit1Data, eventPosition, null),
+                            new EmittedDataEvent(_emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit2Data, eventPosition, null),
                         };
                     return true;
                 case "emit212_type":
                     _loadedState = newState = data;
                     emittedEvents = new[]
                         {
-                            new EmittedEvent(_emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit1Data, eventPosition, null),
-                            new EmittedEvent(_emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit2Data, eventPosition, null),
-                            new EmittedEvent(_emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit3Data, eventPosition, null),
+                            new EmittedDataEvent(_emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit1Data, eventPosition, null),
+                            new EmittedDataEvent(_emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit2Data, eventPosition, null),
+                            new EmittedDataEvent(_emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit3Data, eventPosition, null),
                         };
                     return true;
                 case "emit12_type":
                     _loadedState = newState = data;
                     emittedEvents = new[]
                         {
-                            new EmittedEvent(_emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, eventPosition, null),
-                            new EmittedEvent(_emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit2Data, eventPosition, null),
+                            new EmittedDataEvent(_emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, eventPosition, null),
+                            new EmittedDataEvent(_emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit2Data, eventPosition, null),
                         };
                     return true;
                 default:

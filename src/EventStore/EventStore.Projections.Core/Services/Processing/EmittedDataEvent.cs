@@ -27,42 +27,30 @@
 // 
 
 using System;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
-using EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection;
-using NUnit.Framework;
+using System.Text;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_stream
+namespace EventStore.Projections.Core.Services.Processing
 {
-    [TestFixture]
-    public class when_checkpoint_requested: TestFixtureWithReadWriteDisaptchers
+    public class EmittedDataEvent : EmittedEvent
     {
-        private EmittedStream _stream;
-        private TestCheckpointManagerMessageHandler _readyHandler;
+        private readonly byte[] _data;
 
-        [SetUp]
-        public void setup()
+        public EmittedDataEvent(
+            string streamId, Guid eventId, string eventType, string data, CheckpointTag causedByTag,
+            CheckpointTag expectedTag, Action<int> onCommitted = null)
+            : base(streamId, eventId, eventType, causedByTag, expectedTag, onCommitted)
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();;
-            _stream = new EmittedStream(
-                "test", CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler, 50);
-            _stream.Start();
-            _stream.Checkpoint();
+            _data = data == null ? null : Encoding.UTF8.GetBytes(data);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void emit_events_throws_invalid_operation_exception()
+        public override byte[] Data
         {
-            _stream.EmitEvents(
-                new[] { new EmittedDataEvent("test", Guid.NewGuid(), "type2", "data2", CheckpointTag.FromPosition(-1, -1), null) });
+            get { return _data; }
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void checkpoint_throws_invalid_operation_exception()
+        public override bool IsReady()
         {
-            _stream.Checkpoint();
+            return true;
         }
     }
 }

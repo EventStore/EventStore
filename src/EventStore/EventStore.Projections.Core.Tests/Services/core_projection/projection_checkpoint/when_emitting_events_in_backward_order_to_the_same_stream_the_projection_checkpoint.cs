@@ -35,7 +35,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint
 {
     [TestFixture]
-    public class when_emitting_events_in_backward_order_the_projection_checkpoint : TestFixtureWithExistingEvents
+    public class when_emitting_events_in_backward_order_to_the_same_stream_the_projection_checkpoint : TestFixtureWithExistingEvents
     {
         private ProjectionCheckpoint _checkpoint;
         private Exception _lastException;
@@ -50,10 +50,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             try
             {
                 _checkpoint.ValidateOrderAndEmitEvents(
-                    new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
+                    new[] {new EmittedDataEvent("stream1", Guid.NewGuid(), "type", "data",
                     CheckpointTag.FromPosition(140, 130), null)});
                 _checkpoint.ValidateOrderAndEmitEvents(
-                    new[] {new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2",
+                    new[] {new EmittedDataEvent("stream1", Guid.NewGuid(), "type", "data2",
                     CheckpointTag.FromPosition(120, 110), null)});
             }
             catch (Exception ex)

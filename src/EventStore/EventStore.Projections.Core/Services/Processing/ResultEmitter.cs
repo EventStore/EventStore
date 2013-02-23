@@ -36,6 +36,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ResultEmitter(ProjectionNamesBuilder namesBuilder)
         {
+            if (namesBuilder == null) throw new ArgumentNullException("namesBuilder");
             _namesBuilder = namesBuilder;
         }
 
@@ -51,13 +52,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private EmittedEvent[] CreateResultUpdatedEvents(string partition, string projectionResult, CheckpointTag at)
         {
+            var streamId = _namesBuilder.MakePartitionStateStreamName(partition);
             var result = projectionResult == null
-                                      ? new EmittedEvent(
-                                            _namesBuilder.MakePartitionStateStreamName(partition), Guid.NewGuid(), "ResultRemoved",
-                                            null, at, null)
-                                      : new EmittedEvent(
-                                            _namesBuilder.MakePartitionStateStreamName(partition), Guid.NewGuid(), "Result",
-                                            projectionResult, at, null);
+                             ? new EmittedDataEvent(streamId, Guid.NewGuid(), "ResultRemoved", null, at, null)
+                             : new EmittedDataEvent(streamId, Guid.NewGuid(), "Result", projectionResult, at, null);
             return new[]
                     {
                         result

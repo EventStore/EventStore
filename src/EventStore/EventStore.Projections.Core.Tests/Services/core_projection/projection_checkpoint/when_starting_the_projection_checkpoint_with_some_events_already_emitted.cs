@@ -29,8 +29,6 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
@@ -59,13 +57,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[]
                     {
-                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2", CheckpointTag.FromPosition(120, 110), null),
-                        new EmittedEvent("stream3", Guid.NewGuid(), "type", "data3", CheckpointTag.FromPosition(120, 110), null),
-                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data4", CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedDataEvent("stream2", Guid.NewGuid(), "type", "data2", CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedDataEvent("stream3", Guid.NewGuid(), "type", "data3", CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedDataEvent("stream2", Guid.NewGuid(), "type", "data4", CheckpointTag.FromPosition(120, 110), null),
                     }
                 );
             _checkpoint.ValidateOrderAndEmitEvents(
-                new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
+                new[] {new EmittedDataEvent("stream1", Guid.NewGuid(), "type", "data",
                 CheckpointTag.FromPosition(140, 130), null)});
             _checkpoint.Start();
         }

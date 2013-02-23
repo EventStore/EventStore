@@ -181,6 +181,8 @@
     <Compile Include="Services\Processing\CompletedWorkItem.cs" />
     <Compile Include="Services\Processing\CoreProjectionCheckpointManager.cs" />
     <Compile Include="Services\Processing\DefaultCheckpointManager.cs" />
+    <Compile Include="Services\Processing\EmittedDataEvent.cs" />
+    <Compile Include="Services\Processing\EmittedLinkTo.cs" />
     <Compile Include="Services\Processing\EventIndexEventReader.cs" />
     <Compile Include="Services\Processing\EventProcessedResult.cs" />
     <Compile Include="Services\Processing\EventReorderingProjectionSubscription.cs" />

@@ -112,7 +112,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected void OneWriteCompletes()
         {
             var message = _writesQueue.Dequeue();
-            message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, 0));
+            ProcessWrite(message);
         }
 
         protected void AllWriteComplete()
@@ -154,7 +154,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             List<EventRecord> list;
             if (_lastMessageReplies.TryGetValue(message.EventStreamId, out list))
             {
-                if (list != null && list.Count > 0 && (list.Last().EventNumber <= message.FromEventNumber)
+                if (list != null && list.Count > 0 && (list.Last().EventNumber >= message.FromEventNumber)
                     || (message.FromEventNumber == -1))
                 {
                     ResolvedEvent[] records = list.Safe()
@@ -200,27 +200,31 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         {
             if (_allWritesSucceed || _writesToSucceed.Contains(message.EventStreamId))
             {
-                List<EventRecord> list;
-                if (!_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || list == null)
-                {
-                    list = new List<EventRecord>();
-                    _lastMessageReplies[message.EventStreamId] = list;
-                }
-                foreach (var eventRecord in from e in message.Events
-                                            select
-                                                new EventRecord(
-                                                list.Count, list.Count*1000, message.CorrelationId, e.EventId,
-                                                list.Count*1000, 0, message.EventStreamId, ExpectedVersion.Any,
-                                                DateTime.UtcNow, PrepareFlags.SingleWrite, e.EventType, e.Data,
-                                                e.Metadata))
-                {
-                    list.Add(eventRecord);
-                }
-
-                message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, 0));
+                ProcessWrite(message);
             }
             else if (_allWritesQueueUp)
                 _writesQueue.Enqueue(message);
+        }
+
+        private void ProcessWrite(ClientMessage.WriteEvents message)
+        {
+            List<EventRecord> list;
+            if (!_lastMessageReplies.TryGetValue(message.EventStreamId, out list) || list == null)
+            {
+                list = new List<EventRecord>();
+                _lastMessageReplies[message.EventStreamId] = list;
+            }
+            foreach (var eventRecord in from e in message.Events
+                                        select
+                                            new EventRecord(
+                                            list.Count, list.Count*1000, message.CorrelationId, e.EventId, list.Count*1000, 0,
+                                            message.EventStreamId, ExpectedVersion.Any, DateTime.UtcNow,
+                                            PrepareFlags.SingleWrite, e.EventType, e.Data, e.Metadata))
+            {
+                list.Add(eventRecord);
+            }
+
+            message.Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(message.CorrelationId, list.Count - message.Events.Length));
         }
 
         public void Handle(ProjectionCoreServiceMessage.Tick message)

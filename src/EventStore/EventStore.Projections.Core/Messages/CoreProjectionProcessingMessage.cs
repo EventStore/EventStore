@@ -89,21 +89,6 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class ReadyForCheckpoint : EventStore.Core.Messaging.Message
-        {
-            private readonly object _sender;
-
-            public ReadyForCheckpoint(object sender)
-            {
-                _sender = sender;
-            }
-
-            public object Sender
-            {
-                get { return _sender; }
-            }
-        }
-
         public class CheckpointCompleted : Message
         {
             private readonly CheckpointTag _checkpointTag;
@@ -136,5 +121,49 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class ReadyForCheckpoint : EventStore.Core.Messaging.Message
+        {
+            private readonly object _sender;
+
+            public ReadyForCheckpoint(object sender)
+            {
+                _sender = sender;
+            }
+
+            public object Sender
+            {
+                get { return _sender; }
+            }
+        }
+
+        public class EmittedStreamAwaiting : EventStore.Core.Messaging.Message
+        {
+            private readonly string _streamId;
+
+            public EmittedStreamAwaiting(string streamId)
+            {
+                _streamId = streamId;
+            }
+
+            public string StreamId
+            {
+                get { return _streamId; }
+            }
+        }
+
+        public class EmittedStreamWriteCompleted : EventStore.Core.Messaging.Message
+        {
+            private readonly string _streamId;
+
+            public EmittedStreamWriteCompleted(string streamId)
+            {
+                _streamId = streamId;
+            }
+
+            public string StreamId
+            {
+                get { return _streamId; }
+            }
+        }
     }
 }

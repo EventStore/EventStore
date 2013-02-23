@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using EventStore.Common.Log;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -52,10 +51,11 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly string _streamId;
         private readonly CheckpointTag _zeroPosition;
         private readonly CheckpointTag _from;
-        private readonly IProjectionCheckpointManager _readyHandler;
+        private readonly IEmittedStreamContainer _readyHandler;
 
-        private readonly Queue<EmittedEvent[]> _pendingWrites =
-            new Queue<EmittedEvent[]>();
+        private readonly Stack<Tuple<CheckpointTag, string, int>> _alreadyCommittedEvents = new Stack<Tuple<CheckpointTag, string, int>>();
+        private readonly Queue<EmittedEvent> _pendingWrites =
+            new Queue<EmittedEvent>();
 
         private bool _checkpointRequested;
         private bool _awaitingWriteCompleted;
@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Services.Processing
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-            IProjectionCheckpointManager readyHandler, int maxWriteBatchLength, ILogger logger = null,
+            IEmittedStreamContainer readyHandler, int maxWriteBatchLength, ILogger logger = null,
             bool noCheckpoints = false)
         {
             if (streamId == null) throw new ArgumentNullException("streamId");
@@ -111,7 +111,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 _last = @event.CausedByTag;
             }
             EnsureCheckpointNotRequested();
-            _pendingWrites.Enqueue(events);
+            foreach (var @event in events)
+                _pendingWrites.Enqueue(@event);
             ProcessWrites();
         }
 
@@ -156,9 +157,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             if (message.Result == OperationResult.Success)
             {
-                _lastKnownEventNumber = message.FirstEventNumber + _submittedToWriteEvents.Length - 1
-                                        + (_lastKnownEventNumber == ExpectedVersion.NoStream ? 1 : 0); // account for stream crated
-                NotifyEventsCommitted(_submittedToWriteEmittedEvents);
+                var firstEventNumber = message.FirstEventNumber + (_lastKnownEventNumber == ExpectedVersion.NoStream ? 1 : 0); // account for stream crated
+                _lastKnownEventNumber = firstEventNumber + _submittedToWriteEvents.Length - 1;
+                NotifyEventsCommitted(_submittedToWriteEmittedEvents, firstEventNumber);
                 OnWriteCompleted();
                 return;
             }
@@ -189,26 +190,61 @@ namespace EventStore.Projections.Core.Services.Processing
             _readyHandler.Handle(new CoreProjectionProcessingMessage.RestartRequested(Guid.Empty, reason));
         }
 
-        private void Handle(ClientMessage.ReadStreamEventsBackwardCompleted message)
+        private void ReadStreamEventsBackwardCompleted(ClientMessage.ReadStreamEventsBackwardCompleted message, CheckpointTag upTo)
         {
+            if (upTo == _zeroPosition)
+                throw new ArgumentException("upTo cannot be equal to zero position");
+
             if (!_awaitingListEventsCompleted)
                 throw new InvalidOperationException("ReadStreamEventsBackward has not been requested");
             if (_disposed)
                 return;
             _awaitingListEventsCompleted = false;
+
+            if (_lastSubmittedOrCommittedMetadata == null)
+            {
+                if (message.Events.Length == 0)
+                {
+                    _lastSubmittedOrCommittedMetadata = _zeroPosition;
+                    _lastKnownEventNumber = ExpectedVersion.NoStream;
+                }
+                else
+                {
+                    //TODO: verify order - as we are reading backward
+                    var projectionStateMetadata = message.Events[0].Event.Metadata.ParseJson<CheckpointTag>();
+                    _lastSubmittedOrCommittedMetadata = projectionStateMetadata;
+                    _lastKnownEventNumber = message.Events[0].Event.EventNumber;
+                }
+            }
+
+            CheckpointTag lastReadTag = null;
+
             if (message.Events.Length == 0)
             {
-                _lastSubmittedOrCommittedMetadata = _zeroPosition;
-                _lastKnownEventNumber = ExpectedVersion.NoStream;
-                SubmitWriteEvents();
+                lastReadTag = _zeroPosition;
             }
             else
             {
-                var projectionStateMetadata = message.Events[0].Event.Metadata.ParseJson<CheckpointTag>();
-                _lastSubmittedOrCommittedMetadata = projectionStateMetadata;
-                _lastKnownEventNumber = message.Events[0].Event.EventNumber;
-                SubmitWriteEventsInRecovery();
+                foreach (var e in message.Events)
+                {
+                    var tag = e.Event.Metadata.ParseJson<CheckpointTag>();
+                    if (tag < upTo) // ignore any events prior to the requested upTo (== first emitted event position)
+                        break;
+                    var eventType = e.Event.EventType;
+                    _alreadyCommittedEvents.Push(Tuple.Create(tag, eventType, e.Event.EventNumber));
+                }
+
+                //TODO: verify order - as we are reading backward
+                var lastReadEvent = message.Events[message.Events.Length - 1];
+                var projectionStateMetadata = lastReadEvent.Event.Metadata.ParseJson<CheckpointTag>();
+                lastReadTag = projectionStateMetadata;
             }
+
+            if (lastReadTag <= upTo)
+                SubmitWriteEventsInRecovery();
+            else
+                SubmitListEvents(upTo, message.NextEventNumber);
+
         }
 
         private void ProcessWrites()
@@ -216,20 +252,21 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_started && !_awaitingWriteCompleted && _pendingWrites.Count > 0)
             {
                 _awaitingWriteCompleted = true;
-
+                var firstEvent = _pendingWrites.Peek();
                 if (_lastSubmittedOrCommittedMetadata == null)
-                    SubmitListEvents();
+                    SubmitListEvents(firstEvent.CausedByTag);
                 else
                     SubmitWriteEventsInRecovery();
             }
         }
 
-        private void SubmitListEvents()
+        private void SubmitListEvents(CheckpointTag upTo, int fromEventNumber = -1)
         {
             _awaitingListEventsCompleted = true;
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
-                    Guid.NewGuid(), _readDispatcher.Envelope, _streamId, -1, 1, resolveLinks: false, validationStreamVersion: null), Handle);
+                    Guid.NewGuid(), _readDispatcher.Envelope, _streamId, fromEventNumber, 1, resolveLinks: false, validationStreamVersion: null), 
+                        completed => ReadStreamEventsBackwardCompleted(completed, upTo));
         }
 
         private void SubmitWriteEvents()
@@ -238,25 +275,28 @@ namespace EventStore.Projections.Core.Services.Processing
             var emittedEvents = new List<EmittedEvent>();
             while (_pendingWrites.Count > 0 && events.Count < _maxWriteBatchLength)
             {
-                var eventsToWrite = _pendingWrites.Dequeue();
-
-                foreach (var e in eventsToWrite)
+                var e = _pendingWrites.Peek();
+                if (!e.IsReady())
                 {
-                    var expectedTag = e.ExpectedTag;
-                    var causedByTag = e.CausedByTag;
-                    if (expectedTag != null)
-                        if (DetectConcurrencyViolations(expectedTag))
-                        {
-                            RequestRestart(
-                                string.Format(
-                                    "Wrong expected tag while submitting write event request to the '{0}' stream.  The last known stream tag is: '{1}'  the expected tag is: '{2}'",
-                                    _streamId, _lastSubmittedOrCommittedMetadata, expectedTag));
-                            return;
-                        }
-                    _lastSubmittedOrCommittedMetadata = causedByTag;
-                    events.Add(new Event(e.EventId, e.EventType, true, e.Data, e.CausedByTag.ToJsonBytes()));
-                    emittedEvents.Add(e);
+                    _readyHandler.Handle(new CoreProjectionProcessingMessage.EmittedStreamAwaiting(_streamId));
+                    break;
                 }
+                _pendingWrites.Dequeue();
+
+                var expectedTag = e.ExpectedTag;
+                var causedByTag = e.CausedByTag;
+                if (expectedTag != null)
+                    if (DetectConcurrencyViolations(expectedTag))
+                    {
+                        RequestRestart(
+                            string.Format(
+                                "Wrong expected tag while submitting write event request to the '{0}' stream.  The last known stream tag is: '{1}'  the expected tag is: '{2}'",
+                                _streamId, _lastSubmittedOrCommittedMetadata, expectedTag));
+                        return;
+                    }
+                _lastSubmittedOrCommittedMetadata = causedByTag;
+                events.Add(new Event(e.EventId, e.EventType, true, e.Data, e.CausedByTag.ToJsonBytes()));
+                emittedEvents.Add(e);
             }
             _submittedToWriteEvents = events.ToArray();
             _submittedToWriteEmittedEvents = emittedEvents.ToArray();
@@ -297,8 +337,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private void OnWriteCompleted()
         {
             _awaitingWriteCompleted = false;
+            NotifyWriteCompleted();
             ProcessWrites();
             ProcessRequestedCheckpoint();
+        }
+
+        private void NotifyWriteCompleted()
+        {
+            _readyHandler.Handle(new CoreProjectionProcessingMessage.EmittedStreamWriteCompleted(_streamId));
         }
 
         private void ProcessRequestedCheckpoint()
@@ -318,31 +364,53 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void SubmitWriteEventsInRecovery()
         {
+            bool anyFound = false;
             while (_pendingWrites.Count > 0)
             {
                 var eventsToWrite = _pendingWrites.Peek();
-                if (eventsToWrite[0].CausedByTag > _lastSubmittedOrCommittedMetadata)
+                if (eventsToWrite.CausedByTag > _lastSubmittedOrCommittedMetadata)
                 {
+                    if (anyFound)
+                        NotifyWriteCompleted(); // unlock pending write-resolves if any
                     SubmitWriteEvents();
                     return;
                 }
-                
-                NotifyEventsCommitted(eventsToWrite);
+                var topAlreadyCommitted = _alreadyCommittedEvents.Pop();
+                if (topAlreadyCommitted.Item1 != eventsToWrite.CausedByTag
+                    || topAlreadyCommitted.Item2 != eventsToWrite.EventType)
+                    throw new InvalidOperationException(
+                        string.Format(
+                            "An event emitted in recovery differ from the originally emitted event.  Existing('{0}', '{1}'). New('{2}', '{3}')",
+                            topAlreadyCommitted.Item2, topAlreadyCommitted.Item1, eventsToWrite.EventType,
+                            eventsToWrite.CausedByTag));
+                anyFound = true;
+                NotifyEventCommitted(eventsToWrite, topAlreadyCommitted.Item3); 
                 _pendingWrites.Dequeue(); // drop already committed event
             }
             OnWriteCompleted();
         }
 
-        private static void NotifyEventsCommitted(EmittedEvent[] eventsToWrite)
+        private static void NotifyEventsCommitted(EmittedEvent[] events, int firstEventNumber)
         {
-            foreach (var @event in eventsToWrite)
-                if (@event.OnCommitted != null)
-                    @event.OnCommitted();
+            var sequenceNumber = firstEventNumber;
+            foreach (var e in events)
+                NotifyEventCommitted(e, sequenceNumber++);
+        }
+
+        private static void NotifyEventCommitted(EmittedEvent @event, int eventNumber)
+        {
+            if (@event.OnCommitted != null)
+                @event.OnCommitted(eventNumber);
         }
 
         public void Dispose()
         {
             _disposed = true;
+        }
+
+        public void RetryAwaitingWrites()
+        {
+            throw new NotImplementedException();
         }
     }
 }
