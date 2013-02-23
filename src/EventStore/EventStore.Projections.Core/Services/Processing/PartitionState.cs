@@ -28,6 +28,7 @@
 
 using System;
 using System.IO;
+using EventStore.Core.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
