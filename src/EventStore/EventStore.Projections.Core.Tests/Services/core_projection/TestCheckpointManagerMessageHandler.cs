@@ -42,6 +42,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public readonly List<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted> HandledWriteCompletedMessage =
             new List<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted>();
 
+        public readonly List<CoreProjectionProcessingMessage.EmittedStreamAwaiting> HandledStreamAwaitingMessage =
+            new List<CoreProjectionProcessingMessage.EmittedStreamAwaiting>();
+
         public void Handle(CoreProjectionProcessingMessage.ReadyForCheckpoint message)
         {
             HandledMessages.Add(message);
@@ -54,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
         public void Handle(CoreProjectionProcessingMessage.EmittedStreamAwaiting message)
         {
-            throw new System.NotImplementedException();
+            HandledStreamAwaitingMessage.Add(message);
         }
 
         public void Handle(CoreProjectionProcessingMessage.EmittedStreamWriteCompleted message)

@@ -53,12 +53,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private EmittedEvent[] CreateResultUpdatedEvents(string partition, string projectionResult, CheckpointTag at)
         {
             var streamId = _namesBuilder.MakePartitionStateStreamName(partition);
+            var allResultsStreamId = _namesBuilder.GetStateStreamName();
+            var linkTo = new EmittedLinkTo(allResultsStreamId, Guid.NewGuid(), streamId, at, null);
             var result = projectionResult == null
-                             ? new EmittedDataEvent(streamId, Guid.NewGuid(), "ResultRemoved", null, at, null)
-                             : new EmittedDataEvent(streamId, Guid.NewGuid(), "Result", projectionResult, at, null);
-            return new[]
+                             ? new EmittedDataEvent(streamId, Guid.NewGuid(), "ResultRemoved", null, at, null, linkTo.SetTargetEventNumber)
+                             : new EmittedDataEvent(streamId, Guid.NewGuid(), "Result", projectionResult, at, null, linkTo.SetTargetEventNumber);
+            return new EmittedEvent[]
                     {
-                        result
+                        result, linkTo
                     };
         }
     }

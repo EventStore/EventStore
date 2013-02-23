@@ -27,46 +27,40 @@
 // 
 
 using System;
-using System.Globalization;
-using System.Text;
+using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
-namespace EventStore.Projections.Core.Services.Processing
+namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint
 {
-    public class EmittedLinkTo : EmittedEvent
+    [TestFixture]
+    public class when_emitting_events_before_from_position_the_projection_checkpoint : TestFixtureWithExistingEvents
     {
-        private readonly string _targetStreamId;
-        private int? _eventNumber;
+        private ProjectionCheckpoint _checkpoint;
+        private Exception _lastException;
+        private TestCheckpointManagerMessageHandler _readyHandler;
 
-        public EmittedLinkTo(
-            string streamId, Guid eventId, string targetStreamId, CheckpointTag causedByTag,
-            CheckpointTag expectedTag, Action<int> onCommitted = null)
-            : base(streamId, eventId, "$>", causedByTag, expectedTag, onCommitted)
+        [SetUp]
+        public void setup()
         {
-            _targetStreamId = targetStreamId;
-        }
-
-        public override byte[] Data
-        {
-            get
+            _readyHandler = new TestCheckpointManagerMessageHandler();
+            _checkpoint = new ProjectionCheckpoint(_readDispatcher, _writeDispatcher, _readyHandler, CheckpointTag.FromPosition(100, 50),
+                CheckpointTag.FromPosition(0, -1), 250);
+            try
             {
-                if (!IsReady())
-                    throw new InvalidOperationException("Link target has not been yet committed");
-                return
-                    Encoding.UTF8.GetBytes(
-                        _eventNumber.Value.ToString(CultureInfo.InvariantCulture) + "@" + _targetStreamId);
+                _checkpoint.ValidateOrderAndEmitEvents(
+                    new[] {new EmittedDataEvent("stream1", Guid.NewGuid(), "type", "data",
+                    CheckpointTag.FromPosition(40, 30), null)});
+            }
+            catch (Exception ex)
+            {
+                _lastException = ex;
             }
         }
 
-        public override bool IsReady()
+        [Test, ExpectedException(typeof (InvalidOperationException))]
+        public void throws_invalid_operation_exception()
         {
-            return _eventNumber != null;
-        }
-
-        public void SetTargetEventNumber(int eventNumber)
-        {
-            if (_eventNumber != null)
-                throw new InvalidOperationException("Target event number has been already set");
-            _eventNumber = eventNumber;
+            if (_lastException != null) throw _lastException;
         }
     }
 }

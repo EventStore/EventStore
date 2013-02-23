@@ -170,6 +170,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                             new EmittedDataEvent(_emit2StreamId, Guid.NewGuid(), _emit2EventType, _emit2Data, eventPosition, null),
                         };
                     return true;
+                case "just_emit":
+                    newState = _loadedState;
+                    emittedEvents = new[]
+                        {
+                            new EmittedDataEvent(_emit1StreamId, Guid.NewGuid(), _emit1EventType, _emit1Data, eventPosition, null),
+                        };
+                    return true;
                 default:
                     throw new NotSupportedException();
             }

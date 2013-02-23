@@ -126,8 +126,10 @@
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_starting_with_prerecorded_events_after_the_last_checkpoint.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_checkpoint_requested_but_disabled.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_committed_callback.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_not_ready_event.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_in_invalid_order.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_with_previously_written_events.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_handling_stream_awaiting_message.cs" />
     <Compile Include="Services\core_projection\TestFixtureUtils.cs" />
     <Compile Include="Services\core_projection\when_receiving_committed_event_the_projection_with_existing_partitioned_state_should.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_eof_for_all_streams_and_idle_eof.cs" />
@@ -314,7 +316,7 @@
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_in_backward_order_to_the_same_stream_the_projection_checkpoint.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_in_correct_order_the_started_projection_checkpoint.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_the_non_started_checkpoint.cs" />
-    <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_the_projection_checkpoint.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_before_from_position_the_projection_checkpoint.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_requesting_checkpoint_after_all_writes_completed.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_requesting_checkpoint_before_all_writes_completed.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_starting_the_projection_checkpoint_with_some_events_already_emitted.cs" />

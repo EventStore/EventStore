@@ -26,8 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
-using EventStore.Core.Tests.Bus.Helpers;
+using EventStore.Core.Tests.Services.Replication;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -35,34 +34,40 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint
 {
     [TestFixture]
-    public class when_emitting_events_before_from_postion_the_projection_checkpoint : TestFixtureWithExistingEvents
+    public class when_handling_stream_awaiting_message : TestFixtureWithExistingEvents
     {
         private ProjectionCheckpoint _checkpoint;
-        private Exception _lastException;
         private TestCheckpointManagerMessageHandler _readyHandler;
+        private FakeEnvelope _fakeEnvelope;
 
         [SetUp]
         public void setup()
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();
-            _checkpoint = new ProjectionCheckpoint(_readDispatcher, _writeDispatcher, _readyHandler, CheckpointTag.FromPosition(100, 50),
+            _checkpoint = new ProjectionCheckpoint(
+                _readDispatcher, _writeDispatcher, _readyHandler, CheckpointTag.FromPosition(100, 50),
                 CheckpointTag.FromPosition(0, -1), 250);
-            try
-            {
-                _checkpoint.ValidateOrderAndEmitEvents(
-                    new[] {new EmittedDataEvent("stream1", Guid.NewGuid(), "type", "data",
-                    CheckpointTag.FromPosition(40, 30), null)});
-            }
-            catch (Exception ex)
-            {
-                _lastException = ex;
-            }
+
+            _fakeEnvelope = new FakeEnvelope();
+            _checkpoint.Handle(new CoreProjectionProcessingMessage.EmittedStreamAwaiting("awaiting_stream", _fakeEnvelope));
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void throws_invalid_operation_exception()
+        [Test]
+        public void broadcasts_write_completed_to_awaiting_streams()
         {
-            if (_lastException != null) throw _lastException;
+            _checkpoint.Handle(new CoreProjectionProcessingMessage.EmittedStreamWriteCompleted("completed_stream"));
+            Assert.AreEqual(1, _fakeEnvelope.Replies.Count);
+            Assert.IsInstanceOf<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted>(_fakeEnvelope.Replies[0]);
+        }
+
+        [Test]
+        public void does_not_broadcast_second_write_completed_to_awaiting_streams()
+        {
+            _checkpoint.Handle(new CoreProjectionProcessingMessage.EmittedStreamWriteCompleted("completed_stream1"));
+            _checkpoint.Handle(new CoreProjectionProcessingMessage.EmittedStreamWriteCompleted("completed_stream2"));
+            Assert.AreEqual(1, _fakeEnvelope.Replies.Count);
+            Assert.IsInstanceOf<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted>(_fakeEnvelope.Replies[0]);
+            Assert.AreEqual("completed_stream1", ((CoreProjectionProcessingMessage.EmittedStreamWriteCompleted)_fakeEnvelope.Replies[0]).StreamId);
         }
     }
 }

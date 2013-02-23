@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using EventStore.Common.Log;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -57,7 +58,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
 
-        private List<EmittedStream> _awaitingStreams;
+        private List<IEnvelope> _awaitingStreams;
 
         public ProjectionCheckpoint(RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
@@ -208,7 +209,9 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Handle(CoreProjectionProcessingMessage.EmittedStreamAwaiting message)
         {
-            _awaitingStreams.Add(_emittedStreams[message.StreamId]);
+            if (_awaitingStreams == null)
+                _awaitingStreams = new List<IEnvelope>();
+            _awaitingStreams.Add(message.Envelope);
         }
 
         public void Handle(CoreProjectionProcessingMessage.EmittedStreamWriteCompleted message)
@@ -217,7 +220,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _awaitingStreams = null; // still awaiting will re-register
             if (awaitingStreams != null)
                 foreach (var stream in awaitingStreams)
-                    stream.RetryAwaitingWrites();
+                    stream.ReplyWith(message);
         }
     }
 }
