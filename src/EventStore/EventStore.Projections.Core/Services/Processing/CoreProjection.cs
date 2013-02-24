@@ -922,6 +922,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _checkpointSuggestedWorkItem = null; 
                 workItem.CheckpointCompleted();
+                EnsureTickPending();
             }
         }
 
