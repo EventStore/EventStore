@@ -123,7 +123,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration ReadStreamEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfStream)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
+            // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 
             var msg = message as ClientMessage.ReadStreamEventsBackwardCompleted;
             if (msg == null)

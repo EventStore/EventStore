@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Messages
         }
 
         /// <summary>
-        /// A ChechpointSuggested message is sent to core projection 
+        /// A CheckpointSuggested message is sent to core projection 
         /// to allow bookmarking a position that can be used to 
         /// restore the projection processing (typically
         /// an event at this position does not satisfy projection filter)
