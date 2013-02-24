@@ -52,11 +52,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_service
             _service.Handle(
                 new ProjectionSubscriptionManagement.Subscribe(
                     _projectionCorrelationId, Guid.NewGuid(), _committedeventHandler, CheckpointTag.FromPosition(0, 0),
-                    CreateCheckpointStrategy(), 1000));
+                    CreateCheckpointStrategy(), 1000, 2000));
             _service.Handle(
                 new ProjectionSubscriptionManagement.Subscribe(
                     _projectionCorrelationId2, Guid.NewGuid(), _committedeventHandler2, CheckpointTag.FromPosition(0, 0),
-                    CreateCheckpointStrategy(), 1000));
+                    CreateCheckpointStrategy(), 1000, 2000));
             // when
             _service.Handle(new ProjectionSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
         }

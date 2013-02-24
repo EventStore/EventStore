@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
             var ps = new EventReorderingProjectionSubscription(new FakePublisher(),
                 Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 CreateCheckpointStrategy(),
-                1000, 500);
+                1000, 2000, 500);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
             var ps = new EventReorderingProjectionSubscription(null,
                 Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), 
                 CreateCheckpointStrategy(),
-                1000, 500);
+                1000, 2000, 500);
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
         {
             var ps = new EventReorderingProjectionSubscription(new FakePublisher(),
                 Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
-                null, 1000, 500);
+                null, 1000, 2000, 500);
         }
 
         private CheckpointStrategy CreateCheckpointStrategy()

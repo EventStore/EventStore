@@ -42,11 +42,13 @@ namespace EventStore.Projections.Core.Messages
             private readonly CheckpointTag _fromPosition;
             private readonly CheckpointStrategy _checkpointStrategy;
             private readonly long _checkpointUnhandledBytesThreshold;
+            private readonly int _checkpointProcessedEventsThreshold; 
             private readonly bool _stopOnEof;
 
             public Subscribe(
                 Guid correlationId, Guid subscriptionId, ICoreProjection subscriber, CheckpointTag from,
-                CheckpointStrategy checkpointStrategy, long checkpointUnhandledBytesThreshold, bool stopOnEof = false)
+                CheckpointStrategy checkpointStrategy, long checkpointUnhandledBytesThreshold,
+                int checkpointProcessedEventsThreshold, bool stopOnEof = false)
             {
                 if (subscriber == null) throw new ArgumentNullException("subscriber");
                 if (@from == null) throw new ArgumentNullException("from");
@@ -57,6 +59,7 @@ namespace EventStore.Projections.Core.Messages
                 _fromPosition = @from;
                 _checkpointStrategy = checkpointStrategy;
                 _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
+                _checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
                 _stopOnEof = stopOnEof;
             }
 
@@ -83,6 +86,11 @@ namespace EventStore.Projections.Core.Messages
             public long CheckpointUnhandledBytesThreshold
             {
                 get { return _checkpointUnhandledBytesThreshold; }
+            }
+
+            public int CheckpointProcessedEventsThreshold 
+            {
+                get { return _checkpointProcessedEventsThreshold; }
             }
 
             public bool StopOnEof

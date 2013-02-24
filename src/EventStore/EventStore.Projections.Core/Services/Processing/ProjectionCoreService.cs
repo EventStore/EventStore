@@ -224,7 +224,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var fromCheckpointTag = message.FromPosition;
             var projectionSubscription = message.CheckpointStrategy.CreateProjectionSubscription(_publisher, 
                 fromCheckpointTag, message.CorrelationId, message.SubscriptionId, message.CheckpointUnhandledBytesThreshold,
-                message.StopOnEof);
+                message.CheckpointProcessedEventsThreshold, message.StopOnEof);
             _subscriptions.Add(message.CorrelationId, projectionSubscription);
 
             var distibutionPointCorrelationId = Guid.NewGuid();

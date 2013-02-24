@@ -267,7 +267,7 @@
     <Compile Include="Services\position_tagging\transaction_file_position_tagger\when_creating_transaction_file_postion_tracker.cs" />
     <Compile Include="Services\position_tagging\transaction_file_position_tagger\when_updating_transaction_file_postion_tracker.cs" />
     <Compile Include="Services\position_tagging\transaction_file_position_tagger\when_updating_postion_tagger_from_a_tag.cs" />
-    <Compile Include="Services\core_projection\when_the_checkpoint_is_suggested.cs" />
+    <Compile Include="Services\core_projection\checkpoint_suggested.cs" />
     <Compile Include="Services\core_projection\when_the_projection_with_pending_writes_is_stopped.cs" />
     <Compile Include="Services\core_projection\when_the_state_handler_fails_to_process_an_event_the_projection_should.cs" />
     <Compile Include="Services\core_service\when_unsubscribing_a_subscribed_projection.cs" />
@@ -328,7 +328,6 @@
     <Compile Include="Services\core_projection\when_receiving_a_committed_event_the_projection_should.cs" />
     <Compile Include="Services\core_projection\when_starting_an_existing_projection.cs" />
     <Compile Include="Services\core_projection\when_starting_an_existing_projection_missing_last_emitted_event_and_state_snapshot.cs" />
-    <Compile Include="Services\core_projection\when_the_checkpoint_handled_threshold_is_reached.cs" />
     <Compile Include="Services\core_projection\when_the_state_handler_does_emit_multiple_interleaved_events_into_the_same_stream_the_projection_should.cs" />
     <Compile Include="Services\core_projection\when_starting_an_existing_projection_missing_last_state_snapshot.cs" />
     <Compile Include="Services\core_projection\when_starting_a_new_projection.cs" />

@@ -49,12 +49,14 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected InMemoryBus _bus;
         protected Action<QuerySourceProcessingStrategyBuilder> _source = null;
         protected int _checkpointUnhandledBytesThreshold;
+        protected int _checkpointProcessedEventsThreshold;
         protected CheckpointStrategy _checkpointStrategy;
 
         [SetUp]
         public void setup()
         {
             _checkpointUnhandledBytesThreshold = 1000;
+            _checkpointProcessedEventsThreshold = 2000;
             Given();
             _bus = new InMemoryBus("bus");
             _projectionCorrelationId = Guid.NewGuid();
@@ -77,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected virtual IProjectionSubscription CreateProjectionSubscription()
         {
             return new ProjectionSubscription(_bus, 
-                _projectionCorrelationId, Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), _checkpointStrategy, _checkpointUnhandledBytesThreshold);
+                _projectionCorrelationId, Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), _checkpointStrategy, _checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold);
         }
 
         protected virtual void Given()

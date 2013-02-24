@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
             var ps = new ProjectionSubscription(
                 new FakePublisher(), Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
                 CreateCheckpointStrategy(),
-                1000);
+                1000, 2000);
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
@@ -53,14 +53,15 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         {
             var ps = new ProjectionSubscription(null,
                 Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1),
-                CreateCheckpointStrategy(), 1000);
+                CreateCheckpointStrategy(), 1000, 2000);
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
-        public void null_describe_source_throws_argument_null_exception()
+        public void null_checkpoint_strategy_throws_argument_null_exception()
         {
             var ps = new ProjectionSubscription(new FakePublisher(),
-                Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), null, 1000);
+                Guid.NewGuid(), Guid.NewGuid(), CheckpointTag.FromPosition(0, -1), 
+                null, 1000, 2000);
         }
 
         private CheckpointStrategy CreateCheckpointStrategy()
