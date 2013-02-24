@@ -1,4 +1,4 @@
-@echo off
+@echo on
 pushd %~dp0 || goto :error
 cd ..\..\..\..\bin\eventstore\release\anycpu || goto :error
 

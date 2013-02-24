@@ -325,7 +325,8 @@ namespace EventStore.Core.Services.Storage
                                                             transactionInfo.EventStreamId,
                                                             evnt.EventType,
                                                             evnt.Data,
-                                                            evnt.Metadata);
+                                                            evnt.Metadata,
+                                                            evnt.IsJson);
                     var res = WritePrepareWithRetry(record);
                     logPosition = res.NewPos;
                 }

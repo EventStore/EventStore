@@ -156,7 +156,7 @@ namespace EventStore.Core.Index
                     throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.", exc);
                 }
 
-                for (int x = 0, i = 0, xN = Count - 1; x < xN; x += segmentSize, i += 1)
+                for (int x = 0, i = 0, xN = Count - 1; x <= xN; x += segmentSize, i += 1)
                 {
                     var record = ReadEntry(x, workItem);
                     midpoints[i] = new Midpoint(record.Key, x);
