@@ -66,12 +66,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         }
 
         [Test]
-        public void completes_checkpoint()
-        {
-            Assert.AreEqual(1, _projection._checkpointCompletedMessages.Count);
-        }
-
-        [Test]
         public void messages_are_handled()
         {
             Assert.IsNull(_exception);

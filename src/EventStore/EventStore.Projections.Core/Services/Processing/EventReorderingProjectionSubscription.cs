@@ -46,12 +46,13 @@ namespace EventStore.Projections.Core.Services.Processing
             IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> eventHandler,
             IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> checkpointHandler,
             IHandle<ProjectionSubscriptionMessage.ProgressChanged> progressHandler,
-            IHandle<ProjectionSubscriptionMessage.EofReached> eofHandler,
-            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, int processingLagMs,
+            IHandle<ProjectionSubscriptionMessage.EofReached> eofHandler, CheckpointStrategy checkpointStrategy,
+            long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, int processingLagMs,
             bool stopOnEof = false)
             : base(
-                projectionCorrelationId, subscriptionId, @from, eventHandler, checkpointHandler, progressHandler, eofHandler, 
-                checkpointStrategy, checkpointUnhandledBytesThreshold, stopOnEof)
+                projectionCorrelationId, subscriptionId, @from, eventHandler, checkpointHandler, progressHandler,
+                eofHandler, checkpointStrategy, checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold,
+                stopOnEof)
         {
             _processingLagMs = processingLagMs;
         }

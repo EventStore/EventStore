@@ -31,7 +31,6 @@ using System.Collections.Generic;
 using System.Text;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Utils;
@@ -799,7 +798,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(
                 new ProjectionSubscriptionManagement.Subscribe(
                     _projectionCorrelationId, _currentSubscriptionId, this, checkpointTag, _checkpointStrategy,
-                    _projectionConfig.CheckpointUnhandledBytesThreshold, stopOnEof));
+                    _projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold, stopOnEof));
             _subscribed = true;
             try
             {

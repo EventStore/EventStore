@@ -259,7 +259,6 @@ namespace EventStore.Projections.Core.Services.Processing
             _lastProcessedEventProgress = progress;
             // running state only
             _handledEventsAfterCheckpoint++;
-            ProcessCheckpoints();
         }
 
         public void EventsEmitted(EmittedEvent[] scheduledWrites)
@@ -278,7 +277,8 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_stopped || _stopping)
                 return;
             EnsureStarted();
-            _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointTag);
+            if (checkpointTag != _lastProcessedEventPosition.LastTag) // allow checkpoint at the current position
+                _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointTag);
             _lastProcessedEventProgress = progress;
             RequestCheckpoint(_lastProcessedEventPosition);
         }
@@ -343,17 +343,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 _positionTagger.MakeZeroCheckpointTag(), _projectionConfig.MaxWriteBatchLength, _logger);
             // checkpoint only after assigning new current checkpoint, as it may call back immediately
             _closingCheckpoint.Prepare(requestedCheckpointPosition);
-        }
-
-        private void ProcessCheckpoints()
-        {
-            if (_useCheckpoints)
-                if (_handledEventsAfterCheckpoint >= _projectionConfig.CheckpointHandledThreshold)
-                    RequestCheckpoint(_lastProcessedEventPosition);
-                else
-                {
-                    // TODO: projections emitting events without checkpoints will eat memory by creating new emitted streams  
-                }
         }
 
         protected void CheckpointLoaded(CheckpointTag checkpointTag, string checkpointData)
@@ -422,7 +411,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _currentCheckpoint.Start();
             _inCheckpoint = false;
 
-            ProcessCheckpoints();
+            //NOTE: the next checkpoint will start by completing checkpoint work item
             _coreProjection.Handle(
                 new CoreProjectionProcessingMessage.CheckpointCompleted(_lastCompletedCheckpointPosition));
         }
