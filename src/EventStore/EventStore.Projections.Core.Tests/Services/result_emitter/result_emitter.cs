@@ -217,5 +217,56 @@ namespace EventStore.Projections.Core.Tests.Services.result_emitter
 
         }
 
+        [TestFixture]
+        public class when_result_updated_on_root_partition
+        {
+            private ProjectionNamesBuilder _namesBuilder;
+            private ResultEmitter _re;
+            private string _partition;
+            private string _projection;
+            private CheckpointTag _resultAt;
+            private EmittedEvent[] _emittedEvents;
+            private string _result;
+
+            [SetUp]
+            public void setup()
+            {
+                Given();
+                When();
+            }
+
+            private void Given()
+            {
+                _projection = "projection";
+                _resultAt = CheckpointTag.FromPosition(100, 50);
+                _partition = "";
+                _result = "{\"result\":1}";
+                _namesBuilder = new ProjectionNamesBuilder(_projection);
+                _re = new ResultEmitter(_namesBuilder);
+            }
+
+            private void When()
+            {
+                _emittedEvents = _re.ResultUpdated(_partition, _result, _resultAt);
+            }
+
+            [Test]
+            public void emits_result_event()
+            {
+                Assert.NotNull(_emittedEvents);
+                Assert.AreEqual(1, _emittedEvents.Length);
+                var @event = _emittedEvents[0];
+
+                Assert.AreEqual("Result", @event.EventType);
+                Assert.AreEqual(_result, Encoding.UTF8.GetString(@event.Data));
+                Assert.AreEqual("$projections-projection-result", @event.StreamId);
+                Assert.AreEqual(_resultAt, @event.CausedByTag);
+                Assert.IsNull(@event.ExpectedTag);
+
+
+            }
+
+
+        }
     }
 }
