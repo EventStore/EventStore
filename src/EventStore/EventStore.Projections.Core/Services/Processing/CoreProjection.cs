@@ -351,7 +351,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     CheckpointTag checkpointTag = message.CheckpointTag;
                     var checkpointSuggestedWorkItem = new CheckpointSuggestedWorkItem(this, message, _checkpointManager);
-                    _processingQueue.EnqueueTask(checkpointSuggestedWorkItem, checkpointTag);
+                    _processingQueue.EnqueueTask(checkpointSuggestedWorkItem, checkpointTag, allowCurrentPosition: true);
                 }
                 _processingQueue.ProcessEvent();
             }
@@ -645,6 +645,8 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly List<CoreProjectionManagementMessage.DebugState.Event> _eventsForDebugging =
             new List<CoreProjectionManagementMessage.DebugState.Event>();
 
+        private CheckpointSuggestedWorkItem _checkpointSuggestedWorkItem;
+
         private void InternalCollectEventForDebugging(string partition, ProjectionSubscriptionMessage.CommittedEventReceived message)
         {
             if (_eventsForDebugging.Count >= 10)
@@ -874,6 +876,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void CheckpointCompleted(CheckpointTag lastCompletedCheckpointPosition)
         {
+            CompleteCheckpointSuggestedWorkItem();
             // all emitted events caused by events before the checkpoint position have been written  
             // unlock states, so the cache can be clean up as they can now be safely reloaded from the ES
             _partitionStateCache.Unlock(lastCompletedCheckpointPosition);
@@ -886,6 +889,16 @@ namespace EventStore.Projections.Core.Services.Processing
                 case State.FaultedStopping:
                     GoToState(State.Faulted);
                     break;
+            }
+        }
+
+        private void CompleteCheckpointSuggestedWorkItem()
+        {
+            var workItem = _checkpointSuggestedWorkItem;
+            if (workItem != null)
+            {
+                _checkpointSuggestedWorkItem = null; 
+                workItem.CheckpointCompleted();
             }
         }
 
@@ -924,6 +937,15 @@ namespace EventStore.Projections.Core.Services.Processing
                     completed(); // allow collecting events for debugging
                     break;
             }
+        }
+
+        internal void SetCurrentCheckpointSuggestedWorkItem(CheckpointSuggestedWorkItem checkpointSuggestedWorkItem)
+        {
+            if (_checkpointSuggestedWorkItem != null && checkpointSuggestedWorkItem != null)
+                throw new InvalidOperationException("Checkpoint in progress");
+            if (_checkpointSuggestedWorkItem == null && checkpointSuggestedWorkItem == null)
+                throw new InvalidOperationException("No checkpoint in progress");
+            _checkpointSuggestedWorkItem = checkpointSuggestedWorkItem;
         }
     }
 }

@@ -30,8 +30,9 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class CheckpointSuggestedWorkItem : CheckpointWorkItemBase
+    internal class CheckpointSuggestedWorkItem : CheckpointWorkItemBase
     {
+        private readonly CoreProjection _projection;
         private readonly ProjectionSubscriptionMessage.CheckpointSuggested _message;
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
 
@@ -40,13 +41,23 @@ namespace EventStore.Projections.Core.Services.Processing
             ICoreProjectionCheckpointManager checkpointManager)
             : base(projection) 
         {
+            _projection = projection;
             _message = message;
             _checkpointManager = checkpointManager;
         }
 
         protected override void WriteOutput()
         {
-            _checkpointManager.CheckpointSuggested(_message.CheckpointTag, _message.Progress);
+            _projection.SetCurrentCheckpointSuggestedWorkItem(this);
+            if (_checkpointManager.CheckpointSuggested(_message.CheckpointTag, _message.Progress))
+            {
+                _projection.SetCurrentCheckpointSuggestedWorkItem(null);
+                NextStage();
+            }
+        }
+
+        internal void CheckpointCompleted()
+        {
             NextStage();
         }
     }
