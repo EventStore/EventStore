@@ -36,5 +36,10 @@ namespace EventStore.Projections.Core.Services.Processing
             : base(projection, _correlationId)
         {
         }
+
+        protected CheckpointWorkItemBase(CoreProjection projection, object correlation)
+            : base(projection, correlation)
+        {
+        }
     }
 }

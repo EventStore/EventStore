@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         /* get state partition - ordered as it may change correlation id */, false
                         /* load foreach state */, false
                         /* process Js */, true
-                        /* write emits */
+                        /* write emits */, false /* complete item */ 
                     });
 
         private readonly IPublisher _publisher;

@@ -85,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override void WriteOutput()
         {
             Projection.FinalizeEventProcessing(_eventProcessedResult, _message.CheckpointTag, _message.Progress);
-            NextStage();
+            Complete();
         }
 
         private void SetEventProcessedResult(EventProcessedResult eventProcessedResult)
