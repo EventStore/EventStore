@@ -249,7 +249,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 lastReadTag = projectionStateMetadata;
             }
 
-            if (lastReadTag < upTo)
+            if (lastReadTag < upTo || message.IsEndOfStream)
                 SubmitWriteEventsInRecovery();
             else
                 SubmitListEvents(upTo, message.NextEventNumber);
@@ -274,6 +274,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _awaitingListEventsCompleted = true;
             _readDispatcher.Publish(
                 new ClientMessage.ReadStreamEventsBackward(
+                    //TODO: reading events history in batches of 1 event (slow?)
                     Guid.NewGuid(), _readDispatcher.Envelope, _streamId, fromEventNumber, 1, resolveLinks: false, validationStreamVersion: null), 
                         completed => ReadStreamEventsBackwardCompleted(completed, upTo));
         }

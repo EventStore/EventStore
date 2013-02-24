@@ -129,6 +129,7 @@
     <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_not_ready_event.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_in_invalid_order.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_with_previously_written_events.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_with_previously_written_events_at_the_same_position.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_handling_stream_awaiting_message.cs" />
     <Compile Include="Services\core_projection\TestFixtureUtils.cs" />
     <Compile Include="Services\core_projection\when_receiving_committed_event_the_projection_with_existing_partitioned_state_should.cs" />
