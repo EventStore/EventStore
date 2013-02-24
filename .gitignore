@@ -1,3 +1,4 @@
+*.nupkg
 /Logs
 /Data
 /Data-logs
