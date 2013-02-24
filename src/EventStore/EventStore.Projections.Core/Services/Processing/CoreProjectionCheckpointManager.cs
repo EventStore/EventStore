@@ -244,17 +244,17 @@ namespace EventStore.Projections.Core.Services.Processing
                 _currentCheckpoint.ValidateOrderAndEmitEvents(scheduledWrites);
         }
 
-        public void CheckpointSuggested(CheckpointTag checkpointTag, float progress)
+        public bool CheckpointSuggested(CheckpointTag checkpointTag, float progress)
         {
             if (!_useCheckpoints)
                 throw new InvalidOperationException("Checkpoints are not used");
             if (_stopped || _stopping)
-                return;
+                return true;
             EnsureStarted();
             if (checkpointTag != _lastProcessedEventPosition.LastTag) // allow checkpoint at the current position
                 _lastProcessedEventPosition.UpdateByCheckpointTagForward(checkpointTag);
             _lastProcessedEventProgress = progress;
-            RequestCheckpoint(_lastProcessedEventPosition);
+            return RequestCheckpoint(_lastProcessedEventPosition);
         }
 
         public void Progress(float progress)
@@ -332,22 +332,25 @@ namespace EventStore.Projections.Core.Services.Processing
             _partitionStateUpdateManager.StateUpdated(partition, newState, oldState.CausedBy);
         }
 
-        private void RequestCheckpoint(PositionTracker lastProcessedEventPosition)
+        /// <returns>true - if checkpoint has beem completed in-sync</returns>
+        private bool RequestCheckpoint(PositionTracker lastProcessedEventPosition)
         {
             if (!_useCheckpoints)
                 throw new InvalidOperationException("Checkpoints are not allowed");
-            if (!_inCheckpoint)
-                StartCheckpoint(lastProcessedEventPosition, _currentProjectionState);
+            if (_inCheckpoint)
+                throw new InvalidOperationException("Checkpoint in progress");
+            return StartCheckpoint(lastProcessedEventPosition, _currentProjectionState);
         }
 
-        private void StartCheckpoint(PositionTracker lastProcessedEventPosition, PartitionState projectionState)
+        /// <returns>true - if checkpoint has been completed in-sync</returns>
+        private bool StartCheckpoint(PositionTracker lastProcessedEventPosition, PartitionState projectionState)
         {
             Contract.Requires(_closingCheckpoint == null);
             if (projectionState == null) throw new ArgumentNullException("projectionState");
 
             CheckpointTag requestedCheckpointPosition = lastProcessedEventPosition.LastTag;
             if (requestedCheckpointPosition == _lastCompletedCheckpointPosition)
-                return; // either suggested or requested to stop
+                return true; // either suggested or requested to stop
 
             if (_emitPartitionCheckpoints)
                 EmitPartitionCheckpoints();
@@ -360,6 +363,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _currentCheckpoint = CreateProjectionCheckpoint(requestedCheckpointPosition);
             // checkpoint only after assigning new current checkpoint, as it may call back immediately
             _closingCheckpoint.Prepare(requestedCheckpointPosition);
+            return false; // even if prepare completes in sync it notifies the world by a message
         }
 
         private void EmitPartitionCheckpoints()

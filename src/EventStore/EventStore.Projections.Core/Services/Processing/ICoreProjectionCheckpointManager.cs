@@ -44,7 +44,13 @@ namespace EventStore.Projections.Core.Services.Processing
         void StateUpdated(string partition, PartitionState oldState, PartitionState newState);
         void EventProcessed(CheckpointTag checkpointTag, float progress);
 
-        void CheckpointSuggested(CheckpointTag checkpointTag, float progress);
+        /// <summary>
+        /// Suggests a checkpoint which may complete immediately or be delayed
+        /// </summary>
+        /// <param name="checkpointTag"></param>
+        /// <param name="progress"></param>
+        /// <returns>true - if checkpoint has been completed (or skipped)</returns>
+        bool CheckpointSuggested(CheckpointTag checkpointTag, float progress);
         void Progress(float progress);
 
         void BeginLoadState();
