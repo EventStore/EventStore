@@ -48,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
                 new TestHandler<ProjectionSubscriptionMessage.EofReached>(), 
                 CreateCheckpointStrategy(),
-                1000);
+                1000, 2000);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
                 new TestHandler<ProjectionSubscriptionMessage.EofReached>(),
                 CreateCheckpointStrategy(),
-                1000);
+                1000, 2000);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
                 new TestHandler<ProjectionSubscriptionMessage.EofReached>(),
                 CreateCheckpointStrategy(),
-                1000);
+                1000, 2000);
         }
 
         [Test, ExpectedException(typeof (ArgumentNullException))]
@@ -83,7 +83,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(),
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(), null,
                 new TestHandler<ProjectionSubscriptionMessage.EofReached>(), 
-                CreateCheckpointStrategy(), 1000);
+                CreateCheckpointStrategy(), 1000, 2000);
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
@@ -95,7 +95,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(), 
                 new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
                 null,
-                CreateCheckpointStrategy(), 1000);
+                CreateCheckpointStrategy(), 1000, 2000);
         }
 
         [Test, ExpectedException(typeof(ArgumentNullException))]
@@ -106,7 +106,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
                 new TestHandler<ProjectionSubscriptionMessage.CommittedEventReceived>(),
                 new TestHandler<ProjectionSubscriptionMessage.CheckpointSuggested>(),
                 new TestHandler<ProjectionSubscriptionMessage.ProgressChanged>(),
-                new TestHandler<ProjectionSubscriptionMessage.EofReached>(), null, 1000);
+                new TestHandler<ProjectionSubscriptionMessage.EofReached>(), null, 1000, 2000);
         }
 
         private CheckpointStrategy CreateCheckpointStrategy()

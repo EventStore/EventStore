@@ -27,7 +27,6 @@
 // 
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -45,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
         {
             AllWritesSucceed();
             base.Given();
-            this._checkpointHandledThreshold = 2;
+            this._checkpointHandledThreshold = 2; //NOTE: does not play any role anymore here
         }
 
         protected override void When()
@@ -60,6 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
                 _manager.EventProcessed(CheckpointTag.FromStreamPosition("stream", 11), 77.7f);
 //                _manager.StateUpdated("", @"{""state"":""state2""}");
                 _manager.EventProcessed(CheckpointTag.FromStreamPosition("stream", 12), 77.8f);
+                _manager.CheckpointSuggested(CheckpointTag.FromStreamPosition("stream", 12), 77.8f);
                 _manager.Stopping();
                 _manager.RequestCheckpointToStop();
             }

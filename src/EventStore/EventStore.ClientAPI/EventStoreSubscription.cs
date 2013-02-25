@@ -28,6 +28,7 @@
 
 using System;
 using System.Threading;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Connection;
 
@@ -38,6 +39,8 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class EventStoreSubscription : IDisposable
     {
+        private readonly ILogger Log = LogManager.GetLogger();
+
         public bool IsSubscribedToAll { get { return _streamId == string.Empty; } }
         public string StreamId { get { return _streamId; } }
 
@@ -104,6 +107,8 @@ namespace EventStore.ClientAPI
 #pragma warning disable 420
             if (Interlocked.CompareExchange(ref _unsubscribed, 1, 0) == 0)
             {
+                Log.Debug("Subscription {0:B} to {1}: unsubscribing...", _correlationId, IsSubscribedToAll ? "<all>" : StreamId);
+
                 _subscriptionsChannel.Unsubscribe(_correlationId);
                 _subscriptionDropped(this);
             }
@@ -115,6 +120,9 @@ namespace EventStore.ClientAPI
             if (commitPosition < -1)
                 throw new ArgumentOutOfRangeException("commitPosition", string.Format("Invalid commitPosition {0} on subscription confirmation.", commitPosition));
 
+            Log.Debug("Subscription {0:B} to {1}: subscribed at CommitPosition: {2}, EventNumber: {3}.", 
+                      _correlationId, IsSubscribedToAll ? "<all>" : StreamId, commitPosition, eventNumber);
+
             _commitPosition = commitPosition;
             _eventNumber = eventNumber;
         }
@@ -123,11 +131,15 @@ namespace EventStore.ClientAPI
         {
             if (_unsubscribed != 0)
                 return;
+            Log.Debug("Subscription {0:B} to {1}: event appeared ({2}, {3}, {4} @ {5}).",
+                      _correlationId, IsSubscribedToAll ? "<all>" : StreamId, 
+                      @event.OriginalStreamId, @event.OriginalEventNumber, @event.OriginalEvent.EventType, @event.OriginalPosition);
             _eventAppeared(this, @event);
         }
 
         internal void SubscriptionDropped()
         {
+            Log.Debug("Subscription {0:B} to {1}: subscription dropped...", _correlationId, IsSubscribedToAll ? "<all>" : StreamId);
             Unsubscribe();
         }
     }

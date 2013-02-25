@@ -158,21 +158,21 @@ namespace EventStore.Core.Index
 
         public IEnumerable<IndexEntry> IterateAllInOrder()
         {
-            Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder...");
+            //Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder...");
 
-            var items = _hash.Keys.ToArray();
-            Array.Sort(items, new ReverseComparer<uint>());
+            var keys = _hash.Keys.ToArray();
+            Array.Sort(keys, new ReverseComparer<uint>());
             
-            foreach (var item in items)
+            foreach (var key in keys)
             {
-                var hash = _hash[item];
-                for (int i = hash.Count - 1; i >= 0; --i)
+                var list = _hash[key];
+                for (int i = list.Count - 1; i >= 0; --i)
                 {
-                    var x = hash.Keys[i];
-                    yield return new IndexEntry(item, x.Item1, x.Item2);
+                    var x = list.Keys[i];
+                    yield return new IndexEntry(key, x.Item1, x.Item2);
                 }
             }
-            Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder... DONE!");
+            //Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder... DONE!");
         }
 
         public void Clear()

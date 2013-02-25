@@ -15,6 +15,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly IHandle<ProjectionSubscriptionMessage.EofReached> _eofHandler;
         private readonly CheckpointStrategy _checkpointStrategy;
         private readonly long? _checkpointUnhandledBytesThreshold;
+        private readonly int? _checkpointProcessedEventsThreshold;
         private readonly bool _stopOnEof;
         private readonly EventFilter _eventFilter;
         private readonly PositionTagger _positionTagger;
@@ -22,6 +23,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private long? _lastPassedOrCheckpointedEventPosition;
         private float _progress = -1;
         private long _subscriptionMessageSequenceNumber;
+        private int _eventsSinceLastCheckpointSuggested = 0;
         private readonly Guid _subscriptionId;
         private bool _eofReached;
 
@@ -30,8 +32,8 @@ namespace EventStore.Projections.Core.Services.Processing
             IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> eventHandler,
             IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> checkpointHandler,
             IHandle<ProjectionSubscriptionMessage.ProgressChanged> progressHandler,
-            IHandle<ProjectionSubscriptionMessage.EofReached> eofHandler,
-            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, bool stopOnEof)
+            IHandle<ProjectionSubscriptionMessage.EofReached> eofHandler, CheckpointStrategy checkpointStrategy,
+            long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof)
         {
             if (eventHandler == null) throw new ArgumentNullException("eventHandler");
             if (checkpointHandler == null) throw new ArgumentNullException("checkpointHandler");
@@ -44,6 +46,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _eofHandler = eofHandler;
             _checkpointStrategy = checkpointStrategy;
             _checkpointUnhandledBytesThreshold = checkpointUnhandledBytesThreshold;
+            _checkpointProcessedEventsThreshold = checkpointProcessedEventsThreshold;
             _stopOnEof = stopOnEof;
             _projectionCorrelationId = projectionCorrelationId;
             _subscriptionId = subscriptionId;
@@ -98,6 +101,9 @@ namespace EventStore.Projections.Core.Services.Processing
                         message, eventCheckpointTag, _eventFilter.GetCategory(message.PositionStreamId), _subscriptionId,
                         _subscriptionMessageSequenceNumber++);
                 _eventHandler.Handle(convertedMessage);
+                _eventsSinceLastCheckpointSuggested++;
+                if (_eventsSinceLastCheckpointSuggested >= _checkpointProcessedEventsThreshold)
+                    SuggestCheckpoint(message);
             }
             else
             {
@@ -106,11 +112,7 @@ namespace EventStore.Projections.Core.Services.Processing
                         && message.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
                         > _checkpointUnhandledBytesThreshold))
                 {
-                    _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
-                    _checkpointHandler.Handle(
-                        new ProjectionSubscriptionMessage.CheckpointSuggested(
-                            _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, message.Progress,
-                            _subscriptionMessageSequenceNumber++));
+                    SuggestCheckpoint(message);
                 }
                 else
                 {
@@ -124,6 +126,16 @@ namespace EventStore.Projections.Core.Services.Processing
             // initialize checkpointing based on first message 
             if (_lastPassedOrCheckpointedEventPosition == null)
                 _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
+        }
+
+        private void SuggestCheckpoint(ProjectionCoreServiceMessage.CommittedEventDistributed message)
+        {
+            _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
+            _checkpointHandler.Handle(
+                new ProjectionSubscriptionMessage.CheckpointSuggested(
+                    _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, message.Progress,
+                    _subscriptionMessageSequenceNumber++));
+            _eventsSinceLastCheckpointSuggested = 0;
         }
 
         public EventReader CreatePausedEventReader(IPublisher publisher, Guid eventReaderId)

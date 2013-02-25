@@ -30,12 +30,16 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using EventStore.ClientAPI.Common.Concurrent;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Exceptions;
 
 namespace EventStore.ClientAPI
 {
     public abstract class EventStoreCatchUpSubscription
     {
+        protected static readonly ILogger Log = LogManager.GetLogger();
+
         private const int DefaultReadBatchSize = 500;
         private const int DefaultMaxPushQueueSize = 10000;
         private static readonly ResolvedEvent DropSubscriptionEvent = new ResolvedEvent();
@@ -63,7 +67,7 @@ namespace EventStore.ClientAPI
         private volatile bool _stop;
         private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 
-        protected abstract void ReadEvents(EventStoreConnection connection, bool resolveLinkTos);
+        protected abstract void ReadEventsTill(EventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber);
         protected abstract void TryProcess(ResolvedEvent e);
 
         protected EventStoreCatchUpSubscription(EventStoreConnection connection, 
@@ -92,17 +96,23 @@ namespace EventStore.ClientAPI
         {
             ThreadPool.QueueUserWorkItem(_ =>
             {
+                Log.Debug("Catch-up Subscription to {0}: starting...", IsSubscribedToAll ? "<all>" : StreamId);
+
                 _stopped.Reset();
                 try
                 {
-                    ReadEvents(_connection, _resolveLinkTos);
+                    Log.Debug("Catch-up Subscription to {0}: pulling events...", IsSubscribedToAll ? "<all>" : StreamId);
+                    ReadEventsTill(_connection, _resolveLinkTos, null, null);
                     if (!_stop)
                     {
+                        Log.Debug("Catch-up Subscription to {0}: subscribing...", IsSubscribedToAll ? "<all>" : StreamId);
                         var subscribeTask = _streamId == string.Empty
                             ? _connection.SubscribeToAll(_resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped)
                             : _connection.SubscribeToStream(_streamId, _resolveLinkTos, EnqueuePushedEvent, ServerSubscriptionDropped);
                         _subscription = subscribeTask.Result;
-                        ReadEvents(_connection, _resolveLinkTos);
+
+                        Log.Debug("Catch-up Subscription to {0}: pulling events (if left)...", IsSubscribedToAll ? "<all>" : StreamId);
+                        ReadEventsTill(_connection, _resolveLinkTos, _subscription.LastCommitPosition, _subscription.LastEventNumber);
                     }
                 }
                 catch (Exception exc)
@@ -117,6 +127,7 @@ namespace EventStore.ClientAPI
                     return;
                 }
 
+                Log.Debug("Catch-up Subscription to {0}: processing live events...", IsSubscribedToAll ? "<all>" : StreamId);
                 _allowProcessing = true;
                 EnsureProcessingPushQueue();
             });
@@ -124,6 +135,8 @@ namespace EventStore.ClientAPI
 
         public void Stop(TimeSpan timeout)
         {
+            Log.Debug("Catch-up Subscription to {0}: requesting stop...", IsSubscribedToAll ? "<all>" : StreamId);
+
             _stop = true;
             EnqueueSubscriptionDropNotification("Subscription stop was requested.", null);
             if (!_stopped.Wait(timeout))
@@ -132,6 +145,10 @@ namespace EventStore.ClientAPI
 
         private void EnqueuePushedEvent(EventStoreSubscription subscription, ResolvedEvent e)
         {
+            Log.Debug("Catch-up Subscription to {0}: event appeared ({1}, {2}, {3} @ {4}).", 
+                      IsSubscribedToAll ? "<all>" : StreamId,
+                      e.OriginalStreamId, e.OriginalEventNumber, e.OriginalEvent.EventType, e.OriginalPosition);
+
             if (_liveQueue.Count >= MaxPushQueueSize)
             {
                 subscription.Unsubscribe();
@@ -201,6 +218,10 @@ namespace EventStore.ClientAPI
         private void DropSubscription(string reason, Exception error)
         {
             Ensure.NotNull(reason, "reason");
+            
+            Log.Debug("Catch-up Subscription to {0}: dropping subscription, reason: {1} {2}.",
+                      IsSubscribedToAll ? "<all>" : StreamId, reason, error == null ? string.Empty : error.ToString());
+
             if (_subscription != null)
                 _subscription.Unsubscribe();
             if (_subscriptionDropped != null)
@@ -239,11 +260,15 @@ namespace EventStore.ClientAPI
             _nextReadPosition = fromPositionExclusive ?? Position.Start;
         }
 
-        protected override void ReadEvents(EventStoreConnection connection, bool resolveLinkTos)
+        protected override void ReadEventsTill(EventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber)
         {
-            AllEventsSlice slice;
+            bool done;
+            AllEventsSlice slice = null;
             do
             {
+                if (slice != null && slice.IsEndOfStream)
+                    Thread.Sleep(1); // we are waiting for server to flush its data
+
                 slice = connection.ReadAllEventsForward(_nextReadPosition, ReadBatchSize, resolveLinkTos);
                 foreach (var e in slice.Events)
                 {
@@ -251,16 +276,28 @@ namespace EventStore.ClientAPI
                     TryProcess(e);
                 }
                 _nextReadPosition = slice.NextPosition;
-            } while (!slice.IsEndOfStream);
+
+                done = lastCommitPosition == null
+                               ? slice.IsEndOfStream
+                               : slice.NextPosition >= new Position(lastCommitPosition.Value, lastCommitPosition.Value);
+            } while (!done);
+
+            Log.Debug("Catch-up Subscription to {0}: finished reading events, nextReadPosition = {1}.",
+                      IsSubscribedToAll ? "<all>" : StreamId, _nextReadPosition);
         }
 
         protected override void TryProcess(ResolvedEvent e)
         {
+            bool processed = false;
             if (e.OriginalPosition > _lastProcessedPosition)
             {
                 EventAppeared(this, e);
                 _lastProcessedPosition = e.OriginalPosition.Value;
+                processed = true;
             }
+            Log.Debug("Catch-up Subscription to {0}: {1} event ({2}, {3}, {4} @ {5}).", 
+                      IsSubscribedToAll ? "<all>" : StreamId, processed ? "processed" : "skipping",
+                      e.OriginalEvent.EventStreamId, e.OriginalEvent.EventNumber, e.OriginalEvent.EventType, e.OriginalPosition);
         }
     }
 
@@ -285,29 +322,58 @@ namespace EventStore.ClientAPI
             _nextReadEventNumber = fromEventNumberExclusive ?? 0;
         }
 
-        protected override void ReadEvents(EventStoreConnection connection, bool resolveLinkTos)
+        protected override void ReadEventsTill(EventStoreConnection connection, bool resolveLinkTos, long? lastCommitPosition, int? lastEventNumber)
         {
-            StreamEventsSlice slice;
+            StreamEventsSlice slice = null;
+            bool done;
             do
             {
+                if (slice != null && slice.IsEndOfStream)
+                    Thread.Sleep(1); // we are waiting for server to flush its data
+
                 slice = connection.ReadStreamEventsForward(StreamId, _nextReadEventNumber, ReadBatchSize, resolveLinkTos);
-                if (slice.Status != SliceReadStatus.Success)
-                    return;
-                foreach (var e in slice.Events)
+                switch (slice.Status)
                 {
-                    TryProcess(e);
+                    case SliceReadStatus.Success:
+                    {
+                        foreach (var e in slice.Events)
+                        {
+                            TryProcess(e);
+                        }
+                        _nextReadEventNumber = slice.NextEventNumber;
+                        done = lastEventNumber == null ? slice.IsEndOfStream : slice.NextEventNumber > lastEventNumber;
+                        break;
+                    }
+                    case SliceReadStatus.StreamNotFound:
+                    {
+                        if (lastEventNumber.HasValue && lastEventNumber != -1)
+                            throw new Exception(string.Format("Impossible: stream {0} disappeared in the middle of catching up subscription.", StreamId));
+                        done = true;
+                        break;
+                    }
+                    case SliceReadStatus.StreamDeleted:
+                        throw new StreamDeletedException(StreamId);
+                    default:
+                        throw new ArgumentOutOfRangeException(string.Format("Unexpected StreamEventsSlice.Status: {0}.", slice.Status));
                 }
-                _nextReadEventNumber = slice.NextEventNumber;
-            } while (!slice.IsEndOfStream);
+            } while (!done);
+
+            Log.Debug("Catch-up Subscription to {0}: finished reading events, nextReadEventNumber = {1}.",
+                      IsSubscribedToAll ? "<all>" : StreamId, _nextReadEventNumber);
         }
 
         protected override void TryProcess(ResolvedEvent e)
         {
+            bool processed = false;
             if (e.OriginalEventNumber > _lastProcessedEventNumber)
             {
                 EventAppeared(this, e);
                 _lastProcessedEventNumber = e.OriginalEventNumber;
+                processed = true;
             }
+            Log.Debug("Catch-up Subscription to {0}: {1} event ({2}, {3}, {4} @ {5}).",
+                      IsSubscribedToAll ? "<all>" : StreamId, processed ? "processed" : "skipping",
+                      e.OriginalEvent.EventStreamId, e.OriginalEvent.EventNumber, e.OriginalEvent.EventType, e.OriginalEventNumber);
         }
     }
 }

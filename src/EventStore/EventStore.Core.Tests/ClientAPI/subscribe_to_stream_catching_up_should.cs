@@ -59,9 +59,35 @@ namespace EventStore.Core.Tests.ClientAPI
         }
 
         [Test, Category("LongRunning")]
+        public void be_able_to_subscribe_to_non_existing_stream()
+        {
+            const string stream = "be_able_to_subscribe_to_non_existing_stream";
+            using (var store = EventStoreConnection.Create())
+            {
+                store.Connect(_node.TcpEndPoint);
+                var appeared = new ManualResetEventSlim(false);
+                var dropped = new CountdownEvent(1);
+
+                var subscription = store.SubscribeToStreamFrom(stream,
+                                                               null,
+                                                               false,
+                                                               (_, x) => appeared.Set(),
+                                                               (_, __, ___) => dropped.Signal());
+
+                Thread.Sleep(100); // give time for first pull phase
+                var dummySubscr = store.SubscribeToStream(stream, false, x => { }, () => { }).Result; // wait for dummy subscription to complete
+                Thread.Sleep(100);
+                Assert.IsFalse(appeared.Wait(0), "Some event appeared!");
+                Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
+                subscription.Stop(Timeout);
+                Assert.IsTrue(dropped.Wait(Timeout));
+            }
+        }
+
+        [Test, Category("LongRunning")]
         public void be_able_to_subscribe_to_non_existing_stream_and_then_catch_created_event()
         {
-            const string stream = "subscribe_should_be_able_to_subscribe_to_non_existing_stream_and_then_catch_created_event";
+            const string stream = "be_able_to_subscribe_to_non_existing_stream_and_then_catch_created_event";
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
@@ -91,7 +117,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void allow_multiple_subscriptions_to_same_stream()
         {
-            const string stream = "subscribe_should_allow_multiple_subscriptions_to_same_stream";
+            const string stream = "allow_multiple_subscriptions_to_same_stream";
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
@@ -124,7 +150,7 @@ namespace EventStore.Core.Tests.ClientAPI
         [Test, Category("LongRunning")]
         public void call_dropped_callback_after_stop_method_call()
         {
-            const string stream = "subscribe_should_call_dropped_callback_after_unsubscribe_method_call";
+            const string stream = "call_dropped_callback_after_stop_method_call";
             using (var store = EventStoreConnection.Create())
             {
                 store.Connect(_node.TcpEndPoint);
@@ -230,6 +256,53 @@ namespace EventStore.Core.Tests.ClientAPI
 
                 Assert.AreEqual(20, events.Count);
                 for (int i = 0; i < 20; ++i)
+                {
+                    Assert.AreEqual("et-" + (i + 10).ToString(), events[i].OriginalEvent.EventType);
+                }
+
+                Assert.IsFalse(dropped.Wait(0));
+                subscription.Stop(Timeout);
+                Assert.IsTrue(dropped.Wait(Timeout));
+
+                Assert.AreEqual(events.Last().OriginalEventNumber, subscription.LastProcessedEventNumber);
+            }
+        }
+
+        [Test, Category("LongRunning")]
+        public void filter_events_and_work_if_nothing_was_written_after_subscription()
+        {
+            const string stream = "filter_events_and_work_if_nothing_was_written_after_subscription";
+            using (var store = EventStoreConnection.Create())
+            {
+                store.Connect(_node.TcpEndPoint);
+
+                var events = new List<ResolvedEvent>();
+                var appeared = new CountdownEvent(10);
+                var dropped = new CountdownEvent(1);
+
+                store.CreateStream(stream, Guid.NewGuid(), false, null);
+                for (int i = 0; i < 20; ++i)
+                {
+                    store.AppendToStream(stream, i, new EventData(Guid.NewGuid(), "et-" + i.ToString(), false, new byte[3], null));
+                }
+
+                var subscription = store.SubscribeToStreamFrom(stream,
+                                                               10,
+                                                               false,
+                                                               (x, y) =>
+                                                               {
+                                                                   events.Add(y);
+                                                                   appeared.Signal();
+                                                               },
+                                                               (x, y, z) => dropped.Signal());
+                if (!appeared.Wait(Timeout))
+                {
+                    Assert.IsFalse(dropped.Wait(0), "Subscription was dropped prematurely.");
+                    Assert.Fail("Couldn't wait for all events.");
+                }
+
+                Assert.AreEqual(10, events.Count);
+                for (int i = 0; i < 10; ++i)
                 {
                     Assert.AreEqual("et-" + (i + 10).ToString(), events[i].OriginalEvent.EventType);
                 }

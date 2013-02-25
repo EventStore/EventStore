@@ -25,13 +25,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
+
 using System;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.ClientAPI.AllEvents
+namespace EventStore.Core.Tests.ClientAPI
 {
     [TestFixture, Category("LongRunning")]
     public class subscribe_to_all_should: SpecificationWithDirectory
