@@ -30,13 +30,13 @@ using System;
 using System.Linq;
 using System.Text;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_projection_with_pending_writes_is_stopped : TestFixtureWithCoreProjectionStarted
+    public class when_the_projection_with_pending_checkpoint_is_stopped : TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {
@@ -70,6 +70,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
                     ResolvedEvent.Sample(
                         Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data3"),
                         Encoding.UTF8.GetBytes("metadata")), 2));
+            _coreProjection.Handle(new ProjectionSubscriptionMessage.CheckpointSuggested(_projectionCorrelationId, _subscriptionId, CheckpointTag.FromPosition(160, 150), 77.7f, 3));
             _coreProjection.Stop();
         }
 
@@ -80,15 +81,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             Assert.AreEqual(
                 1,
                 _writeEventHandler.HandledMessages.Count(v => v.Events.Any(e => e.EventType == "ProjectionCheckpoint")));
+            Assert.AreEqual(1, _consumer.HandledMessages.OfType<CoreProjectionManagementMessage.Stopped>().Count());
         }
 
-        [Test]
-        public void other_events_are_not_written_after_the_checkpoint_write()
-        {
-            AllWriteComplete();
-            var index = _writeEventHandler.HandledMessages.FindIndex(
-                    v => v.Events.Any(e => e.EventType == "ProjectionCheckpoint"));
-            Assert.AreEqual(index + 1, _writeEventHandler.HandledMessages.Count());
-        }
     }
 }

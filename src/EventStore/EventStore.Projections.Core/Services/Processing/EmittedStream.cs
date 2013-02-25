@@ -402,7 +402,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private static void ValidateEmittedEventInRecoveryMode(Tuple<CheckpointTag, string, int> topAlreadyCommitted, EmittedEvent eventsToWrite)
         {
-            //TODO: ensure this exception fails a projection
             if (topAlreadyCommitted.Item1 != eventsToWrite.CausedByTag || topAlreadyCommitted.Item2 != eventsToWrite.EventType)
                 throw new InvalidOperationException(
                     string.Format(

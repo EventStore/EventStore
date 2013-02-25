@@ -308,6 +308,8 @@ namespace EventStore.Projections.Core.Services.Processing
             EnsureStarted();
             if (!_stopping)
                 throw new InvalidOperationException("Not stopping");
+            if (_inCheckpoint) // checkpoint in progress.  no other writes will happen, so we can stop here.
+                return;
             // do not request checkpoint if no events were processed since last checkpoint
             if (_useCheckpoints
                 && _lastCompletedCheckpointPosition < _lastProcessedEventPosition.LastTag)
