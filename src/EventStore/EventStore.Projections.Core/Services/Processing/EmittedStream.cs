@@ -92,7 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing
             _streamId = streamId;
             _zeroPosition = zeroPosition;
             _from = @from;
-            _last = @from;
+            _last = null;
             _readDispatcher = readDispatcher;
             _writeDispatcher = writeDispatcher;
             _readyHandler = readyHandler;
@@ -110,7 +110,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (groupCausedBy == null)
                 {
                     groupCausedBy = @event.CausedByTag;
-                    if (groupCausedBy < _last)
+                    if (!(_last != null && groupCausedBy > _last) && !(_last == null && groupCausedBy >= _from))
                         throw new InvalidOperationException(string.Format("Invalid event order.  '{0}' goes after '{1}'", @event.CausedByTag, _last));
                     _last = groupCausedBy;
                 }
