@@ -870,10 +870,17 @@ namespace EventStore.ClientAPI
         {
             if (package.Command == TcpCommand.BadRequest && package.CorrelationId == Guid.Empty)
             {
-                // TODO AN reports somehow to client code, that something bad happened
-                var message = Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count);
-                throw new Exception(string.Format("BadRequest received from server. Error: {0}",
-                                                  string.IsNullOrEmpty(message) ? "<no message>" : message));
+                string message = Helper.EatException(() => Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
+                try
+                {
+                    throw new EventStoreConnectionException(
+                        string.Format("BadRequest received from server. Error: {0}", string.IsNullOrEmpty(message) ? "<no message>" : message));
+                }
+                catch (EventStoreConnectionException exc)
+                {
+                    OnError(exc);
+                }
+                return;
             }
 
             WorkItem workItem;
@@ -909,7 +916,7 @@ namespace EventStore.ClientAPI
                     break;
                 }
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(string.Format("Unknown InspectionDecision: {0}.", result.Decision));
             }
         }
 
@@ -931,23 +938,38 @@ namespace EventStore.ClientAPI
             }
         }
 
-        private void OnConnected()
+        private void OnError(Exception exc)
         {
-            var handler = Connected;
-            if (handler != null)
-                handler(this, EventArgs.Empty);
+            if (_settings.ErrorOccurred != null)
+                _settings.ErrorOccurred(this, exc);
         }
 
-        private void OnReconnecting()
+        private void OnConnected()
         {
-            var handler = Reconnecting;
+            if (_settings.Connected != null)
+                _settings.Connected(this);
+
+            var handler = Connected;
             if (handler != null)
                 handler(this, EventArgs.Empty);
         }
 
         private void OnDisconnected()
         {
+            if (_settings.Disconnected != null)
+                _settings.Disconnected(this);
+
             var handler = Disconnected;
+            if (handler != null)
+                handler(this, EventArgs.Empty);
+        }
+
+        private void OnReconnecting()
+        {
+            if (_settings.Reconnecting != null)
+                _settings.Reconnecting(this);
+
+            var handler = Reconnecting;
             if (handler != null)
                 handler(this, EventArgs.Empty);
         }

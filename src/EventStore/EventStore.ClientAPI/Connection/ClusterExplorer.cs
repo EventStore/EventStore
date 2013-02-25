@@ -61,8 +61,8 @@ namespace EventStore.ClientAPI.Connection
 
         public Task<IPEndPoint> Resolve(string dns)
         {
-            return Task.Factory.StartNew(() => Dns.GetHostAddresses(dns))
-                               .ContinueWith(addresses => DiscoverCLuster(addresses.Result, _maxDiscoverAttempts));
+            return Task<IPAddress[]>.Factory.FromAsync(Dns.BeginGetHostAddresses, Dns.EndGetHostAddresses, dns, null)
+                                            .ContinueWith(addresses => DiscoverCLuster(addresses.Result, _maxDiscoverAttempts));
         }
 
         private IPEndPoint DiscoverCLuster(IPAddress[] managers, int maxAttempts)
