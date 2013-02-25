@@ -48,6 +48,11 @@ namespace EventStore.ClientAPI
         private TimeSpan _operationTimeout;
         private TimeSpan _operationTimeoutCheckPeriod;
 
+        private Action<EventStoreConnection, Exception> _errorOccurred;
+        private Action<EventStoreConnection> _connected;
+        private Action<EventStoreConnection> _disconnected;
+        private Action<EventStoreConnection> _reconnecting;
+
         internal ConnectionSettingsBuilder()
         {
             _log = null;
@@ -181,6 +186,50 @@ namespace EventStore.ClientAPI
             return this;
         }
 
+        /// <summary>
+        /// Sets handler of internal connection errors.
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder OnErrorOccurred(Action<EventStoreConnection, Exception> handler)
+        {
+            _errorOccurred = handler;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets handler called when connection is established.
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder OnConnected(Action<EventStoreConnection> handler)
+        {
+            _connected = handler;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets handler called when connection is dropped.
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder OnDisconnected(Action<EventStoreConnection> handler)
+        {
+            _disconnected = handler;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets handler called when reconnection attempt is made.
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        public ConnectionSettingsBuilder OnReconnecting(Action<EventStoreConnection> handler)
+        {
+            _reconnecting = handler;
+            return this;
+        }
+
         public static implicit operator ConnectionSettings(ConnectionSettingsBuilder builder)
         {
             return new ConnectionSettings(builder._log,
@@ -191,7 +240,11 @@ namespace EventStore.ClientAPI
                                           builder._allowForwarding,
                                           builder._reconnectionDelay,
                                           builder._operationTimeout,
-                                          builder._operationTimeoutCheckPeriod);
+                                          builder._operationTimeoutCheckPeriod,
+                                          builder._errorOccurred,
+                                          builder._connected,
+                                          builder._disconnected,
+                                          builder._reconnecting);
         }
     }
 }

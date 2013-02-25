@@ -85,6 +85,23 @@ namespace EventStore.ClientAPI
         /// </summary>
         public readonly TimeSpan OperationTimeoutCheckPeriod;
 
+        /// <summary>
+        /// Raised whenever the internal error occurs
+        /// </summary>
+        public Action<EventStoreConnection, Exception> ErrorOccurred;
+        /// <summary>
+        /// Raised whenever the internal connection is connected to the event store
+        /// </summary>
+        public Action<EventStoreConnection> Connected;
+        /// <summary>
+        /// Raised whenever the internal connection is disconnected from the event store
+        /// </summary>
+        public Action<EventStoreConnection> Disconnected;
+        /// <summary>
+        /// Raised whenever the internal connection is reconnecting to the event store
+        /// </summary>
+        public Action<EventStoreConnection> Reconnecting;
+
         internal ConnectionSettings(ILogger log,
                                     int maxQueueSize,
                                     int maxConcurrentItems,
@@ -93,7 +110,11 @@ namespace EventStore.ClientAPI
                                     bool allowForwarding,
                                     TimeSpan reconnectionDelay,
                                     TimeSpan operationTimeout,
-                                    TimeSpan operationTimeoutCheckPeriod)
+                                    TimeSpan operationTimeoutCheckPeriod,
+                                    Action<EventStoreConnection, Exception> errorOccurred,
+                                    Action<EventStoreConnection> connected,
+                                    Action<EventStoreConnection> disconnected,
+                                    Action<EventStoreConnection> reconnecting)
         {
             Log = log;
             MaxQueueSize = maxQueueSize;
@@ -104,6 +125,11 @@ namespace EventStore.ClientAPI
             ReconnectionDelay = reconnectionDelay;
             OperationTimeout = operationTimeout;
             OperationTimeoutCheckPeriod = operationTimeoutCheckPeriod;
+
+            ErrorOccurred = errorOccurred;
+            Connected = connected;
+            Disconnected = disconnected;
+            Reconnecting = reconnecting;
         }
     }
 }

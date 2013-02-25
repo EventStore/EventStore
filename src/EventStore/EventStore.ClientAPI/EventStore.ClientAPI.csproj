@@ -94,6 +94,7 @@
     <Compile Include="Common\Concurrent\ConcurrentStack.cs" />
     <Compile Include="Common\Log\ConsoleLogger.cs" />
     <Compile Include="Common\Log\DebugLogger.cs" />
+    <Compile Include="Common\Utils\Helper.cs" />
     <Compile Include="Common\Utils\Tasks.cs" />
     <Compile Include="ConnectionSettings.cs" />
     <Compile Include="ConnectionSettingsBuilder.cs" />
@@ -104,6 +105,7 @@
     <Compile Include="Empty.cs" />
     <Compile Include="EventData.cs" />
     <Compile Include="EventStoreSubscription.cs" />
+    <Compile Include="Exceptions\EventStoreConnectionException.cs" />
     <Compile Include="Exceptions\ServerErrorException.cs" />
     <Compile Include="ProjectionsClient.cs" />
     <Compile Include="ReadDirection.cs" />

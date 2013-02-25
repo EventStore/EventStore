@@ -11,7 +11,7 @@
     
     <script>
         $(function () {
-            var webUrl = location.href.replace(location.pathname, "");
+            var webUrl = location.protocol + '//' + location.host;
 
             $.ajax(webUrl + "/sys/subsystems", {
                 headers: {

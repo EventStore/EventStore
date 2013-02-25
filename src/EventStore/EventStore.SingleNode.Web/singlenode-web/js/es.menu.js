@@ -28,8 +28,13 @@
         es.util.loadMenu(menu);
     }
     
+    function getBaseUrl() {
+        return location.protocol + '//' + location.host;
+    }
+    
+    
     $(function () {
-        var webUrl = location.href.replace(location.pathname, "");
+        var webUrl = getBaseUrl();
         
         pendingRequestsCount += 1;
 
@@ -85,7 +90,7 @@
     
     function loadProjectionsMenu() {
         $(function () {
-            var webUrl = location.href.replace(location.pathname, "");
+            var webUrl = getBaseUrl();
 
             $.ajax(webUrl + "/web/es/js/projections/resources/es.menu.part.json", {
                 headers: {
