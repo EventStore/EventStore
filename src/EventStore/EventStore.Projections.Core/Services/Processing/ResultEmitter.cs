@@ -52,8 +52,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private EmittedEvent[] CreateResultUpdatedEvents(string partition, string projectionResult, CheckpointTag at)
         {
-            var streamId = _namesBuilder.MakePartitionStateStreamName(partition);
-            var allResultsStreamId = _namesBuilder.GetStateStreamName();
+            var streamId = _namesBuilder.MakePartitionResultStreamName(partition);
+            var allResultsStreamId = _namesBuilder.GetResultStreamName();
             if (string.IsNullOrEmpty(partition))
             {
                 var result = projectionResult == null
