@@ -117,7 +117,7 @@ namespace EventStore.Core.Index
 
             try
             {
-                _midpoints = PopulateCache(depth);
+                _midpoints = CacheMidpoints(depth);
             }
             catch (PossibleToHandleOutOfMemoryException)
             {
@@ -125,48 +125,35 @@ namespace EventStore.Core.Index
             }
         }
 
-        private Midpoint[] PopulateCache(int depth)
+        internal Midpoint[] CacheMidpoints(int depth)
         {
-            if (depth > 31)
+            if (depth < 0 || depth > 30)
                 throw new ArgumentOutOfRangeException("depth");
-            if (Count == 0)
-                throw new InvalidOperationException("Empty PTable.");
+
+            if (Count == 0 || depth == 0)
+                return null;
 
             var workItem = GetWorkItem();
             try
             {
-                int segmentSize;
+                int midpointsCount;
                 Midpoint[] midpoints;
                 try
                 {
-                    int midPointsCnt = 1 << depth;
-                    if (Count < midPointsCnt)
-                    {
-                        segmentSize = 1; // we cache all items
-                        midpoints = new Midpoint[Count];
-                    }
-                    else
-                    {
-                        segmentSize = Count / midPointsCnt;
-                        midpoints = new Midpoint[1 + (Count + segmentSize - 1) / segmentSize];
-                    }
+                    midpointsCount = Math.Max(2, Math.Min(1 << depth, Count));
+                    midpoints = new Midpoint[midpointsCount];
                 }
                 catch (OutOfMemoryException exc)
                 {
                     throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.", exc);
                 }
 
-                for (int x = 0, i = 0, xN = Count - 1; x <= xN; x += segmentSize, i += 1)
+                for (int k = 0; k < midpointsCount; ++k)
                 {
-                    var record = ReadEntry(x, workItem);
-                    midpoints[i] = new Midpoint(record.Key, x);
+                    int index = (int)((long)k * (Count - 1) / (midpointsCount - 1));
+                    midpoints[k] = new Midpoint(ReadEntry(index, workItem).Key, index);
                 }
 
-                // add the very last item as the last midpoint (possibly it is done twice)
-                {
-                    var record = ReadEntry(Count - 1, workItem);
-                    midpoints[midpoints.Length - 1] = new Midpoint(record.Key, Count - 1);
-                }
                 return midpoints;
             }
             finally
@@ -431,7 +418,7 @@ namespace EventStore.Core.Index
                 throw new TimeoutException();
         }
 
-        private struct Midpoint
+        internal struct Midpoint
         {
             public readonly ulong Key;
             public readonly int ItemIndex;

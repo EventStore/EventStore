@@ -140,6 +140,7 @@
     <Compile Include="Index\MemTableTests.cs" />
     <Compile Include="Index\FakeFilenameProvider.cs" />
     <Compile Include="Index\IndexEntryTests.cs" />
+    <Compile Include="Index\ptable_midpoint_cache_should.cs" />
     <Compile Include="Index\ptable_read_scenario_with_usual_items.cs" />
     <Compile Include="Index\ptable_read_scenario_with_items_spanning_few_cache_segments.cs" />
     <Compile Include="Index\ptable_should.cs" />
