@@ -68,9 +68,11 @@ namespace EventStore.Projections.Core.Services.Processing
             // after the last available checkpoint tag
             if (!_positionTagger.IsMessageAfterCheckpointTag(_positionTracker.LastTag, message))
             {
+/*
                 _logger.Trace(
                     "Skipping replayed event {0}@{1} at position {2}. the last processed event checkpoint tag is: {3}",
                     message.PositionSequenceNumber, message.PositionStreamId, message.Position, _positionTracker.LastTag);
+*/
                 return;
             }
             var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);

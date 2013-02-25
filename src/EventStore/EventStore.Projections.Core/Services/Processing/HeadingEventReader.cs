@@ -130,7 +130,7 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_subscribeFromPosition.CommitPosition <= fromTransactionFilePosition)
             {
                 _logger.Trace("The '{0}' subscription has joined the heading distribution point at '{1}'", projectionId, fromTransactionFilePosition);
-                DispatchRecentMessagesTo(projectionSubscription);
+                DispatchRecentMessagesTo(projectionSubscription, fromTransactionFilePosition);
                 AddSubscriber(projectionId, projectionSubscription);
                 return true;
             }
@@ -147,11 +147,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _headSubscribers.Remove(projectionId);
         }
 
-        private void DispatchRecentMessagesTo(
-            IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed> subscription)
+        private void DispatchRecentMessagesTo(IHandle<ProjectionCoreServiceMessage.CommittedEventDistributed> subscription, long fromTransactionFilePosition)
         {
             foreach (var m in _lastMessages)
-                subscription.Handle(m);
+                if (m.Position.CommitPosition >= fromTransactionFilePosition)
+                    subscription.Handle(m);
         }
 
         private void DistributeMessage(ProjectionCoreServiceMessage.CommittedEventDistributed message)
