@@ -50,7 +50,7 @@ namespace EventStore.Core.Index
             Ensure.NotNullOrEmpty(filename, "filename");
             Ensure.Nonnegative(cacheDepth, "cacheDepth");
 
-            Log.Trace("Started dumping MemTable [{0}] into PTable...", table.Id);
+            //Log.Trace("Started dumping MemTable [{0}] into PTable...", table.Id);
             var sw = Stopwatch.StartNew();
             using (var fs = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 8096, FileOptions.SequentialScan))
             {
@@ -80,7 +80,7 @@ namespace EventStore.Core.Index
                     fs.Write(hash, 0, hash.Length);
                 }
             }
-            Log.Trace("Done dumping MemTable [{0}] in {1}.", table.Id, sw.Elapsed);
+            Log.Trace("Dumped MemTable [{0}] in {1}.", table.Id, sw.Elapsed);
             return new PTable(filename, table.Id, depth: cacheDepth);
         }
 
