@@ -111,6 +111,34 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
+        public class with_multiple_from_streams_plain : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromStreams('stream1', 'stream2', 'stream3').whenAny(
+                        function(state, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(false, _source.AllStreams);
+                Assert.IsNotNull(_source.Streams);
+                Assert.AreEqual(3, _source.Streams.Count);
+                Assert.AreEqual("stream1", _source.Streams[0]);
+                Assert.AreEqual("stream2", _source.Streams[1]);
+                Assert.AreEqual("stream3", _source.Streams[2]);
+                Assert.That(_source.Categories == null || _source.Categories.Count == 0);
+                Assert.AreEqual(false, _source.ByStream);
+            }
+        }
+
+        [TestFixture]
         public class with_from_category : TestFixtureWithJsProjection
         {
             protected override void Given()

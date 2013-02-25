@@ -138,8 +138,10 @@ function scope($on, $notify) {
     }
 
     function fromStreams(streams) {
-        for (var i = 0; i < streams.length; i++) 
-            eventProcessor.fromStream(streams[i]);
+        var arr = Array.isArray(streams) ? streams : arguments;
+        for (var i = 0; i < arr.length; i++) 
+            eventProcessor.fromStream(arr[i]);
+ 
         return {
             partitionBy: partitionBy,
             when: when,
