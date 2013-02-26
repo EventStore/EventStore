@@ -181,7 +181,7 @@ namespace EventStore.Projections.Core.Services.v8
                 new[]
                     {
                         streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture),
-                        metadata ?? "", partition, eventPosition.ToJson()
+                        metadata ?? "", partition
                     });
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
