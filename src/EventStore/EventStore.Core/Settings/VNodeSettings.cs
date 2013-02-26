@@ -42,6 +42,9 @@ namespace EventStore.Core.Settings
         public readonly int HttpReceivingThreads;
         public readonly int TcpSendingThreads;
 
+        public readonly TimeSpan PrepareTimeout;
+        public readonly TimeSpan CommitTimeout;
+
         public readonly TimeSpan StatsPeriod;
         public readonly StatsStorage StatsStorage;
 
@@ -51,6 +54,8 @@ namespace EventStore.Core.Settings
                                    int httpSendingThreads, 
                                    int httpReceivingThreads, 
                                    int tcpSendingThreads,
+                                   TimeSpan prepareTimeout,
+                                   TimeSpan commitTimeout,
                                    TimeSpan statsPeriod, 
                                    StatsStorage statsStorage = StatsStorage.StreamAndCsv)
         {
@@ -68,6 +73,9 @@ namespace EventStore.Core.Settings
             HttpReceivingThreads = httpReceivingThreads;
             TcpSendingThreads = tcpSendingThreads;
 
+            PrepareTimeout = prepareTimeout;
+            CommitTimeout = commitTimeout;
+
             StatsPeriod = statsPeriod;
             StatsStorage = statsStorage;
         }
@@ -80,14 +88,18 @@ namespace EventStore.Core.Settings
                                  + "HttpSendingThreads: {3}\n" 
                                  + "HttpReceivingThreads: {4}\n"
                                  + "TcpSendingThreads: {5}\n"
-                                 + "StatsPeriod: {6}\n"
-                                 + "StatsStorage: {7}",
+                                 + "PrepareTimeout: {6}\n"
+                                 + "CommitTimeout: {7}\n"
+                                 + "StatsPeriod: {8}\n"
+                                 + "StatsStorage: {9}",
                                  ExternalTcpEndPoint,
                                  ExternalHttpEndPoint,
                                  string.Join(", ", HttpPrefixes),
                                  HttpSendingThreads,
                                  HttpReceivingThreads,
                                  TcpSendingThreads,
+                                 PrepareTimeout,
+                                 CommitTimeout,
                                  StatsPeriod,
                                  StatsStorage);
         }

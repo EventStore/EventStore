@@ -35,9 +35,16 @@ namespace EventStore.Core.Services.RequestManager.Managers
 {
     public class DeleteStreamTwoPhaseRequestManager : TwoPhaseRequestManagerBase, IHandle<StorageMessage.DeleteStreamRequestCreated>
     {
-        public DeleteStreamTwoPhaseRequestManager(IPublisher publisher, int prepareCount, int commitCount) :
-                base(publisher, prepareCount, commitCount)
+        private readonly TimeSpan _prepareTimeout;
+
+        public DeleteStreamTwoPhaseRequestManager(IPublisher publisher,  
+                                                  int prepareCount, 
+                                                  int commitCount, 
+                                                  TimeSpan prepareTimeout,
+                                                  TimeSpan commitTimeout) 
+            : base(publisher, prepareCount, commitCount, commitTimeout)
         {
+            _prepareTimeout = prepareTimeout;
         }
 
         public void Handle(StorageMessage.DeleteStreamRequestCreated request)
@@ -49,10 +56,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                              request.EventStreamId,
                                                              request.ExpectedVersion,
                                                              allowImplicitStreamCreation: true,
-                                                             liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
-            Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
-                                                           PublishEnvelope,
-                                                           new StorageMessage.PreparePhaseTimeout(CorrelationId)));
+                                                             liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks * 9 / 10)));
+            Publisher.Publish(TimerMessage.Schedule.Create(_prepareTimeout, PublishEnvelope, new StorageMessage.PreparePhaseTimeout(CorrelationId)));
         }
 
         protected override void CompleteSuccessRequest(Guid correlationId, int firstEventNumber)

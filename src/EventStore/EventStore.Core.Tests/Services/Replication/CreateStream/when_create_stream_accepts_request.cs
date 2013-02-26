@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new CreateStreamTwoPhaseRequestManager(publisher, 3,3);
+            return new CreateStreamTwoPhaseRequestManager(publisher, 3, 3, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
         }
 
         protected override IEnumerable<Message> WithInitialMessages()
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
             Assert.IsInstanceOf<TimerMessage.Schedule>(produced[1]);
             var msg = (TimerMessage.Schedule) produced[1];
             var reply = (StorageMessage.PreparePhaseTimeout) msg.ReplyMessage;
-            Assert.AreEqual(Timeouts.PrepareTimeout, msg.TriggerAfter);
+            Assert.AreEqual(TimeSpan.FromSeconds(2), msg.TriggerAfter);
             Assert.AreEqual(CorrelationId, reply.CorrelationId);
         }
     }

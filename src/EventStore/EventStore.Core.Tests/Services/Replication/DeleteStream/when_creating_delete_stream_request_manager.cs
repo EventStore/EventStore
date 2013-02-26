@@ -38,21 +38,21 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
         [Test]
         public void null_publisher_throws_argument_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => new DeleteStreamTwoPhaseRequestManager(null, 3, 3));
+            Assert.Throws<ArgumentNullException>(() => new DeleteStreamTwoPhaseRequestManager(null, 3, 3, TimeSpan.Zero, TimeSpan.Zero));
         }
 
         [Test]
         public void zero_prepare_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 0, 3));
+                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 0, 3, TimeSpan.Zero, TimeSpan.Zero));
         }
 
         [Test]
         public void zero_commit_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 3, 0));
+                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 3, 0, TimeSpan.Zero, TimeSpan.Zero));
         }
 
 
@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
         public void negative_commit_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 3, -1));
+                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), 3, -1, TimeSpan.Zero, TimeSpan.Zero));
         }
 
 
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Services.Replication.DeleteStream
         public void negative_prepare_ack_count_throws_argument_out_range()
         {
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), -1, 3));
+                () => new DeleteStreamTwoPhaseRequestManager(new FakePublisher(), -1, 3, TimeSpan.Zero, TimeSpan.Zero));
         }
     }
 }

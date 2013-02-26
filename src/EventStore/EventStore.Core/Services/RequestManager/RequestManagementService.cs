@@ -57,8 +57,10 @@ namespace EventStore.Core.Services.RequestManager
 
         private readonly int _prepareCount;
         private readonly int _commitCount;
+        private readonly TimeSpan _prepareTimeout;
+        private readonly TimeSpan _commitTimeout;
 
-        public RequestManagementService(IPublisher bus, int prepareCount, int commitCount)
+        public RequestManagementService(IPublisher bus, int prepareCount, int commitCount, TimeSpan prepareTimeout, TimeSpan commitTimeout)
         {
             Ensure.NotNull(bus, "bus");
             Ensure.Nonnegative(prepareCount, "prepareCount");
@@ -66,46 +68,48 @@ namespace EventStore.Core.Services.RequestManager
             _bus = bus;
             _prepareCount = prepareCount;
             _commitCount = commitCount;
+            _prepareTimeout = prepareTimeout;
+            _commitTimeout = commitTimeout;
         }
 
         public void Handle(StorageMessage.CreateStreamRequestCreated message)
         {
-            var manager = new CreateStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
+            var manager = new CreateStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
         public void Handle(StorageMessage.WriteRequestCreated message)
         {
-            var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
+            var manager = new WriteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
         public void Handle(StorageMessage.DeleteStreamRequestCreated message)
         {
-            var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
+            var manager = new DeleteStreamTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
         public void Handle(StorageMessage.TransactionStartRequestCreated message)
         {
-            var manager = new SingleAckRequestManager(_bus);
+            var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
         
         public void Handle(StorageMessage.TransactionWriteRequestCreated message)
         {
-            var manager = new SingleAckRequestManager(_bus);
+            var manager = new SingleAckRequestManager(_bus, _prepareTimeout);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }
 
         public void Handle(StorageMessage.TransactionCommitRequestCreated message)
         {
-            var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount);
+            var manager = new TransactionCommitTwoPhaseRequestManager(_bus, _prepareCount, _commitCount, _prepareTimeout, _commitTimeout);
             _currentRequests.Add(message.CorrelationId, manager);
             manager.Handle(message);
         }

@@ -57,21 +57,23 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         private int _awaitingPrepare;
         private int _awaitingCommit;
+        private readonly TimeSpan _commitTimeout;
 
         private long _transactionPos = -1;
 
         private bool _completed;
         private bool _initialized;
 
-        protected TwoPhaseRequestManagerBase(IPublisher publisher, int prepareCount, int commitCount)
+        protected TwoPhaseRequestManagerBase(IPublisher publisher, int prepareCount, int commitCount, TimeSpan commitTimeout)
         {
             Ensure.NotNull(publisher, "publisher");
             Ensure.Positive(prepareCount, "prepareCount");
             Ensure.Positive(commitCount, "commitCount");
 
             Publisher = publisher;
-            _awaitingCommit = commitCount;
             _awaitingPrepare = prepareCount;
+            _awaitingCommit = commitCount;
+            _commitTimeout = commitTimeout;
             _publishEnvelope = new PublishEnvelope(publisher);
         }
 
@@ -142,9 +144,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                     if (_transactionPos < 0)
                         throw new Exception("PreparePos is not assigned.");
                     Publisher.Publish(new StorageMessage.WriteCommit(message.CorrelationId, _publishEnvelope, _transactionPos));
-                    Publisher.Publish(TimerMessage.Schedule.Create(Timeouts.CommitTimeout,
-                                                                   _publishEnvelope,
-                                                                   new StorageMessage.CommitPhaseTimeout(_correlationId)));
+                    Publisher.Publish(TimerMessage.Schedule.Create(_commitTimeout, _publishEnvelope, new StorageMessage.CommitPhaseTimeout(_correlationId)));
                 }
             }
         }
