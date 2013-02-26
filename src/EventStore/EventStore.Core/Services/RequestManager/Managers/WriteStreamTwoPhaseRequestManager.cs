@@ -59,7 +59,6 @@ namespace EventStore.Core.Services.RequestManager.Managers
             if (_expectedVersion == ExpectedVersion.Any)
                 _request = request;
 
-/*
             Publisher.Publish(new StorageMessage.WritePrepares(CorrelationId,
                                                                PublishEnvelope,
                                                                request.EventStreamId,
@@ -67,7 +66,6 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                                request.Events,
                                                                allowImplicitStreamCreation: true,
                                                                liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks * 9 / 10)));
-*/
             Publisher.Publish(TimerMessage.Schedule.Create(_prepareTimeout, PublishEnvelope, new StorageMessage.PreparePhaseTimeout(CorrelationId)));
         }
 
