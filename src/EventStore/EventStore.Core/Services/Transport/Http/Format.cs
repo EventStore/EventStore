@@ -63,7 +63,7 @@ namespace EventStore.Core.Services.Transport.Http
 
             public static string ReadStreamEventsBackwardCompletedFeed(HttpResponseFormatterArgs entity, Message message, EmbedLevel embed, bool headOfStream)
             {
-                Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
+                // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadStreamEventsBackwardCompleted));
 
                 var completed = message as ClientMessage.ReadStreamEventsBackwardCompleted;
                 if (completed != null)

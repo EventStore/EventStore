@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         {
             NoStream("$projections-$all");
             NoStream("$projections-test-projection");
-            NoStream("$projections-test-projection-state");
+            NoStream("$projections-test-projection-result");
             NoStream("$projections-test-projection-order");
             AllWritesToSucceed("$projections-test-projection-order");
             NoStream("$projections-test-projection-checkpoint");

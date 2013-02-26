@@ -37,7 +37,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class MultiStreamMultiOutputCheckpointManager : DefaultCheckpointManager
+    public class MultiStreamMultiOutputCheckpointManager : DefaultCheckpointManager, IEmittedStreamContainer
     {
         private readonly PositionTagger _positionTagger;
         private CheckpointTag _lastOrderCheckpointTag; //TODO: use position tracker to ensure order?
@@ -47,17 +47,15 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly Stack<Item> _loadQueue = new Stack<Item>();
         private CheckpointTag _loadingPrerecordedEventsFrom;
 
-        public MultiStreamMultiOutputCheckpointManager(
-            ICoreProjection coreProjection, IPublisher publisher, Guid projectionCorrelationId,
+        public MultiStreamMultiOutputCheckpointManager(IPublisher publisher, Guid projectionCorrelationId,
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
             ProjectionConfig projectionConfig, string name, PositionTagger positionTagger,
-            ProjectionNamesBuilder namingBuilder, bool useCheckpoints, bool emitStateUpdated,
+            ProjectionNamesBuilder namingBuilder, IResultEmitter resultEmitter, bool useCheckpoints,
             bool emitPartitionCheckpoints = false)
-            : base(
-                coreProjection, publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
-                name, positionTagger, namingBuilder, useCheckpoints, emitStateUpdated, emitPartitionCheckpoints)
+            : base(publisher, projectionCorrelationId, readDispatcher, writeDispatcher, projectionConfig,
+                name, positionTagger, namingBuilder, resultEmitter, useCheckpoints, emitPartitionCheckpoints)
         {
             _positionTagger = positionTagger;
         }
@@ -74,7 +72,7 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             base.Start(checkpointTag);
             _lastOrderCheckpointTag = checkpointTag;
-            _orderStream = CreateOrderStream();
+            _orderStream = CreateOrderStream(_lastOrderCheckpointTag);
             _orderStream.Start();
         }
 
@@ -88,18 +86,18 @@ namespace EventStore.Projections.Core.Services.Processing
             _orderStream.EmitEvents(
                 new[]
                     {
-                        new EmittedEvent(
+                        new EmittedDataEvent(
                     orderStreamName, Guid.NewGuid(), "$>",
                     message.PositionSequenceNumber + "@" + message.PositionStreamId, message.CheckpointTag,
-                    _lastOrderCheckpointTag, committed)
+                    _lastOrderCheckpointTag, v => committed())
                     });
             _lastOrderCheckpointTag = message.CheckpointTag;
         }
 
-        private EmittedStream CreateOrderStream()
+        private EmittedStream CreateOrderStream(CheckpointTag from)
         {
             return new EmittedStream(
-                _namingBuilder.GetOrderStreamName(), _positionTagger.MakeZeroCheckpointTag(),
+                _namingBuilder.GetOrderStreamName(), _positionTagger.MakeZeroCheckpointTag(), from,
                 _readDispatcher, _writeDispatcher, /* MUST NEVER SEND READY MESSAGE */ this, 100, _logger,
                 noCheckpoints: true);
         }
@@ -240,6 +238,15 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 _result = eventLinkPair;
             }
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.EmittedStreamAwaiting message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.EmittedStreamWriteCompleted message)
+        {
         }
     }
 }

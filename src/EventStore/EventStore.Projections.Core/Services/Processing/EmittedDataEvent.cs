@@ -27,45 +27,30 @@
 // 
 
 using System;
-using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
-using NUnit.Framework;
+using System.Text;
 
-namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint
+namespace EventStore.Projections.Core.Services.Processing
 {
-    [TestFixture]
-    public class when_emitting_events_in_backward_order_the_projection_checkpoint : TestFixtureWithExistingEvents
+    public class EmittedDataEvent : EmittedEvent
     {
-        private ProjectionCheckpoint _checkpoint;
-        private Exception _lastException;
-        private TestCheckpointManagerMessageHandler _readyHandler;
+        private readonly byte[] _data;
 
-        [SetUp]
-        public void setup()
+        public EmittedDataEvent(
+            string streamId, Guid eventId, string eventType, string data, CheckpointTag causedByTag,
+            CheckpointTag expectedTag, Action<int> onCommitted = null)
+            : base(streamId, eventId, eventType, causedByTag, expectedTag, onCommitted)
         {
-            _readyHandler = new TestCheckpointManagerMessageHandler();
-            _checkpoint = new ProjectionCheckpoint(_readDispatcher, _writeDispatcher, _readyHandler, CheckpointTag.FromPosition(100, 50),
-                CheckpointTag.FromPosition(0, -1), 250);
-            try
-            {
-                _checkpoint.ValidateOrderAndEmitEvents(
-                    new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
-                    CheckpointTag.FromPosition(140, 130), null)});
-                _checkpoint.ValidateOrderAndEmitEvents(
-                    new[] {new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2",
-                    CheckpointTag.FromPosition(120, 110), null)});
-            }
-            catch (Exception ex)
-            {
-                _lastException = ex;
-            }
+            _data = data == null ? null : Encoding.UTF8.GetBytes(data);
         }
 
-        [Test, ExpectedException(typeof (InvalidOperationException))]
-        public void throws_invalid_operation_exception()
+        public override byte[] Data
         {
-            if (_lastException != null) throw _lastException;
+            get { return _data; }
+        }
+
+        public override bool IsReady()
+        {
+            return true;
         }
     }
 }

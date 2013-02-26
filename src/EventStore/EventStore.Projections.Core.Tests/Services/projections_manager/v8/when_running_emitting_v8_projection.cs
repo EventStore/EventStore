@@ -33,17 +33,18 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
 {
+
     [TestFixture]
     public class when_running_emitting_v8_projection : TestFixtureWithJsProjection
     {
         protected override void Given()
         {
             _projection = @"
-                fromAll();
-                on_raw(function(state, event) {
+                fromAll().when({$any: 
+                    function(state, event) {
                     emit('output-stream' + event.sequenceNumber, 'emitted-event' + event.sequenceNumber, {a: JSON.parse(event.bodyRaw).a});
                     return {};
-                });
+                }});
             ";
         }
 

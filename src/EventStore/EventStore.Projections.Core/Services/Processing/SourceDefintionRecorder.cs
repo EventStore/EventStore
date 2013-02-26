@@ -4,9 +4,9 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class SourceDefintionRecorder : QuerySourceProcessingStrategyBuilder
     {
-        public ProjectionSourceDefintion Build()
+        public ProjectionSourceDefinition Build()
         {
-            return new ProjectionSourceDefintion
+            return new ProjectionSourceDefinition
                 {
                     AllEvents = _allEvents,
                     AllStreams = _allStreams,
@@ -15,6 +15,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     Categories = (_categories ?? new List<string>()).ToArray(),
                     Events = (_events ?? new List<string>()).ToArray(),
                     Streams = (_streams ?? new List<string>()).ToArray(),
+                    DefinesStateTransform = _definesStateTransform,
                     Options = _options,
                 };
         }

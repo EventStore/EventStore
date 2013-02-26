@@ -27,7 +27,6 @@
 // 
 
 using System;
-using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -70,7 +69,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 _partition, _message.CheckpointTag, LoadCompleted, lockLoaded: true);
         }
 
-        private void LoadCompleted(CheckpointTag checkpointTag, string state)
+        private void LoadCompleted(PartitionState state)
         {
             NextStage();
         }
@@ -86,7 +85,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override void WriteOutput()
         {
             Projection.FinalizeEventProcessing(_eventProcessedResult, _message.CheckpointTag, _message.Progress);
-            NextStage();
+            Complete();
         }
 
         private void SetEventProcessedResult(EventProcessedResult eventProcessedResult)

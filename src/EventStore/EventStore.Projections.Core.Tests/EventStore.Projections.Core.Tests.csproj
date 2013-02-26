@@ -125,9 +125,15 @@
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\TestFixtureWithMultiStreamCheckpointManager.cs" />
     <Compile Include="Services\core_projection\checkpoint_manager\multi_stream\when_starting_with_prerecorded_events_after_the_last_checkpoint.cs" />
     <Compile Include="Services\core_projection\emitted_stream\when_checkpoint_requested_but_disabled.cs" />
-    <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit__with_committed_callback.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_committed_callback.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_handling_an_emit_with_not_ready_event.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_in_invalid_order.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_with_previously_written_events.cs" />
+    <Compile Include="Services\core_projection\emitted_stream\when_handling_emits_with_previously_written_events_at_the_same_position.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_handling_stream_awaiting_message.cs" />
     <Compile Include="Services\core_projection\TestFixtureUtils.cs" />
     <Compile Include="Services\core_projection\when_receiving_committed_event_the_projection_with_existing_partitioned_state_should.cs" />
+    <Compile Include="Services\core_projection\when_the_projection_with_pending_checkpoint_is_stopped.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_eof_for_all_streams_and_idle_eof.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_handling_read_completed_for_all_streams_after_pause_requested.cs" />
     <Compile Include="Services\event_reader\multi_stream_reader\when_onetime_reader_handles_eof.cs" />
@@ -135,6 +141,7 @@
     <Compile Include="Services\event_reader\stream_reader\when_onetime_reader_handles_eof.cs" />
     <Compile Include="Services\event_reader\transaction_file_reader\when_handling_eof_and_idle_eof.cs" />
     <Compile Include="Services\event_reader\transaction_file_reader\when_onetime_reader_handles_eof.cs" />
+    <Compile Include="Services\partition_state\partition_state.cs" />
     <Compile Include="Services\partition_state_cache\when_caching_a_parition_state.cs" />
     <Compile Include="Services\partition_state_update_manager\FakeEventWriter.cs" />
     <Compile Include="Services\partition_state_update_manager\when_created.cs" />
@@ -222,6 +229,8 @@
     <Compile Include="Services\projections_manager\v8\when_initializing_state.cs" />
     <Compile Include="Services\projections_manager\v8\when_not_returning_state_from_a_js_handler.cs" />
     <Compile Include="Services\projections_manager\v8\when_partitioning_by_custom_rule.cs" />
+    <Compile Include="Services\projections_manager\v8\when_running_a_v8_projection_with_not_passing_filter_by.cs" />
+    <Compile Include="Services\projections_manager\v8\when_running_a_v8_projection_with_transform_by.cs" />
     <Compile Include="Services\projections_manager\v8\when_running_emitting_v8_projection.cs" />
     <Compile Include="Services\projections_manager\when_a_dsiabled_projection_has_been_loaded.cs" />
     <Compile Include="Services\projections_manager\when_requesting_partition_state_from_a_stopped_foreach_projection.cs" />
@@ -229,6 +238,7 @@
     <Compile Include="Services\projections_manager\when_updating_a_faulted_projection_query_text_invalid_defintion.cs" />
     <Compile Include="Services\projections_manager\when_updating_a_persistent_projection_emit_enabled_option.cs" />
     <Compile Include="Services\projection_subscription\when_handling_multiple_committed_event_passing_the_filter.cs" />
+    <Compile Include="Services\result_emitter\result_emitter.cs" />
     <Compile Include="Services\staged_processing_queue.cs" />
     <Compile Include="Services\event_reader\stream_reader\when_creating_stream_event_reader.cs" />
     <Compile Include="Services\event_reader\stream_reader\when_handling_no_stream.cs" />
@@ -305,10 +315,10 @@
     <Compile Include="Services\core_projection\projection_checkpoint\the_non_started_checkpoint.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\the_started_checkpoint_with_some_events_emitted.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_creating_a_projection_checkpoint.cs" />
-    <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_in_backward_order_the_projection_checkpoint.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_in_backward_order_to_the_same_stream_the_projection_checkpoint.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_in_correct_order_the_started_projection_checkpoint.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_the_non_started_checkpoint.cs" />
-    <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_the_projection_checkpoint.cs" />
+    <Compile Include="Services\core_projection\projection_checkpoint\when_emitting_events_before_from_position_the_projection_checkpoint.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_requesting_checkpoint_after_all_writes_completed.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_requesting_checkpoint_before_all_writes_completed.cs" />
     <Compile Include="Services\core_projection\projection_checkpoint\when_starting_the_projection_checkpoint_with_some_events_already_emitted.cs" />

@@ -106,7 +106,8 @@ extern "C"
 		delete compiled_script;
 	};
 
-	JS1_API void * STDCALL execute_command_handler(void *script_handle, void* event_handler_handle, const uint16_t *data_json, const uint16_t *data_other[], int32_t other_length, uint16_t **result_json)
+	JS1_API bool STDCALL execute_command_handler(void *script_handle, void* event_handler_handle, const uint16_t *data_json, 
+		const uint16_t *data_other[], int32_t other_length, uint16_t **result_json, void **memory_handle)
 	{
 
 		js1::QueryScript *query_script;
@@ -115,17 +116,27 @@ extern "C"
 		query_script = reinterpret_cast<js1::QueryScript *>(script_handle);
 		js1::PreludeScope prelude_scope(query_script);
 
-		v8::Persistent<v8::String> result = query_script->execute_handler(event_handler_handle, data_json, data_other, other_length);
-		if (result.IsEmpty()) {
+		v8::Persistent<v8::String> result;
+		js1::Status success = query_script->execute_handler(event_handler_handle, data_json, data_other, other_length, result);
+		if (success != js1::S_OK) {
 			*result_json = NULL;
-			return NULL;
+			*memory_handle = NULL;
+			return false;
 		}
 		//NOTE: incorrect return types are handled in execute_handler
-		v8::String::Value * result_buffer = new v8::String::Value(result);
-		result.Dispose();
-		*result_json = **result_buffer;
-
-		return result_buffer;
+		if (!result.IsEmpty()) 
+		{
+			v8::String::Value * result_buffer = new v8::String::Value(result);
+			result.Dispose();
+			*result_json = **result_buffer;
+			*memory_handle = result_buffer;
+		}
+		else 
+		{
+			*result_json = NULL;
+			*memory_handle = NULL;
+		}
+		return true;
 	};
 
 	JS1_API void STDCALL free_result(void *result)

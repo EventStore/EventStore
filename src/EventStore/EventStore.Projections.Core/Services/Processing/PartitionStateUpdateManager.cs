@@ -36,9 +36,8 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         private class State
         {
-            public string Data;
+            public PartitionState PartitionState;
             public CheckpointTag ExpectedTag;
-            public CheckpointTag CausedByTag;
         }
 
         private readonly Dictionary<string, State> _states = new Dictionary<string, State>();
@@ -50,17 +49,16 @@ namespace EventStore.Projections.Core.Services.Processing
             _namingBuilder = namingBuilder;
         }
 
-        public void StateUpdated(string partition, string state, CheckpointTag basedOn, CheckpointTag at)
+        public void StateUpdated(string partition, PartitionState state, CheckpointTag basedOn)
         {
             State stateEntry;
             if (_states.TryGetValue(partition, out stateEntry))
             {
-                stateEntry.Data = state;
-                stateEntry.CausedByTag = at;
+                stateEntry.PartitionState = state;
             }
             else
             {
-                _states.Add(partition, new State { Data = state, ExpectedTag = basedOn, CausedByTag = at});
+                _states.Add(partition, new State { PartitionState = state, ExpectedTag = basedOn});
             }
         }
 
@@ -73,16 +71,17 @@ namespace EventStore.Projections.Core.Services.Processing
                 {
                     var partition = entry.Key;
                     var streamId = _namingBuilder.MakePartitionCheckpointStreamName(partition);
-                    var data = entry.Value.Data;
-                    var causedBy = entry.Value.CausedByTag;
+                    var data = entry.Value.PartitionState.Serialize();
+                    var causedBy = entry.Value.PartitionState.CausedBy;
                     var expectedTag = entry.Value.ExpectedTag;
-                    list.Add(new EmittedEvent(streamId, Guid.NewGuid(), "Checkpoint", data, causedBy, expectedTag));
+                    list.Add(new EmittedDataEvent(streamId, Guid.NewGuid(), "Checkpoint", data, causedBy, expectedTag));
                 }
                 //NOTE: order yb is required to satisfy internal emit events validation
-                // whih ensures that events are ordered by causeby tag.  
+                // which ensures that events are ordered by causedBy tag.  
                 // it is too strong check, but ...
                 eventWriter.ValidateOrderAndEmitEvents(list.OrderBy(v => v.CausedByTag).ToArray());
             }
         }
     }
 }
+    

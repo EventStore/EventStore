@@ -10,7 +10,7 @@ namespace js1 {
 		friend class PreludeScope;
 		CompiledScript();
 		virtual ~CompiledScript();
-		void report_errors(REPORT_ERROR_CALLBACK report_error_callback);
+		virtual void report_errors(REPORT_ERROR_CALLBACK report_error_callback);
 		void isolate_terminate_execution();
 	protected:
 		virtual v8::Isolate *get_isolate() = 0;
@@ -19,7 +19,7 @@ namespace js1 {
 		v8::Persistent<v8::Context> &get_context();
 		Status compile_script(const uint16_t *source, const uint16_t *file_name);
 		v8::Handle<v8::Value> run_script(v8::Persistent<v8::Context> context);
-		void set_last_error(bool is_error, v8::TryCatch &try_catch);
+		bool set_last_error(bool is_error, v8::TryCatch &try_catch);
 		void set_last_error(v8::Handle<v8::String> message);
 		static void isolate_add_ref(v8::Isolate * isolate);
 		static size_t isolate_release(v8::Isolate * isolate);

@@ -55,5 +55,11 @@ namespace EventStore.Projections.Core.Services
         bool ProcessEvent(
             string partition, CheckpointTag eventPosition, string streamId, string eventType, string category, Guid eventid,
             int sequenceNumber, string metadata, string data, out string newState, out EmittedEvent[] emittedEvents);
+
+        /// <summary>
+        /// Transforms current state into a projection result.  Should not call any emit/linkTo etc 
+        /// </summary>
+        /// <returns>result JSON or NULL if current state has been skipped</returns>
+        string TransformStateToResult();
     }
 }

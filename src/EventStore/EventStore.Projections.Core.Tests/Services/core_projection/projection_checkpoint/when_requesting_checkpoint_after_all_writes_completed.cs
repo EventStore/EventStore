@@ -58,12 +58,12 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
             _checkpoint.ValidateOrderAndEmitEvents(
                 new[]
                     {
-                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data2", CheckpointTag.FromPosition(120, 110), null),
-                        new EmittedEvent("stream2", Guid.NewGuid(), "type", "data4", CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedDataEvent("stream2", Guid.NewGuid(), "type", "data2", CheckpointTag.FromPosition(120, 110), null),
+                        new EmittedDataEvent("stream2", Guid.NewGuid(), "type", "data4", CheckpointTag.FromPosition(120, 110), null),
                     }
                 );
             _checkpoint.ValidateOrderAndEmitEvents(
-                new[] {new EmittedEvent("stream1", Guid.NewGuid(), "type", "data",
+                new[] {new EmittedDataEvent("stream1", Guid.NewGuid(), "type", "data",
                 CheckpointTag.FromPosition(140, 130), null)});
             var writes = _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().ToArray();
             writes[0].Envelope.ReplyWith(new ClientMessage.WriteEventsCompleted(writes[0].CorrelationId, 0));

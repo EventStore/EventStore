@@ -43,10 +43,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void Given()
         {
             ExistingEvent(
-                "$projections-projection-state", "StateUpdated",
+                "$projections-projection-result", "Result",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
             ExistingEvent(
-                "$projections-projection-state", "ProjectionCheckpoint",
+                "$projections-projection-result", "ProjectionCheckpoint",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
             NoStream(FakeProjectionStateHandler._emit1StreamId);
             NoStream(FakeProjectionStateHandler._emit2StreamId);

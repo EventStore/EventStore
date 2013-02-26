@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void Given()
         {
             ExistingEvent(
-                "$projections-projection-state", "StateUpdated",
+                "$projections-projection-result", "Result",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",

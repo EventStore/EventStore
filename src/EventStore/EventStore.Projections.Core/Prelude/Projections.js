@@ -6,6 +6,7 @@ var $projections = {
         var eventHandlers = { };
         var anyEventHandlers = [];
         var rawEventHandlers = [];
+        var transformers = [];
         var getStatePartitionHandler = function () {
             throw "GetStatePartition is not defined";
         };
@@ -18,14 +19,14 @@ var $projections = {
             by_custom_partitions: false,
             categories: [], 
             streams: [], 
-            events: [], 
+            events: [],
+            defines_state_transform: false,
             options: { 
                 stateStreamName: null, 
                 $forceProjectionName: null, 
                 useEventIndexes: false,
                 reorderEvents: false,
                 processingLag: 0,
-                emitStateUpdated: false,
             }, 
         };
 
@@ -37,35 +38,53 @@ var $projections = {
             set_debugging: function () {
                 debugging = true;
             },
-            initialize_raw: function() {
+
+            initialize: function() {
                 projectionState = initStateHandler();
                 return "OK";
             },
 
-            get_state_partition_raw: function (event, streamId, eventType, category, sequenceNumber, metadata, position) {
+            get_state_partition: function (event, streamId, eventType, category, sequenceNumber, metadata, position) {
                 return getStatePartition(event, streamId, eventType, category, sequenceNumber, metadata, position);
             },
 
-            process_event_raw: function (event, streamId, eventType, category, sequenceNumber, metadata, partition, position) {
+            process_event: function (event, streamId, eventType, category, sequenceNumber, metadata, partition, position) {
                 processEvent(event, streamId, eventType, category, sequenceNumber, metadata, partition, position);
+                var stateJson = JSON.stringify(projectionState);
+                return stateJson;
+            },
+
+            transform_state_to_result: function () {
+                var result = projectionState;
+                for (var i = 0; i < transformers.length; i++) {
+                    var by = transformers[i];
+                    result = by(result);
+                    if (result === null)
+                        break;
+                }
+                return result !== null ? JSON.stringify(result) : null;
+            },
+
+            set_state: function(jsonState) {
+                var parsedState = JSON.parse(jsonState);
+                projectionState = parsedState;
                 return "OK";
             },
 
-            get_state_raw: function() {
-                return projectionState;
-            },
-
-            set_state_raw: function(state) {
-                projectionState = state;
-                return "OK";
-            },
-
-            get_sources_raw: function() {
-                return sources;
+            get_sources: function() {
+                return JSON.stringify(sources);
             }
         };
 
-        function on_pure(eventName, eventHandler) {
+        function registerCommandHandlers($on) {
+            // this is the only way to pass parameters to the system module
+
+            for (var name in commandHandlers) {
+                $on(name, commandHandlers[name]);
+            }
+        }
+
+        function on_event(eventName, eventHandler) {
             eventHandlers[eventName] = eventHandler;
             sources.events.push(eventName);
         }
@@ -195,8 +214,13 @@ var $projections = {
             sources.by_custom_partitions = true;
         }
 
-        function emit_state_updated() {
-            sources.options.emitStateUpdated = true;
+        function $defines_state_transform() {
+            sources.defines_state_transform = true;
+        }
+
+        function chainTransformBy(by) {
+            transformers.push(by);
+            sources.defines_state_transform = true;
         }
 
         function fromAll() {
@@ -216,7 +240,7 @@ var $projections = {
         }
 
         return {
-            on_pure: on_pure,
+            on_event: on_event,
             on_init_state: on_init_state,
             on_any: on_any,
             on_raw: on_raw,
@@ -227,12 +251,13 @@ var $projections = {
 
             byStream: byStream,
             partitionBy: partitionBy,
-            emit_state_updated: emit_state_updated,
+            $defines_state_transform: $defines_state_transform,
+            chainTransformBy: chainTransformBy,
 
             emit: emit,
             options: options,
 
-            commandHandlers: commandHandlers,
+            register_comand_handlers: registerCommandHandlers,
         };
     }
 };

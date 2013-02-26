@@ -48,17 +48,17 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
             for (var i = 0; i < 15; i++)
             {
                 CheckpointTag at = CheckpointTag.FromPosition(1000 + (i*100), 1000 + (i*100) - 50);
-                _cache.CacheAndLockPartitionState("partition1", new PartitionStateCache.State("data1", at), at);
+                _cache.CacheAndLockPartitionState("partition1", new PartitionState("data1", null, at), at);
             }
 
             _cachedAtCheckpointTag2 = CheckpointTag.FromPosition(20100, 20050);
             _cachedAtCheckpointTag3 = CheckpointTag.FromPosition(20200, 20150);
             _cache.CacheAndLockPartitionState(
-                "partition1", new PartitionStateCache.State("data1", _cachedAtCheckpointTag1), _cachedAtCheckpointTag1);
+                "partition1", new PartitionState("data1", null, _cachedAtCheckpointTag1), _cachedAtCheckpointTag1);
             _cache.CacheAndLockPartitionState(
-                "partition2", new PartitionStateCache.State("data2", _cachedAtCheckpointTag2), _cachedAtCheckpointTag2);
+                "partition2", new PartitionState("data2", null, _cachedAtCheckpointTag2), _cachedAtCheckpointTag2);
             _cache.CacheAndLockPartitionState(
-                "partition3", new PartitionStateCache.State("data3", _cachedAtCheckpointTag3), _cachedAtCheckpointTag3);
+                "partition3", new PartitionState("data3", null, _cachedAtCheckpointTag3), _cachedAtCheckpointTag3);
             _cache.Unlock(_cachedAtCheckpointTag2);
             // when
             _cache.Initialize();
@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_cache
         public void state_can_be_cached()
         {
             CheckpointTag at = CheckpointTag.FromPosition(100, 90);
-            _cache.CacheAndLockPartitionState("partition", new PartitionStateCache.State("data", at), at);
+            _cache.CacheAndLockPartitionState("partition", new PartitionState("data", null, at), at);
         }
 
         [Test]

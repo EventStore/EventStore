@@ -81,6 +81,10 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
             controls.state.text(state);
         }
 
+        function resultChanged(state) {
+            controls.result.text(state);
+        }
+
         function sourceChanged(source) {
             var current = sourceEditor.getValue();
             if (current !== source.query) {
@@ -134,7 +138,12 @@ define(["ace/ace", "projections/Observer", "projections/Controller"], function (
 
         return {
             bind: function() {
-                observer.subscribe({ statusChanged: statusChanged, stateChanged: stateChanged, sourceChanged: sourceChanged });
+                observer.subscribe({
+                    statusChanged: statusChanged,
+                    stateChanged: stateChanged,
+                    resultChanged: resultChanged,
+                    sourceChanged: sourceChanged
+                });
                 bindClick(controls.start, updateAndStart);
                 bindClick(controls.stop, stop);
                 bindClick(controls.save, save);

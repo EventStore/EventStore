@@ -26,23 +26,21 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 using System;
-using System.Text;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    public class EmittedEvent
+    public abstract class EmittedEvent
     {
         public readonly string StreamId;
         public readonly Guid EventId;
         public readonly string EventType;
         private readonly CheckpointTag _causedByTag;
         private readonly CheckpointTag _expectedTag;
-        private readonly byte[]  _data;
-        private readonly Action _onCommitted;
+        private readonly Action<int> _onCommitted;
 
-        public EmittedEvent(
-            string streamId, Guid eventId, string eventType, string data, CheckpointTag causedByTag,
-            CheckpointTag expectedTag, Action onCommitted = null)
+        protected EmittedEvent(
+            string streamId, Guid eventId, string eventType, CheckpointTag causedByTag,
+            CheckpointTag expectedTag, Action<int> onCommitted = null)
         {
             if (causedByTag == null) throw new ArgumentNullException("causedByTag");
             StreamId = streamId;
@@ -51,13 +49,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _causedByTag = causedByTag;
             _expectedTag = expectedTag;
             _onCommitted = onCommitted;
-            _data = data == null ? null : Encoding.UTF8.GetBytes(data);
         }
 
-        public byte[] Data
-        {
-            get { return _data; }
-        }
+        public abstract byte[] Data { get; }
 
         public CheckpointTag CausedByTag
         {
@@ -69,9 +63,11 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _expectedTag; }
         }
 
-        public Action OnCommitted
+        public Action<int> OnCommitted
         {
             get { return _onCommitted; }
         }
+
+        public abstract bool IsReady();
     }
 }

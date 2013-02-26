@@ -35,16 +35,11 @@ namespace EventStore.Projections.Core.Services.Processing
     public class ProjectionSubscription : ProjectionSubscriptionBase, IProjectionSubscription
     {
         public ProjectionSubscription(
-            Guid projectionCorrelationId, Guid subscriptionId, CheckpointTag from,
-            IHandle<ProjectionSubscriptionMessage.CommittedEventReceived> eventHandler,
-            IHandle<ProjectionSubscriptionMessage.CheckpointSuggested> checkpointHandler,
-            IHandle<ProjectionSubscriptionMessage.ProgressChanged> progressHandler,
-            IHandle<ProjectionSubscriptionMessage.EofReached> eofHandler, CheckpointStrategy checkpointStrategy,
-            long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof = false)
+            IPublisher publisher, Guid projectionCorrelationId, Guid subscriptionId, CheckpointTag from,
+            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof = false)
             : base(
-                projectionCorrelationId, subscriptionId, from, eventHandler, checkpointHandler, progressHandler,
-                eofHandler, checkpointStrategy, checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold,
-                stopOnEof)
+                publisher, projectionCorrelationId, subscriptionId, from, checkpointStrategy,
+                checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold, stopOnEof)
         {
         }
 

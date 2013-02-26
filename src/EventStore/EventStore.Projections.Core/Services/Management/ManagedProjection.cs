@@ -38,6 +38,7 @@ using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Utils;
+using Newtonsoft.Json;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Services.Management
@@ -54,7 +55,14 @@ namespace EventStore.Projections.Core.Services.Management
             public ProjectionMode Mode { get; set; }
             public bool Enabled { get; set; }
             public bool Deleted { get; set; }
-            public ProjectionSourceDefintion SourceDefintion { get; set; }
+
+            [Obsolete]
+            public ProjectionSourceDefinition SourceDefintion
+            {
+                set { SourceDefinition = value; }
+            }
+
+            public ProjectionSourceDefinition SourceDefinition { get; set; }
             public bool? EmitEnabled { get; set; }
             public bool? CreateTempStreams { get; set; }
             public bool? CheckpointsDisabled { get; set; }
@@ -75,6 +83,11 @@ namespace EventStore.Projections.Core.Services.Management
             RequestResponseDispatcher
                 <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>
             _getStateDispatcher;
+
+        private readonly
+            RequestResponseDispatcher
+                <CoreProjectionManagementMessage.GetResult, CoreProjectionManagementMessage.ResultReport>
+            _getResultDispatcher;
 
 
         private readonly ILogger _logger;
@@ -119,6 +132,10 @@ namespace EventStore.Projections.Core.Services.Management
             _getStateDispatcher =
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>(
+                    coreQueue, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
+            _getResultDispatcher =
+                new RequestResponseDispatcher
+                    <CoreProjectionManagementMessage.GetResult, CoreProjectionManagementMessage.ResultReport>(
                     coreQueue, v => v.CorrelationId, v => v.CorrelationId, new PublishEnvelope(_inputQueue));
             _lastAccessed = _timeProvider.Now;
         }
@@ -224,6 +241,24 @@ namespace EventStore.Projections.Core.Services.Management
             }
         }
 
+        public void Handle(ProjectionManagementMessage.GetResult message)
+        {
+            _lastAccessed = _timeProvider.Now;
+            if (_state >= ManagedProjectionState.Stopped)
+            {
+                _getResultDispatcher.Publish(
+                    new CoreProjectionManagementMessage.GetResult(
+                        new PublishEnvelope(_inputQueue), Guid.NewGuid(), _id, message.Partition),
+                    m =>
+                    message.Envelope.ReplyWith(
+                        new ProjectionManagementMessage.ProjectionResult(_name, m.Partition, m.Result)));
+            }
+            else
+            {
+                message.Envelope.ReplyWith(
+                    new ProjectionManagementMessage.ProjectionResult(message.Name, message.Partition, "*** UNKNOWN ***"));
+            }
+        }
         public void Handle(ProjectionManagementMessage.GetDebugState message)
         {
             _lastAccessed = _timeProvider.Now;
@@ -305,7 +340,7 @@ namespace EventStore.Projections.Core.Services.Management
             if (_state == ManagedProjectionState.Preparing)
             {
                 // cannot prepare - thus we don't know source defintion
-                _persistedState.SourceDefintion = null;
+                _persistedState.SourceDefinition = null;
                 OnPrepared();
             }
             FireStoppedOrFaulted();
@@ -314,13 +349,18 @@ namespace EventStore.Projections.Core.Services.Management
         public void Handle(CoreProjectionManagementMessage.Prepared message)
         {
             _state = ManagedProjectionState.Prepared;
-            _persistedState.SourceDefintion = message.SourceDefintion;
+            _persistedState.SourceDefinition = message.SourceDefinition;
             OnPrepared();
         }
 
         public void Handle(CoreProjectionManagementMessage.StateReport message)
         {
             _getStateDispatcher.Handle(message);
+        }
+
+        public void Handle(CoreProjectionManagementMessage.ResultReport message)
+        {
+            _getResultDispatcher.Handle(message);
         }
 
         public void Handle(CoreProjectionManagementMessage.StatisticsReport message)
@@ -630,14 +670,14 @@ namespace EventStore.Projections.Core.Services.Management
 
             //TODO: load configuration from the definition
 
-            if (_persistedState.SourceDefintion == null)
+            if (_persistedState.SourceDefinition == null)
                 throw new Exception(
                     "The projection cannot be loaded as stopped as it was stored in the old format.  Update the projection query text to force prepare");
 
             var createProjectionMessage =
                 new CoreProjectionManagementMessage.CreatePrepared(
                     new PublishEnvelope(_inputQueue), _id, _name, config,
-                    new SourceDefinition(_persistedState.SourceDefintion));
+                    new SourceDefinition(_persistedState.SourceDefinition));
 
             //note: set running before start as coreProjection.start() can respond with faulted
             _state = ManagedProjectionState.Preparing;
@@ -763,9 +803,9 @@ namespace EventStore.Projections.Core.Services.Management
 
     class SourceDefinition : ISourceDefinitionConfigurator
     {
-        private readonly ProjectionSourceDefintion _sourceDefinition;
+        private readonly ProjectionSourceDefinition _sourceDefinition;
 
-        public SourceDefinition(ProjectionSourceDefintion sourceDefinition)
+        public SourceDefinition(ProjectionSourceDefinition sourceDefinition)
         {
             if (sourceDefinition == null) throw new ArgumentNullException("sourceDefinition");
 
@@ -809,8 +849,8 @@ namespace EventStore.Projections.Core.Services.Management
             if (_sourceDefinition.Options != null)
                 builder.SetProcessingLag(_sourceDefinition.Options.ProcessingLag);
 
-            if (_sourceDefinition.Options != null)
-                builder.SetEmitStateUpdated(_sourceDefinition.Options.EmitStateUpdated);
+            if (_sourceDefinition.DefinesStateTransform)
+                builder.SetDefinesStateTransform();
         }
     }
 }

@@ -110,7 +110,7 @@
         });
 
         function successPartitionState(data, status, xhr) {
-            $("#projection-debug-state").text(data);
+            $("#projection-debug-result").text(data);
             $('#run-button').removeAttr("disabled");
 
             $('#run-button').click(function () {

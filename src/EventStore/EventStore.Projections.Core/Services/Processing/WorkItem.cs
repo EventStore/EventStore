@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
             : base(initialCorrelationId)
         {
             Projection = projection;
-            _lastStage = 4;
+            _lastStage = 5;
         }
 
         public override void Process(int onStage, Action<int, object> readyForStage)
@@ -70,15 +70,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 case 4:
                     WriteOutput();
                     break;
+                case 5:
+                    CompleteItem();
+                    break;
                 default:
                     throw new NotSupportedException();
             }
             Projection.EnsureTickPending();
-        }
-
-        protected virtual void WriteOutput()
-        {
-            NextStage();
         }
 
         protected virtual void RecordEventOrder()
@@ -101,6 +99,17 @@ namespace EventStore.Projections.Core.Services.Processing
             NextStage();
         }
 
+        protected virtual void WriteOutput()
+        {
+            NextStage();
+        }
+
+
+        protected virtual void CompleteItem()
+        {
+            NextStage();
+        }
+
         protected void NextStage(object newCorrelationId = null)
         {
             _lastStageCorrelationId = newCorrelationId ?? _lastStageCorrelationId ?? InitialCorrelationId;
@@ -109,7 +118,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected void Complete()
         {
-            _complete(-1, InitialCorrelationId);
+            _complete(-1, _lastStageCorrelationId);
         }
 
         public void SetCheckpointTag(CheckpointTag checkpointTag)

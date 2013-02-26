@@ -29,53 +29,8 @@ var projections = initializeProjections();
 
 function scope($on, $notify) {
     var eventProcessor = projections.createEventProcessor(log, $notify);
-    var commandHandlers = {
-            initialize: function() {
-                return eventProcessor.commandHandlers.initialize_raw();
-            },
-
-            get_state_partition: function (json, streamId, eventType, category, sequenceNumber, metadata, position) {
-                return eventProcessor.commandHandlers.get_state_partition_raw(json, streamId, eventType, category, sequenceNumber, metadata, position);
-            },
-        
-            process_event: function(json, streamId, eventType, category, sequenceNumber, metadata, partition, position) {
-                return eventProcessor.commandHandlers.process_event_raw(json, streamId, eventType, category, sequenceNumber, metadata, partition, position);
-            }, 
-
-            get_state: function() {
-                var stateJson = JSON.stringify(eventProcessor.commandHandlers.get_state_raw());
-                return stateJson;
-            }, 
-        
-            set_state: function(json) {
-                var projectionState = JSON.parse(json);
-                return eventProcessor.commandHandlers.set_state_raw(projectionState);
-            }, 
-        
-            get_statistics: function() {
-                return JSON.stringify(eventProcessor.commandHandlers.get_statistics_raw());
-            }, 
-        
-            get_sources: function() {
-                return JSON.stringify(eventProcessor.commandHandlers.get_sources_raw());
-            },
-             
-            set_debugging: function () {
-                return eventProcessor.commandHandlers.set_debugging();
-            }
-    };
-
-    // this is the only way to pass parameters to the system module
-
-    function registerCommandHandlers($on) {
-        for (var name in commandHandlers) {
-            $on(name, commandHandlers[name]);
-        }
-    }
-
-    registerCommandHandlers($on);
-
-
+    eventProcessor.register_comand_handlers($on);
+    
     function queryLog(message) {
         _log(message);
     }
@@ -90,27 +45,50 @@ function scope($on, $notify) {
                 eventProcessor.on_any(handlers[name]);
             }
             else {
-                eventProcessor.on_pure(name, handlers[name]);
+                eventProcessor.on_event(name, handlers[name]);
             }
         }
     }
 
 
-    function emitStateUpdated() {
-        eventProcessor.emit_state_updated();
+    function $defines_state_transform() {
+        eventProcessor.$defines_state_transform();
+    }
+
+    function transformBy(by) {
+        eventProcessor.chainTransformBy(by);
+        return {
+            transformBy: transformBy,
+            filterBy: filterBy,
+        };
+    }
+
+    function filterBy(by) {
+        eventProcessor.chainTransformBy(function (s) {
+            var result = by(s);
+            return result ? s : null;
+        });
+        return {
+            transformBy: transformBy,
+            filterBy: filterBy,
+        };
     }
 
     function when(handlers) {
         translateOn(handlers);
         return {
-            emitStateUpdated: emitStateUpdated,
+            $defines_state_transform: $defines_state_transform,
+            transformBy: transformBy,
+            filterBy: filterBy,
         };
     }
 
     function whenAny(handler) {
         eventProcessor.on_any(handler);
         return {
-            emitStateUpdated: emitStateUpdated,
+            $defines_state_transform: $defines_state_transform,
+            transformBy: transformBy,
+            filterBy: filterBy,
         };
     }
 
@@ -160,8 +138,10 @@ function scope($on, $notify) {
     }
 
     function fromStreams(streams) {
-        for (var i = 0; i < streams.length; i++) 
-            eventProcessor.fromStream(streams[i]);
+        var arr = Array.isArray(streams) ? streams : arguments;
+        for (var i = 0; i < arr.length; i++) 
+            eventProcessor.fromStream(arr[i]);
+ 
         return {
             partitionBy: partitionBy,
             when: when,

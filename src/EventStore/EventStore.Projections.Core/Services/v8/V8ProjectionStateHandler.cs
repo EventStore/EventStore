@@ -91,7 +91,7 @@ namespace EventStore.Projections.Core.Services.v8
             }
             if (_emittedEvents == null)
                 _emittedEvents = new List<EmittedEvent>();
-            _emittedEvents.Add(new EmittedEvent(emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body, _eventPosition, expectedTag: null));
+            _emittedEvents.Add(new EmittedDataEvent(emittedEvent.streamId, Guid.NewGuid(), emittedEvent.eventName, emittedEvent.body, _eventPosition, expectedTag: null));
         }
 
         public void ConfigureSourceProcessingStrategy(QuerySourceProcessingStrategyBuilder builder)
@@ -131,8 +131,8 @@ namespace EventStore.Projections.Core.Services.v8
                 builder.SetReorderEvents(true);
             if (sourcesDefintion.Options.ProcessingLag != null)
                 builder.SetProcessingLag(sourcesDefintion.Options.ProcessingLag.GetValueOrDefault());
-            if (sourcesDefintion.Options.EmitStateUpdated)
-                builder.SetEmitStateUpdated(true);
+            if (sourcesDefintion.DefinesStateTransform)
+                builder.SetDefinesStateTransform(); 
         }
 
         public void Load(string state)
@@ -176,16 +176,22 @@ namespace EventStore.Projections.Core.Services.v8
                 throw new ArgumentNullException("streamId");
             _eventPosition = eventPosition;
             _emittedEvents = null;
-            _query.Push(
+            newState = _query.Push(
                 data.Trim(), // trimming data passed to a JS 
                 new[]
                     {
                         streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture),
                         metadata ?? "", partition, eventPosition.ToJson()
                     });
-            newState = _query.GetState();
             emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
             return true;
+        }
+
+        public string TransformStateToResult()
+        {
+            CheckDisposed();
+            var result = _query.TransformStateToResult();
+            return result;
         }
 
         private void CheckDisposed()
