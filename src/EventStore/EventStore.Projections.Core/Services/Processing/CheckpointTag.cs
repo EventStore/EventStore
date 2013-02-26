@@ -29,15 +29,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text;
 using EventStore.Core.Data;
+using EventStore.Core.Util;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    [DataContract]
     public class CheckpointTag : IComparable<CheckpointTag>
     {
+        public readonly EventPosition Position;
+        public readonly Dictionary<string, int> Streams;
+
         internal enum Mode
         {
             Position,
@@ -49,16 +51,26 @@ namespace EventStore.Projections.Core.Services.Processing
         internal CheckpointTag()
         {
             Position = new EventPosition(long.MinValue, long.MinValue);
+            Mode_ = CalculateMode();
+        }
+
+        private CheckpointTag(EventPosition position, Dictionary<string, int> streams)
+        {
+            Position = position;
+            Streams = streams;
+            Mode_ = CalculateMode();
         }
 
         public CheckpointTag(long preparePosition)
         {
             Position = new EventPosition(long.MinValue, preparePosition);
+            Mode_ = CalculateMode();
         }
 
         public CheckpointTag(EventPosition position)
         {
             Position = position;
+            Mode_ = CalculateMode();
         }
 
         public CheckpointTag(Dictionary<string, int> streams)
@@ -70,6 +82,7 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             Streams = new Dictionary<string, int>(streams); // clone
             Position = new EventPosition(Int64.MinValue, Int64.MinValue);
+            Mode_ = CalculateMode();
         }
 
         private CheckpointTag(string stream, int sequenceNumber)
@@ -79,9 +92,10 @@ namespace EventStore.Projections.Core.Services.Processing
             if (sequenceNumber < 0 && sequenceNumber != ExpectedVersion.NoStream) throw new ArgumentException("sequenceNumber");
             Position = new EventPosition(Int64.MinValue, Int64.MinValue);
             Streams = new Dictionary<string, int> {{stream, sequenceNumber}};
+            Mode_ = CalculateMode();
         }
 
-        internal Mode GetMode()
+        private Mode CalculateMode()
         {
             if (Streams == null || Streams.Count == 0)
                 if (CommitPosition == null && PreparePosition != null)
@@ -101,8 +115,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 return true;
             if (ReferenceEquals(left, null) && !ReferenceEquals(right, null))
                 return false;
-            var leftMode = left.GetMode();
-            var rightMode = right.GetMode();
+            var leftMode = left.Mode_;
+            var rightMode = right.Mode_;
             UpgradeModes(ref leftMode, ref rightMode);
             if (leftMode != rightMode)
                 throw new NotSupportedException("Cannot compare checkpoint tags in different modes");
@@ -131,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     throw new NotSupportedException("Checkpoint tag mode is not supported in comparison");
             }
         }
-
+        
         private static void ThrowIncomparable(CheckpointTag left, CheckpointTag right)
         {
             throw new InvalidOperationException(
@@ -146,8 +160,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 return true;
             if (ReferenceEquals(left, null) && !ReferenceEquals(right, null))
                 return false;
-            var leftMode = left.GetMode();
-            var rightMode = right.GetMode();
+            var leftMode = left.Mode_;
+            var rightMode = right.Mode_;
             UpgradeModes(ref leftMode, ref rightMode);
             if (leftMode != rightMode)
                 throw new NotSupportedException("Cannot compare checkpoint tags in different modes");
@@ -201,11 +215,16 @@ namespace EventStore.Projections.Core.Services.Processing
             return !(left == right);
         }
 
+        public static implicit operator CheckpointTag (CheckpointTagJson source)
+        {
+            return source == null ? null : new CheckpointTag(source.Position, source.Streams);
+        }
+
 
         protected bool Equals(CheckpointTag other)
         {
-            var leftMode = GetMode();
-            var rightMode = other.GetMode();
+            var leftMode = Mode_;
+            var rightMode = other.Mode_;
             if (leftMode != rightMode)
                 return false;
             UpgradeModes(ref leftMode, ref rightMode);
@@ -242,10 +261,7 @@ namespace EventStore.Projections.Core.Services.Processing
             return Position.GetHashCode();
         }
 
-        public EventPosition Position { get; private set; }
 
-
-        [DataMember]
         public long? CommitPosition
         {
             get
@@ -254,14 +270,8 @@ namespace EventStore.Projections.Core.Services.Processing
                            ? null
                            : (Position.CommitPosition != Int64.MinValue ? Position.CommitPosition : (long?) null);
             }
-            set
-            {
-                Position = new EventPosition(
-                    value == null ? Int64.MinValue : value.GetValueOrDefault(), Position.PreparePosition);
-            }
         }
 
-        [DataMember]
         public long? PreparePosition
         {
             get
@@ -270,15 +280,9 @@ namespace EventStore.Projections.Core.Services.Processing
                          ? null
                          : (Position.PreparePosition != Int64.MinValue ? Position.PreparePosition : (long?)null);
             }
-            set
-            {
-                Position = new EventPosition(
-                    Position.CommitPosition, value == null ? Int64.MinValue : value.GetValueOrDefault());
-            }
         }
 
-        [DataMember]
-        public Dictionary<string, int> Streams { get; private set; }
+        internal readonly Mode Mode_;
 
         public static CheckpointTag FromPosition(long commitPosition, long preparePosition)
         {
@@ -308,7 +312,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override string ToString()
         {
-            switch (GetMode())
+            switch (Mode_)
             {
                 case Mode.Position:
                     return Position.ToString();
@@ -344,7 +348,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public CheckpointTag UpdateStreamPosition(string streamId, int eventSequenceNumber)
         {
-            if (GetMode() != Mode.MultiStream)
+            if (Mode_ != Mode.MultiStream)
                 throw new ArgumentException("Invalid tag mode", "tag");
             var resultDictionary = new Dictionary<string, int>();
             foreach (var stream in Streams)
@@ -366,6 +370,11 @@ namespace EventStore.Projections.Core.Services.Processing
             if (resultDictionary.Count < Streams.Count)
                 resultDictionary.Add(streamId, eventSequenceNumber);
             return FromStreamPositions(resultDictionary);
+        }
+
+        public byte[] ToJsonBytes()
+        {
+            return new CheckpointTagJson { Position =  Position, Streams = Streams }.ToJsonBytes();
         }
     }
 }

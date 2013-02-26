@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Other
             string instring = Encoding.UTF8.GetString(bytes);
             Console.WriteLine(instring);
 
-            var back = instring.ParseJson<CheckpointTag>();
+            CheckpointTag back = instring.ParseJson<CheckpointTagJson>();
             Assert.AreEqual(tag, back);
         }
 
@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Other
             string instring = Encoding.UTF8.GetString(bytes);
             Console.WriteLine(instring);
 
-            var back = instring.ParseJson<CheckpointTag>();
+            CheckpointTag back = instring.ParseJson<CheckpointTagJson>();
             Assert.AreEqual(tag, back);
         }
 
@@ -70,7 +70,7 @@ namespace EventStore.Projections.Core.Tests.Other
             string instring = Encoding.UTF8.GetString(bytes);
             Console.WriteLine(instring);
 
-            var back = instring.ParseJson<CheckpointTag>();
+            CheckpointTag back = instring.ParseJson<CheckpointTagJson>();
             Assert.AreEqual(tag, back);
         }
 
@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Other
             string instring = Encoding.UTF8.GetString(bytes);
             Console.WriteLine(instring);
 
-            var back = instring.ParseJson<CheckpointTag>();
+            CheckpointTag back = instring.ParseJson<CheckpointTagJson>();
             Assert.AreEqual(tag, back);
         }
 
@@ -94,7 +94,7 @@ namespace EventStore.Projections.Core.Tests.Other
             string instring = Encoding.UTF8.GetString(bytes);
             Console.WriteLine(instring);
 
-            var back = instring.ParseJson<CheckpointTag>();
+            CheckpointTag back = instring.ParseJson<CheckpointTagJson>();
             Assert.AreEqual(tag, back);
             Assert.IsNull(back.CommitPosition);
         }
@@ -107,7 +107,7 @@ namespace EventStore.Projections.Core.Tests.Other
             string instring = Encoding.UTF8.GetString(bytes);
             Console.WriteLine(instring);
 
-            var back = instring.ParseJson<CheckpointTag>();
+            CheckpointTag back = instring.ParseJson<CheckpointTagJson>();
             Assert.AreEqual(tag, back);
             Assert.IsNull(back.CommitPosition);
         }

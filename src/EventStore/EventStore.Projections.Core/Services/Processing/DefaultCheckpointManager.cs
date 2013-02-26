@@ -214,7 +214,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (checkpoint != null)
                 {
                     checkpointData = Encoding.UTF8.GetString(checkpoint.Data);
-                    checkpointTag = checkpoint.Metadata.ParseJson<CheckpointTag>();
+                    checkpointTag = checkpoint.Metadata.ParseJson<CheckpointTagJson>();
                     checkpointEventNumber = checkpoint.EventNumber;
                 }
             }
@@ -265,7 +265,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 EventRecord @event = message.Events[0].Event;
                 if (@event.EventType == stateEventType)
                 {
-                    var loadedStateCheckpointTag = @event.Metadata.ParseJson<CheckpointTag>();
+                    var loadedStateCheckpointTag = @event.Metadata.ParseJson<CheckpointTagJson>();
                     // always recovery mode? skip until state before current event
                     //TODO: skip event processing in case we know i has been already processed
                     if (loadedStateCheckpointTag < requestedStateCheckpointTag)

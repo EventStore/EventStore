@@ -89,18 +89,27 @@ namespace EventStore.Projections.Core.Services.Processing
         public int Process()
         {
             int processed = 0;
-            StagedTask taskProcessed = null;
+            TaskEntry taskProcessed = null;
             while (_tasks.Count > 0)
             {
-                taskProcessed = ProcessOneTask(taskProcessed);
-                if (taskProcessed == null)
+                var entry = GetEntryToProcess(taskProcessed);
+                if (entry == null)
                     break;
+                ProcessEntry(entry);
+                taskProcessed = entry;
                 processed++;
             }
             return processed;
         }
 
-        private StagedTask ProcessOneTask(StagedTask runThisOnly)
+        private void ProcessEntry(TaskEntry entry)
+        {
+            entry.Task.Process(
+                entry.ReadForStage,
+                (readyForStage, newCorrelationId) => CompleteTaskProcessing(entry, readyForStage, newCorrelationId));
+        }
+
+        private TaskEntry GetEntryToProcess(TaskEntry runThisOnly)
         {
             while (_tasks.Count > 0 && _tasks.Peek().Completed)
                 _tasks.Dequeue();
@@ -130,15 +139,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_orderedStage[taskStage] && taskStage > previousTaskMinimumProcessingStage)
                     continue;
 
-                if (runThisOnly != null && entry.Task != runThisOnly) // skip other tasks (this is to allow current entry continue to the next step - required by TickHandling)
+                if (runThisOnly != null && entry != runThisOnly) // skip other tasks (this is to allow current entry continue to the next step - required by TickHandling)
                     break; // do not skip, we can process only in this order
 
                 // here we should be at the first StagedTask of current processing level which is not busy
                 entry.Busy = true;
-                entry.Task.Process(
-                    taskStage,
-                    (readyForStage, newCorrelationId) => CompleteTaskProcessing(entry, readyForStage, newCorrelationId));
-                return entry.Task;
+                return entry;
             }
             return null;
         }

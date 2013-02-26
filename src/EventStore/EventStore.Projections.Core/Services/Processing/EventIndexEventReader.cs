@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected override EventPosition? EventPairToPosition(EventStore.Core.Data.ResolvedEvent resolvedEvent)
         {
             var @link = resolvedEvent.Link;
-            return @link.Metadata.ParseJson<CheckpointTag>().Position;
+            return @link.Metadata.ParseJson<CheckpointTagJson>().Position;
         }
 
         protected override EventPosition? MessageToLastCommitPosition(
@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         protected override EventPosition GetItemPosition(Tuple<EventRecord, EventRecord, float> head)
         {
-            return head.Item2.Metadata.ParseJson<CheckpointTag>().Position;
+            return head.Item2.Metadata.ParseJson<CheckpointTagJson>().Position;
         }
 
         protected override EventPosition GetMaxPosition()

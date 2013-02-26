@@ -158,7 +158,7 @@ namespace EventStore.Projections.Core.Services.v8
                 throw new ArgumentNullException("streamId");
             var partition = _query.GetPartition(
                 data.Trim(), // trimming data passed to a JS 
-                new string[] { streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture), metadata ?? "", eventPosition.ToJson() });
+                new string[] { streamId, eventType, category ?? "", sequenceNumber.ToString(CultureInfo.InvariantCulture), metadata ?? "" });
             if (partition == "")
                 return null;
             else 

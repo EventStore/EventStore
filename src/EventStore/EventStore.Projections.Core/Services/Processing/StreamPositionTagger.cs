@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override bool IsMessageAfterCheckpointTag(CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
         {
-            if (previous.GetMode() != CheckpointTag.Mode.Stream)
+            if (previous.Mode_ != CheckpointTag.Mode.Stream)
                 throw new ArgumentException("Mode.Stream expected", "previous");
             return comittedEvent.PositionStreamId == _stream
                    && comittedEvent.PositionSequenceNumber > previous.Streams[_stream];
@@ -65,7 +65,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
         {
-            return checkpointTag.GetMode() == CheckpointTag.Mode.Stream && checkpointTag.Streams.Keys.First() == this._stream;
+            return checkpointTag.Mode_ == CheckpointTag.Mode.Stream && checkpointTag.Streams.Keys.First() == this._stream;
         }
     }
 }

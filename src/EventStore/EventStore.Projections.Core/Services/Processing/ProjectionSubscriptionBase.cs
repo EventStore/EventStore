@@ -76,11 +76,6 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             }
             var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
-            if (eventCheckpointTag <= _positionTracker.LastTag)
-                throw new Exception(
-                    string.Format(
-                        "Invalid checkpoint tag was built.  Tag '{0}' must be greater than '{1}'", eventCheckpointTag,
-                        _positionTracker.LastTag));
             _positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
             if (_eventFilter.Passes(message.ResolvedLinkTo, message.PositionStreamId, message.Data.EventType))
             {

@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
                 CheckpointTag.FromPosition(200, 150), CheckpointTag.FromPosition(100, 50)) });
             var metaData =
                 _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Single().Events[0].Metadata.ParseJson
-                    <CheckpointTag>();
+                    <CheckpointTagJson>();
             Assert.AreEqual(200, metaData.CommitPosition);
             Assert.AreEqual(150, metaData.PreparePosition);
         }

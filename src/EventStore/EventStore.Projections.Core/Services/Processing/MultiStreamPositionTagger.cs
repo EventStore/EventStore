@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override bool IsMessageAfterCheckpointTag(CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
         {
-            if (previous.GetMode() != CheckpointTag.Mode.MultiStream)
+            if (previous.Mode_ != CheckpointTag.Mode.MultiStream)
                 throw new ArgumentException("Mode.MultiStream expected", "previous");
             return _streams.Contains(comittedEvent.PositionStreamId)
                    && comittedEvent.PositionSequenceNumber > previous.Streams[comittedEvent.PositionStreamId];
@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public override bool IsCompatible(CheckpointTag checkpointTag)
         {
             //TODO: should Stream be supported here as well if in the set?
-            return checkpointTag.GetMode() == CheckpointTag.Mode.MultiStream
+            return checkpointTag.Mode_ == CheckpointTag.Mode.MultiStream
                    && checkpointTag.Streams.All(v => _streams.Contains(v.Key));
 
         }

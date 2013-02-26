@@ -7,12 +7,12 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         public override bool IsCompatible(CheckpointTag checkpointTag)
         {
-            return checkpointTag.GetMode() == CheckpointTag.Mode.Position;
+            return checkpointTag.Mode_ == CheckpointTag.Mode.Position;
         }
 
         public override bool IsMessageAfterCheckpointTag(CheckpointTag previous, ProjectionCoreServiceMessage.CommittedEventDistributed comittedEvent)
         {
-            if (previous.GetMode() != CheckpointTag.Mode.Position)
+            if (previous.Mode_ != CheckpointTag.Mode.Position)
                 throw new ArgumentException("Mode.Position expected", "previous");
             return comittedEvent.Position > previous.Position;
         }

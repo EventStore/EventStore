@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public override bool IsCompatible(CheckpointTag checkpointTag)
         {
-            return checkpointTag.GetMode() == CheckpointTag.Mode.PreparePosition;
+            return checkpointTag.Mode_ == CheckpointTag.Mode.PreparePosition;
         }
     }
 }
