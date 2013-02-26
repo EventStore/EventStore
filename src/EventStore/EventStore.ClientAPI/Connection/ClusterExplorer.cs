@@ -62,10 +62,10 @@ namespace EventStore.ClientAPI.Connection
         public Task<IPEndPoint> Resolve(string dns)
         {
             return Task<IPAddress[]>.Factory.FromAsync(Dns.BeginGetHostAddresses, Dns.EndGetHostAddresses, dns, null)
-                                            .ContinueWith(addresses => DiscoverCLuster(addresses.Result, _maxDiscoverAttempts));
+                                            .ContinueWith(addresses => DiscoverCluster(addresses.Result, _maxDiscoverAttempts));
         }
 
-        private IPEndPoint DiscoverCLuster(IPAddress[] managers, int maxAttempts)
+        private IPEndPoint DiscoverCluster(IPAddress[] managers, int maxAttempts)
         {
             if (managers == null || managers.Length == 0)
                 throw new CannotEstablishConnectionException("DNS entry resolved in empty ip addresses list");

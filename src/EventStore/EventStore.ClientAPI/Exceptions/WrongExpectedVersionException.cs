@@ -31,7 +31,7 @@ using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class WrongExpectedVersionException : Exception
+    public class WrongExpectedVersionException : EventStoreConnectionException
     {
         public WrongExpectedVersionException(string message) : base(message)
         {

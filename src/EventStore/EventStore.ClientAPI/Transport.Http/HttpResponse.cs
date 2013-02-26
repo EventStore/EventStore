@@ -32,27 +32,27 @@ namespace EventStore.ClientAPI.Transport.Http
 {
     internal class HttpResponse
     {
-        public string CharacterSet { get; private set; }
+        public readonly string CharacterSet;
 
-        public string ContentEncoding { get; private set; }
-        public long ContentLength { get; private set; }
-        public string ContentType { get; private set; }
+        public readonly string ContentEncoding;
+        public readonly long ContentLength;
+        public readonly string ContentType;
 
-        //public CookieCollection Cookies { get; private set; }
-        public WebHeaderCollection Headers { get; private set; }
+        //public readonly CookieCollection Cookies;
+        public readonly WebHeaderCollection Headers;
 
-        //public bool IsFromCache { get; private set; }
-        //public bool IsMutuallyAuthenticated { get; private set; }//TODO TR: not implemented in mono
-        //public DateTime LastModified { get; private set; }
+        //public readonly bool IsFromCache;
+        //public readonly bool IsMutuallyAuthenticated;//TODO TR: not implemented in mono
+        //public readonly DateTime LastModified;
 
-        public string Method { get; private set; }
-        //public Version ProtocolVersion { get; private set; }
+        public readonly string Method;
+        //public readonly Version ProtocolVersion;
 
-        //public Uri ResponseUri { get; private set; }
-        //public string Server { get; private set; }
+        //public readonly Uri ResponseUri;
+        //public readonly string Server;
 
-        public int HttpStatusCode { get; private set; }
-        public string StatusDescription { get; private set; }
+        public readonly int HttpStatusCode;
+        public readonly string StatusDescription;
 
         public string Body { get; internal set; }
 

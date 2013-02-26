@@ -137,7 +137,7 @@ namespace EventStore.ClientAPI.Transport.Http
             }
             catch (Exception e)
             {
-                state.DisposeIOStreams();
+                state.Dispose();
                 state.OnError(e);
             }
         }
@@ -149,7 +149,7 @@ namespace EventStore.ClientAPI.Transport.Http
 
             if (copier.Error != null)
             {
-                state.DisposeIOStreams();
+                state.Dispose();
                 state.OnError(copier.Error);
                 return;
             }
@@ -158,7 +158,7 @@ namespace EventStore.ClientAPI.Transport.Http
             var memStream = (MemoryStream)state.OutputStream;
             state.Response.Body = Encoding.UTF8.GetString(memStream.GetBuffer(), 0, (int)memStream.Length);
 
-            state.DisposeIOStreams();
+            state.Dispose();
             state.OnSuccess(state.Response);
         }
 
@@ -175,7 +175,7 @@ namespace EventStore.ClientAPI.Transport.Http
             }
             catch (Exception e)
             {
-                state.DisposeIOStreams();
+                state.Dispose();
                 state.OnError(e);
             }
         }
@@ -188,12 +188,12 @@ namespace EventStore.ClientAPI.Transport.Http
 
             if (copier.Error != null)
             {
-                state.DisposeIOStreams();
+                state.Dispose();
                 state.OnError(copier.Error);
                 return;
             }
 
-            state.DisposeIOStreams();
+            state.Dispose();
             httpRequest.BeginGetResponse(ResponseAcquired, state);
         }
     }

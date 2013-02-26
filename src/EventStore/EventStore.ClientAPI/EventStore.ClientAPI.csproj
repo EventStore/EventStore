@@ -94,6 +94,7 @@
     <Compile Include="Common\Concurrent\ConcurrentStack.cs" />
     <Compile Include="Common\Log\ConsoleLogger.cs" />
     <Compile Include="Common\Log\DebugLogger.cs" />
+    <Compile Include="Common\Utils\BytesFormatter.cs" />
     <Compile Include="Common\Utils\Helper.cs" />
     <Compile Include="Common\Utils\Tasks.cs" />
     <Compile Include="ConnectionSettings.cs" />
@@ -101,6 +102,7 @@
     <Compile Include="Connection\ClusterExplorer.cs" />
     <Compile Include="Connection\SubscriptionsChannel.cs" />
     <Compile Include="Connection\WorkItem.cs" />
+    <Compile Include="Consts.cs" />
     <Compile Include="EventStoreCatchUpSubscription.cs" />
     <Compile Include="Empty.cs" />
     <Compile Include="EventData.cs" />
@@ -125,7 +127,6 @@
     <Compile Include="Exceptions\RetriesLimitReachedException.cs" />
     <Compile Include="ClientOperations\CreateStreamOperation.cs" />
     <Compile Include="Common\Log\LogManager.cs" />
-    <Compile Include="Common\Utils\BytesFormatter.cs" />
     <Compile Include="ClientOperations\DeleteStreamOperation.cs" />
     <Compile Include="ClientOperations\IClientOperation.cs" />
     <Compile Include="ClientOperations\ReadStreamEventsForwardOperation.cs" />
@@ -151,7 +152,6 @@
     <Compile Include="Transport.Http\HttpMethod.cs" />
     <Compile Include="Transport.Http\HttpResponse.cs" />
     <Compile Include="Transport.Http\HttpStatusCode.cs" />
-    <Compile Include="Transport.Http\IOStreams.cs" />
     <Compile Include="Transport.Http\IPEndpointExtensions.cs" />
     <Compile Include="Transport.Http\WebRequestExtensions.cs" />
     <Compile Include="Messages\ClientMessage.cs" />

@@ -31,7 +31,7 @@ using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class InvalidTransactionException : Exception
+    public class InvalidTransactionException : EventStoreConnectionException
     {
         public InvalidTransactionException()
         {

@@ -73,8 +73,8 @@ namespace EventStore.ClientAPI.Transport.Tcp
             InSend = inSend;
             PendingReceived = pendingReceived;
             MeasureTime = measureTime;
-            SendingSpeed = (MeasureTime.TotalSeconds < 0.00001) ? 0 : SentBytesSinceLastRun / MeasureTime.TotalSeconds;
-            ReceivingSpeed = (MeasureTime.TotalSeconds < 0.00001) ? 0 : ReceivedBytesSinceLastRun / MeasureTime.TotalSeconds;
+            SendingSpeed = MeasureTime.TotalSeconds < 0.00001 ? 0 : SentBytesSinceLastRun / MeasureTime.TotalSeconds;
+            ReceivingSpeed = MeasureTime.TotalSeconds < 0.00001 ? 0 : ReceivedBytesSinceLastRun / MeasureTime.TotalSeconds;
 
             SentBytesTotalFriendly = SentBytesTotal.ToFriendlySizeString();
             ReceivedBytesTotalFriendly = ReceivedBytesTotal.ToFriendlySizeString();

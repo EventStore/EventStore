@@ -31,7 +31,7 @@ using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class ServerErrorException : Exception
+    public class ServerErrorException : EventStoreConnectionException
     {
         public ServerErrorException()
         {
