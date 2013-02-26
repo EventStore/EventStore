@@ -26,6 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  
 using System;
+using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
@@ -35,7 +36,7 @@ namespace EventStore.ClientAPI
     /// </summary>
     public class ConnectionSettingsBuilder
     {
-        private ILogger _log;
+        private ILogger _log = new NoopLogger();
 
         private int _maxQueueSize = Consts.DefaultMaxQueueSize;
         private int _maxConcurrentItems = Consts.DefaultMaxConcurrentItems;
@@ -64,6 +65,7 @@ namespace EventStore.ClientAPI
         /// <returns></returns>
         public ConnectionSettingsBuilder UseLogger(ILogger logger)
         {
+            Ensure.NotNull(logger, "logger");
             _log = logger;
             return this;
         }

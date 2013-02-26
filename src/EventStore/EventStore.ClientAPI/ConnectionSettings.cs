@@ -27,6 +27,7 @@
 //  
 
 using System;
+using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI
 {
@@ -116,6 +117,12 @@ namespace EventStore.ClientAPI
                                     Action<EventStoreConnection> disconnected,
                                     Action<EventStoreConnection> reconnecting)
         {
+            Ensure.NotNull(log, "log");
+            Ensure.Positive(maxQueueSize, "maxQueueSize");
+            Ensure.Positive(maxConcurrentItems, "maxConcurrentItems");
+            Ensure.Positive(maxAttempts, "maxAttempts");
+            Ensure.Nonnegative(maxReconnections, "maxReconnections");
+
             Log = log;
             MaxQueueSize = maxQueueSize;
             MaxConcurrentItems = maxConcurrentItems;

@@ -30,7 +30,7 @@ using System;
 using System.Threading;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Common.Utils;
-using EventStore.ClientAPI.Connection;
+using EventStore.ClientAPI.Core;
 
 namespace EventStore.ClientAPI
 {
