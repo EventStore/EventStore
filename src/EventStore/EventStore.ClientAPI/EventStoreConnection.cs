@@ -873,7 +873,7 @@ namespace EventStore.ClientAPI
                 string message = Helper.EatException(() => Encoding.UTF8.GetString(package.Data.Array, package.Data.Offset, package.Data.Count));
                 try
                 {
-                    throw new EventStoreConnectionException(
+                    throw new ServerErrorException(
                         string.Format("BadRequest received from server. Error: {0}", string.IsNullOrEmpty(message) ? "<no message>" : message));
                 }
                 catch (EventStoreConnectionException exc)

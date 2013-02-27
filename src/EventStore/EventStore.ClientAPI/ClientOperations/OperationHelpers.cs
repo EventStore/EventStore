@@ -50,8 +50,15 @@ namespace EventStore.ClientAPI.ClientOperations
             {
                 message = exc.ToString();
             }
-            return new InspectionResult(InspectionDecision.NotifyError,
-                                        new ServerErrorException(string.IsNullOrEmpty(message) ? "<no message>" : message));
+            try
+            {
+                throw new ServerErrorException(
+                    string.Format("BadRequest received from server. Error: {0}", string.IsNullOrEmpty(message) ? "<no message>" : message));
+            }
+            catch (ServerErrorException exc)
+            {
+                return new InspectionResult(InspectionDecision.NotifyError, exc);
+            }
         }
 
         public static InspectionResult InspectNotHandled(this TcpPackage package)

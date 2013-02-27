@@ -31,7 +31,7 @@ using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class CannotEstablishConnectionException : Exception
+    public class CannotEstablishConnectionException : EventStoreConnectionException
     {
         public CannotEstablishConnectionException()
         {

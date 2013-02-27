@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Services.Replication.CreateStream
     {
         protected override TwoPhaseRequestManagerBase OnManager(FakePublisher publisher)
         {
-            return new CreateStreamTwoPhaseRequestManager(publisher, 3, 3);
+            return new CreateStreamTwoPhaseRequestManager(publisher, 3, 3, TimeSpan.Zero, TimeSpan.Zero);
         }
 
         protected override IEnumerable<Message> WithInitialMessages()

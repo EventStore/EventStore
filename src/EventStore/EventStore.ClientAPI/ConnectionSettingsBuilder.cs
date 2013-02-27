@@ -37,16 +37,16 @@ namespace EventStore.ClientAPI
     {
         private ILogger _log;
 
-        private int _maxQueueSize;
-        private int _maxConcurrentItems;
-        private int _maxAttempts;
-        private int _maxReconnections;
+        private int _maxQueueSize = Consts.DefaultMaxQueueSize;
+        private int _maxConcurrentItems = Consts.DefaultMaxConcurrentItems;
+        private int _maxAttempts = Consts.DefaultMaxOperationAttempts;
+        private int _maxReconnections = Consts.DefaultMaxReconnections;
 
-        private bool _allowForwarding;
+        private bool _allowForwarding = Consts.DefaultAllowForwarding;
 
-        private TimeSpan _reconnectionDelay;
-        private TimeSpan _operationTimeout;
-        private TimeSpan _operationTimeoutCheckPeriod;
+        private TimeSpan _reconnectionDelay = Consts.DefaultReconnectionDelay;
+        private TimeSpan _operationTimeout = Consts.DefaultOperationTimeout;
+        private TimeSpan _operationTimeoutCheckPeriod = Consts.DefaultOperationTimeoutCheckPeriod;
 
         private Action<EventStoreConnection, Exception> _errorOccurred;
         private Action<EventStoreConnection> _connected;
@@ -55,20 +55,7 @@ namespace EventStore.ClientAPI
 
         internal ConnectionSettingsBuilder()
         {
-            _log = null;
-
-            _maxQueueSize = 5000;
-            _maxConcurrentItems = 5000;
-            _maxAttempts = 10;
-            _maxReconnections = 10;
-
-            _allowForwarding = true;
-
-            _reconnectionDelay = TimeSpan.FromSeconds(3);
-            _operationTimeout = TimeSpan.FromSeconds(7);
-            _operationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
         }
-
 
         /// <summary>
         /// Configures the connection to utilize a given logger.

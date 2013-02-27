@@ -43,8 +43,6 @@ namespace EventStore.ClientAPI.Connection
 {
     internal class SubscriptionsChannel
     {
-        private const int ConnectionTimeoutMs = 2000;
-
         private readonly ILogger _log;
 
         private readonly TcpConnector _connector;
@@ -216,9 +214,9 @@ namespace EventStore.ClientAPI.Connection
                 if (!_connectedEvent.Wait(0))
                 {
                     Connect(endPoint);
-                    if (!_connectedEvent.Wait(ConnectionTimeoutMs))
+                    if (!_connectedEvent.Wait(Consts.SubscriptionChannelConnectionTimeout))
                     {
-                        var message = string.Format("Couldn't connect to [{0}] in {1} ms.", _connection.EffectiveEndPoint, ConnectionTimeoutMs);
+                        var message = string.Format("Couldn't connect to [{0}] in {1}.", _connection.EffectiveEndPoint, Consts.SubscriptionChannelConnectionTimeout);
                         _log.Error(message);
                         throw new CannotEstablishConnectionException(message);
                     }

@@ -32,7 +32,7 @@ using System.Net.Sockets;
 
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class ConnectionFailedException : Exception
+    public class ConnectionFailedException : EventStoreConnectionException
     {
         public ConnectionFailedException(IPEndPoint endPoint, SocketError socketError)  
             : base(string.Format("Connection to [{0}] failed. Error : {1}.", endPoint, socketError))

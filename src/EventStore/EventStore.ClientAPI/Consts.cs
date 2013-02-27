@@ -1,10 +1,10 @@
 ﻿// Copyright (c) 2012, Event Store LLP
 // All rights reserved.
-// 
+//  
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//  
 // Redistributions of source code must retain the above copyright notice,
 // this list of conditions and the following disclaimer.
 // Redistributions in binary form must reproduce the above copyright
@@ -24,35 +24,24 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-
+//  
 using System;
-using System.IO;
-using EventStore.ClientAPI.Common.Log;
 
-namespace EventStore.ClientAPI.Transport.Http
+namespace EventStore.ClientAPI
 {
-    internal class IOStreams
+    internal static class Consts
     {
-        public static void SafelyDispose(params Stream[] streams)
-        {
-            if (streams == null || streams.Length == 0)
-                return;
+        public const int DefaultMaxQueueSize = 5000;
+        public const int DefaultMaxConcurrentItems = 5000;
+        public const int DefaultMaxOperationAttempts = 10;
+        public const int DefaultMaxReconnections = 10;
 
-            foreach (var stream in streams)
-            {
-                try
-                {
-                    if (stream != null)
-                        stream.Dispose();
-                }
-                catch (Exception e)
-                {
-                    //Exceptions may be thrown when client shutdown and we were unable to write all the data,
-                    //Nothing we can do, ignore (another option - globally ignore write errors)
-                    LogManager.GetLogger().Debug("Error while closing stream : {0}", e.Message);
-                }
-            }
-        }
+        public const bool DefaultAllowForwarding = true;
+
+        public static readonly TimeSpan DefaultReconnectionDelay = TimeSpan.FromSeconds(3);
+        public static readonly TimeSpan DefaultOperationTimeout = TimeSpan.FromSeconds(7);
+        public static readonly TimeSpan DefaultOperationTimeoutCheckPeriod = TimeSpan.FromSeconds(1);
+
+        public static readonly TimeSpan SubscriptionChannelConnectionTimeout = TimeSpan.FromSeconds(2);
     }
 }

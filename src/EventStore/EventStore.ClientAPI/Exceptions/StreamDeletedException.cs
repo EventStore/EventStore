@@ -26,12 +26,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using System;
 using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class StreamDeletedException : Exception
+    public class StreamDeletedException : EventStoreConnectionException
     {
         public readonly string Stream;
 

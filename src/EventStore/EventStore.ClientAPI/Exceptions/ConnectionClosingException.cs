@@ -31,7 +31,7 @@ using System.Runtime.Serialization;
 
 namespace EventStore.ClientAPI.Exceptions
 {
-    public class ConnectionClosingException : Exception
+    public class ConnectionClosingException : EventStoreConnectionException
     {
         public ConnectionClosingException()
         {

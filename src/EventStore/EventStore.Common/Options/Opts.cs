@@ -128,6 +128,18 @@ namespace EventStore.Common.Options
         public const string HttpPrefixesDescr = "The prefixes that the http server should respond to.";
         public static readonly string[] HttpPrefixesDefault = new string[0];
 
+        public const string PrepareTimeoutMsCmd = "pt|prepare-timeout=";
+        public const string PrepareTimeoutMsEnv = "PREPARE_TIMEOUT_MS";
+        public const string PrepareTimeoutMsJson = "prepareTimeoutMs";
+        public const string PrepareTimeoutMsDescr = "Prepare timeout (in milliseconds).";
+        public static readonly int PrepareTimeoutMsDefault = 2000; // 2 seconds
+
+        public const string CommitTimeoutMsCmd = "ct|commit-timeout=";
+        public const string CommitTimeoutMsEnv = "COMMIT_TIMEOUT_MS";
+        public const string CommitTimeoutMsJson = "commitTimeoutMs";
+        public const string CommitTimeoutMsDescr = "Commit timeout (in milliseconds).";
+        public static readonly int CommitTimeoutMsDefault = 2000; // 2 seconds
+
         /*
          *  CLUSTER OPTIONS
          */

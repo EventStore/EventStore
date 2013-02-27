@@ -44,6 +44,7 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                            IHandle<StorageMessage.PreparePhaseTimeout>
     {
         private readonly IPublisher _bus;
+        private readonly TimeSpan _prepareTimeout;
         private readonly IEnvelope _publishEnvelope;
 
         private IEnvelope _responseEnvelope;
@@ -56,11 +57,12 @@ namespace EventStore.Core.Services.RequestManager.Managers
 
         private RequestType _requestType;
 
-        public SingleAckRequestManager(IPublisher bus)
+        public SingleAckRequestManager(IPublisher bus, TimeSpan prepareTimeout)
         {
             if (bus == null) throw new ArgumentNullException("bus");
 
             _bus = bus;
+            _prepareTimeout = prepareTimeout;
             _publishEnvelope = new PublishEnvelope(_bus);
         }
 
@@ -81,10 +83,8 @@ namespace EventStore.Core.Services.RequestManager.Managers
                                                                   message.EventStreamId,
                                                                   message.ExpectedVersion,
                                                                   allowImplicitStreamCreation: true,
-                                                                  liveUntil: DateTime.UtcNow + Timeouts.PrepareWriteMessageTimeout));
-            _bus.Publish(TimerMessage.Schedule.Create(Timeouts.PrepareTimeout,
-                                                      _publishEnvelope,
-                                                      new StorageMessage.PreparePhaseTimeout(_correlationId)));
+                                                                  liveUntil: DateTime.UtcNow + TimeSpan.FromTicks(_prepareTimeout.Ticks * 9 / 10)));
+            _bus.Publish(TimerMessage.Schedule.Create(_prepareTimeout, _publishEnvelope, new StorageMessage.PreparePhaseTimeout(_correlationId)));
         }
 
         public void Handle(StorageMessage.TransactionWriteRequestCreated request)

@@ -53,6 +53,9 @@ namespace EventStore.SingleNode
         public int HttpSendThreads { get { return _helper.Get(() => HttpSendThreads); } }
         public string[] HttpPrefixes { get { return _helper.Get(() => HttpPrefixes); } }
 
+        public int PrepareTimeoutMs { get { return _helper.Get(() => PrepareTimeoutMs); } }
+        public int CommitTimeoutMs { get { return _helper.Get(() => CommitTimeoutMs); } }
+
         private readonly OptsHelper _helper;
 
         public SingleNodeOptions()
@@ -79,6 +82,9 @@ namespace EventStore.SingleNode
             _helper.Register(() => HttpReceiveThreads, Opts.HttpReceiveThreadsCmd, Opts.HttpReceiveThreadsEnv, Opts.HttpReceiveThreadsJson, Opts.HttpReceiveThreadsDefault, Opts.HttpReceiveThreadsDescr);
             _helper.Register(() => HttpSendThreads, Opts.HttpSendThreadsCmd, Opts.HttpSendThreadsEnv, Opts.HttpSendThreadsJson, Opts.HttpSendThreadsDefault, Opts.HttpSendThreadsDescr);
             _helper.RegisterArray(() => HttpPrefixes, Opts.HttpPrefixesCmd, Opts.HttpPrefixesEnv, ",", Opts.HttpPrefixesJson, Opts.HttpPrefixesDefault, Opts.HttpPrefixesDescr);
+
+            _helper.Register(() => PrepareTimeoutMs, Opts.PrepareTimeoutMsCmd, Opts.PrepareTimeoutMsEnv, Opts.PrepareTimeoutMsJson, Opts.PrepareTimeoutMsDefault, Opts.PrepareTimeoutMsDescr);
+            _helper.Register(() => CommitTimeoutMs, Opts.CommitTimeoutMsCmd, Opts.CommitTimeoutMsEnv, Opts.CommitTimeoutMsJson, Opts.CommitTimeoutMsDefault, Opts.CommitTimeoutMsDescr);
         }
 
         public void Parse(params string[] args)

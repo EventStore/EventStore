@@ -61,7 +61,7 @@ namespace EventStore.ClientAPI.Connection
         public override string ToString()
         {
             return string.Format("WorkItem {0}: {1}, attempt: {2}, seqNo: {3}", 
-                                 Operation.GetType().FullName, 
+                                 Operation.GetType().Name, 
                                  Operation,
                                  Attempt, 
                                  SeqNo);
