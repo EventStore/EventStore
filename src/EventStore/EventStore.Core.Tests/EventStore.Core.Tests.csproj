@@ -72,6 +72,7 @@
     <Compile Include="Bus\Helpers\BusTestMessages.cs" />
     <Compile Include="Bus\Helpers\NoopConsumer.cs" />
     <Compile Include="Bus\Helpers\QueuedHandlerTestWithWaitingConsumer.cs" />
+    <Compile Include="Bus\Helpers\StubHandler.cs" />
     <Compile Include="Bus\Helpers\TestMultiHandler.cs" />
     <Compile Include="Bus\Helpers\TestHandler.cs" />
     <Compile Include="Bus\Helpers\TimeoutHelper.cs" />
