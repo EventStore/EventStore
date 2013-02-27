@@ -70,7 +70,7 @@ namespace EventStore.Core.Services.Monitoring
         private readonly IPublisher _statsCollectionBus;
         private readonly IPublisher _mainBus;
         private readonly StatsStorage _statsStorage;
-        private readonly int _statsCollectionPeriodMs;
+        private readonly long _statsCollectionPeriodMs;
         private readonly SystemStatsHelper _systemStats;
 
         private string _lastWrittenCsvHeader;
@@ -100,7 +100,7 @@ namespace EventStore.Core.Services.Monitoring
             _statsCollectionBus = statsCollectionBus;
             _mainBus = mainBus;
             _statsStorage = statsStorage;
-            _statsCollectionPeriodMs = (int)statsCollectionPeriod.TotalMilliseconds;
+            _statsCollectionPeriodMs = statsCollectionPeriod > TimeSpan.Zero ? (long)statsCollectionPeriod.TotalMilliseconds : Timeout.Infinite;
             _systemStats = new SystemStatsHelper(Log, writerCheckpoint, dbPath);
             _nodeStatsStream = string.Format("{0}-{1}", SystemStreams.StatsStreamPrefix, nodeEndpoint);
             _timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
