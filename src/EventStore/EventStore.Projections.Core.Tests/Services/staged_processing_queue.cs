@@ -241,6 +241,35 @@ namespace EventStore.Projections.Core.Tests.Services
         }
 
         [TestFixture]
+        public class when_enqueuing_two_related_one_step_tasks_one_by_one
+        {
+            private StagedProcessingQueue _q;
+            private TestTask _t1;
+            private TestTask _t2;
+
+            [SetUp]
+            public void when()
+            {
+                _q = new StagedProcessingQueue(new[] { true, true });
+                _t1 = new TestTask(1, 1, 1);
+                _t2 = new TestTask(1, 1, 1);
+                _q.Enqueue(_t1);
+                _q.Process();
+                _q.Enqueue(_t2);
+                _q.Process();
+            }
+
+            [Test]
+            public void two_process_execute_only_the_first_task()
+            {
+
+                Assert.That(_t1.StartedOn(0));
+                Assert.That(_t2.StartedOn(0));
+            }
+
+        }
+
+        [TestFixture]
         public class when_enqueuing_two_two_step_tasks_that_relate_on_first_stage
         {
             private StagedProcessingQueue _q;
@@ -251,8 +280,8 @@ namespace EventStore.Projections.Core.Tests.Services
             public void when()
             {
                 _q = new StagedProcessingQueue(new[] { true, true });
-                _t1 = new TestTask(Guid.NewGuid(), 2, stageCorrelations: new object[]{"a", "a"});
-                _t2 = new TestTask(Guid.NewGuid(), 2, stageCorrelations: new object[] { "a", "a" });
+                _t1 = new TestTask(null, 2, stageCorrelations: new object[]{"a", "a"});
+                _t2 = new TestTask(null, 2, stageCorrelations: new object[] { "a", "a" });
                 _q.Enqueue(_t1);
                 _q.Enqueue(_t2);
             }

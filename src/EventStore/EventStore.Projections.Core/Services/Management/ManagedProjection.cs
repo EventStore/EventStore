@@ -727,7 +727,7 @@ namespace EventStore.Projections.Core.Services.Management
         private ProjectionConfig CreateDefaultProjectionConfiguration()
         {
             var checkpointsEnabled = _persistedState.CheckpointsDisabled != true;
-            var checkpointHandledThreshold = checkpointsEnabled ? 2000 : 0;
+            var checkpointHandledThreshold = checkpointsEnabled ? 4000 : 0;
             var checkpointUnhandledBytesThreshold = checkpointsEnabled ? 10*1000*1000 : 0;
             var pendingEventsThreshold = 1000;
             var maxWriteBatchLength = 500;

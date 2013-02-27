@@ -31,7 +31,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
@@ -101,7 +100,21 @@ namespace EventStore.Projections.Core.Services.Processing
                     SendEof();
                     break;
                 case ReadStreamResult.Success:
-                    if (message.Events.Length == 0)
+                    var oldFromSequenceNumber = _fromSequenceNumber;
+                    _fromSequenceNumber = message.NextEventNumber;
+                    var eof = message.Events.Length == 0;
+                    var willDispose = eof && _stopOnEof;
+
+                    if (!willDispose)
+                    {
+                        if (_pauseRequested)
+                            _paused = true;
+                        else if (eof)
+                            RequestEvents(delay: true);
+                        else
+                            RequestEvents();
+                    }
+                    if (eof)
                     {
                         // the end
                         DeliverSafeJoinPosition(GetLastCommitPositionFrom(message));
@@ -114,18 +127,10 @@ namespace EventStore.Projections.Core.Services.Processing
                         {
                             var @event = message.Events[index].Event;
                             var @link = message.Events[index].Link;
-                            DeliverEvent(@event, @link, 100.0f * (link ?? @event).EventNumber / message.LastEventNumber);
+                            DeliverEvent(@event, @link, 100.0f * (link ?? @event).EventNumber / message.LastEventNumber, ref oldFromSequenceNumber);
                         }
                     }
-                    if (_disposed)
-                        return;
 
-                    if (_pauseRequested)
-                        _paused = true;
-                    else if (message.Events.Length == 0)
-                        RequestEvents(delay: true);
-                    else
-                        _publisher.Publish(CreateTickMessage());
                     break;
                 default:
                     throw new NotSupportedException(
@@ -182,15 +187,15 @@ namespace EventStore.Projections.Core.Services.Processing
                     _streamName, _fromSequenceNumber, false, null, safeJoinPosition, 100.0f));
         }
 
-        private void DeliverEvent(EventRecord @event, EventRecord link, float progress)
+        private void DeliverEvent(EventRecord @event, EventRecord link, float progress, ref int sequenceNumber)
         {
             EventRecord positionEvent = (link ?? @event);
-            if (positionEvent.EventNumber != _fromSequenceNumber)
+            if (positionEvent.EventNumber != sequenceNumber)
                 throw new InvalidOperationException(
                     string.Format(
                         "Event number {0} was expected in the stream {1}, but event number {2} was received",
-                        _fromSequenceNumber, _streamName, positionEvent.EventNumber));
-            _fromSequenceNumber = positionEvent.EventNumber + 1;
+                        sequenceNumber, _streamName, positionEvent.EventNumber));
+            sequenceNumber = positionEvent.EventNumber + 1;
             var resolvedLinkTo = positionEvent.EventStreamId != @event.EventStreamId
                                  || positionEvent.EventNumber != @event.EventNumber;
             _publisher.Publish(

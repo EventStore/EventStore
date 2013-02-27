@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected GetDataWorkItemBase(
             IEnvelope envelope, Guid correlationId, Guid projectionId, CoreProjection projection,
             PartitionStateCache partitionStateCache, string partition)
-            : base(projection, string.Empty)
+            : base(projection, null)
         {
             if (envelope == null) throw new ArgumentNullException("envelope");
             if (partitionStateCache == null) throw new ArgumentNullException("partitionStateCache");
@@ -52,6 +52,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _correlationId = correlationId;
             _projectionId = projectionId;
             _partitionStateCache = partitionStateCache;
+        }
+
+        protected override void GetStatePartition()
+        {
+            NextStage(_partition);
         }
 
         protected override void Load(CheckpointTag checkpointTag)

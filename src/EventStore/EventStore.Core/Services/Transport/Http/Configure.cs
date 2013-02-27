@@ -101,7 +101,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration ReadEventCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
+            // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadEventCompleted));
 
             var completed = message as ClientMessage.ReadEventCompleted;
             if (completed == null)
@@ -152,7 +152,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration WriteEventsCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.WriteEventsCompleted));
+            // Debug.Assert(message.GetType() == typeof(ClientMessage.WriteEventsCompleted));
 
             var completed = message as ClientMessage.WriteEventsCompleted;
             if (completed == null)
@@ -190,7 +190,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration GetFreshStatsCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
-            Debug.Assert(message.GetType() == typeof(MonitoringMessage.GetFreshStatsCompleted));
+            // Debug.Assert(message.GetType() == typeof(MonitoringMessage.GetFreshStatsCompleted));
 
             var completed = message as MonitoringMessage.GetFreshStatsCompleted;
             if (completed == null)
@@ -201,7 +201,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration CreateStreamCompleted(HttpResponseConfiguratorArgs entity, Message message, string eventStreamId)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
+            // Debug.Assert(message.GetType() == typeof(ClientMessage.CreateStreamCompleted));
 
             var completed = message as ClientMessage.CreateStreamCompleted;
             if (completed == null)
@@ -237,7 +237,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration DeleteStreamCompleted(HttpResponseConfiguratorArgs entity, Message message)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.DeleteStreamCompleted));
+            // Debug.Assert(message.GetType() == typeof(ClientMessage.DeleteStreamCompleted));
 
             var completed = message as ClientMessage.DeleteStreamCompleted;
             if (completed == null)
@@ -265,7 +265,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration ReadAllEventsBackwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
+            // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsBackwardCompleted));
 
             var msg = message as ClientMessage.ReadAllEventsBackwardCompleted;
             if (msg == null)
@@ -279,7 +279,7 @@ namespace EventStore.Core.Services.Transport.Http
 
         public static ResponseConfiguration ReadAllEventsForwardCompleted(HttpResponseConfiguratorArgs entity, Message message, bool headOfTf)
         {
-            Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
+            // Debug.Assert(message.GetType() == typeof(ClientMessage.ReadAllEventsForwardCompleted));
 
             var msg = message as ClientMessage.ReadAllEventsForwardCompleted;
             if (msg == null)

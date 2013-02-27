@@ -78,6 +78,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _bus.Subscribe<ProjectionSubscriptionMessage.CheckpointSuggested>(_coreProjection);
             _bus.Subscribe<ProjectionSubscriptionMessage.EofReached>(_coreProjection);
             _bus.Subscribe<ProjectionSubscriptionMessage.ProgressChanged>(_coreProjection);
+            _bus.Subscribe(new StubHandler<ProjectionCoreServiceMessage.Tick>(tick => tick.Action()));
             PreWhen();
             When();
         }

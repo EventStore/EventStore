@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private CheckpointTag _unlockedBefore;
         private readonly CheckpointTag _zeroPosition;
 
-        public PartitionStateCache(CheckpointTag zeroPosition, int maxCachedPartitions = 1000)
+        public PartitionStateCache(CheckpointTag zeroPosition, int maxCachedPartitions = 4000)
         {
             _zeroPosition = zeroPosition;
             _unlockedBefore = zeroPosition;

@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public ProgressWorkItem(
             CoreProjection projection, ICoreProjectionCheckpointManager checkpointManager, float progress)
-            : base(projection, Guid.NewGuid()) 
+            : base(projection, null) 
         {
             _checkpointManager = checkpointManager;
             _progress = progress;

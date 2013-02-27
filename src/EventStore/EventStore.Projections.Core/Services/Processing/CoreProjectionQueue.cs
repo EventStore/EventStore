@@ -27,6 +27,7 @@
 // 
 
 using System;
+using EventStore.Common.Log;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
 
@@ -34,6 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class CoreProjectionQueue
     {
+        private readonly ILogger _logger = LogManager.GetLoggerFor<CoreProjectionQueue>();
         private readonly StagedProcessingQueue _queuePendingEvents =
             new StagedProcessingQueue(
                 new[]
@@ -132,7 +134,6 @@ namespace EventStore.Projections.Core.Services.Processing
         {
             if (_subscriptionPaused && !_unsubscribed)
             {
-
                 _subscriptionPaused = false;
                 _publisher.Publish(
                     new ProjectionSubscriptionManagement.Resume(_projectionCorrelationId));
@@ -144,12 +145,11 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ProcessOneEvent()
         {
-            int pendingEventsCount = _queuePendingEvents.Count;
-            if (pendingEventsCount > _pendingEventsThreshold)
+            if (_queuePendingEvents.Count > _pendingEventsThreshold)
                 PauseSubscription();
-            if (_subscriptionPaused && pendingEventsCount < _pendingEventsThreshold/2)
-                ResumeSubscription();
             _queuePendingEvents.Process();
+            if (_subscriptionPaused && _queuePendingEvents.Count < _pendingEventsThreshold / 2)
+                ResumeSubscription();
 
             if (_updateStatistics != null
                 && ((_queuePendingEvents.Count == 0)

@@ -45,15 +45,19 @@ namespace EventStore.Projections.Core.Services.Processing
         private class TaskEntry
         {
             public readonly StagedTask Task;
+            public readonly long Sequence;
             public bool Busy;
             public object BusyCorrelationId;
+            public TaskEntry PreviousByCorrelation;
+            public TaskEntry NextByCorrelation;
             public bool Completed;
             public int ReadForStage;
 
-            public TaskEntry(StagedTask task)
+            public TaskEntry(StagedTask task, long sequence)
             {
                 Task = task;
-                BusyCorrelationId = task.InitialCorrelationId;
+                ReadForStage = -1;
+                Sequence = sequence;
             }
 
             public override string ToString()
@@ -64,7 +68,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly bool[] _orderedStage;
         private readonly Queue<TaskEntry> _tasks = new Queue<TaskEntry>();
-        private readonly HashSet<object> _precedingCorrelations = new HashSet<object>();
+        private readonly Dictionary<object, TaskEntry> _correlationLastEntries = new Dictionary<object, TaskEntry>();
+        private long _sequence = 0;
 
         public StagedProcessingQueue(bool[] orderedStage)
         {
@@ -83,7 +88,10 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Enqueue(StagedTask stagedTask)
         {
-            _tasks.Enqueue(new TaskEntry(stagedTask));
+            var entry = new TaskEntry(stagedTask, ++_sequence);
+            SetEntryCorrelation(entry, stagedTask.InitialCorrelationId);
+            entry.ReadForStage = 0;
+            _tasks.Enqueue(entry);
         }
 
         public int Process()
@@ -92,6 +100,7 @@ namespace EventStore.Projections.Core.Services.Processing
             TaskEntry taskProcessed = null;
             while (_tasks.Count > 0)
             {
+                RemoveCompleted();
                 var entry = GetEntryToProcess(taskProcessed);
                 if (entry == null)
                     break;
@@ -111,10 +120,7 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private TaskEntry GetEntryToProcess(TaskEntry runThisOnly)
         {
-            while (_tasks.Count > 0 && _tasks.Peek().Completed)
-                _tasks.Dequeue();
 
-            _precedingCorrelations.Clear();
             var previousTaskMinimumProcessingStage  = int.MaxValue;
             var taskStage = int.MaxValue;
             foreach (var entry in _tasks)
@@ -122,13 +128,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 previousTaskMinimumProcessingStage = Math.Min(taskStage, previousTaskMinimumProcessingStage);
                 taskStage = entry.ReadForStage;
 
-                var busyCorrelationId = entry.BusyCorrelationId;
-                if (busyCorrelationId != null)
-                {
-                    if (_precedingCorrelations.Contains(busyCorrelationId))
-                        break;
-                    _precedingCorrelations.Add(busyCorrelationId);
-                }
+                if (entry.PreviousByCorrelation != null)
+                    break;
 
                 if (entry.Busy)
                     continue;
@@ -149,18 +150,68 @@ namespace EventStore.Projections.Core.Services.Processing
             return null;
         }
 
+        private void RemoveCompleted()
+        {
+            while (_tasks.Count > 0 && _tasks.Peek().Completed)
+            {
+                var task = _tasks.Dequeue();
+                if (task.BusyCorrelationId != null)
+                {
+                    var nextByCorrelation = task.NextByCorrelation;
+                    if (nextByCorrelation != null)
+                    {
+                        if (nextByCorrelation.PreviousByCorrelation != task)
+                            throw new Exception("Invalid linked list by correlation");
+                        task.NextByCorrelation = null;
+                        nextByCorrelation.PreviousByCorrelation = null;
+                    }
+                    else
+                    {
+                        // remove the last one
+                        _correlationLastEntries.Remove(task.BusyCorrelationId); 
+                    }
+                }
+            }
+        }
+
         private void CompleteTaskProcessing(TaskEntry entry, int readyForStage, object newCorrelationId)
         {
             if (!entry.Busy)
                 throw new InvalidOperationException("Task was not in progress");
             entry.Busy = false;
-            if (!_orderedStage[entry.ReadForStage] && !Equals(entry.BusyCorrelationId, newCorrelationId))
-                throw new InvalidOperationException("Cannot change busy correlation id at non-ordered stage");
-            entry.BusyCorrelationId = newCorrelationId;
+            SetEntryCorrelation(entry, newCorrelationId);
             if (readyForStage < 0)
                 RemoveCompletedTask(entry);
             else
                 entry.ReadForStage = readyForStage;
+        }
+
+        private void SetEntryCorrelation(TaskEntry entry, object newCorrelationId)
+        {
+            if (!Equals(entry.BusyCorrelationId, newCorrelationId))
+            {
+                if (entry.ReadForStage != -1 && !_orderedStage[entry.ReadForStage])
+                    throw new InvalidOperationException("Cannot set busy correlation id at non-ordered stage");
+                if (entry.BusyCorrelationId != null)
+                    throw new InvalidOperationException("Busy correlation id has been already set");
+
+                entry.BusyCorrelationId = newCorrelationId;
+                if (newCorrelationId != null)
+                {
+                    TaskEntry lastEntry;
+                    if (_correlationLastEntries.TryGetValue(newCorrelationId, out lastEntry))
+                    {
+                        if (entry.Sequence < lastEntry.Sequence)
+                            //NOTE: should never happen as we require ordered stage or initialization
+                            throw new InvalidOperationException("Cannot inject task correlation id before another task with the same correlation id");
+                        lastEntry.NextByCorrelation = entry;
+                        entry.PreviousByCorrelation = lastEntry;
+                        _correlationLastEntries[newCorrelationId] = entry;
+                    }
+                    else
+                        _correlationLastEntries.Add(newCorrelationId, entry);
+                }
+            }
         }
 
         private void RemoveCompletedTask(TaskEntry entry)
@@ -170,7 +221,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public void Initialize()
         {
-            _precedingCorrelations.Clear();
             _tasks.Clear();
         }
     }

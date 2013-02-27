@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Services.Processing
         public CommittedEventWorkItem(
             CoreProjection projection, ProjectionSubscriptionMessage.CommittedEventReceived message,
             StatePartitionSelector statePartitionSelector)
-            : base(projection, Guid.NewGuid())
+            : base(projection, null)
         {
             _statePartitionSelector = statePartitionSelector;
             _message = message;

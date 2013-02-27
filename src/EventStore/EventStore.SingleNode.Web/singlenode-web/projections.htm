@@ -79,7 +79,7 @@
           <td class="r">{{>~addSpace(lastCheckpoint)}}</td>
           <td>{{>checkpointStatus}}</td>
           <td class="r">{{>readsInProgress}} / {{>writesInProgress}}</td>
-          <td class="r">{{>writePendingEventsBeforeCheckpoint}} / {{>writePendingEventsAfterCheckpoint}}</td>
+          <td class="r">{{>writePendingEventsAfterCheckpoint}} / {{>writePendingEventsBeforeCheckpoint}}</td>
           <td class="r">{{>partitionsCached}}</td>
           <td class="r">{{>eventsProcessedAfterRestart}}</td>
           <td class="r">{{>eventsPerSecond}}</td>
@@ -221,11 +221,11 @@
                         })
                     );
 
-                    setTimeout(requestList, 1000);
+                    setTimeout(requestList, 2000);
                 }
 
                 function error(xhr, status) {
-                    setTimeout(requestList, 1000);
+                    setTimeout(requestList, 2000);
                 }
             }
         })();

@@ -261,7 +261,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 var committedEventWorkItem = new CommittedEventWorkItem(this, message, _statePartitionSelector);
                 _processingQueue.EnqueueTask(committedEventWorkItem, eventTag);
                 if (_state != State.StateLoaded)
-                    _processingQueue.ProcessEvent();
+                    EnsureTickPending();
             }
             catch (Exception ex)
             {

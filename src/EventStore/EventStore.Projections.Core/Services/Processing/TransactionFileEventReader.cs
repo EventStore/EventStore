@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Services.Processing
     public class TransactionFileEventReader : EventReader
     {
         private bool _eventsRequested = false;
-        private int _maxReadCount = 50;
+        private int _maxReadCount = 250;
         private EventPosition _from;
         private readonly bool _deliverEndOfTfPosition;
         private readonly ITimeProvider _timeProvider;
@@ -83,7 +83,23 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new InvalidOperationException("Paused");
             _eventsRequested = false;
 
-            if (message.Result.Events.Length == 0)
+
+            var eof = message.Result.Events.Length == 0;
+            var willDispose = _stopOnEof && eof;
+            var oldFrom = _from;
+            _from = message.Result.NextPos;
+
+            if (!willDispose)
+            {
+                if (_pauseRequested)
+                    _paused = true;
+                else if (eof)
+                    RequestEvents(delay: true);
+                else
+                    RequestEvents();
+            }
+
+            if (eof)
             {
                 // the end
                 if (_deliverEndOfTfPosition)
@@ -97,20 +113,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 for (int index = 0; index < message.Result.Events.Length; index++)
                 {
                     var @event = message.Result.Events[index];
-                    DeliverEvent(@event, message.Result.TfEofPosition);
+                    DeliverEvent(@event, message.Result.TfEofPosition, oldFrom);
                 }
-                _from = message.Result.NextPos;
             }
-
-            if (_disposed)
-                return;
-
-            if (_pauseRequested)
-                _paused = true;
-            else if (message.Result.Events.Length == 0)
-                RequestEvents(delay: true);
-            else
-                _publisher.Publish(CreateTickMessage());
 
         }
 
@@ -158,15 +163,15 @@ namespace EventStore.Projections.Core.Services.Processing
                     null, int.MinValue, false, null, lastPosition.PreparePosition, 100.0f)); //TODO: check was is passed here
         }
 
-        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent @event, long lastCommitPosition)
+        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent @event, long lastCommitPosition, EventPosition currentFrom)
         {
             EventRecord positionEvent = (@event.Link ?? @event.Event);
             EventPosition receivedPosition = @event.OriginalPosition.Value;
-            if (_from > receivedPosition)
+            if (currentFrom > receivedPosition)
                 throw new Exception(
                     string.Format(
                         "ReadFromTF returned events in incorrect order.  Last known position is: {0}.  Received position is: {1}",
-                        _from, receivedPosition));
+                        currentFrom, receivedPosition));
 
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(

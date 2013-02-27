@@ -203,10 +203,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         public static bool operator ==(CheckpointTag left, CheckpointTag right)
         {
-            if (ReferenceEquals(left, right))
-                return true;
-            if (ReferenceEquals(left, null))
-                return false;
             return Equals(left, right);
         }
 
