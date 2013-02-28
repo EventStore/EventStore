@@ -49,7 +49,8 @@ namespace EventStore.Projections.Core.v8
         private readonly Action<int, Action> _cancelCallbackFactory;
 
         private int _cancelTokenOrStatus = 0; // bot hcore and timer threads
-        private Func<bool> _terminateRequested; // core thread only
+        private readonly CancelRef _defaultCancelRef = new CancelRef();
+        private CancelRef _terminateRequested; // core thread only
         private int _currentCancelToken = 1; // core thread only
 
         private readonly Js1.EnterCancellableRegionDelegate _enterCancellableRegion;
@@ -147,6 +148,16 @@ namespace EventStore.Projections.Core.v8
             }
         }
 
+        private class CancelRef
+        {
+            public bool TerminateRequested = false;
+
+            public void Terminate()
+            {
+                TerminateRequested = true;
+            }
+        }
+
         public void ScheduleTerminateExecution()
         {
             int currentCancelToken = ++_currentCancelToken;
@@ -154,14 +165,14 @@ namespace EventStore.Projections.Core.v8
                 throw new InvalidOperationException("ScheduleTerminateExecution cannot be called while previous one has not been canceled");
             if (_cancelCallbackFactory != null) // allow nulls in tests
             {
-                bool terminated = false;
-                _terminateRequested = () => terminated;
+                var terminateRequested = new CancelRef();
+                _terminateRequested = terminateRequested;
                 _cancelCallbackFactory(
-                    1000, () => AnotherThreadCancel(currentCancelToken, GetHandle(), () => terminated = true));
+                    1000, () => AnotherThreadCancel(currentCancelToken, GetHandle(), terminateRequested.Terminate));
             }
             else
             {
-                _terminateRequested = () => false;
+                _terminateRequested = _defaultCancelRef;
             }
         }
 
@@ -171,13 +182,13 @@ namespace EventStore.Projections.Core.v8
             while (Interlocked.CompareExchange(ref _cancelTokenOrStatus, NonScheduled, Scheduled) != Scheduled)
                 Thread.SpinWait(1);
             // exit only if terminated or canceled
-            return _terminateRequested();
+            return _terminateRequested.TerminateRequested;
         }
 
         private bool EnterCancellableRegion()
         {
             var entered = Interlocked.CompareExchange(ref _cancelTokenOrStatus, _currentCancelToken, Scheduled) == Scheduled;
-            var result = entered && !_terminateRequested();
+            var result = entered && !_terminateRequested.TerminateRequested;
             if (!result && entered)
             {
                 if (Interlocked.CompareExchange(ref _cancelTokenOrStatus, Scheduled, _currentCancelToken) != _currentCancelToken)
@@ -193,7 +204,7 @@ namespace EventStore.Projections.Core.v8
         private bool ExitCancellableRegion()
         {
             return Interlocked.CompareExchange(ref _cancelTokenOrStatus, Scheduled, _currentCancelToken) == _currentCancelToken
-                   && !_terminateRequested();
+                   && !_terminateRequested.TerminateRequested;
         }
 
     }
