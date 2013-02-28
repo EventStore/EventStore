@@ -58,6 +58,7 @@ namespace EventStore.Projections.Core.Services.Management
                                      IHandle<ProjectionManagementMessage.Disable>,
                                      IHandle<ProjectionManagementMessage.Enable>,
                                      IHandle<ProjectionManagementMessage.Internal.CleanupExpired>,
+                                     IHandle<ProjectionManagementMessage.Internal.RegularTimeout>,
                                      IHandle<ProjectionManagementMessage.Internal.Deleted>,
                                      IHandle<CoreProjectionManagementMessage.Started>,
                                      IHandle<CoreProjectionManagementMessage.Stopped>,
@@ -73,6 +74,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly IPublisher _inputQueue;
         private readonly IPublisher _publisher;
         private readonly IPublisher[] _queues;
+        private readonly TimeoutScheduler[] _timeoutSchedulers;
         private readonly ITimeProvider _timeProvider;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
         private readonly Dictionary<string, ManagedProjection> _projections;
@@ -81,8 +83,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
             _writeDispatcher;
 
-        private readonly
-            RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
+        private readonly RequestResponseDispatcher<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
             _readDispatcher;
 
         private int _readEventsBatchSize = 100;
@@ -97,6 +98,9 @@ namespace EventStore.Projections.Core.Services.Management
             _inputQueue = inputQueue;
             _publisher = publisher;
             _queues = queues;
+
+            _timeoutSchedulers = CreateTimeoutSchedulers(queues);
+
             _timeProvider = timeProvider;
 
             _writeDispatcher =
@@ -114,6 +118,14 @@ namespace EventStore.Projections.Core.Services.Management
             _publishEnvelope = new PublishEnvelope(_inputQueue, crossThread: true);
         }
 
+        private static TimeoutScheduler[] CreateTimeoutSchedulers(IPublisher[] queues)
+        {
+            var timeoutSchedulers = new TimeoutScheduler[queues.Length];
+            for (var i = 0; i < timeoutSchedulers.Length; i++)
+                timeoutSchedulers[i] = new TimeoutScheduler();
+            return timeoutSchedulers;
+        }
+
         private void Start()
         {
             _started = true;
@@ -121,13 +133,25 @@ namespace EventStore.Projections.Core.Services.Management
                 queue.Publish(new ProjectionCoreServiceMessage.Start());
             StartExistingProjections();
             ScheduleExpire();
+            ScheduleRegularTimeout();
         }
 
         private void ScheduleExpire()
         {
+            if (!_started)
+                return;
             _publisher.Publish(
                 TimerMessage.Schedule.Create(
                     TimeSpan.FromSeconds(60), _publishEnvelope, new ProjectionManagementMessage.Internal.CleanupExpired()));
+        }
+
+        private void ScheduleRegularTimeout()
+        {
+            if (!_started)
+                return;
+            _publisher.Publish(
+                TimerMessage.Schedule.Create(
+                    TimeSpan.FromMilliseconds(100), _publishEnvelope, new ProjectionManagementMessage.Internal.RegularTimeout()));
         }
 
         private void Stop()
@@ -282,6 +306,13 @@ namespace EventStore.Projections.Core.Services.Management
         {
             ScheduleExpire();
             CleanupExpired();
+        }
+
+        public void Handle(ProjectionManagementMessage.Internal.RegularTimeout message)
+        {
+            ScheduleRegularTimeout();
+            for (var i = 0; i < _timeoutSchedulers.Length; i++)
+                _timeoutSchedulers[i].Tick();
         }
 
         private void CleanupExpired()
@@ -479,19 +510,20 @@ namespace EventStore.Projections.Core.Services.Management
 
         private int _lastUsedQueue = 0;
         private bool _started;
-        private readonly PublishEnvelope _publishEnvelope;
+        private PublishEnvelope _publishEnvelope;
 
         private ManagedProjection CreateManagedProjectionInstance(string name)
         {
             var projectionCorrelationId = Guid.NewGuid();
             if (_lastUsedQueue >= _queues.Length)
                 _lastUsedQueue = 0;
-            IPublisher queue = _queues[_lastUsedQueue];
+            var queueIndex = _lastUsedQueue;
+            var queue = _queues[queueIndex];
             _lastUsedQueue++;
 
             var managedProjectionInstance = new ManagedProjection(queue, 
                 projectionCorrelationId, name, _logger, _writeDispatcher, _readDispatcher, _inputQueue, _publisher,
-                _projectionStateHandlerFactory, _timeProvider);
+                _projectionStateHandlerFactory, _timeProvider, _timeoutSchedulers[queueIndex]);
             _projectionsMap.Add(projectionCorrelationId, name);
             _projections.Add(name, managedProjectionInstance);
             return managedProjectionInstance;
@@ -549,5 +581,6 @@ namespace EventStore.Projections.Core.Services.Management
             _projections.Remove(message.Name);
             _projectionsMap.Remove(message.Id);
         }
+
     }
 }

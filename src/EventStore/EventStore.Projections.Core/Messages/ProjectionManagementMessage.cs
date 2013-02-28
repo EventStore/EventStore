@@ -572,6 +572,10 @@ namespace EventStore.Projections.Core.Messages
             {
             }
 
+            public class RegularTimeout : Message
+            {
+            }
+
             public class Deleted : Message
             {
                 private readonly string _name;

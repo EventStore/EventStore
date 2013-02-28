@@ -169,9 +169,11 @@
     <Compile Include="ProjectionManagerNode.cs" />
     <Compile Include="Projections.cs" />
     <Compile Include="Services\Http\ProjectionsStatisticsHttpFormatted.cs" />
+    <Compile Include="Services\ISingletonTimeoutScheduler.cs" />
     <Compile Include="Services\Management\ManagedProjection.cs" />
     <Compile Include="Services\Management\ManagedProjectionState.cs" />
     <Compile Include="Services\Management\ProjectionStateHandlerFactory.cs" />
+    <Compile Include="Services\Management\TimeoutScheduler.cs" />
     <Compile Include="Services\Processing\ByHandleStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\ByStreamStatePartitionSelector.cs" />
     <Compile Include="Services\Processing\CategoryEventFilter.cs" />

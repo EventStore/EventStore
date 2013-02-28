@@ -38,7 +38,6 @@ using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Utils;
-using Newtonsoft.Json;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Services.Management
@@ -93,6 +92,7 @@ namespace EventStore.Projections.Core.Services.Management
         private readonly ILogger _logger;
         private readonly ProjectionStateHandlerFactory _projectionStateHandlerFactory;
         private readonly ITimeProvider _timeProvider;
+        private readonly ISingletonTimeoutScheduler _timeoutScheduler;
         private readonly IPublisher _coreQueue;
         private readonly Guid _id;
         private readonly string _name;
@@ -113,7 +113,7 @@ namespace EventStore.Projections.Core.Services.Management
             RequestResponseDispatcher
                 <ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> readDispatcher,
             IPublisher inputQueue, IPublisher output, ProjectionStateHandlerFactory projectionStateHandlerFactory,
-            ITimeProvider timeProvider)
+            ITimeProvider timeProvider, ISingletonTimeoutScheduler timeoutScheduler = null)
         {
             if (id == Guid.Empty) throw new ArgumentException("id");
             if (name == null) throw new ArgumentNullException("name");
@@ -129,6 +129,7 @@ namespace EventStore.Projections.Core.Services.Management
             _output = output;
             _projectionStateHandlerFactory = projectionStateHandlerFactory;
             _timeProvider = timeProvider;
+            _timeoutScheduler = timeoutScheduler;
             _getStateDispatcher =
                 new RequestResponseDispatcher
                     <CoreProjectionManagementMessage.GetState, CoreProjectionManagementMessage.StateReport>(
@@ -629,11 +630,11 @@ namespace EventStore.Projections.Core.Services.Management
                             {
                                 stateHandler = handlerFactory.Create(HandlerType, Query, 
                                     logger: Console.WriteLine, 
-                                    cancelCallbackFactory: (ms, action) => 
+                                    cancelCallbackFactory: _timeoutScheduler == null ? (Action<int, Action>) null : _timeoutScheduler.Schedule /*(ms, action) => 
                                         _output.Publish(
                                             TimerMessage.Schedule.Create(
                                                 TimeSpan.FromMilliseconds(ms), new SendToThisEnvelope(this), 
-                                                new ProjectionManagementMessage.CancelExecutionMessage(action))));
+                                                new ProjectionManagementMessage.CancelExecutionMessage(action)))*/);
                                 var checkpointStrategyBuilder = new CheckpointStrategy.Builder();
                                 stateHandler.ConfigureSourceProcessingStrategy(checkpointStrategyBuilder);
                                 checkpointStrategyBuilder.Validate(config); // avoid future exceptions in coreprojection
