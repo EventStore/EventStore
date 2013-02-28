@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Services.Processing
             get { return _options.ForceProjectionName ?? _name; }
         }
 
-        private string GetPartitionStateStreamName(string partitonName)
+        private string GetPartitionResultStreamName(string partitonName)
         {
             return
                 String.Format(
@@ -53,13 +53,13 @@ namespace EventStore.Projections.Core.Services.Processing
                     partitonName);
         }
 
-        public string GetStateStreamName()
+        public string GetResultStreamName()
         {
             return _options.StateStreamName ?? ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionsStateStreamSuffix;
         }
 
         private const string ProjectionsStreamPrefix = "$projections-";
-        private const string ProjectionsStateStreamSuffix = "-state";
+        private const string ProjectionsStateStreamSuffix = "-result";
         private const string ProjectionCheckpointStreamSuffix = "-checkpoint";
         private const string ProjectionOrderStreamSuffix = "-order";
         private const string ProjectionPartitionCatalogStreamSuffix = "-partitions";
@@ -69,11 +69,11 @@ namespace EventStore.Projections.Core.Services.Processing
             return ProjectionsStreamPrefix + EffectiveProjectionName + ProjectionPartitionCatalogStreamSuffix;
         }
 
-        public string MakePartitionStateStreamName(string statePartition)
+        public string MakePartitionResultStreamName(string statePartition)
         {
             return String.IsNullOrEmpty(statePartition)
-                       ? GetStateStreamName()
-                       : GetPartitionStateStreamName(statePartition);
+                       ? GetResultStreamName()
+                       : GetPartitionResultStreamName(statePartition);
         }
 
         public string MakePartitionCheckpointStreamName(string statePartition)

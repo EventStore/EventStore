@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             }
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception))]
+        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "Terminated", MatchType = MessageMatch.Contains)]
         public void long_compilation_times_out()
         {
             string m = null;
@@ -116,7 +116,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             }
         }
 
-        [Test, Category("v8"), ExpectedException(typeof(Js1Exception))]
+        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "Terminated", MatchType = MessageMatch.Contains)]
         public void long_execution_times_out()
         {
             string m = null;
@@ -142,6 +142,39 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 string newState;
                 EmittedEvent[] emittedevents;
                 h.ProcessEvent("partition", CheckpointTag.FromPosition(100, 50), "stream", "event", "", Guid.NewGuid(), 1, "", "{}", out newState, out emittedevents);
+            }
+        }
+
+        [Test, Category("v8"), ExpectedException(typeof(Js1Exception), ExpectedMessage = "Terminated", MatchType = MessageMatch.Contains)]
+        public void long_post_processing_times_out()
+        {
+            string m = null;
+            using (var h = _stateHandlerFactory.Create("JS",
+                @"
+                    fromAll().when({
+                        $any: function (s, e) {
+                            return {};
+                        }
+                    })
+                    .transformBy(function(s){
+                            log('1');
+                            var i = 0;
+                            while (true) i++;
+                    });
+                ",
+                logger: Console.WriteLine,
+                cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state =>
+                {
+                    Console.WriteLine("Calling a callback in " + timeout + "ms");
+                    Thread.Sleep(timeout);
+                    action();
+                })))
+            {
+                h.Initialize();
+                string newState;
+                EmittedEvent[] emittedevents;
+                h.ProcessEvent("partition", CheckpointTag.FromPosition(100, 50), "stream", "event", "", Guid.NewGuid(), 1, "", "{}", out newState, out emittedevents);
+                var result = h.TransformStateToResult();
             }
         }
 

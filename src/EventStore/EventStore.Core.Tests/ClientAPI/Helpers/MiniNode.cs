@@ -79,6 +79,8 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers
                                                               1,
                                                               1,
                                                               1,
+                                                              TimeSpan.FromSeconds(2),
+                                                              TimeSpan.FromSeconds(2),
                                                               TimeSpan.FromHours(1),
                                                               StatsStorage.None);
 

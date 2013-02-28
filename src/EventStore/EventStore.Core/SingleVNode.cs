@@ -178,7 +178,7 @@ namespace EventStore.Core
             HttpService.SetupController(new WebSiteController(MainQueue, _enabledNodeSubsystems));
 
             // REQUEST MANAGEMENT
-            var requestManagement = new RequestManagementService(MainQueue, 1, 1);
+            var requestManagement = new RequestManagementService(MainQueue, 1, 1, vNodeSettings.PrepareTimeout, vNodeSettings.CommitTimeout);
             Bus.Subscribe<StorageMessage.CreateStreamRequestCreated>(requestManagement);
             Bus.Subscribe<StorageMessage.WriteRequestCreated>(requestManagement);
             Bus.Subscribe<StorageMessage.TransactionStartRequestCreated>(requestManagement);

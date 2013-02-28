@@ -91,11 +91,16 @@ namespace EventStore.Projections.Core.Standard
 
             emittedEvents = new[]
                 {
-                    new EmittedEvent(
+                    new EmittedDataEvent(
                         _categoryStreamPrefix + category, Guid.NewGuid(), "$>", sequenceNumber + "@" + streamId, eventPosition, expectedTag: null)
                 };
 
             return true;
+        }
+
+        public string TransformStateToResult()
+        {
+            throw new NotImplementedException();
         }
 
         public void Dispose()

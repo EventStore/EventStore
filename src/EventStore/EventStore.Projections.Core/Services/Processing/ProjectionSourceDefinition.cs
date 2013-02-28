@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 namespace EventStore.Projections.Core.Services.Processing
 {
     [DataContract]
-    public class ProjectionSourceDefintion
+    public class ProjectionSourceDefinition
     {
         [DataMember]
         public bool AllEvents { get; set; }
@@ -28,5 +28,8 @@ namespace EventStore.Projections.Core.Services.Processing
 
         [DataMember]
         public QuerySourceProcessingStrategyBuilder.QuerySourceOptions Options { get; set; }
+
+        [DataMember]
+        public bool DefinesStateTransform { get; set; }
     }
 }

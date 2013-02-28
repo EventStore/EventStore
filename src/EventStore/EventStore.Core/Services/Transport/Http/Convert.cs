@@ -291,6 +291,8 @@ namespace EventStore.Core.Services.Transport.Http
 
         private static string FormatJson(string unformattedjson)
         {
+            if (string.IsNullOrEmpty(unformattedjson))
+                return unformattedjson;
             var jo = JObject.Parse(unformattedjson);
             var json = JsonConvert.SerializeObject(jo, Formatting.Indented);
             return json;

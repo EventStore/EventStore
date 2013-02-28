@@ -109,6 +109,8 @@ namespace EventStore.SingleNode
                                                         options.HttpSendThreads,
                                                         options.HttpReceiveThreads,
                                                         options.TcpSendThreads,
+                                                        TimeSpan.FromMilliseconds(options.PrepareTimeoutMs),
+                                                        TimeSpan.FromMilliseconds(options.CommitTimeoutMs),
                                                         TimeSpan.FromSeconds(options.StatsPeriodSec),
                                                         StatsStorage.StreamAndCsv);
             return vnodeSettings;

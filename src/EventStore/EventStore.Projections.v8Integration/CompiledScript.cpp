@@ -38,11 +38,11 @@ namespace js1
 			return;
 		}
 
-		v8::HandleScope handle_scope;
-		v8::Context::Scope local(get_context());
-
 		if (!last_exception.IsEmpty()) 
 		{
+			v8::HandleScope handle_scope;
+			v8::Context::Scope local(get_context());
+
 			v8::String::Value error_value(last_exception);
 			//TODO: define error codes
 			report_error_callback(1, *error_value);
@@ -70,7 +70,8 @@ namespace js1
 
 		v8::TryCatch try_catch;
 		v8::Handle<v8::Script> result = v8::Script::Compile(v8::String::New(script_source), v8::String::New(file_name));
-		set_last_error(result.IsEmpty(), try_catch);
+		if (set_last_error(result.IsEmpty(), try_catch))
+			return S_ERROR;
 
 		if (result.IsEmpty())
 			return S_ERROR;
@@ -84,25 +85,29 @@ namespace js1
 		v8::Context::Scope context_scope(context);
 		v8::TryCatch try_catch;
 		v8::Handle<v8::Value> result = script->Run();
-		set_last_error(result.IsEmpty(), try_catch);
+		if (set_last_error(result.IsEmpty(), try_catch))
+			result.Clear();
 		return result;
 	}
 
-	void CompiledScript::set_last_error(bool is_error, v8::TryCatch &try_catch)
+	bool CompiledScript::set_last_error(bool is_error, v8::TryCatch &try_catch)
 	{
 		if (!is_error && !try_catch.Exception().IsEmpty()) {
-			printf("Caught exception which was not indicated as an error");
+			set_last_error(v8::String::New("Caught exception which was not indicated as an error"));
+			return true;
 		}
 		if (is_error) 
 		{
 			Handle<Value> exception = try_catch.Exception();
 			last_exception.Dispose();
 			last_exception = v8::Persistent<v8::Value>::New(exception);
+			return true;
 		}
 		else 
 		{
 			last_exception.Dispose();
 			last_exception.Clear();
+			return false;
 		}
 	}
 

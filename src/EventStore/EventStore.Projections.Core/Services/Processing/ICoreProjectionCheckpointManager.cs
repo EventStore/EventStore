@@ -27,7 +27,6 @@
 // 
 
 using System;
-using System.Collections.Generic;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
@@ -39,10 +38,10 @@ namespace EventStore.Projections.Core.Services.Processing
         void Stopping();
         void Stopped();
         void GetStatistics(ProjectionStatistics info);
-        void RequestCheckpointToStop();
 
+        void NewPartition(string partition, CheckpointTag eventCheckpointTag);
         void EventsEmitted(EmittedEvent[] scheduledWrites);
-        void StateUpdated(string partition, PartitionStateCache.State oldState, PartitionStateCache.State newState);
+        void StateUpdated(string partition, PartitionState oldState, PartitionState newState);
         void EventProcessed(CheckpointTag checkpointTag, float progress);
 
         /// <summary>
@@ -53,11 +52,12 @@ namespace EventStore.Projections.Core.Services.Processing
         /// <returns>true - if checkpoint has been completed (or skipped)</returns>
         bool CheckpointSuggested(CheckpointTag checkpointTag, float progress);
         void Progress(float progress);
+
         void BeginLoadState();
 
         void BeginLoadPartitionStateAt(
             string statePartition, CheckpointTag requestedStateCheckpointTag,
-            Action<PartitionStateCache.State> loadCompleted);
+            Action<PartitionState> loadCompleted);
 
         void RecordEventOrder(ProjectionSubscriptionMessage.CommittedEventReceived message, Action committed);
     }

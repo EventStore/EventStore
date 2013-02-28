@@ -62,6 +62,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<CoreProjectionManagementMessage.Prepared>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.Faulted>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.StateReport>(_manager);
+            _bus.Subscribe<CoreProjectionManagementMessage.ResultReport>(_manager);
             _bus.Subscribe<CoreProjectionManagementMessage.StatisticsReport>(_manager);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_manager);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_manager);
@@ -76,8 +77,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<CoreProjectionManagementMessage.Stop>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.Kill>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.GetState>(_coreService);
+            _bus.Subscribe<CoreProjectionManagementMessage.GetResult>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.GetDebugState>(_coreService);
             _bus.Subscribe<CoreProjectionManagementMessage.UpdateStatistics>(_coreService);
+            _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointCompleted>(_coreService);
+            _bus.Subscribe<CoreProjectionProcessingMessage.CheckpointLoaded>(_coreService);
+            _bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(_coreService);
+            _bus.Subscribe<CoreProjectionProcessingMessage.RestartRequested>(_coreService);
             _bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_coreService);
             _bus.Subscribe<ClientMessage.WriteEventsCompleted>(_coreService);
             _bus.Subscribe<ProjectionCoreServiceMessage.Start>(_coreService);
@@ -86,6 +92,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
             _bus.Subscribe<ProjectionCoreServiceMessage.CommittedEventDistributed>(_coreService);
             _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderEof>(_coreService);
             _bus.Subscribe<ProjectionCoreServiceMessage.EventReaderIdle>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionMessage.CommittedEventReceived>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionMessage.CheckpointSuggested>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionMessage.EofReached>(_coreService);
+            _bus.Subscribe<ProjectionSubscriptionMessage.ProgressChanged>(_coreService);
             _bus.Subscribe<ProjectionSubscriptionManagement.Pause>(_coreService);
             _bus.Subscribe<ProjectionSubscriptionManagement.Resume>(_coreService);
             _bus.Subscribe<ProjectionSubscriptionManagement.Subscribe>(_coreService);

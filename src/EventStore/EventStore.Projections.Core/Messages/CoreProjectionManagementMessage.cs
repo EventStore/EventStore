@@ -152,6 +152,38 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class GetResult : CoreProjectionManagementMessage
+        {
+            private readonly IEnvelope _envelope;
+            private readonly Guid _correlationId;
+            private readonly string _partition;
+
+            public GetResult(IEnvelope envelope, Guid correlationId, Guid projectionId, string partition)
+                : base(projectionId)
+            {
+                if (envelope == null) throw new ArgumentNullException("envelope");
+                if (partition == null) throw new ArgumentNullException("partition");
+                _envelope = envelope;
+                _correlationId = correlationId;
+                _partition = partition;
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+            public string Partition
+            {
+                get { return _partition; }
+            }
+
+            public Guid CorrelationId
+            {
+                get { return _correlationId; }
+            }
+        }
+
         public class GetDebugState : CoreProjectionManagementMessage
         {
             private readonly IEnvelope _envelope;
@@ -178,25 +210,18 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
-        public class StateReport : CoreProjectionManagementMessage
+        public abstract class DataReportBase : CoreProjectionManagementMessage
         {
             private readonly Guid _correlationId;
-            private readonly string _state;
             private readonly Exception _exception;
             private readonly string _partition;
 
-            public StateReport(Guid correlationId, Guid projectionId, string partition, string state, Exception exception = null)
+            protected DataReportBase(Guid correlationId, Guid projectionId, string partition, Exception exception = null)
                 : base(projectionId)
             {
                 _correlationId = correlationId;
-                _state = state;
                 _exception = exception;
                 _partition = partition;
-            }
-
-            public string State
-            {
-                get { return _state; }
             }
 
             public string Partition
@@ -215,6 +240,39 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class StateReport : DataReportBase
+        {
+            private readonly string _state;
+
+            public StateReport(Guid correlationId, Guid projectionId, string partition, string state, Exception exception = null)
+                : base(correlationId, projectionId, partition, exception)
+            {
+                _state = state;
+            }
+
+            public string State
+            {
+                get { return _state; }
+            }
+
+        }
+
+        public class ResultReport : DataReportBase
+        {
+            private readonly string _result;
+
+            public ResultReport(Guid correlationId, Guid projectionId, string partition, string result, Exception exception = null)
+                : base(correlationId, projectionId, partition, exception)
+            {
+                _result = result;
+            }
+
+            public string Result
+            {
+                get { return _result; }
+            }
+
+        }
         public class DebugState : CoreProjectionManagementMessage
         {
             private readonly Event[] _events;
@@ -283,17 +341,17 @@ namespace EventStore.Projections.Core.Messages
 
         public class Prepared : CoreProjectionManagementMessage
         {
-            private readonly ProjectionSourceDefintion _sourceDefintion;
+            private readonly ProjectionSourceDefinition _sourceDefinition;
 
-            public Prepared(Guid projectionId, ProjectionSourceDefintion sourceDefintion)
+            public Prepared(Guid projectionId, ProjectionSourceDefinition sourceDefinition)
                 : base(projectionId)
             {
-                _sourceDefintion = sourceDefintion;
+                _sourceDefinition = sourceDefinition;
             }
 
-            public ProjectionSourceDefintion SourceDefintion
+            public ProjectionSourceDefinition SourceDefinition
             {
-                get { return _sourceDefintion; }
+                get { return _sourceDefinition; }
             }
         }
 

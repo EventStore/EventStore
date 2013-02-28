@@ -323,6 +323,38 @@ namespace EventStore.Projections.Core.Messages
             }
         }
 
+        public class GetResult : Message
+        {
+            private readonly IEnvelope _envelope;
+            private readonly string _name;
+            private readonly string _partition;
+
+            public GetResult(IEnvelope envelope, string name, string partition)
+            {
+                if (envelope == null) throw new ArgumentNullException("envelope");
+                if (name == null) throw new ArgumentNullException("name");
+                if (partition == null) throw new ArgumentNullException("partition");
+                _envelope = envelope;
+                _name = name;
+                _partition = partition;
+            }
+
+            public string Name
+            {
+                get { return _name; }
+            }
+
+            public IEnvelope Envelope
+            {
+                get { return _envelope; }
+            }
+
+            public string Partition
+            {
+                get { return _partition; }
+            }
+        }
+
         public class GetDebugState : Message
         {
             private readonly IEnvelope _envelope;
@@ -363,29 +395,22 @@ namespace EventStore.Projections.Core.Messages
 
         }
 
-        public class ProjectionState : Message
+        public abstract class ProjectionDataBase : Message
         {
             private readonly string _name;
             private readonly string _partition;
-            private readonly string _state;
             private readonly Exception _exception;
 
-            public ProjectionState(string name, string partition, string state, Exception exception = null)
+            protected ProjectionDataBase(string name, string partition, Exception exception = null)
             {
                 _name = name;
                 _partition = partition;
-                _state = state;
                 _exception = exception;
             }
 
             public string Name
             {
                 get { return _name; }
-            }
-
-            public string State
-            {
-                get { return _state; }
             }
 
             public Exception Exception
@@ -396,6 +421,38 @@ namespace EventStore.Projections.Core.Messages
             public string Partition
             {
                 get { return _partition; }
+            }
+        }
+
+        public class ProjectionState : ProjectionDataBase
+        {
+            private readonly string _state;
+
+            public ProjectionState(string name, string partition, string state, Exception exception = null)
+                : base(name, partition, exception)
+            {
+                _state = state;
+            }
+
+            public string State
+            {
+                get { return _state; }
+            }
+        }
+
+        public class ProjectionResult : ProjectionDataBase
+        {
+            private readonly string _result;
+
+            public ProjectionResult(string name, string partition, string result, Exception exception = null)
+                : base(name, partition, exception)
+            {
+                _result = result;
+            }
+
+            public string Result
+            {
+                get { return _result; }
             }
         }
 

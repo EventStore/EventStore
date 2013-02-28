@@ -34,9 +34,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
     {
         protected override void When()
         {
-            _manager = new MultiStreamMultiOutputCheckpointManager(
-                _projection, _bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
-                new MultiStreamPositionTagger(new[] {"a", "b", "c"}), _namingBuilder, _checkpointsEnabled, true);
+            _manager = new MultiStreamMultiOutputCheckpointManager(_bus, _projectionCorrelationId, _readDispatcher, _writeDispatcher, _config, "projection",
+                new MultiStreamPositionTagger(new[] { "a", "b", "c" }), _namingBuilder, _resultEmitter, _checkpointsEnabled);
         }
     }
 }

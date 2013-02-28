@@ -29,9 +29,7 @@
 using System;
 using System.Linq;
 using System.Text;
-using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
@@ -43,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         protected override void Given()
         {
             _checkpointHandledThreshold = 2;
-            NoStream("$projections-projection-state");
+            NoStream("$projections-projection-result");
             NoStream("$projections-projection-order");
             AllWritesToSucceed("$projections-projection-order");
             NoStream("$projections-projection-checkpoint");

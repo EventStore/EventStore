@@ -36,6 +36,9 @@ namespace EventStore.Projections.Core.Services.Processing
         private readonly ProjectionSubscriptionMessage.CheckpointSuggested _message;
         private readonly ICoreProjectionCheckpointManager _checkpointManager;
 
+        private bool _completed = false;
+        private bool _completeRequested = false;
+
         public CheckpointSuggestedWorkItem(
             CoreProjection projection, ProjectionSubscriptionMessage.CheckpointSuggested message,
             ICoreProjectionCheckpointManager checkpointManager)
@@ -52,13 +55,26 @@ namespace EventStore.Projections.Core.Services.Processing
             if (_checkpointManager.CheckpointSuggested(_message.CheckpointTag, _message.Progress))
             {
                 _projection.SetCurrentCheckpointSuggestedWorkItem(null);
-                NextStage();
+                Complete();
             }
+            else 
+                NextStage();
+        }
+
+        protected override void CompleteItem()
+        {
+            if (_completed)
+                Complete();
+            else
+                _completeRequested = true;
         }
 
         internal void CheckpointCompleted()
         {
-            NextStage();
+            if (_completeRequested)
+                Complete();
+            else
+                _completed = true;
         }
     }
 }

@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         {
             _readyHandler = new TestCheckpointManagerMessageHandler();;
             _stream = new EmittedStream(
-                "test", CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler, 50);
+                "test", CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler, 50);
             _stream.Start();
             _stream.Checkpoint();
         }
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
         public void emit_events_throws_invalid_operation_exception()
         {
             _stream.EmitEvents(
-                new[] {new EmittedEvent("test", Guid.NewGuid(), "type2", "data2", CheckpointTag.FromPosition(-1, -1), null)});
+                new[] { new EmittedDataEvent("test", Guid.NewGuid(), "type2", "data2", CheckpointTag.FromPosition(-1, -1), null) });
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]

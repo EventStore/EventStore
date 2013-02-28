@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
         protected override void Given()
         {
             base.Given();
-            NoStream("$projections-test-projection-state");
+            NoStream("$projections-test-projection-result");
             NoStream("$projections-test-projection-order");
             AllWritesToSucceed("$projections-test-projection-order");
             NoStream("$projections-test-projection-checkpoint");
@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager
                     ""Mode"":""3"", 
                     ""Enabled"":false, 
                     ""HandlerType"":""JS"",
-                    ""SourceDefintion"":{
+                    ""SourceDefinition"":{
                         ""AllEvents"":true,
                         ""AllStreams"":true,
                     }

@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
         [Test]
         public void handles_state_updated()
         {
-            _updateManager.StateUpdated("partition", "state", CheckpointTag.FromPosition(100, 50), CheckpointTag.FromPosition(200, 150));
+            _updateManager.StateUpdated("partition", new PartitionState("state", null, CheckpointTag.FromPosition(100, 50)), CheckpointTag.FromPosition(200, 150));
         }
 
         [Test]

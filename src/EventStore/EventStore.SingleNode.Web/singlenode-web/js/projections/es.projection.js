@@ -40,13 +40,12 @@ es.projection = function (settings) {
         function process_event(event) {
             var parsedEvent = event;
 
-            processor.process_event(parsedEvent.data,
+            var stateStr = processor.process_event(parsedEvent.data,
                             parsedEvent.eventStreamId,
                             parsedEvent.eventType,
                             category,
                             parsedEvent.eventNumber,
                             parsedEvent.metadata);
-            var stateStr = processor.get_state();
             var stateObj = JSON.parse(stateStr);
 
             onStateUpdate(stateObj, stateStr);

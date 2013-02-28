@@ -52,7 +52,7 @@ namespace EventStore.Projections.Core.Services.Processing
             public int ProcessingLag { get; set; }
 
             [DataMember]
-            public bool EmitStateUpdated { get; set; }
+            public bool DefinesStateTransform { get; set; }
         }
 
         protected readonly QuerySourceOptions _options = new QuerySourceOptions();
@@ -63,6 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing
         protected List<string> _events;
         protected bool _byStream;
         protected bool _byCustomPartitions;
+        protected bool _definesStateTransform;
 
         public void FromAll()
         {
@@ -105,6 +106,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _byCustomPartitions = true;
         }
 
+        public void SetDefinesStateTransform()
+        {
+            _definesStateTransform = true;
+        }
+
         public void SetStateStreamNameOption(string stateStreamName)
         {
             _options.StateStreamName = string.IsNullOrWhiteSpace(stateStreamName) ? null : stateStreamName;
@@ -130,9 +136,9 @@ namespace EventStore.Projections.Core.Services.Processing
             _options.ProcessingLag = processingLag;
         }
 
-        public void SetEmitStateUpdated(bool emitStateUpdated = true)
+        public void SetDefinesStateTransform(bool definesStateTransform = true)
         {
-            _options.EmitStateUpdated = emitStateUpdated;
+            _options.DefinesStateTransform = definesStateTransform;
         }
 
 
@@ -176,9 +182,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 if (_options.ProcessingLag < 50)
                     throw new InvalidOperationException("Event reordering requires processing lag at least of 50ms");
             }
-            if (_options.EmitStateUpdated && !config.EmitEventEnabled)
+            if (_options.DefinesStateTransform && !config.EmitEventEnabled)
                 throw new InvalidOperationException(
-                    "EmitStateUpdated requires EmitEventEnabled mode");
+                    "transformBy/filterBy requires EmitEventEnabled mode");
         }
 
     }

@@ -56,11 +56,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.emitted_str
             _readyHandler = new TestCheckpointManagerMessageHandler();
             ;
             _stream = new EmittedStream(
-                "test", CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler, 50);
+                "test", CheckpointTag.FromPosition(0, -1), CheckpointTag.FromPosition(0, -1), _readDispatcher, _writeDispatcher, _readyHandler, 50);
             _stream.EmitEvents(
                 new[]
                     {
-                        new EmittedEvent(
+                        new EmittedDataEvent(
                     "test", Guid.NewGuid(), "type", "data", CheckpointTag.FromPosition(200, 150), null)
                     });
         }

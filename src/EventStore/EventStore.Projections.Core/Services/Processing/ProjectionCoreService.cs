@@ -57,12 +57,21 @@ namespace EventStore.Projections.Core.Services.Processing
                                          IHandle<CoreProjectionManagementMessage.Stop>,
                                          IHandle<CoreProjectionManagementMessage.Kill>,
                                          IHandle<CoreProjectionManagementMessage.GetState>,
-                                         IHandle<CoreProjectionManagementMessage.GetDebugState>,
+                                        IHandle<CoreProjectionManagementMessage.GetResult>,
+                                        IHandle<CoreProjectionManagementMessage.GetDebugState>,
+                                        IHandle<ProjectionSubscriptionMessage.CommittedEventReceived>, 
+                                        IHandle<ProjectionSubscriptionMessage.CheckpointSuggested>, 
+                                        IHandle<ProjectionSubscriptionMessage.EofReached>, 
+                                        IHandle<ProjectionSubscriptionMessage.ProgressChanged>, 
                                          IHandle<CoreProjectionManagementMessage.UpdateStatistics>,
                                          IHandle<ClientMessage.ReadStreamEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadAllEventsForwardCompleted>,
                                          IHandle<ClientMessage.ReadStreamEventsBackwardCompleted>,
-                                         IHandle<ClientMessage.WriteEventsCompleted>
+                                         IHandle<ClientMessage.WriteEventsCompleted>, 
+                                        IHandle<CoreProjectionProcessingMessage.CheckpointCompleted>, 
+                                        IHandle<CoreProjectionProcessingMessage.CheckpointLoaded>, 
+                                        IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>, 
+                                        IHandle<CoreProjectionProcessingMessage.RestartRequested>
 
 
     {
@@ -213,8 +222,8 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
 
             var fromCheckpointTag = message.FromPosition;
-            var projectionSubscription = message.CheckpointStrategy.CreateProjectionSubscription(
-                fromCheckpointTag, message.CorrelationId, message.SubscriptionId, message.Subscriber, message.CheckpointUnhandledBytesThreshold,
+            var projectionSubscription = message.CheckpointStrategy.CreateProjectionSubscription(_publisher, 
+                fromCheckpointTag, message.CorrelationId, message.SubscriptionId, message.CheckpointUnhandledBytesThreshold,
                 message.CheckpointProcessedEventsThreshold, message.StopOnEof);
             _subscriptions.Add(message.CorrelationId, projectionSubscription);
 
@@ -400,6 +409,13 @@ namespace EventStore.Projections.Core.Services.Processing
                 projection.Handle(message);
         }
 
+        public void Handle(CoreProjectionManagementMessage.GetResult message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
         public void Handle(CoreProjectionManagementMessage.GetDebugState message)
         {
             CoreProjection projection;
@@ -452,5 +468,62 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(new ProjectionSubscriptionManagement.ReaderAssigned(message.CorrelationId, Guid.Empty));
             return true;
         }
+
+        public void Handle(CoreProjectionProcessingMessage.CheckpointCompleted message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.CheckpointLoaded message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.PrerecordedEventsLoaded message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(CoreProjectionProcessingMessage.RestartRequested message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(ProjectionSubscriptionMessage.CommittedEventReceived message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(ProjectionSubscriptionMessage.CheckpointSuggested message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(ProjectionSubscriptionMessage.EofReached message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
+        public void Handle(ProjectionSubscriptionMessage.ProgressChanged message)
+        {
+            CoreProjection projection;
+            if (_projections.TryGetValue(message.ProjectionId, out projection))
+                projection.Handle(message);
+        }
+
     }
 }

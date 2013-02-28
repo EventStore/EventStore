@@ -32,41 +32,19 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
-    class GetStateWorkItem : WorkItem
+    class GetStateWorkItem : GetDataWorkItemBase
     {
-        private readonly string _partition;
-        private readonly IEnvelope _envelope;
-        private readonly Guid _correlationId;
-        private readonly Guid _projectionId;
-        private readonly PartitionStateCache _partitionStateCache;
-
         public GetStateWorkItem(
             IEnvelope envelope, Guid correlationId, Guid projectionId, CoreProjection projection,
             PartitionStateCache partitionStateCache, string partition)
-            : base(projection, string.Empty)
+            : base(envelope, correlationId, projectionId, projection, partitionStateCache, partition)
         {
-            if (envelope == null) throw new ArgumentNullException("envelope");
-            if (partitionStateCache == null) throw new ArgumentNullException("partitionStateCache");
-            if (partition == null) throw new ArgumentNullException("partition");
-            _partition = partition;
-            _envelope = envelope;
-            _correlationId = correlationId;
-            _projectionId = projectionId;
-            _partitionStateCache = partitionStateCache;
         }
 
-        protected override void Load(CheckpointTag checkpointTag)
-        {
-            Projection.BeginGetPartitionStateAt(
-                _partition, checkpointTag, LoadCompleted, lockLoaded: false);
-        }
-
-        private void LoadCompleted(CheckpointTag checkpointTag, string state)
+        protected override void Reply(PartitionState state)
         {
             _envelope.ReplyWith(
-                new CoreProjectionManagementMessage.StateReport(
-                    _correlationId, _projectionId, _partition, state));
-            NextStage();
+                new CoreProjectionManagementMessage.StateReport(_correlationId, _projectionId, _partition, state.State));
         }
     }
 }

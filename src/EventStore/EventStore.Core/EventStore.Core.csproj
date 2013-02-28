@@ -147,7 +147,6 @@
     <Compile Include="Services\Monitoring\SystemStatsHelper.cs" />
     <Compile Include="Services\Monitoring\Stats\StatMetadata.cs" />
     <Compile Include="Services\RequestManager\Managers\SingleAckRequestManager.cs" />
-    <Compile Include="Services\RequestManager\Managers\Timeouts.cs" />
     <Compile Include="Services\Storage\ReaderIndex\CommitCheckResult.cs" />
     <Compile Include="Services\Storage\ReaderIndex\CommitDecision.cs" />
     <Compile Include="Services\Storage\ReaderIndex\IndexReadAllResult.cs" />

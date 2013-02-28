@@ -210,6 +210,9 @@ namespace EventStore.Core.Messages
             public readonly Guid CorrelationId;
             public readonly OperationResult Result;
             public readonly string Message;
+            /// <summary>
+            /// NOTE: FirstEventNumber may account for ImplicitStreamCreated event
+            /// </summary>
             public readonly int FirstEventNumber;
 
             public WriteEventsCompleted(Guid correlationId, int firstEventNumber)

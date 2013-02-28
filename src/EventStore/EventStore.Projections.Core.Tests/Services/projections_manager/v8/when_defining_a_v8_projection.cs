@@ -111,6 +111,34 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
+        public class with_multiple_from_streams_plain : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromStreams('stream1', 'stream2', 'stream3').whenAny(
+                        function(state, event) {
+                            return state;
+                        });
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test, Category("v8")]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(false, _source.AllStreams);
+                Assert.IsNotNull(_source.Streams);
+                Assert.AreEqual(3, _source.Streams.Count);
+                Assert.AreEqual("stream1", _source.Streams[0]);
+                Assert.AreEqual("stream2", _source.Streams[1]);
+                Assert.AreEqual("stream3", _source.Streams[2]);
+                Assert.That(_source.Categories == null || _source.Categories.Count == 0);
+                Assert.AreEqual(false, _source.ByStream);
+            }
+        }
+
+        [TestFixture]
         public class with_from_category : TestFixtureWithJsProjection
         {
             protected override void Given()
@@ -190,7 +218,30 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
-        public class with_emit_state_updated_1 : TestFixtureWithJsProjection
+        public class with_output_to : TestFixtureWithJsProjection
+        {
+            protected override void Given()
+            {
+                _projection = @"
+                    fromAll()
+                    .whenAny(
+                        function(state, event) {
+                            return state;
+                        })
+                    .$defines_state_transform();
+                ";
+                _state = @"{""count"": 0}";
+            }
+
+            [Test]
+            public void source_definition_is_correct()
+            {
+                Assert.AreEqual(true, _source.DefinesStateTransform);
+            }
+        }
+
+        [TestFixture]
+        public class with_transform_by : TestFixtureWithJsProjection
         {
             protected override void Given()
             {
@@ -198,18 +249,18 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                     fromAll().whenAny(
                         function(state, event) {
                             return state;
-                        }).emitStateUpdated();
+                        }).transformBy(function(s) {return s;});
                 ";
                 _state = @"{""count"": 0}";
             }
             [Test, Category("v8")]
             public void source_definition_is_correct()
             {
-                Assert.AreEqual(true, _source.Options.EmitStateUpdated);
+                Assert.AreEqual(true, _source.DefinesStateTransform);
             }
         }
 
-        public class with_emit_state_updated_2 : TestFixtureWithJsProjection
+        public class with_filter_by : TestFixtureWithJsProjection
         {
             protected override void Given()
             {
@@ -218,7 +269,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                         some: function(state, event) {
                             return state;
                         }
-                    }).emitStateUpdated();
+                    }).filterBy(function(s) {return true;});
                 ";
                 _state = @"{""count"": 0}";
             }
@@ -226,7 +277,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             [Test, Category("v8")]
             public void source_definition_is_correct()
             {
-                Assert.AreEqual(true, _source.Options.EmitStateUpdated);
+                Assert.AreEqual(true, _source.DefinesStateTransform);
             }
         }
 
@@ -305,13 +356,17 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         }
 
         [TestFixture]
-        public class with_emit_state_updated_option : TestFixtureWithJsProjection
+        public class with_multiple_option_statements : TestFixtureWithJsProjection
         {
             protected override void Given()
             {
                 _projection = @"
                     options({
-                        emitStateUpdated: true,
+                        reorderEvents: false,
+                        processingLag: 500,
+                    });
+                    options({
+                        reorderEvents: true,
                     });
                     fromAll().whenAny(
                         function(state, event) {
@@ -324,8 +379,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
             [Test, Category("v8")]
             public void source_definition_is_correct()
             {
-                Assert.AreEqual(true, _source.Options.EmitStateUpdated);
+                Assert.AreEqual(500, _source.Options.ProcessingLag);
+                Assert.AreEqual(true, _source.Options.ReorderEvents);
             }
         }
+
     }
 }

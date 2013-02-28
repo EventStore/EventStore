@@ -43,6 +43,7 @@ namespace js1
 		else 
 		{
 			set_last_error(v8::String::New("Module script must return an object"));
+			return S_ERROR;
 		}
 		return S_OK;
 	}

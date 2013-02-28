@@ -38,12 +38,13 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
         protected override void Given()
         {
             _projection = @"
-                fromAll();
-                on_raw(function(state, event) {
-                    log(JSON.stringify(state) + '/' + event.bodyRaw + '/' + event.streamId + '/' + 
-                        event.eventType + '/' + event.sequenceNumber + '/' + event.metadataRaw + '/' + 
-                        JSON.parse(event.position).commitPosition + '/' + JSON.parse(event.position).preparePosition);
-                    return {};
+                fromAll().when({$any: 
+                    function(state, event) {
+                        log(JSON.stringify(state) + '/' + event.bodyRaw + '/' + event.streamId + '/' + 
+                            event.eventType + '/' + event.sequenceNumber + '/' + event.metadataRaw + '/' + 
+                            JSON.parse(event.position).commitPosition + '/' + JSON.parse(event.position).preparePosition);
+                        return {};
+                    }
                 });
             ";
         }
@@ -58,6 +59,18 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.v8
                 @"{""a"":""b""}", out state, out emittedEvents);
             Assert.AreEqual(1, _logged.Count);
             Assert.AreEqual(@"{}/{""a"":""b""}/stream1/type1/0/metadata/20/10", _logged[0]);
+        }
+
+        [Test, Category("v8")]
+        public void process_event_should_reflect_event_2()
+        {
+            string state;
+            EmittedEvent[] emittedEvents;
+            _stateHandler.ProcessEvent(
+                "", CheckpointTag.FromPosition(20, 10), "stream1", "type1", "category", Guid.NewGuid(), 0, "metadata",
+                @"{""a"":1}", out state, out emittedEvents);
+            Assert.AreEqual(1, _logged.Count);
+            Assert.AreEqual(@"{}/{""a"":1}/stream1/type1/0/metadata/20/10", _logged[0]);
         }
 
         [Test, Category("v8")]

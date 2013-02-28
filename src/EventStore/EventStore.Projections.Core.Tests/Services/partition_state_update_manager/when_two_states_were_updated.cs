@@ -9,29 +9,29 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
     public class when_two_states_were_updated
     {
         private PartitionStateUpdateManager _updateManager;
-        private CheckpointTag _zero = CheckpointTag.FromPosition(100, 50);
-        private CheckpointTag _one = CheckpointTag.FromPosition(200, 150);
-        private CheckpointTag _two = CheckpointTag.FromPosition(300, 250);
-        private CheckpointTag _three = CheckpointTag.FromPosition(400, 350);
+        private readonly CheckpointTag _zero = CheckpointTag.FromPosition(100, 50);
+        private readonly CheckpointTag _one = CheckpointTag.FromPosition(200, 150);
+        private readonly CheckpointTag _two = CheckpointTag.FromPosition(300, 250);
+        private readonly CheckpointTag _three = CheckpointTag.FromPosition(400, 350);
 
         [SetUp]
         public void setup()
         {
             _updateManager = new PartitionStateUpdateManager(new ProjectionNamesBuilder("projection"));
-            _updateManager.StateUpdated("partition1", "state1", _zero, _one);
-            _updateManager.StateUpdated("partition2", "state2", _zero, _two);
+            _updateManager.StateUpdated("partition1", new PartitionState("{\"state\":1}", null, _one), _zero);
+            _updateManager.StateUpdated("partition2", new PartitionState("{\"state\":2}", null, _two), _zero);
         }
 
         [Test]
         public void handles_state_updated_for_the_same_partition()
         {
-            _updateManager.StateUpdated("partition1", "state", _two, _three);
+            _updateManager.StateUpdated("partition1", new PartitionState("{\"state\":0}", null, _three), _two);
         }
 
         [Test]
         public void handles_state_updated_for_another_partition()
         {
-            _updateManager.StateUpdated("partition3", "state", _two, _three);
+            _updateManager.StateUpdated("partition3", new PartitionState("{\"state\":0}", null, _three), _two);
         }
 
         [Test]
@@ -61,8 +61,8 @@ namespace EventStore.Projections.Core.Tests.Services.partition_state_update_mana
             var event1 = events.Single(v => "$projections-projection-partition1-checkpoint" == v.StreamId);
             var event2 = events.Single(v => "$projections-projection-partition2-checkpoint" == v.StreamId);
 
-            Assert.AreEqual("state1", Encoding.UTF8.GetString(event1.Data));
-            Assert.AreEqual("state2", Encoding.UTF8.GetString(event2.Data));
+            Assert.AreEqual("[{\"state\":1}]", Encoding.UTF8.GetString(event1.Data));
+            Assert.AreEqual("[{\"state\":2}]", Encoding.UTF8.GetString(event2.Data));
         }
 
         [Test]
