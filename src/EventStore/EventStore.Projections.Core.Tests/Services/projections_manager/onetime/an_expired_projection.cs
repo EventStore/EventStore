@@ -31,8 +31,6 @@ using System.Linq;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
@@ -57,9 +55,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 _reader = readerAssignedMessage.ReaderId;
 
                 _bus.Publish(
-                    new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                        _reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false,
-                        ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0]), 100, 33.3f));
+                    ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                        _reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
+                        false, new byte[0], new byte[0], 100, 33.3f));
                 _timeProvider.AddTime(TimeSpan.FromMinutes(6));
                 foreach (var m in _consumer.HandledMessages.OfType<TimerMessage.Schedule>().ToArray())
                     m.Envelope.ReplyWith(m.ReplyMessage);
@@ -82,9 +80,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
             {
                 Assert.IsTrue(_consumer.HandledMessages.OfType<ProjectionManagementMessage.NotFound>().Any());
             }
-
-
         }
-
     }
 }

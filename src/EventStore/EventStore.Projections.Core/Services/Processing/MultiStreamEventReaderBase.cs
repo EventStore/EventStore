@@ -292,8 +292,7 @@ namespace EventStore.Projections.Core.Services.Processing
             // deliver if already available
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, default(EventPosition), "", -1, "", -1, false, null,
-                    PositionToSafeJoinPosition(_safePositionToJoin), 100.0f));
+                    _distibutionPointCorrelationId, null, PositionToSafeJoinPosition(_safePositionToJoin), 100.0f));
         }
 
         private void UpdateSafePositionToJoin(string streamId, TPosition? preparePosition)
@@ -317,11 +316,11 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(
                 //TODO: publish both link and event data
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, default(EventPosition), streamId, positionEvent.EventNumber,
-                    @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
-                    ResolvedEvent.Create(
-                        @event.EventId, @event.EventType, false, @event.Data, @event.Metadata, positionEvent.TimeStamp),
-                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress));
+                    _distibutionPointCorrelationId,
+                    new ResolvedEvent(
+                        streamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
+                        default(EventPosition), @event.EventId, @event.EventType, false, @event.Data, @event.Metadata,
+                        positionEvent.TimeStamp), _stopOnEof ? (long?) null : positionEvent.LogPosition, progress));
         }
     }
 }

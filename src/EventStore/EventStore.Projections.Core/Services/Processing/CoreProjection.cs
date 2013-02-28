@@ -748,8 +748,8 @@ namespace EventStore.Projections.Core.Services.Processing
             projectionResult = null;
             SetHandlerState(partition);
             var result = _projectionStateHandler.ProcessEvent(
-                partition, message.CheckpointTag, message.EventStreamId, message.Data.EventType, message.EventCategory,
-                message.Data.EventId, message.EventSequenceNumber, Encoding.UTF8.GetString(message.Data.Metadata),
+                partition, message.CheckpointTag, message.Data.EventStreamId, message.Data.EventType, message.EventCategory,
+                message.Data.EventId, message.Data.EventSequenceNumber, Encoding.UTF8.GetString(message.Data.Metadata),
                 Encoding.UTF8.GetString(message.Data.Data), out newState, out emittedEvents);
             if (result)
             {

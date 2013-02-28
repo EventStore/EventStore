@@ -27,22 +27,20 @@
 // 
 
 using System;
-using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
     [TestFixture]
-    public class when_the_state_handler_does_not_process_event_the_projection_should : TestFixtureWithCoreProjectionStarted
+    public class when_the_state_handler_does_not_process_event_the_projection_should :
+        TestFixtureWithCoreProjectionStarted
     {
         protected override void Given()
         {
             ExistingEvent(
-                "$projections-projection-result", "Result",
-                @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
+                "$projections-projection-result", "Result", @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
             ExistingEvent(
                 "$projections-projection-checkpoint", "ProjectionCheckpoint",
                 @"{""CommitPosition"": 100, ""PreparePosition"": 50}", "{}");
@@ -53,8 +51,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             //projection subscribes here
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "/event_category/1", -1, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "skip_this_type", false, new byte[0], new byte[0]), 0));
+                    new ResolvedEvent(
+                        "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(120, 110),
+                        Guid.NewGuid(), "skip_this_type", false, new byte[0], new byte[0], default(DateTime)),
+                    Guid.Empty, _subscriptionId, 0));
         }
 
         [Test]

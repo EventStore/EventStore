@@ -27,20 +27,20 @@
 // 
 
 using System;
+using EventStore.Common.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
     public class ResolvedEvent
     {
-        public static ResolvedEvent Create(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata, DateTime timestamp)
-        {
-            return new ResolvedEvent(eventId, eventType, isJson, data, metadata, timestamp);
-        }
+        private readonly string _eventStreamId;
+        private readonly int _eventSequenceNumber;
+        private readonly bool _resolvedLinkTo;
 
-        public static ResolvedEvent Sample(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata, DateTime? timestamp = null)
-        {
-            return new ResolvedEvent(eventId, eventType, isJson, data, metadata, timestamp ?? DateTime.UtcNow);
-        }
+        private readonly string _positionStreamId;
+        private readonly int _positionSequenceNumber;
+        private readonly EventPosition _position;
+
 
         public readonly Guid EventId;
         public readonly string EventType;
@@ -50,20 +50,59 @@ namespace EventStore.Projections.Core.Services.Processing
         public readonly byte[] Data;
         public readonly byte[] Metadata;
 
-        private ResolvedEvent(Guid eventId, string eventType, bool isJson, byte[] data, byte[] metadata, DateTime timestamp)
+        public ResolvedEvent(
+            string positionStreamId, int positionSequenceNumber, string eventStreamId, int eventSequenceNumber,
+            bool resolvedLinkTo, EventPosition position, Guid eventId, string eventType, bool isJson, byte[] data,
+            byte[] metadata, DateTime timestamp)
         {
             if (Guid.Empty == eventId)
                 throw new ArgumentException("Empty eventId provided.");
             if (string.IsNullOrEmpty(eventType))
                 throw new ArgumentException("Empty eventType provided.");
 
+            _positionStreamId = positionStreamId;
+            _positionSequenceNumber = positionSequenceNumber;
+            _eventStreamId = eventStreamId;
+            _eventSequenceNumber = eventSequenceNumber;
+            _resolvedLinkTo = resolvedLinkTo;
+            _position = position;
             EventId = eventId;
             EventType = eventType;
             IsJson = isJson;
             Timestamp = timestamp;
 
-            Data = data ?? Common.Utils.Empty.ByteArray;
-            Metadata = metadata ?? Common.Utils.Empty.ByteArray;
+            Data = data ?? Empty.ByteArray;
+            Metadata = metadata ?? Empty.ByteArray;
+        }
+
+        public string EventStreamId
+        {
+            get { return _eventStreamId; }
+        }
+
+        public int EventSequenceNumber
+        {
+            get { return _eventSequenceNumber; }
+        }
+
+        public bool ResolvedLinkTo
+        {
+            get { return _resolvedLinkTo; }
+        }
+
+        public string PositionStreamId
+        {
+            get { return _positionStreamId; }
+        }
+
+        public int PositionSequenceNumber
+        {
+            get { return _positionSequenceNumber; }
+        }
+
+        public EventPosition Position
+        {
+            get { return _position; }
         }
     }
 }

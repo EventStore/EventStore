@@ -1,3 +1,31 @@
+// Copyright (c) 2012, Event Store LLP
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+// Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+// Neither the name of the Event Store LLP nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 
+
 using System;
 using EventStore.Common.Log;
 using EventStore.Core.Bus;
@@ -20,13 +48,14 @@ namespace EventStore.Projections.Core.Services.Processing
         private long? _lastPassedOrCheckpointedEventPosition;
         private float _progress = -1;
         private long _subscriptionMessageSequenceNumber;
-        private int _eventsSinceLastCheckpointSuggested = 0;
+        private int _eventsSinceLastCheckpointSuggested;
         private readonly Guid _subscriptionId;
         private bool _eofReached;
 
-        protected ProjectionSubscriptionBase(IPublisher publisher,
-            Guid projectionCorrelationId, Guid subscriptionId, CheckpointTag from,
-            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, bool stopOnEof)
+        protected ProjectionSubscriptionBase(
+            IPublisher publisher, Guid projectionCorrelationId, Guid subscriptionId, CheckpointTag from,
+            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold,
+            int? checkpointProcessedEventsThreshold, bool stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
             if (checkpointStrategy == null) throw new ArgumentNullException("checkpointStrategy");
@@ -53,7 +82,7 @@ namespace EventStore.Projections.Core.Services.Processing
             var roundedProgress = (float) Math.Round(message.Progress, 2);
             bool progressChanged = _progress != roundedProgress;
             _progress = roundedProgress;
-            if (!_eventFilter.PassesSource(message.ResolvedLinkTo, message.PositionStreamId))
+            if (!_eventFilter.PassesSource(message.Data.ResolvedLinkTo, message.Data.PositionStreamId))
             {
                 if (progressChanged)
                     _publisher.Publish(
@@ -77,13 +106,13 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
             _positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
-            if (_eventFilter.Passes(message.ResolvedLinkTo, message.PositionStreamId, message.Data.EventType))
+            if (_eventFilter.Passes(message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType))
             {
-                _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
+                _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
                 var convertedMessage =
                     ProjectionSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
-                        message, eventCheckpointTag, _eventFilter.GetCategory(message.PositionStreamId), _projectionCorrelationId, 
-                        _subscriptionId, _subscriptionMessageSequenceNumber++);
+                        message, eventCheckpointTag, _eventFilter.GetCategory(message.Data.PositionStreamId),
+                        _projectionCorrelationId, _subscriptionId, _subscriptionMessageSequenceNumber++);
                 _publisher.Publish(convertedMessage);
                 _eventsSinceLastCheckpointSuggested++;
                 if (_eventsSinceLastCheckpointSuggested >= _checkpointProcessedEventsThreshold)
@@ -93,7 +122,7 @@ namespace EventStore.Projections.Core.Services.Processing
             {
                 if (_checkpointUnhandledBytesThreshold != null
                     && (_lastPassedOrCheckpointedEventPosition != null
-                        && message.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
+                        && message.Data.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
                         > _checkpointUnhandledBytesThreshold))
                 {
                     SuggestCheckpoint(message);
@@ -109,12 +138,12 @@ namespace EventStore.Projections.Core.Services.Processing
             }
             // initialize checkpointing based on first message 
             if (_lastPassedOrCheckpointedEventPosition == null)
-                _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
+                _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
         }
 
         private void SuggestCheckpoint(ProjectionCoreServiceMessage.CommittedEventDistributed message)
         {
-            _lastPassedOrCheckpointedEventPosition = message.Position.PreparePosition;
+            _lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
             _publisher.Publish(
                 new ProjectionSubscriptionMessage.CheckpointSuggested(
                     _projectionCorrelationId, _subscriptionId, _positionTracker.LastTag, message.Progress,

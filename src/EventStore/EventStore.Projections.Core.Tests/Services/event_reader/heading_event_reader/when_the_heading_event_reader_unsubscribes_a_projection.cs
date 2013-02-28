@@ -63,13 +63,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
                 new TransactionFileEventReader(
                     _bus, _distibutionPointCorrelationId, new EventPosition(0, -1), new RealTimeProvider()));
             _point.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, new EventPosition(20, 10), "stream", 10, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
+                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                    _distibutionPointCorrelationId, new EventPosition(20, 10), "stream", 10, false, Guid.NewGuid(),
+                    "type", false, new byte[0], new byte[0]));
             _point.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, new EventPosition(40, 30), "stream", 11, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
+                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                    _distibutionPointCorrelationId, new EventPosition(40, 30), "stream", 11, false, Guid.NewGuid(),
+                    "type", false, new byte[0], new byte[0]));
             _subscription = new FakeProjectionSubscription();
             _projectionSubscriptionId = Guid.NewGuid();
             var subscribed = _point.TrySubscribe(_projectionSubscriptionId, _subscription, 30);
@@ -83,9 +83,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         {
             var count = _subscription.ReceivedEvents.Count;
             _point.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, new EventPosition(60, 50), "stream", 12, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
+                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                    _distibutionPointCorrelationId, new EventPosition(60, 50), "stream", 12, false, Guid.NewGuid(),
+                    "type", false, new byte[0], new byte[0]));
             Assert.AreEqual(count, _subscription.ReceivedEvents.Count);
         }
 

@@ -27,11 +27,8 @@
 // 
 
 using System;
-using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.projection_subscription
 {
@@ -50,17 +47,17 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription
         protected override void When()
         {
             _subscription.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                    Guid.NewGuid(), new EventPosition(200, 150), "test-stream", 1, false, Guid.NewGuid(),
+                    "bad-event-type", false, new byte[0], new byte[0]));
             _subscription.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(2000, 1950), "test-stream", 2, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                    Guid.NewGuid(), new EventPosition(2000, 1950), "test-stream", 2, false, Guid.NewGuid(),
+                    "bad-event-type", false, new byte[0], new byte[0]));
             _subscription.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(2100, 2050), "test-stream", 2, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "bad-event-type", false, new byte[0], new byte[0])));
+                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                    Guid.NewGuid(), new EventPosition(2100, 2050), "test-stream", 2, false, Guid.NewGuid(),
+                    "bad-event-type", false, new byte[0], new byte[0]));
         }
 
         [Test]

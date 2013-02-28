@@ -29,7 +29,6 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -37,7 +36,6 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services
 {
@@ -122,7 +120,9 @@ namespace EventStore.Projections.Core.Tests.Services
 
         protected static ResolvedEvent CreateEvent()
         {
-            return ResolvedEvent.Sample(Guid.NewGuid(), "t", false, new byte[0], new byte[0]);
+            return new ResolvedEvent(
+                "test", -1, "test", -1, false, new EventPosition(10, 5), Guid.NewGuid(), "t", false, new byte[0],
+                new byte[0], default(DateTime));
         }
     }
 }

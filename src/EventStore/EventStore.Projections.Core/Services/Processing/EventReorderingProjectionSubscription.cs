@@ -28,9 +28,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Projections.Core.Messages;
-using System.Linq;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -41,13 +41,13 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private readonly int _processingLagMs;
 
-        public EventReorderingProjectionSubscription(IPublisher publisher,
-            Guid projectionCorrelationId, Guid subscriptionId, CheckpointTag from,
-            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold, int? checkpointProcessedEventsThreshold, int processingLagMs,
-            bool stopOnEof = false)
-            : base(publisher, 
-                projectionCorrelationId, subscriptionId, @from, 
-                checkpointStrategy, checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold, stopOnEof)
+        public EventReorderingProjectionSubscription(
+            IPublisher publisher, Guid projectionCorrelationId, Guid subscriptionId, CheckpointTag from,
+            CheckpointStrategy checkpointStrategy, long? checkpointUnhandledBytesThreshold,
+            int? checkpointProcessedEventsThreshold, int processingLagMs, bool stopOnEof = false)
+            : base(
+                publisher, projectionCorrelationId, subscriptionId, @from, checkpointStrategy,
+                checkpointUnhandledBytesThreshold, checkpointProcessedEventsThreshold, stopOnEof)
         {
             _processingLagMs = processingLagMs;
         }
@@ -58,9 +58,9 @@ namespace EventStore.Projections.Core.Services.Processing
                 throw new NotSupportedException();
             ProjectionCoreServiceMessage.CommittedEventDistributed existing;
             // ignore duplicate messages (when replaying from heading event distribution point)
-            if (!_buffer.TryGetValue(message.Position.PreparePosition, out existing))
+            if (!_buffer.TryGetValue(message.Data.Position.PreparePosition, out existing))
             {
-                _buffer.Add(message.Position.PreparePosition, message);
+                _buffer.Add(message.Data.Position.PreparePosition, message);
                 var maxTimestamp = _buffer.Max(v => v.Value.Data.Timestamp);
                 ProcessAllFor(maxTimestamp);
             }
@@ -68,7 +68,6 @@ namespace EventStore.Projections.Core.Services.Processing
 
         private void ProcessAllFor(DateTime maxTimestamp)
         {
-
             if (_buffer.Count == 0)
                 throw new InvalidOperationException();
 

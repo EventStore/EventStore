@@ -29,12 +29,10 @@
 using System;
 using System.Linq;
 using System.Text;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
@@ -72,26 +70,28 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _consumer.HandledMessages.Clear();
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "account-01", 1, false,
-                    ResolvedEvent.Sample(
-                        _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
-                        Encoding.UTF8.GetBytes("metadata")), 0));
+                    new ResolvedEvent(
+                        "account-01", 1, "account-01", 1, false, new EventPosition(120, 110), _eventId,
+                        "handle_this_type", false, Encoding.UTF8.GetBytes("data1"), Encoding.UTF8.GetBytes("metadata"),
+                        default(DateTime)), Guid.Empty, _subscriptionId, 0));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, _subscriptionId, new EventPosition(140, 130), "account-02", 2, false,
-                    ResolvedEvent.Sample(
-                        _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
-                        Encoding.UTF8.GetBytes("metadata")), 1));
+                    new ResolvedEvent(
+                        "account-02", 2, "account-02", 2, false, new EventPosition(140, 130), _eventId,
+                        "handle_this_type", false, Encoding.UTF8.GetBytes("data2"), Encoding.UTF8.GetBytes("metadata"),
+                        default(DateTime)), Guid.Empty, _subscriptionId, 1));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, _subscriptionId, new EventPosition(160, 150), "account-01", 2, false,
-                    ResolvedEvent.Sample(
-                        _eventId, "append", false, Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata")), 2));
+                    new ResolvedEvent(
+                        "account-01", 2, "account-01", 2, false, new EventPosition(160, 150), _eventId, "append", false,
+                        Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata"), default(DateTime)), Guid.Empty,
+                    _subscriptionId, 2));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, _subscriptionId, new EventPosition(180, 170), "account-02", 3, false,
-                    ResolvedEvent.Sample(
-                        _eventId, "append", false, Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata")), 3));
+                    new ResolvedEvent(
+                        "account-02", 3, "account-02", 3, false, new EventPosition(180, 170), _eventId, "append", false,
+                        Encoding.UTF8.GetBytes("$"), Encoding.UTF8.GetBytes("metadata"), default(DateTime)), Guid.Empty,
+                    _subscriptionId, 3));
         }
 
         [Test]
@@ -144,7 +144,6 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
             Assert.AreEqual(1, writes[1].Events.Length);
             Assert.AreEqual("account-02", Encoding.UTF8.GetString(writes[1].Events[0].Data));
-
         }
     }
 }

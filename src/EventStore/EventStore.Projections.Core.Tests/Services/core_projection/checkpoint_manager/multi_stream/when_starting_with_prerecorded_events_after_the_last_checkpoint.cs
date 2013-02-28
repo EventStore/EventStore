@@ -130,21 +130,21 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
             Assert.AreEqual("Event", message2.Data.EventType);
             Assert.AreEqual("Event", message3.Data.EventType);
 
-            Assert.AreEqual("c", message1.PositionStreamId);
-            Assert.AreEqual("a", message2.PositionStreamId);
-            Assert.AreEqual("b", message3.PositionStreamId);
+            Assert.AreEqual("c", message1.Data.PositionStreamId);
+            Assert.AreEqual("a", message2.Data.PositionStreamId);
+            Assert.AreEqual("b", message3.Data.PositionStreamId);
 
-            Assert.AreEqual("c", message1.EventStreamId);
-            Assert.AreEqual("a", message2.EventStreamId);
-            Assert.AreEqual("b", message3.EventStreamId);
+            Assert.AreEqual("c", message1.Data.EventStreamId);
+            Assert.AreEqual("a", message2.Data.EventStreamId);
+            Assert.AreEqual("b", message3.Data.EventStreamId);
 
             Assert.AreEqual(Guid.Empty, message1.SubscriptionId);
             Assert.AreEqual(Guid.Empty, message2.SubscriptionId);
             Assert.AreEqual(Guid.Empty, message3.SubscriptionId);
 
-            Assert.AreEqual(false, message1.ResolvedLinkTo);
-            Assert.AreEqual(false, message2.ResolvedLinkTo);
-            Assert.AreEqual(false, message3.ResolvedLinkTo);
+            Assert.AreEqual(false, message1.Data.ResolvedLinkTo);
+            Assert.AreEqual(false, message2.Data.ResolvedLinkTo);
+            Assert.AreEqual(false, message3.Data.ResolvedLinkTo);
         }
     }
 }

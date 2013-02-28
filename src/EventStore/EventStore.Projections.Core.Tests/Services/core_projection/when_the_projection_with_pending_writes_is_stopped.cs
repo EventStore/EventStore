@@ -30,8 +30,8 @@ using System;
 using System.Linq;
 using System.Text;
 using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
@@ -54,22 +54,22 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             //projection subscribes here
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "/event_category/1", -1, false,
-                    ResolvedEvent.Sample(
+                    new ResolvedEvent(
+                        "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(120, 110),
                         Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data1"),
-                        Encoding.UTF8.GetBytes("metadata")), 0));
+                        Encoding.UTF8.GetBytes("metadata"), default(DateTime)), Guid.Empty, _subscriptionId, 0));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, _subscriptionId, new EventPosition(140, 130), "/event_category/1", -1, false,
-                    ResolvedEvent.Sample(
+                    new ResolvedEvent(
+                        "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(140, 130),
                         Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data2"),
-                        Encoding.UTF8.GetBytes("metadata")), 1));
+                        Encoding.UTF8.GetBytes("metadata"), default(DateTime)), Guid.Empty, _subscriptionId, 1));
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, _subscriptionId, new EventPosition(160, 150), "/event_category/1", -1, false,
-                    ResolvedEvent.Sample(
+                    new ResolvedEvent(
+                        "/event_category/1", -1, "/event_category/1", -1, false, new EventPosition(160, 150),
                         Guid.NewGuid(), "handle_this_type", false, Encoding.UTF8.GetBytes("data3"),
-                        Encoding.UTF8.GetBytes("metadata")), 2));
+                        Encoding.UTF8.GetBytes("metadata"), default(DateTime)), Guid.Empty, _subscriptionId, 2));
             _coreProjection.Stop();
         }
 
@@ -86,7 +86,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
         public void other_events_are_not_written_after_the_checkpoint_write()
         {
             AllWriteComplete();
-            var index = _writeEventHandler.HandledMessages.FindIndex(
+            var index =
+                _writeEventHandler.HandledMessages.FindIndex(
                     v => v.Events.Any(e => e.EventType == "ProjectionCheckpoint"));
             Assert.AreEqual(index + 1, _writeEventHandler.HandledMessages.Count());
         }

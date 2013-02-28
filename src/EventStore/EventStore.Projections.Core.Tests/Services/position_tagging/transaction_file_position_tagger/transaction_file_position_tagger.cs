@@ -44,9 +44,15 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
         [SetUp]
         public void setup()
         {
-            _zeroEvent = new ProjectionCoreServiceMessage.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(10, 0), "stream", 0, false, ResolvedEvent.Sample(Guid.NewGuid(), "StreamCreated", false, new byte[0], new byte[0]));
-            _firstEvent = new ProjectionCoreServiceMessage.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(30, 20), "stream", 1, false, ResolvedEvent.Sample(Guid.NewGuid(), "Data", true, Encoding.UTF8.GetBytes("{}"), new byte[0]));
-            _secondEvent = new ProjectionCoreServiceMessage.CommittedEventDistributed(Guid.NewGuid(), new EventPosition(50, 40), "stream", 2, false, ResolvedEvent.Sample(Guid.NewGuid(), "Data", true, Encoding.UTF8.GetBytes("{}"), new byte[0]));
+            _zeroEvent = ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                Guid.NewGuid(), new EventPosition(10, 0), "stream", 0, false, Guid.NewGuid(), "StreamCreated", false,
+                new byte[0], new byte[0]);
+            _firstEvent = ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                Guid.NewGuid(), new EventPosition(30, 20), "stream", 1, false, Guid.NewGuid(), "Data", true,
+                Encoding.UTF8.GetBytes("{}"), new byte[0]);
+            _secondEvent = ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                Guid.NewGuid(), new EventPosition(50, 40), "stream", 2, false, Guid.NewGuid(), "Data", true,
+                Encoding.UTF8.GetBytes("{}"), new byte[0]);
         }
 
         [Test]
@@ -123,6 +129,5 @@ namespace EventStore.Projections.Core.Tests.Services.position_tagging.transactio
             Assert.AreEqual(zeroEvent2, zeroEvent);
             Assert.AreEqual(second, second2);
         }
-
     }
 }

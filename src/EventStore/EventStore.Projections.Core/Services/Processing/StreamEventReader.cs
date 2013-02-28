@@ -33,7 +33,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
-using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Projections.Core.Services.Processing
 {
@@ -94,7 +93,7 @@ namespace EventStore.Projections.Core.Services.Processing
                     DeliverSafeJoinPosition(GetLastCommitPositionFrom(message)); // allow joining heading distribution
                     if (_pauseRequested)
                         _paused = true;
-                    else 
+                    else
                         RequestEvents(delay: true);
                     SendIdle();
                     SendEof();
@@ -127,7 +126,9 @@ namespace EventStore.Projections.Core.Services.Processing
                         {
                             var @event = message.Events[index].Event;
                             var @link = message.Events[index].Link;
-                            DeliverEvent(@event, @link, 100.0f * (link ?? @event).EventNumber / message.LastEventNumber, ref oldFromSequenceNumber);
+                            DeliverEvent(
+                                @event, @link, 100.0f*(link ?? @event).EventNumber/message.LastEventNumber,
+                                ref oldFromSequenceNumber);
                         }
                     }
 
@@ -141,8 +142,7 @@ namespace EventStore.Projections.Core.Services.Processing
         private void SendIdle()
         {
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.EventReaderIdle(
-                    _distibutionPointCorrelationId, _timeProvider.Now));
+                new ProjectionCoreServiceMessage.EventReaderIdle(_distibutionPointCorrelationId, _timeProvider.Now));
         }
 
         public override void Handle(ClientMessage.ReadAllEventsForwardCompleted message)
@@ -183,8 +183,7 @@ namespace EventStore.Projections.Core.Services.Processing
                 return; //TODO: this should not happen, but StorageReader does not return it now
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, default(EventPosition), _streamName, _fromSequenceNumber,
-                    _streamName, _fromSequenceNumber, false, null, safeJoinPosition, 100.0f));
+                    _distibutionPointCorrelationId, null, safeJoinPosition, 100.0f));
         }
 
         private void DeliverEvent(EventRecord @event, EventRecord link, float progress, ref int sequenceNumber)
@@ -201,10 +200,12 @@ namespace EventStore.Projections.Core.Services.Processing
             _publisher.Publish(
                 //TODO: publish both link and event data
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, default(EventPosition), positionEvent.EventStreamId,
-                    positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber, resolvedLinkTo,
-                    ResolvedEvent.Create(@event.EventId, @event.EventType, false, @event.Data, @event.Metadata, positionEvent.TimeStamp),
-                    _stopOnEof ? (long?) null : positionEvent.LogPosition, progress));
+                    _distibutionPointCorrelationId,
+                    new ResolvedEvent(
+                        positionEvent.EventStreamId, positionEvent.EventNumber, @event.EventStreamId, @event.EventNumber,
+                        resolvedLinkTo, default(EventPosition), @event.EventId, @event.EventType, false, @event.Data,
+                        @event.Metadata, positionEvent.TimeStamp), _stopOnEof ? (long?) null : positionEvent.LogPosition,
+                    progress));
         }
     }
 }

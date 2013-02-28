@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Services.Processing
     {
         public override string GetStatePartition(ProjectionSubscriptionMessage.CommittedEventReceived @event)
         {
-            return @event.EventStreamId;
+            return @event.Data.EventStreamId;
         }
     }
 }

@@ -30,14 +30,12 @@ using System;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
-using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
@@ -61,26 +59,28 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
-            _edp = new StreamEventReader(_bus, _distibutionPointCorrelationId, "stream", 10, new RealTimeProvider(), false);
+            _edp = new StreamEventReader(
+                _bus, _distibutionPointCorrelationId, "stream", 10, new RealTimeProvider(), false);
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, 
+                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success,
                     new[]
-                    {
-                        new ResolvedEvent( 
-                            new EventRecord(
-                                10, 50, Guid.NewGuid(), _firstEventId, 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
-                                PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                "event_type1", new byte[] {1}, new byte[] {2}), null),
-                        new ResolvedEvent( 
-                            new EventRecord(
-                                11, 100, Guid.NewGuid(), _secondEventId, 100, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
-                                PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                "event_type2", new byte[] {3}, new byte[] {4}), null)
-                    }, "", 12, 11, true, 200));
+                        {
+                            new ResolvedEvent(
+                        new EventRecord(
+                            10, 50, Guid.NewGuid(), _firstEventId, 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
+                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                            "event_type1", new byte[] {1}, new byte[] {2}), null),
+                            new ResolvedEvent(
+                        new EventRecord(
+                            11, 100, Guid.NewGuid(), _secondEventId, 100, 0, "stream", ExpectedVersion.Any,
+                            DateTime.UtcNow,
+                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                            "event_type2", new byte[] {3}, new byte[] {4}), null)
+                        }, "", 12, 11, true, 200));
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
@@ -100,9 +100,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             Assert.AreEqual(
                 2, _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Count());
-            var first = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().First();
+            var first =
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().First();
             var second =
-                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>().Skip(1).First();
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
+                         .Skip(1)
+                         .First();
 
             Assert.AreEqual("event_type1", first.Data.EventType);
             Assert.AreEqual("event_type2", second.Data.EventType);
@@ -112,12 +115,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             Assert.AreEqual(2, first.Data.Metadata[0]);
             Assert.AreEqual(3, second.Data.Data[0]);
             Assert.AreEqual(4, second.Data.Metadata[0]);
-            Assert.AreEqual("stream", first.EventStreamId);
-            Assert.AreEqual("stream", second.EventStreamId);
-            Assert.AreEqual(0, first.Position.PreparePosition);
-            Assert.AreEqual(0, second.Position.PreparePosition);
-            Assert.AreEqual(0, first.Position.CommitPosition);
-            Assert.AreEqual(0, second.Position.CommitPosition);
+            Assert.AreEqual("stream", first.Data.EventStreamId);
+            Assert.AreEqual("stream", second.Data.EventStreamId);
+            Assert.AreEqual(0, first.Data.Position.PreparePosition);
+            Assert.AreEqual(0, second.Data.Position.PreparePosition);
+            Assert.AreEqual(0, first.Data.Position.CommitPosition);
+            Assert.AreEqual(0, second.Data.Position.CommitPosition);
             Assert.AreEqual(50, first.SafeTransactionFileReaderJoinPosition);
             Assert.AreEqual(100, second.SafeTransactionFileReaderJoinPosition);
         }
@@ -137,15 +140,16 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, 
+                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success,
                     new[]
-                    {
-                        new ResolvedEvent( 
-                            new EventRecord(
-                        10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
-                        PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                        "event_type", new byte[0], new byte[0]), null)
-                    }, "", 11, 10, true, 100));
+                        {
+                            new ResolvedEvent(
+                        new EventRecord(
+                            10, 50, Guid.NewGuid(), Guid.NewGuid(), 50, 0, "stream", ExpectedVersion.Any,
+                            DateTime.UtcNow,
+                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                            "event_type", new byte[0], new byte[0]), null)
+                        }, "", 11, 10, true, 100));
         }
 
         [Test]
@@ -153,15 +157,16 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, 
+                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success,
                     new[]
-                    {
-                        new ResolvedEvent( 
-                            new EventRecord(
-                                12, 250, Guid.NewGuid(), Guid.NewGuid(), 250, 0, "stream", ExpectedVersion.Any, DateTime.UtcNow,
-                                PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-                                "event_type", new byte[0], new byte[0]), null)
-                    }, "", 13, 11, true, 300));
+                        {
+                            new ResolvedEvent(
+                        new EventRecord(
+                            12, 250, Guid.NewGuid(), Guid.NewGuid(), 250, 0, "stream", ExpectedVersion.Any,
+                            DateTime.UtcNow,
+                            PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
+                            "event_type", new byte[0], new byte[0]), null)
+                        }, "", 13, 11, true, 300));
         }
     }
 }

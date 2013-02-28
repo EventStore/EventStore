@@ -31,14 +31,12 @@ using System.Linq;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.continuous
 {
     public class a_running_projection
     {
-
         public abstract class Base : a_new_posted_projection.Base
         {
             protected Guid _reader;
@@ -57,9 +55,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 _reader = readerAssignedMessage.ReaderId;
 
                 _bus.Publish(
-                    new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                        _reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false,
-                        ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0]), 100, 33.3f));
+                    ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                        _reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "type",
+                        false, new byte[0], new byte[0], 100, 33.3f));
             }
         }
 
@@ -73,9 +71,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                 for (var i = 0; i < 50; i++)
                 {
                     _bus.Publish(
-                        new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                            _reader, new EventPosition(100 * i + 200, 150), "stream", 1, "stream", 1 + i + 1, false,
-                            ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0]), 100 * i + 200, 33.3f));
+                        ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                            _reader, new EventPosition(100*i + 200, 150), "stream", 1, "stream", 1 + i + 1, false,
+                            Guid.NewGuid(), "type", false, new byte[0], new byte[0], 100*i + 200, 33.3f));
                 }
             }
 
@@ -133,9 +131,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
             {
                 base.When();
                 _bus.Publish(
-                    new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                        _reader, new EventPosition(200, 150), "stream", 2, "stream", 1, false,
-                        ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0]), 100, 33.3f));
+                    ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                        _reader, new EventPosition(200, 150), "stream", 2, "stream", 1, false, Guid.NewGuid(), "type",
+                        false, new byte[0], new byte[0], 100, 33.3f));
             }
 
             [Test]
@@ -171,6 +169,5 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.continu
                              .Enabled);
             }
         }
-
     }
 }

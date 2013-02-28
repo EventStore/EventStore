@@ -28,7 +28,6 @@
 
 using System;
 using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection_subscription
@@ -48,16 +47,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
             _firstEventTimestamp = DateTime.UtcNow;
 
             _subscription.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(200, 150), "a", 1, false,
-                    ResolvedEvent.Sample(
-                        _secondEventId, "bad-event-type", false, new byte[0], new byte[0], _firstEventTimestamp)));
+                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                    Guid.NewGuid(), new EventPosition(200, 150), "a", 1, false, _secondEventId, "bad-event-type", false,
+                    new byte[0], new byte[0], _firstEventTimestamp));
             _subscription.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(300, 100), "b", 1, false,
-                    ResolvedEvent.Sample(
-                        _firstEventId, "bad-event-type", false, new byte[0], new byte[0],
-                        _firstEventTimestamp.AddMilliseconds(1))));
+                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                    Guid.NewGuid(), new EventPosition(300, 100), "b", 1, false, _firstEventId, "bad-event-type", false,
+                    new byte[0], new byte[0], _firstEventTimestamp.AddMilliseconds(1)));
             _subscription.Handle(
                 new ProjectionCoreServiceMessage.EventReaderIdle(
                     Guid.NewGuid(), _firstEventTimestamp.AddMilliseconds(_timeBetweenEvents)));

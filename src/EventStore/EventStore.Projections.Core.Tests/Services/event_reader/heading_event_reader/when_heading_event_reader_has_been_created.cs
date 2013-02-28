@@ -36,7 +36,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader
 {
     [TestFixture]
-    public class when_heading_event_reader_has_been_created: TestFixtureWithReadWriteDisaptchers
+    public class when_heading_event_reader_has_been_created : TestFixtureWithReadWriteDisaptchers
     {
         private HeadingEventReader _point;
         private Exception _exception;
@@ -83,9 +83,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
         public void handle_throws_invalid_operation_exception()
         {
             _point.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    Guid.NewGuid(), new EventPosition(20, 10), "stream", 10, false,
-                    ResolvedEvent.Sample(Guid.NewGuid(), "type", false, new byte[0], new byte[0])));
+                ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                    Guid.NewGuid(), new EventPosition(20, 10), "stream", 10, false, Guid.NewGuid(), "type", false,
+                    new byte[0], new byte[0]));
         }
 
         [Test]
@@ -94,8 +94,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
             var eventReaderId = Guid.NewGuid();
             _point.Start(
                 eventReaderId,
-                new TransactionFileEventReader(
-                    _bus, eventReaderId, new EventPosition(0, -1), new RealTimeProvider()));
+                new TransactionFileEventReader(_bus, eventReaderId, new EventPosition(0, -1), new RealTimeProvider()));
         }
     }
 }

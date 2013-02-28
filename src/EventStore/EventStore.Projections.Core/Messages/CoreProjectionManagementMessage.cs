@@ -298,10 +298,10 @@ namespace EventStore.Projections.Core.Messages
                             BodyRaw = Encoding.UTF8.GetString(source.Data.Data),
                             MetadataRaw = Encoding.UTF8.GetString(source.Data.Metadata),
                             EventType = source.Data.EventType,
-                            StreamId = source.EventStreamId,
-                            SequenceNumber = source.EventSequenceNumber,
+                            StreamId = source.Data.EventStreamId,
+                            SequenceNumber = source.Data.EventSequenceNumber,
                             Category = source.EventCategory,
-                            LogPosition = source.Position.PreparePosition,
+                            LogPosition = source.Data.Position.PreparePosition,
                         };
                 }
 

@@ -31,7 +31,6 @@ using System.Linq;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
-using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
@@ -54,9 +53,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                 Assert.IsNotNull(readerAssignedMessage);
                 var reader = readerAssignedMessage.ReaderId;
                 _bus.Publish(
-                    new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                        reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false,
-                        ResolvedEvent.Sample(Guid.NewGuid(), "event", false, new byte[0], new byte[0]), 100, 33.3f));
+                    ProjectionCoreServiceMessage.CommittedEventDistributed.Sample(
+                        reader, new EventPosition(100, 50), "stream", 1, "stream", 1, false, Guid.NewGuid(), "event",
+                        false, new byte[0], new byte[0], 100, 33.3f));
             }
         }
 
@@ -185,7 +184,5 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.onetime
                              .Enabled);
             }
         }
-
-
     }
 }

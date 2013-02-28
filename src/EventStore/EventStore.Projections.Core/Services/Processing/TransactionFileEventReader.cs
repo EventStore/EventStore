@@ -39,13 +39,15 @@ namespace EventStore.Projections.Core.Services.Processing
 {
     public class TransactionFileEventReader : EventReader
     {
-        private bool _eventsRequested = false;
+        private bool _eventsRequested;
         private int _maxReadCount = 250;
         private EventPosition _from;
         private readonly bool _deliverEndOfTfPosition;
         private readonly ITimeProvider _timeProvider;
 
-        public TransactionFileEventReader(IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition @from, ITimeProvider timeProvider, bool stopOnEof = false, bool deliverEndOfTFPosition = true)
+        public TransactionFileEventReader(
+            IPublisher publisher, Guid distibutionPointCorrelationId, EventPosition @from, ITimeProvider timeProvider,
+            bool stopOnEof = false, bool deliverEndOfTFPosition = true)
             : base(publisher, distibutionPointCorrelationId, stopOnEof)
         {
             if (publisher == null) throw new ArgumentNullException("publisher");
@@ -116,14 +118,12 @@ namespace EventStore.Projections.Core.Services.Processing
                     DeliverEvent(@event, message.Result.TfEofPosition, oldFrom);
                 }
             }
-
         }
 
         private void SendIdle()
         {
             _publisher.Publish(
-                new ProjectionCoreServiceMessage.EventReaderIdle(
-                    _distibutionPointCorrelationId, _timeProvider.Now));
+                new ProjectionCoreServiceMessage.EventReaderIdle(_distibutionPointCorrelationId, _timeProvider.Now));
         }
 
         private void RequestEvents(bool delay)
@@ -159,11 +159,12 @@ namespace EventStore.Projections.Core.Services.Processing
                 return;
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, default(EventPosition), null, int.MinValue,
-                    null, int.MinValue, false, null, lastPosition.PreparePosition, 100.0f)); //TODO: check was is passed here
+                    _distibutionPointCorrelationId, null, lastPosition.PreparePosition, 100.0f));
+                //TODO: check was is passed here
         }
 
-        private void DeliverEvent(EventStore.Core.Data.ResolvedEvent @event, long lastCommitPosition, EventPosition currentFrom)
+        private void DeliverEvent(
+            EventStore.Core.Data.ResolvedEvent @event, long lastCommitPosition, EventPosition currentFrom)
         {
             EventRecord positionEvent = (@event.Link ?? @event.Event);
             EventPosition receivedPosition = @event.OriginalPosition.Value;
@@ -175,11 +176,12 @@ namespace EventStore.Projections.Core.Services.Processing
 
             _publisher.Publish(
                 new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, receivedPosition, positionEvent.EventStreamId,
-                    positionEvent.EventNumber, @event.Event.EventStreamId, @event.Event.EventNumber, @event.Link != null,
-                    ResolvedEvent.Create(
-                        @event.Event.EventId, @event.Event.EventType, (@event.Event.Flags & PrepareFlags.IsJson) != 0,
-                        @event.Event.Data, @event.Event.Metadata, positionEvent.TimeStamp),
+                    _distibutionPointCorrelationId,
+                    new ResolvedEvent(
+                        positionEvent.EventStreamId, positionEvent.EventNumber, @event.Event.EventStreamId,
+                        @event.Event.EventNumber, @event.Link != null, receivedPosition, @event.Event.EventId,
+                        @event.Event.EventType, (@event.Event.Flags & PrepareFlags.IsJson) != 0, @event.Event.Data,
+                        @event.Event.Metadata, positionEvent.TimeStamp),
                     _stopOnEof ? (long?) null : receivedPosition.PreparePosition,
                     100.0f*positionEvent.LogPosition/lastCommitPosition));
         }

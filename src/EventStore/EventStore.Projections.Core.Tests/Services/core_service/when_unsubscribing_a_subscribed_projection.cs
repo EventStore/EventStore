@@ -65,8 +65,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_service
         public void committed_events_are_no_longer_distributed_to_the_projection()
         {
             _service.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _projectionCorrelationId, new EventPosition(10, 5), "test", -1, false, CreateEvent()));
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(_projectionCorrelationId, CreateEvent()));
             Assert.AreEqual(0, _committedeventHandler.HandledMessages.Count);
         }
 
@@ -75,8 +74,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_service
         {
             _service.Handle(new ProjectionSubscriptionManagement.Resume(_projectionCorrelationId));
             _service.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _projectionCorrelationId, new EventPosition(10, 5), "test", -1, false, CreateEvent()));
+                new ProjectionCoreServiceMessage.CommittedEventDistributed(_projectionCorrelationId, CreateEvent()));
             Assert.AreEqual(0, _committedeventHandler.HandledMessages.Count);
         }
     }

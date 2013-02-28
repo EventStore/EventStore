@@ -29,13 +29,11 @@
 using System;
 using System.Linq;
 using System.Text;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection
 {
@@ -70,10 +68,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             _consumer.HandledMessages.Clear();
             _coreProjection.Handle(
                 ProjectionSubscriptionMessage.CommittedEventReceived.Sample(
-                    Guid.Empty, _subscriptionId, new EventPosition(120, 110), "account-01", -1, false,
-                    ResolvedEvent.Sample(
-                        _eventId, "handle_this_type", false, Encoding.UTF8.GetBytes("data"),
-                        Encoding.UTF8.GetBytes("metadata")), 0));
+                    new ResolvedEvent(
+                        "account-01", -1, "account-01", -1, false, new EventPosition(120, 110), _eventId,
+                        "handle_this_type", false, Encoding.UTF8.GetBytes("data"), Encoding.UTF8.GetBytes("metadata"),
+                        default(DateTime)), Guid.Empty, _subscriptionId, 0));
         }
 
         [Test]
@@ -82,8 +80,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
             // 1 - for load state
             Assert.AreEqual(
                 1,
-                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>().Count(
-                    v => v.EventStreamId == "$projections-projection-account-01-checkpoint"));
+                _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>()
+                         .Count(v => v.EventStreamId == "$projections-projection-account-01-checkpoint"));
         }
 
         [Test]
@@ -137,7 +135,5 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection
 
             Assert.AreEqual("account-01", Encoding.UTF8.GetString(@event.Data));
         }
-
-
     }
 }

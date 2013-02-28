@@ -30,14 +30,12 @@ using System;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
-using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
@@ -61,13 +59,14 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
         {
             _publishWithCorrelationId = Guid.NewGuid();
             _distibutionPointCorrelationId = Guid.NewGuid();
-            _edp = new StreamEventReader(_bus, _distibutionPointCorrelationId, "stream", 10, new RealTimeProvider(), false);
+            _edp = new StreamEventReader(
+                _bus, _distibutionPointCorrelationId, "stream", 10, new RealTimeProvider(), false);
             _edp.Resume();
             _firstEventId = Guid.NewGuid();
             _secondEventId = Guid.NewGuid();
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, 
+                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success,
                     new[]
                         {
                             new ResolvedEvent(
@@ -84,8 +83,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                         }, "", 12, 11, true, 200));
             _edp.Handle(
                 new ClientMessage.ReadStreamEventsForwardCompleted(
-                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, 
-                    new ResolvedEvent[0], "", 12, 11, true, 400));
+                    _distibutionPointCorrelationId, "stream", 100, 100, ReadStreamResult.Success, new ResolvedEvent[0],
+                    "", 12, 11, true, 400));
         }
 
         [Test, ExpectedException(typeof (InvalidOperationException))]
@@ -111,7 +110,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
                 _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
                          .Skip(1)
                          .First();
-            var third = _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
+            var third =
+                _consumer.HandledMessages.OfType<ProjectionCoreServiceMessage.CommittedEventDistributed>()
                          .Skip(2)
                          .First();
             Assert.IsNull(third.Data);
@@ -125,12 +125,12 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             Assert.AreEqual(2, first.Data.Metadata[0]);
             Assert.AreEqual(3, second.Data.Data[0]);
             Assert.AreEqual(4, second.Data.Metadata[0]);
-            Assert.AreEqual("stream", first.EventStreamId);
-            Assert.AreEqual("stream", second.EventStreamId);
-            Assert.AreEqual(0, first.Position.PreparePosition);
-            Assert.AreEqual(0, second.Position.PreparePosition);
-            Assert.AreEqual(0, first.Position.CommitPosition);
-            Assert.AreEqual(0, second.Position.CommitPosition);
+            Assert.AreEqual("stream", first.Data.EventStreamId);
+            Assert.AreEqual("stream", second.Data.EventStreamId);
+            Assert.AreEqual(0, first.Data.Position.PreparePosition);
+            Assert.AreEqual(0, second.Data.Position.PreparePosition);
+            Assert.AreEqual(0, first.Data.Position.CommitPosition);
+            Assert.AreEqual(0, second.Data.Position.CommitPosition);
             Assert.AreEqual(50, first.SafeTransactionFileReaderJoinPosition);
             Assert.AreEqual(100, second.SafeTransactionFileReaderJoinPosition);
         }
@@ -149,6 +149,5 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader
             schedule.Reply();
             Assert.AreEqual(3, _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>().Count());
         }
-
     }
 }
