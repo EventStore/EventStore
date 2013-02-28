@@ -65,7 +65,7 @@ namespace EventStore.ClientAPI.Core
         private int _reconnectionCount;
 
         private bool _connectionActive;
-        private bool _disposed;
+        private volatile bool _disposed;
 
         private readonly Dictionary<Guid, OperationItem> _operations = new Dictionary<Guid, OperationItem>();
         private readonly Queue<OperationItem> _waitingOperations = new Queue<OperationItem>();
@@ -112,8 +112,16 @@ namespace EventStore.ClientAPI.Core
             Ensure.NotNull(task, "task");
             Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
 
-            if (_disposed) task.SetException(new ObjectDisposedException(_connectionName));
-            if (_connectionActive) task.SetException(new InvalidOperationException("EventStoreConnection is already active."));
+            if (_disposed)
+            {
+                task.SetException(new ObjectDisposedException(_connectionName));
+                return;
+            }
+            if (_connectionActive)
+            {
+                task.SetException(new InvalidOperationException("EventStoreConnection is already active."));
+                return;
+            }
 
             _settings.Log.Info("EventStoreConnection '{0}': connecting to [{1}].", _connectionName, tcpEndPoint);
 
@@ -236,14 +244,24 @@ namespace EventStore.ClientAPI.Core
 
         private void StartOperation(IClientOperation operation, int maxAttempts, TimeSpan timeout)
         {
-            if (_disposed) operation.Fail(new ObjectDisposedException(_connectionName));
-            if (!_connectionActive) operation.Fail(new InvalidOperationException(string.Format("EventStoreConnection '{0}' is not active.", _connectionName)));
+            if (_disposed)
+            {
+                operation.Fail(new ObjectDisposedException(_connectionName));
+                return;
+            }
+            if (!_connectionActive)
+            {
+                operation.Fail(new InvalidOperationException(string.Format("EventStoreConnection '{0}' is not active.", _connectionName)));
+                return;
+            }
 
             ScheduleOperation(new OperationItem(operation, maxAttempts, timeout));
         }
 
         private void HandleTcpPackage(TcpTypedConnection connection, TcpPackage package)
         {
+            if (_disposed) return;
+
             if (package.Command == TcpCommand.BadRequest && package.CorrelationId == Guid.Empty)
             {
                 if (_settings.ErrorOccurred != null)
@@ -378,6 +396,7 @@ namespace EventStore.ClientAPI.Core
                 MaxRetries = maxRetries;
                 Timeout = timeout;
 
+                CorrelationId = Guid.NewGuid();
                 RetryCount = 0;
                 LastUpdated = DateTime.UtcNow;
             }
